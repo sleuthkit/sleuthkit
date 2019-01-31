@@ -379,7 +379,7 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
     ptrdiff_t off = _pool.block_size();
 
     if (is_root()) {
-      off -= 0x28;
+      off -= sizeof(apfs_btree_info);
     }
 
     return off;
@@ -464,6 +464,19 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
     }();
 
     return vec;
+  }
+
+  inline const apfs_btree_info *info() const noexcept {
+    // Only root nodes contain the info struct
+    if (!is_root()) {
+      return nullptr;
+    }
+
+    // The info structure is at the end of the object
+    const auto ptr =
+        _storage.data() + _storage.size() - sizeof(apfs_btree_info);
+
+    return reinterpret_cast<const apfs_btree_info *>(ptr);
   }
 
   // Iterators

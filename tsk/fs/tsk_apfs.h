@@ -225,6 +225,27 @@ typedef struct {
 static_assert(sizeof(apfs_btentry_variable) == 0x08,
               "improperly aligned struct");
 
+// Flags for apfs_btree_info.flags
+#define APFS_BTREE_UINT64_KEYS 0x00000001
+#define APFS_BTREE_SEQUENTIAL_INSERT 0x00000002
+#define APFS_BTREE_ALLOW_GHOSTS 0x00000004
+#define APFS_BTREE_EPHEMERAL 0x00000008
+#define APFS_BTREE_PHYSICAL 0x00000010
+#define APFS_BTREE_NONPERSISTENT 0x00000020
+#define APFS_BTREE_KV_NONALIGNED 0x00000040
+
+typedef struct {
+  uint32_t flags;        // 0x00
+  uint32_t node_size;    // 0x04
+  uint32_t key_size;     // 0x08
+  uint32_t val_size;     // 0x0C
+  uint32_t longest_key;  // 0x10
+  uint32_t longest_val;  // 0x14
+  uint64_t key_count;    // 0x18
+  uint64_t node_count;   // 0x20
+} apfs_btree_info;
+static_assert(sizeof(apfs_btree_info) == 0x28, "improperly aligned struct");
+
 // Flags for apfs_superblock.features
 #define APFS_SB_FEATURES_DEFRAG_PRERELEASE 0x00000001LL
 #define APFS_SB_FEATURES_HARDLINK_MAP_RECORDS 0x00000002LL
