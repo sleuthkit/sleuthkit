@@ -34,20 +34,30 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
   // Check to see if we need to scan for a newer pool
   if (nx_block_num == APFS_POOL_NX_BLOCK_LATEST) {
     const auto versions = known_versions();
-    const auto highest = std::max_element(
-        versions.begin(), versions.end(),
-        [](const auto& a, const auto& b) { return a.xid < b.xid; });
 
-    // No need to do anything, we're already the highest version
-    if (highest->xid != nxsb->xid()) {
-      _nx_block_num = highest->nx_block_num;
+    if (versions.empty()) {
+      _nx_block_num = APFS_POOL_NX_BLOCK_LAST_KNOWN_GOOD;
+      if (tsk_verbose) {
+        tsk_fprintf(stderr,
+                    "APFSPool: No checkpoint superblocks found.  Attempting to "
+                    "fall back to last known good superblock\n");
+      }
+    } else {
+      const auto highest = std::max_element(
+          versions.begin(), versions.end(),
+          [](const auto& a, const auto& b) { return a.xid < b.xid; });
 
-      try {
-        nxsb = nx(true);
-      } catch (const std::runtime_error&) {
-        // Fallback to last known good block if the latest block is not valid
-        _nx_block_num = APFS_POOL_NX_BLOCK_LAST_KNOWN_GOOD;
-        nxsb = nx(true);
+      // No need to do anything, we're already the highest version
+      if (highest->xid != nxsb->xid()) {
+        _nx_block_num = highest->nx_block_num;
+
+        try {
+          nxsb = nx(true);
+        } catch (const std::runtime_error&) {
+          // Fallback to last known good block if the latest block is not valid
+          _nx_block_num = APFS_POOL_NX_BLOCK_LAST_KNOWN_GOOD;
+          nxsb = nx(true);
+        }
       }
     }
   }
