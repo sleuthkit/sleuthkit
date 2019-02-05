@@ -6106,7 +6106,7 @@ public class SleuthkitCase {
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, TskData.EncodingType encodingType,
-			AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
+			Content parent, CaseDbTransaction transaction) throws TskCoreException {
 
 		CaseDbConnection connection = transaction.getConnection();
 		transaction.acquireSingleUserCaseWriteLock();
@@ -6143,10 +6143,14 @@ public class SleuthkitCase {
 			statement.setLong(14, mtime);
 			String parentPath;
 
-			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-				parentPath = "/";
+			if (parent instanceof AbstractFile) {
+				if (parent.getParent() == null && ((AbstractFile)parent).getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+					parentPath = "/";
+				} else {
+					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
 			} else {
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+				parentPath = "/";
 			}
 			statement.setString(15, parentPath);
 			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
@@ -7796,6 +7800,21 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Close all database connections.
+	 */
+	public synchronized void closeConnections() {
+		acquireSingleUserCaseWriteLock();
+
+		try {
+			connections.close();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}	
 
 	/**
 	 * Store the known status for the FsContent in the database Note: will not
