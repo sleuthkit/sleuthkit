@@ -208,6 +208,7 @@ uint8_t
 TskAutoDb::addImageDetails(const char* deviceId)
 {
    string md5 = "";
+   string sha1 = "";
 #if HAVE_LIBEWF 
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
      // @@@ This should really probably be inside of a tsk_img_ method
@@ -215,6 +216,9 @@ TskAutoDb::addImageDetails(const char* deviceId)
        if (ewf_info->md5hash_isset) {
            md5 = ewf_info->md5hash;
        }
+	   if (ewf_info->sha1hash_isset) {
+		   sha1 = ewf_info->sha1hash;
+	   }
    }
 #endif
 
@@ -225,7 +229,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
         devId = "";
     }
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5, "", "", devId)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId)) {
         registerError();
         return 1;
     }
