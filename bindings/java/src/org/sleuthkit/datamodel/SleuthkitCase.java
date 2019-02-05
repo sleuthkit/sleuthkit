@@ -94,7 +94,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 3);
+			= new CaseDbSchemaVersionNumber(8, 2);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -862,11 +862,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
-				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value='8' WHERE name='" + SCHEMA_MAJOR_VERSION_KEY + "'");
-				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value='3' WHERE name='" + SCHEMA_MINOR_VERSION_KEY + "'");
 				statement.close();
 				statement = null;
 			}
@@ -1670,45 +1667,6 @@ public class SleuthkitCase {
 		}
 	}
 	
-	/**
-	 * Updates a schema version 8.2 database to a schema version 8.3 database.
-	 *
-	 * @param schemaVersion The current schema version of the database.
-	 * @param connection    A connection to the case database.
-	 *
-	 * @return The new database schema version.
-	 *
-	 * @throws SQLException     If there is an error completing a database
-	 *                          operation.
-	 * @throws TskCoreException If there is an error completing a database
-	 *                          operation via another SleuthkitCase method.
-	 */
-	private CaseDbSchemaVersionNumber updateFromSchema8dot2toSchema8dot3(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
-		if (schemaVersion.getMajor() != 8) {
-			return schemaVersion;
-		}
-
-		if (schemaVersion.getMinor() != 2) {
-			return schemaVersion;
-		}
-		Statement statement = connection.createStatement();
-		acquireSingleUserCaseWriteLock();
-		try {
-
-			// Fix typo in 8.2 Sqlite databases
-			statement.execute("UPDATE tsk_db_info_extended SET name='" + CREATION_SCHEMA_MAJOR_VERSION_KEY + 
-					"' WHERE name='CREATED_SCHEMA_MAJOR_VERSION'");
-			statement.execute("UPDATE tsk_db_info_extended SET name='" + CREATION_SCHEMA_MINOR_VERSION_KEY + 
-					"' WHERE name='CREATED_SCHEMA_MINOR_VERSION'");
-
-			return new CaseDbSchemaVersionNumber(8, 3);
-
-		} finally {
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}	
-
 	/**
 	 * Extract the extension from a file name.
 	 *
