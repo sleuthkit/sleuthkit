@@ -16,8 +16,7 @@ unless (@ARGV == 1) {
 
 my $RELDIR = `pwd`;	# The release directory
 chomp $RELDIR;
-#my $TSKDIR = "$RELDIR/../";
-my $TSKDIR = "$RELDIR/sleuthkit/";
+my $TSKDIR = "$RELDIR/../";
 
 my $VER = $ARGV[0];
 my $TAGNAME = "sleuthkit-${VER}";
