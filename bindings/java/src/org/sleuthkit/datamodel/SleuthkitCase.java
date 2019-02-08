@@ -5299,9 +5299,12 @@ public class SleuthkitCase {
 			}
 			
 			// Add a row to data_source_info
+			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO);
 			statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
-					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timezone + "');");
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setString(2, deviceId);
+			preparedStatement.setString(3, timezone);
+			connection.executeUpdate(preparedStatement);
 			
 			// Create the new Image object
 			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, displayName,
@@ -10028,6 +10031,7 @@ public class SleuthkitCase {
 		INSERT_IMAGE_NAME("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (?, ?, ?)"),
 		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)" + 
 				" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (?, ?, ?)"),
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
