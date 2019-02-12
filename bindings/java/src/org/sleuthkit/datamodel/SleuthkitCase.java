@@ -1666,7 +1666,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
+	
 	/**
 	 * Extract the extension from a file name.
 	 *
@@ -5845,6 +5845,10 @@ public class SleuthkitCase {
 			boolean isFile, Content parentObj,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+		
+		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
+		localPath = localPath.replaceAll("^[/\\\\]+", "");
+		
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		try {
@@ -5970,6 +5974,10 @@ public class SleuthkitCase {
 			boolean isFile, String mimeType,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+		
+		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
+		localPath = localPath.replaceAll("^[/\\\\]+", "");
+		
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		ResultSet rs = null;
