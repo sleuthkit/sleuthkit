@@ -68,7 +68,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(XFSFS_INFO * xfsfs, TSK_INUM_T dino
     dino_aginum = dino_inum & rel_inum_neg;
 
     // take inode agi b+tree
-    cur_block_num = ag_num * xfsfs->fs->sb_agblocks + xfsfs->agi[ag_num].agi_root;
+    cur_block_num = (TSK_DADDR_T) ag_num * (TSK_DADDR_T) xfsfs->fs->sb_agblocks + (TSK_DADDR_T) xfsfs->agi[ag_num].agi_root;
     len = sizeof(xfs_inobt_block_t);
     cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * cur_block_num, (char *) cur_inobt_block, sizeof(xfs_inobt_block_t));
     if (cnt != len) {
@@ -107,7 +107,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(XFSFS_INFO * xfsfs, TSK_INUM_T dino
 
         // read all the node pointers
         len = cur_inobt_block->bb_numrecs * sizeof(xfs_inobt_ptr_t);
-        cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * cur_block_num + sizeof(xfs_inobt_block_t) + cur_inobt_block->bb_numrecs * sizeof(xfs_inobt_key_t), (char *) iptrs, len);
+        cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * cur_block_num + (TSK_OFF_T) sizeof(xfs_inobt_block_t) + (TSK_OFF_T) (cur_inobt_block->bb_numrecs * sizeof(xfs_inobt_key_t)), (char *) iptrs, len);
         if (cnt != len) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -129,7 +129,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(XFSFS_INFO * xfsfs, TSK_INUM_T dino
                 // found in a range, go one level down in b+tree, read the next
                 found_key = true;
 
-                cur_block_num = ag_num * xfsfs->fs->sb_agblocks + (TSK_DADDR_T) tsk_getu32(TSK_BIG_ENDIAN, iptrs[cur_key]);
+                cur_block_num = (TSK_DADDR_T) ag_num * (TSK_DADDR_T) xfsfs->fs->sb_agblocks + (TSK_DADDR_T) tsk_getu32(TSK_BIG_ENDIAN, iptrs[cur_key]);
 
                 if (tsk_verbose) { tsk_fprintf(stderr, "go one level down in b+tree, cur_block_num = %u \n", cur_block_num); }
 
@@ -178,7 +178,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(XFSFS_INFO * xfsfs, TSK_INUM_T dino
 
         if(dino_aginum >= irecs[cur_key].ir_startino && dino_aginum - irecs[cur_key].ir_startino < 64)
         {
-            if (tsk_verbose) { tsk_fprintf(stderr, "found at cur_inobt_block->bb_level = %u, cur_key = %u, irecs[cur_key].ar_startblock = %u, irecs[cur_key].ir_free = %" PRIx64 " \n",
+            if (tsk_verbose) { tsk_fprintf(stderr, "found at cur_inobt_block->bb_level = %u, cur_key = %u, irecs[cur_key].ir_startino = %u, irecs[cur_key].ir_free = %" PRIx64 " \n",
                 cur_inobt_block->bb_level, cur_key, irecs[cur_key].ir_startino, irecs[cur_key].ir_free); }
 
             free(cur_inobt_block);
@@ -223,6 +223,12 @@ xfs_dinode_load(XFSFS_INFO * xfsfs, TSK_INUM_T dino_inum,
 {
     char *myname = "xfs_dinode_load";
     TSK_FS_INFO *fs = &(xfsfs->fs_info);
+    xfs_agnumber_t ag_num = 0;
+    uint64_t rel_inum_neg = 0;
+    xfs_agino_t dino_aginum = 0;
+    uint64_t offset_neg = 0;
+    TSK_DADDR_T ag_block = 0;
+    xfs_off_t offset = 0;
     TSK_OFF_T addr = 0;
     ssize_t cnt;
 
@@ -244,7 +250,20 @@ xfs_dinode_load(XFSFS_INFO * xfsfs, TSK_INUM_T dino_inum,
         return 1;
     }
 
-    addr = dino_inum * xfsfs->inode_size;
+    ag_num = dino_inum >> xfsfs->fs->sb_agblklog >> xfsfs->fs->sb_inopblog;
+    rel_inum_neg = 1 << (xfsfs->fs->sb_agblklog + xfsfs->fs->sb_inopblog);
+    rel_inum_neg -= 1;
+    dino_aginum = dino_inum & rel_inum_neg;
+    ag_block = dino_aginum >> xfsfs->fs->sb_inopblog;
+    offset_neg = 1 << xfsfs->fs->sb_inopblog;
+    offset_neg -= 1;
+    offset = dino_aginum & offset_neg;
+
+    addr = (TSK_OFF_T) ag_num * (TSK_OFF_T) xfsfs->fs->sb_agblocks * (TSK_OFF_T) xfsfs->fs->sb_blocksize +
+     (TSK_OFF_T) ag_block * (TSK_OFF_T) xfsfs->fs->sb_blocksize + (TSK_OFF_T) offset * (TSK_OFF_T) xfsfs->fs->sb_inodesize;
+
+    if (tsk_verbose) { tsk_fprintf(stderr, "ag_num = %" PRId64 " ag_block = %" PRId64 " offset  = %" PRId64 ", addr = %" PRId64 " \n", ag_num, ag_block, offset, addr); }
+
     cnt = tsk_fs_read(fs, addr, (char *) dino_buf, xfsfs->inode_size);
     if (cnt != xfsfs->fs->sb_inodesize) {
         if (cnt >= 0) {
@@ -517,6 +536,7 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
 
         di_core_ptr = (xfs_dinode_core_t*) &dino_buf->di_core;
         extent_data_offset = (xfs_bmbt_rec_t*) XFS_DFORK_PTR(di_core_ptr, XFS_DATA_FORK);
+
         memcpy(fs_meta->content_ptr, extent_data_offset, content_len);
     }
     else {
@@ -748,7 +768,7 @@ TSK_FS_BLOCK_FLAG_ENUM
 xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 {
     XFSFS_INFO *xfsfs = (XFSFS_INFO *) a_fs;
-    TSK_DADDR_T ag_start = 0;
+    TSK_OFF_T ag_start_off = 0;
     TSK_OFF_T offset = 0;
     unsigned int len = 0;
     xfs_agf *agf = NULL;
@@ -764,6 +784,17 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     // actually, determining the status of a block in a general case, without the reverse-mapping B+tree is difficult, or at least nonoptimal
     // but let's try
 
+    xfs_agnumber_t ag_num = a_addr >> xfsfs->fs->sb_agblklog;
+    uint64_t rel_blk_neg = 1 << (xfsfs->fs->sb_agblklog);
+    rel_blk_neg -= 1;
+    uint64_t rel_blk = a_addr & rel_blk_neg;
+
+    // Sanity check
+    if (rel_blk >= xfsfs->fs->sb_agblocks)
+    {
+        // TODO: error msg
+        return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
+    }
 
     // 0 - superblock, agf, agi, agfl
     // 1 - inobt
@@ -774,11 +805,10 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     //        the free list array. This size may increase as features are added." (c) http://ftp.ntu.edu.tw/linux/utils/fs/xfs/docs/xfs_filesystem_structure.pdf
     //
 
-    if (a_addr % xfsfs->fs->sb_agblocks <= 7)
+    if (rel_blk <= 7)
         return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_ALLOC);
 
-
-    ag_start = rounddown(a_addr, xfsfs->fs->sb_agblocks);
+    ag_start_off = (TSK_OFF_T) ag_num * (TSK_OFF_T) xfsfs->fs->sb_agblocks * (TSK_OFF_T) xfsfs->fs->sb_blocksize;
 
     // Check agfl
 
@@ -786,8 +816,8 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     if ((agf = (xfs_agf *) tsk_malloc(len)) == NULL)
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
 
-    if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs AG Free Space Block, ag_start = %" PRId64 ", sect_size = %u, len = %u \n", ag_start, xfsfs->fs->sb_sectsize, len); }
-    cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) (ag_start * xfsfs->fs->sb_blocksize + xfsfs->fs->sb_sectsize), (char *) agf, len);
+    if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs AG Free Space Block, ag_start_off = %" PRId64 ", sect_size = %u, len = %u \n", ag_start_off, xfsfs->fs->sb_sectsize, len); }
+    cnt = tsk_fs_read(&xfsfs->fs_info, ag_start_off + (TSK_OFF_T) xfsfs->fs->sb_sectsize, (char *) agf, len);
     if (cnt != len) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -825,7 +855,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     if ((agfl = (xfs_agblock_t *) tsk_malloc(len)) == NULL)
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
 
-    offset = ag_start * xfsfs->fs->sb_blocksize + xfsfs->fs->sb_sectsize * 3;
+    offset = ag_start_off + (TSK_OFF_T) xfsfs->fs->sb_sectsize * 3;
     len = xfsfs->fs->sb_sectsize;
     if (XFS_SB_VERSION_NUM(xfsfs->fs) == 5)
     {
@@ -858,7 +888,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     // the free list array. This size may increase as features are added." (c) http://ftp.ntu.edu.tw/linux/utils/fs/xfs/docs/xfs_filesystem_structure.pdf
     // Q: will they be reserved right after the 7th block?
 
-    offset = ag_start * xfsfs->fs->sb_blocksize + xfsfs->fs->sb_blocksize * 4;
+    offset = ag_start_off + (TSK_OFF_T) xfsfs->fs->sb_blocksize * 4;
     len = xfsfs->fs->sb_blocksize * 4;
     cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) offset, ((char *) agfl) + agfl_cur_len, len);
     if (cnt != len) {
@@ -874,19 +904,22 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 
     for (cur_key = agf->agf_flfirst; cur_key <= agf->agf_fllast; cur_key++)
     {
-        if (a_addr % xfsfs->fs->sb_agblocks == tsk_getu32(TSK_BIG_ENDIAN, &agfl[cur_key]))
+        if (rel_blk == tsk_getu32(TSK_BIG_ENDIAN, &agfl[cur_key]))
         {
             // free
             return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_UNALLOC);
         }
     }
 
+    uint64_t aginode_num = rel_blk * (uint64_t) xfsfs->fs->sb_inopblock;
+    uint64_t inode_num = (uint64_t) ag_num << xfsfs->fs->sb_agblklog + aginode_num;
+
     // Pet trick here: if the block possibly stores inodes, try to read the corresponding inode flags
-    if (tsk_verbose) { tsk_fprintf(stderr, "trying to treat block %u as inode %u \n", a_addr, a_addr * xfsfs->fs->sb_blocksize / xfsfs->fs->sb_inodesize); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "trying to treat rel_block %" PRId64 " in ag %" PRId64 " as rel inode %" PRId64 " (abs inode %" PRId64 ") \n", rel_blk, ag_num, aginode_num, inode_num); }
 
     inode_flag =
       //(TSK_FS_META_FLAG_ENUM) 0;
-        xfs_inode_getallocflag(xfsfs, a_addr * xfsfs->fs->sb_blocksize / xfsfs->fs->sb_inodesize, NULL);
+        xfs_inode_getallocflag(xfsfs, inode_num, NULL);
     if (inode_flag)
     {
         // free
@@ -938,7 +971,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     {
         // read all the keys
         len = cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_key_t);
-        cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * cur_sblock_num + sizeof(xfs_btree_sblock_t), (char *) recs, len);
+        cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * (TSK_OFF_T) cur_sblock_num + (TSK_OFF_T) sizeof(xfs_btree_sblock_t), (char *) recs, len);
         if (cnt != len) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -952,7 +985,8 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 
         // read all the node pointers
         len = cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_ptr_t);
-        cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * cur_sblock_num + sizeof(xfs_btree_sblock_t) + cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_key_t), (char *) ptrs, len);
+        cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * (TSK_OFF_T) cur_sblock_num + (TSK_OFF_T) sizeof(xfs_btree_sblock_t) + (TSK_OFF_T) (cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_key_t)),
+            (char *) ptrs, len);
         if (cnt != len) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -971,7 +1005,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
             recs[cur_key].ar_startblock = tsk_getu32(TSK_BIG_ENDIAN, &recs[cur_key].ar_startblock);
             recs[cur_key].ar_blockcount = tsk_getu32(TSK_BIG_ENDIAN, &recs[cur_key].ar_blockcount);
 
-            if(a_addr >= recs[cur_key].ar_startblock && a_addr - recs[cur_key].ar_startblock < recs[cur_key].ar_blockcount)
+            if(rel_blk >= recs[cur_key].ar_startblock && rel_blk - recs[cur_key].ar_startblock < recs[cur_key].ar_blockcount)
             {
                 // go one level down in b+tree
                 found = true;
@@ -1022,7 +1056,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         if (tsk_verbose) { tsk_fprintf(stderr, "checking cur_key = %u, recs[cur_key].ar_startblock = %u, recs[cur_key].ar_blockcount = %u \n",
             cur_key, recs[cur_key].ar_startblock, recs[cur_key].ar_blockcount); }
 
-        if(a_addr >= recs[cur_key].ar_startblock && a_addr - recs[cur_key].ar_startblock < recs[cur_key].ar_blockcount)
+        if(rel_blk >= recs[cur_key].ar_startblock && rel_blk - recs[cur_key].ar_startblock < recs[cur_key].ar_blockcount)
         {
             if (tsk_verbose) { tsk_fprintf(stderr, "found at cur_btree_sblock->bb_level = %u, cur_key = %u, recs[cur_key].ar_startblock = %u, recs[cur_key].ar_blockcount = %u \n",
                 cur_btree_sblock->bb_level, cur_key, recs[cur_key].ar_startblock, recs[cur_key].ar_blockcount); }
@@ -1102,6 +1136,7 @@ xfs_block_walk(TSK_FS_INFO * a_fs, TSK_DADDR_T a_start_blk,
      * Iterate
      */
 
+    // TODO: iterate AGs and iterate block numbers until sb_agblocks
     for (addr = a_start_blk; addr <= a_end_blk; addr++) {
         int retval;
         int myflags;
@@ -1154,6 +1189,7 @@ xfs_load_attrs(TSK_FS_FILE * fs_file)
 {
     TSK_FS_META *fs_meta = fs_file->meta;
     TSK_FS_INFO *fs_info = fs_file->fs_info;
+    XFSFS_INFO *xfs = (XFSFS_INFO *) fs_info;
     TSK_FS_ATTR *fs_attr;
     TSK_OFF_T length = 0;
     xfs_bmbt_irec_t irec;
@@ -1194,15 +1230,23 @@ xfs_load_attrs(TSK_FS_FILE * fs_file)
             xfs_bmbt_disk_get_all(&addr_ptr[extent_num], &irec);
 
             if (tsk_verbose) {
-                xfs_bmbt_disk_get_all(&addr_ptr[extent_num], &irec);
-                tsk_fprintf(stderr, "extent_num = %d, adding br_startblock = %d / br_blockcount = %d \n", extent_num, irec.br_startblock, irec.br_blockcount);
+                tsk_fprintf(stderr, "extent_num = %d, adding br_startblock = %" PRIu64 " / br_blockcount = %d \n", extent_num, irec.br_startblock, irec.br_blockcount);
             }
 
             TSK_FS_ATTR_RUN *data_run = tsk_fs_attr_run_alloc();
             if (data_run == NULL) {
                 return 1;
             }
-            data_run->addr = irec.br_startblock;
+
+            xfs_agnumber_t ag_num = irec.br_startblock >> xfs->fs->sb_agblklog;
+            uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
+            rel_blk_neg -= 1;
+            uint64_t rel_blk = (uint64_t) irec.br_startblock & rel_blk_neg;
+            TSK_OFF_T offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) fs_info->block_size;
+
+            // converting logical xfs block number into a "physical" number
+            // this block number is later processed by tsk_fs_read_block, which does (TSK_OFF_T) (a_addr) * a_fs->block_size
+            data_run->addr = offset / fs_info->block_size;
             data_run->len = irec.br_blockcount;
 
             if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
@@ -1793,7 +1837,12 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         size = irec.br_blockcount * a_fs->block_size;
 
-        TSK_OFF_T offset = irec.br_startblock * a_fs->block_size;
+        xfs_agnumber_t ag_num = (TSK_OFF_T) irec.br_startblock >> xfs->fs->sb_agblklog;
+        uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
+        rel_blk_neg -= 1;
+        uint64_t rel_blk = (TSK_OFF_T) irec.br_startblock & rel_blk_neg;
+        TSK_OFF_T offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) a_fs->block_size;
+
         TSK_OFF_T offset_in_block = 0;
 
         // read xfs_dir2_data_hdr (on a v5 filesystem this is xfs_dir3_data_hdr_t)
@@ -2002,6 +2051,14 @@ TSK_FS_INFO *
     unsigned int len = 0;
     ssize_t cnt;
 
+    // temporary sanity check
+    if (xfs_dinode_size(2) != 100) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("Invalid FS Type in xfsfs_open");
+        return NULL;
+    }
+
     // clean up any error messages that are lying around
     tsk_error_reset();
 
@@ -2112,7 +2169,7 @@ TSK_FS_INFO *
 
     for (xfs_agnumber_t current_ag = 0; current_ag < xfsfs->fs->sb_agcount; current_ag++)
     {
-        TSK_OFF_T agi_offset = current_ag * xfsfs->fs->sb_agblocks * xfsfs->fs->sb_blocksize + xfsfs->fs->sb_sectsize * 2;
+        TSK_OFF_T agi_offset = (TSK_OFF_T) current_ag * (TSK_OFF_T) xfsfs->fs->sb_agblocks * (TSK_OFF_T) xfsfs->fs->sb_blocksize + (TSK_OFF_T) (xfsfs->fs->sb_sectsize * 2);
         len = sizeof(xfs_agi);
 
         if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs AGI[%d/%d] from agi_offset = %" PRId64 " \n", current_ag, xfsfs->fs->sb_agcount, agi_offset); }
@@ -2161,7 +2218,15 @@ TSK_FS_INFO *
     fs->dev_bsize = img_info->sector_size;
     fs->block_count = xfsfs->fs->sb_dblocks;
     fs->first_block = 0;
-    fs->last_block_act = fs->last_block = fs->block_count - 1;
+
+    if (xfsfs->fs->sb_agcount < 1)
+    {
+        tsk_fprintf(stderr, "xfsfs->fs->sb_agcount is <1");
+    }
+
+    fs->last_block = (TSK_DADDR_T) (xfsfs->fs->sb_agcount - 1) << xfsfs->fs->sb_agblklog;
+    fs->last_block += (TSK_DADDR_T) agi[xfsfs->fs->sb_agcount - 1].agi_length;
+    fs->last_block_act = fs->last_block;
     fs->block_size = xfsfs->fs->sb_blocksize;
 
     /*
@@ -2169,7 +2234,9 @@ TSK_FS_INFO *
      */
     fs->root_inum = fs->first_inum = xfsfs->fs->sb_rootino; // usually 128
     fs->inum_count = xfsfs->fs->sb_icount;
-    fs->last_inum = img_info->size / xfsfs->inode_size - 1; // pragmatic upper bound is defined by the image size
+    fs->last_inum = (uint64_t) (xfsfs->fs->sb_agcount - 1) << (xfsfs->fs->sb_agblklog + xfsfs->fs->sb_inopblog);
+    fs->last_inum += (uint64_t) agi[xfsfs->fs->sb_agcount - 1].agi_length * (uint64_t) xfsfs->fs->sb_inopblock;
+    fs->last_inum -= 1;
     // right now, 0xffff prefix signifies the start of unused space in directory entry, so theoretical last inode num is 0xffff000000000000
 
     fs->get_default_attr_type = tsk_fs_unix_get_default_attr_type;

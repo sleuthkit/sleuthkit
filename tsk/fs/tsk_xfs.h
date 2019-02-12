@@ -511,13 +511,12 @@ static inline uint xfs_dinode_size(int version)
     if (version == 3)
     {
         //return sizeof(struct xfs_dinode);
-        //return 176;
-        return 0; // apparently it's something more than null
+        return 176; // hardcode for now
     }
 
-    //return sizeof(xfs_dinode_core_t);
-
-    return offsetof(struct xfs_dinode, di_next_unlinked) + sizeof(__uint32_t); // hacky
+    return 100; // hardcode for now
+     //sizeof(xfs_dinode_core_t) + sizeof(uint32_t);
+     // offsetof(struct xfs_dinode, di_next_unlinked) + sizeof(__uint32_t); // hacky
      //96;
 }
 
