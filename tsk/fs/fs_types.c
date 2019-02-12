@@ -1,6 +1,6 @@
 /*
 ** fs_types
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Identify the type of file system being used
 **

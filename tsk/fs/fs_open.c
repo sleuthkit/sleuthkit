@@ -237,7 +237,7 @@ tsk_fs_free(TSK_FS_INFO * a_fs_info)
         a_fs_info->list_inum_named = NULL;
     }
 
-    /* we should probably get the lock, but we're 
+    /* we should probably get the lock, but we're
      * about to kill the entire object so there are
      * bigger problems if another thread is still
      * using the fs */
