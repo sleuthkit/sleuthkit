@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.sleuthkit.datamodel.timeline.RootFilterTest;
 
 /**
  *
@@ -41,7 +42,7 @@ import org.junit.runners.Suite;
  * default ant target sets properties for the various folders.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({CommunicationsManagerTest.class, CaseDbSchemaVersionNumberTest.class,org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class, org.sleuthkit.datamodel.HashDbTest.class})
+@Suite.SuiteClasses({ CommunicationsManagerTest.class, CaseDbSchemaVersionNumberTest.class,org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class, org.sleuthkit.datamodel.HashDbTest.class})
 public class DataModelTestSuite {
 
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
