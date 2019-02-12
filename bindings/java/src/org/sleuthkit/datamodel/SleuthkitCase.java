@@ -5337,7 +5337,6 @@ public class SleuthkitCase {
 	public VolumeSystem addVolumeSystem(long parentObjId, TskData.TSK_VS_TYPE_ENUM type, long imgOffset, 
 			long blockSize, CaseDbTransaction transaction) throws TskCoreException{
 		acquireSingleUserCaseWriteLock();
-		Statement statement = null;
 		try {
 			// Insert a row for the VolumeSystem into the tsk_objects table.
 			CaseDbConnection connection = transaction.getConnection();
@@ -5359,7 +5358,6 @@ public class SleuthkitCase {
 			throw new TskCoreException(String.format("Error creating volume system with parent ID %d and image offset %d", 
 					parentObjId, imgOffset), ex);
 		} finally {
-			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}			
 	}
@@ -5458,7 +5456,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(9, displayName);
 			connection.executeUpdate(preparedStatement);
 
-			// Create the new Volume object
+			// Create the new FileSystem object
 			return new FileSystem(this, newObjId, displayName, imgOffset, type, blockSize, blockCount, rootInum,
 				firstInum, lastInum);
 		} catch (SQLException ex) {
