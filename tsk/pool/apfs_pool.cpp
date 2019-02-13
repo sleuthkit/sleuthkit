@@ -64,7 +64,19 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
 
   _vol_blocks = nxsb->volume_blocks();
   _num_vols = static_cast<int>(_vol_blocks.size());
-  _hw_crypto = !bit_is_set(nxsb->sb()->flags, APFS_NXSB_FLAGS_CRYPTO_SW);
+
+  // If the software crypto bit is not set, then either hardware crypto is used
+  // or there are no volumes that are encrypted.
+  if (bit_is_set(nxsb->sb()->flags, APFS_NXSB_FLAGS_CRYPTO_SW) == false) {
+    // We need to check each volume to determine if any of them have encryption
+    // enabled.
+    for (const auto& volume : volumes()) {
+      if (volume.encrypted()) {
+        _hw_crypto = true;
+        break;
+      }
+    }
+  }
 }
 
 std::unique_ptr<APFSSuperblock> APFSPool::nx(bool validate) const {
