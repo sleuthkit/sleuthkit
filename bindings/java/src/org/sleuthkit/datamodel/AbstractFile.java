@@ -1099,32 +1099,6 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public void save() throws TskCoreException {
 
-		SleuthkitCase.CaseDbTransaction localTrans = getSleuthkitCase().beginTransaction();
-		try {
-			save(localTrans);
-			localTrans.commit();
-			localTrans = null;
-		} finally {
-			if (null != localTrans) {
-				try {
-					localTrans.rollback();
-				} catch (TskCoreException ex2) {
-					LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Saves the editable file properties of this file to the case database,
-	 * e.g., the MIME type, MD5 hash, and known state.
-	 *
-	 * @param transaction The current transaction
-	 * 
-	 * @throws TskCoreException if there is an error saving the editable file
-	 *                          properties to the case database.
-	 */		
-	public void save(SleuthkitCase.CaseDbTransaction transaction) throws TskCoreException {	
 		// No fields have been updated
 		if (!(md5HashDirty || mimeTypeDirty || knownStateDirty)) {
 			return;
@@ -1149,10 +1123,10 @@ public abstract class AbstractFile extends AbstractContent {
 
 		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
 
-		SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
+		SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
 		Statement statement = null;
 
-		transaction.acquireSingleUserCaseWriteLock();
+		getSleuthkitCase().acquireSingleUserCaseWriteLock();
 		try {
 			statement = connection.createStatement();
 			connection.executeUpdate(statement, queryStr);
@@ -1164,7 +1138,8 @@ public abstract class AbstractFile extends AbstractContent {
 			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
 		} finally {
 			closeStatement(statement);
-			// NOTE: write lock will be released by transaction
+			connection.close();
+			getSleuthkitCase().releaseSingleUserCaseWriteLock();
 		}
 	}
 
