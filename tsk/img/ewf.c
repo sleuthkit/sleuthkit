@@ -64,7 +64,7 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 
     tsk_take_lock(&(ewf_info->read_lock));
 #if defined( HAVE_LIBEWF_V2_API )
-    cnt = libewf_handle_read_random(ewf_info->handle,
+    cnt = libewf_handle_read_buffer_at_offset(ewf_info->handle,
         buf, len, offset, &ewf_error);
     if (cnt < 0) {
         char *errmsg = NULL;

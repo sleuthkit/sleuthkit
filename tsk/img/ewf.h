@@ -20,9 +20,9 @@
 
 #include <libewf.h>
 
-// libewf version 2 no longer defines LIBEWF_HANDLE
+// libewf version 2 no longer defines LIBEWF_OPEN_READ_WRITE
 #undef HAVE_LIBEWF_V2_API
-#if !defined( LIBEWF_HANDLE )
+#if !defined( LIBEWF_OPEN_READ_WRITE )
 #define HAVE_LIBEWF_V2_API
 #endif
 
