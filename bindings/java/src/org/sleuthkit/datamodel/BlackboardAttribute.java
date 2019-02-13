@@ -1312,6 +1312,28 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_ICCID(130, "TSK_ICCID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskIccid.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_TEXT(131, "TSK_PHONE_NUMBER_TEXT", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberText.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_VOICE(132, "TSK_PHONE_NUMBER_VOICE", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberVoice.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_FAX(133, "TSK_PHONE_NUMBER_FAX", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberFax.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_VIDEO(134, "TSK_PHONE_NUMBER_VIDEO", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberVideo.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_PAGER(135, "TSK_PHONE_NUMBER_PAGER", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberPager.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		/**
+		 * Telecommunication device for people with hearing or speech
+		 * difficulties.
+		 */
+		TSK_PHONE_NUMBER_TEXTPHONE(136, "TSK_PHONE_NUMBER_TEXTPHONE", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberTextphone.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
