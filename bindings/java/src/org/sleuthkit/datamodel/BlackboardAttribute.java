@@ -1316,24 +1316,42 @@ public class BlackboardAttribute {
 		TSK_PHONE_NUMBER_TEXT(131, "TSK_PHONE_NUMBER_TEXT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberText.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_PHONE_NUMBER_VOICE(132, "TSK_PHONE_NUMBER_VOICE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPhoneNumberVoice.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_PHONE_NUMBER_FAX(133, "TSK_PHONE_NUMBER_FAX", //NON-NLS
+		TSK_PHONE_NUMBER_FAX(132, "TSK_PHONE_NUMBER_FAX", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberFax.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_PHONE_NUMBER_VIDEO(134, "TSK_PHONE_NUMBER_VIDEO", //NON-NLS
+		TSK_PHONE_NUMBER_VIDEO(133, "TSK_PHONE_NUMBER_VIDEO", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberVideo.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_PHONE_NUMBER_PAGER(135, "TSK_PHONE_NUMBER_PAGER", //NON-NLS
+		TSK_PHONE_NUMBER_PAGER(134, "TSK_PHONE_NUMBER_PAGER", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberPager.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		/**
 		 * Telecommunication device for people with hearing or speech
 		 * difficulties.
 		 */
-		TSK_PHONE_NUMBER_TEXTPHONE(136, "TSK_PHONE_NUMBER_TEXTPHONE", //NON-NLS
+		TSK_PHONE_NUMBER_TEXTPHONE(135, "TSK_PHONE_NUMBER_TEXTPHONE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberTextphone.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_VOICE_MESSAGING(136, "TSK_PHONE_NUMBER_VOICE_MESSAGING", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberVoiceMessaging.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_BBS(137, "TSK_PHONE_NUMBER_BBS", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberBbs.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_MODEM(138, "TSK_PHONE_NUMBER_MODEM", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberModem.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_CAR(139, "TSK_PHONE_NUMBER_CAR", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberCar.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_ISDN(140, "TSK_PHONE_NUMBER_ISDN", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberIsdn.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PHONE_NUMBER_PCS(141, "TSK_PHONE_NUMBER_PCS", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskPhoneNumberPcs.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_EMAIL_X400(142, "TSK_EMAIL_X400", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskEmailX400.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
