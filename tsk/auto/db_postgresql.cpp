@@ -636,14 +636,14 @@ int TskDbPostgreSQL::initialize() {
             "Error creating accounts table: %s\n")
         ||
         attempt_exec
-		("CREATE TABLE account_relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id BIGINT NOT NULL, date_time BIGINT, relationship_type INTEGER NOT NULL, data_source_obj_id BIGINT NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
+        ("CREATE TABLE account_relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id BIGINT NOT NULL, date_time BIGINT, relationship_type INTEGER NOT NULL, data_source_obj_id BIGINT NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
             "Error creating relationships table: %s\n")
         ||
         attempt_exec(
             "CREATE TABLE tsk_event_types ("
             " event_type_id BIGSERIAL PRIMARY KEY,"
             " display_name TEXT UNIQUE NOT NULL , "
-			" super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )"
+            " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )"
             , "Error creating tsk_event_types table: %s\n")
         ||
         attempt_exec(
@@ -653,47 +653,46 @@ int TskDbPostgreSQL::initialize() {
             "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(3, 'Misc Types', 0);"
             "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(4, 'Modified', 1);"
             "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1);"
-	        "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
-	        "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
-	        , "Error initializing tsk_event_types table rows: %s\n") ||
-	    attempt_exec(
-	        "CREATE TABLE tsk_event_descriptions ( "
-	        " event_description_id BIGSERIAL PRIMARY KEY, "
-	        " full_description TEXT NOT NULL, "
-	        " med_description TEXT, "
-	        " short_description TEXT,"
-	        " data_source_obj_id BIGINT NOT NULL, "
-	        " file_obj_id BIGINT NOT NULL, "
-	        " artifact_id BIGINT, "
-	        " hash_hit INTEGER NOT NULL, " //boolean 
-	        " tagged INTEGER NOT NULL, " //boolean 
-	        " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
-	        " FOREIGN KEY(file_obj_id) REFERENCES tsk_files(obj_id), "
-	        " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
-	        "Error creating tsk_event_descriptions table: %s\n")
-	    ||
-	    attempt_exec(
-	        "CREATE TABLE tsk_events ("
-	        " event_id BIGSERIAL PRIMARY KEY, "
-	        " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
-	        " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
-	        " time INTEGER NOT NULL) "
-	        , "Error creating tsk_events table: %s\n")
-
-	    ||
-	    attempt_exec
-	    ("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
-	     "Error creating tsk_examiners table: %s\n")
-	    ||
-	    attempt_exec
-	    ("CREATE TABLE content_tags (tag_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, examiner_id BIGINT, "
-	     "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
-			"Error creating content_tags table: %s\n")
-		||
-		attempt_exec
-		("CREATE TABLE blackboard_artifact_tags (tag_id BIGSERIAL PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL,  examiner_id BIGINT, "
-			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
-			"Error creating blackboard_artifact_tags table: %s\n")){
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
+            , "Error initializing tsk_event_types table rows: %s\n") ||
+        attempt_exec(
+            "CREATE TABLE tsk_event_descriptions ( "
+            " event_description_id BIGSERIAL PRIMARY KEY, "
+            " full_description TEXT NOT NULL, "
+            " med_description TEXT, "
+            " short_description TEXT,"
+            " data_source_obj_id BIGINT NOT NULL, "
+            " file_obj_id BIGINT NOT NULL, "
+            " artifact_id BIGINT, "
+            " hash_hit INTEGER NOT NULL, " //boolean 
+            " tagged INTEGER NOT NULL, " //boolean 
+            " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+            " FOREIGN KEY(file_obj_id) REFERENCES tsk_files(obj_id), "
+            " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
+            "Error creating tsk_event_descriptions table: %s\n")
+        ||
+        attempt_exec(
+            "CREATE TABLE tsk_events ("
+            " event_id BIGSERIAL PRIMARY KEY, "
+            " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+            " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
+            " time INTEGER NOT NULL) "
+            , "Error creating tsk_events table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
+            "Error creating tsk_examiners table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE content_tags (tag_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, examiner_id BIGINT, "
+            "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
+            "Error creating content_tags table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_artifact_tags (tag_id BIGSERIAL PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL,  examiner_id BIGINT, "
+            "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
+            "Error creating blackboard_artifact_tags table: %s\n")){
 		return 1;
 	}
 
