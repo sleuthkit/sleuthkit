@@ -1189,7 +1189,12 @@ public class BlackboardArtifact implements Content {
 		 * Indicates an person's address filled in a web form
 		 */
 		TSK_WEB_FORM_ADDRESS (50, "TSK_WEB_FORM_ADDRESSES ",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text"));
+				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
+		/**
+		 * Indicates source of a file/object
+		 */
+		TSK_SOURCE_ARTIFACT (51, "TSK_SOURCE_ARTIFACT ",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskSourceArtifact.text"));
 		
 		private final String label;
 		private final int typeId;
