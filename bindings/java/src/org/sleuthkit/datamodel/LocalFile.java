@@ -98,7 +98,7 @@ public class LocalFile extends AbstractFile {
 		if (parentId > 0) {
 			setParentId(parentId);
 		}
-		super.setLocalFilePath(localPath, true);
+		super.setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}
 
