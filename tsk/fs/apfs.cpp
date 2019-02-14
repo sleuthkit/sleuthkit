@@ -378,7 +378,7 @@ static const auto unsupported_recovery_keys = {
     Guid{"ec1c2ad9-b618-4ed6-bd8d-50f361c27507"},  // iCloud User
 };
 
-void APFSFileSystem::init_crypto_info() {
+void APFSFileSystem::init_crypto_info() try {
   // Get container keybag
   const auto container_kb = _pool.nx()->keybag();
 
@@ -455,6 +455,10 @@ void APFSFileSystem::init_crypto_info() {
     }
 
     _crypto.wrapped_keks.emplace_back(wrapped_kek{std::move(k.uuid), k.data});
+  }
+} catch (std::exception& e) {
+  if (tsk_verbose) {
+    tsk_fprintf(stderr, "APFSFileSystem::init_crypto_info: %s", e.what());
   }
 }
 
