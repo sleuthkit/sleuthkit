@@ -892,21 +892,30 @@ public abstract class AbstractFile extends AbstractContent {
 	 * read() will read the file in the local path.
 	 *
 	 * @param localPath  local path to be set
-	 * @param isAbsolute true if the path is absolute, false if relative to the
-	 *                   case db
 	 */
-	void setLocalFilePath(String localPath, boolean isAbsolute) {
+	void setLocalFilePath(String localPath) {
 
 		if (localPath == null || localPath.equals("")) {
 			this.localPath = "";
 			localAbsPath = null;
 			localPathSet = false;
 		} else {
+			// It should always be the case that absolute paths start with slashes or a windows drive letter
+			// and relative paths do not, but some older versions of modules created derived file paths
+			// starting with slashes. So we first check if this file is a DerivedFile before looking at the path.
 			this.localPath = localPath;
-			if (isAbsolute) {
-				this.localAbsPath = localPath;
+			if (this instanceof DerivedFile) {
+				// DerivedFiles always have relative paths
+				this.localAbsPath = getSleuthkitCase().getDbDirPath() + java.io.File.separator + localPath;
 			} else {
-				this.localAbsPath = getSleuthkitCase().getDbDirPath() + java.io.File.separator + this.localPath;
+				// If a path starts with a slash or with a Windows drive letter, then it is
+				// absolute. Otherwise it is relative.
+				if (localPath.startsWith("/") || localPath.startsWith("\\")
+						|| localPath.matches("[A-Za-z]:[/\\\\].*")) {
+					this.localAbsPath = localPath;
+				} else {
+					this.localAbsPath = getSleuthkitCase().getDbDirPath() + java.io.File.separator + localPath;
+				}
 			}
 			this.localPathSet = true;
 		}
@@ -1251,7 +1260,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Deprecated
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
-		setLocalFilePath(localPath, isAbsolute);
+		setLocalFilePath(localPath);
 	}
 
 	/*

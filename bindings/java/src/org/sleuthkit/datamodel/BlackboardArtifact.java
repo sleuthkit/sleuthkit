@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1146,44 +1146,54 @@ public class BlackboardArtifact implements Content {
 		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskObjectDetected.text")),
 		/**
-	         * A wireless network.
+		 * A wireless network.
 		 */
- 	
-	
- 
-		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK",  //NON-NLS
+		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWIFINetwork.text")),
 		/**
 		 * Information related to a device.
 		 */
-		TSK_DEVICE_INFO(43, "TSK_DEVICE_INFO",  //NON-NLS
+		TSK_DEVICE_INFO(43, "TSK_DEVICE_INFO", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskDeviceInfo.text")),
 		/**
 		 * A SIM card.
 		 */
-		TSK_SIM_ATTACHED(44, "TSK_SIM_ATTACHED",  //NON-NLS
+		TSK_SIM_ATTACHED(44, "TSK_SIM_ATTACHED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskSimAttached.text")),
 		/**
 		 * A bluetooth adapter.
 		 */
-		TSK_BLUETOOTH_ADAPTER(45, "TSK_BLUETOOTH_ADAPTER",  //NON-NLS
+		TSK_BLUETOOTH_ADAPTER(45, "TSK_BLUETOOTH_ADAPTER", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskBluetoothAdapter.text")),
 		/**
 		 * A wireless network adapter.
 		 */
-		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER",  //NON-NLS
+		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text")),
-
 		/**
 		 * Indicates a verification failure
 		 */
-		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED",  //NON-NLS
+		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskVerificationFailed.text")),
-		
-/**
+		/**
+		 * Categorization information for a data source.
+		 */
+		TSK_DATA_SOURCE_USAGE(48, "TSK_DATA_SOURCE_USAGE", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDataSourceUsage.text")),
+		/**
+		 * Indicates auto fill data from a Web form
+		 */
+		TSK_WEB_FORM_AUTOFILL(49, "TSK_WEB_FORM_AUTOFILL", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWebFormAutofill.text")),
+		/**
+		 * Indicates an person's address filled in a web form
+		 */
+		TSK_WEB_FORM_ADDRESS(50, "TSK_WEB_FORM_ADDRESSES ", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
+		/**
 		 * A generic (timeline) event.
 		 */
-		TSK_TL_EVENT(48, "TSK_TL_EVENT", //NON-NLS
+		TSK_TL_EVENT(51, "TSK_TL_EVENT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
 		private final String label;
 		private final int typeId;
@@ -1239,9 +1249,9 @@ public class BlackboardArtifact implements Content {
 
 		/**
 		 * Gets the artifact type enum value that corresponds to a given type
-		 * id.
-		 * This method should only be used when the id is known to be one of the
-		 * built-in types - otherwise use getArtifactType() in SleuthkitCase.
+		 * id. This method should only be used when the id is known to be one of
+		 * the built-in types - otherwise use getArtifactType() in
+		 * SleuthkitCase.
 		 *
 		 * @param id The type id.
 		 *
