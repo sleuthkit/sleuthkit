@@ -14,19 +14,52 @@
 #include "tsk_img_i.h"
 
 #if HAVE_LIBAFF4
+
 #include "aff4.h"
 
-#include <stdio.h>
+#include <aff4/libaff4-c.h>
+
 #include <string.h>
 
+static char* get_messages(AFF4_Message* msg) {
+    // find total message length
+    size_t len = 0;
+    for (const AFF4_Message* m = msg; m; m = m->next) {
+        len += strlen(m->message) + 1;
+    }
+
+    if (len == 0) {
+        return NULL;
+    }
+
+    char* ret = (char*) tsk_malloc(len + 1);
+
+    // copy the messages to one string
+    char* p = ret;
+    size_t mlen;
+    for (const AFF4_Message* m = msg; m; m = m->next) {
+        *p = '\n';
+        mlen = strlen(m->message);
+        strcpy(++p, m->message);
+        p += mlen;
+    }
+    ret[len] = '\0';
+
+    return ret;
+}
+
+static void free_image_names(TSK_IMG_INFO* img_info) {
+    for (int i = 0; i < img_info->num_img; ++i) {
+        free(img_info->images[i]);
+    }
+    free(img_info->images);
+}
+
+>>>>>>> ff70c2d76 (Adjustments to aff4 handle for updated libaff4 C API.)
 static ssize_t
-aff4_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
+aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
     size_t len)
 {
-
-    ssize_t cnt;
-    IMG_AFF4_INFO *aff4_info = (IMG_AFF4_INFO *) img_info;
-
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "aff4_image_read: byte offset: %" PRIdOFF " len: %" PRIuSIZE
@@ -39,22 +72,31 @@ aff4_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
         return -1;
     }
 
+    IMG_AFF4_INFO* aff4_info = (IMG_AFF4_INFO*) img_info;
+    AFF4_Message* msg = NULL;
+
     tsk_take_lock(&(aff4_info->read_lock));
-    cnt = AFF4_read(aff4_info->handle, offset, buf, len);
+    const ssize_t cnt = AFF4_read(aff4_info->handle, offset, buf, len, &msg);
     if (cnt < 0) {
+        char* aff4_msgs = get_messages(msg);
+        AFF4_free_messages(msg);
+        tsk_release_lock(&(aff4_info->read_lock));
+
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
         tsk_error_set_errstr("aff4_image_read - offset: %" PRIdOFF
-            " - len: %" PRIuSIZE " - %s", offset, len, strerror(errno));
-        tsk_release_lock(&(aff4_info->read_lock));
+            " - len: %" PRIuSIZE " - %s: %s%s",
+            offset, len, strerror(errno), aff4_msgs ? aff4_msgs : "");
+        free(aff4_msgs);
         return -1;
     }
+    AFF4_free_messages(msg);
     tsk_release_lock(&(aff4_info->read_lock));
     return cnt;
 }
 
 static void
-aff4_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
+aff4_image_imgstat(TSK_IMG_INFO* img_info, FILE* hFile)
 {
 
 	tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
@@ -67,51 +109,62 @@ aff4_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 }
 
 static void
-aff4_image_close(TSK_IMG_INFO * img_info)
+aff4_image_close(TSK_IMG_INFO* img_info)
 {
-    IMG_AFF4_INFO *aff4_info = (IMG_AFF4_INFO *) img_info;
+    IMG_AFF4_INFO* aff4_info = (IMG_AFF4_INFO*) img_info;
 
-    AFF4_close(aff4_info->handle);
-
-    for (int i = 0; i < img_info->num_img; ++i) {
-        free(img_info->images[i]);
-    }
-    free(img_info->images);
-
+    tsk_take_lock(&(aff4_info->read_lock));
+    AFF4_close(aff4_info->handle, NULL);
+    tsk_release_lock(&(aff4_info->read_lock));
     tsk_deinit_lock(&(aff4_info->read_lock));
+
+    free_image_names(img_info);
     tsk_img_free(aff4_info);
 }
 
-static int aff4_check_file_signature(const char* path)
+/*
+static int
+aff4_check_file_signature(const char* filename)
 {
-    // AFF4 images are ZIP archives, check for the ZIP signature
-    FILE* f;
-    if (!(f = fopen(path, "rb"))) {
+    const char exp_sig[] = "PK\03\04";
+    char act_sig[4];
+
+    int fd = open(filename, O_RDONLY | O_BINARY);
+    if (fd < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("aff4 signature testing failed: %s", filename);
         return -1;
     }
 
-    char sig[4];
-    const size_t len = fread(sig, 1, 4, f);
-    if (fclose(f)) {
+    const ssize_t len = read(fd, act_sig, 4);
+    close(fd);
+
+    if (len < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_READ);
+        tsk_error_set_errstr("aff4 signature testing read failed: %s", filename);
         return -1;
     }
 
-    return len == 4 && memcmp(sig, "PK\x03\x04", 4) == 0;
+    return len == sizeof(exp_sig) &&
+           memcmp(act_sig, exp_sig, sizeof(exp_sig)) == 0;
 }
+*/
 
-TSK_IMG_INFO *
+TSK_IMG_INFO*
 aff4_open(int a_num_img,
-    const TSK_TCHAR * const a_images[], unsigned int a_ssize)
+    const TSK_TCHAR* const a_images[], unsigned int a_ssize)
 {
-    IMG_AFF4_INFO *aff4_info = NULL;
+    IMG_AFF4_INFO* aff4_info = NULL;
     if ((aff4_info =
-            (IMG_AFF4_INFO *) tsk_img_malloc(sizeof(IMG_AFF4_INFO))) ==
+            (IMG_AFF4_INFO*) tsk_img_malloc(sizeof(IMG_AFF4_INFO))) ==
         NULL) {
         return NULL;
     }
     aff4_info->handle = -1;
 
-    TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) aff4_info;
+    TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info;
     img_info->images = NULL;
     img_info->num_img = 0;
 
@@ -153,10 +206,12 @@ aff4_open(int a_num_img,
     filename = img_info->images[0];
 #endif
 
+/*
     // Check the file signature
     switch (aff4_check_file_signature(filename)) {
     case -1:
-        // some sort of I/O failure
+
+    case 0:
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
         tsk_error_set_errstr("aff4_open: file: %" PRIttocTSK
@@ -173,34 +228,54 @@ aff4_open(int a_num_img,
         if (tsk_verbose)
             tsk_fprintf(stderr, "Not an AFF4 file\n");
         goto on_error;
+    case 1:
+        // ok!
     }
+*/
 
     // Attempt to open the file.
-    aff4_info->handle = AFF4_open(filename);
+    AFF4_Message* msg = NULL;
+
+    aff4_info->handle = AFF4_open(filename, &msg);
     if (aff4_info->handle == -1) {
+        char* aff4_msgs = get_messages(msg);
+        AFF4_free_messages(msg);
+
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
-            ": Error opening", a_images[0]);
+            ": Error opening%s", a_images[0], aff4_msgs ? aff4_msgs : "");
+        free(aff4_msgs);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening AFF4 file\n");
         }
         goto on_error;
     }
 
+    AFF4_free_messages(msg);
+    msg = NULL;
+
     // get image size
-    img_info->size = AFF4_object_size(aff4_info->handle);
+    img_info->size = AFF4_object_size(aff4_info->handle, &msg);
     if (img_info->size == 0) {
+        char* aff4_msgs = get_messages(msg);
+        AFF4_free_messages(msg);
+
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
-            ": Error getting size of image", a_images[0]);
+            ": Error getting size of image%s",
+            a_images[0], aff4_msgs ? aff4_msgs : "");
+        free(aff4_msgs);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of AFF4 file\n");
         }
-        AFF4_close(aff4_info->handle);
+        AFF4_close(aff4_info->handle, NULL);
         goto on_error;
     }
+
+    AFF4_free_messages(msg);
+    msg = NULL;
 
     img_info->sector_size = 512;
     img_info->itype = TSK_IMG_TYPE_AFF4_AFF4;
@@ -212,19 +287,16 @@ aff4_open(int a_num_img,
     free(filename);
 #endif
 
-    // initialize the read lock
+    // initialize the API lock
     tsk_init_lock(&(aff4_info->read_lock));
+
     return img_info;
 
 on_error:
 #if defined (TSK_WIN32)
     free(filename);
 #endif
-    for (int i = 0; i < img_info->num_img; ++i) {
-        free(img_info->images[i]);
-    }
-    free(img_info->images);
-
+    free_image_names(img_info);
     tsk_img_free(aff4_info);
     return NULL;
 }
