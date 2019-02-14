@@ -7851,21 +7851,6 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
-	/**
-	 * Close all database connections.
-	 */
-	public synchronized void closeConnections() {
-		acquireSingleUserCaseWriteLock();
-
-		try {
-			connections.close();
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}	
 
 	/**
 	 * Store the known status for the FsContent in the database Note: will not
