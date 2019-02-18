@@ -120,7 +120,6 @@ public abstract class TimelineFilter {
 	 */
 	public static final class EventTypeFilter extends UnionFilter<EventTypeFilter> {
 
-		private static final Comparator<EventTypeFilter> comparator = Comparator.comparing(EventTypeFilter::getDisplayName);
 		/**
 		 * the event type this filter passes
 		 */
@@ -140,7 +139,7 @@ public abstract class TimelineFilter {
 			if (recursive) {
 				// add subfilters for each subtype
 				for (EventType subType : eventType.getSubTypes()) {
-					addSubFilter(new EventTypeFilter(subType), comparator);
+					addSubFilter(new EventTypeFilter(subType));
 				}
 			}
 		}
@@ -388,7 +387,7 @@ public abstract class TimelineFilter {
 		public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter,
 				TextFilter textFilter, EventTypeFilter typeFilter, DataSourcesFilter dataSourcesFilter,
 				FileTypesFilter fileTypesFilter, Collection<TimelineFilter> annonymousSubFilters) {
-			super(FXCollections.observableArrayList(textFilter, knownFilter, dataSourcesFilter, tagsFilter, hashFilter, typeFilter, fileTypesFilter));
+			super(FXCollections.observableArrayList(textFilter, knownFilter, tagsFilter, dataSourcesFilter, hashFilter, fileTypesFilter, typeFilter));
 
 			getSubFilters().removeIf(Objects::isNull);
 			this.knownFilter = knownFilter;
@@ -399,8 +398,7 @@ public abstract class TimelineFilter {
 			this.dataSourcesFilter = dataSourcesFilter;
 			this.fileTypesFilter = fileTypesFilter;
 
-			namedSubFilters.addAll(asList(knownFilter, tagsFilter, hashFilter,
-					textFilter, typeFilter, dataSourcesFilter, fileTypesFilter));
+			namedSubFilters.addAll(asList(textFilter, knownFilter, tagsFilter, dataSourcesFilter, hashFilter, fileTypesFilter, typeFilter));
 			namedSubFilters.removeIf(Objects::isNull);
 			annonymousSubFilters.stream().
 					filter(Objects::nonNull).
@@ -537,14 +535,9 @@ public abstract class TimelineFilter {
 	public static abstract class CompoundFilter<SubFilterType extends TimelineFilter> extends TimelineFilter {
 
 		protected void addSubFilter(SubFilterType subfilter) {
-			addSubFilter(subfilter, Comparator.comparing(TimelineFilter::getDisplayName));
-		}
-
-		protected void addSubFilter(SubFilterType subfilter, Comparator<SubFilterType> comparator) {
 			if (getSubFilters().contains(subfilter) == false) {
 				getSubFilters().add(subfilter);
 			}
-			getSubFilters().sort(comparator);
 		}
 
 		/**
