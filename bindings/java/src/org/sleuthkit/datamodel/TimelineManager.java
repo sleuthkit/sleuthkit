@@ -554,9 +554,6 @@ public final class TimelineManager {
 	}
 
 	Collection<TimelineEvent> addAbstractFileEvents(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
-		boolean hashHashHits = CollectionUtils.isNotEmpty(file.getHashSetNames());
-		boolean hasTags = CollectionUtils.isNotEmpty(sleuthkitCase.getContentTagsByContent(file));
-
 		//gather time stamps into map
 		Map<EventType, Long> timeMap = ImmutableMap.of(
 				EventType.FILE_CREATED, file.getCrtime(),
@@ -574,6 +571,8 @@ public final class TimelineManager {
 			return Collections.emptySet();
 		}
 
+		boolean hashHashHits = CollectionUtils.isNotEmpty(file.getHashSetNames());
+		boolean hasTags = CollectionUtils.isNotEmpty(sleuthkitCase.getContentTagsByContent(file));
 		String description = file.getParentPath() + file.getName();
 		long fileObjId = file.getId();
 		Set<TimelineEvent> events = new HashSet<>();
@@ -771,12 +770,12 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private HashMap<Long, Long> getEventDescriptionIDs(long fileObjID, Long artifactID) throws TskCoreException {
+	private Map<Long, Long> getEventDescriptionIDs(long fileObjID, Long artifactID) throws TskCoreException {
 		return getEventDescriptionIDsHelper(fileObjID, " AND artifact_id = " + artifactID);
 	}
 
-	private HashMap<Long, Long> getEventDescriptionIDsHelper(long fileObjID, String artifactClause) throws TskCoreException {
-		HashMap<Long, Long> eventIDToDescriptionIDs = new HashMap<>();
+	private Map<Long, Long> getEventDescriptionIDsHelper(long fileObjID, String artifactClause) throws TskCoreException {
+		Map<Long, Long> eventIDToDescriptionIDs = new HashMap<>();
 		String sql = "SELECT event_id, tsk_events.event_description_id"
 				+ " FROM tsk_events "
 				+ " LEFT JOIN tsk_event_descriptions ON ( tsk_events.event_description_id = tsk_event_descriptions.event_description_id )"

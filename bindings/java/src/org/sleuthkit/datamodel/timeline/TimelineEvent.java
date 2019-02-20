@@ -243,7 +243,11 @@ public final class TimelineEvent {
 		return this.eventID == other.eventID;
 	}
 
-	static interface EventDescription {
+	/**
+	 * Encapsulates the motential multiple levels of description for an event in
+	 * to one object.
+	 */
+	interface EventDescription {
 
 		public static EventDescription create(String fullDescription, String medDescription, String shortDescription) {
 			return new ThreeLevellEventDescription(fullDescription, medDescription, shortDescription);

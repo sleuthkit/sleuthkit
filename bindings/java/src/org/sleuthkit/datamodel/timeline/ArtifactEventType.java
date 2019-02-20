@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel.timeline;
 
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.DescriptionLoD;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
@@ -125,6 +124,5 @@ public interface ArtifactEventType extends EventType {
 			this.time = time;
 
 		}
-
 	}
 }
