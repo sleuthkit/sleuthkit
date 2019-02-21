@@ -819,9 +819,9 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
 {
     // Add the data source to the tsk_objects table.
     // We don't use addObject because we're passing in NULL as the parent
-    char stmt[20480000];
+    char stmt[10242048];
     int expectedNumFileds = 1;
-    snprintf(stmt, 20480000, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
+    snprintf(stmt, 10242048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
     if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of columns in result set: Expected %d, Received %d\n")) {
         return 1;
@@ -852,7 +852,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(sha256_sql);
         return 1;
     }
-    snprintf(stmt, 20480000, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s, %s, %s);",
+    snprintf(stmt, 10242048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s, %s, %s);",
         objId, type, ssize, timezone_sql, size, md5_sql, sha1_sql, sha256_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -889,7 +889,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(timeZone_sql);
         return 1;
     }
-    snprintf(stmt, 20480000, "INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (%" PRId64 ", %s, %s, %s);",
+    snprintf(stmt, 10242048, "INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (%" PRId64 ", %s, %s, %s);",
         objId, deviceId_sql, timeZone_sql, collectionDetails.c_str());
     ret = attempt_exec(stmt, "Error adding device id to data_source_info table: %s\n");
     PQfreemem(deviceId_sql);
