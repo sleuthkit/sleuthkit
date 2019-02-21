@@ -6190,7 +6190,11 @@ public class SleuthkitCase {
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
 			statement.setString(15, md5);
-			statement.setByte(16, known.getFileKnownValue());
+			if (known != null) {
+				statement.setByte(16, known.getFileKnownValue());
+			} else {
+				statement.setNull(16, java.sql.Types.TINYINT);
+			}
 			statement.setString(17, mimeType);
 			String parentPath;
 
