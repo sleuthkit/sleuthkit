@@ -6185,6 +6185,131 @@ public class SleuthkitCase {
 			// NOTE: write lock will be released by transaction
 		}
 	}
+	
+// TODO TODO
+	public LayoutFile addNewFileType(String fileName,
+			long size, 
+			TSK_FS_NAME_FLAG_ENUM dirFlag, TSK_FS_META_FLAG_ENUM metaType,
+			long ctime, long crtime, long atime, long mtime,
+			List<TskFileRange> fileRanges,
+			Content parent) throws TskCoreException {
+
+		if (null == parent) {
+			throw new TskCoreException("Parent can not be null");
+		}
+		
+		CaseDbTransaction transaction = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		long newCacheKey = 0; // Used to roll back cache if transaction is rolled back.
+		try {
+			transaction = beginTransaction();
+			transaction.acquireSingleUserCaseWriteLock();
+			CaseDbConnection connection = transaction.getConnection();
+
+			/*
+			 * Insert a row for the carved file into the tsk_objects table:
+			 * INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+			 */
+			long newFileId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
+
+			/*
+			 * Insert a row for the file into the tsk_files table:
+			 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
+			 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
+			 * ctime, crtime, atime, mtime, parent_path,
+			 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
+			 * ?, ?, ?, ?, ?, ?, ?, ?,?)
+			 */
+			PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			prepStmt.clearParameters();
+			prepStmt.setLong(1, newFileId); // obj_id
+			
+			// If the parent is part of a file system, grab its file system ID
+			if (0 != parent.getId()) {
+				long parentFs = this.getFileSystemId(parent.getId(), connection);
+				if (parentFs != -1) {
+					prepStmt.setLong(2, parentFs);
+				} else {
+					prepStmt.setNull(2, java.sql.Types.BIGINT);
+				}
+			} else {
+				prepStmt.setNull(2, java.sql.Types.BIGINT);
+			}
+			prepStmt.setString(3, fileName); // name
+			prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.RENAME_ME.getFileType()); // type
+			prepStmt.setShort(5, (short) 0); // has_path
+			prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
+			prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
+			prepStmt.setShort(8, dirFlag.getValue()); // dir_flags
+			prepStmt.setShort(9, metaType.getValue()); // meta_flags
+			prepStmt.setLong(10, size); // size
+			prepStmt.setLong(11, ctime); // ctime
+			prepStmt.setLong(12, crtime); // crtime
+			prepStmt.setLong(13, atime); // atime
+			prepStmt.setLong(14, mtime); // mtime
+			prepStmt.setString(15, parent.getUniquePath()); // parent path
+			prepStmt.setLong(16, parent.getDataSource().getId()); // data_source_obj_id
+
+			prepStmt.setString(17, extractExtension(fileName)); 				//extension
+			connection.executeUpdate(prepStmt);
+
+			/*
+			 * Insert a row in the tsk_layout_file table for each chunk of
+			 * the carved file. INSERT INTO tsk_file_layout (obj_id,
+			 * byte_start, byte_len, sequence) VALUES (?, ?, ?, ?)
+			 */
+			prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+			for (TskFileRange tskFileRange : fileRanges) {
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, newFileId); // obj_id
+				prepStmt.setLong(2, tskFileRange.getByteStart()); // byte_start
+				prepStmt.setLong(3, tskFileRange.getByteLen()); // byte_len
+				prepStmt.setLong(4, tskFileRange.getSequence()); // sequence
+				connection.executeUpdate(prepStmt);
+			}
+
+			/*
+			 * Create a layout file representation of the carved file.
+			 */
+			/*LayoutFile layoutFile = new LayoutFile(this,
+					newFileId,
+					carvedFilesDir.getDataSourceObjectId(),
+					carvedFile.getName(),
+					TSK_DB_FILES_TYPE_ENUM.CARVED,
+					TSK_FS_NAME_TYPE_ENUM.REG,
+					TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
+					TSK_FS_NAME_FLAG_ENUM.UNALLOC,
+					TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
+					carvedFile.getSizeInBytes(),
+					null,
+					FileKnown.UNKNOWN,
+					parentPath,
+					null));*/
+
+			transaction.commit();
+			transaction = null;
+			return null;
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to add carved files to case database", ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+
+			// NOTE: write lock will be released by transaction
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+				if (0 != newCacheKey) {
+					rootIdsToCarvedFileDirs.remove(newCacheKey);
+				}
+			}
+		}
+	}
 
 	/**
 	 * Given an object id, works up the tree of ancestors to the data source for
@@ -7275,7 +7400,8 @@ public class SleuthkitCase {
 					results.add(localDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()
 						|| type == TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS.getFileType()
-						|| type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()) {
+						|| type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()
+						|| type == TSK_DB_FILES_TYPE_ENUM.RENAME_ME.getFileType()) {
 					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path"); //NON-NLS
 					if (parentPath == null) {

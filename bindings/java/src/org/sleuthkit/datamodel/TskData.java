@@ -677,6 +677,7 @@ public class TskData {
 		VIRTUAL_DIR(6, "Virtual Directory"), ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
 		SLACK(7, "Slack"), ///< Slack space for a single file
 		LOCAL_DIR(8, "Local Directory"), ///< Local directory that was added (not from a disk image)
+		RENAME_ME(9, "Rename me!"), ///< Set of blocks from an image that have been designated as a file
 		;
 
 		private final short fileType;
