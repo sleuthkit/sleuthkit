@@ -17,6 +17,7 @@
 #include "tsk/img/img_writer.h"
 #if HAVE_LIBEWF
 #include "tsk/img/ewf.h"
+#include "tsk/img/tsk_img_i.h"
 #endif
 #include <string.h>
 
@@ -209,6 +210,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
 {
    string md5 = "";
    string sha1 = "";
+   string collectionDetails = "";
 #if HAVE_LIBEWF 
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
      // @@@ This should really probably be inside of a tsk_img_ method
@@ -219,6 +221,62 @@ TskAutoDb::addImageDetails(const char* deviceId)
 	   if (ewf_info->sha1hash_isset) {
 		   sha1 = ewf_info->sha1hash;
 	   }
+
+	   char *res = libewf_read_unique_description(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_case_number(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_evidence_number(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_examiner_name(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_notes(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_model(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_serial_number(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_device_label(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_version(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_platform(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_acquired_date(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_system_date(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_acquiry_operating_system(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
+
+	   res = libewf_read_acquiry_software_version(ewf_info->handle);
+	   collectionDetails.append(res);
+	   free(res);
    }
 #endif
 
@@ -229,7 +287,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
         devId = "";
     }
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails)) {
         registerError();
         return 1;
     }

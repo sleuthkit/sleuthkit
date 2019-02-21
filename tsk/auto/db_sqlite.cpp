@@ -560,7 +560,7 @@ int
 int
     TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string &sha1, const string &sha256)
 {
-    return addImageInfo(type, ssize, objId, timezone, size, md5, sha1, sha256, "");
+    return addImageInfo(type, ssize, objId, timezone, size, md5, sha1, sha256, "", "");
 }
 
 /**
@@ -576,7 +576,7 @@ int
  * @returns 1 on error, 0 on success
  */
 int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, 
-    const string& sha1, const string& sha256, const string& deviceId)
+    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails)
 {
 
     // Add the data source to the tsk_objects table.
@@ -614,7 +614,7 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
 #else
     deviceIdStr << deviceId;
 #endif
-    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, '%s', '%s');", objId, deviceIdStr.str().c_str(), timezone.c_str());
+    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (%lld, '%s', '%s', '%s');", objId, deviceIdStr.str().c_str(), timezone.c_str(), collectionDetails.c_str());
     ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
     return ret;
@@ -638,7 +638,6 @@ int
     sqlite3_free(zSQL);
     return ret;
 }
-
 
 /**
 * @returns 1 on error, 0 on success

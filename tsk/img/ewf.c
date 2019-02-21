@@ -406,7 +406,7 @@ ewf_open(int a_num_img,
     }
     ewf_info->md5hash_isset = result;
 
-	int sha1_result = libewf_handle_get_hash_value_sha1(ewf_info->handle,
+	int sha1_result = libewf_handle_get_utf8_hash_value_sha1(ewf_info->handle,
 		(uint8_t *)ewf_info->sha1hash, 41, &ewf_error);
 
 	if (sha1_result == -1) {
