@@ -38,7 +38,7 @@ extern "C" {
 
 inline int is_blank(const char* str) {
     while (*str != '\0') {
-		if (!isspace((unsigned char)*str)) {
+        if (!isspace((unsigned char)*str)) {
             return 0;
         }
         str++;
