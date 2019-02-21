@@ -74,7 +74,7 @@ inline char* read_libewf_header_value(libewf_handle_t *handle, const uint8_t *id
 	return result_str;
 }
 
-inline char* libewf_read_unique_description(libewf_handle_t *handle) {
+inline char* libewf_read_description(libewf_handle_t *handle) {
 	return read_libewf_header_value(handle, (uint8_t *) "description", 11, "Description: ");
 }
 

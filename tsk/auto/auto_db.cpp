@@ -222,61 +222,62 @@ TskAutoDb::addImageDetails(const char* deviceId)
 		   sha1 = ewf_info->sha1hash;
 	   }
 
-	   char *res = libewf_read_unique_description(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   char * header_result = libewf_read_description(ewf_info->handle);
 
-	   res = libewf_read_case_number(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_evidence_number(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_case_number(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_examiner_name(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_evidence_number(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_notes(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_examiner_name(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_model(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_notes(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_serial_number(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_model(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_device_label(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_serial_number(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_version(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_device_label(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_platform(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_version(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_acquired_date(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_platform(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_system_date(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_acquired_date(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_acquiry_operating_system(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_system_date(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
 
-	   res = libewf_read_acquiry_software_version(ewf_info->handle);
-	   collectionDetails.append(res);
-	   free(res);
+	   header_result = libewf_read_acquiry_operating_system(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
+
+	   header_result = libewf_read_acquiry_software_version(ewf_info->handle);
+	   collectionDetails.append(header_result);
+	   free(header_result);
    }
 #endif
 
