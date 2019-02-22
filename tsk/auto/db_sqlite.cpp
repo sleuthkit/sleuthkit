@@ -1238,7 +1238,7 @@ TSK_RETVAL_ENUM
     }
 
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, known) "
         "VALUES ("
         "1, %Q, %lld,"
         "%" PRId64 ","
@@ -1247,7 +1247,7 @@ TSK_RETVAL_ENUM
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,0)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
         dbFileType,
@@ -1411,7 +1411,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "0,"
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,'/')",
         fsObjId,
         objId,
         dataSourceObjId,

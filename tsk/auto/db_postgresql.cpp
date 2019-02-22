@@ -1599,7 +1599,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "0,"
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,'/')",
         fsObjId,
         objId,
         dataSourceObjId,
@@ -1831,7 +1831,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         PQfreemem(name_sql);
         return TSK_ERR;
     }
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, known) "
         "VALUES ("
         "1, %s, %" PRId64 ","
         "%" PRId64 ","
@@ -1840,7 +1840,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL, 0)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
         dbFileType,

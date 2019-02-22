@@ -4957,7 +4957,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id,extension)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -5001,6 +5001,10 @@ public class SleuthkitCase {
 			statement.setNull(12, java.sql.Types.BIGINT);
 			statement.setNull(13, java.sql.Types.BIGINT);
 			statement.setNull(14, java.sql.Types.BIGINT);
+			
+			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 
 			// parent path
 			statement.setString(15, parentPath);
@@ -5210,7 +5214,7 @@ public class SleuthkitCase {
 			// dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime,
 			// atime, mtime, parent_path, data_source_obj_id, extension)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
 			preparedStatement.setNull(2, java.sql.Types.BIGINT);
@@ -5231,10 +5235,13 @@ public class SleuthkitCase {
 			preparedStatement.setNull(12, java.sql.Types.BIGINT);
 			preparedStatement.setNull(13, java.sql.Types.BIGINT);
 			preparedStatement.setNull(14, java.sql.Types.BIGINT);
+			preparedStatement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			preparedStatement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			preparedStatement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 			String parentPath = "/"; //NON-NLS
-			preparedStatement.setString(15, parentPath);
-			preparedStatement.setLong(16, newObjId);
-			preparedStatement.setString(17, null); //extension, just set it to null
+			preparedStatement.setString(18, parentPath);
+			preparedStatement.setLong(19, newObjId);
+			preparedStatement.setString(20, null); //extension, just set it to null
 			connection.executeUpdate(preparedStatement);
 
 			return new LocalFilesDataSource(this, newObjId, newObjId, deviceId, rootDirectoryName, dirType, metaType, dirFlag, metaFlags, timeZone, null, FileKnown.UNKNOWN, parentPath);
@@ -5733,7 +5740,7 @@ public class SleuthkitCase {
 				 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
 				 * ?, ?, ?, ?, ?, ?, ?, ?,?)
 				 */
-				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 				prepStmt.clearParameters();
 				prepStmt.setLong(1, carvedFileId); // obj_id
 				if (root instanceof FileSystem) {
@@ -5753,10 +5760,12 @@ public class SleuthkitCase {
 				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
 				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
 				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
-				prepStmt.setString(15, parentPath); // parent path
-				prepStmt.setLong(16, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
-
-				prepStmt.setString(17, extractExtension(carvedFile.getName())); 				//extension
+				prepStmt.setNull(15, java.sql.Types.VARCHAR); // MD5
+				prepStmt.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+				prepStmt.setNull(17, java.sql.Types.VARCHAR); // MIME type	
+				prepStmt.setString(18, parentPath); // parent path
+				prepStmt.setLong(19, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
+				prepStmt.setString(20, extractExtension(carvedFile.getName())); //extension
 				connection.executeUpdate(prepStmt);
 
 				/*
@@ -5877,7 +5886,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id, extension)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -5916,6 +5925,10 @@ public class SleuthkitCase {
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
+			
+			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 
 			//parent path
 			statement.setString(15, parentPath);
