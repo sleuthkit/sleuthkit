@@ -50,27 +50,26 @@ inline char* read_libewf_header_value(libewf_handle_t *handle, const uint8_t *id
     libewf_error_t *ewf_error = NULL;
     char* header_value = (char* )malloc(BUFFER_SIZE);
     header_value[0] = '\0';
-
-    char* null_byte = (char*)malloc(1);
-    null_byte[0] = '\0';
     if (header_value == NULL) {
-        return null_byte;
+        return header_value;
     }
 
     int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)header_value, BUFFER_SIZE, &ewf_error);
     if (result == -1 || is_blank(header_value)) {
-        return null_byte;
+        return header_value;
     }
 	
     //+ 2 for new line char and null byte
     char* result_str = (char*) malloc((strlen(key) + strlen(header_value) + 2) * sizeof(char));
     if (result_str == NULL) {
-        return null_byte;
+        return header_value;
     }
 
     strcpy(result_str, key);
     strcat(result_str, header_value);
     strcat(result_str, "\n");
+
+	free(header_value);
 
     return result_str;
 }
