@@ -5106,7 +5106,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -5142,15 +5142,19 @@ public class SleuthkitCase {
 			statement.setNull(13, java.sql.Types.BIGINT);
 			statement.setNull(14, java.sql.Types.BIGINT);
 
+			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type			
+			
 			// parent path
-			statement.setString(15, parentPath);
+			statement.setString(18, parentPath);
 
 			// data source object id
 			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
-			statement.setLong(16, dataSourceObjectId);
+			statement.setLong(19, dataSourceObjectId);
 
 			//extension, since this is a directory we just set it to null
-			statement.setString(17, null);
+			statement.setString(20, null);
 
 			connection.executeUpdate(statement);
 
@@ -6138,7 +6142,7 @@ public class SleuthkitCase {
 	 * @param atime        The accessed time of the file
 	 * @param mtime        The modified time of the file.
 	 * @param md5          The MD5 hash of the file
-	 * @param known        The known status of the file
+	 * @param known        The known status of the file (can be null)
 	 * @param mimeType     The MIME type of the file
 	 * @param isFile       True, unless the file is a directory.
 	 * @param encodingType Type of encoding used on the file
@@ -6193,7 +6197,7 @@ public class SleuthkitCase {
 			if (known != null) {
 				statement.setByte(16, known.getFileKnownValue());
 			} else {
-				statement.setNull(16, java.sql.Types.TINYINT);
+				statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue());
 			}
 			statement.setString(17, mimeType);
 			String parentPath;
