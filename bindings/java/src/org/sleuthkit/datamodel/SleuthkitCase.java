@@ -7761,7 +7761,8 @@ public class SleuthkitCase {
 						break;
 					case UNALLOC_BLOCKS:
 					case UNUSED_BLOCKS:
-					case CARVED: {
+					case CARVED:
+					case RENAME_ME: {
 						String parentPath = rs.getString("parent_path");
 						if (parentPath == null) {
 							parentPath = "";
