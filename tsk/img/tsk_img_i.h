@@ -27,8 +27,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 1024000
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,88 +44,81 @@ inline int is_blank(const char* str) {
     return 1;
 }
 
-inline char* read_libewf_header_value(libewf_handle_t *handle, const uint8_t *identifier, size_t identifier_length, const char* key) {
-    libewf_error_t *ewf_error = NULL;
-    char* header_value = (char* )malloc(BUFFER_SIZE);
-    header_value[0] = '\0';
-    if (header_value == NULL) {
-        return header_value;
-    }
+/**
+* Reads the first 1 MB of the libewf header
+*/
+inline char* read_libewf_header_value(libewf_handle_t *handle, char* result_buffer, const size_t buffer_size, const uint8_t *identifier, size_t identifier_length, const char* key) {
+	result_buffer[0] = '\0';
 
-    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)header_value, BUFFER_SIZE, &ewf_error);
-    if (result == -1 || is_blank(header_value)) {
-        return header_value;
-    }
+    strcpy(result_buffer, key);
+	libewf_error_t * ewf_error;
+	size_t key_len = strlen(key);
 	
-    //+ 2 for new line char and null byte
-    char* result_str = (char*) malloc((strlen(key) + strlen(header_value) + 2) * sizeof(char));
-    if (result_str == NULL) {
-        return header_value;
-    }
+    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len, &ewf_error);
+	if (result != -1 && !is_blank(result_buffer + key_len)) {
+		strcat(result_buffer, "\n");
+	} else {
+		//if blank or error, return nothing!
+		result_buffer[0] = '\0';
+	}
 
-    strcpy(result_str, key);
-    strcat(result_str, header_value);
-    strcat(result_str, "\n");
-
-	free(header_value);
-
-    return result_str;
+	return result_buffer;
 }
 
-inline char* libewf_read_description(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "description", 11, "Description: ");
+inline char* libewf_read_description(libewf_handle_t *handle, char* result_buffer, const size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "description", 11, "Description: ");
 }
 
-inline char* libewf_read_case_number(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "case_number", 11, "Case Number: ");
+inline char* libewf_read_case_number(libewf_handle_t *handle,  char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "case_number", 11, "Case Number: ");
 }
 
-inline char* libewf_read_evidence_number(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "evidence_number", 15, "Evidence Number: ");
+inline char* libewf_read_evidence_number(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "evidence_number", 15, "Evidence Number: ");
 }
 
-inline char* libewf_read_examiner_name(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "examiner_name", 13, "Examiner Name: ");
+inline char* libewf_read_examiner_name(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "examiner_name", 13, "Examiner Name: ");
 }
 
-inline char* libewf_read_notes(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "notes", 5, "Notes: ");
+inline char* libewf_read_notes(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "notes", 5, "Notes: ");
 }
 
-inline char* libewf_read_model(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "model", 5, "Model: ");
+inline char* libewf_read_model(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "model", 5, "Model: ");
 }
 
-inline char* libewf_read_serial_number(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "serial_number", 13, "Serial Number: ");
+inline char* libewf_read_serial_number(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "serial_number", 13, "Serial Number: ");
 }
 
-inline char* libewf_read_device_label(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "device_label", 12, "Device Label:");
+inline char* libewf_read_device_label(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "device_label", 12, "Device Label:");
 }
 
-inline char* libewf_read_version(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "version", 7, "Version: ");
+inline char* libewf_read_version(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "version", 7, "Version: ");
 }
 
-inline char* libewf_read_platform(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "platform", 8, "Platform: ");
+inline char* libewf_read_platform(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "platform", 8, "Platform: ");
 }
 
-inline char* libewf_read_acquired_date(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "acquiry_date", 12, "Acquired Date: ");
+inline char* libewf_read_acquired_date(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "acquiry_date", 12, "Acquired Date: ");
 }
 
-inline char* libewf_read_system_date(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "system_date", 11, "System Date: ");
+inline char* libewf_read_system_date(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "system_date", 11, "System Date: ");
 }
 
-inline char* libewf_read_acquiry_operating_system(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "acquiry_operating_system", 24, "Acquiry Operating System: ");
+inline char* libewf_read_acquiry_operating_system(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "acquiry_operating_system", 24, "Acquiry Operating System: ");
 }
 
-inline char* libewf_read_acquiry_software_version(libewf_handle_t *handle) {
-    return read_libewf_header_value(handle, (uint8_t *) "acquiry_software_version", 24, "Acquiry Software Version: ");
+inline char* libewf_read_acquiry_software_version(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "acquiry_software_version", 24, "Acquiry Software Version: ");
 }
 #endif
 
