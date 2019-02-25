@@ -1599,14 +1599,14 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "0,"
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,'/')",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d,'/')",
         fsObjId,
         objId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_VIRTUAL_DIR,
         name_sql,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
-        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
+        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED), TSK_DB_FILES_KNOWN_UNKNOWN);
 
     if (attempt_exec(zSQL, "Error adding data to tsk_files table: %s\n")) {
         PQfreemem(name_sql);
@@ -1840,13 +1840,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL, 0)",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
         dbFileType,
         name_sql,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
-        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
+        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size, TSK_DB_FILES_KNOWN_UNKNOWN);
 
     if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
         PQfreemem(name_sql);
