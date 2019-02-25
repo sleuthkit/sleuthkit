@@ -218,13 +218,13 @@ TskAutoDb::addImageDetails(const char* deviceId)
        if (ewf_info->md5hash_isset) {
            md5 = ewf_info->md5hash;
        }
-	   if (ewf_info->sha1hash_isset) {
-		   sha1 = ewf_info->sha1hash;
-	   }
+       if (ewf_info->sha1hash_isset) {
+           sha1 = ewf_info->sha1hash;
+       }
 
        //Need 1MB for libewf read and extra 100 bytes for header name and formatting
        const size_t buffer_size = 1024100;
-       char result[buffer_size];
+       char* result = (char*) malloc(buffer_size * sizeof(char));
 
        //Populate all of the libewf header values for the acquisition details column
        collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));
