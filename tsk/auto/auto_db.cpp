@@ -225,22 +225,24 @@ TskAutoDb::addImageDetails(const char* deviceId)
        //Need 1MB for libewf read and extra 100 bytes for header name and formatting
        const size_t buffer_size = 1024100;
        char* result = (char*) malloc(buffer_size * sizeof(char));
-
-       //Populate all of the libewf header values for the acquisition details column
-       collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_case_number(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_evidence_number(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_examiner_name(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_notes(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_model(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_serial_number(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_device_label(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_version(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_platform(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_acquired_date(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_system_date(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_acquiry_operating_system(ewf_info->handle, result, buffer_size));
-       collectionDetails.append(libewf_read_acquiry_software_version(ewf_info->handle, result, buffer_size));
+	   if (result != NULL) {
+		   //Populate all of the libewf header values for the acquisition details column
+		   collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_case_number(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_evidence_number(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_examiner_name(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_notes(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_model(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_serial_number(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_device_label(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_version(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_platform(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_acquired_date(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_system_date(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_acquiry_operating_system(ewf_info->handle, result, buffer_size));
+		   collectionDetails.append(libewf_read_acquiry_software_version(ewf_info->handle, result, buffer_size));
+           free(result);
+	   }
    }
 #endif
 
