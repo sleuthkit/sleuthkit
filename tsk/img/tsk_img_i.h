@@ -45,24 +45,25 @@ inline int is_blank(const char* str) {
 }
 
 /**
-* Reads the first 1 MB of the libewf header
+* Reads from libewf what is left in the buffer after the addition of the key and new line
 */
 inline char* read_libewf_header_value(libewf_handle_t *handle, char* result_buffer, const size_t buffer_size, const uint8_t *identifier, size_t identifier_length, const char* key) {
-	result_buffer[0] = '\0';
+    result_buffer[0] = '\0';
 
     strcpy(result_buffer, key);
-	libewf_error_t * ewf_error;
-	size_t key_len = strlen(key);
+    libewf_error_t * ewf_error;
+    size_t key_len = strlen(key);
 	
-    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len, &ewf_error);
-	if (result != -1 && !is_blank(result_buffer + key_len)) {
-		strcat(result_buffer, "\n");
-	} else {
-		//if blank or error, return nothing!
-		result_buffer[0] = '\0';
-	}
+    //buffer_size - key_len - 1 for the new line at the end
+    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len - 1, &ewf_error);
+    if (result != -1 && !is_blank(result_buffer + key_len)) {
+        strcat(result_buffer, "\n");
+    } else {
+        //if blank or error, return nothing!
+        result_buffer[0] = '\0';
+    }
 
-	return result_buffer;
+    return result_buffer;
 }
 
 inline char* libewf_read_description(libewf_handle_t *handle, char* result_buffer, const size_t buffer_size) {
