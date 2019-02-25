@@ -423,9 +423,9 @@ ewf_open(int a_num_img,
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting SHA1 of EWF file\n");
-		}
+        }
         return (NULL);
-	}
+    }
     ewf_info->sha1hash_isset = result;
 
 
