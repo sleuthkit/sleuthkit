@@ -5007,7 +5007,7 @@ public class SleuthkitCase {
 			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 
 			// parent path
-			statement.setString(15, parentPath);
+			statement.setString(18, parentPath);
 
 			// data source object id (same as object id if this is a data source)
 			long dataSourceObjectId;
@@ -5016,10 +5016,10 @@ public class SleuthkitCase {
 			} else {
 				dataSourceObjectId = getDataSourceObjectId(connection, parentId);
 			}
-			statement.setLong(16, dataSourceObjectId);
+			statement.setLong(19, dataSourceObjectId);
 
 			//extension, since this is not really file we just set it to null
-			statement.setString(17, null);
+			statement.setString(20, null);
 			connection.executeUpdate(statement);
 
 			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
@@ -5931,14 +5931,14 @@ public class SleuthkitCase {
 			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 
 			//parent path
-			statement.setString(15, parentPath);
+			statement.setString(18, parentPath);
 
 			// root data source object id
 			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
-			statement.setLong(16, dataSourceObjId);
+			statement.setLong(19, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			//extension
-			statement.setString(17, extension);
+			statement.setString(20, extension);
 
 			connection.executeUpdate(statement);
 
