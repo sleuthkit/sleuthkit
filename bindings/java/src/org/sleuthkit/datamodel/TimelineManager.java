@@ -451,9 +451,7 @@ public final class TimelineManager {
 		 * performance problems on very large tables unless you include a where
 		 * clause see http://stackoverflow.com/a/9338276/4004683 for more.
 		 */
-		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM tsk_events WHERE event_id IS NOT null"), //NON-NLS
-		DROP_EVENTS_TABLE("DROP TABLE IF EXISTS tsk_events"), //NON-NLS
-		DROP_DB_INFO_TABLE("DROP TABLE IF EXISTS db_ino");//NON-NLS
+		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM tsk_events WHERE event_id IS NOT null"); //NON-NLS
 
 		private final String sql;
 
