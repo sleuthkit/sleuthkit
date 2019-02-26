@@ -797,7 +797,7 @@ int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const str
 */
 int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string &sha1, const string &sha256)
 {
-    return addImageInfo(type, size, objId, timezone, 0, md5, sha1, sha256, "");
+    return addImageInfo(type, size, objId, timezone, 0, md5, sha1, sha256, "", "");
 }
 
 /**
@@ -815,13 +815,19 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
  * @returns 1 on error, 0 on success
  */
 int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, 
-    const string& sha1, const string& sha256, const string& deviceId)
+    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails)
 {
     // Add the data source to the tsk_objects table.
     // We don't use addObject because we're passing in NULL as the parent
-    char stmt[2048];
+    char* stmt = (char*) malloc(10242148 * sizeof(char));
+    if (stmt == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Malloc for statement string failed.");
+        return 1;
+    }
     int expectedNumFileds = 1;
-    snprintf(stmt, 2048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
+    snprintf(stmt, 10242048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
     if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of columns in result set: Expected %d, Received %d\n")) {
         return 1;
@@ -850,9 +856,10 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(md5_sql);
         PQfreemem(sha1_sql);
         PQfreemem(sha256_sql);
+        free(stmt);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s, %s, %s);",
+    snprintf(stmt, 10242048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s, %s, %s);",
         objId, type, ssize, timezone_sql, size, md5_sql, sha1_sql, sha256_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -860,6 +867,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     PQfreemem(sha1_sql);
     PQfreemem(sha256_sql);
     if (1 == ret) {
+        free(stmt);
         return ret;
     }
 
@@ -881,19 +889,22 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     char *deviceId_sql = PQescapeLiteral(conn, deviceId.c_str(), strlen(deviceIdStr.str().c_str()));
     if (!isEscapedStringValid(deviceId_sql, deviceId.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
         PQfreemem(deviceId_sql);
+        free(stmt);
         return 1;
     }
     char *timeZone_sql = PQescapeLiteral(conn, timezone.c_str(), strlen(timezone.c_str()));
     if (!isEscapedStringValid(timeZone_sql, timezone.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
         PQfreemem(deviceId_sql);
         PQfreemem(timeZone_sql);
+        free(stmt);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%" PRId64 ", %s, %s);",
-        objId, deviceId_sql, timeZone_sql);
+    snprintf(stmt, 10242048, "INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (%" PRId64 ", %s, %s, %s);",
+        objId, deviceId_sql, timeZone_sql, collectionDetails.c_str());
     ret = attempt_exec(stmt, "Error adding device id to data_source_info table: %s\n");
     PQfreemem(deviceId_sql);
     PQfreemem(timeZone_sql);
+    free(stmt);
     return ret;
 }
 
@@ -1599,14 +1610,14 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "0,"
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d,'/')",
         fsObjId,
         objId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_VIRTUAL_DIR,
         name_sql,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
-        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
+        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED), TSK_DB_FILES_KNOWN_UNKNOWN);
 
     if (attempt_exec(zSQL, "Error adding data to tsk_files table: %s\n")) {
         PQfreemem(name_sql);
@@ -1831,7 +1842,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         PQfreemem(name_sql);
         return TSK_ERR;
     }
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, known) "
         "VALUES ("
         "1, %s, %" PRId64 ","
         "%" PRId64 ","
@@ -1840,13 +1851,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
         dbFileType,
         name_sql,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
-        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
+        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size, TSK_DB_FILES_KNOWN_UNKNOWN);
 
     if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
         PQfreemem(name_sql);

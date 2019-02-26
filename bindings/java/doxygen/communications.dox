@@ -11,8 +11,9 @@ The Java code and database in Sleuth Kit contain special classes and tables to d
 
 \section jni_com_types Terminology
 
-First, lets cover the terminology that we use. 
+First, let's cover the terminology that we use. 
 
+\subsection jni_com_types_account Accounts
 
 An <b>Account</b> is an entity with a type and an identifier that is unique to the type.  Common examples of types include:
 - Credit Card (and the unique identifier is the credit card number)
@@ -21,8 +22,9 @@ An <b>Account</b> is an entity with a type and an identifier that is unique to t
 - Twitter (with a unique identifier of the login)
 - ...
 
-Accounts are found in forensics when parsing structured data (such as email messages) or keyword searching.
+Accounts are found in a digital investigation when parsing structured data (such as email messages) or keyword searching.
 
+\subsection jni_com_types_relationships Relationships 
 
 Two accounts have a <b>relationship</b> if they are believed to have communicated in some way.  Examples of interactions that cause a relationship are:
 - Being part of the same email message
@@ -33,28 +35,51 @@ When there are multiple people involved with an email message, a relationship is
 
 A <b>relationship source</b> is where we learned about the relationship.  This typically comes from Blackboard Artifacts, but may come from generic files in the future. 
 
+\subsection jni_com_types_devaccount Device Accounts
+
+In some situations, we may not know a specific account that a relationship exists with.  For example, when we find a contact book a thumb drive, we want to make a relationship between the accounts in the contact book and the accounts associated with the owner of that thumb drive.  But, we may not know which accounts are for that owner.  The contacts could be just a bunch of vCards and not tied to a specific email or phone number.
+
+In this situation, we make a <b>device account</b> that is associated with the data source or device being analyzed.  You should make an account of type Account.Type.DEVICE (instead of something like EMAIL) and the identifier is the device id of the data source where the other accounts were located.  
+
+
+
 \section jni_com_add Adding Communication Information to Database
 
-Now lets cover what you should do when you are parsing some communications data and want to store it in the TSK database.  Let's assume we are parsing a smart phone app that has messages. 
+Now let's cover what you should do when you are parsing some communications data and want to store it in the TSK database.  Let's assume we are parsing a smart phone app that has messages. 
 
 \subsection jni_com_add_acct Adding Account Instances
 
-When you encounter a message, the first thing to do is store information about the accounts.  TSK wants to know about each <i>file</i> that had a reference of the account.   You should call org.sleuthkit.datamodel.CommunicationsManager.createAccountFileInstance() for each file that you encounter a given account.   
+When you encounter a message, the first thing to do is store information about the accounts.  TSK wants to know about each <i>file</i> that had a reference of the account.   You should call org.sleuthkit.datamodel.CommunicationsManager.createAccountFileInstance() for each file that you encounter a given account.  
+
+
+To make a device account, you'd have logic similar to:
+\code
+AccountFileInstance deviceAccountInstance = tskCase.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE,
+                    abstractFile.getDataSource().getDeviceId(), "Module Name", abstractFile);
+\endcode
 
 Behind the scenes, createAccountFileInstance will make an entry in the accounts table for each unique account on a given device and will make a org.sleuthkit.datamodel.BlackboardArtifact for each unique account in a given file. 
 
 If you want to create a custom account type, call org.sleuthkit.datamodel.CommunicationsManager.addAccountType(). 
 
-\subsection jni_com_add_msg Adding The Message (Source)
+\subsection jni_com_add_msg Adding The Message (Relationship Source)
 
-You also need to make sure that you store the org.sleuthkit.datamodel.BlackboardArtifact that used the accounts.  You can do this before or after calling createAccountFileInstance(). The order does not matter.
+You also need to make sure that you store the org.sleuthkit.datamodel.BlackboardArtifact that used the accounts and had the relationship.  You can do this before or after calling createAccountFileInstance(). The order does not matter.
 
-For a messaging app, you would make org.sleuthkit.datamodel.BlackboardArtifact objects with a type of org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.  That artifact would store various name and value pairs using org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE values. 
+For a messaging app, you would make org.sleuthkit.datamodel.BlackboardArtifact objects with a type of org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.  That artifact would store various name and value pairs using org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE values.   There is nothing communication-specific about this step. It is the same Blackboard artifacts and attributes that are used in many other places. 
 
 
 \subsection jni_com_add_relationship Adding the Relationship
 
-The final step is to create store the relationships between the accounts.  You can do this via org.sleuthkit.datamodel.CommunicationsManager.addRelationships().  This method will require you to pass in the org.sleuthkit.datamodel.AccountInstance objects that you created and the org.sleuthkit.datamodel.BlackboardArtifact that you created for the message or other source.
+The final step is to store the relationships between the accounts.  You can do this via org.sleuthkit.datamodel.CommunicationsManager.addRelationships().  This method will require you to pass in the org.sleuthkit.datamodel.AccountInstance objects that you created and the org.sleuthkit.datamodel.BlackboardArtifact that you created for the message or other source.  
+
+The source of the relationship can be a device account (for things like call logs and contacts) if you are unsure about the specific account (such as phone number) associated with the device. 
+
+
+As an example, you can refer to some code in Autopsy.  Such as:
+- [Android Text Messages] (https://github.com/sleuthkit/autopsy/blob/develop/InternalPythonModules/android/textmessage.py)
+- [Email Module addArtifact()] (https://github.com/sleuthkit/autopsy/blob/develop/thunderbirdparser/src/org/sleuthkit/autopsy/thunderbirdparser/ThunderbirdMboxFileIngestModule.java)
+
 
 
 \section jni_com_schema Database Schema
