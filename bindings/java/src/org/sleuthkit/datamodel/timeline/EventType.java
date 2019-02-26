@@ -64,6 +64,16 @@ public interface EventType extends Comparable<EventType> {
 
 	Optional<? extends EventType> getSubType(String string);
 
+	/**
+	 * Parse the three raw descriptions from the DB into a EventDescription
+	 * object.
+	 *
+	 * @param fullDescriptionRaw
+	 * @param medDescriptionRaw
+	 * @param shortDescriptionRaw
+	 *
+	 * @return
+	 */
 	EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw);
 
 	/**

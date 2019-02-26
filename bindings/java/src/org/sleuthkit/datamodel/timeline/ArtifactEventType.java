@@ -104,8 +104,8 @@ public interface ArtifactEventType extends EventType {
 	EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
-	 * Bundles the per event information derived from a BlackBoard Artifact into
-	 * one object. Primarily used to have a single return value for
+	 * Bundles the event specific information derived from a BlackBoard Artifact
+	 * into one object. Primarily used to have a single return value for
 	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
 	 * BlackboardArtifact).
 	 */
