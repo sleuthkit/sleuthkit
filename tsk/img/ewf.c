@@ -400,11 +400,34 @@ ewf_open(int a_num_img,
         tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
-            tsk_fprintf(stderr, "Error getting size of EWF file\n");
+            tsk_fprintf(stderr, "Error getting MD5 of EWF file\n");
         }
         return (NULL);
     }
     ewf_info->md5hash_isset = result;
+
+    int sha1_result = libewf_handle_get_utf8_hash_value_sha1(ewf_info->handle,
+        (uint8_t *)ewf_info->sha1hash, 41, &ewf_error);
+
+    if (sha1_result == -1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+
+        getError(ewf_error, error_string);
+        tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
+            ": Error getting SHA1 of image (%s)", a_images[0],
+            error_string);
+        libewf_error_free(&ewf_error);
+
+        tsk_img_free(ewf_info);
+
+        if (tsk_verbose != 0) {
+            tsk_fprintf(stderr, "Error getting SHA1 of EWF file\n");
+        }
+        return (NULL);
+    }
+    ewf_info->sha1hash_isset = result;
+
 
 #else                           // V1 API
 
