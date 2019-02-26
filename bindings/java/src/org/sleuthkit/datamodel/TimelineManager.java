@@ -518,7 +518,24 @@ public final class TimelineManager {
 		return getEventAndDescriptionIDs(file.getId(), includeDerivedArtifacts).keySet();
 	}
 
-	private long addDescription(long dataSourceObjId, long fileObjId, Long artifactID,
+	/**
+	 * Add a row to the tsk_events_description table.
+	 *
+	 * @param dataSourceObjId
+	 * @param fileObjId
+	 * @param artifactID
+	 * @param fullDescription
+	 * @param medDescription
+	 * @param shortDescription
+	 * @param hasHashHits
+	 * @param tagged
+	 * @param connection
+	 *
+	 * @return the event_decription_id of the inserted row.
+	 *
+	 * @throws TskCoreException
+	 */
+	private long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
 			String fullDescription, String medDescription, String shortDescription,
 			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException {
 		String insertDescriptionSql
@@ -576,7 +593,7 @@ public final class TimelineManager {
 		Set<TimelineEvent> events = new HashSet<>();
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try {
-			long descriptionID = addDescription(file.getDataSourceObjectId(), fileObjId, null,
+			long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
 					description, null, null, false, false, connection);
 
 			for (Map.Entry<EventType, Long> timeEntry : timeMap.entrySet()) {
@@ -703,7 +720,7 @@ public final class TimelineManager {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = getSleuthkitCase().getConnection();) {
 
-			long descriptionID = addDescription(dataSourceObjectID, fileObjId, artifactID,
+			long descriptionID = addEventDescription(dataSourceObjectID, fileObjId, artifactID,
 					fullDescription, medDescription, shortDescription,
 					hasHashHits, tagged, connection);
 
@@ -750,12 +767,12 @@ public final class TimelineManager {
 	 * @param includeArtifacts true if results should also include events from
 	 *                         artifacts associated with the file.
 	 *
-	 * @return
+	 * @return A map from event_id to event_decsription_id.
 	 *
 	 * @throws TskCoreException
 	 */
 	private Map<Long, Long> getEventAndDescriptionIDs(long fileObjID, boolean includeArtifacts) throws TskCoreException {
-		return getEventDescriptionIDsHelper(fileObjID, (includeArtifacts ? "" : " AND artifact_id IS NULL"));
+		return getEventAndDescriptionIDsHelper(fileObjID, (includeArtifacts ? "" : " AND artifact_id IS NULL"));
 	}
 
 	/**
@@ -764,15 +781,29 @@ public final class TimelineManager {
 	 * @param fileObjID
 	 * @param artifactID
 	 *
-	 * @return
+	 * @return A map from event_id to event_decsription_id.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Map<Long, Long> getEventDescriptionIDs(long fileObjID, Long artifactID) throws TskCoreException {
-		return getEventDescriptionIDsHelper(fileObjID, " AND artifact_id = " + artifactID);
+	private Map<Long, Long> getEventAndDescriptionIDs(long fileObjID, Long artifactID) throws TskCoreException {
+		return getEventAndDescriptionIDsHelper(fileObjID, " AND artifact_id = " + artifactID);
 	}
 
-	private Map<Long, Long> getEventDescriptionIDsHelper(long fileObjID, String artifactClause) throws TskCoreException {
+	/**
+	 * Get a map containging event_id and their corresponding
+	 * event_description_ids.
+	 *
+	 * @param fileObjID      get event Ids for events that are derived from the
+	 *                       file with this id.
+	 * @param artifactClause SQL clause that clients can pass in to filter the
+	 *                       returned ids.
+	 *
+	 * @return A map from event_id to event_decsription_id.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Map<Long, Long> getEventAndDescriptionIDsHelper(long fileObjID, String artifactClause) throws TskCoreException {
+		//map from event_id to the event_description_id for that event.
 		Map<Long, Long> eventIDToDescriptionIDs = new HashMap<>();
 		String sql = "SELECT event_id, tsk_events.event_description_id"
 				+ " FROM tsk_events "
@@ -806,17 +837,17 @@ public final class TimelineManager {
 	 * @param tagged     true to mark the matching events tagged, false to mark
 	 *                   them as untagged
 	 *
-	 * @return the event ids that match the object/artifact pair
+	 * @return the event ids that match the object/artifact pair.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Set<Long> setEventsTagged(long fileObjId, Long artifactID, boolean tagged) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		Map<Long, Long> eventIDs;
+		Map<Long, Long> eventIDs;  // map from event_ids to event_description_ids
 		if (Objects.isNull(artifactID)) {
 			eventIDs = getEventAndDescriptionIDs(fileObjId, false);
 		} else {
-			eventIDs = getEventDescriptionIDs(fileObjId, artifactID);
+			eventIDs = getEventAndDescriptionIDs(fileObjId, artifactID);
 		}
 
 		//update tagged state for all event with selected ids
