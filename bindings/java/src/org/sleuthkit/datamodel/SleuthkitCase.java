@@ -5597,6 +5597,7 @@ public class SleuthkitCase {
 						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
 						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
 						fileRange.getByteLen(),
+						0L, 0L, 0L, 0L,
 						null,
 						FileKnown.UNKNOWN,
 						parent.getUniquePath(),
@@ -5780,6 +5781,7 @@ public class SleuthkitCase {
 						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
 						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
 						carvedFile.getSizeInBytes(),
+						0L, 0L, 0L, 0L,
 						null,
 						FileKnown.UNKNOWN,
 						parentPath,
@@ -6186,16 +6188,40 @@ public class SleuthkitCase {
 		}
 	}
 	
-// TODO TODO
-	public LayoutFile addNewFileType(String fileName,
+	/**
+	 * Add a new layout file to the database.
+	 * 
+	 * @param fileName     The name of the file.
+	 * @param size         The size of the file in bytes.
+	 * @param dirFlag      The allocated status from the name structure
+	 * @param metaFlag     The allocated status from the metadata structure
+	 * @param ctime        The changed time of the file.
+	 * @param crtime       The creation time of the file.
+	 * @param atime        The accessed time of the file
+	 * @param mtime        The modified time of the file.
+	 * @param fileRanges   The byte ranges in the data source that belong to this file
+	 * @param parent       The parent of the file
+	 * 
+	 * @return The new LayoutFile
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public LayoutFile addLayoutFile(String fileName,
 			long size, 
-			TSK_FS_NAME_FLAG_ENUM dirFlag, TSK_FS_META_FLAG_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, TSK_FS_META_FLAG_ENUM metaFlag,
 			long ctime, long crtime, long atime, long mtime,
 			List<TskFileRange> fileRanges,
 			Content parent) throws TskCoreException {
 
 		if (null == parent) {
 			throw new TskCoreException("Parent can not be null");
+		}
+		
+		String parentPath;
+		if (parent instanceof AbstractFile) {
+			parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + '/'; //NON-NLS
+		} else {
+			parentPath = "/";
 		}
 		
 		CaseDbTransaction transaction = null;
@@ -6237,18 +6263,18 @@ public class SleuthkitCase {
 				prepStmt.setNull(2, java.sql.Types.BIGINT);
 			}
 			prepStmt.setString(3, fileName); // name
-			prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.RENAME_ME.getFileType()); // type
+			prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE.getFileType()); // type
 			prepStmt.setShort(5, (short) 0); // has_path
 			prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
 			prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
 			prepStmt.setShort(8, dirFlag.getValue()); // dir_flags
-			prepStmt.setShort(9, metaType.getValue()); // meta_flags
-			prepStmt.setLong(10, size); // size
-			prepStmt.setLong(11, ctime); // ctime
+			prepStmt.setShort(9, metaFlag.getValue()); // meta_flags
+			prepStmt.setLong(10, size);   // size
+			prepStmt.setLong(11, ctime);  // ctime
 			prepStmt.setLong(12, crtime); // crtime
-			prepStmt.setLong(13, atime); // atime
-			prepStmt.setLong(14, mtime); // mtime
-			prepStmt.setString(15, parent.getUniquePath()); // parent path
+			prepStmt.setLong(13, atime);  // atime
+			prepStmt.setLong(14, mtime);  // mtime
+			prepStmt.setString(15, parentPath); // parent path
 			prepStmt.setLong(16, parent.getDataSource().getId()); // data_source_obj_id
 
 			prepStmt.setString(17, extractExtension(fileName)); 				//extension
@@ -6272,27 +6298,28 @@ public class SleuthkitCase {
 			/*
 			 * Create a layout file representation of the carved file.
 			 */
-			/*LayoutFile layoutFile = new LayoutFile(this,
+			LayoutFile layoutFile = new LayoutFile(this,
 					newFileId,
-					carvedFilesDir.getDataSourceObjectId(),
-					carvedFile.getName(),
-					TSK_DB_FILES_TYPE_ENUM.CARVED,
+					parent.getDataSource().getId(),
+					fileName,
+					TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE,
 					TSK_FS_NAME_TYPE_ENUM.REG,
 					TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
-					TSK_FS_NAME_FLAG_ENUM.UNALLOC,
-					TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
-					carvedFile.getSizeInBytes(),
+					dirFlag,
+					metaFlag.getValue(),
+					size,
+					ctime, crtime, atime, mtime,
 					null,
 					FileKnown.UNKNOWN,
 					parentPath,
-					null));*/
+					null);
 
 			transaction.commit();
 			transaction = null;
-			return null;
+			return layoutFile;
 
 		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to add carved files to case database", ex);
+			throw new TskCoreException("Failed to add layout file " + fileName + " to case database", ex);
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
@@ -7401,7 +7428,7 @@ public class SleuthkitCase {
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()
 						|| type == TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS.getFileType()
 						|| type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()
-						|| type == TSK_DB_FILES_TYPE_ENUM.RENAME_ME.getFileType()) {
+						|| type == TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE.getFileType()) {
 					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path"); //NON-NLS
 					if (parentPath == null) {
@@ -7415,6 +7442,7 @@ public class SleuthkitCase {
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
 							rs.getLong("size"), //NON-NLS
+							rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type")); //NON-NLS
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
@@ -7762,7 +7790,7 @@ public class SleuthkitCase {
 					case UNALLOC_BLOCKS:
 					case UNUSED_BLOCKS:
 					case CARVED:
-					case RENAME_ME: {
+					case LAYOUT_FILE: {
 						String parentPath = rs.getString("parent_path");
 						if (parentPath == null) {
 							parentPath = "";
@@ -7772,7 +7800,9 @@ public class SleuthkitCase {
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 								TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
 								TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-								rs.getLong("size"), rs.getString("md5"),
+								rs.getLong("size"), 
+								rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
+								rs.getString("md5"),
 								FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"));
 						children.add(lf);
 						break;
