@@ -55,7 +55,7 @@ class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 
 	@Override
 	public TimelineEvent.EventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
-		return new SingeLevelEventDiscription(fullDescription);
+		return TimelineEvent.EventDescription.create(fullDescription);
 	}
 
 	/**

@@ -109,7 +109,7 @@ public interface ArtifactEventType extends EventType {
 	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
 	 * BlackboardArtifact).
 	 */
-	final class EventDescriptionWithTime extends ThreeLevellEventDescription {
+	final class EventDescriptionWithTime extends ThreeLevelEventDescription {
 
 		final private long time;
 

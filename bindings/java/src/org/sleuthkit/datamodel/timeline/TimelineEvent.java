@@ -244,13 +244,13 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Encapsulates the motential multiple levels of description for an event in
+	 * Encapsulates the potential multiple levels of description for an event in
 	 * to one object.
 	 */
 	interface EventDescription {
 
 		public static EventDescription create(String fullDescription, String medDescription, String shortDescription) {
-			return new ThreeLevellEventDescription(fullDescription, medDescription, shortDescription);
+			return new ThreeLevelEventDescription(fullDescription, medDescription, shortDescription);
 		}
 
 		public static EventDescription create(String fullDescription) {
