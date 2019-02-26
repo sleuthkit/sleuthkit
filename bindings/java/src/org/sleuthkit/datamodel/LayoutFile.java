@@ -70,10 +70,10 @@ public class LayoutFile extends AbstractFile {
 	 *                           reported in the metadata structure of the file
 	 *                           system.
 	 * @param size               The size of the file.
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The creation time of the file.
+	 * @param atime              The accessed time of the file
+	 * @param mtime              The modified time of the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
 	 * @param knownState         The known state of the file from a hash

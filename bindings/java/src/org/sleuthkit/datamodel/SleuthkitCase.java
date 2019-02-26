@@ -5840,10 +5840,10 @@ public class SleuthkitCase {
 	 * @param localPath       local path of the derived file, including the file
 	 *                        name. The path is relative to the database path.
 	 * @param size            size of the derived file in bytes
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
+	 * @param ctime           The changed time of the file.
+	 * @param crtime          The creation time of the file.
+	 * @param atime           The accessed time of the file
+	 * @param mtime           The modified time of the file.
 	 * @param isFile          whether a file or directory, true if a file
 	 * @param parentObj		     parent content object
 	 * @param rederiveDetails details needed to re-derive file (will be specific
@@ -5973,13 +5973,13 @@ public class SleuthkitCase {
 	 * @param localPath       local path of the derived file, including the file
 	 *                        name. The path is relative to the database path.
 	 * @param size            size of the derived file in bytes
-	 * @param ctime
-	 * @param crtime
-	 * @param mimeType		      The MIME type the updated file should have, null
-	 *                        to unset it
-	 * @param atime
-	 * @param mtime
+	 * @param ctime           The changed time of the file.
+	 * @param crtime          The creation time of the file.
+	 * @param atime           The accessed time of the file
+	 * @param mtime           The modified time of the file.
 	 * @param isFile          whether a file or directory, true if a file
+	 * @param mimeType		  The MIME type the updated file should have, null
+	 *                        to unset it
 	 * @param rederiveDetails details needed to re-derive file (will be specific
 	 *                        to the derivation method), currently unused
 	 * @param toolName        name of derivation method/tool, currently unused
@@ -6274,7 +6274,7 @@ public class SleuthkitCase {
 	 * @param crtime       The creation time of the file.
 	 * @param atime        The accessed time of the file
 	 * @param mtime        The modified time of the file.
-	 * @param fileRanges   The byte ranges in the data source that belong to this file
+	 * @param fileRanges   The byte ranges that belong to this file (relative to start of image)
 	 * @param parent       The parent of the file
 	 * 
 	 * @return The new LayoutFile
@@ -11488,10 +11488,10 @@ public class SleuthkitCase {
 	 * @param localPath       local path of the derived file, including the file
 	 *                        name. The path is relative to the database path.
 	 * @param size            size of the derived file in bytes
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
+	 * @param ctime           The changed time of the file.
+	 * @param crtime          The creation time of the file.
+	 * @param atime           The accessed time of the file
+	 * @param mtime           The modified time of the file.
 	 * @param isFile          whether a file or directory, true if a file
 	 * @param parentFile      parent file object (derived or local file)
 	 * @param rederiveDetails details needed to re-derive file (will be specific
