@@ -85,7 +85,7 @@ aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
         tsk_error_set_errstr("aff4_image_read - offset: %" PRIdOFF
-            " - len: %" PRIuSIZE " - %s: %s%s",
+            " - len: %" PRIuSIZE " - %s: %s",
             offset, len, strerror(errno), aff4_msgs ? aff4_msgs : "");
         free(aff4_msgs);
         return -1;
@@ -162,13 +162,13 @@ aff4_open(int a_num_img,
         NULL) {
         return NULL;
     }
-    aff4_info->handle = -1;
+    aff4_info->handle = NULL;
 
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info;
     img_info->images = NULL;
     img_info->num_img = 0;
 
-    char* filename = NULL;
+    const char* filename = NULL;
 
     // copy the image filename into the img_info
     img_info->images = (TSK_TCHAR**) tsk_malloc(sizeof(TSK_TCHAR*));
@@ -187,12 +187,12 @@ aff4_open(int a_num_img,
 
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
 #if defined (TSK_WIN32)
-    filename = tsk_malloc(len);
-    if (filename == NULL) {
+    char* fn = tsk_malloc(len);
+    if (fn == NULL) {
         goto on_error;
     }
 
-    UTF8* utf8 = (UTF8*) filename;
+    UTF8* utf8 = (UTF8*) fn;
     const UTF16* utf16 = (UTF16*) a_images[0];
 
     const int ret = tsk_UTF16toUTF8_lclorder(&utf16, utf16 + len, &utf8, utf8 + len, TSKstrictConversion);
@@ -202,6 +202,8 @@ aff4_open(int a_num_img,
         tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
         goto on_error;
     }
+
+    filename = fn;
 #else
     filename = img_info->images[0];
 #endif
@@ -237,7 +239,7 @@ aff4_open(int a_num_img,
     AFF4_Message* msg = NULL;
 
     aff4_info->handle = AFF4_open(filename, &msg);
-    if (aff4_info->handle == -1) {
+    if (!aff4_info->handle) {
         char* aff4_msgs = get_messages(msg);
         AFF4_free_messages(msg);
 
