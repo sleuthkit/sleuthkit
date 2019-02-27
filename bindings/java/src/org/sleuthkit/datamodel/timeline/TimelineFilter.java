@@ -585,7 +585,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final CompoundFilter<?> other = (CompoundFilter<?>) obj;
-			return Objects.equals(this.getSubFilters().sorted(), other.getSubFilters().sorted());
+			return Objects.equals(this.getSubFilters() , other.getSubFilters());
 		}
 
 		@Override
