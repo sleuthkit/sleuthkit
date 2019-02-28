@@ -1666,7 +1666,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
+	
 	/**
 	 * Extract the extension from a file name.
 	 *
@@ -4957,7 +4957,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id,extension)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -5001,6 +5001,10 @@ public class SleuthkitCase {
 			statement.setNull(12, java.sql.Types.BIGINT);
 			statement.setNull(13, java.sql.Types.BIGINT);
 			statement.setNull(14, java.sql.Types.BIGINT);
+			
+			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 
 			// parent path
 			statement.setString(15, parentPath);
@@ -5089,10 +5093,14 @@ public class SleuthkitCase {
 			CaseDbConnection connection = transaction.getConnection();
 			AbstractFile parent = getAbstractFileById(parentId, connection);
 			String parentPath;
-			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-				parentPath = "/";
+			if (parent != null) {
+				if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+					parentPath = "/";
+				} else {
+					parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
 			} else {
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+				parentPath = "/";
 			}
 
 			// Insert a row for the local directory into the tsk_objects table.
@@ -5102,7 +5110,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -5138,15 +5146,19 @@ public class SleuthkitCase {
 			statement.setNull(13, java.sql.Types.BIGINT);
 			statement.setNull(14, java.sql.Types.BIGINT);
 
+			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type			
+			
 			// parent path
-			statement.setString(15, parentPath);
+			statement.setString(18, parentPath);
 
 			// data source object id
 			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
-			statement.setLong(16, dataSourceObjectId);
+			statement.setLong(19, dataSourceObjectId);
 
 			//extension, since this is a directory we just set it to null
-			statement.setString(17, null);
+			statement.setString(20, null);
 
 			connection.executeUpdate(statement);
 
@@ -5202,7 +5214,7 @@ public class SleuthkitCase {
 			// dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime,
 			// atime, mtime, parent_path, data_source_obj_id, extension)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
 			preparedStatement.setNull(2, java.sql.Types.BIGINT);
@@ -5223,10 +5235,13 @@ public class SleuthkitCase {
 			preparedStatement.setNull(12, java.sql.Types.BIGINT);
 			preparedStatement.setNull(13, java.sql.Types.BIGINT);
 			preparedStatement.setNull(14, java.sql.Types.BIGINT);
+			preparedStatement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			preparedStatement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			preparedStatement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 			String parentPath = "/"; //NON-NLS
-			preparedStatement.setString(15, parentPath);
-			preparedStatement.setLong(16, newObjId);
-			preparedStatement.setString(17, null); //extension, just set it to null
+			preparedStatement.setString(18, parentPath);
+			preparedStatement.setLong(19, newObjId);
+			preparedStatement.setString(20, null); //extension, just set it to null
 			connection.executeUpdate(preparedStatement);
 
 			return new LocalFilesDataSource(this, newObjId, newObjId, deviceId, rootDirectoryName, dirType, metaType, dirFlag, metaFlags, timeZone, null, FileKnown.UNKNOWN, parentPath);
@@ -5238,7 +5253,232 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Add an image to the database.
+	 * 
+	 * @param type         Type of image
+	 * @param sectorSize   Sector size
+	 * @param size         Image size
+	 * @param displayName  Display name for the image
+	 * @param imagePaths   Image path(s)
+	 * @param timezone     Time zone
+	 * @param md5          MD5 hash
+	 * @param sha1         SHA1 hash
+	 * @param sha256       SHA256 hash
+	 * @param deviceId     Device ID
+	 * @param transaction  Case DB transaction
+	 * 
+	 * @return the newly added Image
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public Image addImage(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName, List<String> imagePaths,
+			String timezone, String md5, String sha1, String sha256,
+			String deviceId,
+			CaseDbTransaction transaction) throws TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		try {
+			// Insert a row for the Image into the tsk_objects table.
+			CaseDbConnection connection = transaction.getConnection();
+			long newObjId = addObject(0, TskData.ObjectType.IMG.getObjectType(), connection);
+			
+			// Add a row to tsk_image_info
+			// INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_INFO);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setShort(2, (short)type.getValue());
+			preparedStatement.setLong(3, sectorSize);
+			preparedStatement.setString(4, timezone);
+			preparedStatement.setLong(5, size);
+			preparedStatement.setString(6, md5);
+			preparedStatement.setString(7, sha1);
+			preparedStatement.setString(8, sha256);
+			preparedStatement.setString(9, displayName);
+			connection.executeUpdate(preparedStatement);
+			
+			// If there are paths, add them to tsk_image_names
+			for (int i = 0; i < imagePaths.size(); i++) {
+				preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
+				preparedStatement.clearParameters();
+				preparedStatement.setLong(1, newObjId);
+				preparedStatement.setString(2, imagePaths.get(i));
+				preparedStatement.setLong(3, i);
+				connection.executeUpdate(preparedStatement);
+			}
+			
+			// Add a row to data_source_info
+			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO);
+			statement = connection.createStatement();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setString(2, deviceId);
+			preparedStatement.setString(3, timezone);
+			connection.executeUpdate(preparedStatement);
+			
+			// Create the new Image object
+			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, displayName,
+						imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, size);
+		} catch (SQLException ex) {
+			if (! imagePaths.isEmpty()) {
+				throw new TskCoreException(String.format("Error adding image with path %s to database", imagePaths.get(0)), ex);
+			} else {
+				throw new TskCoreException(String.format("Error adding image with display name %s to database", displayName), ex);
+			}
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}	
+	}
+	
+	/**
+	 * Add a volume system to the database.
+	 * 
+	 * @param parentObjId  Object ID of the volume system's parent
+	 * @param type         Type of volume system
+	 * @param imgOffset    Image offset
+	 * @param blockSize    Block size
+	 * @param transaction  Case DB transaction
+	 * 
+	 * @return the newly added VolumeSystem
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public VolumeSystem addVolumeSystem(long parentObjId, TskData.TSK_VS_TYPE_ENUM type, long imgOffset, 
+			long blockSize, CaseDbTransaction transaction) throws TskCoreException{
+		acquireSingleUserCaseWriteLock();
+		try {
+			// Insert a row for the VolumeSystem into the tsk_objects table.
+			CaseDbConnection connection = transaction.getConnection();
+			long newObjId = addObject(parentObjId, TskData.ObjectType.VS.getObjectType(), connection);
+			
+			// Add a row to tsk_vs_info
+			// INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size)
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_VS_INFO);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setShort(2, (short)type.getVsType());
+			preparedStatement.setLong(3, imgOffset);
+			preparedStatement.setLong(4, blockSize);
+			connection.executeUpdate(preparedStatement);
 
+			// Create the new VolumeSystem object
+			return new VolumeSystem(this, newObjId, "", type.getVsType(), imgOffset, blockSize);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating volume system with parent ID %d and image offset %d", 
+					parentObjId, imgOffset), ex);
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}			
+	}
+
+	/**
+	 * Add a volume to the database
+	 * 
+	 * @param parentObjId   Object ID of the volume's parent
+	 * @param addr			Address of the volume
+	 * @param start         Start of the volume
+	 * @param length        Length of the volume
+	 * @param desc          Description of the volume
+	 * @param flags         Flags
+	 * @param transaction   Case DB transaction
+	 * 
+	 * @return the newly created Volume
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public Volume addVolume(long parentObjId, long addr, long start, long length, String desc,
+			long flags, CaseDbTransaction transaction) throws TskCoreException{
+		acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		try {
+			// Insert a row for the Volume into the tsk_objects table.
+			CaseDbConnection connection = transaction.getConnection();
+			long newObjId = addObject(parentObjId, TskData.ObjectType.VOL.getObjectType(), connection);
+			
+			// Add a row to tsk_vs_parts
+			// INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)
+			PreparedStatement preparedStatement;
+			if (this.dbType == DbType.POSTGRESQL) {
+				preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_VS_PART_POSTGRESQL);
+			} else {
+				preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_VS_PART_SQLITE);
+			}
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setLong(2, addr);
+			preparedStatement.setLong(3, start);
+			preparedStatement.setLong(4, length);
+			preparedStatement.setString(5, desc);
+			preparedStatement.setShort(6, (short)flags);
+			connection.executeUpdate(preparedStatement);
+
+			// Create the new Volume object
+			return new Volume(this, newObjId, addr, start, length, flags, desc);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating volume with address %d and parent ID %d", addr, parentObjId), ex);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}			
+	}	
+	
+	/**
+	 * Add a FileSystem to the database.
+	 * 
+	 * @param parentObjId  Object ID of the file system's parent
+	 * @param imgOffset    Offset in the image
+	 * @param type         Type of file system
+	 * @param blockSize    Block size
+	 * @param blockCount   Block count
+	 * @param rootInum     root inum
+	 * @param firstInum    first inum
+	 * @param lastInum     last inum
+	 * @param displayName  display name
+	 * @param transaction  Case DB transaction
+	 * 
+	 * @return the newly created FileSystem
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public FileSystem addFileSystem(long parentObjId, long imgOffset, TskData.TSK_FS_TYPE_ENUM type, long blockSize, long blockCount, 
+			long rootInum, long firstInum, long lastInum, String displayName,
+			CaseDbTransaction transaction) throws TskCoreException{
+		acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		try {
+			// Insert a row for the FileSystem into the tsk_objects table.
+			CaseDbConnection connection = transaction.getConnection();
+			long newObjId = addObject(parentObjId, TskData.ObjectType.FS.getObjectType(), connection);
+			
+			// Add a row to tsk_fs_info
+			// INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FS_INFO);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setLong(2, imgOffset);
+			preparedStatement.setShort(3, (short)type.getValue());
+			preparedStatement.setLong(4, blockSize);
+			preparedStatement.setLong(5, blockCount);
+			preparedStatement.setLong(6, rootInum);
+			preparedStatement.setLong(7, firstInum);
+			preparedStatement.setLong(8, lastInum);
+			preparedStatement.setString(9, displayName);
+			connection.executeUpdate(preparedStatement);
+
+			// Create the new FileSystem object
+			return new FileSystem(this, newObjId, displayName, imgOffset, type, blockSize, blockCount, rootInum,
+				firstInum, lastInum);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating file system with image offset %d and parent ID %d",
+					imgOffset, parentObjId), ex);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}			
+	}			
+	
 	/**
 	 * Get IDs of the virtual folder roots (at the same level as image), used
 	 * for containers such as for local files.
@@ -5500,7 +5740,7 @@ public class SleuthkitCase {
 				 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
 				 * ?, ?, ?, ?, ?, ?, ?, ?,?)
 				 */
-				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 				prepStmt.clearParameters();
 				prepStmt.setLong(1, carvedFileId); // obj_id
 				if (root instanceof FileSystem) {
@@ -5520,10 +5760,12 @@ public class SleuthkitCase {
 				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
 				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
 				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
-				prepStmt.setString(15, parentPath); // parent path
-				prepStmt.setLong(16, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
-
-				prepStmt.setString(17, extractExtension(carvedFile.getName())); 				//extension
+				prepStmt.setNull(15, java.sql.Types.VARCHAR); // MD5
+				prepStmt.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+				prepStmt.setNull(17, java.sql.Types.VARCHAR); // MIME type	
+				prepStmt.setString(18, parentPath); // parent path
+				prepStmt.setLong(19, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
+				prepStmt.setString(20, extractExtension(carvedFile.getName())); //extension
 				connection.executeUpdate(prepStmt);
 
 				/*
@@ -5619,6 +5861,10 @@ public class SleuthkitCase {
 			boolean isFile, Content parentObj,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+		
+		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
+		localPath = localPath.replaceAll("^[/\\\\]+", "");
+		
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		try {
@@ -5640,7 +5886,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id, extension)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -5679,6 +5925,10 @@ public class SleuthkitCase {
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
+			
+			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
+			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
+			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
 
 			//parent path
 			statement.setString(15, parentPath);
@@ -5744,6 +5994,10 @@ public class SleuthkitCase {
 			boolean isFile, String mimeType,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+		
+		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
+		localPath = localPath.replaceAll("^[/\\\\]+", "");
+		
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		ResultSet rs = null;
@@ -5878,8 +6132,47 @@ public class SleuthkitCase {
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, TskData.EncodingType encodingType,
-			AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
-
+			Content parent, CaseDbTransaction transaction) throws TskCoreException {
+		
+		return addLocalFile(fileName, localPath,
+			size, ctime, crtime, atime, mtime,
+			null, null, null,
+			isFile, encodingType,
+			parent, transaction);
+	}
+	
+	/**
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
+	 *
+	 * @param fileName     The name of the file.
+	 * @param localPath    The absolute path (including the file name) of the
+	 *                     local/logical in secondary storage.
+	 * @param size         The size of the file in bytes.
+	 * @param ctime        The changed time of the file.
+	 * @param crtime       The creation time of the file.
+	 * @param atime        The accessed time of the file
+	 * @param mtime        The modified time of the file.
+	 * @param md5          The MD5 hash of the file
+	 * @param known        The known status of the file (can be null)
+	 * @param mimeType     The MIME type of the file
+	 * @param isFile       True, unless the file is a directory.
+	 * @param encodingType Type of encoding used on the file
+	 * @param parent       The parent of the file (e.g., a virtual directory)
+	 * @param transaction  A caller-managed transaction within which the add
+	 *                     file operations are performed.
+	 *
+	 * @return An object representing the local/logical file.
+	 *
+	 * @throws TskCoreException if there is an error completing a case database
+	 *                          operation.
+	 */
+	public LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			String md5, FileKnown known, String mimeType,
+			boolean isFile, TskData.EncodingType encodingType,
+			Content parent, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
 		transaction.acquireSingleUserCaseWriteLock();
 		Statement queryStatement = null;
@@ -5893,7 +6186,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id,extension)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_WITH_ALL_FIELDS);
 			statement.clearParameters();
 			statement.setLong(1, objectId);
 			statement.setNull(2, java.sql.Types.BIGINT); // Not part of a file system
@@ -5913,18 +6206,29 @@ public class SleuthkitCase {
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
+			statement.setString(15, md5);
+			if (known != null) {
+				statement.setByte(16, known.getFileKnownValue());
+			} else {
+				statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue());
+			}
+			statement.setString(17, mimeType);
 			String parentPath;
 
-			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-				parentPath = "/";
+			if (parent instanceof AbstractFile) {
+				if (parent.getParent() == null && ((AbstractFile)parent).getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+					parentPath = "/";
+				} else {
+					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
 			} else {
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+				parentPath = "/";
 			}
-			statement.setString(15, parentPath);
+			statement.setString(18, parentPath);
 			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
-			statement.setLong(16, dataSourceObjId);
+			statement.setLong(19, dataSourceObjId);
 			final String extension = extractExtension(fileName);
-			statement.setString(17, extension);
+			statement.setString(20, extension);
 
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
@@ -5938,7 +6242,7 @@ public class SleuthkitCase {
 					metaFlags,
 					size,
 					ctime, crtime, atime, mtime,
-					null, null, null,
+					mimeType, md5, known,
 					parent.getId(), parentPath,
 					dataSourceObjId,
 					localPath,
@@ -9658,6 +9962,8 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id,extension) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)"), //NON-NLS
+		INSERT_FILE_WITH_ALL_FIELDS("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id,extension) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
@@ -9770,7 +10076,16 @@ public class SleuthkitCase {
 		UPDATE_FILE_NAME("UPDATE tsk_files SET name = ? WHERE obj_id = ?"),
 		UPDATE_IMAGE_NAME("UPDATE tsk_image_info SET display_name = ? WHERE obj_id = ?"),
 		DELETE_IMAGE_NAME("DELETE FROM tsk_image_names WHERE obj_id = ?"),
-		INSERT_IMAGE_NAME("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (?, ?, ?)");
+		INSERT_IMAGE_NAME("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (?, ?, ?)"),
+		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)" + 
+				" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (?, ?, ?)"),
+		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
+		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
+		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
+		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
+					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		
 		
 		private final String sql;
 

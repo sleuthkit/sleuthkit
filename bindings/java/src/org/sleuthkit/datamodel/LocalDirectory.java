@@ -19,6 +19,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -30,6 +32,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * Not a file system
  */
 public class LocalDirectory extends SpecialDirectory {
+	private static final Logger logger = Logger.getLogger(LocalDirectory.class.getName());
 
 	/**
 	 * Constructs a local directory that can be used as a parent for
@@ -73,6 +76,23 @@ public class LocalDirectory extends SpecialDirectory {
 	 */
 	public boolean isDataSource() {
 		return false;
+	}
+	
+	/**
+	 * Indicates whether or not this directory is the root of a file
+	 * system. Local directories should only be the root of a file
+	 * system in a portable case.
+	 *
+	 * @return true if the parent of this directory is a file system
+	 */
+	@Override
+	public boolean isRoot() {
+		try {
+			return (getParent() instanceof FileSystem);
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting parent of LocalDirectory with object ID " + getId(), ex);
+			return false;
+		}
 	}
 
 	/**
