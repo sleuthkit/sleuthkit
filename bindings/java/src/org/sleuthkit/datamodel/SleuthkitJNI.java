@@ -112,26 +112,6 @@ public class SleuthkitJNI {
 
 		private static final String INVALID_FILE_HANDLE = "Invalid file handle."; //NON-NLS
 		
-		private static void print(String desc) {
-			/*
-			System.out.println("\nPrinting handle cache : " + desc);
-			for (long caseDbPointer:caseHandlesCache.keySet()) {
-				System.out.println("caseDbPointer: " + caseDbPointer);
-				CaseHandles handles = caseHandlesCache.get(caseDbPointer);
-
-				System.out.println("  Image cache");
-				for (String s:handles.imageHandleCache.keySet()) {
-					System.out.println("    " + s + " : " +handles.imageHandleCache.get(s) );
-				}
-				
-				System.out.println("  File handle cache");
-				for (long s:handles.fileHandleCache) {
-					System.out.println("    " + s );
-				}
-				
-			}*/
-		}
-		
 		/**
 		 * Create the empty cache for a new case
 		 * 
@@ -151,7 +131,6 @@ public class SleuthkitJNI {
 		 */
 		private static long getDefaultCaseDbPointer() throws TskCoreException {
 			synchronized (cacheLock) {
-				print("Getting default case db pointer");
 				if (caseHandlesCache.keySet().size() > 1) {
 					throw new TskCoreException("Can not get default case handle with multiple open cases");
 				} else if (caseHandlesCache.keySet().isEmpty()) {
@@ -182,7 +161,6 @@ public class SleuthkitJNI {
 		 */
 		private static void removeCaseHandlesCache(long caseDbPointer) {
 			synchronized (cacheLock) {
-				print("Removing case pointer " + caseDbPointer);
 				if (caseHandlesCache.containsKey(caseDbPointer)) {
 					caseHandlesCache.get(caseDbPointer).fsHandleCache.clear();
 					caseHandlesCache.get(caseDbPointer).imageHandleCache.clear();
@@ -202,7 +180,6 @@ public class SleuthkitJNI {
 		 */
 		private static boolean isImageInAnyCache(long imgHandle) {
 			synchronized (cacheLock) {
-				print("Checking if image " + imgHandle + " is in any cache");
 				for (long caseDbPointer:caseHandlesCache.keySet()) {
 					if (caseHandlesCache.get(caseDbPointer).fsHandleCache.keySet().contains(imgHandle)) {
 						return true;
@@ -220,7 +197,6 @@ public class SleuthkitJNI {
 		 */
 		private static void addFileHandle(long caseDbPointer, long fileHandle, long fsHandle) {
 			synchronized (cacheLock) {
-				print("Adding file handle " + fileHandle + " to fs " + fsHandle);
 				// Add to collection of open file handles.
 				getCaseHandles(caseDbPointer).fileHandleCache.add(fileHandle);
 
@@ -241,7 +217,6 @@ public class SleuthkitJNI {
 		 */
 		private static void removeFileHandle(long fileHandle, SleuthkitCase skCase) {
 			synchronized (cacheLock) {
-				print("Removing file handle " + fileHandle);
 				// Remove from collection of open file handles.
 				if (skCase != null) {
 					getCaseHandles(skCase.getCaseHandle().caseDbPointer).fileHandleCache.remove(fileHandle);
@@ -266,7 +241,6 @@ public class SleuthkitJNI {
 		 */
 		private static boolean isValidFileHandle(long fileHandle) {
 			synchronized (cacheLock) {
-				print("Checking if " + fileHandle + " is a valid file handle");
 				for (long caseDbPointer:caseHandlesCache.keySet()) {
 					if (caseHandlesCache.get(caseDbPointer).fileHandleCache.contains(fileHandle)) {
 						return true;
