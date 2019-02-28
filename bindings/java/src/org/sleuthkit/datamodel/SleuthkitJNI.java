@@ -69,6 +69,32 @@ public class SleuthkitJNI {
 	private SleuthkitJNI() {
 	}
 
+	private static class CaseHandles {
+				/*
+		 * A SleuthKit image handle cache implemented as a mappng of
+		 * concatenated image file paths to image handles.
+		 */
+		private final Map<String, Long> imageHandleCache = new HashMap<>();
+
+		/*
+		 * A SleuthKit file system handles cache implemented as a mapping of
+		 * image handles to image offset and file system handle pairs.
+		 */
+		private final Map<Long, Map<Long, Long>> fsHandleCache = new HashMap<>();
+
+		/*
+		 * The collection of open file handles. We will only allow requests
+		 * through to the C code if the file handle exists in this collection.
+		 */
+		private final Set<Long> fileHandleCache = new HashSet<>();
+
+		private final Map<Long, List<Long>> fileSystemToFileHandles = new HashMap<>();
+		
+		private CaseHandles() {
+			
+		}
+	}
+	
 	/**
 	 * Cache of all handles allocated in the JNI layer. Used for: (a) quick
 	 * lookup of frequently used handles (e.g. file system and image) (b)
@@ -82,70 +108,183 @@ public class SleuthkitJNI {
 		 */
 		private static final Object cacheLock = new Object();
 
-		/*
-		 * A SleuthKit image handle cache implemented as a mappng of
-		 * concatenated image file paths to image handles.
-		 */
-		private static final Map<String, Long> imageHandleCache = new HashMap<String, Long>();
-
-		/*
-		 * A SleuthKit file system handles cache implemented as a mapping of
-		 * image handles to image offset and file system handle pairs.
-		 */
-		private static final Map<Long, Map<Long, Long>> fsHandleCache = new HashMap<Long, Map<Long, Long>>();
-
-		/*
-		 * The collection of open file handles. We will only allow requests
-		 * through to the C code if the file handle exists in this collection.
-		 */
-		private static final Set<Long> fileHandleCache = new HashSet<Long>();
-
-		private static final Map<Long, List<Long>> fileSystemToFileHandles = new HashMap<Long, List<Long>>();
+		private static final Map<Long, CaseHandles> caseHandlesCache = new HashMap<>();
 
 		private static final String INVALID_FILE_HANDLE = "Invalid file handle."; //NON-NLS
+		
+		private static void print(String desc) {
+			/*
+			System.out.println("\nPrinting handle cache : " + desc);
+			for (long caseDbPointer:caseHandlesCache.keySet()) {
+				System.out.println("caseDbPointer: " + caseDbPointer);
+				CaseHandles handles = caseHandlesCache.get(caseDbPointer);
 
+				System.out.println("  Image cache");
+				for (String s:handles.imageHandleCache.keySet()) {
+					System.out.println("    " + s + " : " +handles.imageHandleCache.get(s) );
+				}
+				
+				System.out.println("  File handle cache");
+				for (long s:handles.fileHandleCache) {
+					System.out.println("    " + s );
+				}
+				
+			}*/
+		}
+		
+		/**
+		 * Create the empty cache for a new case
+		 * 
+		 * @param caseDbPointer 
+		 */
+		private static void createCaseHandleCache(long caseDbPointer) {
+			caseHandlesCache.put(caseDbPointer, new CaseHandles());
+		}
+		
+		/**
+		 * If there is one case open return its handle.
+		 * This is to support deprecated methods that don't have a case parameter.
+		 * 
+		 * @return the open case pointer
+		 * 
+		 * @throws TskCoreException If there are no cases open or if multiple cases are open
+		 */
+		private static long getDefaultCaseDbPointer() throws TskCoreException {
+			synchronized (cacheLock) {
+				print("Getting default case db pointer");
+				if (caseHandlesCache.keySet().size() > 1) {
+					throw new TskCoreException("Can not get default case handle with multiple open cases");
+				} else if (caseHandlesCache.keySet().isEmpty()) {
+					throw new TskCoreException("Can not get default case handle with no open case");
+				}
+
+				return (caseHandlesCache.keySet().iterator().next());
+			}
+		}
+			
+		/**
+		 * Gets the case handle cache for a given case.
+		 * 
+		 * @param caseDbPointer
+		 * 
+		 * @return the case handle cache
+		 */
+		private static CaseHandles getCaseHandles(long caseDbPointer) {
+			synchronized (cacheLock) {
+				return caseHandlesCache.get(caseDbPointer);
+			}
+		}
+		
+		/**
+		 * Removes the case handle cache for a given case.
+		 * 
+		 * @param caseDbPointer 
+		 */
+		private static void removeCaseHandlesCache(long caseDbPointer) {
+			synchronized (cacheLock) {
+				print("Removing case pointer " + caseDbPointer);
+				if (caseHandlesCache.containsKey(caseDbPointer)) {
+					caseHandlesCache.get(caseDbPointer).fsHandleCache.clear();
+					caseHandlesCache.get(caseDbPointer).imageHandleCache.clear();
+					caseHandlesCache.get(caseDbPointer).fileHandleCache.clear();
+					caseHandlesCache.get(caseDbPointer).fileSystemToFileHandles.clear();
+					caseHandlesCache.remove(caseDbPointer);
+				}
+			}
+		}
+		
+		/**
+		 * Searches all the open caches for an image handle.
+		 * 
+		 * @param imgHandle
+		 * 
+		 * @return true if the handle is found in any cache, false otherwise
+		 */
+		private static boolean isImageInAnyCache(long imgHandle) {
+			synchronized (cacheLock) {
+				print("Checking if image " + imgHandle + " is in any cache");
+				for (long caseDbPointer:caseHandlesCache.keySet()) {
+					if (caseHandlesCache.get(caseDbPointer).fsHandleCache.keySet().contains(imgHandle)) {
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+		
 		/**
 		 * Add a new file handle to the cache.
 		 *
 		 * @param fileHandle The new file handle.
 		 * @param fsHandle   The file system handle in which the file lives.
 		 */
-		private static void addFileHandle(long fileHandle, long fsHandle) {
+		private static void addFileHandle(long caseDbPointer, long fileHandle, long fsHandle) {
 			synchronized (cacheLock) {
+				print("Adding file handle " + fileHandle + " to fs " + fsHandle);
 				// Add to collection of open file handles.
-				fileHandleCache.add(fileHandle);
+				getCaseHandles(caseDbPointer).fileHandleCache.add(fileHandle);
 
 				// Add to map of file system to file handles.
-				if (fileSystemToFileHandles.containsKey(fsHandle)) {
-					fileSystemToFileHandles.get(fsHandle).add(fileHandle);
+				if (getCaseHandles(caseDbPointer).fileSystemToFileHandles.containsKey(fsHandle)) {
+					getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle).add(fileHandle);
 				} else {
-					fileSystemToFileHandles.put(fsHandle, new ArrayList<Long>(Arrays.asList(fileHandle)));
+					getCaseHandles(caseDbPointer).fileSystemToFileHandles.put(fsHandle, new ArrayList<Long>(Arrays.asList(fileHandle)));
 				}
 			}
 		}
 
-		private static void removeFileHandle(long fileHandle) {
+		/**
+		 * Removes a file handle from the cache for the given case
+		 * 
+		 * @param fileHandle
+		 * @param skCase     Can be null. If so, the first matching handle will be removed.
+		 */
+		private static void removeFileHandle(long fileHandle, SleuthkitCase skCase) {
 			synchronized (cacheLock) {
+				print("Removing file handle " + fileHandle);
 				// Remove from collection of open file handles.
-				fileHandleCache.remove(fileHandle);
+				if (skCase != null) {
+					getCaseHandles(skCase.getCaseHandle().caseDbPointer).fileHandleCache.remove(fileHandle);
+				} else {
+					// If we don't know what case the handle is from, delete the first one we find
+					for (long caseDbPointer:caseHandlesCache.keySet()) {
+						if (caseHandlesCache.get(caseDbPointer).fileHandleCache.contains(fileHandle)) {
+							caseHandlesCache.get(caseDbPointer).fileHandleCache.remove(fileHandle);
+							return;
+						}
+					}
+				}
 			}
 		}
 
+		/**
+		 * Searches all the open caches for a file handle.
+		 * 
+		 * @param fileHandle
+		 * 
+		 * @return true if the handle is found in any cache, false otherwise
+		 */
 		private static boolean isValidFileHandle(long fileHandle) {
 			synchronized (cacheLock) {
-				return fileHandleCache.contains(fileHandle);
+				print("Checking if " + fileHandle + " is a valid file handle");
+				for (long caseDbPointer:caseHandlesCache.keySet()) {
+					if (caseHandlesCache.get(caseDbPointer).fileHandleCache.contains(fileHandle)) {
+						return true;
+					}
+				}
+				return false;
 			}
 		}
 
-		private static void closeHandlesAndClearCache() throws TskCoreException {
+		private static void closeHandlesAndClearCache(long caseDbPointer) throws TskCoreException {
 			synchronized (cacheLock) {
 				/*
 				 * Close any cached file system handles.
 				 */
-				for (Map<Long, Long> imageToFsMap : fsHandleCache.values()) {
+				for (Map<Long, Long> imageToFsMap : getCaseHandles(caseDbPointer).fsHandleCache.values()) {
 					for (Long fsHandle : imageToFsMap.values()) {
 						// First close all open file handles for the file system.
-						for (Long fileHandle : fileSystemToFileHandles.get(fsHandle)) {
+						for (Long fileHandle : getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle)) {
 							closeFile(fileHandle);
 						}
 						// Then close the file system handle.
@@ -156,14 +295,11 @@ public class SleuthkitJNI {
 				/*
 				 * Close any cached image handles.
 				 */
-				for (Long imageHandle : imageHandleCache.values()) {
+				for (Long imageHandle : getCaseHandles(caseDbPointer).imageHandleCache.values()) {
 					closeImgNat(imageHandle);
 				}
 
-				fsHandleCache.clear();
-				imageHandleCache.clear();
-				fileHandleCache.clear();
-				fileSystemToFileHandles.clear();
+				removeCaseHandlesCache(caseDbPointer);
 			}
 
 		}
@@ -188,6 +324,7 @@ public class SleuthkitJNI {
 		 */
 		private CaseDbHandle(long caseDbPointer) {
 			this.caseDbPointer = caseDbPointer;
+			HandleCache.createCaseHandleCache(caseDbPointer);
 		}
 
 		/**
@@ -199,7 +336,7 @@ public class SleuthkitJNI {
 		void free() throws TskCoreException {
 			tskLock.writeLock().lock();
 			try {
-				HandleCache.closeHandlesAndClearCache();
+				HandleCache.closeHandlesAndClearCache(caseDbPointer);
 				SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 			} finally {
 				tskLock.writeLock().unlock();
@@ -326,7 +463,7 @@ public class SleuthkitJNI {
 							throw new TskCoreException("Add image process already started");
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
-							imageHandle = openImage(imageFilePaths, sectorSize, false);
+							imageHandle = openImage(imageFilePaths, sectorSize, false, caseDbPointer);
 							tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 						}
 						if (0 == tskAutoDbPointer) {
@@ -546,18 +683,22 @@ public class SleuthkitJNI {
 		startVerboseLoggingNat(logPath);
 	}
 
-	/**
+		/**
 	 * Open the image and return the image info pointer.
 	 *
 	 * @param imageFiles the paths to the images
+	 * @param skCase     the case this image belongs to
 	 *
 	 * @return the image info pointer
 	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openImage(String[] imageFiles) throws TskCoreException {
-		return openImage(imageFiles, 0, true);
+	public static long openImage(String[] imageFiles, SleuthkitCase skCase) throws TskCoreException {
+		if (skCase == null) {
+			throw new TskCoreException("SleuthkitCase can not be null");
+		}
+		return openImage(imageFiles, 0, true, skCase.getCaseHandle().caseDbPointer);
 	}
 
 	/**
@@ -566,16 +707,20 @@ public class SleuthkitJNI {
 	 *
 	 * @param imageFiles the paths to the images
 	 * @param sSize      the sector size (use '0' for autodetect)
+	 * @param skCase     the case this image belongs to
 	 *
 	 * @return the image info pointer
 	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openImage(String[] imageFiles, int sSize) throws TskCoreException {
-		return openImage(imageFiles, sSize, true);
+	public static long openImage(String[] imageFiles, int sSize, SleuthkitCase skCase) throws TskCoreException {
+		if (skCase == null) {
+			throw new TskCoreException("SleuthkitCase can not be null");
+		}
+		return openImage(imageFiles, sSize, true, skCase.getCaseHandle().caseDbPointer);
 	}
-
+	
 	/**
 	 * Open the image and return the image info pointer. This is a temporary
 	 * measure to allow ingest of multiple local disks on the same drive letter.
@@ -592,7 +737,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	private static long openImage(String[] imageFiles, int sSize, boolean useCache) throws TskCoreException {
+	private static long openImage(String[] imageFiles, int sSize, boolean useCache, Long caseDbPointer) throws TskCoreException {
 
 		getTSKReadLock();
 		try {
@@ -605,21 +750,25 @@ public class SleuthkitJNI {
 			final String imageKey = keyBuilder.toString();
 
 			synchronized (HandleCache.cacheLock) {
+				if (caseDbPointer == null) {
+					caseDbPointer = HandleCache.getDefaultCaseDbPointer();
+				}
+				
 				// If we're getting a fresh copy, remove any existing cache references
-				if (!useCache && HandleCache.imageHandleCache.containsKey(imageKey)) {
-					long tempImageHandle = HandleCache.imageHandleCache.get(imageKey);
-					HandleCache.fsHandleCache.remove(tempImageHandle);
-					HandleCache.imageHandleCache.remove(imageKey);
+				if (!useCache && HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.containsKey(imageKey)) {
+					long tempImageHandle = HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.get(imageKey);
+					HandleCache.getCaseHandles(caseDbPointer).fsHandleCache.remove(tempImageHandle);
+					HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.remove(imageKey);
 				}
 
-				if (useCache && HandleCache.imageHandleCache.containsKey(imageKey)) //get from cache
+				if (useCache && HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.containsKey(imageKey)) //get from cache
 				{
-					imageHandle = HandleCache.imageHandleCache.get(imageKey);
+					imageHandle = HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.get(imageKey);
 				} else {
 					//open new handle and cache it
 					imageHandle = openImgNat(imageFiles, imageFiles.length, sSize);
-					HandleCache.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
-					HandleCache.imageHandleCache.put(imageKey, imageHandle);
+					HandleCache.getCaseHandles(caseDbPointer).fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
+					HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.put(imageKey, imageHandle);
 				}
 			}
 			return imageHandle;
@@ -686,12 +835,18 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
+	public static long openFs(long imgHandle, long fsOffset, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			long fsHandle;
 			synchronized (HandleCache.cacheLock) {
-				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.fsHandleCache.get(imgHandle);
+				long caseDbPointer;
+				if (skCase == null) {
+					caseDbPointer = HandleCache.getDefaultCaseDbPointer();
+				} else {
+					caseDbPointer = skCase.getCaseHandle().caseDbPointer;
+				}
+				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseDbPointer).fsHandleCache.get(imgHandle);
 				if (imgOffSetToFsHandle == null) {
 					throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
 				}
@@ -717,13 +872,14 @@ public class SleuthkitJNI {
 	 * @param fileId   id of the file
 	 * @param attrType file attribute type to open
 	 * @param attrId   file attribute id to open
+	 * @param skCase   the case associated with this file
 	 *
 	 * @return pointer to a file structure in the sleuthkit
 	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openFile(long fsHandle, long fileId, TSK_FS_ATTR_TYPE_ENUM attrType, int attrId) throws TskCoreException {
+	public static long openFile(long fsHandle, long fileId, TSK_FS_ATTR_TYPE_ENUM attrType, int attrId, SleuthkitCase skCase) throws TskCoreException {
 		/*
 		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
 		 * short even though it is stored as uint16 in TSK. In extremely rare
@@ -738,7 +894,15 @@ public class SleuthkitJNI {
 		getTSKReadLock();
 		try {
 			long fileHandle = openFileNat(fsHandle, fileId, attrType.getValue(), convertSignedToUnsigned(attrId));
-			HandleCache.addFileHandle(fileHandle, fsHandle);
+			synchronized (HandleCache.cacheLock) {
+				long caseDbPointer;
+				if (skCase == null) {
+					caseDbPointer = HandleCache.getDefaultCaseDbPointer();
+				} else {
+					caseDbPointer = skCase.getCaseHandle().caseDbPointer;
+				}
+				HandleCache.addFileHandle(caseDbPointer, fileHandle, fsHandle);
+			}
 			return fileHandle;
 		} finally {
 			releaseTSKReadLock();
@@ -767,7 +931,7 @@ public class SleuthkitJNI {
 	 */
 	private static boolean imgHandleIsValid(long imgHandle) {
 		synchronized(HandleCache.cacheLock) {
-			return HandleCache.fsHandleCache.containsKey(imgHandle);
+			return HandleCache.isImageInAnyCache(imgHandle);
 		}
 	}
 
@@ -994,14 +1158,25 @@ public class SleuthkitJNI {
 	 * @param fileHandle pointer to file structure in sleuthkit
 	 */
 	public static void closeFile(long fileHandle) {
+		closeFile(fileHandle, null);
+	}
+	
+	/**
+	 * frees the fileHandle pointer
+	 *
+	 * @param fileHandle pointer to file structure in sleuthkit
+	 */
+	public static void closeFile(long fileHandle, SleuthkitCase skCase) {		
 		getTSKReadLock();
 		try {
-			if (!HandleCache.isValidFileHandle(fileHandle)) {
-				// File handle is not open so this is a no-op.
-				return;
+			synchronized (HandleCache.cacheLock) {
+				if (!HandleCache.isValidFileHandle(fileHandle)) {
+					// File handle is not open so this is a no-op.
+					return;
+				}
+				closeFileNat(fileHandle);
+				HandleCache.removeFileHandle(fileHandle, skCase);
 			}
-			closeFileNat(fileHandle);
-			HandleCache.removeFileHandle(fileHandle);
 		} finally {
 			releaseTSKReadLock();
 		}
@@ -1360,6 +1535,80 @@ public class SleuthkitJNI {
 	public static void closeFs(long fsHandle) {
 		//closeFsNat(fsHandle);
 	}
+	
+	/**
+	 * Open the image and return the image info pointer.
+	 *
+	 * @param imageFiles the paths to the images
+	 *
+	 * @return the image info pointer
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 * @deprecated Use the version with the SleuthkitCase argument
+	 */
+	@Deprecated
+	public static long openImage(String[] imageFiles) throws TskCoreException {
+		
+		return openImage(imageFiles, 0, true, null);
+	}
+
+	/**
+	 * Open the image with a specified sector size and return the image info
+	 * pointer.
+	 *
+	 * @param imageFiles the paths to the images
+	 * @param sSize      the sector size (use '0' for autodetect)
+	 *
+	 * @return the image info pointer
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 * @deprecated Use the version with the SleuthkitCase argument
+	 */
+	@Deprecated
+	public static long openImage(String[] imageFiles, int sSize) throws TskCoreException {
+		return openImage(imageFiles, sSize, true, null);
+	}
+	
+		
+	/**
+	 * Get file system Handle Opened handle is cached (transparently) so it does
+	 * not need be reopened next time for the duration of the application
+	 *
+	 * @param imgHandle pointer to imgHandle in sleuthkit
+	 * @param fsOffset  byte offset to the file system
+	 *
+	 * @return pointer to a fsHandle structure in the sleuthkit
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 * @deprecated Use the version with the SleuthkitCase argument
+	 */
+	@Deprecated
+	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
+		return openFs(imgHandle, fsOffset, null);
+	}	
+	
+	/**
+	 * Get file Handle
+	 *
+	 * @param fsHandle fsHandle pointer in the sleuthkit
+	 * @param fileId   id of the file
+	 * @param attrType file attribute type to open
+	 * @param attrId   file attribute id to open
+	 *
+	 * @return pointer to a file structure in the sleuthkit
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 * @deprecated Use the version with the SleuthkitCase argument
+	 */
+	@Deprecated
+	public static long openFile(long fsHandle, long fileId, TSK_FS_ATTR_TYPE_ENUM attrType, int attrId) throws TskCoreException {
+		return openFile(fsHandle, fileId, attrType, attrId, null);
+	}	
+	
 
 	private static native String getVersionNat();
 
