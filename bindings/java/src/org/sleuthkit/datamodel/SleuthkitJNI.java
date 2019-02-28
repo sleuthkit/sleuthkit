@@ -91,7 +91,7 @@ public class SleuthkitJNI {
 		private final Map<Long, List<Long>> fileSystemToFileHandles = new HashMap<>();
 		
 		private CaseHandles() {
-			
+			// Nothing to do here
 		}
 	}
 	
@@ -657,7 +657,7 @@ public class SleuthkitJNI {
 		startVerboseLoggingNat(logPath);
 	}
 
-		/**
+	/**
 	 * Open the image and return the image info pointer.
 	 *
 	 * @param imageFiles the paths to the images
