@@ -1193,14 +1193,14 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Indicates source of a file/object
 		 */
-		TSK_SOURCE (51, "TSK_SOURCE",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskSourceArtifact.text")),
+		TSK_DOWNLOAD_SOURCE (51, "TSK_DOWNLOAD_SOURCE",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDownloadSource.text")),
 		
 		/**
 		 * Indicates web cache data
 		 */
 		TSK_WEB_CACHE (52, "TSK_WEB_CACHE",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebCacheArtifact.text"));
+				bundle.getString("BlackboardArtifact.tskWebCache.text"));
 		
 		private final String label;
 		private final int typeId;
