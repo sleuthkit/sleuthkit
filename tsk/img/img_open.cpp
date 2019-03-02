@@ -19,7 +19,6 @@
 #include "raw.h"
 
 #if HAVE_LIBAFFLIB
-typedef int bool;
 #include "aff.h"
 #endif
 
