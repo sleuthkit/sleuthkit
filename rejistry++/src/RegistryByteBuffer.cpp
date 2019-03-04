@@ -85,9 +85,13 @@ namespace Rejistry {
         return getASCIIString(0, _byteBuffer->limit());
     }
 
-    /**
-    * Throws exception if offset or length is too large.
-    */
+	/**
+	* Reads data from the registry and returns the data as a string
+	* as it is represented in the registry, including Null characters.
+	*
+	* @param offset: Offset where data begins
+	* @param length: Number of bytes to read
+	*/
     std::string RegistryByteBuffer::getASCIIString(const uint32_t offset, const uint32_t length) const {
         if (length == 0) {
             return "";
@@ -102,59 +106,66 @@ namespace Rejistry {
         return getUTF16String(0, _byteBuffer->limit());
     }
 
+	/**
+	* Reads data from the registry and returns a wstring of the data
+	* as it is represented in the registry, including Null characters.
+	*
+	* @param offset: Offset where data begins
+	* @param length: Number of bytes to read
+	*/
     std::wstring RegistryByteBuffer::getUTF16String(const uint32_t offset, const uint32_t length) const {
-        if (length == 0) {
-            return L"";
-        }
-
-        ByteBuffer::ByteArray &data = getData(offset, length);
-        // If the size of the array is not a multiple of 2 it is
-        // likely to not be UTF16 encoded. The most common case is that
-        // the string is simply missing a terminating null so we add it.
-        if (data.size() % 2 != 0) {
-            data.push_back('\0');
-        }
-
-        // Find UTF16 null terminator.
-        uint32_t nullPos = 0;
-        for (; nullPos < data.size(); nullPos += 2) {
-            if (data[nullPos] == '\0' && data[nullPos+1] == '\0') {
-                break;
-            }
-        }
-
-		// empty string
-        if (nullPos == 0) {
-            return L"";
-        }
-		// NULL Pointer not found
-		else if (nullPos == data.size()) {
-			// @@@ BC: I'm not sure if this is correct.  But, we got exceptions if
-			// we kept it past the buffer.  
-			// Are these always supposed to be NULL terminated, in which case this is an error?
-			nullPos = data.size() - 1;
+		if (length == 0) {
+			return L"";
 		}
 
-        std::wstring result;
+		ByteBuffer::ByteArray &data = getData(offset, length);
+		// There are cases where an odd number of bytes are returned which 
+		// leads to errors during conversion. See CT-2917 test12 for more details. 
+		if (data.size() % 2 != 0) {
+			data.push_back('\0');
+		}
 
-        try {
-            result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[nullPos]));
-        }
-        catch (std::exception&)
-        {
-            throw RegistryParseException("Error: Failed to convert string");
-        }
+		// Empty value data (single UTF16 null char)
+		if (data.size() == 2 && data[0] == '\0' && data[1] == '\0') {
+			return L"";
+		}
 
-        return result;
-    }
+		// We do this so we can reference the last character in the string
+		// data.size() -2. if we didn't add a char to the string then returned
+		// string would be missing the last character. 
+		data.push_back('\0');
+		data.push_back('\0');
+
+		// We are unsure how from_bytes() works. Microsofts docs seem to indicate that the second pointer
+		// should point to the last character which will be included in the conversion.[1] However, another
+		// reference indicates that the data pointed to by the second pointer will not be included, which is 
+		// what our testing has shown.[2] We previously had the second pointer point to data.size() but there were
+		// concerns that we were pointing to memory we did not own. As a result, we add a char to the end of every
+		// string so we can use data.size() - 2 and still get the original string back.  
+		// 1. https://docs.microsoft.com/en-us/cpp/standard-library/wstring-convert-class?view=vs-2017#from_bytes
+		// 2. http://www.cplusplus.com/reference/locale/wstring_convert/from_bytes/
+		std::wstring result;
+		try {
+			result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[data.size()-2]));
+		}
+		catch (std::exception&)
+		{
+			throw RegistryParseException("Error: Failed to convert string");
+		}
+
+		return result;
+	}
 
     ByteBuffer::ByteArray RegistryByteBuffer::getData() const {
         return getData(0, _byteBuffer->limit());
     }
 
-    /**
-     * Throws exception if offset and length are too large.
-     */
+	/**
+	* Reads data from the registry based off of the given offset and length of data to read.
+	*
+	* @param offset: Offset where data begins
+	* @param length: Number of bytes to read
+	*/
     ByteBuffer::ByteArray RegistryByteBuffer::getData(const uint32_t offset, const uint32_t length) const {
         uint32_t savedPosition = _byteBuffer->position();
         _byteBuffer->position(offset);
@@ -169,6 +180,12 @@ namespace Rejistry {
         return getStringList(0, _byteBuffer->limit());
     }
 
+	/**
+	* Reads data from the registry based off of the given offset and length of data to read.
+	*
+	* @param offset: Offset where data begins
+	* @param length: Number of bytes to read
+	*/
     std::vector<std::wstring> RegistryByteBuffer::getStringList(const uint32_t offset, const uint32_t length) const {
         std::vector<std::wstring> stringList;
         ByteBuffer::ByteArray data = getData(offset, length);
