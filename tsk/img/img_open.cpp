@@ -122,7 +122,7 @@ tsk_img_open(int num_img,
          */
         TSK_IMG_INFO *img_set = NULL;
 #if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI
-        char *set = NULL;
+        const char *set = NULL;
 #endif
 
         // we rely on tsk_errno, so make sure it is 0
