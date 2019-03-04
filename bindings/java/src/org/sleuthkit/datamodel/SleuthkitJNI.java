@@ -69,8 +69,11 @@ public class SleuthkitJNI {
 	private SleuthkitJNI() {
 	}
 
+	/**
+	 * Utility class to hold the handles for a single case.
+	 */
 	private static class CaseHandles {
-				/*
+		/*
 		 * A SleuthKit image handle cache implemented as a mappng of
 		 * concatenated image file paths to image handles.
 		 */
@@ -705,6 +708,7 @@ public class SleuthkitJNI {
 	 * @param sSize      the sector size (use '0' for autodetect)
 	 * @param useCache   true if the image handle cache should be used, false to
 	 *                   always go to TSK to open a fresh copy
+	 * @param caseDbPointer The caseDbPointer for this case. Can be null to support deprecated methods.
 	 *
 	 * @return the image info pointer
 	 *
@@ -724,25 +728,26 @@ public class SleuthkitJNI {
 			final String imageKey = keyBuilder.toString();
 
 			synchronized (HandleCache.cacheLock) {
-				if (caseDbPointer == null) {
-					caseDbPointer = HandleCache.getDefaultCaseDbPointer();
+				Long nonNullCaseDbPointer = caseDbPointer;
+				if (nonNullCaseDbPointer == null) {
+					nonNullCaseDbPointer = HandleCache.getDefaultCaseDbPointer();
 				}
 				
 				// If we're getting a fresh copy, remove any existing cache references
-				if (!useCache && HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.containsKey(imageKey)) {
-					long tempImageHandle = HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.get(imageKey);
-					HandleCache.getCaseHandles(caseDbPointer).fsHandleCache.remove(tempImageHandle);
-					HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.remove(imageKey);
+				if (!useCache && HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.containsKey(imageKey)) {
+					long tempImageHandle = HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.get(imageKey);
+					HandleCache.getCaseHandles(nonNullCaseDbPointer).fsHandleCache.remove(tempImageHandle);
+					HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.remove(imageKey);
 				}
 
-				if (useCache && HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.containsKey(imageKey)) //get from cache
+				if (useCache && HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.containsKey(imageKey)) //get from cache
 				{
-					imageHandle = HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.get(imageKey);
+					imageHandle = HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.get(imageKey);
 				} else {
 					//open new handle and cache it
 					imageHandle = openImgNat(imageFiles, imageFiles.length, sSize);
-					HandleCache.getCaseHandles(caseDbPointer).fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
-					HandleCache.getCaseHandles(caseDbPointer).imageHandleCache.put(imageKey, imageHandle);
+					HandleCache.getCaseHandles(nonNullCaseDbPointer).fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
+					HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.put(imageKey, imageHandle);
 				}
 			}
 			return imageHandle;
