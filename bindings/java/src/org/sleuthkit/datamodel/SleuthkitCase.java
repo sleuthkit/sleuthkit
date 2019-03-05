@@ -6302,14 +6302,13 @@ public class SleuthkitCase {
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		long newCacheKey = 0; // Used to roll back cache if transaction is rolled back.
 		try {
 			transaction = beginTransaction();
 			transaction.acquireSingleUserCaseWriteLock();
 			CaseDbConnection connection = transaction.getConnection();
 
 			/*
-			 * Insert a row for the carved file into the tsk_objects table:
+			 * Insert a row for the layout file into the tsk_objects table:
 			 * INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			 */
 			long newFileId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
@@ -6408,9 +6407,6 @@ public class SleuthkitCase {
 					transaction.rollback();
 				} catch (TskCoreException ex2) {
 					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
-				}
-				if (0 != newCacheKey) {
-					rootIdsToCarvedFileDirs.remove(newCacheKey);
 				}
 			}
 		}
