@@ -176,7 +176,7 @@ public abstract class FsContent extends AbstractFile {
 		if (fileHandle == 0) {
 			synchronized (this) {
 				if (fileHandle == 0) {
-					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId, getSleuthkitCase());
 				}
 			}
 		}
