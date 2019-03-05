@@ -567,9 +567,9 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.c" />
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp" />
     <ClCompile Include="..\..\tsk\img\aff.c" />
-    <ClCompile Include="..\..\tsk\img\ewf.c" />
+    <ClCompile Include="..\..\tsk\img\ewf.cpp" />
     <ClCompile Include="..\..\tsk\img\img_io.c" />
-    <ClCompile Include="..\..\tsk\img\img_open.c" />
+    <ClCompile Include="..\..\tsk\img\img_open.cpp" />
     <ClCompile Include="..\..\tsk\img\img_types.c" />
     <ClCompile Include="..\..\tsk\img\mult_files.c" />
     <ClCompile Include="..\..\tsk\img\raw.c" />
