@@ -899,11 +899,20 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         free(stmt);
         return 1;
     }
+    char *collectionDetails_sql = PQescapeLiteral(conn, collectionDetails.c_str(), strlen(collectionDetails.c_str()));
+    if (!isEscapedStringValid(collectionDetails_sql, collectionDetails.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
+        PQfreemem(deviceId_sql);
+        PQfreemem(timeZone_sql);
+        PQfreemem(collectionDetails_sql);
+        free(stmt);
+        return 1;
+    }
     snprintf(stmt, 10242048, "INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (%" PRId64 ", %s, %s, %s);",
-        objId, deviceId_sql, timeZone_sql, collectionDetails.c_str());
+        objId, deviceId_sql, timeZone_sql, collectionDetails_sql);
     ret = attempt_exec(stmt, "Error adding device id to data_source_info table: %s\n");
     PQfreemem(deviceId_sql);
     PQfreemem(timeZone_sql);
+    PQfreemem(collectionDetails_sql);
     free(stmt);
     return ret;
 }
