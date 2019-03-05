@@ -36,7 +36,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.ObjectUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
@@ -81,9 +80,10 @@ public final class TimelineManager {
 	private static final ImmutableList<EventType> PREDEFINED_EVENT_TYPES
 			= new ImmutableList.Builder<EventType>()
 					.add(EventType.CUSTOM_TYPES)
-					.addAll(EventType.getWebActivityTypes())
-					.addAll(EventType.getMiscTypes())
-					.add(EventType.OTHER).build();
+					.addAll(EventType.WEB_ACTIVITY.getSubTypes())
+					.addAll(EventType.MISC_TYPES.getSubTypes())
+					.addAll(EventType.CUSTOM_TYPES.getSubTypes())
+					.build();
 
 	private final SleuthkitCase sleuthkitCase;
 

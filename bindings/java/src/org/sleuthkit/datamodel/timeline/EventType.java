@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,6 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
-import org.sleuthkit.datamodel.DescriptionLoD;
 import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
 import static org.sleuthkit.datamodel.timeline.EventType.RECENT_DOCUMENTS;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.BASE_TYPE;
@@ -50,6 +49,8 @@ import org.sleuthkit.datamodel.timeline.TimelineEvent.EventDescription;
  * subtypes, allowing events to be organized in a type hierarchy.
  */
 public interface EventType extends Comparable<EventType> {
+
+	 
 
 	String getDisplayName();
 
@@ -293,9 +294,10 @@ public interface EventType extends Comparable<EventType> {
 			BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
-			return ImmutableSortedSet.of(OTHER);
+			return ImmutableSortedSet.of(OTHER, USER_CREATED);
 		}
 	};
+
 
 	//generic catch all other event
 	ArtifactEventType OTHER = new SingleDescriptionArtifactEventType(23,
@@ -320,6 +322,15 @@ public interface EventType extends Comparable<EventType> {
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
+		//generic catch all other event
+	ArtifactEventType USER_CREATED = new SingleDescriptionArtifactEventType(26,
+			getBundle().getString("CustomTypes.userCreated.name"),
+			CUSTOM_TYPES,
+			new BlackboardArtifact.Type(TSK_TL_EVENT),
+			new BlackboardAttribute.Type(TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_DESCRIPTION));
+	
+	
 	static SortedSet<? extends EventType> getBaseTypes() {
 		return ROOT_EVENT_TYPE.getSubTypes();
 	}
