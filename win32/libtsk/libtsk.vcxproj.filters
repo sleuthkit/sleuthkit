@@ -225,13 +225,7 @@
     <ClCompile Include="..\..\tsk\img\aff.c">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\ewf.c">
-      <Filter>img</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_io.c">
-      <Filter>img</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\img\img_open.c">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_types.c">
@@ -326,6 +320,12 @@
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\lzvn.c">
       <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\ewf.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\img_open.cpp">
+      <Filter>img</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

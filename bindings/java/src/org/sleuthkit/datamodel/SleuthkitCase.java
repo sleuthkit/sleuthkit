@@ -7952,6 +7952,10 @@ public class SleuthkitCase {
 	CaseDbConnection getConnection() throws TskCoreException {
 		return connections.getConnection();
 	}
+	
+	SleuthkitJNI.CaseDbHandle getCaseHandle() {
+		return this.caseHandle;
+	}
 
 	@Override
 	protected void finalize() throws Throwable {
