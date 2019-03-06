@@ -1191,10 +1191,21 @@ public class BlackboardArtifact implements Content {
 		TSK_WEB_FORM_ADDRESS(50, "TSK_WEB_FORM_ADDRESSES ", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
 		/**
+		 * Indicates source of a file/object
+		 */
+		TSK_DOWNLOAD_SOURCE(51, "TSK_DOWNLOAD_SOURCE", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDownloadSource.text")),
+		/**
+		 * Indicates web cache data
+		 */
+		TSK_WEB_CACHE(52, "TSK_WEB_CACHE", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWebCache.text")),
+		/**
 		 * A generic (timeline) event.
 		 */
-		TSK_TL_EVENT(51, "TSK_TL_EVENT", //NON-NLS
+		TSK_TL_EVENT(53, "TSK_TL_EVENT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
+
 		private final String label;
 		private final int typeId;
 		private final String displayName;
