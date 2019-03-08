@@ -6,12 +6,38 @@
 #include <openssl/sha.h>
 
 #include <algorithm>
-#include <string>
 #include <cstring>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
 
 // This should initialize and cleanup openssl
 static struct _openssl_init {
-  _openssl_init() noexcept { OpenSSL_add_all_algorithms(); }
+  _openssl_init() noexcept {
+    OpenSSL_add_all_algorithms();
+
+// OpenSSL 1.1.0 removed the need for threading callbacks
+#if OPENSSL_VERSION_NUMBER < 0x10100000 && defined(TSK_MULTITHREAD_LIB)
+    CRYPTO_set_locking_callback([](int mode, int n, const char *, int) {
+      static auto mutexes = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
+
+      auto &mutex = mutexes[n];
+
+      if (mode & CRYPTO_LOCK) {
+        mutex.lock();
+      } else {
+        mutex.unlock();
+      }
+    });
+
+    CRYPTO_THREADID_set_callback([](CRYPTO_THREADID *id) {
+      thread_local const auto thread_id =
+          std::hash<std::thread::id>()(std::this_thread::get_id());
+      CRYPTO_THREADID_set_numeric(id, thread_id);
+    });
+#endif
+  }
 
   ~_openssl_init() noexcept { EVP_cleanup(); }
 } openssl_init{};

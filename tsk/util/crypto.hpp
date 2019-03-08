@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tsk/tsk_incs.h>
+
 #include <openssl/evp.h>
 
 #include <memory>
