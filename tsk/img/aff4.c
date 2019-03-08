@@ -21,31 +21,44 @@
 
 #include <string.h>
 
+#ifndef HAVE_STRNLEN
+static size_t strnlen(const char* s, size_t maxlen) {
+  const char* z = memchr(s, 0, maxlen);
+  return z ? z-s : n;
+}
+#endif
+
 static char* get_messages(AFF4_Message* msg) {
-    // find total message length
-    size_t len = 0;
-    for (const AFF4_Message* m = msg; m; m = m->next) {
-        len += strlen(m->message) + 1;
+    // count the messages
+    size_t count = 0;
+    for (const AFF4_Message* m = msg; m; m = m->next, ++count);
+
+    if (count == 0) {
+      return NULL;
     }
 
-    if (len == 0) {
-        return NULL;
-    }
+    // get message lengths and total length
+    const size_t maxlen = 1024;
+    size_t* lengths = tsk_malloc(count * sizeof(size_t));
+    size_t total_len = 0;
 
-    char* ret = (char*) tsk_malloc(len);
+    int i = 0;
+    for (const AFF4_Message* m = msg; m; m = m->next, ++i) {
+        total_len += lengths[i] = strnlen(m->message, maxlen);
+    }
 
     // copy the messages to one string
+    char* ret = (char*) tsk_malloc(total_len + count);
     char* p = ret;
-    size_t mlen;
-
-    for (const AFF4_Message* m = msg; m; m = m->next) {
-        mlen = strlen(m->message);
-        strcpy(p, m->message);
-        p += mlen;
+    i = 0;
+    for (const AFF4_Message* m = msg; m; m = m->next, ++i) {
+        strncpy(p, m->message, lengths[i]);
+        p += lengths[i];
         *p++ = '\n';
     }
-    ret[len-1] = '\0';
+    *(p-1) = '\0';
 
+    free(lengths);
     return ret;
 }
 
