@@ -32,18 +32,19 @@ static char* get_messages(AFF4_Message* msg) {
         return NULL;
     }
 
-    char* ret = (char*) tsk_malloc(len + 1);
+    char* ret = (char*) tsk_malloc(len);
 
     // copy the messages to one string
     char* p = ret;
     size_t mlen;
+
     for (const AFF4_Message* m = msg; m; m = m->next) {
-        *p = '\n';
         mlen = strlen(m->message);
-        strcpy(++p, m->message);
+        strcpy(p, m->message);
         p += mlen;
+        *p++ = '\n';
     }
-    ret[len] = '\0';
+    ret[len-1] = '\0';
 
     return ret;
 }
