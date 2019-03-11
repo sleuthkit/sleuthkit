@@ -5205,7 +5205,7 @@ public class SleuthkitCase {
 			AbstractFile parent = getAbstractFileById(parentId, connection);
 			String parentPath;
 			if (parent != null) {
-				if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+				if ((! hasParent(parent, transaction)) && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
 					parentPath = "/";
 				} else {
 					parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
@@ -6336,7 +6336,7 @@ public class SleuthkitCase {
 			String parentPath;
 
 			if (parent instanceof AbstractFile) {
-				if (parent.getParent() == null && ((AbstractFile)parent).getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+				if ((! hasParent(parent, transaction)) && ((AbstractFile)parent).getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
 					parentPath = "/";
 				} else {
 					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
@@ -6374,6 +6374,42 @@ public class SleuthkitCase {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
 		} finally {
 			closeStatement(queryStatement);
+			// NOTE: write lock will be released by transaction
+		}
+	}
+	
+	/**
+	 * Check if the given content has a parent object.
+	 * 
+	 * @param content
+	 * @param transaction
+	 * 
+	 * @return true if it has a parent in the tsk_objects table, false otherwise
+	 * 
+	 * @throws TskCoreException 
+	 */
+	private boolean hasParent(Content content, CaseDbTransaction transaction) throws TskCoreException {
+		
+		CaseDbConnection connection = transaction.getConnection();
+		transaction.acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		
+		try {
+			String query = String.format("SELECT par_obj_id FROM tsk_objects WHERE obj_id = %s;", content.getId());
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery(query);
+			if (resultSet.next()) {
+				long parentId = resultSet.getLong("par_obj_id");
+				return (parentId != 0);
+			} else {
+				throw new TskCoreException(String.format("tsk_objects table is corrupt, SQL query returned no result: %s", query));
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Failed to lookup parent of content (%s) with id %d", content.getName(), content.getId()), ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
 			// NOTE: write lock will be released by transaction
 		}
 	}
