@@ -19,7 +19,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * outputFileName);
+    TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR * outputFileName);
+    TSK_RETVAL_ENUM tsk_img_writer_finish(TSK_IMG_INFO *img_info);
 
     enum IMG_WRITER_BLOCK_STATUS_ENUM {
         IMG_WRITER_BLOCK_STATUS_UNALLOC = 0,

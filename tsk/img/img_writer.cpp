@@ -601,7 +601,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
  * @param img_info        the TSK_IMG_INFO object
  * @param outputFileName  path to the VHD
  */
-TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR * outputFileName) {
+TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *outputFileName) {
 #ifndef TSK_WIN32
     return TSK_ERR;
 #else
@@ -617,6 +617,13 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("tsk_img_writer_create: tsk cache length is larger than the block size");
+        return TSK_ERR;
+    }
+
+    if (img_info->itype != TSK_IMG_TYPE_RAW) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("tsk_img_writer_create: image writer can be used on only raw images");
         return TSK_ERR;
     }
 
@@ -734,4 +741,25 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
 #endif
 }
 
+/**
+ * Read the remaining sectors into the VHD file. 
+ */
+TSK_RETVAL_ENUM tsk_img_writer_finish(TSK_IMG_INFO *img_info) {
+    if (img_info->itype != TSK_IMG_TYPE_RAW) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_writer_finish: image writer can be used on only raw images");
+        return TSK_ERR;
+    }
+
+    IMG_RAW_INFO* raw_info = (IMG_RAW_INFO *)img_info;
+    if (raw_info->img_writer == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_writer_finish: image writer not set");
+        return TSK_ERR;
+    }
+
+    return raw_info->img_writer->finish_image(raw_info->img_writer);
+}
 
