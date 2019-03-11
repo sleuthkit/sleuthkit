@@ -144,8 +144,8 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Get the Content obj id of the file (which could be a data source) this
-	 * event is derived from.
+	 * Get the Content obj id of the "file" (which could be a data source or
+	 * other non AbstractFile ContentS) this event is derived from.
 	 *
 	 * @return the object id.
 	 */

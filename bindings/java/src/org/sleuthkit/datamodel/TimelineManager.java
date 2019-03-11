@@ -654,12 +654,8 @@ public final class TimelineManager {
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (eventPayload.getTime() > 0) {
 			long sourceFileObjId = artifact.getObjectID();
-			AbstractFile file = sleuthkitCase.getAbstractFileById(sourceFileObjId);
-			boolean hasHashHits = false;
-			// file will be null if source was data source or some non-file
-			if (file != null) {
-				hasHashHits = file.getHashSetNames().isEmpty() == false;
-			}
+			Content sourceFile = sleuthkitCase.getContentById(sourceFileObjId);
+			boolean hasHashHits = sourceFile.getHashSetNames().isEmpty() == false;
 
 			return Optional.of(addEvent(eventPayload.getTime(),
 					eventType,
@@ -732,7 +728,7 @@ public final class TimelineManager {
 				long eventID = generatedKeys.getLong(1);
 				singleEvent = new TimelineEvent(eventID, datasourceObjID,
 						fileObjID, artifactID, time, type,
-						 TimelineEvent.EventDescription.create(fullDescription, medDescription, shortDescription),
+						TimelineEvent.EventDescription.create(fullDescription, medDescription, shortDescription),
 						hashHit, tagged);
 			}
 		} catch (SQLException ex) {
