@@ -204,11 +204,10 @@ main(int argc, char **argv1)
 		exit(1);
 	}
 
-	const char *str = tsk_img_type_toname(img->itype);
-	tsk_printf("%s\n", str);
-	img->imgstat(img, stdout);
-
-//	tsk_img_writer_finish();
+	if (tsk_img_writer_finish(img) == TSK_ERR) {
+		fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+		// not exiting, should call tsk_img_close.
+	}
 
 	tsk_img_close(img);
     exit(0);
