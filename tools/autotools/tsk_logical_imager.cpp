@@ -185,13 +185,30 @@ main(int argc, char **argv1)
 		exit(1);
 	}
 
-//	if (tsk_img_writer_create(img, directory_path)) {
-//
-//	}
+	string outputFileName = directory_path + "/sparse_image.vhd";
+	int ilen = outputFileName.size();
+	TCHAR *outputFileNameW = (TCHAR *)tsk_malloc((ilen + 1) * sizeof(TCHAR));
+	if (outputFileNameW == NULL) {
+		fprintf(stderr, "tsk_malloc returns NULL\n");
+		exit(1);
+	}
+	UTF8 *utf8 = (UTF8 *)outputFileName.c_str();
+	UTF16 *utf16 = (UTF16 *)outputFileNameW;
+
+	int retval =
+		tsk_UTF8toUTF16((const UTF8 **)&utf8, &utf8[ilen],
+			&utf16, &utf16[ilen], TSKlenientConversion);
+
+	if (tsk_img_writer_create(img, outputFileNameW) == TSK_ERR) {
+		fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
+		exit(1);
+	}
 
 	const char *str = tsk_img_type_toname(img->itype);
 	tsk_printf("%s\n", str);
 	img->imgstat(img, stdout);
+
+//	tsk_img_writer_finish();
 
 	tsk_img_close(img);
     exit(0);
