@@ -15,7 +15,7 @@
 #ifndef HAVE_STRNLEN
 size_t
 strnlen(const char* s, size_t maxlen) {
-  const char* z = memchr(s, 0, maxlen);
+  const char* const z = memchr(s, 0, maxlen);
   return z ? z-s : n;
 }
 #endif
