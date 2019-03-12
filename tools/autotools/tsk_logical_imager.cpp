@@ -9,8 +9,11 @@
  **
  */
 
+#include <direct.h>
+#include <winsock2.h>
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
+#include "tsk/img/img_writer.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;
@@ -20,175 +23,176 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-ahkvV] [-i imgtype] [-b dev_sector_size] [-d database] [-z ZONE] image [image]\n"),
+        ("usage: %s [-i imgtype] \n"),
         progname);
-    tsk_fprintf(stderr, "\t-a: Add image to existing database, instead of creating a new one (requires -d to specify database)\n");
-    tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
-    tsk_fprintf(stderr, "\t-h: Calculate hash values for the files\n");
     tsk_fprintf(stderr,
-        "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
-    tsk_fprintf(stderr,
-        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
-    tsk_fprintf(stderr, "\t-d database: Path for the database (default is the same directory as the image, with name derived from image name)\n");
-    tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
-    tsk_fprintf(stderr, "\t-V: Print version\n");
-    tsk_fprintf(stderr, "\t-z: Time zone of original machine (i.e. EST5EDT or GMT)\n");
-    
+        "\t-i imgPath: The image file\n");
+	tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
+	tsk_fprintf(stderr, "\t-V: Print version\n");
     exit(1);
 }
 
+// is Windows XP or older?
+bool isWinXPOrOlder() {
+	OSVERSIONINFO	vi;
+	memset(&vi, 0, sizeof vi);
+	vi.dwOSVersionInfoSize = sizeof vi;
+	GetVersionEx(&vi);
+	unsigned int m_winntVerMajor = vi.dwMajorVersion;
+	unsigned int m_winntVerMinor = vi.dwMinorVersion;
 
+	return((m_winntVerMajor <= 5));
+}
+
+static BOOL IsProcessElevated() {
+	static BOOL fRet = FALSE;
+	HANDLE hToken = NULL;
+
+	// the below logic doesn't work on XP, so lie and say
+	// yes.  It will eventually fail with an uglier message
+	// is Windows XP or older?
+	if (isWinXPOrOlder()) {
+		return TRUE;
+	}
+
+	if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+		TOKEN_ELEVATION Elevation;
+		DWORD cbSize = sizeof(TOKEN_ELEVATION);
+		if (GetTokenInformation(hToken, TokenElevation, &Elevation, sizeof(Elevation), &cbSize)) {
+			fRet = Elevation.TokenIsElevated;
+		}
+	}
+	if (hToken) {
+		CloseHandle(hToken);
+	}
+	return fRet;
+}
+
+int getLocalHost(string &a_hostName) {
+
+	// Initialize Winsock
+	WSADATA wsaData;
+	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != 0) {
+		fprintf(stderr, "WSAStartup failed with error = %d\n", iResult);
+		return -1;
+	}
+
+	char buf[MAX_PATH];
+	if (gethostname(buf, sizeof(buf)) == SOCKET_ERROR) {
+		fprintf(stderr, "Error getting host name. Error =  %d\n", WSAGetLastError());
+		return -1;
+	}
+	a_hostName = string(buf);
+
+	WSACleanup();
+	return 0;
+}
+
+int createDirectory(string &directoryPathname) {
+	time_t now;
+	struct tm localTime;
+
+	time(&now);
+	gmtime_s(&localTime, &now);
+
+	char timeStr[32];
+	strftime(timeStr, sizeof timeStr, "%Y%m%d_%H_%M_%S", &localTime);
+
+	string outDirName;
+	string hostName;
+	if (0 == getLocalHost(hostName)) {
+		outDirName = "Logical_Imager_" + hostName + "_" + timeStr;
+	}
+
+	struct stat st;
+	if (stat(outDirName.c_str(), &st) != 0)
+	{
+		int rc = _mkdir(outDirName.c_str());
+		if (rc != 0) {
+			fprintf(stderr, "Failed to create output folder = %s Error: %d\n", outDirName.c_str(), rc);
+			return -1;
+		}
+	}
+	directoryPathname = outDirName;
+	return 0;
+}
 
 int
 main(int argc, char **argv1)
 {
-    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+	TSK_IMG_INFO *img;
+	TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
-    int ch;
-    TSK_TCHAR **argv;
-    unsigned int ssize = 0;
-    TSK_TCHAR *cp;
-    TSK_TCHAR *database = NULL;
-    
-    bool blkMapFlag = true;   // true if we are going to write the block map
-    bool createDbFlag = true; // true if we are going to create a new database
-    bool calcHash = false;
+	int ch;
+	TSK_TCHAR **argv;
+	unsigned int ssize = 0;
+	TSK_TCHAR *imgPath[1];
+	BOOL iFlagUsed = FALSE;
 
 #ifdef TSK_WIN32
-    // On Windows, get the wide arguments (mingw doesn't support wmain)
-    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
-        exit(1);
-    }
+	// On Windows, get the wide arguments (mingw doesn't support wmain)
+	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	if (argv == NULL) {
+		fprintf(stderr, "Error getting wide arguments\n");
+		exit(1);
+	}
 #else
-    argv = (TSK_TCHAR **) argv1;
+	argv = (TSK_TCHAR **)argv1;
 #endif
-	printf("Environment variable TSK_HOME=%s\n", getenv("TSK_HOME"));
-    progname = argv[0];
-    setlocale(LC_ALL, "");
+	progname = argv[0];
+	setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:d:hi:kvVz:"))) > 0) {
-        switch (ch) {
-        case _TSK_T('?'):
-        default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
-                argv[OPTIND]);
-            usage();
+	while ((ch = GETOPT(argc, argv, _TSK_T("i:vV"))) > 0) {
+		switch (ch) {
+		case _TSK_T('?'):
+		default:
+			TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+				argv[OPTIND]);
+			usage();
 
-        case _TSK_T('a'):
-            createDbFlag = false;
-            break;
+		case _TSK_T('v'):
+			tsk_verbose++;
+			break;
 
-        case _TSK_T('b'):
-            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || ssize < 1) {
-                TFPRINTF(stderr,
-                    _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
-                    OPTARG);
-                usage();
-            }
-            break;
+		case _TSK_T('V'):
+			tsk_version_print(stdout);
+			exit(0);
 
-        case _TSK_T('i'):
-            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_img_type_print(stderr);
-                exit(1);
-            }
-            imgtype = tsk_img_type_toid(OPTARG);
-            if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
-                    OPTARG);
-                usage();
-            }
-            break;
-                
-        case _TSK_T('k'):
-            blkMapFlag = false;
-            break;
+		case _TSK_T('i'):
+			imgPath[0] = OPTARG;
+			iFlagUsed = TRUE;
+			break;
+		}
+	}
 
-        case _TSK_T('h'):
-            calcHash = true;
-            break;
+	if (!iFlagUsed) {
+		if (!IsProcessElevated()) {
+			fprintf(stderr, "Process is not running in elevated mode\n");
+			exit(1);
+		}
+	}
 
-        case _TSK_T('d'):
-            database = OPTARG;
-            break;
+	// create a directory with hostname_timestamp
+	string directory_path;
+	if (createDirectory(directory_path) == -1) {
+		exit(1);
+	}
+	fprintf(stdout, "Created directory %s", directory_path.c_str());
 
-        case _TSK_T('v'):
-            tsk_verbose++;
-            break;
-        
-        case _TSK_T('V'):
-            tsk_version_print(stdout);
-            exit(0);
+	if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
+		tsk_error_print(stderr);
+		exit(1);
+	}
 
-        case _TSK_T('z'):
-            TSK_TCHAR envstr[32];
-            TSNPRINTF(envstr, 32, _TSK_T("TZ=%s"), OPTARG);
-            if (0 != TPUTENV(envstr)) {
-                tsk_fprintf(stderr, "error setting environment");
-                exit(1);
-            }
-            TZSET();
-            break;
-        }
-    }
+//	if (tsk_img_writer_create(img, directory_path)) {
+//
+//	}
 
-    /* We need at least one more argument */
-    if (OPTIND >= argc) {
-        tsk_fprintf(stderr, "Missing image names\n");
-        usage();
-    }
-    
-    TSK_TCHAR buff[1024];
-    
-    if (database == NULL) {
-        if (createDbFlag == false) {
-            fprintf(stderr, "Error: -a requires that database be specified with -d\n");
-            usage();
-        }
-        TSNPRINTF(buff, 1024, _TSK_T("%s.db"), argv[OPTIND]);
-        database = buff;
-    }
-    
-    //tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
+	const char *str = tsk_img_type_toname(img->itype);
+	tsk_printf("%s\n", str);
+	img->imgstat(img, stdout);
 
-    TskCaseDb * tskCase;
-    
-    if (createDbFlag) {
-        tskCase = TskCaseDb::newDb(database);
-    } else {
-        tskCase = TskCaseDb::openDb(database);
-    }
-
-    if (tskCase == NULL) {
-        tsk_error_print(stderr);
-        exit(1);
-    }
-
-    TskAutoDb *autoDb = tskCase->initAddImage();
-    autoDb->createBlockMap(blkMapFlag);
-    autoDb->hashFiles(calcHash);
-    autoDb->setAddUnallocSpace(true);
-
-    if (autoDb->startAddImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
-        std::vector<TskAuto::error_record> errors = autoDb->getErrorList();
-        for (size_t i = 0; i < errors.size(); i++) {
-            fprintf(stderr, "Error: %s\n", TskAuto::errorRecordToString(errors[i]).c_str());
-        } 
-    }
-
-    if (autoDb->commitAddImage() == -1) {
-        tsk_error_print(stderr);
-        exit(1);
-    }
-    TFPRINTF(stdout, _TSK_T("Database stored at: %s\n"), database);
-
-    autoDb->closeImage();
-    delete tskCase;
-    delete autoDb;
-    
+	tsk_img_close(img);
     exit(0);
 }
