@@ -21,13 +21,6 @@
 
 #include <string.h>
 
-#ifndef HAVE_STRNLEN
-static size_t strnlen(const char* s, size_t maxlen) {
-  const char* z = memchr(s, 0, maxlen);
-  return z ? z-s : n;
-}
-#endif
-
 static char* get_messages(AFF4_Message* msg) {
     // count the messages
     size_t count = 0;

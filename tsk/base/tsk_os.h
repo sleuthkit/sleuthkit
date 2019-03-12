@@ -119,6 +119,9 @@ typedef int32_t ssize_t;
 
 #endif
 
+#ifndef HAVE_STRNLEN
+size_t strnlen(const char* s, size_t maxlen);
+#endif
 
 /* When TSK deals with the outside world (printing / input), the data will 
  * be in either UTF-16 or UTF-8 (Windows or Unix).  TSK_TCHAR is defined 
