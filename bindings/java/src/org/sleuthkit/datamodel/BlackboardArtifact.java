@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1174,7 +1174,33 @@ public class BlackboardArtifact implements Content {
 		 * Indicates a verification failure
 		 */
 		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskVerificationFailed.text"));
+				bundle.getString("BlackboardArtifact.tskVerificationFailed.text")),
+		/**
+		 * Categorization information for a data source.
+		 */
+		TSK_DATA_SOURCE_USAGE(48, "TSK_DATA_SOURCE_USAGE", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDataSourceUsage.text")),
+		/**
+		 * Indicates auto fill data from a Web form
+		 */
+		TSK_WEB_FORM_AUTOFILL(49, "TSK_WEB_FORM_AUTOFILL",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWebFormAutofill.text")),
+		/**
+		 * Indicates an person's address filled in a web form
+		 */
+		TSK_WEB_FORM_ADDRESS (50, "TSK_WEB_FORM_ADDRESSES ",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
+		/**
+		 * Indicates source of a file/object
+		 */
+		TSK_DOWNLOAD_SOURCE (51, "TSK_DOWNLOAD_SOURCE",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDownloadSource.text")),
+		
+		/**
+		 * Indicates web cache data
+		 */
+		TSK_WEB_CACHE (52, "TSK_WEB_CACHE",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWebCache.text"));
 		
 		private final String label;
 		private final int typeId;

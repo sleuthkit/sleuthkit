@@ -66,4 +66,21 @@ public interface DataSource extends Content {
 	 */
 	long getContentSize(SleuthkitCase sleuthkitCase) throws TskCoreException;
 
+	/**
+	 * Sets the acquisition details field in the case database.
+	 * 
+	 * @param details The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	void setAcquisitionDetails(String details) throws TskCoreException;
+	
+	/**
+	 * Gets the acquisition details field from the case database.
+	 * 
+	 * @return The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	String getAcquisitionDetails() throws TskCoreException;
 }

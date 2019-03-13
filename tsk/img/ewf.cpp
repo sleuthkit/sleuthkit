@@ -17,6 +17,9 @@
 
 #if HAVE_LIBEWF
 #include "ewf.h"
+#include <cctype>
+
+using std::string;
 
 #define TSK_EWF_ERROR_STRING_SIZE 512
 
@@ -400,11 +403,34 @@ ewf_open(int a_num_img,
         tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
-            tsk_fprintf(stderr, "Error getting size of EWF file\n");
+            tsk_fprintf(stderr, "Error getting MD5 of EWF file\n");
         }
         return (NULL);
     }
     ewf_info->md5hash_isset = result;
+
+    int sha1_result = libewf_handle_get_utf8_hash_value_sha1(ewf_info->handle,
+        (uint8_t *)ewf_info->sha1hash, 41, &ewf_error);
+
+    if (sha1_result == -1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+
+        getError(ewf_error, error_string);
+        tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
+            ": Error getting SHA1 of image (%s)", a_images[0],
+            error_string);
+        libewf_error_free(&ewf_error);
+
+        tsk_img_free(ewf_info);
+
+        if (tsk_verbose != 0) {
+            tsk_fprintf(stderr, "Error getting SHA1 of EWF file\n");
+        }
+        return (NULL);
+    }
+    ewf_info->sha1hash_isset = result;
+
 
 #else                           // V1 API
 
@@ -540,5 +566,136 @@ ewf_open(int a_num_img,
     tsk_init_lock(&(ewf_info->read_lock));
 
     return (img_info);
+}
+
+
+
+static int is_blank(const char* str) {
+    while (*str != '\0') {
+        if (!isspace((unsigned char)*str)) {
+            return 0;
+        }
+        str++;
+    }
+    return 1;
+}
+
+/**
+* Reads from libewf what is left in the buffer after the addition of the key and new line
+ * @param handle
+  * @param result_buffer Buffer to read results into
+  * @param buffer_size Size of buffer
+
+  * @param identifier Name of value to get from E01
+  * @param key Display name of the value (with a space at end)
+*/
+static char* read_libewf_header_value(libewf_handle_t *handle, char* result_buffer, const size_t buffer_size, const uint8_t *identifier,  const char* key) {
+    result_buffer[0] = '\0';
+    size_t identifier_length = strlen((char *)identifier);
+    strcpy(result_buffer, key);
+    libewf_error_t * ewf_error;
+    size_t key_len = strlen(key);
+
+    //buffer_size - key_len - 1 for the new line at the end
+    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len - 1, &ewf_error);
+    if (result != -1 && !is_blank(result_buffer + key_len)) {
+        strcat(result_buffer, "\n");
+    }
+    else {
+        //if blank or error, return nothing!
+        result_buffer[0] = '\0';
+    }
+
+    return result_buffer;
+}
+
+static char* libewf_read_description(libewf_handle_t *handle, char* result_buffer, const size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "description", "Description: ");
+}
+
+static char* libewf_read_case_number(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "case_number", "Case Number: ");
+}
+
+static char* libewf_read_evidence_number(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "evidence_number", "Evidence Number: ");
+}
+
+static char* libewf_read_examiner_name(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "examiner_name", "Examiner Name: ");
+}
+
+static char* libewf_read_notes(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "notes", "Notes: ");
+}
+
+static char* libewf_read_model(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "model", "Model: ");
+}
+
+static char* libewf_read_serial_number(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "serial_number", "Serial Number: ");
+}
+
+static char* libewf_read_device_label(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "device_label", "Device Label:");
+}
+
+static char* libewf_read_version(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "version", "Version: ");
+}
+
+static char* libewf_read_platform(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "platform", "Platform: ");
+}
+
+static char* libewf_read_acquired_date(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "acquiry_date", "Acquired Date: ");
+}
+
+static char* libewf_read_system_date(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "system_date", "System Date: ");
+}
+
+static char* libewf_read_acquiry_operating_system(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "acquiry_operating_system", "Acquiry Operating System: ");
+}
+
+static char* libewf_read_acquiry_software_version(libewf_handle_t *handle, char* result_buffer, size_t buffer_size) {
+    return read_libewf_header_value(handle, result_buffer, buffer_size, (uint8_t *) "acquiry_software_version", "Acquiry Software Version: ");
+}
+
+
+
+/**
+ * Return text with name/value pairs from the E01 image.
+ */
+std::string ewf_get_details(IMG_EWF_INFO *ewf_info) {
+    //Need 1MB for libewf read and extra 100 bytes for header name and formatting
+    const size_t buffer_size = 1024100;
+    
+    char* result = (char*)tsk_malloc(buffer_size);
+    if (result == NULL) {
+        return NULL; 
+    }
+    
+    string collectionDetails = "";
+    //Populate all of the libewf header values for the acquisition details column
+    collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_case_number(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_evidence_number(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_examiner_name(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_notes(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_model(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_serial_number(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_device_label(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_version(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_platform(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_acquired_date(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_system_date(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_acquiry_operating_system(ewf_info->handle, result, buffer_size));
+    collectionDetails.append(libewf_read_acquiry_software_version(ewf_info->handle, result, buffer_size));
+    free(result);
+    return collectionDetails;
 }
 #endif                          /* HAVE_LIBEWF */

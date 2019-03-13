@@ -560,7 +560,7 @@ int
 int
     TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string &sha1, const string &sha256)
 {
-    return addImageInfo(type, ssize, objId, timezone, size, md5, sha1, sha256, "");
+    return addImageInfo(type, ssize, objId, timezone, size, md5, sha1, sha256, "", "");
 }
 
 /**
@@ -576,7 +576,7 @@ int
  * @returns 1 on error, 0 on success
  */
 int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, 
-    const string& sha1, const string& sha256, const string& deviceId)
+    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails)
 {
 
     // Add the data source to the tsk_objects table.
@@ -614,7 +614,7 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
 #else
     deviceIdStr << deviceId;
 #endif
-    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, '%s', '%s');", objId, deviceIdStr.str().c_str(), timezone.c_str());
+    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (%lld, '%s', '%s', '%q');", objId, deviceIdStr.str().c_str(), timezone.c_str(), collectionDetails.c_str());
     ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
     return ret;
@@ -638,7 +638,6 @@ int
     sqlite3_free(zSQL);
     return ret;
 }
-
 
 /**
 * @returns 1 on error, 0 on success
@@ -1238,7 +1237,7 @@ TSK_RETVAL_ENUM
     }
 
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, known) "
         "VALUES ("
         "1, %Q, %lld,"
         "%" PRId64 ","
@@ -1247,13 +1246,13 @@ TSK_RETVAL_ENUM
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
         dbFileType,
         fileName,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
-        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
+        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size, TSK_DB_FILES_KNOWN_UNKNOWN);
 
     if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
         sqlite3_free(zSQL);
@@ -1411,14 +1410,14 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "0,"
-        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d,'/')",
         fsObjId,
         objId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_VIRTUAL_DIR,
         name,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
-        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
+        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED), TSK_DB_FILES_KNOWN_UNKNOWN);
 
     if (attempt_exec(zSQL, "Error adding data to tsk_files table: %s\n")) {
         sqlite3_free(zSQL);
