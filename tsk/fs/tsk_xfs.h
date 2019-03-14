@@ -1,9 +1,20 @@
+/*
+** The Sleuth Kit
+**
+** Brian Carrier [carrier <at> sleuthkit [dot] org]
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+**
+** ICS Laboratory [515lab.ics <at> gmail [dot] com]
+** Copyright (c) 2019 ICS Laboratory.  All rights reserved.
+**
+** This software is distributed under the Common Public License 1.0
+*/
+
 #ifndef _TSK_XFS_H
 #define _TSK_XFS_H
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <uuid/uuid.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -795,7 +806,7 @@ struct xfs_dir3_blk_hdr {
     uint32_t          crc;    /* CRC of block */
     uint64_t          blkno;  /* first block of the buffer */
     uint64_t          lsn;    /* sequence number of last write */
-    uuid_t          uuid;   /* filesystem we belong to */
+    uint64_t          uuid[2];
     uint64_t          owner;  /* inode that owns the block */
 };
 
@@ -965,7 +976,7 @@ struct xfs_btree_block_shdr {
 
     uint64_t      bb_blkno;
     uint64_t      bb_lsn;
-    uuid_t        bb_uuid;
+    uint64_t      bb_uuid[2];
     uint32_t      bb_owner;
     uint32_t      bb_crc;
     //__le32      bb_crc;
@@ -978,7 +989,7 @@ struct xfs_btree_block_lhdr {
 
     uint64_t      bb_blkno;
     uint64_t      bb_lsn;
-    uuid_t       bb_uuid;
+    uint64_t      bb_uuid[2];
     uint64_t      bb_owner;
     uint32_t    bb_crc;
     //__le32      bb_crc;
@@ -1183,7 +1194,6 @@ xfs_dir2_block_tail_p(XFS_INFO *xfs, struct xfs_dir2_data_hdr *hdr)
 static inline struct xfs_dir2_leaf_entry *
 xfs_dir2_block_leaf_p(XFS_INFO *xfs, struct xfs_dir2_block_tail *btp)
 {
-    TSK_FS_INFO * fs = (TSK_FS_INFO *) &xfs->fs_info;
     uint32_t count = btp->count;
     return ((struct xfs_dir2_leaf_entry *)btp) - count;
 }
