@@ -1,3 +1,15 @@
+/*
+** The Sleuth Kit
+**
+** Brian Carrier [carrier <at> sleuthkit [dot] org]
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+**
+** ICS Laboratory [515lab.ics <at> gmail [dot] com]
+** Copyright (c) 2019 ICS Laboratory.  All rights reserved.
+**
+** This software is distributed under the Common Public License 1.0
+*/
+
 #include "tsk_fs_i.h"
 #include "tsk_xfs.h"
 
@@ -160,9 +172,8 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
     hdr = (xfs_dir2_sf_hdr_t*)buf;
     dir2_sf->hdr = hdr;   
     
-    uint8_t ftype;
-    uint8_t namelen;
-    uint64_t inode;
+    //uint8_t ftype;
+    uint64_t i;
 
     if ((fs_name = tsk_fs_name_alloc(XFS_MAXNAMELEN + 1, 0)) == NULL)
         return TSK_ERR;
@@ -171,13 +182,15 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
     
     uint16_t num_entries = (hdr->i8count > 0) ? hdr->i8count : hdr->count;
 
-    for (int i = 0; i < num_entries; i++)
+    for (i = 0; i < num_entries; i++)
     {
+        uint8_t namelen;
+        uint64_t inode;
+        char* name;
+
         dir2_sf->entry = ent;
         namelen = ent->namelen;
         inode = xfs_dir2_sf_get_ino(hdr, ent);
-
-        char* name;
         name = (char*)tsk_malloc(sizeof(char) * (namelen + 1));
         name[namelen] = '\0';
 
@@ -403,7 +416,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     free(dirbuf);
 
-    return TSK_OK;
+    return retval_final;
 }
 
 uint8_t xfs_jentry_walk(TSK_FS_INFO *info, int a,

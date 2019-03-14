@@ -1,14 +1,15 @@
+/*
+** The Sleuth Kit
+**
+** Brian Carrier [carrier <at> sleuthkit [dot] org]
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+**
+** ICS Laboratory [515lab.ics <at> gmail [dot] com]
+** Copyright (c) 2019 ICS Laboratory.  All rights reserved.
+**
+** This software is distributed under the Common Public License 1.0
+*/
 
-/**
- * \internal
- * Open part of a disk image as a XFS file system.
- *
- * @param img_info Disk image to analyze
- * @param offset Byte offset where file system starts
- * @param ftype Specific type of file system
- * @param test NOT USED
- * @returns NULL on error or if data is not an XFS file system
- */
 #include "tsk_fs_i.h"
 #include "tsk_xfs.h"
 
@@ -179,8 +180,6 @@ xfs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
     TSK_FS_ATTR * fs_attr, TSK_FS_ATTR * fs_attr_extent,
     TSK_DADDR_T idx_block)
 {
-    TSK_OFF_T length = 0;
-
     fprintf(stderr, "[i] xfs_make_data_run_extent_index: xfs.c: %d - not implemented\n", __LINE__);
 
     return 1;
@@ -271,9 +270,7 @@ xfs_load_attrs_block(TSK_FS_FILE *fs_file)
 static uint8_t
 xfs_load_attrs(TSK_FS_FILE * fs_file)
 {
-    TSK_FS_META *fs_meta = fs_file->meta;
     TSK_FS_INFO * fs = (TSK_FS_INFO*)fs_file->fs_info;
-    XFS_INFO *xfs = (XFS_INFO*)fs_file->fs_info;
 
     // not needed to implement about shortform data fork. shortform does not have location of real file.
     if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS) {
@@ -445,7 +442,10 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     }
 
     if (fs_meta->content_len != XFS_CONTENT_LEN_V5(xfs)) {
-         fprintf(stderr, "xfs.c:514 content_len is not XFS_CONTENT_LEN_V5  : %d\n", fs_meta->content_len);
+         if (tsk_verbose) {
+            fprintf(stderr, "xfs.c: content_len is not XFS_CONTENT_LEN_V5\n");
+         }
+
          if ((fs_meta =
                  tsk_fs_meta_realloc(fs_meta,
                      XFS_CONTENT_LEN_V5(xfs))) == NULL) {
@@ -461,7 +461,9 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     ssize_t cnt = tsk_fs_read(fs, dfork_offset, content_buf, XFS_CONTENT_LEN_V5(xfs));
 
     if (cnt != XFS_CONTENT_LEN_V5(xfs)){
-        fprintf(stderr, "invalid datafork read size : cnt : %d   con_len : %d\n", cnt, XFS_CONTENT_LEN_V5(xfs));
+        if (tsk_verbose) {
+            fprintf(stderr, "invalid datafork read size, cnt: %d\n", cnt);
+        }
         return -1;
     }
 
@@ -487,7 +489,6 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
     TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB a_action, void *a_ptr)
 {
     char *myname = "xfs_inode_walk";
-    XFS_INFO * xfs = (XFS_INFO *) fs;
     TSK_INUM_T inum;
     TSK_INUM_T end_inum_tmp;
     TSK_FS_FILE * fs_file;
