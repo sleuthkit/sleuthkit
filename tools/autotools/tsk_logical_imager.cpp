@@ -16,16 +16,15 @@
 #include <codecvt>
 #include <direct.h>
 #include <winsock2.h>
-#include "tsk/tsk_tools_i.h"
-#include "tsk/auto/tsk_case_db.h"
-#include "tsk/img/img_writer.h"
 #include <locale.h>
 #include <Wbemidl.h>
 #pragma comment(lib, "wbemuuid.lib")
 
 #include <comutil.h>
 
-using namespace std;
+#include "tsk/tsk_tools_i.h"
+#include "tsk/auto/tsk_case_db.h"
+#include "tsk/img/img_writer.h"
 
 std::wstring GetLastErrorStdStrW();
 std::string GetErrorStdStr(DWORD err);
@@ -35,6 +34,11 @@ static TSK_TCHAR *progname;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
+/**
+* toUpper: convert string to uppercase
+* @param srcStr to convert
+* @return uppercase string
+*/
 string toUpper(const string &srcStr)
 {
 	string outStr(srcStr);
@@ -42,6 +46,12 @@ string toUpper(const string &srcStr)
 
 	return outStr;
 }
+
+/**
+* toLower: convert string to lowercase
+* @param srcStr to convert
+* @return lowercase string
+*/
 string toLower(const string &srcStr)
 {
 	string outStr(srcStr);
@@ -54,7 +64,7 @@ string toLower(const string &srcStr)
 * Convert from UTF-16 to UTF-8.
 * Returns empty string on error
 */
-string toNarrow(const wstring& a_utf16Str)
+string toNarrow(const std::wstring& a_utf16Str)
 {
 	try {
 		std::string narrow = converter.to_bytes(a_utf16Str);
@@ -70,7 +80,7 @@ string toNarrow(const wstring& a_utf16Str)
 * Convert from UTF-8 to UTF-16.
 * Returns empty string on error
 */
-wstring toWide(const string& a_utf8Str)
+std::wstring toWide(const string& a_utf8Str)
 {
 	try {
 		std::wstring wide = converter.from_bytes(a_utf8Str);
@@ -97,7 +107,7 @@ string GetErrorStdStr(DWORD err) {
 *
 * @returns error message wide string
 */
-wstring GetLastErrorStdStrW() {
+std::wstring GetLastErrorStdStrW() {
 	DWORD error = GetLastError();
 	return GetErrorStdStrW(error);
 }
@@ -108,7 +118,7 @@ wstring GetLastErrorStdStrW() {
 * @param err error code
 * @returns error message wide string
 */
-wstring GetErrorStdStrW(DWORD a_err)
+std::wstring GetErrorStdStrW(DWORD a_err)
 {
 	if (ERROR_SUCCESS != a_err)
 	{
@@ -163,7 +173,13 @@ usage()
     exit(1);
 }
 
-// is Windows XP or older?
+/**
+* isWinXPOrOlder: Determine if we are on Windows XP or older OS
+* 
+* @returns  TRUE if running on Windows XP or older
+*           FALSE otherwise
+*
+*/
 BOOL isWinXPOrOlder() {
 	OSVERSIONINFO	vi;
 	memset(&vi, 0, sizeof vi);
@@ -175,6 +191,15 @@ BOOL isWinXPOrOlder() {
 	return((m_winntVerMajor <= 5));
 }
 
+/**
+* isProcessElevated: Determine if this process as admin privs.
+*
+* https://stackoverflow.com/questions/8046097/how-to-check-if-a-process-has-the-administrative-rights
+*
+* @returns  TRUE if process is elevated
+*           FALSE otherwise
+*
+*/
 static BOOL isProcessElevated() {
 	static BOOL fRet = FALSE;
 	HANDLE hToken = NULL;
@@ -199,6 +224,14 @@ static BOOL isProcessElevated() {
 	return fRet;
 }
 
+/**
+* getLocalHost: Get the localhost name
+*
+* @param a_hostName - the localhost name
+* @returns  0 on success
+*           -1 if error
+*
+*/
 int getLocalHost(string &a_hostName) {
 
 	// Initialize Winsock
@@ -220,6 +253,14 @@ int getLocalHost(string &a_hostName) {
 	return 0;
 }
 
+/**
+* createDirectory: Create a directory to store sparse_image.vhd
+*
+* @param directoryPathname - the directory pathname created
+* @returns  0 on success
+*           -1 if error
+*
+*/
 int createDirectory(string &directoryPathname) {
 	time_t now;
 	struct tm localTime;
@@ -261,7 +302,7 @@ int createDirectory(string &directoryPathname) {
 *
 */
 
-long wmi_init(const wstring& wmiNamespace, IWbemLocator **ppWbemLocator, IWbemServices **ppWbemServices)
+long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLocator, IWbemServices **ppWbemServices)
 {
 	HRESULT hres;
 
@@ -407,7 +448,7 @@ int checkDriveForLDM(const string& driveLetter) {
 	bool bDriveFound = false;
 	int isLDM = 0;
 
-	wstring wstrQuery = L"ASSOCIATORS OF {Win32_LogicalDisk.DeviceID='";
+	std::wstring wstrQuery = L"ASSOCIATORS OF {Win32_LogicalDisk.DeviceID='";
 	wstrQuery += toWide(driveLetter);
 	wstrQuery += L"'} where AssocClass=Win32_LogicalDiskToPartition";
 
@@ -420,9 +461,9 @@ int checkDriveForLDM(const string& driveLetter) {
 		&pEnumerator);
 
 	if (FAILED(hres)) {
-		cerr << "WMI Query for partition type failed. "
+		std::cerr << "WMI Query for partition type failed. "
 			<< "Error code = 0x"
-			<< hex << hres << endl;
+			<< std::hex << hres << std::endl;
 		wmi_close(&pWbemLocator, &pWbemServices);
 		return -1;
 	}
@@ -437,10 +478,10 @@ int checkDriveForLDM(const string& driveLetter) {
 			VARIANT vtProp, vtProp2;
 
 			hres = pclsObj->Get(_bstr_t(L"Type"), 0, &vtProp, 0, 0);
-			wstring partitionType = vtProp.bstrVal;
+			std::wstring partitionType = vtProp.bstrVal;
 
 			hres = pclsObj->Get(_bstr_t(L"DeviceID"), 0, &vtProp2, 0, 0);
-			wstring deviceID = vtProp2.bstrVal;
+			std::wstring deviceID = vtProp2.bstrVal;
 
 			VariantClear(&vtProp);
 			VariantClear(&vtProp2);
@@ -449,7 +490,7 @@ int checkDriveForLDM(const string& driveLetter) {
 
 			//wcout << L"Drive: " << toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << endl;
 			if (string::npos != toLower(toNarrow(partitionType)).find("logical disk manager")) {
-				cerr << "Found Logical Disk Manager disk for drive =   " << driveLetter << endl;
+				std::cerr << "Found Logical Disk Manager disk for drive =   " << driveLetter << std::endl;
 
 				isLDM = 1;
 			}
@@ -460,7 +501,7 @@ int checkDriveForLDM(const string& driveLetter) {
 	wmi_close(&pWbemLocator, &pWbemServices);
 
 	if (!bDriveFound) {
-		cerr << "Drive =  " << driveLetter << " not found in Win32_LogicalDiskToPartition" << endl;
+		std::cerr << "Drive =  " << driveLetter << " not found in Win32_LogicalDiskToPartition" << std::endl;
 	}
 
 	return bDriveFound ? isLDM : -1;
@@ -483,7 +524,7 @@ int checkDriveForBitlocker(const string& driveLetter) {
 
 	long rc = 0;
 
-	wstring wsBitLockerNamespace = L"ROOT\\CIMV2\\security\\MicrosoftVolumeEncryption";
+	std::wstring wsBitLockerNamespace = L"ROOT\\CIMV2\\security\\MicrosoftVolumeEncryption";
 
 
 	// Init WMI with the requisite namespace. This may fail on some versions of Windows, if Bitlocker in not installed.
@@ -491,11 +532,11 @@ int checkDriveForBitlocker(const string& driveLetter) {
 	if (0 != rc) {
 
 		if ((WBEM_E_INVALID_NAMESPACE == rc)) {
-			cerr << " Bitlocker is not installed." << endl;
+			std::cerr << " Bitlocker is not installed." << std::endl;
 			return 0;
 		}
 		else {
-			cerr << "Failed to connect to WMI namespace = " << toNarrow(wsBitLockerNamespace) << endl;
+			std::cerr << "Failed to connect to WMI namespace = " << toNarrow(wsBitLockerNamespace) << std::endl;
 			return -1;
 		}
 	}
@@ -508,7 +549,7 @@ int checkDriveForBitlocker(const string& driveLetter) {
 	unsigned int bitLockerStatus = 0; // assume no Bitlocker
 
 									  // WMI query
-	wstring wstrQuery = L"SELECT * FROM Win32_EncryptableVolume where driveletter = '";
+	std::wstring wstrQuery = L"SELECT * FROM Win32_EncryptableVolume where driveletter = '";
 	wstrQuery += toWide(driveLetter);
 	wstrQuery += L"'";
 
@@ -521,9 +562,9 @@ int checkDriveForBitlocker(const string& driveLetter) {
 		&pEnumerator);
 
 	if (FAILED(hres)) {
-		cerr << "WMI Query for Win32_EncryptableVolume failed. "
+		std::cerr << "WMI Query for Win32_EncryptableVolume failed. "
 			<< "Error code = 0x"
-			<< hex << hres << endl;
+			<< std::hex << hres << std::endl;
 		wmi_close(&pWbemLocator, &pWbemServices);
 		return -1;
 	}
@@ -543,12 +584,9 @@ int checkDriveForBitlocker(const string& driveLetter) {
 			}
 			else {
 				unsigned int encryptionMethod = vtProp.uintVal;
-				cerr << "Drive: " << driveLetter << ",  found in Win32_EncryptableVolume.  EncryptionMethod:  " << encryptionMethod << endl;
-
+				std::cerr << "Drive: " << driveLetter << ",  found in Win32_EncryptableVolume.  EncryptionMethod:  " << encryptionMethod << std::endl;
 				bitLockerStatus = (0 == encryptionMethod) ? 0 : 1;
 			}
-
-
 			VariantClear(&vtProp);
 		}
 	}
@@ -559,8 +597,6 @@ int checkDriveForBitlocker(const string& driveLetter) {
 	return bitLockerStatus;
 }
 
-
-
 /**
 * getDriveToProcess() - returns the drive to process
 *          By default we process PhysicalDrive0, unless
@@ -569,7 +605,6 @@ int checkDriveForBitlocker(const string& driveLetter) {
 * @param output driveToProcess
 *
 * @returns  TRUE on success or FALSE in case of failure.
-*
 *
 */
 BOOL getDriveToProcess(string& driveToProcess) {
@@ -599,10 +634,6 @@ BOOL getDriveToProcess(string& driveToProcess) {
 	checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
 	if (1 == checkBitlockerStatus) {
 		fprintf(stderr, "System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
-
-		// record encrypted drive in target info
-//		setSystemdriveEncrypted(true);
-
 		driveToProcess = systemDriveLetter;
 		return TRUE;
 	}
@@ -672,26 +703,20 @@ main(int argc, char **argv1)
 	}
 
 
-	wstring wImgPathName;
+	std::wstring wImgPathName;
 
 	if (!iFlagUsed) {
-		if (!isProcessElevated()) {
-			fprintf(stderr, "Process is not running in elevated mode\n");
-			exit(1);
-		}
 		string driveToProcess;
 		if (getDriveToProcess(driveToProcess)) {
-			fprintf(stderr, "driveToProcess = %s\n", driveToProcess.c_str());
 			wImgPathName = _TSK_T("\\\\.\\") + toWide(driveToProcess);
-			TFPRINTF(stdout, _TSK_T("wImgPathName = %s\n"), (TSK_TCHAR *)wImgPathName.c_str());
 			imgPath[0] = (TSK_TCHAR *)wImgPathName.c_str();
 		}
 		else {
-			fprintf(stderr, "getDriveToProcess failed\n");
+			fprintf(stderr, "Process is not running in elevated mode\n");
 			exit(1);
 		}
 	}
-	TFPRINTF(stdout, _TSK_T("imgPath[0] = %s\n"), imgPath[0]);
+	TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), imgPath[0]);
 
 	// create a directory with hostname_timestamp
 	string directory_path;
@@ -706,20 +731,9 @@ main(int argc, char **argv1)
 	}
 
 	string outputFileName = directory_path + "/sparse_image.vhd";
-	size_t ilen = outputFileName.size();
-	TCHAR *outputFileNameW = (TCHAR *)tsk_malloc((ilen + 1) * sizeof(TCHAR));
-	if (outputFileNameW == NULL) {
-		fprintf(stderr, "tsk_malloc returns NULL\n");
-		exit(1);
-	}
-	UTF8 *utf8 = (UTF8 *)outputFileName.c_str();
-	UTF16 *utf16 = (UTF16 *)outputFileNameW;
+	std::wstring outputFileNameW = toWide(outputFileName);
 
-	int retval =
-		tsk_UTF8toUTF16((const UTF8 **)&utf8, &utf8[ilen],
-			&utf16, &utf16[ilen], TSKlenientConversion);
-
-	if (tsk_img_writer_create(img, outputFileNameW) == TSK_ERR) {
+	if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
 		fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
 		exit(1);
 	}
@@ -730,5 +744,6 @@ main(int argc, char **argv1)
 	}
 
 	tsk_img_close(img);
+	TFPRINTF(stdout, _TSK_T("Created VHD file in %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     exit(0);
 }
