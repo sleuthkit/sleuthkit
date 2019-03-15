@@ -401,22 +401,23 @@ typedef struct {
   apfs_spaceman_device devs[APFS_SD_COUNT];     // 0x30
   uint32_t flags;                               // 0x90
   uint32_t ip_tx_multiplier;                    // 0x94
-  uint32_t ip_block_count;                      // 0x98
-  uint32_t ip_bm_block_count;                   // 0x9C
-  uint64_t ip_bm_base_address;                  // 0xA0
-  uint64_t ip_base_address;                     // 0xA8
-  uint64_t fs_reserve_block_count;              // 0xB0
-  uint64_t fs_reserve_alloc_count;              // 0xB8
-  apfs_spaceman_free_queue fq[APFS_SFQ_COUNT];  // 0xC0
-  uint16_t ip_bm_free_head;                     // 0x138
-  uint16_t ip_bm_free_tail;                     // 0x13A
-  uint32_t ip_bm_xid_offset;                    // 0x13C
-  uint32_t ip_bm_offset;                        // 0x140
-  uint32_t ip_bm_free_next_offset;              // 0x144
-  uint32_t version;                             // 0x148
-  uint32_t struct_size;                         // 0x14C
+  uint64_t ip_block_count;                      // 0x98
+  uint32_t ip_bm_size_in_blocks;                // 0xA0
+  uint32_t ip_bm_block_count;                   // 0xA4
+  uint64_t ip_bm_base_address;                  // 0xA8
+  uint64_t ip_base_address;                     // 0xB0
+  uint64_t fs_reserve_block_count;              // 0xB8
+  uint64_t fs_reserve_alloc_count;              // 0xC0
+  apfs_spaceman_free_queue fq[APFS_SFQ_COUNT];  // 0xC8
+  uint16_t ip_bm_free_head;                     // 0x140
+  uint16_t ip_bm_free_tail;                     // 0x142
+  uint32_t ip_bm_xid_offset;                    // 0x144
+  uint32_t ip_bm_offset;                        // 0x148
+  uint32_t ip_bm_free_next_offset;              // 0x14C
+  uint32_t version;                             // 0x150
+  uint32_t struct_size;                         // 0x154
 } apfs_spaceman;
-static_assert(sizeof(apfs_spaceman) == 0x150, "improperly aligned struct");
+static_assert(sizeof(apfs_spaceman) == 0x158, "improperly aligned struct");
 
 // Type 6
 typedef struct {
