@@ -659,8 +659,9 @@ uint8_t TskFindFiles::handleError() {
 
 
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-	fprintf(stdout, "processFile: path=%s\n", path);
-	return TSK_OK;
+    fprintf(stdout, "processFile: fs_file->name->name=%s\n", fs_file->name->name);
+    fprintf(stdout, "processFile: path=%s\n", path);
+    return TSK_OK;
 }
 
 int
@@ -747,7 +748,7 @@ main(int argc, char **argv1)
 	fprintf(stdout, "Created directory %s\n", directory_path.c_str());
 
 	TskFindFiles findFiles(config);
-	if (findFiles.openImage(1, imgPath, imgtype, ssize) == NULL) {
+	if (findFiles.openImage(1, imgPath, imgtype, ssize)) {
 		tsk_error_print(stderr);
 		exit(1);
 	}
