@@ -1,6 +1,6 @@
 #pragma once
 
-#include <tsk/tsk_incs.h>
+#include "tsk/base/tsk_base_i.h"
 
 #include <openssl/evp.h>
 
