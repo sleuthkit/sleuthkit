@@ -747,7 +747,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     char *idxalloc;
     ntfs_idxentry *idxe;
     ntfs_idxroot *idxroot;
-    ntfs_idxelist *idxelist;
+    ntfs_idxelist *idxelist = NULL;
     ntfs_idxrec *idxrec_p, *idxrec;
     TSK_OFF_T idxalloc_len;
     TSK_FS_LOAD_FILE load_file;
@@ -851,7 +851,6 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_COR;
         }
     }
-
     
 
     /*
@@ -983,8 +982,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
      * all of the entries
      */
     if (!fs_attr_idx) {
-        if (tsk_getu32(a_fs->endian,
-                idxelist->flags) & NTFS_IDXELIST_CHILD) {
+        if ((idxelist) && (tsk_getu32(a_fs->endian,
+                idxelist->flags) & NTFS_IDXELIST_CHILD)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
             tsk_error_set_errstr
@@ -1003,22 +1002,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_COR;
         }
 
-        /* Verify that the attribute type is $FILE_NAME */
-        if (tsk_getu32(a_fs->endian, fs_attr_idx->type) == 0) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr
-            ("dent_walk: Attribute type in index alloc is 0");
-            return TSK_COR;
-        }
-        else if (tsk_getu32(a_fs->endian, fs_attr_idx->type) != NTFS_ATYPE_FNAME) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr("ERROR: Directory index is sorted by type: %"
-                PRIu32 ".\nOnly $FNAME is currently supported",
-                tsk_getu32(a_fs->endian, fs_attr_idx->type));
-            return TSK_COR;
-        }
+        // NOTE: If there was no IDX_ROOT, then we have not done any validation at this point
+        // that this index structure is actually about FNAME objects. Sanity checking
+        // could be added here
 
         /*
          * Copy the index allocation run into a big buffer
