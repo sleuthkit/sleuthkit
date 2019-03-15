@@ -1,0 +1,4 @@
+jpeg
+jpg
+gif
+pic

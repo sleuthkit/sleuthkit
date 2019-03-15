@@ -25,6 +25,7 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/img/img_writer.h"
+#include "LogicalImagerConfig.h"
 
 std::wstring GetLastErrorStdStrW();
 std::string GetErrorStdStr(DWORD err);
@@ -654,6 +655,33 @@ BOOL getDriveToProcess(string& driveToProcess) {
 	}
 }
 
+class TskFindFiles :public TskAuto {
+public:
+	TskFindFiles(const LogicalImagerConfig *config);
+	virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
+	virtual uint8_t handleError();
+
+private:
+	const LogicalImagerConfig * m_logicialImagerConfig;
+};
+
+
+TskFindFiles::TskFindFiles(const LogicalImagerConfig *config) {
+	m_logicialImagerConfig = config;
+}
+
+// Print errors as they are encountered
+uint8_t TskFindFiles::handleError() {
+	fprintf(stderr, "%s", tsk_error_get());
+	return 0;
+}
+
+
+TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
+	fprintf(stdout, "processFile: path=%s\n", path);
+	return TSK_OK;
+}
+
 int
 main(int argc, char **argv1)
 {
@@ -665,6 +693,8 @@ main(int argc, char **argv1)
 	unsigned int ssize = 0;
 	const TSK_TCHAR *imgPath[1];
 	BOOL iFlagUsed = FALSE;
+	TSK_TCHAR *configFilename;
+	LogicalImagerConfig *config = NULL;
 
 #ifdef TSK_WIN32
 	// On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -679,13 +709,18 @@ main(int argc, char **argv1)
 	progname = argv[0];
 	setlocale(LC_ALL, "");
 
-	while ((ch = GETOPT(argc, argv, _TSK_T("i:vV"))) > 0) {
+	while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV"))) > 0) {
 		switch (ch) {
 		case _TSK_T('?'):
 		default:
 			TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
 				argv[OPTIND]);
 			usage();
+
+		case _TSK_T('c'):
+			configFilename = OPTARG;
+			config = new LogicalImagerConfig(toNarrow(configFilename));
+			break;
 
 		case _TSK_T('v'):
 			tsk_verbose++;
@@ -702,6 +737,11 @@ main(int argc, char **argv1)
 		}
 	}
 
+	if (config == NULL) {
+		config = new LogicalImagerConfig();
+	}
+	fprintf(stdout, "config jpg %i\n", config->hasExtension("jpg"));
+	fprintf(stdout, "config txt %i\n", config->hasExtension("txt"));
 
 	std::wstring wImgPathName;
 
@@ -725,6 +765,20 @@ main(int argc, char **argv1)
 	}
 	fprintf(stdout, "Created directory %s\n", directory_path.c_str());
 
+	TskFindFiles findFiles(config);
+	if (findFiles.openImage(1, imgPath, imgtype, ssize) == NULL) {
+		tsk_error_print(stderr);
+		exit(1);
+	}
+	
+	if (findFiles.findFilesInImg()) {
+		// we already logged the errors
+		exit(1);
+	}
+	exit(0);
+
+//////////////////////////////
+
 	if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
 		tsk_error_print(stderr);
 		exit(1);
@@ -743,6 +797,9 @@ main(int argc, char **argv1)
 		// not exiting, should call tsk_img_close.
 	}
 
+	if (config) {
+		delete config;
+	}
 	tsk_img_close(img);
 	TFPRINTF(stdout, _TSK_T("Created VHD file in %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     exit(0);
