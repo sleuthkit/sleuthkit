@@ -130,7 +130,7 @@ std::wstring GetErrorStdStrW(DWORD a_err)
 			NULL,
 			a_err,
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPTSTR)&lpMsgBuf,
+			(LPWSTR)&lpMsgBuf,
 			0, NULL);
 		if (bufLen)
 		{
