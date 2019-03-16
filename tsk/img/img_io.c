@@ -240,8 +240,6 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
             // Something went wrong so let's try skipping the cache
             read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
-            tsk_release_lock(&(a_img_info->cache_lock));
-            return read_count;
         }
     }
 
