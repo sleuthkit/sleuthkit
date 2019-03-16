@@ -1288,6 +1288,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
             }
             len_remain -= len_inrun;
+            byteoffset_toread = 0;
         }
         return (ssize_t) (len_toread - len_remain);
     }
