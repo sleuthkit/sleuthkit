@@ -18,6 +18,8 @@
 #include <winsock2.h>
 #include <locale.h>
 #include <Wbemidl.h>
+#include <shlwapi.h>
+
 #pragma comment(lib, "wbemuuid.lib")
 
 #include <comutil.h>
@@ -638,16 +640,16 @@ BOOL getDriveToProcess(string& driveToProcess) {
 
 class TskFindFiles :public TskAuto {
 public:
-	TskFindFiles(const LogicalImagerConfig *config);
+	TskFindFiles(LogicalImagerConfig *config);
 	virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
 	virtual uint8_t handleError();
 
 private:
-	const LogicalImagerConfig * m_logicialImagerConfig;
+	LogicalImagerConfig * m_logicialImagerConfig;
 };
 
 
-TskFindFiles::TskFindFiles(const LogicalImagerConfig *config) {
+TskFindFiles::TskFindFiles(LogicalImagerConfig *config) {
 	m_logicialImagerConfig = config;
 }
 
@@ -659,8 +661,34 @@ uint8_t TskFindFiles::handleError() {
 
 
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    fprintf(stdout, "processFile: fs_file->name->name=%s\n", fs_file->name->name);
-    fprintf(stdout, "processFile: path=%s\n", path);
+    if (fs_file == NULL || fs_file->name == NULL )
+        return TSK_ERR;
+
+    char *extension = PathFindExtensionA(fs_file->name->name);
+    if (extension[0] == '.') {
+        extension = &extension[1];
+    }
+    if (m_logicialImagerConfig->hasExtension(extension)) {
+        fprintf(stdout, "processFile: fs_file->name->name=%s\n", fs_file->name->name);
+        fprintf(stdout, "processFile: path=%s\n", path);
+        fprintf(stdout, "extension %s\n", extension);
+
+        TSK_OFF_T offset = 0;
+        size_t bufferLen = 16 * 1024;
+        size_t bytesRead;
+        char buffer[16 * 1024];
+        
+        while (true) {
+            bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
+            if (bytesRead == -1) {
+                return TSK_ERR;
+            }
+            if (bytesRead < bufferLen) {
+                break;
+            }
+            offset += bytesRead;
+        }
+    }
     return TSK_OK;
 }
 
@@ -783,6 +811,6 @@ main(int argc, char **argv1)
 		delete config;
 	}
 	tsk_img_close(img);
-	TFPRINTF(stdout, _TSK_T("Created VHD file in %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
+	TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     exit(0);
 }

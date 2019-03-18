@@ -1,4 +1,4 @@
-jpeg
 jpg
+jpeg
 gif
-pic
+png
