@@ -722,6 +722,6 @@ int main(int argc, char **argv1) {
     }
 
     tsk_img_close(img);
-    TFPRINTF(stdout, _TSK_T("Created VHD file in %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
+    TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     exit(0);
 }
