@@ -1,1 +1,4 @@
 jpg
+JPG
+JPEG
+jpeg

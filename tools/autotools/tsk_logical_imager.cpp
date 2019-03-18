@@ -661,17 +661,19 @@ uint8_t TskFindFiles::handleError() {
 
 
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    if (fs_file == NULL || fs_file->name == NULL )
+    if (fs_file == NULL || fs_file->name == NULL ) {
+        fprintf(stderr, "processFile: fs_file is null or fs_file->name is null\n");
         return TSK_ERR;
+    }
 
     char *extension = PathFindExtensionA(fs_file->name->name);
     if (extension[0] == '.') {
         extension = &extension[1];
     }
     if (m_logicialImagerConfig->hasExtension(extension)) {
-        fprintf(stdout, "processFile: fs_file->name->name=%s\n", fs_file->name->name);
-        fprintf(stdout, "processFile: path=%s\n", path);
-        fprintf(stdout, "extension %s\n", extension);
+        fprintf(stderr, "processFile: fs_file->name->name=%s\n", fs_file->name->name);
+        fprintf(stderr, "processFile: path=%s\n", path);
+        fprintf(stderr, "extension %s\n", extension);
 
         TSK_OFF_T offset = 0;
         size_t bufferLen = 16 * 1024;
@@ -681,6 +683,7 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
         while (true) {
             bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
             if (bytesRead == -1) {
+                fprintf(stderr, "processFile: tsk_fs_file_read returns -1 offset=%d\n", offset);
                 return TSK_ERR;
             }
             if (bytesRead < bufferLen) {
@@ -750,8 +753,6 @@ main(int argc, char **argv1)
 	if (config == NULL) {
 		config = new LogicalImagerConfig();
 	}
-	fprintf(stdout, "config jpg %i\n", config->hasExtension("jpg"));
-	fprintf(stdout, "config txt %i\n", config->hasExtension("txt"));
 
 	std::wstring wImgPathName;
 
