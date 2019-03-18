@@ -429,7 +429,8 @@ extern "C" {
         TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1,     ///< Ext4 with extents instead of individual pointers
         TSK_FS_META_CONTENT_TYPE_XFS_EXTENTS = 0x2,     ///< XFS with extents instead of individual pointers
         TSK_FS_META_CONTENT_TYPE_XFS_LOCAL = 0x3,     ///< XFS with all info stored locally instead of individual pointers
-        TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE = 0x4 ///< XFS with all info stored in B+tree
+        TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE = 0x4, ///< XFS with all info stored in B+tree
+        TSK_FS_META_CONTENT_TYPE_XFS_FMT_RMAP = 0x5 ///< XFS with all info stored in a reverse-mapping B+tree stored in the fork
     } TSK_FS_META_CONTENT_TYPE_ENUM;
 
 

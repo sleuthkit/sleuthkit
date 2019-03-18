@@ -475,9 +475,11 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
         }
     }
 
-    if (dino_buf->di_core.di_format & XFS_DINODE_FMT_LOCAL)
+    if (tsk_verbose) { tsk_fprintf(stderr, "inode %" PRId64, inum); }
+    
+    if (dino_buf->di_core.di_format == XFS_DINODE_FMT_LOCAL)
     {
-        if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format & XFS_DINODE_FMT_LOCAL == true \n"); }
+        if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == XFS_DINODE_FMT_LOCAL \n"); }
 
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_LOCAL;
 
@@ -511,7 +513,7 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
             if (tsk_verbose) { tsk_fprintf(stderr, "unknown type = %d \n", fs_meta->type); }
         }
     }
-    else if (dino_buf->di_core.di_format & XFS_DINODE_FMT_EXTENTS)
+    else if (dino_buf->di_core.di_format == XFS_DINODE_FMT_EXTENTS)
     {
         // if inode stores extents with pointers to the blocks with data, just copy all the extents to the meta->content_ptr
 
@@ -539,14 +541,38 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
 
         memcpy(fs_meta->content_ptr, extent_data_offset, content_len);
     }
-    else {
-        if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format & XFS_DINODE_FMT_EXTENTS == false (XFS_DINODE_FMT_BTREE) \n"); }
+    else if (dino_buf->di_core.di_format == XFS_DINODE_FMT_BTREE)
+    {
+        if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == XFS_DINODE_FMT_BTREE \n"); }
 
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE;
 
         /*
         Walk the b+tree
         */
+    }
+    else if (dino_buf->di_core.di_format == XFS_DINODE_FMT_UUID)
+    {
+        // not used
+        
+        if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == XFS_DINODE_FMT_UUID, which is not used \n"); }
+        
+        // a stub
+        fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_DEFAULT;
+    }
+    else if (dino_buf->di_core.di_format == XFS_DINODE_FMT_RMAP)
+    {
+        if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == XFS_DINODE_FMT_RMAP \n"); }
+
+        fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_FMT_RMAP;
+    }
+    else
+    {
+        // shouldn't reach this state
+        if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == %d, which is an unexpected value \n"); }
+        
+        // a stub
+        fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_DEFAULT;
     }
 
     if (tsk_verbose) { tsk_fprintf(stderr, "xfs_dinode_copy: fs_meta->content_len = %d, fs_meta->content_ptr = 0x %x, fs_meta->content_type = %d \n", fs_meta->content_len, fs_meta->content_ptr, fs_meta->content_type); }

@@ -419,7 +419,8 @@ typedef enum xfs_dinode_fmt {
      XFS_DINODE_FMT_LOCAL,
      XFS_DINODE_FMT_EXTENTS,
      XFS_DINODE_FMT_BTREE,
-     XFS_DINODE_FMT_UUID
+     XFS_DINODE_FMT_UUID,
+     XFS_DINODE_FMT_RMAP,
 } xfs_dinode_fmt_t;
 
 typedef struct xfs_dinode_core {
