@@ -37,7 +37,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public abstract class FsContent extends AbstractFile {
 
-	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
+	private static final Logger logger = Logger.getLogger(FsContent.class.getName());
 	private String uniquePath;
 	private List<String> metaDataText = null;
 	private volatile FileSystem parentFileSystem;
@@ -176,7 +176,7 @@ public abstract class FsContent extends AbstractFile {
 		if (fileHandle == 0) {
 			synchronized (this) {
 				if (fileHandle == 0) {
-					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId, getSleuthkitCase());
 				}
 			}
 		}

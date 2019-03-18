@@ -1,67 +1,154 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "img_stat", "img_stat\img_stat.vcxproj", "{48F52EA8-A5D1-4BF4-B774-6ECFCB0CE3C9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mmls", "mmls\mmls.vcxproj", "{712DD83B-786E-485E-83C7-7197DD851B78}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "img_cat", "img_cat\img_cat.vcxproj", "{671D843F-4DFA-4CB8-8BC9-D44E7F4ECF1E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mmstat", "mmstat\mmstat.vcxproj", "{5D75FBFB-539A-4014-ACEB-520BB16F5BFC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fls", "fls\fls.vcxproj", "{58DA1042-AC19-4779-AC1A-AA8EEB3A4524}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fsstat", "fsstat\fsstat.vcxproj", "{D1E6567A-4F65-4832-8018-D33B3CB4692B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blkcat", "blkcat\blkcat.vcxproj", "{A2BEA467-A4CC-4FA6-9C74-587498E35467}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blkstat", "blkstat\blkstat.vcxproj", "{FBB66156-9A54-4713-A801-C507BE7A3AE3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blkcalc", "blkcalc\blkcalc.vcxproj", "{46B82840-9832-466F-8568-132407CA3853}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blkls", "blkls\blkls.vcxproj", "{48D98A0A-BF9C-4D7E-9AF8-E4CAE8437997}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ffind", "ffind\ffind.vcxproj", "{7C132953-1700-42FF-9F61-A814C9F2C758}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "icat", "icat\icat.vcxproj", "{38D89022-2C83-4436-A333-375A2E3E7BB0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ifind", "ifind\ifind.vcxproj", "{52251CB2-65A3-421B-9CB4-7DAC13BB3758}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ils", "ils\ils.vcxproj", "{62C97F5E-64DD-4623-9563-747C4C173348}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "istat", "istat\istat.vcxproj", "{D7643AD7-8518-4B3E-8F3F-F11258D9540E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jcat", "jcat\jcat.vcxproj", "{44A003BE-400D-4434-AFED-64D8E3B448D9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jls", "jls\jls.vcxproj", "{C52F935E-1FD2-443C-A181-27908DAB3BC8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hfind", "hfind\hfind.vcxproj", "{0B127AE3-0C18-4EEF-AB20-A0693E6AA822}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mmcat", "mmcat\mmcat.vcxproj", "{A15F1E4F-951A-403E-B746-2A6D63D9C416}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "callback-sample", "callback-sample\callback-sample.vcxproj", "{6CE3D593-E90D-4CC1-A66B-694AC909F6B8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "posix-sample", "posix-sample\posix-sample.vcxproj", "{1BA0B9E8-F135-494F-9CF5-86427C1F6E41}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_recover", "tsk_recover\tsk_recover.vcxproj", "{06D707E5-68FF-4FC4-AFD0-C84584E32F47}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_loaddb", "tsk_loaddb\tsk_loaddb.vcxproj", "{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_comparedir", "tsk_comparedir\tsk_compare.vcxproj", "{8EE881F4-78DC-49C7-8845-E842358AC0FA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "callback-cpp-sample", "callback-cpp-sample\callback-cpp-sample.vcxproj", "{3B32F1BE-9686-4DC9-8197-F734D146E9F8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "posix-cpp-sample", "posix-cpp-sample\posix-cpp-sample.vcxproj", "{5594DC0E-191C-4F2A-83FE-97F53A9C1222}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_gettimes", "tsk_gettimes\tsk_gettimes.vcxproj", "{11A8927C-F971-4104-A286-5DC11C25E2EC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtsk_jni", "tsk_jni\tsk_jni.vcxproj", "{62D88133-09F6-4E13-B39F-36FCEFBE4FAF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtsk", "libtsk\libtsk.vcxproj", "{76EFC06C-1F64-4478-ABE8-79832716B393}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcat", "fcat\fcat.vcxproj", "{E4A40368-152D-4D54-9E2E-4B140212F98F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

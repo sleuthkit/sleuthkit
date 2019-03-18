@@ -86,7 +86,7 @@ static TSK_RETVAL_ENUM
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS);
             tsk_error_set_errstr(
-                "yaffsfs_parse_image_load_cache: Max object ID %" PRIuOFF " is invalid", obj_id);
+                "yaffsfs_parse_image_load_cache: Max object ID %" PRIu32 " is invalid", obj_id);
             return TSK_ERR;
         }
 
@@ -94,7 +94,7 @@ static TSK_RETVAL_ENUM
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS);
             tsk_error_set_errstr(
-                "yaffsfs_parse_image_load_cache: Max version number %" PRIuOFF " is invalid", version_num);
+                "yaffsfs_parse_image_load_cache: Max version number %" PRIu32 " is invalid", version_num);
             return TSK_ERR;
         }
 

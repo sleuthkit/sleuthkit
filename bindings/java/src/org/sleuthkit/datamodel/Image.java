@@ -119,8 +119,12 @@ public class Image extends AbstractContent implements DataSource {
 	 * @throws TskCoreException
 	 */
 	public synchronized long getImageHandle() throws TskCoreException {
+		if (paths.length == 0) {
+			throw new TskCoreException("Image has no associated paths");
+		}
+		
 		if (imageHandle == 0) {
-			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize);
+			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize, getSleuthkitCase());
 		}
 
 		return imageHandle;
@@ -150,6 +154,11 @@ public class Image extends AbstractContent implements DataSource {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		// If there are no paths, don't attempt to read the image
+		if (paths.length == 0) {
+			return 0;
+		}
+		
 		// read from the image
 		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}

@@ -170,7 +170,7 @@ class TskDb {
     virtual TSK_RETVAL_ENUM setConnectionInfo(CaseDbConnectionInfo * info);
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone) = 0;
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256) = 0;
-    virtual int addImageInfo(int type, TSK_OFF_T size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256, const string& deviceId) = 0;
+    virtual int addImageInfo(int type, TSK_OFF_T size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256, const string& deviceId, const string& collectionDetails) = 0;
     virtual int addImageName(int64_t objId, char const *imgName, int sequence) = 0;
     virtual int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId, int64_t & objId) = 0;
