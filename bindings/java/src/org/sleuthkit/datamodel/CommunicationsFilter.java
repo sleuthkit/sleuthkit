@@ -286,6 +286,15 @@ final public class CommunicationsFilter {
 		public String getDescription() {
 			return "Filters accounts and relationships by device id.";
 		}
+		
+		/**
+		 *  Gets a set of device ids
+		 * 
+		 * @return Collection of device ids
+		 */
+		public Collection<String> getDevices() {
+			return deviceIds;
+		}
 
 		/**
 		 * Get the SQL string for the filter.
