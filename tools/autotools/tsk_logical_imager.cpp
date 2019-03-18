@@ -768,31 +768,17 @@ main(int argc, char **argv1)
 	}
 	TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), imgPath[0]);
 
+    if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
+        tsk_error_print(stderr);
+        exit(1);
+    }
+
 	// create a directory with hostname_timestamp
 	string directory_path;
 	if (createDirectory(directory_path) == -1) {
 		exit(1);
 	}
 	fprintf(stdout, "Created directory %s\n", directory_path.c_str());
-
-	TskFindFiles findFiles(config);
-	if (findFiles.openImage(1, imgPath, imgtype, ssize)) {
-		tsk_error_print(stderr);
-		exit(1);
-	}
-	
-	if (findFiles.findFilesInImg()) {
-		// we already logged the errors
-		exit(1);
-	}
-	exit(0);
-
-//////////////////////////////
-
-	if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
-		tsk_error_print(stderr);
-		exit(1);
-	}
 
 	string outputFileName = directory_path + "/sparse_image.vhd";
 	std::wstring outputFileNameW = toWide(outputFileName);
@@ -802,15 +788,26 @@ main(int argc, char **argv1)
 		exit(1);
 	}
 
-	if (tsk_img_writer_finish(img) == TSK_ERR) {
-		fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-		// not exiting, should call tsk_img_close.
-	}
+    TskFindFiles findFiles(config);
+    if (findFiles.openImageHandle(img)) {
+        tsk_error_print(stderr);
+        exit(1);
+    }
+
+    if (findFiles.findFilesInImg()) {
+        // we already logged the errors
+        exit(1);
+    }
+
+	//if (tsk_img_writer_finish(img) == TSK_ERR) {
+	//	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+	//	// not exiting, should call tsk_img_close.
+	//}
 
 	if (config) {
 		delete config;
 	}
-	tsk_img_close(img);
+    findFiles.closeImage();
 	TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     exit(0);
 }
