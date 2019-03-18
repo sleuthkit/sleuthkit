@@ -683,7 +683,7 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
         while (true) {
             bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
             if (bytesRead == -1) {
-                fprintf(stderr, "processFile: tsk_fs_file_read returns -1 offset=%d\n", offset);
+                fprintf(stderr, "processFile: tsk_fs_file_read returns -1 offset=%" PRIu64 "\n", offset);
                 return TSK_ERR;
             }
             if (bytesRead < bufferLen) {
