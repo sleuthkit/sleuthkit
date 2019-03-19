@@ -17,6 +17,9 @@
     <ClCompile Include="..\..\tools\autotools\LogicalImagerConfig.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="config.txt">
@@ -25,6 +28,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tools\autotools\LogicalImagerConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\TskFindFiles.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

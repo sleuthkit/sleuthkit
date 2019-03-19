@@ -1,4 +1,4 @@
 jpg
 JPG
-JPEG
 jpeg
+JPEG

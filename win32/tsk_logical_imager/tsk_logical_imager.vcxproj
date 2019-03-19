@@ -422,11 +422,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp" />
     <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tools\autotools\LogicalImagerConfig.h" />
+    <ClInclude Include="..\..\tools\autotools\TskFindFiles.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libtsk\libtsk.vcxproj">

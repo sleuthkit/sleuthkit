@@ -28,6 +28,7 @@
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/img/img_writer.h"
 #include "LogicalImagerConfig.h"
+#include "TskFindFiles.h"
 
 std::wstring GetLastErrorStdStrW();
 std::string GetErrorStdStr(DWORD err);
@@ -153,18 +154,6 @@ std::wstring GetErrorStdStrW(DWORD a_err) {
         }
     }
     return std::wstring(L"no error");
-}
-
-static void usage() {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %s [-i imgPath] \n"),
-        progname);
-    tsk_fprintf(stderr,
-        "\t-i imgPath: The image file\n");
-    tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
-    tsk_fprintf(stderr, "\t-V: Print version\n");
-    exit(1);
 }
 
 /**
@@ -638,61 +627,16 @@ BOOL getDriveToProcess(string& driveToProcess) {
     }
 }
 
-class TskFindFiles :public TskAuto {
-public:
-	TskFindFiles(LogicalImagerConfig *config);
-	virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
-	virtual uint8_t handleError();
-
-private:
-	LogicalImagerConfig * m_logicialImagerConfig;
-};
-
-
-TskFindFiles::TskFindFiles(LogicalImagerConfig *config) {
-	m_logicialImagerConfig = config;
-}
-
-// Print errors as they are encountered
-uint8_t TskFindFiles::handleError() {
-	fprintf(stderr, "%s", tsk_error_get());
-	return 0;
-}
-
-
-TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    if (fs_file == NULL || fs_file->name == NULL ) {
-        fprintf(stderr, "processFile: fs_file is null or fs_file->name is null\n");
-        return TSK_ERR;
-    }
-
-    char *extension = PathFindExtensionA(fs_file->name->name);
-    if (extension[0] == '.') {
-        extension = &extension[1];
-    }
-    if (m_logicialImagerConfig->hasExtension(extension)) {
-        fprintf(stderr, "processFile: fs_file->name->name=%s\n", fs_file->name->name);
-        fprintf(stderr, "processFile: path=%s\n", path);
-        fprintf(stderr, "extension %s\n", extension);
-
-        TSK_OFF_T offset = 0;
-        size_t bufferLen = 16 * 1024;
-        size_t bytesRead;
-        char buffer[16 * 1024];
-        
-        while (true) {
-            bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
-            if (bytesRead == -1) {
-                fprintf(stderr, "processFile: tsk_fs_file_read returns -1 offset=%" PRIu64 "\n", offset);
-                return TSK_ERR;
-            }
-            if (bytesRead < bufferLen) {
-                break;
-            }
-            offset += bytesRead;
-        }
-    }
-    return TSK_OK;
+static void usage() {
+    TFPRINTF(stderr,
+        _TSK_T
+        ("usage: %s [-i imgPath] -c configPath\n"),
+        progname);
+    tsk_fprintf(stderr, "\t-i imgPath: The image file\n");
+    tsk_fprintf(stderr, "\t-c configPath: The configuration file\n");
+    tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
+    tsk_fprintf(stderr, "\t-V: Print version\n");
+    exit(1);
 }
 
 int
@@ -706,7 +650,7 @@ main(int argc, char **argv1)
 	unsigned int ssize = 0;
 	const TSK_TCHAR *imgPath[1];
 	BOOL iFlagUsed = FALSE;
-	TSK_TCHAR *configFilename;
+	TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
 	LogicalImagerConfig *config = NULL;
 
 #ifdef TSK_WIN32
@@ -732,7 +676,6 @@ main(int argc, char **argv1)
 
 		case _TSK_T('c'):
 			configFilename = OPTARG;
-			config = new LogicalImagerConfig(toNarrow(configFilename));
 			break;
 
 		case _TSK_T('v'):
@@ -750,8 +693,9 @@ main(int argc, char **argv1)
 		}
 	}
 
-	if (config == NULL) {
-		config = new LogicalImagerConfig();
+	if (configFilename == NULL) {
+        TFPRINTF(stderr, _TSK_T("-c configPath is required\n"));
+        exit(1);
 	}
 
 	std::wstring wImgPathName;
@@ -789,14 +733,23 @@ main(int argc, char **argv1)
 		exit(1);
 	}
 
+    config = new LogicalImagerConfig(toNarrow(configFilename));
     TskFindFiles findFiles(config);
+
     if (findFiles.openImageHandle(img)) {
         tsk_error_print(stderr);
+        if (config) {
+            delete config;
+        }
         exit(1);
     }
 
     if (findFiles.findFilesInImg()) {
         // we already logged the errors
+        if (config) {
+            delete config;
+        }
+        // should we call findFiles.closeImage() upon error?
         exit(1);
     }
 
