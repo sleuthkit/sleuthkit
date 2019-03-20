@@ -642,16 +642,16 @@ static void usage() {
 int
 main(int argc, char **argv1)
 {
-	TSK_IMG_INFO *img;
-	TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+    TSK_IMG_INFO *img;
+    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
-	int ch;
-	TSK_TCHAR **argv;
-	unsigned int ssize = 0;
-	const TSK_TCHAR *imgPath[1];
-	BOOL iFlagUsed = FALSE;
-	TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
-	LogicalImagerConfig *config = NULL;
+    int ch;
+    TSK_TCHAR **argv;
+    unsigned int ssize = 0;
+    const TSK_TCHAR *imgPath[1];
+    BOOL iFlagUsed = FALSE;
+    TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
+    LogicalImagerConfig *config = NULL;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -663,75 +663,75 @@ main(int argc, char **argv1)
 #else
     argv = (TSK_TCHAR **)argv1;
 #endif
-	progname = argv[0];
-	setlocale(LC_ALL, "");
+    progname = argv[0];
+    setlocale(LC_ALL, "");
 
-	while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV"))) > 0) {
-		switch (ch) {
-		case _TSK_T('?'):
-		default:
-			TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
-				argv[OPTIND]);
-			usage();
+    while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV"))) > 0) {
+        switch (ch) {
+        case _TSK_T('?'):
+        default:
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+                argv[OPTIND]);
+            usage();
 
-		case _TSK_T('c'):
-			configFilename = OPTARG;
-			break;
+        case _TSK_T('c'):
+            configFilename = OPTARG;
+            break;
 
-		case _TSK_T('v'):
-			tsk_verbose++;
-			break;
+        case _TSK_T('v'):
+            tsk_verbose++;
+            break;
 
-		case _TSK_T('V'):
-			tsk_version_print(stdout);
-			exit(0);
+        case _TSK_T('V'):
+            tsk_version_print(stdout);
+            exit(0);
 
-		case _TSK_T('i'):
-			imgPath[0] = OPTARG;
-			iFlagUsed = TRUE;
-			break;
-		}
-	}
+        case _TSK_T('i'):
+            imgPath[0] = OPTARG;
+            iFlagUsed = TRUE;
+            break;
+        }
+    }
 
-	if (configFilename == NULL) {
+    if (configFilename == NULL) {
         TFPRINTF(stderr, _TSK_T("-c configPath is required\n"));
         exit(1);
-	}
+    }
 
-	std::wstring wImgPathName;
+    std::wstring wImgPathName;
 
-	if (!iFlagUsed) {
-		string driveToProcess;
-		if (getDriveToProcess(driveToProcess)) {
-			wImgPathName = _TSK_T("\\\\.\\") + toWide(driveToProcess);
-			imgPath[0] = (TSK_TCHAR *)wImgPathName.c_str();
-		}
-		else {
-			fprintf(stderr, "Process is not running in elevated mode\n");
-			exit(1);
-		}
-	}
-	TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), imgPath[0]);
+    if (!iFlagUsed) {
+        string driveToProcess;
+        if (getDriveToProcess(driveToProcess)) {
+            wImgPathName = _TSK_T("\\\\.\\") + toWide(driveToProcess);
+            imgPath[0] = (TSK_TCHAR *)wImgPathName.c_str();
+        }
+        else {
+            fprintf(stderr, "Process is not running in elevated mode\n");
+            exit(1);
+        }
+    }
+    TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), imgPath[0]);
 
     if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }
 
-	// create a directory with hostname_timestamp
-	string directory_path;
-	if (createDirectory(directory_path) == -1) {
-		exit(1);
-	}
-	fprintf(stdout, "Created directory %s\n", directory_path.c_str());
+    // create a directory with hostname_timestamp
+    string directory_path;
+    if (createDirectory(directory_path) == -1) {
+        exit(1);
+    }
+    fprintf(stdout, "Created directory %s\n", directory_path.c_str());
 
-	string outputFileName = directory_path + "/sparse_image.vhd";
-	std::wstring outputFileNameW = toWide(outputFileName);
+    string outputFileName = directory_path + "/sparse_image.vhd";
+    std::wstring outputFileNameW = toWide(outputFileName);
 
-	if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
-		fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
-		exit(1);
-	}
+    if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
+        fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
+        exit(1);
+    }
 
     config = new LogicalImagerConfig(toNarrow(configFilename));
     TskFindFiles findFiles(config);
@@ -753,15 +753,15 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-	//if (tsk_img_writer_finish(img) == TSK_ERR) {
-	//	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-	//	// not exiting, should call tsk_img_close.
-	//}
+    //if (tsk_img_writer_finish(img) == TSK_ERR) {
+    //	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+    //	// not exiting, should call tsk_img_close.
+    //}
 
-	if (config) {
-		delete config;
-	}
+    if (config) {
+        delete config;
+    }
     findFiles.closeImage();
-	TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
+    TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     exit(0);
 }
