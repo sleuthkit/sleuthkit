@@ -129,7 +129,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(XFSFS_INFO * xfsfs, TSK_INUM_T dino
                 // found in a range, go one level down in b+tree, read the next
                 found_key = true;
 
-                cur_block_num = (TSK_DADDR_T) ag_num * (TSK_DADDR_T) xfsfs->fs->sb_agblocks + (TSK_DADDR_T) tsk_getu32(TSK_BIG_ENDIAN, iptrs[cur_key]);
+                cur_block_num = (TSK_DADDR_T) ag_num * (TSK_DADDR_T) xfsfs->fs->sb_agblocks + (TSK_DADDR_T) tsk_getu32(TSK_BIG_ENDIAN, &iptrs[cur_key]);
 
                 if (tsk_verbose) { tsk_fprintf(stderr, "go one level down in b+tree, cur_block_num = %u \n", cur_block_num); }
 
@@ -1666,6 +1666,8 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_RETVAL_ENUM retval = TSK_OK;
     TSK_FS_NAME *fs_name;
 
+    // Assuming fs_meta->type == TSK_FS_META_TYPE_DIR
+
     if (tsk_verbose) { tsk_fprintf(stderr, "a_fs->first_inum = %d, a_fs->last_inum = %d \n", a_fs->first_inum, a_fs->last_inum); }
 
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
@@ -1837,207 +1839,381 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         xfs_bmbt_rec_t *extent_data_offset = (xfs_bmbt_rec_t *) fs_meta->content_ptr;
         uint32_t nextents = fs_meta->content_len / sizeof(xfs_bmbt_rec_t);
 
-        if (nextents == 0)
+        tsk_fprintf(stderr, "nextents == %" PRId64 ", fs_meta->size = %" PRId64 " \n", nextents, fs_meta->size);
+
+        if (fs_meta->size <= xfs->fs_info.block_size /* nextents can be used too */)
         {
-            tsk_fprintf(stderr, "nextents == 0 \n", nextents);
-        }
+            // unpack extent
+            xfs_bmbt_irec_t irec;
+            memset(&irec, 0, sizeof(irec));
+            xfs_bmbt_disk_get_all(extent_data_offset, &irec);
 
-        if (fs_meta->type == TSK_FS_META_TYPE_DIR && nextents > 1)
-        {
-            tsk_fprintf(stderr, "fs_meta->type == TSK_FS_META_TYPE_DIR and nextents = %d > 1. Directory blocks with multiple extents are unsupported now \n", nextents);
-            return TSK_ERR;
-        }
-
-        // unpack extent
-        xfs_bmbt_irec_t irec;
-        memset(&irec, 0, sizeof(irec));
-        xfs_bmbt_disk_get_all(extent_data_offset, &irec);
-
-        if (tsk_verbose) {
-            tsk_fprintf(stderr, "extent_num = %d, adding br_startblock = %d / br_blockcount = %d \n", /* extent_num */ 0, irec.br_startblock, irec.br_blockcount);
-        }
-
-        if ((dirbuf = (char*) tsk_malloc((size_t)a_fs->block_size)) == NULL) {
-            return TSK_ERR;
-        }
-
-        size = irec.br_blockcount * a_fs->block_size;
-
-        xfs_agnumber_t ag_num = (TSK_OFF_T) irec.br_startblock >> xfs->fs->sb_agblklog;
-        uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
-        rel_blk_neg -= 1;
-        uint64_t rel_blk = (TSK_OFF_T) irec.br_startblock & rel_blk_neg;
-        TSK_OFF_T offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) a_fs->block_size;
-
-        TSK_OFF_T offset_in_block = 0;
-
-        // read xfs_dir2_data_hdr (on a v5 filesystem this is xfs_dir3_data_hdr_t)
-
-        ssize_t len = (size > a_fs->block_size) ? a_fs->block_size : size;
-        ssize_t cnt = tsk_fs_read(a_fs, offset, dirbuf, len);
-        if (cnt != len) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-            tsk_error_set_errstr
-            ("xfs_dir_open_meta: Error reading directory contents: %"
-                PRIuINUM "\n", a_addr);
-            free(dirbuf);
-            return TSK_COR;
-        }
-
-        xfs_dir2_data_hdr data_hdr;
-        memcpy(&data_hdr, dirbuf + offset_in_block, sizeof(data_hdr));
-        offset_in_block += sizeof(data_hdr);
-
-        data_hdr.bestfree[0].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].offset);
-        data_hdr.bestfree[0].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].length);
-        data_hdr.bestfree[1].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].offset);
-        data_hdr.bestfree[1].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].length);
-        data_hdr.bestfree[2].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].offset);
-        data_hdr.bestfree[2].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].length);
-
-        xfs_dir2_block_tail block_tail;
-        memcpy(&block_tail, dirbuf + size - sizeof(xfs_dir2_block_tail), sizeof(xfs_dir2_block_tail));
-        block_tail.count = tsk_getu32(TSK_BIG_ENDIAN, &block_tail.count);
-        block_tail.stale = tsk_getu32(TSK_BIG_ENDIAN, &block_tail.stale);
-        uint32_t leaf_offset = size - sizeof(xfs_dir2_block_tail) - block_tail.count * sizeof(xfs_dir2_leaf_entry_t);
-
-        if (leaf_offset >= len) {
-            tsk_fprintf(stderr, "leaf_offset = %d past len = %d \n", leaf_offset, len);
-            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-            tsk_error_set_errstr
-            ("xfs_dir_open_meta: Error reading directory contents: %"
-                PRIuINUM "\n", a_addr);
-            return TSK_COR;
-        }
-
-        if (tsk_verbose) {
-            tsk_fprintf(stderr, "block_tail.count = %d, leaf_offset = %d (out of len = %d) \n", block_tail.count, leaf_offset, len);
-        }
-
-        size -= len;
-        offset += len;
-
-        xfs_dir2_data_entry_t data_entry;
-
-        while (offset_in_block < leaf_offset)
-        {
-            if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = %d \n", offset_in_block); }
-
-            uint16_t *xfs_dir2_data_unused_freetag = (uint16_t*) (dirbuf + offset_in_block);
-
-            if (*xfs_dir2_data_unused_freetag == 0xffff)
-            {
-                xfs_dir2_data_unused *data_unused = (xfs_dir2_data_unused *) (dirbuf + offset_in_block);
-
-                if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
-                offset_in_block += tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length);
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "extent_num = %d, adding br_startblock = %d / br_blockcount = %d \n", /* extent_num */ 0, irec.br_startblock, irec.br_blockcount);
             }
-            else
+
+            if ((dirbuf = (char*) tsk_malloc((size_t)a_fs->block_size)) == NULL) {
+                return TSK_ERR;
+            }
+
+            size = irec.br_blockcount * a_fs->block_size;
+
+            xfs_agnumber_t ag_num = (TSK_OFF_T) irec.br_startblock >> xfs->fs->sb_agblklog;
+            uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
+            rel_blk_neg -= 1;
+            uint64_t rel_blk = (TSK_OFF_T) irec.br_startblock & rel_blk_neg;
+            TSK_OFF_T offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) a_fs->block_size;
+
+            TSK_OFF_T offset_in_block = 0;
+
+            // read xfs_dir2_data_hdr (on a v5 filesystem this is xfs_dir3_data_hdr_t)
+
+            ssize_t len = (size > a_fs->block_size) ? a_fs->block_size : size;
+            ssize_t cnt = tsk_fs_read(a_fs, offset, dirbuf, len);
+            if (cnt != len) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                tsk_error_set_errstr
+                ("xfs_dir_open_meta: Error reading directory contents: %"
+                    PRIuINUM "\n", a_addr);
+                free(dirbuf);
+                return TSK_COR;
+            }
+
+            xfs_dir2_data_hdr data_hdr;
+            memcpy(&data_hdr, dirbuf + offset_in_block, sizeof(data_hdr));
+            offset_in_block += sizeof(data_hdr);
+
+            data_hdr.bestfree[0].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].offset);
+            data_hdr.bestfree[0].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].length);
+            data_hdr.bestfree[1].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].offset);
+            data_hdr.bestfree[1].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].length);
+            data_hdr.bestfree[2].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].offset);
+            data_hdr.bestfree[2].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].length);
+
+            xfs_dir2_block_tail block_tail;
+            memcpy(&block_tail, dirbuf + size - sizeof(xfs_dir2_block_tail), sizeof(xfs_dir2_block_tail));
+            block_tail.count = tsk_getu32(TSK_BIG_ENDIAN, &block_tail.count);
+            block_tail.stale = tsk_getu32(TSK_BIG_ENDIAN, &block_tail.stale);
+            uint32_t leaf_offset = size - sizeof(xfs_dir2_block_tail) - block_tail.count * sizeof(xfs_dir2_leaf_entry_t);
+
+            if (leaf_offset >= len) {
+                tsk_fprintf(stderr, "leaf_offset = %d past len = %d \n", leaf_offset, len);
+                tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                tsk_error_set_errstr
+                ("xfs_dir_open_meta: Error reading directory contents: %"
+                    PRIuINUM "\n", a_addr);
+                return TSK_COR;
+            }
+
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "block_tail.count = %d, leaf_offset = %d (out of len = %d) \n", block_tail.count, leaf_offset, len);
+            }
+
+            size -= len;
+            offset += len;
+
+            xfs_dir2_data_entry_t data_entry;
+
+            while (offset_in_block < leaf_offset)
             {
-                if (offset_in_block + sizeof(uint64_t) + sizeof(uint8_t) >= leaf_offset)
+                if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = %d \n", offset_in_block); }
+
+                uint16_t *xfs_dir2_data_unused_freetag = (uint16_t*) (dirbuf + offset_in_block);
+
+                if (*xfs_dir2_data_unused_freetag == 0xffff)
                 {
-                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                    tsk_error_set_errstr
-                    ("xfs_dir_open_meta: Error reading directory contents: %"
-                        PRIuINUM "\n", a_addr);
-                    return TSK_COR;
-                }
+                    xfs_dir2_data_unused *data_unused = (xfs_dir2_data_unused *) (dirbuf + offset_in_block);
 
-                memcpy(&data_entry, dirbuf + offset_in_block, sizeof(uint64_t) + sizeof(uint8_t));
-                offset_in_block += sizeof(uint64_t) + sizeof(uint8_t);
-
-                data_entry.inumber = tsk_getu64(TSK_BIG_ENDIAN, &data_entry.inumber);
-                fs_name->meta_addr = data_entry.inumber;
-
-
-                if (offset_in_block + data_entry.namelen + ftype_size >= leaf_offset)
-                {
-                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                    tsk_error_set_errstr
-                    ("xfs_dir_open_meta: Error reading directory contents: %"
-                        PRIuINUM "\n", a_addr);
-                    return TSK_COR;
-                }
-
-                char *name = (char *) dirbuf + offset_in_block;
-                memcpy(fs_name->name, name, data_entry.namelen);
-                offset_in_block += data_entry.namelen;
-                fs_name->name[data_entry.namelen] = '\0';
-
-                uint8_t ftype = 0;
-                if (ftype_size > 0)
-                {
-                    ftype = * (uint8_t *) (name + data_entry.namelen);
+                    if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
+                    offset_in_block += tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length);
                 }
                 else
                 {
-                    xfs_dinode_t *dino_buf = NULL;
-                    ssize_t dinodesize =
-                        xfs->fs->sb_inodesize >
-                        sizeof(xfs_dinode) ? xfs->fs->sb_inodesize : sizeof(xfs_dinode);
-                    if ((dino_buf = (xfs_dinode_t *) tsk_malloc(dinodesize)) == NULL) {
+                    if (offset_in_block + sizeof(uint64_t) + sizeof(uint8_t) >= leaf_offset)
+                    {
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                        ("xfs_dir_open_meta: Error reading directory contents: %"
+                            PRIuINUM "\n", a_addr);
+                        return TSK_COR;
+                    }
+
+                    memcpy(&data_entry, dirbuf + offset_in_block, sizeof(uint64_t) + sizeof(uint8_t));
+                    offset_in_block += sizeof(uint64_t) + sizeof(uint8_t);
+
+                    data_entry.inumber = tsk_getu64(TSK_BIG_ENDIAN, &data_entry.inumber);
+                    fs_name->meta_addr = data_entry.inumber;
+
+
+                    if (offset_in_block + data_entry.namelen + ftype_size >= leaf_offset)
+                    {
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                        ("xfs_dir_open_meta: Error reading directory contents: %"
+                            PRIuINUM "\n", a_addr);
+                        return TSK_COR;
+                    }
+
+                    char *name = (char *) dirbuf + offset_in_block;
+                    memcpy(fs_name->name, name, data_entry.namelen);
+                    offset_in_block += data_entry.namelen;
+                    fs_name->name[data_entry.namelen] = '\0';
+
+                    uint8_t ftype = 0;
+                    if (ftype_size > 0)
+                    {
+                        ftype = * (uint8_t *) (name + data_entry.namelen);
+                    }
+                    else
+                    {
+                        xfs_dinode_t *dino_buf = NULL;
+                        ssize_t dinodesize =
+                            xfs->fs->sb_inodesize >
+                            sizeof(xfs_dinode) ? xfs->fs->sb_inodesize : sizeof(xfs_dinode);
+                        if ((dino_buf = (xfs_dinode_t *) tsk_malloc(dinodesize)) == NULL) {
+                            return TSK_ERR;
+                        }
+
+                        if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
+                            free(dino_buf);
+                            return TSK_ERR;
+                        }
+
+                        ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
+                    }
+
+                    uint32_t ftype32 = (uint32_t) ftype << 12;
+                    switch (ftype32) {
+                    case XFS_IN_REG:
+                        fs_meta->type = TSK_FS_META_TYPE_REG;
+                        break;
+                    case XFS_IN_DIR:
+                        fs_meta->type = TSK_FS_META_TYPE_DIR;
+                        break;
+                    case XFS_IN_SOCK:
+                        fs_meta->type = TSK_FS_META_TYPE_SOCK;
+                        break;
+                    case XFS_IN_LNK:
+                        fs_meta->type = TSK_FS_META_TYPE_LNK;
+                        break;
+                    case XFS_IN_BLK:
+                        fs_meta->type = TSK_FS_META_TYPE_BLK;
+                        break;
+                    case XFS_IN_CHR:
+                        fs_meta->type = TSK_FS_META_TYPE_CHR;
+                        break;
+                    case XFS_IN_FIFO:
+                        fs_meta->type = TSK_FS_META_TYPE_FIFO;
+                        break;
+                    default:
+                        fs_meta->type = TSK_FS_META_TYPE_UNDEF;
+                        break;
+                    }
+
+                    // we iterate over allocated directories
+                    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+
+                    if (tsk_verbose) { tsk_fprintf(stderr, "namelen = %d, fs_name->name = %s, fs_meta->type = %d, fs_name->meta_addr = %" PRId64  " fs_name->flags = \n", data_entry.namelen, fs_name->name, fs_meta->type, fs_name->meta_addr, fs_name->flags); }
+
+                    if (tsk_fs_dir_add(fs_dir, fs_name)) {
+                        tsk_fs_name_free(fs_name);
                         return TSK_ERR;
                     }
 
-                    if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
-                        free(dino_buf);
-                        return TSK_ERR;
-                    }
+                    // skipping xfs_dir2_data_off_t tag (and ftype, if present)
+                    offset_in_block += sizeof(xfs_dir2_data_off_t) + ftype_size;
 
-                    ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
+                    // x64 alignment
+                    offset_in_block = roundup(offset_in_block, sizeof(uint64_t));
+                }
+            }
+        }
+        else
+        {
+            for(uint32_t extent_num = 0; extent_num < nextents; extent_num++)
+            {
+                // unpack extent
+                xfs_bmbt_irec_t irec;
+                memset(&irec, 0, sizeof(irec));
+                xfs_bmbt_disk_get_all(&extent_data_offset[extent_num], &irec);
+
+                // skip it if that's not a data block
+                if (irec.br_startoff >= XFS_DIR2_LEAF_OFFSET / a_fs->block_size  || irec.br_startoff >= XFS_DIR2_FREE_OFFSET / a_fs->block_size)
+                {
+                    continue;
                 }
 
-                uint32_t ftype32 = (uint32_t) ftype << 12;
-                switch (ftype32) {
-                case XFS_IN_REG:
-                    fs_meta->type = TSK_FS_META_TYPE_REG;
-                    break;
-                case XFS_IN_DIR:
-                    fs_meta->type = TSK_FS_META_TYPE_DIR;
-                    break;
-                case XFS_IN_SOCK:
-                    fs_meta->type = TSK_FS_META_TYPE_SOCK;
-                    break;
-                case XFS_IN_LNK:
-                    fs_meta->type = TSK_FS_META_TYPE_LNK;
-                    break;
-                case XFS_IN_BLK:
-                    fs_meta->type = TSK_FS_META_TYPE_BLK;
-                    break;
-                case XFS_IN_CHR:
-                    fs_meta->type = TSK_FS_META_TYPE_CHR;
-                    break;
-                case XFS_IN_FIFO:
-                    fs_meta->type = TSK_FS_META_TYPE_FIFO;
-                    break;
-                default:
-                    fs_meta->type = TSK_FS_META_TYPE_UNDEF;
-                    break;
+                if (tsk_verbose) {
+                    tsk_fprintf(stderr, "extent_num = %d, adding irec.br_startoff = %" PRId64 " br_startblock = %" PRId64 " / br_blockcount = %" PRId64 ", XFS_DIR2_LEAF_OFFSET = %" PRId64 ",  XFS_DIR2_FREE_OFFSET = %" PRId64 "\n", extent_num, irec.br_startoff, irec.br_startblock, irec.br_blockcount, XFS_DIR2_LEAF_OFFSET, XFS_DIR2_FREE_OFFSET);
                 }
 
-                // we iterate over allocated directories
-                fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-
-                if (tsk_verbose) { tsk_fprintf(stderr, "namelen = %d, fs_name->name = %s, fs_meta->type = %d, fs_name->meta_addr = %" PRId64  " fs_name->flags = \n", data_entry.namelen, fs_name->name, fs_meta->type, fs_name->meta_addr, fs_name->flags); }
-
-                if (tsk_fs_dir_add(fs_dir, fs_name)) {
-                    tsk_fs_name_free(fs_name);
+                size = (TSK_OFF_T) irec.br_blockcount * (TSK_OFF_T) a_fs->block_size;
+                
+                if ((dirbuf = (char*) tsk_malloc(size)) == NULL) {
                     return TSK_ERR;
                 }
 
-                // skipping xfs_dir2_data_off_t tag (and ftype, if present)
-                offset_in_block += sizeof(xfs_dir2_data_off_t) + ftype_size;
+                xfs_agnumber_t ag_num = (TSK_OFF_T) irec.br_startblock >> xfs->fs->sb_agblklog;
+                uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
+                rel_blk_neg -= 1;
+                uint64_t rel_blk = (TSK_OFF_T) irec.br_startblock & rel_blk_neg;
+                TSK_OFF_T offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) a_fs->block_size;
 
-                // x64 alignment
-                offset_in_block = roundup(offset_in_block, sizeof(uint64_t));
+                // read xfs_dir2_data_hdr (on a v5 filesystem this is xfs_dir3_data_hdr_t)
+
+                // let's read the whole extent, but parse it block-by-block
+                ssize_t len = size;
+                ssize_t cnt = tsk_fs_read(a_fs, offset, dirbuf, len);
+                if (cnt != len) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                    tsk_error_set_errstr
+                    ("xfs_dir_open_meta: Error reading directory contents: %"
+                        PRIuINUM "\n", a_addr);
+                    free(dirbuf);
+                    return TSK_COR;
+                }
+
+                for (uint16_t block_num = 0; block_num < irec.br_blockcount; block_num++)
+                {
+                    TSK_OFF_T offset_in_block = (TSK_OFF_T) block_num * (TSK_OFF_T) a_fs->block_size;
+                    TSK_OFF_T limit = (TSK_OFF_T) (block_num + 1) * (TSK_OFF_T) a_fs->block_size;
+
+                    xfs_dir2_data_hdr data_hdr;
+                    memcpy(&data_hdr, dirbuf + offset_in_block, sizeof(data_hdr));
+                    offset_in_block += sizeof(data_hdr);
+
+                    data_hdr.bestfree[0].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].offset);
+                    data_hdr.bestfree[0].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].length);
+                    data_hdr.bestfree[1].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].offset);
+                    data_hdr.bestfree[1].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].length);
+                    data_hdr.bestfree[2].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].offset);
+                    data_hdr.bestfree[2].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].length);
+
+                    xfs_dir2_data_entry_t data_entry;
+
+                    while (offset_in_block < limit)
+                    {
+                        if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = %d \n", offset_in_block); }
+
+                        uint16_t *xfs_dir2_data_unused_freetag = (uint16_t*) (dirbuf + offset_in_block);
+
+                        if (*xfs_dir2_data_unused_freetag == 0xffff)
+                        {
+                            xfs_dir2_data_unused *data_unused = (xfs_dir2_data_unused *) (dirbuf + offset_in_block);
+
+                            if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
+                            offset_in_block += tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length);
+                        }
+                        else
+                        {
+                            if (offset_in_block + sizeof(uint64_t) + sizeof(uint8_t) >= limit)
+                            {
+                                tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                                tsk_error_set_errstr
+                                ("xfs_dir_open_meta: Error reading directory contents: %"
+                                    PRIuINUM "\n", a_addr);
+                                return TSK_COR;
+                            }
+
+                            memcpy(&data_entry, dirbuf + offset_in_block, sizeof(uint64_t) + sizeof(uint8_t));
+                            offset_in_block += sizeof(uint64_t) + sizeof(uint8_t);
+
+                            data_entry.inumber = tsk_getu64(TSK_BIG_ENDIAN, &data_entry.inumber);
+                            fs_name->meta_addr = data_entry.inumber;
+
+
+                            if (offset_in_block + data_entry.namelen + ftype_size >= limit)
+                            {
+                                tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                                tsk_error_set_errstr
+                                ("xfs_dir_open_meta: Error reading directory contents: %"
+                                    PRIuINUM "\n", a_addr);
+                                return TSK_COR;
+                            }
+
+                            char *name = (char *) dirbuf + offset_in_block;
+                            memcpy(fs_name->name, name, data_entry.namelen);
+                            offset_in_block += data_entry.namelen;
+                            fs_name->name[data_entry.namelen] = '\0';
+
+                            uint8_t ftype = 0;
+                            if (ftype_size > 0)
+                            {
+                                ftype = * (uint8_t *) (name + data_entry.namelen);
+                            }
+                            else
+                            {
+                                xfs_dinode_t *dino_buf = NULL;
+                                ssize_t dinodesize =
+                                    xfs->fs->sb_inodesize >
+                                    sizeof(xfs_dinode) ? xfs->fs->sb_inodesize : sizeof(xfs_dinode);
+                                if ((dino_buf = (xfs_dinode_t *) tsk_malloc(dinodesize)) == NULL) {
+                                    return TSK_ERR;
+                                }
+
+                                if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
+                                    free(dino_buf);
+                                    return TSK_ERR;
+                                }
+
+                                ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
+                            }
+
+                            uint32_t ftype32 = (uint32_t) ftype << 12;
+                            switch (ftype32) {
+                            case XFS_IN_REG:
+                                fs_meta->type = TSK_FS_META_TYPE_REG;
+                                break;
+                            case XFS_IN_DIR:
+                                fs_meta->type = TSK_FS_META_TYPE_DIR;
+                                break;
+                            case XFS_IN_SOCK:
+                                fs_meta->type = TSK_FS_META_TYPE_SOCK;
+                                break;
+                            case XFS_IN_LNK:
+                                fs_meta->type = TSK_FS_META_TYPE_LNK;
+                                break;
+                            case XFS_IN_BLK:
+                                fs_meta->type = TSK_FS_META_TYPE_BLK;
+                                break;
+                            case XFS_IN_CHR:
+                                fs_meta->type = TSK_FS_META_TYPE_CHR;
+                                break;
+                            case XFS_IN_FIFO:
+                                fs_meta->type = TSK_FS_META_TYPE_FIFO;
+                                break;
+                            default:
+                                fs_meta->type = TSK_FS_META_TYPE_UNDEF;
+                                break;
+                            }
+
+                            // we iterate over allocated directories
+                            fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+
+                            if (tsk_verbose) { tsk_fprintf(stderr, "namelen = %d, fs_name->name = %s, fs_meta->type = %d, fs_name->meta_addr = %" PRId64  " fs_name->flags = \n", data_entry.namelen, fs_name->name, fs_meta->type, fs_name->meta_addr, fs_name->flags); }
+
+                            if (tsk_fs_dir_add(fs_dir, fs_name)) {
+                                tsk_fs_name_free(fs_name);
+                                return TSK_ERR;
+                            }
+
+                            // skipping xfs_dir2_data_off_t tag (and ftype, if present)
+                            offset_in_block += sizeof(xfs_dir2_data_off_t) + ftype_size;
+
+                            // x64 alignment
+                            offset_in_block = roundup(offset_in_block, sizeof(uint64_t));
+                        }
+                    }
+                }
             }
         }
 
         free(dirbuf);
     }
     else if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE) {
-        if (tsk_verbose) { tsk_fprintf(stderr, "fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE is not supported yet"); }
+        tsk_fprintf(stderr, "fs_meta->content_type == XFS_DINODE_FMT_BTREE is not supported yet \n");
     }
 
     return retval;

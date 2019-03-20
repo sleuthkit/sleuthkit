@@ -626,6 +626,15 @@ typedef struct xfs_dir2_leaf_entry {
     xfs_dir2_dataptr_t address;
 } xfs_dir2_leaf_entry_t;
 
+// https://github.com/torvalds/linux/blob/master/fs/xfs/libxfs/xfs_da_format.h#L418
+
+#define	XFS_DIR2_DATA_ALIGN_LOG	3		/* i.e., 8 bytes */
+#define	XFS_DIR2_SPACE_SIZE	(1ULL << (32 + XFS_DIR2_DATA_ALIGN_LOG))
+#define	XFS_DIR2_LEAF_SPACE	1
+#define	XFS_DIR2_LEAF_OFFSET	(XFS_DIR2_LEAF_SPACE * XFS_DIR2_SPACE_SIZE)
+#define	XFS_DIR2_FREE_SPACE	2
+#define	XFS_DIR2_FREE_OFFSET	(XFS_DIR2_FREE_SPACE * XFS_DIR2_SPACE_SIZE)
+
 /*
  * Structure of an xfs file system handle.
  */
