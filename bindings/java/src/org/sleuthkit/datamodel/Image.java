@@ -124,7 +124,7 @@ public class Image extends AbstractContent implements DataSource {
 		}
 		
 		if (imageHandle == 0) {
-			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize);
+			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize, getSleuthkitCase());
 		}
 
 		return imageHandle;
