@@ -36,7 +36,7 @@ uint8_t TskFindFiles::handleError() {
 }
 
 /**
-* Process a file. If the file contains an extension is specified in the LogicalImagerConfig,
+* Process a file. If the file contains an extension which is specified in the LogicalImagerConfig,
 * we collect it by reading the file content.
 * @param fs_file file details
 * @param path full path of parent directory
@@ -53,10 +53,6 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
         extension = &extension[1];
     }
     if (m_logicialImagerConfig->hasExtension(extension)) {
-        //fprintf(stderr, "processFile: fs_file->name->name=%s\n", fs_file->name->name);
-        //fprintf(stderr, "processFile: path=%s\n", path);
-        //fprintf(stderr, "extension %s\n", extension);
-
         TSK_OFF_T offset = 0;
         size_t bufferLen = 16 * 1024;
         size_t bytesRead;
