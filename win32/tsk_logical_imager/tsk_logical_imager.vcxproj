@@ -425,6 +425,7 @@
     <ClCompile Include="..\..\tools\autotools\LogicalImagerExtensionRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerPathRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleBase.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp" />
     <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerConfig.cpp" />
@@ -434,6 +435,7 @@
     <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerPathRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleBase.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h" />
     <ClInclude Include="..\..\tools\autotools\TskFindFiles.h" />
   </ItemGroup>
   <ItemGroup>

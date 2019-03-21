@@ -16,6 +16,7 @@
 #include "LogicalImagerConfig.h"
 #include "LogicalImagerExtensionRule.h"
 #include "LogicalImagerPathRule.h"
+#include "LogicalImagerSizeRule.h"
 
 #include <fstream>
 #include <iostream>
@@ -41,12 +42,15 @@ LogicalImagerConfig::LogicalImagerConfig(const std::string configFilename)
 
     m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("extension_rule"), extension_rule));
 
-
     std::string path_strs[] = { "Google" };
     std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
     LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
 
     m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("path_rule"), path_rule));
+
+    LogicalImagerSizeRule *size_rule = new LogicalImagerSizeRule(2000, 0);
+
+    m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("size_rule"), size_rule));
 }
 
 LogicalImagerConfig::~LogicalImagerConfig()
