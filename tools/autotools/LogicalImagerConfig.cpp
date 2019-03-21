@@ -15,6 +15,7 @@
 
 #include "LogicalImagerConfig.h"
 #include "LogicalImagerExtensionRule.h"
+#include "LogicalImagerPathRule.h"
 
 #include <fstream>
 #include <iostream>
@@ -39,6 +40,13 @@ LogicalImagerConfig::LogicalImagerConfig(const std::string configFilename)
     LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
 
     m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("extension_rule"), extension_rule));
+
+
+    std::string path_strs[] = { "Google" };
+    std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
+    LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
+
+    m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("path_rule"), path_rule));
 }
 
 LogicalImagerConfig::~LogicalImagerConfig()
@@ -48,10 +56,11 @@ LogicalImagerConfig::~LogicalImagerConfig()
 bool LogicalImagerConfig::matches(TSK_FS_FILE * fs_file, const char * path) const
 {
     std::map<std::string, LogicalImagerRuleBase *>::const_iterator itr;
-    bool result = false;
 
     for (itr = m_rules.begin(); itr != m_rules.end(); itr++) {
-        result |= itr->second->matches(fs_file, path);
+        if (!itr->second->matches(fs_file, path)) {
+            return false;
+        }
     }
-    return result;
+    return true;
 }
