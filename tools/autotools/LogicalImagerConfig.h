@@ -17,8 +17,10 @@
 
 #include <string>
 #include <set>
+#include <map>
 
 #include "tsk/tsk_tools_i.h"
+#include "LogicalImagerExtensionRule.h"
 
 /**
 * Implement the logical imager configuration.
@@ -30,9 +32,8 @@ public:
 	LogicalImagerConfig(const std::string configFilename);
 	~LogicalImagerConfig();
 
-	bool hasExtension(const std::string extension);
-	const std::set<std::string> getExtension();
+    bool matches(TSK_FS_FILE *fs_file, const char *path) const;
 
 private:
-	std::set<std::string> m_extensions;
+	std::map<std::string, LogicalImagerRuleBase *> m_rules;
 };

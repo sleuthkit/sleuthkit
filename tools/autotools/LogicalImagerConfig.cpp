@@ -14,10 +14,12 @@
 */
 
 #include "LogicalImagerConfig.h"
+#include "LogicalImagerExtensionRule.h"
 
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <map>
 
 /**
  * Create a logical imager configuration
@@ -30,34 +32,26 @@ LogicalImagerConfig::LogicalImagerConfig(const std::string configFilename)
 {
 	std::ifstream file(configFilename);
 
-	copy(std::istream_iterator<std::string>(file),
-		std::istream_iterator<std::string>(),
-		std::inserter(m_extensions, m_extensions.end()));
+    // TODO: read the config yaml file and construct the m_rules map
+
+    std::string extension_strs[] = {"jpg", "jpeg", "gif", "png"};
+    std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs)/sizeof(extension_strs[0]));
+    LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
+
+    m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("extension_rule"), extension_rule));
 }
 
 LogicalImagerConfig::~LogicalImagerConfig()
 {
 }
 
-/**
- * Does the logical imager configuration contains an extension
- * 
- * @param extension Extension to search
- * @returns TRUE if extension is in the configuration
- *         FALSE otherwise
- */
-bool LogicalImagerConfig::hasExtension(const std::string extension)
+bool LogicalImagerConfig::matches(TSK_FS_FILE * fs_file, const char * path) const
 {
-	return m_extensions.find(extension) != m_extensions.end();
-}
+    std::map<std::string, LogicalImagerRuleBase *>::const_iterator itr;
+    bool result = false;
 
-/**
-* Get a set of extensions defined in the configuration
-*
-* @returns A set of extensions
-*
-*/
-const std::set<std::string> LogicalImagerConfig::getExtension()
-{
-	return m_extensions;
+    for (itr = m_rules.begin(); itr != m_rules.end(); itr++) {
+        result |= itr->second->matches(fs_file, path);
+    }
+    return result;
 }

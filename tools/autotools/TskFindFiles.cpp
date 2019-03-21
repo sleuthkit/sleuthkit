@@ -47,12 +47,9 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
     if (!isFile(fs_file))
         return TSK_OK;
 
-    char *extension = PathFindExtensionA(fs_file->name->name);
-    if (extension[0] == '.') {
-        // skip the leading dot
-        extension = &extension[1];
-    }
-    if (m_logicialImagerConfig->hasExtension(extension)) {
+    if (m_logicialImagerConfig->matches(fs_file, path)) {
+        fprintf(stdout, "processFile: match name=%s\tpath=%s\n", fs_file->name->name, path);
+
         TSK_OFF_T offset = 0;
         size_t bufferLen = 16 * 1024;
         size_t bytesRead;
