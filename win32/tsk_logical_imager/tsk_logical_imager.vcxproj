@@ -423,6 +423,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tools\autotools\LogicalImagerExtensionRule.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerFilenameRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerPathRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleBase.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp" />
@@ -433,6 +434,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\tools\autotools\LogicalImagerConfig.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerPathRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleBase.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h" />

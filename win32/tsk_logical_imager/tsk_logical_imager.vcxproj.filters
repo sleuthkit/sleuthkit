@@ -32,6 +32,9 @@
     <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerFilenameRule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tools\autotools\TskFindFiles.h">
@@ -50,6 +53,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

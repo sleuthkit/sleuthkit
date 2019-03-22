@@ -17,6 +17,7 @@
 #include "LogicalImagerExtensionRule.h"
 #include "LogicalImagerPathRule.h"
 #include "LogicalImagerSizeRule.h"
+#include "LogicalImagerFilenameRule.h"
 
 #include <fstream>
 #include <iostream>
@@ -36,21 +37,27 @@ LogicalImagerConfig::LogicalImagerConfig(const std::string configFilename)
 
     // TODO: read the config yaml file and construct the m_rules map
 
-    std::string extension_strs[] = {"jpg", "jpeg", "gif", "png"};
-    std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs)/sizeof(extension_strs[0]));
-    LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
+    //std::string extension_strs[] = {"jpg", "jpeg", "gif", "png"};
+    //std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs)/sizeof(extension_strs[0]));
+    //LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
 
-    m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("extension_rule"), extension_rule));
+    //m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("extension_rule"), extension_rule));
 
-    std::string path_strs[] = { "Google" };
-    std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
-    LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
+    //std::string path_strs[] = { "Google" };
+    //std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
+    //LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
 
-    m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("path_rule"), path_rule));
+    //m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("path_rule"), path_rule));
 
-    LogicalImagerSizeRule *size_rule = new LogicalImagerSizeRule(2000, 0);
+    //LogicalImagerSizeRule *size_rule = new LogicalImagerSizeRule(2000, 0);
 
-    m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("size_rule"), size_rule));
+    //m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("size_rule"), size_rule));
+
+    std::string filename_strs[] = { "ReadMe.txt" };
+    std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
+    LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
+
+    m_rules.insert(std::pair<std::string, LogicalImagerRuleBase *>(std::string("filename_rule"), filename_rule));
 }
 
 LogicalImagerConfig::~LogicalImagerConfig()
