@@ -15,16 +15,16 @@
 
 #include <shlwapi.h>
 
-#include "LogicalImagerConfig.h"
+#include "LogicalImagerRuleSet.h"
 #include "tsk/tsk_tools_i.h"
 #include "TskFindFiles.h"
 
 /**
  * Create the Find Files object given the Logical Imager Configuration
- * @param config LogicalImagerConfig to use for finding files
+ * @param config LogicalImagerRuleSet to use for finding files
  */
-TskFindFiles::TskFindFiles(LogicalImagerConfig *config) {
-    m_logicialImagerConfig = config;
+TskFindFiles::TskFindFiles(LogicalImagerRuleSet *ruleSet) {
+    m_logicialImagerRuleSet = ruleSet;
 }
 
 /**
@@ -36,7 +36,7 @@ uint8_t TskFindFiles::handleError() {
 }
 
 /**
-* Process a file. If the file contains an extension which is specified in the LogicalImagerConfig,
+* Process a file. If the file contains an extension which is specified in the LogicalImagerRuleSet,
 * we collect it by reading the file content.
 * @param fs_file file details
 * @param path full path of parent directory
@@ -47,8 +47,8 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
     if (!isFile(fs_file))
         return TSK_OK;
 
-    if (m_logicialImagerConfig->matches(fs_file, path)) {
-        fprintf(stdout, "processFile: match name=%s\tpath=%s\n", fs_file->name->name, path);
+    if (m_logicialImagerRuleSet->matches(fs_file, path)) {
+        fprintf(stdout, "processFile: match name=%s\tsize=%" PRIu64 "\tpath=%s\n", fs_file->name->name, fs_file->meta->size, path);
 
         TSK_OFF_T offset = 0;
         size_t bufferLen = 16 * 1024;
@@ -58,7 +58,7 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
         while (true) {
             bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
             if (bytesRead == -1) {
-                fprintf(stderr, "processFile: tsk_fs_file_read returns -1 offset=%" PRIu64 "\n", offset);
+                fprintf(stderr, "processFile: tsk_fs_file_read returns -1\tfilename=%s\toffset=%" PRIu64 "\n", fs_file->name->name, offset);
                 return TSK_ERR;
             }
             if (bytesRead < bufferLen) {

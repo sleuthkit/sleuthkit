@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include "LogicalImagerConfig.h"
+#include "LogicalImagerRuleSet.h"
 
 class TskFindFiles : public TskAuto {
 public:
-    TskFindFiles(LogicalImagerConfig *config);
+    TskFindFiles(LogicalImagerRuleSet *ruleSet);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
     virtual uint8_t handleError();
 
 private:
-    LogicalImagerConfig * m_logicialImagerConfig;
+    LogicalImagerRuleSet * m_logicialImagerRuleSet;
 };
