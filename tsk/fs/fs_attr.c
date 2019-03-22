@@ -1175,28 +1175,28 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
             if (a_offset + (TSK_OFF_T)a_len > a_fs_attr->size)
                 len_toread = (size_t) (a_fs_attr->size - a_offset);
         }
+
+
         // wipe the buffer we won't read into
         if (len_toread < a_len)
             memset(&a_buf[len_toread], 0, a_len - len_toread);
 
         len_remain = len_toread;
 
-        // cycle through the run until we find where we can start to process the clusters
-        for (data_run_cur = a_fs_attr->nrd.run; data_run_cur;
+        // cycle through the runs until we find the one where our offset starts
+        for (data_run_cur = a_fs_attr->nrd.run; data_run_cur && len_remain > 0;
             data_run_cur = data_run_cur->next) {
+
             TSK_DADDR_T blkoffset_inrun;
             size_t len_inrun;
-
-            // we are done
-            if (len_remain <= 0)
-                break;
 
             // See if this run contains the starting offset they requested
             if (data_run_cur->offset + data_run_cur->len <=
                 blkoffset_toread)
                 continue;
 
-            // block offset into this run
+            // We want this run, so find out the offset that we want
+            // we'll start at 0 if we already read data in the last run. 
             if (data_run_cur->offset < blkoffset_toread)
                 blkoffset_inrun = blkoffset_toread - data_run_cur->offset;
             else
@@ -1205,16 +1205,18 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
             // see if we need to read the rest of this run and into the next or if it is all here
             len_inrun = len_remain;
             if ((data_run_cur->len - blkoffset_inrun) * fs->block_size -
-                byteoffset_toread < (size_t)len_remain)
+                byteoffset_toread < (size_t)len_remain) {
                 len_inrun =
                     (size_t) ((data_run_cur->len -
                         blkoffset_inrun) * fs->block_size -
                     byteoffset_toread);
+            }
 
             /* sparse files/runs just get 0s */
             if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
                 memset(&a_buf[len_toread - len_remain], 0, len_inrun);
             }
+
             /* FILLER entries exist when the source file system can store run
              * info out of order and we did not get all of the run info.  We
              * return 0s if data is read from this type of run. */
@@ -1227,6 +1229,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                         (a_fs_attr->fs_file->meta) ? a_fs_attr->
                         fs_file->meta->addr : 0);
             }
+
             // we return 0s for reads past the initsize (unless they want slack space)
             else if (((TSK_OFF_T) ((data_run_cur->offset +
                             blkoffset_inrun) * fs->block_size +
@@ -1241,20 +1244,19 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                                 meta)) ? a_fs_attr->fs_file->meta->
                         addr : 0);
             }
+
+            // we are going to read some data
             else {
                 TSK_OFF_T fs_offset_b;
                 ssize_t cnt;
 
-                // calculate the byte offset in the file system
+                // calculate the byte offset in the file system that we want to read from
                 fs_offset_b =
                     (data_run_cur->addr +
                     blkoffset_inrun) * fs->block_size;
 
                 // add the byte offset in the block
                 fs_offset_b += byteoffset_toread;
-
-                // reset this in case we need to also read from the next run 
-                byteoffset_toread = 0;
 
                 cnt =
                     tsk_fs_read(fs, fs_offset_b,
@@ -1287,7 +1289,11 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 }
 
             }
+
             len_remain -= len_inrun;
+
+            // reset this in case we need to also read from the next run 
+            byteoffset_toread = 0;
         }
         return (ssize_t) (len_toread - len_remain);
     }
