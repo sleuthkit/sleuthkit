@@ -20,10 +20,10 @@
 
 class TskFindFiles : public TskAuto {
 public:
-    TskFindFiles(LogicalImagerRuleSet *ruleSet);
+    TskFindFiles(const LogicalImagerRuleSet *ruleSet);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
     virtual uint8_t handleError();
 
 private:
-    LogicalImagerRuleSet * m_logicialImagerRuleSet;
+    const LogicalImagerRuleSet *m_logicialImagerRuleSet;
 };

@@ -28,7 +28,7 @@
  * Create the Find Files object given the Logical Imager Configuration
  * @param config LogicalImagerRuleSet to use for finding files
  */
-TskFindFiles::TskFindFiles(LogicalImagerRuleSet *ruleSet) {
+TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet) {
     m_logicialImagerRuleSet = ruleSet;
 }
 
@@ -38,6 +38,10 @@ TskFindFiles::TskFindFiles(LogicalImagerRuleSet *ruleSet) {
 uint8_t TskFindFiles::handleError() {
     fprintf(stderr, "%s", tsk_error_get());
     return 0;
+}
+
+time_t getLatestTime2(TSK_FS_META *meta) {
+    return max(max(max(meta->atime, meta->crtime), meta->mtime), meta->ctime);
 }
 
 std::string timeToString(time_t time) {
@@ -62,7 +66,7 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
 
     if (m_logicialImagerRuleSet->matches(fs_file, path)) {
         fprintf(stdout, "processFile: match name=%s\tsize=%" PRIu64 "\tmtime=%s\tpath=%s\n", 
-            fs_file->name->name, fs_file->meta->size, timeToString(fs_file->meta->mtime).c_str(), path);
+            fs_file->name->name, fs_file->meta->size, timeToString(getLatestTime2(fs_file->meta)).c_str(), path);
 
         TSK_OFF_T offset = 0;
         size_t bufferLen = 16 * 1024;

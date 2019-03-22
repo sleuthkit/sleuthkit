@@ -27,7 +27,7 @@
 #include <locale>
 #include <iomanip>
 
-time_t stringToTimet(std::string str) {
+time_t stringToTimet(const std::string str) {
     std::tm t = {};
     std::istringstream ss(str);
     ss.imbue(std::locale("C"));
@@ -80,15 +80,23 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     vector.clear();
     vector.push_back(archive_extension_rule);
     vector.push_back(archive_size_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("really_big_archive_rule"), vector));
+    //m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("really_big_archive_rule"), vector));
 
     // find files last modified between 2007-01-01 and 2007-01-31
-    time_t min_time = stringToTimet("2007-01-01 00:00:00");
-    time_t max_time = stringToTimet("2007-01-31 00:00:00");
+    time_t min_time = stringToTimet("2007-12-01 00:00:00");
+    time_t max_time = stringToTimet("2007-12-31 00:00:00");
     LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, max_time);
     vector.clear();
     vector.push_back(date_rule);
     m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("date_rule"), vector));
+
+    // find files newer than 2014-01-01
+    min_time = stringToTimet("2012-03-01 00:00:00");
+    LogicalImagerDateRule *date2_rule = new LogicalImagerDateRule(min_time, 0);
+    vector.clear();
+    vector.push_back(date2_rule);
+    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("date2_rule"), vector));
+
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() 
@@ -100,14 +108,15 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE * fs_file, const char * path) con
     for (std::map<std::string, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
         const std::vector<LogicalImagerRuleBase *> vector = it->second;
         bool result = true;
+        // All rules in this set must match (ANDed)
         for (std::vector<LogicalImagerRuleBase *>::const_iterator iter = vector.begin(); iter != vector.end(); ++iter) {
             if (!(*iter)->matches(fs_file, path)) {
-                result = false;
+                result = false; // bail as soon as one rule failed to match
                 break;
             }
         }
         if (result)
-            return true;
+            return true; // all rules match, return true. Don't need to apply other rules
     }
     return false;
 }
