@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040605ff
+#define TSK_VERSION_NUM 0x040606ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.6.5"
+#define TSK_VERSION_STR "4.6.6"
 
 
 /* include the TSK-specific header file that we created in autoconf
