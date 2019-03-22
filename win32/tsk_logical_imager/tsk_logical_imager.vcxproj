@@ -422,6 +422,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerDateRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerExtensionRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerFilenameRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerPathRule.cpp" />
@@ -432,6 +433,7 @@
     <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerDateRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerPathRule.h" />

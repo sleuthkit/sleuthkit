@@ -14,6 +14,11 @@
 */
 
 #include <shlwapi.h>
+#include <string>
+#include <sstream>
+#include <sstream>
+#include <locale>
+#include <iomanip>
 
 #include "LogicalImagerRuleSet.h"
 #include "tsk/tsk_tools_i.h"
@@ -35,6 +40,14 @@ uint8_t TskFindFiles::handleError() {
     return 0;
 }
 
+std::string timeToString(time_t time) {
+    struct tm * ptm;
+    ptm = gmtime(&time);
+    char buffer[80];
+    strftime(buffer, 80, "%Y-%m-%d", ptm);
+    return std::string(buffer);
+}
+
 /**
 * Process a file. If the file contains an extension which is specified in the LogicalImagerRuleSet,
 * we collect it by reading the file content.
@@ -48,7 +61,8 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
         return TSK_OK;
 
     if (m_logicialImagerRuleSet->matches(fs_file, path)) {
-        fprintf(stdout, "processFile: match name=%s\tsize=%" PRIu64 "\tpath=%s\n", fs_file->name->name, fs_file->meta->size, path);
+        fprintf(stdout, "processFile: match name=%s\tsize=%" PRIu64 "\tmtime=%s\tpath=%s\n", 
+            fs_file->name->name, fs_file->meta->size, timeToString(fs_file->meta->mtime).c_str(), path);
 
         TSK_OFF_T offset = 0;
         size_t bufferLen = 16 * 1024;
