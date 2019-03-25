@@ -59,7 +59,7 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
 
     std::vector<LogicalImagerRuleBase *> vector;
 
-    //// find all pictures smaller than 3000 bytes in the Google folder
+    // find all pictures smaller than 3000 bytes in the Google folder
     std::string extension_strs[] = {"jpg", "jpeg", "gif", "png"};
     std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs)/sizeof(extension_strs[0]));
     LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
@@ -73,7 +73,7 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     vector.push_back(size_rule);
     m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("pictures_smaller_than_3000_in_Google_folder_rule"), vector));
 
-    //// find all 'readme.txt' and 'autoexec.bat' files
+    // find all 'readme.txt' and 'autoexec.bat' files
     std::string filename_strs[] = {"ReadMe.txt", "Autoexec.bat"};
     std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
     LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
@@ -81,7 +81,7 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     vector.push_back(filename_rule);
     m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("filename_rule"), vector));
 
-    //// find by file size 
+    // find by file size 
     std::string archive_strs[] = {"exe", "bin", "dll"};
     std::set<std::string> archive_extensions(archive_strs, archive_strs + sizeof(archive_strs) / sizeof(archive_strs[0]));
     LogicalImagerExtensionRule *archive_extension_rule = new LogicalImagerExtensionRule(archive_extensions);
@@ -91,7 +91,7 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     vector.push_back(archive_size_rule);
     m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("really_big_programs_rule"), vector));
 
-    // find files newer than 2012-03-21
+    // find files newer than 2012-03-21 (midnight)
     time_t min_time = stringToTimet("2012-03-21 00:00:00");
     LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, 0);
     vector.clear();
