@@ -33,7 +33,7 @@ LogicalImagerFilenameRule::~LogicalImagerFilenameRule()
 * @returns true if filename is in the rule
 *          false otherwise
 */
-bool LogicalImagerFilenameRule::matches(TSK_FS_FILE * fs_file, const char * /*path*/) const
+bool LogicalImagerFilenameRule::matches(TSK_FS_FILE *fs_file, const char */*path*/) const
 {
     if (fs_file->name == NULL)
         return false;

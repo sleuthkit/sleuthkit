@@ -30,7 +30,7 @@ public:
     LogicalImagerRuleBase();
     ~LogicalImagerRuleBase();
 
-    virtual bool matches(TSK_FS_FILE * fs_file, const char * path) const = 0;
+    virtual bool matches(TSK_FS_FILE *fs_file, const char *path) const = 0;
 
     static std::string toLower(const std::string &srcStr) {
         std::string outStr(srcStr);

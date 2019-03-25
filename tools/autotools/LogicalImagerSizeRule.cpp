@@ -31,7 +31,7 @@ LogicalImagerSizeRule::~LogicalImagerSizeRule()
 * @returns true if file size is in the rule
 *          false otherwise
 */
-bool LogicalImagerSizeRule::matches(TSK_FS_FILE * fs_file, const char * /*path*/) const
+bool LogicalImagerSizeRule::matches(TSK_FS_FILE *fs_file, const char */*path*/) const
 {
     if (fs_file->meta == NULL)
         return false;

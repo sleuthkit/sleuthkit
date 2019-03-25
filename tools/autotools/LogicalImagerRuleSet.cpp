@@ -110,7 +110,7 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet()
  * @param path parent path to fs_file
  * @returns true if match, false otherwise
  */
-bool LogicalImagerRuleSet::matches(TSK_FS_FILE * fs_file, const char * path) const
+bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
 {
     for (std::map<std::string, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
         const std::vector<LogicalImagerRuleBase *> vector = it->second;
