@@ -26,14 +26,14 @@ LogicalImagerFilenameRule::~LogicalImagerFilenameRule()
 }
 
 /**
-* Does the filename matches one of the filename rules
+* Match a filename against the logical imager filename set
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if extension is in the rule
-*         false otherwise
+* @returns true if filename is in the rule
+*          false otherwise
 */
-bool LogicalImagerFilenameRule::matches(TSK_FS_FILE * fs_file, const char * path) const
+bool LogicalImagerFilenameRule::matches(TSK_FS_FILE * fs_file, const char * /*path*/) const
 {
     if (fs_file->name == NULL)
         return false;

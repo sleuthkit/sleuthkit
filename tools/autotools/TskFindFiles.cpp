@@ -40,7 +40,7 @@ uint8_t TskFindFiles::handleError() {
     return 0;
 }
 
-time_t getLatestTime2(TSK_FS_META *meta) {
+time_t getLatestTime(TSK_FS_META *meta) {
     return max(max(max(meta->atime, meta->crtime), meta->mtime), meta->ctime);
 }
 
@@ -53,7 +53,7 @@ std::string timeToString(time_t time) {
 }
 
 /**
-* Process a file. If the file contains an extension which is specified in the LogicalImagerRuleSet,
+* Process a file. If the file matches a rule specified in the LogicalImagerRuleSet,
 * we collect it by reading the file content.
 * @param fs_file file details
 * @param path full path of parent directory
@@ -65,8 +65,9 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
         return TSK_OK;
 
     if (m_logicialImagerRuleSet->matches(fs_file, path)) {
-        fprintf(stdout, "processFile: match name=%s\tsize=%" PRIu64 "\tmtime=%s\tpath=%s\n", 
-            fs_file->name->name, fs_file->meta->size, timeToString(getLatestTime2(fs_file->meta)).c_str(), path);
+        // TODO: For verification only
+        fprintf(stdout, "processFile: match name=%s\tsize=%" PRIu64 "\tdate=%s\tpath=%s\n", 
+            fs_file->name->name, fs_file->meta->size, timeToString(getLatestTime(fs_file->meta)).c_str(), path);
 
         TSK_OFF_T offset = 0;
         size_t bufferLen = 16 * 1024;
@@ -75,7 +76,8 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
 
         while (true) {
             bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
-            if (bytesRead == -1) {
+            // ts_fs_file_read returns -1 with empty files, don't report it.
+            if (bytesRead == -1 && !(fs_file->meta != NULL && fs_file->meta->size == 0)) {
                 fprintf(stderr, "processFile: tsk_fs_file_read returns -1\tfilename=%s\toffset=%" PRIu64 "\n", fs_file->name->name, offset);
                 return TSK_ERR;
             }

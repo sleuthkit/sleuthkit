@@ -24,14 +24,14 @@ LogicalImagerSizeRule::~LogicalImagerSizeRule()
 }
 
 /**
-* Is the file within the min and max size
+* Is the file within the min and max file size in bytes
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if extension is in the rule
-*         false otherwise
+* @returns true if file size is in the rule
+*          false otherwise
 */
-bool LogicalImagerSizeRule::matches(TSK_FS_FILE * fs_file, const char * path) const
+bool LogicalImagerSizeRule::matches(TSK_FS_FILE * fs_file, const char * /*path*/) const
 {
     if (fs_file->meta == NULL)
         return false;

@@ -29,7 +29,7 @@ LogicalImagerDateRule::~LogicalImagerDateRule()
  * @param meta TSK_FS_META of the file
  * @returns time_t of the latest time
  */
-time_t getLatestTime(TSK_FS_META *meta) {
+time_t LogicalImagerDateRule::getLatestTime(TSK_FS_META *meta) const {
     return max(max(max(meta->atime, meta->crtime), meta->mtime), meta->ctime);
 }
 
@@ -39,7 +39,7 @@ time_t getLatestTime(TSK_FS_META *meta) {
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
 * @returns true if extension is in the rule
-*         false otherwise
+*          false otherwise
 */
 bool LogicalImagerDateRule::matches(TSK_FS_FILE * fs_file, const char * path) const
 {
@@ -49,7 +49,7 @@ bool LogicalImagerDateRule::matches(TSK_FS_FILE * fs_file, const char * path) co
     time_t latest_time = getLatestTime(fs_file->meta);
     if (m_max == 0) {
         // no upper limit, check the min date
-        if (latest_time >= m_min)
+        if (latest_time > m_min)
             return true;
         else
             return false;

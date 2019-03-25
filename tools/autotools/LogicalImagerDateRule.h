@@ -31,9 +31,11 @@ public:
     LogicalImagerDateRule(time_t min, time_t max);
     ~LogicalImagerDateRule();
 
-    bool matches(TSK_FS_FILE * fs_file, const char * path) const;
+    bool matches(TSK_FS_FILE * fs_file, const char * /*path*/) const;
 
 private:
+    time_t LogicalImagerDateRule::getLatestTime(TSK_FS_META *meta) const;
+
     time_t m_min;
     time_t m_max;
 };

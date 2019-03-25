@@ -26,12 +26,12 @@ LogicalImagerPathRule::~LogicalImagerPathRule()
 }
 
 /**
-* Does the path matches one of the path rules
+* Match a file's path against the logical imager path set
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if extension is in the rule
-*         false otherwise
+* @returns true if the path is in the rule
+*          false otherwise
 */
 bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char * path) const
 {

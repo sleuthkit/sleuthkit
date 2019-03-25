@@ -26,14 +26,14 @@ LogicalImagerExtensionRule::~LogicalImagerExtensionRule()
 }
 
 /**
-* Does the logical imager rule contains an extension
+* Match a file's extension against the logical imager extension set
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
 * @returns true if extension is in the rule
-*         false otherwise
+*          false otherwise
 */
-bool LogicalImagerExtensionRule::matches(TSK_FS_FILE * fs_file, const char * path) const
+bool LogicalImagerExtensionRule::matches(TSK_FS_FILE * fs_file, const char * /*path*/) const
 {
     if (fs_file->name == NULL)
         return false;

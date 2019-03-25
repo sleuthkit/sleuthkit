@@ -27,27 +27,39 @@
 #include <locale>
 #include <iomanip>
 
-time_t stringToTimet(const std::string str) {
+/**
+ * Convert a date time string to time_t
+ * @param datetimeStr Date time string in yyyy-mm-dd HH:MM:SS format
+ * @returns time_t time_t data
+ *
+ */
+time_t stringToTimet(const std::string datetimeStr) {
     std::tm t = {};
-    std::istringstream ss(str);
+    std::istringstream ss(datetimeStr);
     ss.imbue(std::locale("C"));
     ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
     if (ss.fail()) {
-        std::cerr << "Parse failed\n";
-        return 0;
-    }
-    else {
-        std::cout << std::put_time(&t, "%Y-%m-%d") << std::endl;
+        std::cerr << "stringToTimet: Parse failed for " << datetimeStr << std::endl;
+        exit(1);
     }
     time_t time = mktime(&t);
     return time;
 }
 
+/**
+ * Construct the LogicalImagerRuleSet based on a configuration filename
+ * @param configFilename Configuration filename of the rule set
+ *
+ */
 LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
 {
     // TODO: read the config yaml file and construct the m_rules map
     
-    // find all pictures smaller than 3000 bytes in the Google folder
+    // The following rules are for mocking the config file and testing only.
+
+    std::vector<LogicalImagerRuleBase *> vector;
+
+    //// find all pictures smaller than 3000 bytes in the Google folder
     std::string extension_strs[] = {"jpg", "jpeg", "gif", "png"};
     std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs)/sizeof(extension_strs[0]));
     LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
@@ -55,24 +67,21 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     std::string path_strs[] = {"Google"};
     std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
     LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
-
     LogicalImagerSizeRule *size_rule = new LogicalImagerSizeRule(0, 3000);
-
-    std::vector<LogicalImagerRuleBase *> vector;
     vector.push_back(extension_rule);
     vector.push_back(path_rule);
     vector.push_back(size_rule);
     m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("pictures_smaller_than_3000_in_Google_folder_rule"), vector));
 
-    // find all 'readme.txt' and 'autoexec.bat' files
+    //// find all 'readme.txt' and 'autoexec.bat' files
     std::string filename_strs[] = {"ReadMe.txt", "Autoexec.bat"};
     std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
     LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
     vector.clear();
     vector.push_back(filename_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("readme.txt_rule"), vector));
+    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("filename_rule"), vector));
 
-    // find really big programs
+    //// find by file size 
     std::string archive_strs[] = {"exe", "bin", "dll"};
     std::set<std::string> archive_extensions(archive_strs, archive_strs + sizeof(archive_strs) / sizeof(archive_strs[0]));
     LogicalImagerExtensionRule *archive_extension_rule = new LogicalImagerExtensionRule(archive_extensions);
@@ -80,29 +89,27 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     vector.clear();
     vector.push_back(archive_extension_rule);
     vector.push_back(archive_size_rule);
-    //m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("really_big_archive_rule"), vector));
+    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("really_big_programs_rule"), vector));
 
-    // find files last modified between 2007-01-01 and 2007-01-31
-    time_t min_time = stringToTimet("2007-12-01 00:00:00");
-    time_t max_time = stringToTimet("2007-12-31 00:00:00");
-    LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, max_time);
+    // find files newer than 2012-03-21
+    time_t min_time = stringToTimet("2012-03-21 00:00:00");
+    LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, 0);
     vector.clear();
     vector.push_back(date_rule);
     m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("date_rule"), vector));
-
-    // find files newer than 2014-01-01
-    min_time = stringToTimet("2012-03-01 00:00:00");
-    LogicalImagerDateRule *date2_rule = new LogicalImagerDateRule(min_time, 0);
-    vector.clear();
-    vector.push_back(date2_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("date2_rule"), vector));
-
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() 
 {
 }
 
+/**
+ * Given a file and its path, match it using the logical imager rule set.
+ * All rules in a single set must matched (ANDed)
+ * @param fs_file TSK_FS_FILE containing the filename
+ * @param path parent path to fs_file
+ * @returns true if match, false otherwise
+ */
 bool LogicalImagerRuleSet::matches(TSK_FS_FILE * fs_file, const char * path) const
 {
     for (std::map<std::string, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
@@ -116,7 +123,7 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE * fs_file, const char * path) con
             }
         }
         if (result)
-            return true; // all rules match, return true. Don't need to apply other rules
+            return true; // all rules match, no need to apply other rules in the set
     }
     return false;
 }
