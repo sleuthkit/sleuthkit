@@ -55,6 +55,16 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
 {
     // TODO: read the config yaml file and construct the m_rules map
     
+    // Testing TSKHlprPath2Inum
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Sunset.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Water lilies.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Winter.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe");
+    m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt");
+    m_filePaths.push_back("No Such Folder/No such subfolder/no-such-file.txt");
+    return;
+
     // The following rules are for mocking the config file and testing only.
 
     std::vector<LogicalImagerRuleBase *> vector;
@@ -126,4 +136,9 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
             return true; // all rules match, no need to apply other rules in the set
     }
     return false;
+}
+
+const std::vector<std::string> LogicalImagerRuleSet::getFilePaths() const
+{
+    return m_filePaths;
 }

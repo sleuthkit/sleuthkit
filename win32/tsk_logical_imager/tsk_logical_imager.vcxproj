@@ -430,6 +430,7 @@
     <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleSet.cpp" />
     <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp" />
+    <ClCompile Include="..\..\tools\autotools\TskHelper.cpp" />
     <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -441,6 +442,8 @@
     <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleSet.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h" />
     <ClInclude Include="..\..\tools\autotools\TskFindFiles.h" />
+    <ClInclude Include="..\..\tools\autotools\TskHelper.h" />
+    <ClInclude Include="..\..\tools\autotools\tsk_logical_imager.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libtsk\libtsk.vcxproj">

@@ -33,7 +33,7 @@ LogicalImagerExtensionRule::~LogicalImagerExtensionRule()
 * @returns true if extension is in the rule
 *          false otherwise
 */
-bool LogicalImagerExtensionRule::matches(TSK_FS_FILE *fs_file, const char */*path*/) const
+bool LogicalImagerExtensionRule::matches(TSK_FS_FILE *fs_file, const char * /*path*/) const
 {
     if (fs_file->name == NULL)
         return false;
