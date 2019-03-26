@@ -475,8 +475,8 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
         }
     }
 
-    if (tsk_verbose) { tsk_fprintf(stderr, "inode %" PRId64, inum); }
-    
+    if (tsk_verbose) { tsk_fprintf(stderr, "inode %" PRId64 " ", inum); }
+
     if (dino_buf->di_core.di_format == XFS_DINODE_FMT_LOCAL)
     {
         if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == XFS_DINODE_FMT_LOCAL \n"); }
@@ -547,16 +547,21 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
 
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE;
 
-        /*
-        Walk the b+tree
-        */
+        fs_meta->content_len = sizeof(TSK_OFF_T);
+
+        // data fork pointer offset -> data fork raw file offset
+        di_core_ptr = (xfs_dinode_core_t*) &dino_buf->di_core;
+        char *dfork_ptr = XFS_DFORK_PTR(di_core_ptr, XFS_DATA_FORK);
+        TSK_OFF_T dfork_off = dfork_ptr - (char*) di_core_ptr;
+        TSK_OFF_T bmap_root_offset = (TSK_OFF_T) inum * (TSK_OFF_T) xfsfs->inode_size + dfork_off;
+
+        memcpy(fs_meta->content_ptr, &bmap_root_offset, sizeof(TSK_OFF_T));
     }
     else if (dino_buf->di_core.di_format == XFS_DINODE_FMT_UUID)
     {
         // not used
-        
         if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == XFS_DINODE_FMT_UUID, which is not used \n"); }
-        
+
         // a stub
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_DEFAULT;
     }
@@ -570,7 +575,7 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
     {
         // shouldn't reach this state
         if (tsk_verbose) { tsk_fprintf(stderr, "dino_buf->di_format == %d, which is an unexpected value \n"); }
-        
+
         // a stub
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_DEFAULT;
     }
@@ -796,7 +801,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     XFSFS_INFO *xfsfs = (XFSFS_INFO *) a_fs;
     TSK_OFF_T ag_start_off = 0;
     TSK_OFF_T offset = 0;
-    unsigned int len = 0;
+    uint32_t len = 0;
     xfs_agf *agf = NULL;
     xfs_agblock_t *agfl = NULL;
     unsigned int agfl_cur_len = 0;
@@ -842,14 +847,14 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     if ((agf = (xfs_agf *) tsk_malloc(len)) == NULL)
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
 
-    if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs AG Free Space Block, ag_start_off = %" PRId64 ", sect_size = %u, len = %u \n", ag_start_off, xfsfs->fs->sb_sectsize, len); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs AG Free Space Block, ag_start_off = %" PRId64 ", sect_size = %" PRId64 ", len = %" PRId64 " \n", ag_start_off, xfsfs->fs->sb_sectsize, len); }
     cnt = tsk_fs_read(&xfsfs->fs_info, ag_start_off + (TSK_OFF_T) xfsfs->fs->sb_sectsize, (char *) agf, len);
     if (cnt != len) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
         free(agf);
         tsk_fs_free((TSK_FS_INFO *)xfsfs);
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -872,9 +877,9 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     agf->agf_btreeblks = tsk_getu32(TSK_BIG_ENDIAN, &agf->agf_btreeblks);
 
     if (tsk_verbose) { tsk_fprintf(stderr, "agf->agf_magicnum = %.4s \n", &agf->agf_magicnum); }
-    if (tsk_verbose) { tsk_fprintf(stderr, "agf->agf_length = %u \n", agf->agf_length); }
-    if (tsk_verbose) { tsk_fprintf(stderr, "agf->agf_flfirst = %u \n", agf->agf_flfirst); }
-    if (tsk_verbose) { tsk_fprintf(stderr, "agf->agf_fllast = %u \n", agf->agf_fllast); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "agf->agf_length = %" PRId64 " \n", agf->agf_length); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "agf->agf_flfirst = %" PRId64 " \n", agf->agf_flfirst); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "agf->agf_fllast = %" PRId64 " \n", agf->agf_fllast); }
 
     // agfl is one sector and 4 blocks
     len = (xfsfs->fs->sb_blocksize * 4 + xfsfs->fs->sb_sectsize) * sizeof(xfs_agblock_t);
@@ -888,7 +893,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         if(xfsfs->fs->sb_sectsize < sizeof(xfs_agfl))
         {
             // free other structures
-            tsk_error_set_errstr2("xfs_block_getflags: sb_sectsize = %u < sizeof(xfs_agfl) = %u", xfsfs->fs->sb_sectsize, sizeof(xfs_agfl));
+            tsk_error_set_errstr2("xfs_block_getflags: sb_sectsize = %" PRId64 " < sizeof(xfs_agfl) = %" PRId64 "", xfsfs->fs->sb_sectsize, sizeof(xfs_agfl));
             tsk_fs_free((TSK_FS_INFO *)xfsfs);
             return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
         }
@@ -904,7 +909,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
         free(agf);
         tsk_fs_free((TSK_FS_INFO *)xfsfs);
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -922,7 +927,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
         free(agf);
         tsk_fs_free((TSK_FS_INFO *)xfsfs);
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -971,7 +976,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 
     // take b+tree sorted by block offset
     cur_sblock_num = agf->agf_roots[0];
-    if (tsk_verbose) { tsk_fprintf(stderr, "cur_sblock_num = %u \n", cur_sblock_num); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "cur_sblock_num = %" PRId64 " \n", cur_sblock_num); }
     len = sizeof(xfs_btree_sblock_t);
     cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * cur_sblock_num, (char *) cur_btree_sblock, len);
     if (cnt != len) {
@@ -979,7 +984,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
         free(agf);
         tsk_fs_free((TSK_FS_INFO *)xfsfs);
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -1003,7 +1008,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
             free(agf);
             tsk_fs_free((TSK_FS_INFO *)xfsfs);
             return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -1018,7 +1023,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
             free(agf);
             tsk_fs_free((TSK_FS_INFO *)xfsfs);
             return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -1035,9 +1040,9 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
             {
                 // go one level down in b+tree
                 found = true;
-                cur_sblock_num = tsk_getu32(TSK_BIG_ENDIAN, ptrs[cur_key]);
+                cur_sblock_num = tsk_getu32(TSK_BIG_ENDIAN, &ptrs[cur_key]);
 
-                if (tsk_verbose) { tsk_fprintf(stderr, "go one level down in b+tree, cur_sblock_num = %u \n", cur_sblock_num); }
+                if (tsk_verbose) { tsk_fprintf(stderr, "go one level down in b+tree, cur_sblock_num = %" PRId64 " \n", cur_sblock_num); }
 
                 cnt = tsk_fs_read(&xfsfs->fs_info, (TSK_OFF_T) xfsfs->fs->sb_blocksize * cur_sblock_num, (char *) cur_btree_sblock, len);
                 if (cnt != len) {
@@ -1045,7 +1050,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_READ);
                     }
-                    tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+                    tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
                     free(agf);
                     tsk_fs_free((TSK_FS_INFO *)xfsfs);
                     return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -1061,7 +1066,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         if(!found)
         {
             // The block is not in a free list, means it's allocated
-            if (tsk_verbose) { tsk_fprintf(stderr, "didn't find a_addr at level cur_btree_sblock->bb_level = %u \n", cur_btree_sblock->bb_level); }
+            if (tsk_verbose) { tsk_fprintf(stderr, "didn't find a_addr at level cur_btree_sblock->bb_level = %" PRId64 " \n", cur_btree_sblock->bb_level); }
             free(agf);
             free(cur_btree_sblock);
             return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC);
@@ -1079,12 +1084,12 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         recs[cur_key].ar_startblock = tsk_getu32(TSK_BIG_ENDIAN, &recs[cur_key].ar_startblock);
         recs[cur_key].ar_blockcount = tsk_getu32(TSK_BIG_ENDIAN, &recs[cur_key].ar_blockcount);
 
-        if (tsk_verbose) { tsk_fprintf(stderr, "checking cur_key = %u, recs[cur_key].ar_startblock = %u, recs[cur_key].ar_blockcount = %u \n",
+        if (tsk_verbose) { tsk_fprintf(stderr, "checking cur_key = %" PRId64 ", recs[cur_key].ar_startblock = %" PRId64 ", recs[cur_key].ar_blockcount = %" PRId64 " \n",
             cur_key, recs[cur_key].ar_startblock, recs[cur_key].ar_blockcount); }
 
         if(rel_blk >= recs[cur_key].ar_startblock && rel_blk - recs[cur_key].ar_startblock < recs[cur_key].ar_blockcount)
         {
-            if (tsk_verbose) { tsk_fprintf(stderr, "found at cur_btree_sblock->bb_level = %u, cur_key = %u, recs[cur_key].ar_startblock = %u, recs[cur_key].ar_blockcount = %u \n",
+            if (tsk_verbose) { tsk_fprintf(stderr, "found at cur_btree_sblock->bb_level = %" PRId64 ", cur_key = %" PRId64 ", recs[cur_key].ar_startblock = %" PRId64 ", recs[cur_key].ar_blockcount = %" PRId64 " \n",
                 cur_btree_sblock->bb_level, cur_key, recs[cur_key].ar_startblock, recs[cur_key].ar_blockcount); }
             free(agf);
             free(cur_btree_sblock);
@@ -1367,7 +1372,7 @@ static uint8_t
         tsk_fprintf(hFile,
             "Total Range in Image: %" PRIuDADDR " - %" PRIuDADDR "\n",
             fs->first_block, fs->last_block_act);
-    tsk_fprintf(hFile, "Block Size: %u\n", fs->block_size);
+    tsk_fprintf(hFile, "Block Size: %" PRId64 "\n", fs->block_size);
     tsk_fprintf(hFile, "Free Blocks: %" PRIu64 "\n", sb->sb_fdblocks);
     tsk_fprintf(hFile, "Sector Size: %" PRIu16 "\n", sb->sb_sectsize);
 
@@ -1639,6 +1644,366 @@ xfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
 /* Directories */
 
+/*
+ * Calculate number of records in a bmap btree inode root.
+ */
+uint32_t
+xfs_bmdr_maxrecs(
+	uint32_t	blocklen,
+	bool		leaf)
+{
+	blocklen -= sizeof(xfs_bmdr_block_t);
+
+	if (leaf)
+		return blocklen / sizeof(xfs_bmdr_rec_t);
+	return blocklen / (sizeof(xfs_bmdr_key_t) + sizeof(xfs_bmdr_ptr_t));
+}
+
+static TSK_RETVAL_ENUM
+parse_dir_block(TSK_FS_INFO *a_fs, TSK_FS_DIR *fs_dir, TSK_FS_META *fs_meta, xfs_bmbt_irec_t *irec, TSK_FS_NAME *fs_name)
+{
+    TSK_OFF_T size = 0;
+    char *dirbuf = NULL;
+    XFSFS_INFO *xfs = (XFSFS_INFO *) a_fs;
+    uint8_t ftype_size = xfs->fs->sb_features2 & XFS_SB_VERSION2_FTYPE ? sizeof(uint8_t) : 0;
+
+    // skip ft if that's not a data block
+    if (irec->br_startoff >= XFS_DIR2_LEAF_OFFSET / a_fs->block_size  || irec->br_startoff >= XFS_DIR2_FREE_OFFSET / a_fs->block_size)
+    {
+        return TSK_COR;
+    }
+
+    if (tsk_verbose) {
+        tsk_fprintf(stderr, "adding irec->br_startoff = %" PRId64 " br_startblock = %" PRId64 " / br_blockcount = %" PRId64 ", XFS_DIR2_LEAF_OFFSET = %" PRId64 ",  XFS_DIR2_FREE_OFFSET = %" PRId64 "\n", irec->br_startoff, irec->br_startblock, irec->br_blockcount, XFS_DIR2_LEAF_OFFSET, XFS_DIR2_FREE_OFFSET);
+    }
+
+    size = (TSK_OFF_T) irec->br_blockcount * (TSK_OFF_T) a_fs->block_size;
+
+    if ((dirbuf = (char*) tsk_malloc(size)) == NULL) {
+        return TSK_ERR;
+    }
+
+    xfs_agnumber_t ag_num = (TSK_OFF_T) irec->br_startblock >> xfs->fs->sb_agblklog;
+    uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
+    rel_blk_neg -= 1;
+    uint64_t rel_blk = (TSK_OFF_T) irec->br_startblock & rel_blk_neg;
+    TSK_OFF_T offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) a_fs->block_size;
+
+    // read xfs_dir2_data_hdr (on a v5 filesystem this is xfs_dir3_data_hdr_t)
+
+    // let's read the whole extent, but parse it block-by-block
+    ssize_t len = size;
+    ssize_t cnt = tsk_fs_read(a_fs, offset, dirbuf, len);
+    if (cnt != len) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr
+        ("xfs_dir_open_meta: Error reading directory contents: %"
+            PRIuINUM "\n", fs_meta->addr);
+        free(dirbuf);
+        return TSK_COR;
+    }
+
+    for (uint16_t block_num = 0; block_num < irec->br_blockcount; block_num++)
+    {
+        TSK_OFF_T offset_in_block = (TSK_OFF_T) block_num * (TSK_OFF_T) a_fs->block_size;
+        TSK_OFF_T limit = (TSK_OFF_T) (block_num + 1) * (TSK_OFF_T) a_fs->block_size;
+
+        xfs_dir2_data_hdr data_hdr;
+        memcpy(&data_hdr, dirbuf + offset_in_block, sizeof(data_hdr));
+        offset_in_block += sizeof(data_hdr);
+
+        data_hdr.bestfree[0].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].offset);
+        data_hdr.bestfree[0].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].length);
+        data_hdr.bestfree[1].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].offset);
+        data_hdr.bestfree[1].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].length);
+        data_hdr.bestfree[2].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].offset);
+        data_hdr.bestfree[2].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].length);
+
+        xfs_dir2_data_entry_t data_entry;
+
+        while (offset_in_block < limit)
+        {
+            if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = %d \n", offset_in_block); }
+
+            uint16_t *xfs_dir2_data_unused_freetag = (uint16_t*) (dirbuf + offset_in_block);
+
+            if (*xfs_dir2_data_unused_freetag == 0xffff)
+            {
+                xfs_dir2_data_unused *data_unused = (xfs_dir2_data_unused *) (dirbuf + offset_in_block);
+
+                if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
+                offset_in_block += tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length);
+            }
+            else
+            {
+                if (offset_in_block + sizeof(uint64_t) + sizeof(uint8_t) >= limit)
+                {
+                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                    tsk_error_set_errstr
+                    ("xfs_dir_open_meta: Error reading directory contents: %"
+                        PRIuINUM "\n", fs_meta->addr);
+                    return TSK_COR;
+                }
+
+                memcpy(&data_entry, dirbuf + offset_in_block, sizeof(uint64_t) + sizeof(uint8_t));
+                offset_in_block += sizeof(uint64_t) + sizeof(uint8_t);
+
+                data_entry.inumber = tsk_getu64(TSK_BIG_ENDIAN, &data_entry.inumber);
+                fs_name->meta_addr = data_entry.inumber;
+
+
+                if (offset_in_block + data_entry.namelen + ftype_size >= limit)
+                {
+                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                    tsk_error_set_errstr
+                    ("xfs_dir_open_meta: Error reading directory contents: %"
+                        PRIuINUM "\n", fs_meta->addr);
+                    return TSK_COR;
+                }
+
+                char *name = (char *) dirbuf + offset_in_block;
+                memcpy(fs_name->name, name, data_entry.namelen);
+                offset_in_block += data_entry.namelen;
+                fs_name->name[data_entry.namelen] = '\0';
+
+                uint8_t ftype = 0;
+                if (ftype_size > 0)
+                {
+                    ftype = * (uint8_t *) (name + data_entry.namelen);
+                }
+                else
+                {
+                    xfs_dinode_t *dino_buf = NULL;
+                    ssize_t dinodesize =
+                        xfs->fs->sb_inodesize >
+                        sizeof(xfs_dinode) ? xfs->fs->sb_inodesize : sizeof(xfs_dinode);
+                    if ((dino_buf = (xfs_dinode_t *) tsk_malloc(dinodesize)) == NULL) {
+                        return TSK_ERR;
+                    }
+
+                    if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
+                        free(dino_buf);
+                        return TSK_ERR;
+                    }
+
+                    ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
+                }
+
+                uint32_t ftype32 = (uint32_t) ftype << 12;
+                switch (ftype32) {
+                case XFS_IN_REG:
+                    fs_meta->type = TSK_FS_META_TYPE_REG;
+                    break;
+                case XFS_IN_DIR:
+                    fs_meta->type = TSK_FS_META_TYPE_DIR;
+                    break;
+                case XFS_IN_SOCK:
+                    fs_meta->type = TSK_FS_META_TYPE_SOCK;
+                    break;
+                case XFS_IN_LNK:
+                    fs_meta->type = TSK_FS_META_TYPE_LNK;
+                    break;
+                case XFS_IN_BLK:
+                    fs_meta->type = TSK_FS_META_TYPE_BLK;
+                    break;
+                case XFS_IN_CHR:
+                    fs_meta->type = TSK_FS_META_TYPE_CHR;
+                    break;
+                case XFS_IN_FIFO:
+                    fs_meta->type = TSK_FS_META_TYPE_FIFO;
+                    break;
+                default:
+                    fs_meta->type = TSK_FS_META_TYPE_UNDEF;
+                    break;
+                }
+
+                // we iterate over allocated directories
+                fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+
+                if (tsk_verbose) { tsk_fprintf(stderr, "namelen = %d, fs_name->name = %s, fs_meta->type = %d, fs_name->meta_addr = %" PRId64  " fs_name->flags = \n", data_entry.namelen, fs_name->name, fs_meta->type, fs_name->meta_addr, fs_name->flags); }
+
+                if (tsk_fs_dir_add(fs_dir, fs_name)) {
+                    tsk_fs_name_free(fs_name);
+                    return TSK_ERR;
+                }
+
+                // skipping xfs_dir2_data_off_t tag (and ftype, if present)
+                offset_in_block += sizeof(xfs_dir2_data_off_t) + ftype_size;
+
+                // x64 alignment
+                offset_in_block = roundup(offset_in_block, sizeof(uint64_t));
+            }
+        }
+    }
+}
+
+/* visit the btree node (or leaf) */
+static TSK_RETVAL_ENUM
+visit_btree_node(TSK_FS_INFO *a_fs, TSK_FS_DIR *fs_dir, TSK_FS_META *fs_meta, xfs_off_t cur_node_offset, xfs_dinode_t *dino_buf, TSK_FS_NAME *fs_name, bool is_root)
+{
+    XFSFS_INFO *xfs = (XFSFS_INFO *) a_fs;
+    // xfs_bmdr_block  and xfs_bmbt_block_t share those two fields
+    uint16_t bb_numrecs = 0;
+    uint16_t bb_level = 0;
+    uint16_t header_offset = 0;
+    ssize_t len = 0;
+    ssize_t cnt = 0;
+
+    if(is_root)
+    {
+        xfs_bmdr_block *cur_bmdr_block = NULL;
+
+        if ((cur_bmdr_block = (xfs_bmdr_block *) tsk_malloc(sizeof(xfs_bmdr_block))) == NULL)
+        {
+            return TSK_ERR;
+        }
+
+        len = header_offset = sizeof(xfs_bmdr_block);
+        cnt = tsk_fs_read(&xfs->fs_info, cur_node_offset, (char *) cur_bmdr_block, len);
+        if (cnt != len) {
+            if (cnt >= 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+            }
+            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
+            return TSK_ERR;
+        }
+
+        bb_level = tsk_getu16(TSK_BIG_ENDIAN, &cur_bmdr_block->bb_level);
+        bb_numrecs = tsk_getu16(TSK_BIG_ENDIAN, &cur_bmdr_block->bb_numrecs);
+
+        free(cur_bmdr_block);
+    }
+    else
+    {
+        xfs_bmbt_block_t *cur_bmbt_block;
+
+        if ((cur_bmbt_block = (xfs_bmbt_block_t *) tsk_malloc(sizeof(xfs_bmbt_block_t))) == NULL)
+        {
+            return TSK_ERR;
+        }
+
+        len = header_offset = sizeof(xfs_bmbt_block_t);
+        cnt = tsk_fs_read(&xfs->fs_info, cur_node_offset, (char *) cur_bmbt_block, len);
+        if (cnt != len) {
+            if (cnt >= 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+            }
+            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
+            return TSK_ERR;
+        }
+
+        bb_level = tsk_getu16(TSK_BIG_ENDIAN, &cur_bmbt_block->bb_level);
+        bb_numrecs = tsk_getu16(TSK_BIG_ENDIAN, &cur_bmbt_block->bb_numrecs);
+
+        free(cur_bmbt_block);
+    }
+
+    uint32_t dblocksize = XFS_DFORK_SIZE(&dino_buf->di_core, xfs, XFS_DATA_FORK);
+
+    // if not a leaf node
+    if(bb_level > 0)
+    {
+        uint32_t maxrecs = xfs_bmdr_maxrecs(dblocksize, 0 /* not leaf */);
+
+        xfs_bmbt_rec_t *node_recs = NULL;
+        size_t len = (size_t) bb_numrecs * sizeof(xfs_bmbt_rec_t);
+
+        if ((node_recs = (xfs_bmbt_rec_t *) tsk_malloc(len)) == NULL)
+        {
+            return TSK_ERR;
+        }
+
+        // read all the keys
+        cnt = tsk_fs_read(&xfs->fs_info, cur_node_offset + (TSK_OFF_T) header_offset, (char *) node_recs, len);
+        if (cnt != len) {
+            if (cnt >= 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+            }
+            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
+            return TSK_ERR;
+        }
+
+        xfs_bmbt_ptr_t *node_ptrs = NULL;
+        len = bb_numrecs * sizeof(xfs_bmbt_ptr_t);
+        if ((node_ptrs = (xfs_bmbt_ptr_t *) tsk_malloc(len)) == NULL)
+        {
+            return TSK_ERR;
+        }
+
+        // read all the node pointers
+        cnt = tsk_fs_read(&xfs->fs_info, cur_node_offset + (TSK_OFF_T) header_offset + (TSK_OFF_T) maxrecs * (TSK_OFF_T) sizeof(xfs_bmbt_key),
+            (char *) node_ptrs, len);
+        if (cnt != len) {
+            if (cnt >= 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+            }
+            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
+            return TSK_ERR;
+        }
+
+        // traverse all the pointers
+        for(uint32_t cur_key = 0; cur_key < bb_numrecs; cur_key++)
+        {
+            xfs_fsblock_t next_node_block = tsk_getu64(TSK_BIG_ENDIAN, &node_ptrs[cur_key]);
+
+            // block -> offset
+            xfs_agnumber_t ag_num = next_node_block >> xfs->fs->sb_agblklog;
+            uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
+            rel_blk_neg -= 1;
+            uint64_t rel_blk = (uint64_t) next_node_block & rel_blk_neg;
+            TSK_OFF_T next_node_offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) xfs->fs_info.block_size;
+
+            if (tsk_verbose) { tsk_fprintf(stderr, "visiting next_node (block %" PRId64", offset %"PRId64" \n", next_node_block, next_node_offset); }
+
+            visit_btree_node(a_fs, fs_dir, fs_meta, next_node_offset, dino_buf, fs_name, 0);
+        }
+
+        free(node_recs);
+        free(node_ptrs);
+        
+        return TSK_OK;
+    }
+    else
+    {
+        // at the leaf node now
+        xfs_bmbt_rec_t *node_recs = NULL;
+
+        size_t len = bb_numrecs * sizeof(xfs_bmbt_rec_t);
+
+        if ((node_recs = (xfs_bmbt_rec_t *) tsk_malloc(len)) == NULL)
+        {
+            return TSK_ERR;
+        }
+
+        // read all the records
+        cnt = tsk_fs_read(&xfs->fs_info, cur_node_offset + (TSK_OFF_T) header_offset, (char *) node_recs, len);
+
+        // iterate over the keys
+        for(uint32_t cur_key = 0; cur_key < bb_numrecs; cur_key++)
+        {
+            // unpack extent
+            xfs_bmbt_irec_t irec;
+            memset(&irec, 0, sizeof(irec));
+            xfs_bmbt_disk_get_all(&node_recs[cur_key], &irec);
+
+            if (tsk_verbose) { tsk_fprintf(stderr, "now at cur_key = %" PRId64 ", &irec = %" PRIx64" \n",
+                cur_key, &irec); }
+
+            parse_dir_block(a_fs, fs_dir, fs_meta, &irec, fs_name);
+            // parse the directory entry in this extent
+        }
+
+        free(node_recs);
+
+        return TSK_OK;
+    }
+}
+
 /** \internal
 * Process a directory and load up FS_DIR with the entries. If a pointer to
 * an already allocated FS_DIR structure is given, it will be cleared.  If no existing
@@ -1839,7 +2204,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         xfs_bmbt_rec_t *extent_data_offset = (xfs_bmbt_rec_t *) fs_meta->content_ptr;
         uint32_t nextents = fs_meta->content_len / sizeof(xfs_bmbt_rec_t);
 
-        tsk_fprintf(stderr, "nextents == %" PRId64 ", fs_meta->size = %" PRId64 " \n", nextents, fs_meta->size);
+        if (tsk_verbose) { tsk_fprintf(stderr, "nextents == %" PRId64 ", fs_meta->size = %" PRId64 " \n", nextents, fs_meta->size); }
 
         if (fs_meta->size <= xfs->fs_info.block_size /* nextents can be used too */)
         {
@@ -2038,182 +2403,37 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 memset(&irec, 0, sizeof(irec));
                 xfs_bmbt_disk_get_all(&extent_data_offset[extent_num], &irec);
 
-                // skip it if that's not a data block
-                if (irec.br_startoff >= XFS_DIR2_LEAF_OFFSET / a_fs->block_size  || irec.br_startoff >= XFS_DIR2_FREE_OFFSET / a_fs->block_size)
-                {
-                    continue;
-                }
-
-                if (tsk_verbose) {
-                    tsk_fprintf(stderr, "extent_num = %d, adding irec.br_startoff = %" PRId64 " br_startblock = %" PRId64 " / br_blockcount = %" PRId64 ", XFS_DIR2_LEAF_OFFSET = %" PRId64 ",  XFS_DIR2_FREE_OFFSET = %" PRId64 "\n", extent_num, irec.br_startoff, irec.br_startblock, irec.br_blockcount, XFS_DIR2_LEAF_OFFSET, XFS_DIR2_FREE_OFFSET);
-                }
-
-                size = (TSK_OFF_T) irec.br_blockcount * (TSK_OFF_T) a_fs->block_size;
-                
-                if ((dirbuf = (char*) tsk_malloc(size)) == NULL) {
-                    return TSK_ERR;
-                }
-
-                xfs_agnumber_t ag_num = (TSK_OFF_T) irec.br_startblock >> xfs->fs->sb_agblklog;
-                uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
-                rel_blk_neg -= 1;
-                uint64_t rel_blk = (TSK_OFF_T) irec.br_startblock & rel_blk_neg;
-                TSK_OFF_T offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) a_fs->block_size;
-
-                // read xfs_dir2_data_hdr (on a v5 filesystem this is xfs_dir3_data_hdr_t)
-
-                // let's read the whole extent, but parse it block-by-block
-                ssize_t len = size;
-                ssize_t cnt = tsk_fs_read(a_fs, offset, dirbuf, len);
-                if (cnt != len) {
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                    tsk_error_set_errstr
-                    ("xfs_dir_open_meta: Error reading directory contents: %"
-                        PRIuINUM "\n", a_addr);
-                    free(dirbuf);
-                    return TSK_COR;
-                }
-
-                for (uint16_t block_num = 0; block_num < irec.br_blockcount; block_num++)
-                {
-                    TSK_OFF_T offset_in_block = (TSK_OFF_T) block_num * (TSK_OFF_T) a_fs->block_size;
-                    TSK_OFF_T limit = (TSK_OFF_T) (block_num + 1) * (TSK_OFF_T) a_fs->block_size;
-
-                    xfs_dir2_data_hdr data_hdr;
-                    memcpy(&data_hdr, dirbuf + offset_in_block, sizeof(data_hdr));
-                    offset_in_block += sizeof(data_hdr);
-
-                    data_hdr.bestfree[0].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].offset);
-                    data_hdr.bestfree[0].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[0].length);
-                    data_hdr.bestfree[1].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].offset);
-                    data_hdr.bestfree[1].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[1].length);
-                    data_hdr.bestfree[2].offset = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].offset);
-                    data_hdr.bestfree[2].length = tsk_getu16(TSK_BIG_ENDIAN, &data_hdr.bestfree[2].length);
-
-                    xfs_dir2_data_entry_t data_entry;
-
-                    while (offset_in_block < limit)
-                    {
-                        if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = %d \n", offset_in_block); }
-
-                        uint16_t *xfs_dir2_data_unused_freetag = (uint16_t*) (dirbuf + offset_in_block);
-
-                        if (*xfs_dir2_data_unused_freetag == 0xffff)
-                        {
-                            xfs_dir2_data_unused *data_unused = (xfs_dir2_data_unused *) (dirbuf + offset_in_block);
-
-                            if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
-                            offset_in_block += tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length);
-                        }
-                        else
-                        {
-                            if (offset_in_block + sizeof(uint64_t) + sizeof(uint8_t) >= limit)
-                            {
-                                tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                                tsk_error_set_errstr
-                                ("xfs_dir_open_meta: Error reading directory contents: %"
-                                    PRIuINUM "\n", a_addr);
-                                return TSK_COR;
-                            }
-
-                            memcpy(&data_entry, dirbuf + offset_in_block, sizeof(uint64_t) + sizeof(uint8_t));
-                            offset_in_block += sizeof(uint64_t) + sizeof(uint8_t);
-
-                            data_entry.inumber = tsk_getu64(TSK_BIG_ENDIAN, &data_entry.inumber);
-                            fs_name->meta_addr = data_entry.inumber;
-
-
-                            if (offset_in_block + data_entry.namelen + ftype_size >= limit)
-                            {
-                                tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                                tsk_error_set_errstr
-                                ("xfs_dir_open_meta: Error reading directory contents: %"
-                                    PRIuINUM "\n", a_addr);
-                                return TSK_COR;
-                            }
-
-                            char *name = (char *) dirbuf + offset_in_block;
-                            memcpy(fs_name->name, name, data_entry.namelen);
-                            offset_in_block += data_entry.namelen;
-                            fs_name->name[data_entry.namelen] = '\0';
-
-                            uint8_t ftype = 0;
-                            if (ftype_size > 0)
-                            {
-                                ftype = * (uint8_t *) (name + data_entry.namelen);
-                            }
-                            else
-                            {
-                                xfs_dinode_t *dino_buf = NULL;
-                                ssize_t dinodesize =
-                                    xfs->fs->sb_inodesize >
-                                    sizeof(xfs_dinode) ? xfs->fs->sb_inodesize : sizeof(xfs_dinode);
-                                if ((dino_buf = (xfs_dinode_t *) tsk_malloc(dinodesize)) == NULL) {
-                                    return TSK_ERR;
-                                }
-
-                                if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
-                                    free(dino_buf);
-                                    return TSK_ERR;
-                                }
-
-                                ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
-                            }
-
-                            uint32_t ftype32 = (uint32_t) ftype << 12;
-                            switch (ftype32) {
-                            case XFS_IN_REG:
-                                fs_meta->type = TSK_FS_META_TYPE_REG;
-                                break;
-                            case XFS_IN_DIR:
-                                fs_meta->type = TSK_FS_META_TYPE_DIR;
-                                break;
-                            case XFS_IN_SOCK:
-                                fs_meta->type = TSK_FS_META_TYPE_SOCK;
-                                break;
-                            case XFS_IN_LNK:
-                                fs_meta->type = TSK_FS_META_TYPE_LNK;
-                                break;
-                            case XFS_IN_BLK:
-                                fs_meta->type = TSK_FS_META_TYPE_BLK;
-                                break;
-                            case XFS_IN_CHR:
-                                fs_meta->type = TSK_FS_META_TYPE_CHR;
-                                break;
-                            case XFS_IN_FIFO:
-                                fs_meta->type = TSK_FS_META_TYPE_FIFO;
-                                break;
-                            default:
-                                fs_meta->type = TSK_FS_META_TYPE_UNDEF;
-                                break;
-                            }
-
-                            // we iterate over allocated directories
-                            fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-
-                            if (tsk_verbose) { tsk_fprintf(stderr, "namelen = %d, fs_name->name = %s, fs_meta->type = %d, fs_name->meta_addr = %" PRId64  " fs_name->flags = \n", data_entry.namelen, fs_name->name, fs_meta->type, fs_name->meta_addr, fs_name->flags); }
-
-                            if (tsk_fs_dir_add(fs_dir, fs_name)) {
-                                tsk_fs_name_free(fs_name);
-                                return TSK_ERR;
-                            }
-
-                            // skipping xfs_dir2_data_off_t tag (and ftype, if present)
-                            offset_in_block += sizeof(xfs_dir2_data_off_t) + ftype_size;
-
-                            // x64 alignment
-                            offset_in_block = roundup(offset_in_block, sizeof(uint64_t));
-                        }
-                    }
-                }
+                parse_dir_block(a_fs, fs_dir, fs_meta, &irec, fs_name);
             }
         }
 
         free(dirbuf);
     }
-    else if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE) {
-        tsk_fprintf(stderr, "fs_meta->content_type == XFS_DINODE_FMT_BTREE is not supported yet \n");
+    else if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE)
+    {
+        TSK_OFF_T *cur_node_offset = (TSK_OFF_T*) fs_meta->content_ptr;
+
+        if (tsk_verbose) { tsk_fprintf(stderr, "starting TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE btree traversal, cur_node_offset = %" PRId64 "  \n", *cur_node_offset); }
+
+        // have to load the dinode again for proper data fork size calculation
+        xfs_dinode_t *dino_buf = NULL;
+        ssize_t dinode_size =
+            xfs->fs->sb_inodesize >
+            sizeof(xfs_dinode) ? xfs->fs->sb_inodesize : sizeof(xfs_dinode);
+        if ((dino_buf = (xfs_dinode_t *) tsk_malloc(dinode_size)) == NULL) {
+            return TSK_ERR;
+        }
+
+        if (xfs_dinode_load(xfs, a_addr, dino_buf)) {
+            free(dino_buf);
+            return TSK_ERR;
+        }
+
+        retval = visit_btree_node(a_fs, fs_dir, fs_meta, *cur_node_offset, dino_buf, fs_name, 1 /* root node */);
+
+        free(dino_buf);
+
+         if (tsk_verbose) { tsk_fprintf(stderr, "finished TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE btree traversal \n"); }
     }
 
     return retval;
@@ -2299,9 +2519,9 @@ TSK_FS_INFO *
         tsk_fs_free((TSK_FS_INFO *)xfsfs);
         return NULL;
     }
-    if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs superblock, len = %u \n", len); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs superblock, len = %" PRId64 " \n", len); }
     cnt = tsk_fs_read(fs, (TSK_OFF_T) 0, (char *) xfsfs->fs, len);
-    if (tsk_verbose) { tsk_fprintf(stderr, "read the xfs superblock, cnt =%u \n", cnt); }
+    if (tsk_verbose) { tsk_fprintf(stderr, "read the xfs superblock, cnt =%" PRId64 " \n", cnt); }
     if (cnt != len) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -2381,7 +2601,7 @@ TSK_FS_INFO *
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %u, len = %u", cnt, len);
+            tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
             free(agi);
             tsk_fs_free((TSK_FS_INFO *)xfsfs);
             return NULL;
@@ -2399,8 +2619,8 @@ TSK_FS_INFO *
         agi[current_ag].agi_dirino = tsk_getu32(TSK_BIG_ENDIAN, &agi[current_ag].agi_dirino);
 
         if (tsk_verbose) { tsk_fprintf(stderr, "agi->agi_magicnum = %.4s \n", &agi[current_ag].agi_magicnum); }
-        if (tsk_verbose) { tsk_fprintf(stderr, "agi->agi_length = %u \n", agi[current_ag].agi_length); }
-        if (tsk_verbose) { tsk_fprintf(stderr, "agi->agi_count = %u \n", agi[current_ag].agi_count); }
+        if (tsk_verbose) { tsk_fprintf(stderr, "agi->agi_length = %" PRId64 " \n", agi[current_ag].agi_length); }
+        if (tsk_verbose) { tsk_fprintf(stderr, "agi->agi_count = %" PRId64 " \n", agi[current_ag].agi_count); }
     }
 
     xfsfs->agi = agi;

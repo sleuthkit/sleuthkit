@@ -289,6 +289,27 @@ typedef struct xfs_agi {
      XFS_DIFLAG_PROJINHERIT | XFS_DIFLAG_NOSYMLINKS | XFS_DIFLAG_EXTSIZE | \
      XFS_DIFLAG_EXTSZINHERIT | XFS_DIFLAG_NODEFRAG | XFS_DIFLAG_FILESTREAM)
 
+
+// from https://github.com/torvalds/linux/blob/master/fs/xfs/libxfs/xfs_types.h
+
+typedef uint64_t	xfs_fsblock_t;	/* blockno in filesystem (agno|agbno) */
+typedef uint64_t	xfs_rfsblock_t;	/* blockno in filesystem (raw) */
+typedef uint64_t	xfs_rtblock_t;	/* extent (block) in realtime area */
+typedef uint64_t	xfs_fileoff_t;	/* block number in a file */
+typedef uint64_t	xfs_filblks_t;	/* number of blocks in a file */
+
+typedef enum {
+    XFS_EXT_NORM, XFS_EXT_UNWRITTEN,
+} xfs_exntst_t;
+
+typedef struct xfs_bmbt_irec
+{
+    xfs_fileoff_t	br_startoff;	/* starting file offset */
+    xfs_fsblock_t	br_startblock;	/* starting block number */
+    xfs_filblks_t	br_blockcount;	/* number of blocks */
+    xfs_exntst_t	br_state;	/* extent state */
+} xfs_bmbt_irec_t;
+
 /*
  * Bmap root header, on-disk form only.
  */
@@ -296,6 +317,21 @@ typedef struct xfs_bmdr_block {
     __be16		bb_level;	/* 0 is a leaf */
     __be16		bb_numrecs;	/* current # of data records */
 } xfs_bmdr_block_t;
+
+
+typedef struct xfs_btree_lblock xfs_bmbt_block_t;
+typedef struct xfs_btree_lblock {
+     uint32_t                    bb_magic;
+     uint16_t                    bb_level;
+     uint16_t                    bb_numrecs;
+     uint64_t                    bb_leftsib;
+     uint64_t                    bb_rightsib;
+} xfs_btree_lblock_t;
+
+
+typedef struct xfs_bmbt_key {
+     xfs_dfiloff_t              br_startoff;
+} xfs_bmbt_key_t, xfs_bmdr_key_t;
 
 
 // From linux/v2.6.28/source/fs/xfs/xfs_bmap_btree.h
@@ -324,26 +360,10 @@ typedef uint16_t xfs_dir2_sf_off_t;
 
 
 
+typedef xfs_fsblock_t xfs_bmbt_ptr_t, xfs_bmdr_ptr_t;
 
-// from https://github.com/torvalds/linux/blob/master/fs/xfs/libxfs/xfs_types.h
 
-typedef uint64_t	xfs_fsblock_t;	/* blockno in filesystem (agno|agbno) */
-typedef uint64_t	xfs_rfsblock_t;	/* blockno in filesystem (raw) */
-typedef uint64_t	xfs_rtblock_t;	/* extent (block) in realtime area */
-typedef uint64_t	xfs_fileoff_t;	/* block number in a file */
-typedef uint64_t	xfs_filblks_t;	/* number of blocks in a file */
 
-typedef enum {
-    XFS_EXT_NORM, XFS_EXT_UNWRITTEN,
-} xfs_exntst_t;
-
-typedef struct xfs_bmbt_irec
-{
-    xfs_fileoff_t	br_startoff;	/* starting file offset */
-    xfs_fsblock_t	br_startblock;	/* starting block number */
-    xfs_filblks_t	br_blockcount;	/* number of blocks */
-    xfs_exntst_t	br_state;	/* extent state */
-} xfs_bmbt_irec_t;
 
 
 
@@ -528,7 +548,28 @@ static inline uint xfs_dinode_size(int version)
 #define	XFS_ATTR_FORK	1
 #define	XFS_COW_FORK	2
 
+/*
+ * Inode size for given fs.
+ */
+#define XFS_LITINO(mp, version) \
+	((int)(((mp)->fs->sb_inodesize) - xfs_dinode_size(version)))
+
+#define XFS_DFORK_Q(dip)		((dip)->di_forkoff != 0)
 #define XFS_DFORK_BOFF(dip)		((int)((dip)->di_forkoff << 3))
+
+#define XFS_DFORK_DSIZE(dip,mp) \
+	(XFS_DFORK_Q(dip) ? \
+		XFS_DFORK_BOFF(dip) : \
+		XFS_LITINO(mp, (dip)->di_version))
+#define XFS_DFORK_ASIZE(dip,mp) \
+	(XFS_DFORK_Q(dip) ? \
+		XFS_LITINO(mp, (dip)->di_version) - XFS_DFORK_BOFF(dip) : \
+		0)
+
+#define XFS_DFORK_SIZE(dip,mp,w) \
+	((w) == XFS_DATA_FORK ? \
+		XFS_DFORK_DSIZE(dip, mp) : \
+		XFS_DFORK_ASIZE(dip, mp))
 
 /*
  * Return pointers to the data or attribute forks.
