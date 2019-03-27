@@ -115,7 +115,7 @@ bool startsWith(const std::string &bigStr, const std::string &lilStr) {
  * @param a_path UTF-8 path of file to search for
  * @param [out] a_result Meta data address, and TSK_FS_NAME_FLAGS of the file
  * @param [out] a_fs_name Copy of name details (or NULL if details not wanted)
- * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted)
+ * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted) Caller should call tsk_fs_file_close when a_fs_file is no longer needed.
  * @returns -1 on (system) error, 0 if found, 1 if not found, 2 if the file path is found but the inode has been reallocated
  */
 int
@@ -485,6 +485,7 @@ TskHelper::TSKHlprPath2Inum(TSK_FS_INFO *a_fs, const char *a_path,
                     else {
                         isReallocated = true; // should this should be a different return code?
                     }
+                    tsk_fs_file_close(fs_file2);
                 }
 
                 if (!isReallocated) {	// found a match and it isn't reallocated !! - return this

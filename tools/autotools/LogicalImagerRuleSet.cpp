@@ -57,12 +57,16 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     
     // Testing TSKHlprPath2Inum
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Sunset.jpg");
-    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Water lilies.jpg");
-    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Winter.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/blue hills.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/BLUE HILLS.JPG");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/sunset.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/water lilies.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/winter.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe");
     m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt");
     m_filePaths.push_back("No Such Folder/No such subfolder/no-such-file.txt");
+    m_filePaths.push_back("No Such Folder/No such subfolder/Winter.jpg");
     return;
 
     // The following rules are for mocking the config file and testing only.

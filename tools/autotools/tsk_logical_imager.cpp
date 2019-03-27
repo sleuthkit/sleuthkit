@@ -787,25 +787,10 @@ main(int argc, char **argv1)
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::vector<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
             int retval = TskHelper::getInstance().TSKHlprPath2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
-            std::cout << "TSKHlprPath2Inum return " << retval << " for " << iter->c_str() << std::endl;
+            std::cout << "TSKHlprPath2Inum returns " << retval << " for " << iter->c_str() << std::endl;
             if (retval == 0) {
-                TSK_OFF_T offset = 0;
-                size_t bufferLen = 16 * 1024;
-                size_t bytesRead;
-                char buffer[16 * 1024];
-
-                while (true) {
-                    bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
-                    // ts_fs_file_read returns -1 with empty files, don't report it.
-                    if (bytesRead == -1 && !(fs_file->meta != NULL && fs_file->meta->size == 0)) {
-                        fprintf(stderr, "processFile: tsk_fs_file_read returns -1\tfilename=%s\toffset=%" PRIu64 "\n", fs_file->name->name, offset);
-                        return TSK_ERR;
-                    }
-                    if (bytesRead < bufferLen) {
-                        break;
-                    }
-                    offset += bytesRead;
-                }
+                (void) TskFindFiles::extractFile(fs_file);
+                tsk_fs_file_close(fs_file);
             }
         }
     }
