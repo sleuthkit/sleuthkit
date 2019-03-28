@@ -41,7 +41,7 @@ time_t LogicalImagerDateRule::getLatestTime(TSK_FS_META *meta) const {
 * @returns true if extension is in the rule
 *          false otherwise
 */
-bool LogicalImagerDateRule::matches(TSK_FS_FILE *fs_file, const char *path) const
+bool LogicalImagerDateRule::matches(TSK_FS_FILE *fs_file, const char * /* path */) const
 {
     if (fs_file->meta == NULL)
         return false;

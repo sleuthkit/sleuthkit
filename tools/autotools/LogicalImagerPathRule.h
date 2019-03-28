@@ -31,7 +31,7 @@ public:
     LogicalImagerPathRule(std::set<std::string> extensions);
     ~LogicalImagerPathRule();
 
-    bool matches(TSK_FS_FILE */*fs_file*/, const char *path) const;
+    bool matches(TSK_FS_FILE * /*fs_file*/, const char *path) const;
 
 private:
     std::set<std::string> m_paths;

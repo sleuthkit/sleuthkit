@@ -31,7 +31,7 @@ public:
     LogicalImagerSizeRule(TSK_OFF_T min, TSK_OFF_T max);
     ~LogicalImagerSizeRule();
 
-    bool matches(TSK_FS_FILE *fs_file, const char */*path*/) const;
+    bool matches(TSK_FS_FILE *fs_file, const char * /*path*/) const;
 
 private:
     TSK_OFF_T m_min;

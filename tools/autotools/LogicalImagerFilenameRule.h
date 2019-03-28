@@ -31,7 +31,7 @@ public:
     LogicalImagerFilenameRule(std::set<std::string> filenames);
     ~LogicalImagerFilenameRule();
 
-    bool matches(TSK_FS_FILE *fs_file, const char */*path*/) const;
+    bool matches(TSK_FS_FILE *fs_file, const char * /*path*/) const;
 
 private:
     std::set<std::string> m_filenames;

@@ -33,7 +33,7 @@ LogicalImagerPathRule::~LogicalImagerPathRule()
 * @returns true if the path is in the rule
 *          false otherwise
 */
-bool LogicalImagerPathRule::matches(TSK_FS_FILE */*fs_file*/, const char *path) const
+bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path) const
 {
     if (path == NULL)
         return false;
