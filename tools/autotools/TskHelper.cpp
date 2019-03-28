@@ -37,6 +37,7 @@ TskHelper::~TskHelper()
 }
 
 void TskHelper::reset() {
+    releasePath2InumCache();
     m_img_info = NULL;
     m_FSInfoList.clear();
     m_path2InumCache.clear();
@@ -115,7 +116,7 @@ bool startsWith(const std::string &bigStr, const std::string &lilStr) {
  * @param a_path UTF-8 path of file to search for
  * @param [out] a_result Meta data address, and TSK_FS_NAME_FLAGS of the file
  * @param [out] a_fs_name Copy of name details (or NULL if details not wanted)
- * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted) Caller should call tsk_fs_file_close when a_fs_file is no longer needed.
+ * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted)
  * @returns -1 on (system) error, 0 if found, 1 if not found, 2 if the file path is found but the inode has been reallocated
  */
 int
@@ -132,6 +133,7 @@ TskHelper::TSKHlprPath2Inum(TSK_FS_INFO *a_fs, const char *a_path,
     // std::cout << "TskHlprPath2Inum: Looking for " << a_path << " in FS " << a_fs->offset << std::endl;
 
     a_result.setINUM(0);
+    *a_fs_file = NULL;
 
     std::string path_matched;
     bool ignoreExt = false;
@@ -205,7 +207,7 @@ TskHelper::TSKHlprPath2Inum(TSK_FS_INFO *a_fs, const char *a_path,
             if (targetPathSubString.length() == targetPathAsString.length()) {
                 a_result.setINUM(inum);
                 a_result.setFSNameFlags(pInumCacheData->getFSNameFlag());
-
+                *a_fs_file = NULL;
                 free(cpath);
                 return 0;
             }
@@ -229,6 +231,7 @@ TskHelper::TSKHlprPath2Inum(TSK_FS_INFO *a_fs, const char *a_path,
                 * specify a trailing / at the end. */
                 if (cur_name_to_match == NULL) {
                     a_result.setINUM(inum);
+                    *a_fs_file = NULL;
                     free(cpath);
                     return 0;
                 }
@@ -570,7 +573,6 @@ const Path2InumCacheData* TskHelper::lookupPathToInumCache(const TSK_FS_INFO *a_
 */
 
 bool TskHelper::addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string a_path, const Path2InumCacheData *a_cacheData) {
-
     TSK_OFF_T fs_off = a_fs->offset;
     std::string lcPath = toLower(a_path);
 
@@ -581,6 +583,24 @@ bool TskHelper::addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string a_
     else {
         return false;
     }
+}
+
+/**
+* releasePath2InumCache - Frees up all data in the Path/Inum cache.
+*
+* @returns 0 on success, -1 on failure
+*/
+int TskHelper::releasePath2InumCache() {
+    for (auto itr = m_path2InumCache.begin(); itr != m_path2InumCache.end(); itr++) {
+        const Path2InumCacheData* pCacheData = (*itr).second;
+        TSK_FS_DIR * fs_dir = pCacheData->getFSDir();
+        if (NULL != fs_dir) {
+            tsk_fs_dir_close(fs_dir);
+        }
+        delete pCacheData;
+    }
+    m_path2InumCache.clear();
+    return 0;
 }
 
 void TskHelper::addFSInfo(TSK_FS_INFO *a_fs_info) {

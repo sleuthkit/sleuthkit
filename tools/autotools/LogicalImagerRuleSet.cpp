@@ -56,17 +56,41 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     // TODO: read the config yaml file and construct the m_rules map
     
     // Testing TSKHlprPath2Inum
+
+    // Non-Ascii paths
+    auto utf8str = u8"جهاد_files";
+    auto utf16str = L"جهاد_files";
+    std::cout << utf8str << std::endl;
+    std::cout << utf16str << std::endl;
+    TFPRINTF(stdout, _TSK_T("%s\n"), _TSK_T("جهاد_files"));
+    fwprintf(stdout, L"%s\n", utf16str);
+
+    m_filePaths.push_back(u8R"(Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css)");
+
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/blue hills.jpg");
-    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/BLUE HILLS.JPG");
-    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/sunset.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/water lilies.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/blue hills.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/BLUE HILLS.JPG");
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/winter.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe");
+    m_filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
+
+    // Test invalid or file not found paths
     m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt");
     m_filePaths.push_back("No Such Folder/No such subfolder/no-such-file.txt");
     m_filePaths.push_back("No Such Folder/No such subfolder/Winter.jpg");
+    m_filePaths.push_back("");
+    m_filePaths.push_back(".");
+    m_filePaths.push_back("..");
+    m_filePaths.push_back("C:");
+    m_filePaths.push_back("*.*");
+    m_filePaths.push_back("C:/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
+    m_filePaths.push_back("/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
+    m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg");
+
+
     return;
 
     // The following rules are for mocking the config file and testing only.

@@ -27,7 +27,6 @@ typedef std::pair<TSK_OFF_T, std::string> Path2InumCacheKey;
  * For direcories  - inum and TSK_FS_DIR is cached to speed up subsequent lookups along the same path
  */
 class Path2InumCacheData {
-
 public:
     Path2InumCacheData(TSK_INUM_T a_inum, TSK_FS_DIR *a_tsk_fs_dir);
     
@@ -43,14 +42,10 @@ private:
     TSK_FS_NAME_FLAG_ENUM m_fs_name_flags;
 };
 
-
 typedef std::map<Path2InumCacheKey, const Path2InumCacheData *> Path2InumCache;
 
-
 class TSKFileNameInfo {
-   
 public:
-
     TSKFileNameInfo() {
         m_inum = 0;
         m_flags = TSK_FS_NAME_FLAG_ALLOC;
@@ -67,13 +62,9 @@ private:
     TSK_FS_NAME_FLAG_ENUM m_flags;        // name flags
 };
 
-
 class TskHelper {
-
 public:
-    
-    static TskHelper& getInstance()
-    {
+    static TskHelper& getInstance() {
         static TskHelper instance; 
         return instance;
     }
@@ -95,6 +86,7 @@ private:
 
     const Path2InumCacheData *lookupPathToInumCache(const TSK_FS_INFO *a_fs, const char *a_path);
     bool addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string a_path, const Path2InumCacheData *a_cacheData);
+    int releasePath2InumCache();
 
     TskHelper();  
     ~TskHelper();

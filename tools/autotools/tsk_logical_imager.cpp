@@ -787,10 +787,9 @@ main(int argc, char **argv1)
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::vector<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
             int retval = TskHelper::getInstance().TSKHlprPath2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
-            std::cout << "TSKHlprPath2Inum returns " << retval << " for " << iter->c_str() << std::endl;
-            if (retval == 0) {
+            std::cout << "TSKHlprPath2Inum returns " << retval << " " << (retval == 0 && fs_file == NULL ? "duplicate" : "") << " for " << iter->c_str() << std::endl;
+            if (retval == 0 && fs_file != NULL) {
                 (void) TskFindFiles::extractFile(fs_file);
-                tsk_fs_file_close(fs_file);
             }
         }
     }
