@@ -85,8 +85,6 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg");
     m_filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
 
-    return;
-
     // The following rules are for mocking the config file and testing only.
 
     std::vector<LogicalImagerRuleBase *> vector;
