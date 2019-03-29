@@ -116,13 +116,12 @@ bool startsWith(const std::string &bigStr, const std::string &lilStr) {
  * @param a_path UTF-8 path of file to search for
  * @param [out] a_result Meta data address, and TSK_FS_NAME_FLAGS of the file
  * @param [out] a_fs_name Copy of name details (or NULL if details not wanted)
- * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted)
+ * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted). The caller should free the a_fs_file.
  * @returns -1 on (system) error, 0 if found, 1 if not found, 2 if the file path is found but the inode has been reallocated
  */
 int
-TskHelper::TSKHlprPath2Inum(TSK_FS_INFO *a_fs, const char *a_path,
-    TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file)
-{
+TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path,
+    TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file) {
     char *cpath;
     size_t clen;
     char *cur_name_to_match;              // The "current" directory or file we are looking for
@@ -541,12 +540,12 @@ TskHelper::TSKHlprPath2Inum(TSK_FS_INFO *a_fs, const char *a_path,
     free(cpath);
     return 1;
 }
+
 /**
 * lookupPathToInumCache - lookup the given <fs,path> in the cache and return corresponding inum & TSK_FS_DIR
 *
 * @param input a_fs TSK_FS_INFO for the file system containing the file
 * @param input a_path pathname of file/dir to lookup
-
 * @returns Path2InumCacheData* if the given path is found in the cache , NULL otherwise.
 */
 const Path2InumCacheData* TskHelper::lookupPathToInumCache(const TSK_FS_INFO *a_fs, const char *a_path) {
@@ -608,7 +607,6 @@ void TskHelper::addFSInfo(TSK_FS_INFO *a_fs_info) {
         m_FSInfoList.push_back(a_fs_info);
     }
 }
-
 
 TSK_FS_INFO *TskHelper::getFSInfo(TSK_OFF_T offset) {
     for (auto itr = m_FSInfoList.begin(); itr != m_FSInfoList.end(); itr++) {

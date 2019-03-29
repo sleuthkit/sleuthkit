@@ -77,7 +77,7 @@ public:
 
     void setImgInfo(TSK_IMG_INFO *a_img_info) { m_img_info = a_img_info; }
 
-    int TSKHlprPath2Inum(TSK_FS_INFO *a_fs, const char *a_path, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
+    int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
 
 private:
     std::string toLower(const std::string &srcStr);

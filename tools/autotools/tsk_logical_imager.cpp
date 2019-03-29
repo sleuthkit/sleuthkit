@@ -1,4 +1,4 @@
-﻿/*
+/*
  ** tsk_logical_imager
  ** The Sleuth Kit
  **
@@ -669,15 +669,6 @@ static void usage() {
 int
 main(int argc, char **argv1)
 {
-    // Set the CMD Console to Unicode Codepage
-    SetConsoleOutputCP(65001);
-    setlocale(LC_ALL, "en_US.UTF-8"); // set locale to English and UTF-8 encoding.
-    // Printing some Arabic, Kanji and European characters in UTF-8 encoded strings.
-    char *u8str = u8"جهاد_files名門大洋";
-    fprintf(stdout, "Printing utf-8 strings\n");
-    fprintf(stdout, "%s\n", u8str);
-    fprintf(stdout, "%s\n", u8"Hello 名門大洋 aäbcdefghijklmnoöpqrsßtuüvwxy");
-
     TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
@@ -688,6 +679,13 @@ main(int argc, char **argv1)
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerRuleSet *ruleSet = NULL;
+
+    // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
+    // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to 
+    // display most non-ASCII characters (tested with European, Japanese, Chinese, Korean, Greek,
+    // Arabic, Hebrew and Cyrillic strings).
+    SetConsoleOutputCP(65001); // Set the CMD Console to Unicode codepage
+    setlocale(LC_ALL, "en_US.UTF-8"); // Set locale to English and UTF-8 encoding.
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -794,10 +792,11 @@ main(int argc, char **argv1)
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::vector<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
-            int retval = TskHelper::getInstance().TSKHlprPath2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
-            fprintf(stdout, "TSKHlprPath2Inum returns %d %s for %s\n", retval, (retval == 0 && fs_file == NULL ? "duplicate" : ""), iter->c_str());
+            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
+            fprintf(stdout, "Path2Inum returns %d %s for %s\n", retval, (retval == 0 && fs_file == NULL ? "duplicate" : ""), iter->c_str());
             if (retval == 0 && fs_file != NULL) {
                 (void) TskFindFiles::extractFile(fs_file);
+                delete fs_file;
             }
         }
     }

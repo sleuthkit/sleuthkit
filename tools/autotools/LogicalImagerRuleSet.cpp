@@ -55,17 +55,13 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
 {
     // TODO: read the config yaml file and construct the m_rules map
     
-    // Testing TSKHlprPath2Inum
+    // NOTE: C++ source code containing UTF-8 string literals should be saved as "Unicode (UTF-8 without signature) - Codepage 65001"
+    // The VC++ compiler option /utf-8 should be used to specify the source code is in UTF-8 encoding.
+    // This is purely for testing only. We can revert this if UTF-8 string literals are removed from the source code.
 
-    // Non-Ascii paths
-
-    char *u8str = u8"جهاد_files名門大洋";
-    fprintf(stdout, "Printing utf-8 strings\n");
-    fprintf(stdout, "%s\n", u8str);
-    fprintf(stdout, "%s\n", u8"Hello 名門大洋 aäbcdefghijklmnoöpqrsßtuüvwxy");
-
-    char *utf8str = u8"جهاد_files";
-    fprintf(stdout, "%s\n", utf8str);
+    // File path with Chinese name in the fa_keyword_search_test.img
+    m_filePaths.push_back(u8"上交所与香港特许秘书公会签合作协议.doc");
+    m_filePaths.push_back(u8"胡锦涛.htm");
 
     // File path with an Arabic folder name in the XP image
     m_filePaths.push_back(u8"Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css");
@@ -79,21 +75,15 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/winter.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe");
-    m_filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
+    m_filePaths.push_back("/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
 
     // Test invalid or file not found paths
     m_filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt");
     m_filePaths.push_back("No Such Folder/No such subfolder/no-such-file.txt");
     m_filePaths.push_back("No Such Folder/No such subfolder/Winter.jpg");
-    m_filePaths.push_back("");
-    m_filePaths.push_back(".");
-    m_filePaths.push_back("..");
-    m_filePaths.push_back("C:");
-    m_filePaths.push_back("*.*");
     m_filePaths.push_back("C:/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-    m_filePaths.push_back("/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg");
-
+    m_filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
 
     return;
 
