@@ -27,7 +27,7 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/img/img_writer.h"
-#include "LogicalImagerConfig.h"
+#include "LogicalImagerRuleSet.h"
 #include "TskFindFiles.h"
 
 std::wstring GetLastErrorStdStrW();
@@ -651,7 +651,7 @@ main(int argc, char **argv1)
     const TSK_TCHAR *imgPath[1];
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
-    LogicalImagerConfig *config = NULL;
+    LogicalImagerRuleSet *ruleSet = NULL;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -733,21 +733,21 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    config = new LogicalImagerConfig(toNarrow(configFilename));
-    TskFindFiles findFiles(config);
+    ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+    TskFindFiles findFiles(ruleSet);
 
     if (findFiles.openImageHandle(img)) {
         tsk_error_print(stderr);
-        if (config) {
-            delete config;
+        if (ruleSet) {
+            delete ruleSet;
         }
         exit(1);
     }
 
     if (findFiles.findFilesInImg()) {
         // we already logged the errors
-        if (config) {
-            delete config;
+        if (ruleSet) {
+            delete ruleSet;
         }
         // should we call findFiles.closeImage() upon error?
         exit(1);
@@ -758,8 +758,8 @@ main(int argc, char **argv1)
     //	// not exiting, should call tsk_img_close.
     //}
 
-    if (config) {
-        delete config;
+    if (ruleSet) {
+        delete ruleSet;
     }
     findFiles.closeImage();
     TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());

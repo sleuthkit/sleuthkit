@@ -14,18 +14,54 @@
     <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerConfig.cpp">
+    <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp">
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerExtensionRule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerPathRule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerFilenameRule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerDateRule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerConfig.h">
+    <ClInclude Include="..\..\tools\autotools\TskFindFiles.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tools\autotools\TskFindFiles.h">
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerPathRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerDateRule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

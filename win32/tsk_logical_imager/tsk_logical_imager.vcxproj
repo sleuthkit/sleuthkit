@@ -422,12 +422,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerDateRule.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerExtensionRule.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerFilenameRule.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerPathRule.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleBase.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleSet.cpp" />
+    <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp" />
     <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp" />
     <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerConfig.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerDateRule.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerPathRule.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleBase.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleSet.h" />
+    <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h" />
     <ClInclude Include="..\..\tools\autotools\TskFindFiles.h" />
   </ItemGroup>
   <ItemGroup>
