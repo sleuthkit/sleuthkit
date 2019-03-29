@@ -58,15 +58,19 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     // Testing TSKHlprPath2Inum
 
     // Non-Ascii paths
-    auto utf8str = u8"جهاد_files";
-    auto utf16str = L"جهاد_files";
-    std::cout << utf8str << std::endl;
-    std::cout << utf16str << std::endl;
-    TFPRINTF(stdout, _TSK_T("%s\n"), _TSK_T("جهاد_files"));
-    fwprintf(stdout, L"%s\n", utf16str);
 
-    m_filePaths.push_back(u8R"(Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css)");
+    char *u8str = u8"جهاد_files名門大洋";
+    fprintf(stdout, "Printing utf-8 strings\n");
+    fprintf(stdout, "%s\n", u8str);
+    fprintf(stdout, "%s\n", u8"Hello 名門大洋 aäbcdefghijklmnoöpqrsßtuüvwxy");
 
+    char *utf8str = u8"جهاد_files";
+    fprintf(stdout, "%s\n", utf8str);
+
+    // File path with an Arabic folder name in the XP image
+    m_filePaths.push_back(u8"Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css");
+
+    // Test existing files, with some duplicates
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/sunset.jpg");
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/water lilies.jpg");
