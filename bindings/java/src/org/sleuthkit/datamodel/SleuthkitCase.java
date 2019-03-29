@@ -4941,13 +4941,17 @@ public class SleuthkitCase {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
 
-			String parentPath = getFileParentPath(parentId, connection);
-			if (parentPath == null) {
-				parentPath = "/"; //NON-NLS
-			}
-			String parentName = getFileName(parentId, connection);
-			if (parentName != null && !parentName.isEmpty()) {
-				parentPath = parentPath + parentName + "/"; //NON-NLS
+			String parentPath;
+			Content parent = this.getAbstractFileById(parentId, connection);
+			if (parent instanceof AbstractFile) {
+				if (isRootDirectory((AbstractFile)parent, transaction)) {
+					parentPath = "/";
+				} else {
+					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
+			} else {
+				// The parent was either null or not an abstract file
+				parentPath = "/";
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
@@ -5093,7 +5097,7 @@ public class SleuthkitCase {
 			CaseDbConnection connection = transaction.getConnection();
 			AbstractFile parent = getAbstractFileById(parentId, connection);
 			String parentPath;
-			if (parent != null) {
+			/*if (parent != null) {
 				if ((! hasParent(parent, transaction)) && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
 					parentPath = "/";
 				} else {
@@ -5101,7 +5105,13 @@ public class SleuthkitCase {
 				}
 			} else {
 				parentPath = "/";
+			}*/
+			if ((parent == null) || isRootDirectory(parent, transaction)) {
+				parentPath = "/";
+			} else {
+				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			}
+
 
 			// Insert a row for the local directory into the tsk_objects table.
 			long newObjId = addObject(parentId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
@@ -6223,7 +6233,7 @@ public class SleuthkitCase {
 			String parentPath;
 
 			if (parent instanceof AbstractFile) {
-				if ((! hasParent(parent, transaction)) && ((AbstractFile)parent).getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+				if (isRootDirectory((AbstractFile)parent, transaction)) {
 					parentPath = "/";
 				} else {
 					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
@@ -6261,6 +6271,44 @@ public class SleuthkitCase {
 			closeStatement(queryStatement);
 			// NOTE: write lock will be released by transaction
 		}
+	}
+	
+	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
+		CaseDbConnection connection = transaction.getConnection();
+		transaction.acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		
+		try {
+			String query = String.format("SELECT ParentRow.type AS parent_type, ParentRow.obj_id AS parent_object_id " + 
+				"FROM tsk_objects ParentRow JOIN tsk_objects ChildRow ON ChildRow.par_obj_id = ParentRow.obj_id " + 	
+				"WHERE ChildRow.obj_id = %s;", file.getId());
+
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery(query);
+			if (resultSet.next()) {
+				long parentId = resultSet.getLong("parent_object_id");
+				if (parentId == 0) {
+					return true;
+				}
+				int type = resultSet.getInt("parent_type");
+				return (type == TskData.ObjectType.IMG.getObjectType()
+						|| type == TskData.ObjectType.VS.getObjectType()
+						|| type == TskData.ObjectType.VOL.getObjectType()
+						|| type == TskData.ObjectType.FS.getObjectType());
+						
+			} else {
+				return true; // The file has no parent
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Failed to lookup parent of file (%s) with id %d", file.getName(), file.getId()), ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			// NOTE: write lock will be released by transaction
+		}
+		
+		
 	}
 	
 	/**
