@@ -5097,21 +5097,11 @@ public class SleuthkitCase {
 			CaseDbConnection connection = transaction.getConnection();
 			AbstractFile parent = getAbstractFileById(parentId, connection);
 			String parentPath;
-			/*if (parent != null) {
-				if ((! hasParent(parent, transaction)) && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-					parentPath = "/";
-				} else {
-					parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
-				}
-			} else {
-				parentPath = "/";
-			}*/
 			if ((parent == null) || isRootDirectory(parent, transaction)) {
 				parentPath = "/";
 			} else {
 				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			}
-
 
 			// Insert a row for the local directory into the tsk_objects table.
 			long newObjId = addObject(parentId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
@@ -6273,6 +6263,18 @@ public class SleuthkitCase {
 		}
 	}
 	
+	/**
+	 * Check whether a given AbstractFile is the "root" directory.
+	 * True if the AbstractFile either has no parent or its parent is
+	 * an image, volume, volume system, or file system.
+	 * 
+	 * @param file         the file to test
+	 * @param transaction  the current transaction
+	 * 
+	 * @return             true if the file is a root directory, false otherwise
+	 * 
+	 * @throws TskCoreException 
+	 */
 	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
 		transaction.acquireSingleUserCaseWriteLock();
@@ -6302,44 +6304,6 @@ public class SleuthkitCase {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to lookup parent of file (%s) with id %d", file.getName(), file.getId()), ex);
-		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
-			// NOTE: write lock will be released by transaction
-		}
-		
-		
-	}
-	
-	/**
-	 * Check if the given content has a parent object.
-	 * 
-	 * @param content
-	 * @param transaction
-	 * 
-	 * @return true if it has a parent in the tsk_objects table, false otherwise
-	 * 
-	 * @throws TskCoreException 
-	 */
-	private boolean hasParent(Content content, CaseDbTransaction transaction) throws TskCoreException {
-		
-		CaseDbConnection connection = transaction.getConnection();
-		transaction.acquireSingleUserCaseWriteLock();
-		Statement statement = null;
-		ResultSet resultSet = null;
-		
-		try {
-			String query = String.format("SELECT par_obj_id FROM tsk_objects WHERE obj_id = %s;", content.getId());
-			statement = connection.createStatement();
-			resultSet = statement.executeQuery(query);
-			if (resultSet.next()) {
-				long parentId = resultSet.getLong("par_obj_id");
-				return (parentId != 0);
-			} else {
-				throw new TskCoreException(String.format("tsk_objects table is corrupt, SQL query returned no result: %s", query));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Failed to lookup parent of content (%s) with id %d", content.getName(), content.getId()), ex);
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
