@@ -1,12 +1,12 @@
 /*
 ** fs_types
-** The Sleuth Kit
+** The Sleuth Kit 
 **
 ** Identify the type of file system being used
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -159,7 +159,7 @@ tsk_fs_type_toname(TSK_FS_TYPE_ENUM ftype)
 
 /**
  * \ingroup fslib
- * Return the supported file system types.
+ * Return the supported file system types. 
  * @returns The bit in the return value is 1 if the type is supported.
  */
 TSK_FS_TYPE_ENUM

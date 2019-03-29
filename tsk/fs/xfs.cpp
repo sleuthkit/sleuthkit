@@ -323,13 +323,11 @@ xfs_dinode_load(XFSFS_INFO * xfsfs, TSK_INUM_T dino_inum,
     return 0;
 }
 
-// from https://github.com/torvalds/linux/blob/master/fs/xfs/libxfs/xfs_bit.h#L24
 static inline uint64_t xfs_mask64lo(int n)
 {
     return ((uint64_t)1 << (n)) - 1;
 }
 
-// from https://github.com/torvalds/linux/blob/master/fs/xfs/libxfs/xfs_bmap_btree.c#L63
 void
 xfs_bmbt_disk_get_all(
     xfs_bmbt_rec_t    *rec,
