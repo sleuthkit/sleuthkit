@@ -2344,7 +2344,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
                 if (*xfs_dir2_data_unused_freetag == 0xffff)
                 {
-                    xfs_dir2_data_unused *data_unused = (xfs_dir2_data_unused *) (dirbuf + offset_in_block);
+                    xfs_dir2_data_unused *data_unused = static_cast<xfs_dir2_data_unused *>((void *)(dirbuf + offset_in_block));
 
                     if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
                     offset_in_block += tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length);
@@ -2577,7 +2577,7 @@ TSK_FS_INFO *
 
     len = sizeof(xfs_sb_t);
     if ((xfsfs->fs = static_cast<xfs_sb_t *>(tsk_malloc(len))) == NULL) {
-        tsk_fs_free((TSK_FS_INFO *)xfsfs);
+        tsk_fs_free(&xfsfs->fs_info);
         return NULL;
     }
     if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs superblock, len = %" PRId64 " \n", len); }
@@ -2590,7 +2590,7 @@ TSK_FS_INFO *
         }
         tsk_error_set_errstr2("xfs_open: superblock");
         free(xfsfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)xfsfs);
+        tsk_fs_free(&xfsfs->fs_info);
         return NULL;
     }
 
@@ -2642,7 +2642,7 @@ TSK_FS_INFO *
         tsk_error_set_errno(TSK_ERR_FS_READ);
         tsk_error_set_errstr2("xfs_open: magic number doesn't match XFSB");
         free(xfsfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)xfsfs);
+        tsk_fs_free(&xfsfs->fs_info);
         return NULL;
     }
 
@@ -2664,7 +2664,7 @@ TSK_FS_INFO *
             }
             tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
             free(agi);
-            tsk_fs_free((TSK_FS_INFO *)xfsfs);
+            tsk_fs_free(&xfsfs->fs_info);
             return NULL;
         }
 

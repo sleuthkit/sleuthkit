@@ -57,7 +57,7 @@ typedef int64_t	xfs_lsn_t; /* log sequence number */
 #define UUID_SIZE 16
 typedef struct {
     uint8_t b[UUID_SIZE];
-} uuid_t;
+} xfs_uuid_t;
 
 // from https://github.com/torvalds/linux/blob/master/fs/xfs/libxfs/xfs_format.h
 /*
@@ -108,7 +108,7 @@ typedef struct xfs_sb
     xfs_drfsbno_t     sb_dblocks;
     xfs_drfsbno_t     sb_rblocks;
     xfs_drtbno_t      sb_rextents;
-    uuid_t            sb_uuid;
+    xfs_uuid_t            sb_uuid;
     xfs_dfsbno_t      sb_logstart;
     xfs_ino_t         sb_rootino;
     xfs_ino_t         sb_rbmino;
@@ -159,7 +159,7 @@ typedef struct xfs_sb
     xfs_extlen_t sb_spino_align;
     xfs_ino_t sb_pquotino;
     xfs_lsn_t sb_lsn;
-    uuid_t sb_meta_uuid;
+    xfs_uuid_t sb_meta_uuid;
     xfs_ino_t sb_rrmapino;
 } xfs_sb_t;
 
@@ -192,7 +192,7 @@ typedef struct xfs_agf {
 typedef struct xfs_agfl {
     __be32		agfl_magicnum;
     __be32		agfl_seqno;
-    uuid_t		agfl_uuid;
+    xfs_uuid_t		agfl_uuid;
     uint64_t	agfl_lsn;
     __be32		agfl_crc;
 } xfs_agfl_t;
@@ -229,7 +229,7 @@ typedef struct xfs_agi {
     * v5 filesystem fields start here; this marks the end of logging region 1
     * and start of logging region 2.
     * /
-    uuid_t agi_uuid;
+    xfs_uuid_t agi_uuid;
     __be32 agi_crc;
     __be32 agi_pad32;
     __be64 agi_lsn;
@@ -501,7 +501,7 @@ typedef struct xfs_dinode
     uint8_t di_pad2[12];
     xfs_timestamp_t di_crtime;
     uint64_t di_ino;
-    uuid_t di_uuid;
+    xfs_uuid_t di_uuid;
 
     union {
         xfs_bmdr_block_t di_bmbt;	/* btree root block */
@@ -509,7 +509,7 @@ typedef struct xfs_dinode
         xfs_dir2_sf_t	di_dir2sf;	/* shortform directory v2 */
         char		di_c[1];	/* local contents */
         __be32		di_dev;		/* device for S_IFCHR/S_IFBLK */
-        uuid_t		di_muuid;	/* mount point value */
+        xfs_uuid_t		di_muuid;	/* mount point value */
         char		di_symlink[1];	/* local symbolic link */
     }		di_u;
     union {
