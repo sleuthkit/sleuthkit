@@ -77,7 +77,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(XFSFS_INFO * xfsfs, TSK_INUM_T dino
         }
         tsk_error_set_errstr2("xfs_inode_getallocflag: Inode %" PRIuINUM
             ", AGI from block %" PRIuOFF, dino_inum, cur_block_num);
-        free(cur_inobt_block)
+        free(cur_inobt_block);
         return (TSK_FS_META_FLAG_ENUM) NULL;
     }
 
@@ -1815,6 +1815,7 @@ parse_dir_block(TSK_FS_INFO *a_fs, TSK_FS_DIR *fs_dir, TSK_FS_META *fs_meta, xfs
                     }
 
                     ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
+                    free(dino_buf);
                 }
 
                 uint32_t ftype32 = (uint32_t) ftype << 12;
@@ -1852,7 +1853,6 @@ parse_dir_block(TSK_FS_INFO *a_fs, TSK_FS_DIR *fs_dir, TSK_FS_META *fs_meta, xfs
 
                 if (tsk_fs_dir_add(fs_dir, fs_name)) {
                     free(dirbuf);
-                    free(dino_buf);
                     return TSK_ERR;
                 }
 
@@ -1921,7 +1921,7 @@ visit_btree_node(TSK_FS_INFO *a_fs, TSK_FS_DIR *fs_dir, TSK_FS_META *fs_meta, xf
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
             tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
-            free(cur_bmdr_block);
+            free(cur_bmbt_block);
             return TSK_ERR;
         }
 
