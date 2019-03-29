@@ -1763,7 +1763,7 @@ parse_dir_block(TSK_FS_INFO *a_fs, TSK_FS_DIR *fs_dir, TSK_FS_META *fs_meta, xfs
 
             if (*xfs_dir2_data_unused_freetag == 0xffff)
             {
-                xfs_dir2_data_unused *data_unused = (xfs_dir2_data_unused *) (dirbuf + offset_in_block);
+                xfs_dir2_data_unused *data_unused = static_cast<xfs_dir2_data_unused *>((void*) (dirbuf + offset_in_block));
 
                 if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
                 offset_in_block += tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length);
