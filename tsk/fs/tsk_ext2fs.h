@@ -614,6 +614,8 @@ extern "C" {
     typedef struct {
         uint8_t fs_blk[4];
         uint8_t flag[4];
+        uint8_t fs_blk_hi[4];
+        uint8_t checksum[4];
     } ext2fs_journ_dentry;
 
 
