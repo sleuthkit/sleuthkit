@@ -145,15 +145,15 @@ final public class CommunicationsFilter {
 		private final long startDate;
 		private final long endDate;
 		private static final long SECS_PER_DAY = 86400;
-		private boolean startDateEnabled = false;
-		private boolean endDateEnabled = false;
+		private final boolean startDateEnabled;
+		private final boolean endDateEnabled;
 
 		/**
 		 * Constructs a DateRangeFilter.
 		 *
-		 * @param startDateEnabled
+		 * @param startDateEnabled boolean
 		 * @param startDate start date in epoch
-		 * @param endDataEnabled
+		 * @param endDateEnabled boolean
 		 * @param endDate   end date in epoch
 		 */
 		public DateRangeFilter(boolean startDateEnabled, long startDate, boolean endDateEnabled, long endDate) {
