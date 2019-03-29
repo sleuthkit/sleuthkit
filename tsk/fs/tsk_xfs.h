@@ -103,8 +103,8 @@ typedef struct {
 */
 typedef struct xfs_sb
 {
-    __uint32_t        sb_magicnum;
-    __uint32_t        sb_blocksize;
+    uint32_t        sb_magicnum;
+    uint32_t        sb_blocksize;
     xfs_drfsbno_t     sb_dblocks;
     xfs_drfsbno_t     sb_rblocks;
     xfs_drtbno_t      sb_rextents;
@@ -118,44 +118,44 @@ typedef struct xfs_sb
     xfs_agnumber_t    sb_agcount;
     xfs_extlen_t      sb_rbmblocks;
     xfs_extlen_t      sb_logblocks;
-    __uint16_t        sb_versionnum;
-    __uint16_t        sb_sectsize;
-    __uint16_t        sb_inodesize;
-    __uint16_t        sb_inopblock;
+    uint16_t        sb_versionnum;
+    uint16_t        sb_sectsize;
+    uint16_t        sb_inodesize;
+    uint16_t        sb_inopblock;
     char              sb_fname[12];
-    __uint8_t         sb_blocklog;
-    __uint8_t         sb_sectlog;
-    __uint8_t         sb_inodelog;
-    __uint8_t         sb_inopblog;
-    __uint8_t         sb_agblklog;
-    __uint8_t         sb_rextslog;
-    __uint8_t         sb_inprogress;
-    __uint8_t         sb_imax_pct;
-    __uint64_t        sb_icount;
-    __uint64_t        sb_ifree;
-    __uint64_t        sb_fdblocks;
-    __uint64_t        sb_frextents;
+    uint8_t         sb_blocklog;
+    uint8_t         sb_sectlog;
+    uint8_t         sb_inodelog;
+    uint8_t         sb_inopblog;
+    uint8_t         sb_agblklog;
+    uint8_t         sb_rextslog;
+    uint8_t         sb_inprogress;
+    uint8_t         sb_imax_pct;
+    uint64_t        sb_icount;
+    uint64_t        sb_ifree;
+    uint64_t        sb_fdblocks;
+    uint64_t        sb_frextents;
     xfs_ino_t         sb_uquotino;
     xfs_ino_t         sb_gquotino;
-    __uint16_t        sb_qflags;
-    __uint8_t         sb_flags;
-    __uint8_t         sb_shared_vn;
+    uint16_t        sb_qflags;
+    uint8_t         sb_flags;
+    uint8_t         sb_shared_vn;
     xfs_extlen_t      sb_inoalignmt;
-    __uint32_t        sb_unit;
-    __uint32_t        sb_width;
-    __uint8_t         sb_dirblklog;
-    __uint8_t         sb_logsectlog;
-    __uint16_t        sb_logsectsize;
-    __uint32_t        sb_logsunit;
-    __uint32_t        sb_features2;
-    __uint32_t sb_bad_features2;
+    uint32_t        sb_unit;
+    uint32_t        sb_width;
+    uint8_t         sb_dirblklog;
+    uint8_t         sb_logsectlog;
+    uint16_t        sb_logsectsize;
+    uint32_t        sb_logsunit;
+    uint32_t        sb_features2;
+    uint32_t sb_bad_features2;
 
     /* version 5 superblock fields start here */
-    __uint32_t sb_features_compat;
-    __uint32_t sb_features_ro_compat;
-    __uint32_t sb_features_incompat;
-    __uint32_t sb_features_log_incompat;
-    __uint32_t sb_crc;
+    uint32_t sb_features_compat;
+    uint32_t sb_features_ro_compat;
+    uint32_t sb_features_incompat;
+    uint32_t sb_features_log_incompat;
+    uint32_t sb_crc;
     xfs_extlen_t sb_spino_align;
     xfs_ino_t sb_pquotino;
     xfs_lsn_t sb_lsn;
@@ -164,8 +164,8 @@ typedef struct xfs_sb
 } xfs_sb_t;
 
 
-typedef __uint32_t __be32;
-typedef __uint16_t __be16;
+typedef uint32_t __be32;
+typedef uint16_t __be16;
 
 #define XFS_BTNUM_AGF 2
 
@@ -186,15 +186,16 @@ typedef struct xfs_agf {
      __be32              agf_btreeblks;
 } xfs_agf_t;
 
+
+#define XFS_AGFL_SIZE 36
+
 typedef struct xfs_agfl {
     __be32		agfl_magicnum;
     __be32		agfl_seqno;
     uuid_t		agfl_uuid;
     uint64_t	agfl_lsn;
     __be32		agfl_crc;
-} __attribute__((__packed__)) xfs_agfl_t;
-
-// todo: assert sizeof(xfs_agfl) == 36
+} xfs_agfl_t;
 
 typedef struct xfs_btree_sblock {
      __be32                    bb_magic;
@@ -337,20 +338,20 @@ typedef struct xfs_bmbt_key {
 // From linux/v2.6.28/source/fs/xfs/xfs_bmap_btree.h
 typedef struct xfs_bmbt_rec_32
 {
-    __uint32_t		l0, l1, l2, l3;
+    uint32_t		l0, l1, l2, l3;
 } xfs_bmbt_rec_32_t;
 typedef struct xfs_bmbt_rec_64
 {
     uint64_t			l0, l1;
 } xfs_bmbt_rec_64_t;
 
-typedef __uint64_t	xfs_bmbt_rec_base_t;	/* use this for casts */
+typedef uint64_t	xfs_bmbt_rec_base_t;	/* use this for casts */
 typedef xfs_bmbt_rec_64_t xfs_bmbt_rec_t, xfs_bmdr_rec_t;
 
 // from http://www.dubeiko.com/development/FileSystems/XFS/xfs_filesystem_structure.pdf
 
-typedef struct { __uint8_t i[8]; } xfs_dir2_ino8_t;
-typedef struct { __uint8_t i[4]; } xfs_dir2_ino4_t;
+typedef struct { uint8_t i[8]; } xfs_dir2_ino8_t;
+typedef struct { uint8_t i[4]; } xfs_dir2_ino4_t;
 typedef union {
      xfs_dir2_ino8_t i8;
      xfs_dir2_ino4_t i4;
@@ -395,15 +396,15 @@ typedef xfs_fsblock_t xfs_bmbt_ptr_t, xfs_bmdr_ptr_t;
 
 
 typedef struct xfs_dir2_sf_entry {
-     __uint8_t namelen;
+     uint8_t namelen;
      xfs_dir2_sf_off_t offset;
-     __uint8_t name[1];
+     uint8_t name[1];
      xfs_dir2_inou_t inumber;
 } xfs_dir2_sf_entry_t;
 
 typedef struct xfs_dir2_sf_hdr {
-     __uint8_t count;
-     __uint8_t i8count;
+     uint8_t count;
+     uint8_t i8count;
      xfs_dir2_inou_t parent;
 } xfs_dir2_sf_hdr_t;
 typedef struct xfs_dir2_sf {
@@ -412,7 +413,7 @@ typedef struct xfs_dir2_sf {
 } xfs_dir2_sf_t;
 
 
-typedef	__int64_t	xfs_fsize_t;
+typedef	int64_t	xfs_fsize_t;
 typedef int16_t		xfs_aextnum_t;	/* # extents in an attribute fork */
 
 typedef struct xfs_btree_sblock xfs_inobt_block_t;
@@ -430,8 +431,8 @@ typedef __be32 xfs_inobt_ptr_t;
 
 
 typedef struct xfs_timestamp {
-     __int32_t                 t_sec;
-     __int32_t                 t_nsec;
+     int32_t                 t_sec;
+     int32_t                 t_nsec;
 } xfs_timestamp_t;
 
 typedef enum xfs_dinode_fmt {
@@ -444,18 +445,18 @@ typedef enum xfs_dinode_fmt {
 } xfs_dinode_fmt_t;
 
 typedef struct xfs_dinode_core {
-     __uint16_t                di_magic;
-     __uint16_t                di_mode;
-     __int8_t                  di_version;
-     __int8_t                  di_format;
-     __uint16_t                di_onlink;
-     __uint32_t                di_uid;
-     __uint32_t                di_gid;
-     __uint32_t                di_nlink;
-     __uint16_t                di_projid;
-     __uint16_t 			   di_projid_hi;
-     __uint8_t                 di_pad[6];
-     __uint16_t                di_flushiter;
+     uint16_t                di_magic;
+     uint16_t                di_mode;
+     int8_t                  di_version;
+     int8_t                  di_format;
+     uint16_t                di_onlink;
+     uint32_t                di_uid;
+     uint32_t                di_gid;
+     uint32_t                di_nlink;
+     uint16_t                di_projid;
+     uint16_t 			   di_projid_hi;
+     uint8_t                 di_pad[6];
+     uint16_t                di_flushiter;
      xfs_timestamp_t           di_atime;
      xfs_timestamp_t           di_mtime;
      xfs_timestamp_t           di_ctime;
@@ -464,12 +465,12 @@ typedef struct xfs_dinode_core {
      xfs_extlen_t              di_extsize;
      xfs_extnum_t              di_nextents;
      xfs_aextnum_t             di_anextents;
-     __uint8_t                 di_forkoff;
-     __int8_t                  di_aformat;
-     __uint32_t                di_dmevmask;
-     __uint16_t                di_dmstate;
-     __uint16_t                di_flags;
-     __uint32_t                di_gen;
+     uint8_t                 di_forkoff;
+     int8_t                  di_aformat;
+     uint32_t                di_dmevmask;
+     uint16_t                di_dmstate;
+     uint16_t                di_flags;
+     uint32_t                di_gen;
 } xfs_dinode_core_t;
 
 typedef struct xfs_attr_shortform {
@@ -478,10 +479,10 @@ typedef struct xfs_attr_shortform {
          uint8_t count;
  } hdr;
      struct xfs_attr_sf_entry {
-         __uint8_t namelen;
-         __uint8_t valuelen;
-         __uint8_t flags;
-         __uint8_t nameval[1];
+         uint8_t namelen;
+         uint8_t valuelen;
+         uint8_t flags;
+         uint8_t nameval[1];
      } list[1];
 } xfs_attr_shortform_t;
 
@@ -489,7 +490,7 @@ typedef struct xfs_dinode
 {
     xfs_dinode_core_t	di_core;
 
-    __uint32_t				   di_next_unlinked;/* agi unlinked list ptr */
+    uint32_t				   di_next_unlinked;/* agi unlinked list ptr */
 
     /* version 5 filesystem (inode version 3) fields start here */
     uint32_t di_crc;
@@ -523,7 +524,7 @@ typedef struct xfs_dinode
  * Size of the core inode on disk.  Version 1 and 2 inodes have
  * the same size, but version 3 has grown a few additional fields.
  */
-static inline uint xfs_dinode_size(int version)
+static inline uint8_t xfs_dinode_size(int version)
 {
     // The inode’s core is 96 bytes on a V4 filesystem and 176 bytes on a V5 filesystem. It contains information about the
     // file itself including most stat data information about data and attribute forks after the core within the inode. It uses
@@ -537,7 +538,7 @@ static inline uint xfs_dinode_size(int version)
 
     return 100; // hardcode for now
      //sizeof(xfs_dinode_core_t) + sizeof(uint32_t);
-     // offsetof(struct xfs_dinode, di_next_unlinked) + sizeof(__uint32_t); // hacky
+     // offsetof(struct xfs_dinode, di_next_unlinked) + sizeof(uint32_t); // hacky
      //96;
 }
 
@@ -646,7 +647,7 @@ typedef struct xfs_dir2_data_entry {
 } xfs_dir2_data_entry_t;
 
 typedef struct xfs_dir2_data_unused {
-    __uint16_t freetag; /* 0xffff */
+    uint16_t freetag; /* 0xffff */
     xfs_dir2_data_off_t length;
     xfs_dir2_data_off_t tag;
 } xfs_dir2_data_unused_t;

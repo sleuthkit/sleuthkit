@@ -911,17 +911,17 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     len = xfsfs->fs->sb_sectsize;
     if (XFS_SB_VERSION_NUM(xfsfs->fs) == 5)
     {
-        if(xfsfs->fs->sb_sectsize < sizeof(xfs_agfl))
+        if(xfsfs->fs->sb_sectsize < XFS_AGFL_SIZE)
         {
             // free other structures
-            tsk_error_set_errstr2("xfs_block_getflags: sb_sectsize = %" PRId64 " < sizeof(xfs_agfl) = %" PRId64 "", xfsfs->fs->sb_sectsize, sizeof(xfs_agfl));
+            tsk_error_set_errstr2("xfs_block_getflags: sb_sectsize = %" PRId64 " < XFS_AGFL_SIZE = %" PRId64 "", xfsfs->fs->sb_sectsize, XFS_AGFL_SIZE);
             free(agf);
             free(agfl);
             return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
         }
 
-        offset += sizeof(xfs_agfl);
-        len -= sizeof(xfs_agfl);
+        offset += XFS_AGFL_SIZE;
+        len -= XFS_AGFL_SIZE;
     }
     agfl_cur_len = len;
 
@@ -2002,7 +2002,7 @@ visit_btree_node(TSK_FS_INFO *a_fs, TSK_FS_DIR *fs_dir, TSK_FS_META *fs_meta, xf
             uint64_t rel_blk = (uint64_t) next_node_block & rel_blk_neg;
             TSK_OFF_T next_node_offset = ((TSK_OFF_T) ag_num * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) * (TSK_OFF_T) xfs->fs_info.block_size;
 
-            if (tsk_verbose) { tsk_fprintf(stderr, "visiting next_node (block %" PRId64", offset %"PRId64" \n", next_node_block, next_node_offset); }
+            if (tsk_verbose) { tsk_fprintf(stderr, "visiting next_node (block %" PRId64", offset %" PRId64 " \n", next_node_block, next_node_offset); }
 
             visit_btree_node(a_fs, fs_dir, fs_meta, next_node_offset, dino_buf, fs_name, 0);
         }

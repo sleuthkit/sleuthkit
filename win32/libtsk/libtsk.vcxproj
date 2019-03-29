@@ -540,6 +540,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\fs\unix_misc.c" />
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp" />
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\xfs.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto_db.cpp" />
     <ClCompile Include="..\..\tsk\auto\case_db.cpp" />
