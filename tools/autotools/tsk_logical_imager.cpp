@@ -788,10 +788,10 @@ main(int argc, char **argv1)
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
-    const std::vector<std::string> filePaths = ruleSet->getFilePaths();
+    const std::list<std::string> filePaths = ruleSet->getFilePaths();
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-        for (std::vector<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
+        for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
             int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
             fprintf(stdout, "Path2Inum returns %d %s for %s\n", retval, (retval == 0 && fs_file == NULL ? "duplicate" : ""), iter->c_str());
             if (retval == 0 && fs_file != NULL) {

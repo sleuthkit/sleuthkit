@@ -85,6 +85,7 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     m_filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg");
     m_filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
 
+    m_filePaths.push_back("Documents and Settings/John/");
     // The following rules are for mocking the config file and testing only.
 
     std::vector<LogicalImagerRuleBase *> vector;
@@ -158,7 +159,7 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
     return false;
 }
 
-const std::vector<std::string> LogicalImagerRuleSet::getFilePaths() const
+const std::list<std::string> LogicalImagerRuleSet::getFilePaths() const
 {
     return m_filePaths;
 }
