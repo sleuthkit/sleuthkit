@@ -768,6 +768,7 @@ main(int argc, char **argv1)
 
     ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
 
+    TskHelper::getInstance().reset();
     TskHelper::getInstance().setImgInfo(img);
     TSK_VS_INFO *vs_info;
     if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {

@@ -321,7 +321,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path,
             // Main idea was to cache any file in a subfolder of windows/system32.
             if ((fs_name->flags & TSK_FS_NAME_FLAG_ALLOC) &&
                 (fs_name->type == TSK_FS_NAME_TYPE_REG) &&
-                startsWith(toLower(path_matched.c_str()), "windows/system32")) {
+                startsWith(toLower(path_matched), "windows/system32")) {
 
                 Path2InumCacheData *pCacheData = new Path2InumCacheData(fs_name->meta_addr, NULL);
                 pCacheData->setFSNameFlag(fs_name->flags);
@@ -571,7 +571,7 @@ const Path2InumCacheData* TskHelper::lookupPathToInumCache(const TSK_FS_INFO *a_
 * @returns TRUE if successfuly added to cache , false otherwise.
 */
 
-bool TskHelper::addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string a_path, const Path2InumCacheData *a_cacheData) {
+bool TskHelper::addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string &a_path, const Path2InumCacheData *a_cacheData) {
     TSK_OFF_T fs_off = a_fs->offset;
     std::string lcPath = toLower(a_path);
 

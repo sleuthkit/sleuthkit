@@ -85,7 +85,7 @@ private:
     bool compareNames(const char *curFileName, const char *cur_dir, bool ignoreExt, TSK_FS_INFO *a_fs);
 
     const Path2InumCacheData *lookupPathToInumCache(const TSK_FS_INFO *a_fs, const char *a_path);
-    bool addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string a_path, const Path2InumCacheData *a_cacheData);
+    bool addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string &a_path, const Path2InumCacheData *a_cacheData);
     int releasePath2InumCache();
 
     TskHelper();  
