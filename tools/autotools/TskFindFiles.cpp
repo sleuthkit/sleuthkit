@@ -67,14 +67,18 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
     if (!isFile(fs_file))
         return TSK_OK;
 
-    if (m_logicialImagerRuleSet->matches(fs_file, path)) {
+    RuleMatchResult matchResult = m_logicialImagerRuleSet->matches(fs_file, path);
+    if (matchResult.isMatch()) {
         // TODO: For verification only
-        fprintf(stdout, "processFile: match name=%s\tsize=%" PRId64 "\tdate=%s\tpath=%s\n", 
+        fprintf(stdout, "processFile: description=%s save=%d alert=%d name=%s\tsize=%" PRId64 "\tdate=%s\tpath=%s\n",
+            matchResult.getDescription().c_str(),
+            matchResult.isShouldSave(),
+            matchResult.isShouldAlert(),
             (fs_file->name ? fs_file->name->name : "name is null"), 
             (fs_file->meta ? fs_file->meta->size : 0), 
             timeToString(getLatestTime(fs_file->meta)).c_str(), 
             path);
-       return TskFindFiles::extractFile(fs_file);
+        return TskFindFiles::extractFile(fs_file);
     }
     return TSK_OK;
 }

@@ -80,6 +80,7 @@ void LogicalImagerRuleSet::testFilePath() {
 
 void LogicalImagerRuleSet::testExtension() {
     std::vector<LogicalImagerRuleBase *> vector;
+    RuleMatchResult *ruleKey = new RuleMatchResult("Find all pictures smaller than 3000 bytes in the Google folder");
 
     // find all pictures smaller than 3000 bytes in the Google folder
     std::string extension_strs[] = { "jpg", "jpeg", "gif", "png" };
@@ -93,22 +94,24 @@ void LogicalImagerRuleSet::testExtension() {
     vector.push_back(extension_rule);
     vector.push_back(path_rule);
     vector.push_back(size_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("pictures_smaller_than_3000_in_Google_folder_rule"), vector));
+    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testFilename() {
     std::vector<LogicalImagerRuleBase *> vector;
+    RuleMatchResult *ruleKey = new RuleMatchResult("find all 'readme.txt' and 'autoexec.bat' files");
 
     // find all 'readme.txt' and 'autoexec.bat' files
     std::string filename_strs[] = { "ReadMe.txt", "Autoexec.bat" };
     std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
     LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
     vector.push_back(filename_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("filename_rule"), vector));
+    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testFileSize() {
     std::vector<LogicalImagerRuleBase *> vector;
+    RuleMatchResult *ruleKey = new RuleMatchResult("find very large programs");
 
     // find by file size 
     std::string archive_strs[] = { "exe", "bin", "dll" };
@@ -117,22 +120,24 @@ void LogicalImagerRuleSet::testFileSize() {
     LogicalImagerSizeRule *archive_size_rule = new LogicalImagerSizeRule(10000000, 0);
     vector.push_back(archive_extension_rule);
     vector.push_back(archive_size_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("really_big_programs_rule"), vector));
+    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testFileDate() {
     std::vector<LogicalImagerRuleBase *> vector;
+    RuleMatchResult *ruleKey = new RuleMatchResult("find files newer than 2012-03-21");
 
     // find files newer than 2012-03-21 (midnight)
     time_t min_time = stringToTimet("2012-03-21 00:00:00");
     LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, 0);
     vector.clear();
     vector.push_back(date_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("date_rule"), vector));
+    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testUserFolder() {
     std::vector<LogicalImagerRuleBase *> vector;
+    RuleMatchResult *ruleKey = new RuleMatchResult("find all pictures under the user folder");
 
     // find all pictures under the user folder
     std::string extension_strs[] = { "jpg", "jpeg", "gif", "png" };
@@ -144,9 +149,8 @@ void LogicalImagerRuleSet::testUserFolder() {
     LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
     vector.push_back(extension_rule);
     vector.push_back(path_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("Find-pictures-in-all-user-folders-rule"), vector));
+    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
-
 
 /**
  * Construct the LogicalImagerRuleSet based on a configuration filename
@@ -158,12 +162,12 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
     // TODO: read the config yaml file and construct the m_rules map
 
     // The following rules are for mocking the config file and testing only.
-//    testFilePath();
-//    testExtension();
-//    testFilename();
-//    testFileSize();
+    //testFilePath();
+    testExtension();
+    testFilename();
+    testFileSize();
 //    testFileDate();
-    testUserFolder();
+//    testUserFolder();
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() 
@@ -177,9 +181,9 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet()
  * @param path parent path to fs_file
  * @returns true if match, false otherwise
  */
-bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
+RuleMatchResult LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
 {
-    for (std::map<std::string, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
+    for (std::map<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
         const std::vector<LogicalImagerRuleBase *> vector = it->second;
         bool result = true;
         // All rules in this set must match (ANDed)
@@ -189,10 +193,14 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
                 break;
             }
         }
-        if (result)
-            return true; // all rules match, no need to apply other rules in the set
+        if (result) {
+            // all rules match, no need to apply other rules in the set
+            const RuleMatchResult matchResult(it->first->getDescription(), true, it->first->isShouldSave(), it->first->isShouldAlert());
+            return matchResult;
+        }
     }
-    return false;
+    RuleMatchResult matchResult("no match", false);
+    return matchResult;
 }
 
 const std::list<std::string> LogicalImagerRuleSet::getFilePaths() const
