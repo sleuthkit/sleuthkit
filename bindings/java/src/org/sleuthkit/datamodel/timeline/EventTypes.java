@@ -90,8 +90,7 @@ class EventTypes {
 
 				return TimelineEvent.EventDescription.create(fullDescription, mediumDescription, shortDescription);
 			} catch (URISyntaxException ex) {
-				//JMTODO: do we need to bother logging this?
-				Logger.getLogger(EventType.class.getName()).log(Level.WARNING, "Error parsing {0} as a URL:  Ignoring description levels.", fullDescription);
+				//There was an error parsing the description as a URL, just ignore the description levels.
 				return TimelineEvent.EventDescription.create(fullDescription);
 			}
 		}
