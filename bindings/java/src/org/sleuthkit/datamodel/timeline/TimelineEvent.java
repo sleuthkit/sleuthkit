@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.DescriptionLoD;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
 
@@ -88,7 +86,9 @@ public final class TimelineEvent {
 	 */
 	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
 			long time, EventType type,
-			EventDescription descriptions,
+			String fullDescription,
+			String medDescription,
+			String shortDescription,
 			boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
 		this.dataSourceObjID = dataSourceObjID;
@@ -96,8 +96,7 @@ public final class TimelineEvent {
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
-		this.descriptions = descriptions;
-
+		this.descriptions = type.parseDescription(fullDescription, medDescription, shortDescription);
 		this.hashHit = hashHit;
 		this.tagged = tagged;
 	}
@@ -244,10 +243,14 @@ public final class TimelineEvent {
 		return this.eventID == other.eventID;
 	}
 
-	public static interface EventDescription {
+	/**
+	 * Encapsulates the potential multiple levels of description for an event in
+	 * to one object.
+	 */
+	interface EventDescription {
 
 		public static EventDescription create(String fullDescription, String medDescription, String shortDescription) {
-			return new ThreeLevellEventDescription(fullDescription, medDescription, shortDescription);
+			return new ThreeLevelEventDescription(fullDescription, medDescription, shortDescription);
 		}
 
 		public static EventDescription create(String fullDescription) {

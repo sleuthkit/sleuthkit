@@ -42,7 +42,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
-	private final TSKCoreCheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction;
+	private final TSKCoreCheckedFunction<BlackboardArtifact, EventDescriptionWithTime> eventPayloadFunction;
 
 	StandardArtifactEventType(int typeID, String displayName,
 			EventType superType,
@@ -61,7 +61,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor,
-			TSKCoreCheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction) {
+			TSKCoreCheckedFunction<BlackboardArtifact, EventDescriptionWithTime> eventPayloadFunction) {
 
 		super(typeID, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
 		this.artifactType = artifactType;
@@ -113,7 +113,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	}
 
 	@Override
-	public EventPayload buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
+	public EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
 		//if we got passed an artifact that doesn't correspond to this event type, 
 		//something went very wrong. throw an exception.
 		if (this.getArtifactTypeID() != artifact.getArtifactTypeID()) {
@@ -121,7 +121,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		}
 		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
 		if (timeAttribute == null) {
-			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.getArtifactID()); // NON-NLS
+			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.toString()); // NON-NLS
 			return null;
 		}
 
@@ -134,7 +134,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		String shortDescription = extractShortDescription(artifact);
 		String medDescription = shortDescription + " : " + extractMedDescription(artifact);
 		String fullDescription = medDescription + " : " + extractFullDescription(artifact);
-		return new EventPayload(timeAttribute.getValueLong(), shortDescription, medDescription, fullDescription);
+		return new EventDescriptionWithTime(timeAttribute.getValueLong(), shortDescription, medDescription, fullDescription);
 	}
 
 	static BlackboardAttribute getAttributeSafe(BlackboardArtifact artf, BlackboardAttribute.Type attrType) {

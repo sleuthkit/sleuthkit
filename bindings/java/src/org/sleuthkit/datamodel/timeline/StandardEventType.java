@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +41,8 @@ class StandardEventType implements EventType {
 	}
 
 	@Override
-	public TimelineEvent.EventDescription getDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+	public TimelineEvent.EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+		// The standard/default implementation:  Just bundle the three description levels into one object.
 		return TimelineEvent.EventDescription.create(fullDescriptionRaw, medDescriptionRaw, shortDescriptionRaw);
 	}
 

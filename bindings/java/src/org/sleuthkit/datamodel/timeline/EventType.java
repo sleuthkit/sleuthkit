@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,6 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
-import org.sleuthkit.datamodel.DescriptionLoD;
 import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
 import static org.sleuthkit.datamodel.timeline.EventType.RECENT_DOCUMENTS;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.BASE_TYPE;
@@ -65,7 +64,17 @@ public interface EventType extends Comparable<EventType> {
 
 	Optional<? extends EventType> getSubType(String string);
 
-	EventDescription getDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw);
+	/**
+	 * Parse the three raw descriptions from the DB into a EventDescription
+	 * object.
+	 *
+	 * @param fullDescriptionRaw
+	 * @param medDescriptionRaw
+	 * @param shortDescriptionRaw
+	 *
+	 * @return
+	 */
+	EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw);
 
 	/**
 	 * @return the super type of this event
@@ -357,5 +366,4 @@ public interface EventType extends Comparable<EventType> {
 			}
 		}
 	}
-
 }

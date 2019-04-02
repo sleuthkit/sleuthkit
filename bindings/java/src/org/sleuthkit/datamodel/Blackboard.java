@@ -87,7 +87,7 @@ public final class Blackboard {
 		 */
 		for (BlackboardArtifact artifact : artifacts) {
 			try {
-				caseDb.getTimelineManager().addEventsFromArtifact(artifact);
+				caseDb.getTimelineManager().addArtifactEvents(artifact);
 			} catch (TskCoreException ex) {
 				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
 			}

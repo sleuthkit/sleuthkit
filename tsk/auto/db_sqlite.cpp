@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sstream>
 #include <algorithm>
+#include <unordered_set>
 
 using std::stringstream;
 using std::sort;
@@ -417,38 +418,39 @@ TskDbSqlite::initialize()
             "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(2, 'Web Activity', 0);"
             "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(3, 'Misc Types', 0);"
             "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(4, 'Modified', 1);"
-            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1);"
-            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
-            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
-            , "Error initializing event_types table rows: %s\n")
-        ||
-        attempt_exec(
-            "CREATE TABLE tsk_events ("
-            " event_id INTEGER PRIMARY KEY, "
-            " data_source_obj_id INTEGER NOT NULL, "
-            " file_obj_id INTEGER NOT NULL, " 
-            " artifact_id INTEGER, "
-            " time INTEGER NOT NULL, "
-            " sub_type INTEGER, "
-            " base_type INTEGER NOT NULL, "
-            " full_description TEXT NOT NULL, "
-            " med_description TEXT, "
-            " short_description TEXT, " 
-            " hash_hit INTEGER NOT NULL, " //boolean 
-            " tagged INTEGER NOT NULL, " //integer 
-            "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
-            "FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
-            "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), "
-            "FOREIGN KEY(sub_type) REFERENCES tsk_event_types(event_type_id), "
-            "FOREIGN KEY(base_type) REFERENCES tsk_event_types(event_type_id))"
-            , "Error creating tsk_events table: %s\n") ||
-        attempt_exec("CREATE TABLE db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))", //TODO: drop this table
-            "Error creating db_info table: %s\n")
-        ||
+	        "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1);"
+	        "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
+	        "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
+	        , "Error initializing event_types table rows: %s\n")
+	    ||
+	    attempt_exec(
+	        "CREATE TABLE tsk_event_descriptions ( "
+	        " event_description_id INTEGER PRIMARY KEY, "
+	        " full_description TEXT NOT NULL, "
+	        " med_description TEXT, "
+	        " short_description TEXT,"
+	        " data_source_obj_id INTEGER NOT NULL REFERENCES data_source_info(obj_id), "
+	        " file_obj_id INTEGER NOT NULL REFERENCES tsk_files(obj_id), "
+	        " artifact_id INTEGER REFERENCES blackboard_artifacts(artifact_id), "
+	        " hash_hit INTEGER NOT NULL, " //boolean 
+	        " tagged INTEGER NOT NULL)", //boolean 
+	        "Error creating tsk_event_event_types table: %4\n")
+	    ||
+	    attempt_exec(
+	        "CREATE TABLE tsk_events ("
+	        " event_id INTEGER PRIMARY KEY, "
+	        " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+	        " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
+	        " time INTEGER NOT NULL) "
+	        , "Error creating tsk_events table: %s\n")
+	    ||
+	    attempt_exec("CREATE TABLE db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))", //TODO: drop this table
+	                 "Error creating db_info table: %s\n")
+	    ||
         attempt_exec
         ("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
-					"Error creating tsk_examiners table: %s\n") 
-		||
+         "Error creating tsk_examiners table: %s\n")
+        ||
 		attempt_exec
 		("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL, examiner_id INTEGER, "
 			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
@@ -518,24 +520,17 @@ int TskDbSqlite::createIndexes()
         attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
             "Error creating relationships_data_source_obj_id index on account_relationships: %s\n") ||
         //events indices
-        attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_events(data_source_obj_id);",
-            "Error creating relationships_data_source_obj_id index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_event_id_hash_hit  ON tsk_events(event_id, hash_hit);",
-            "Error creating events_event_id_hash_hit index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_event_id_tagged  ON tsk_events(event_id, tagged);",
-            "Error creating events_event_id_tagged index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_events(file_obj_id);",
-            "Error creating events_file_obj_id index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
-            "Error creating events_artifact_id index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id);",
+                     "Error creating events_data_source_obj_id index on tsk_event_descriptions: %s\n") ||
+        attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id);",
+                     "Error creating events_file_obj_id index on tsk_event_descriptions: %s\n") ||
+        attempt_exec("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id);",
+                     "Error creating events_artifact_id index on tsk_event_descriptions: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_sub_type_time ON tsk_events(sub_type,  time);",
-            "Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
-        attempt_exec(
-            "CREATE INDEX events_base_type_time ON tsk_events(base_type,  time);",
-            "Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
+            "CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time);",
+            "Error creating events_sub_type_time index on tsk_events: %s\n") ||
         attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
-            "Error creating events_time index on tsk_events: %s\n");
+                     "Error creating events_time index on tsk_events: %s\n");
 }
 
 
@@ -1009,37 +1004,73 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE* fs_file, const char* parent
     return parObjId;
 }
 
-int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
-                                 const int64_t sub_type, const char* full_description )
+int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_t file_obj_id,
+                                  std::map<int64_t, time_t> timeMap, const char* full_description)
 {
-    if (time == 0)
+    int64_t event_description_id = -1;
+
+    //for each  entry (type ->time)
+    for (const auto entry : timeMap)
     {
-        //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull 
-        return 0;
+        const long long time = entry.second;
+
+
+        if (time == 0)
+        {
+            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull 
+            continue;
+        }
+        if (event_description_id == -1)
+        {
+            //insert common description for file
+            char* descriptionSql = sqlite3_mprintf(
+                "INSERT INTO tsk_event_descriptions ( data_source_obj_id, file_obj_id , artifact_id,  full_description, hash_hit, tagged) "
+                " VALUES ("
+                "%" PRId64 "," // data_source_obj_id
+                "%" PRId64 "," // file_obj_id
+                "NULL," // fixed artifact_id
+                "%Q," // full_description
+                "0," // fixed hash_hit
+                "0" // fixed tagged
+                ")",
+                data_source_obj_id,
+                file_obj_id,
+                full_description);
+
+            if (attempt_exec(descriptionSql,
+                             "TskDbSqlite::addMACTimeEvents: Error adding filesystem event to tsk_events table: %s\n")
+            )
+            {
+                sqlite3_free(descriptionSql);
+                return 1;
+            }
+
+            sqlite3_free(descriptionSql);
+            event_description_id = sqlite3_last_insert_rowid(m_db);
+        }
+        //insert events time event
+        char* eventSql = sqlite3_mprintf(
+            "INSERT INTO tsk_events ( event_type_id, event_description_id , time) "
+            " VALUES ("
+            "%" PRId64 "," // event_type_id
+            "%" PRId64 "," // event_description_id
+            "%" PRIu64 ")", // time
+            entry.first,
+            event_description_id,
+            time
+        );
+
+        if (attempt_exec(
+                eventSql, "TskDbSqlite::addMACTimeEvents: Error adding filesystem event to tsk_events table: %s\n")
+        )
+        {
+            sqlite3_free(eventSql);
+            return 1;
+        }
+        sqlite3_free(eventSql);
     }
 
-    //insert MAC time events
-    zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time, sub_type, base_type, full_description, hash_hit, tagged) "
-        // NON-NLS
-        " VALUES ("
-        "%" PRId64 "," // data_source_obj_id
-        "%" PRId64 "," // file_obj_id
-        "NULL," // fixed artifact_id
-        "%" PRIu64 "," // time
-        "%" PRIu64 "," // sub_type
-        "1," // fixed base_type
-        "%Q," // full_description
-        "0," // fixed hash_hit
-        "0" // fixed tagged
-        ")",
-        data_source_obj_id,
-        obj_id,
-        (unsigned long long)time, // this one changes
-        sub_type,
-        full_description );
-
-    return attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding event to events table: %s\n");
+    return 0;
 }
 
 /**
@@ -1050,10 +1081,10 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
 */
 int
 TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
-                     const TSK_FS_ATTR* fs_attr, const char* path,
-                     const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
-                     int64_t fsObjId, int64_t parObjId,
-                     int64_t& objId, int64_t dataSourceObjId)
+    const TSK_FS_ATTR* fs_attr, const char* path,
+    const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+    int64_t fsObjId, int64_t parObjId,
+    int64_t& objId, int64_t dataSourceObjId)
 {
     time_t mtime = 0;
     time_t crtime = 0;
@@ -1145,7 +1176,7 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         for (int i = 0; i < 16; i++)
         {
             sprintf(&(md5Text[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
-                    md5[i] & 0xf);
+                md5[i] & 0xf);
         }
         md5TextPtr = md5Text;
     }
@@ -1191,21 +1222,26 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
     }
 
 
-    std::string full_description = std::string(escaped_path).append(name);
-
-
     if (!TSK_FS_ISDOT(name))
     {
-        if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_description.c_str())
-            || addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_description.c_str())
-            || addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_description.c_str())
-            || addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_description.c_str()))
+        std::string full_description = std::string(escaped_path).append(name);
+
+        // map from time to event type ids
+        const std::map<int64_t, time_t> timeMap = {
+            {4, mtime},
+            {5, atime},
+            {6, crtime},
+            {7, ctime}
+        };
+
+        //insert MAC time events for the file
+        if (addMACTimeEvents(dataSourceObjId, objId, timeMap, full_description.c_str()))
         {
             free(name);
             free(escaped_path);
             sqlite3_free(zSQL);
             return 1;
-        }
+        };
     }
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
