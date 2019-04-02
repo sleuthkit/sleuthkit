@@ -145,21 +145,24 @@ final public class CommunicationsFilter {
 		private final long startDate;
 		private final long endDate;
 		private static final long SECS_PER_DAY = 86400;
+		private final boolean startDateEnabled;
+		private final boolean endDateEnabled;
 
 		/**
 		 * Constructs a DateRangeFilter.
 		 *
-		 * @param startDate start date in epoch. Use 0 to not specify a date
-		 * @param endDate   end date in epoch. Use 0 to not specify a date.
+		 * @param startDateEnabled boolean
+		 * @param startDate start date in epoch
+		 * @param endDateEnabled boolean
+		 * @param endDate   end date in epoch
 		 */
-		public DateRangeFilter(long startDate, long endDate) {
+		public DateRangeFilter(boolean startDateEnabled, long startDate, boolean endDateEnabled, long endDate) {
 			this.startDate = startDate;
 			// Add a day to end date to make it inclusive in the range
-			if (endDate > 0) {
-				this.endDate = endDate + SECS_PER_DAY;
-			} else {
-				this.endDate = endDate;
-			}
+			this.endDate = endDate + SECS_PER_DAY;
+			
+			this.startDateEnabled = startDateEnabled;
+			this.endDateEnabled = endDateEnabled;
 		}
 		
 		/**
@@ -173,10 +176,29 @@ final public class CommunicationsFilter {
 		
 		/**
 		 * Get the end date.
+		 * 
 		 * @return Seconds from java epoch or zero if no value was set
 		 */
 		public long getEndDate() {
 			return endDate;
+		}
+		
+		/**
+		 * Returns whether or not the start date should be enabled.
+		 * 
+		 * @return boolean
+		 */
+		public boolean isStartDateEnabled(){
+			return startDateEnabled;
+		}
+		
+		/**
+		 * Returns whether or not the end date should be enabled.
+		 * 
+		 * @return boolean
+		 */
+		public boolean isEndDateEnabled(){
+			return endDateEnabled;
 		}
 
 		@Override
@@ -193,14 +215,14 @@ final public class CommunicationsFilter {
 		 */
 		@Override
 		public String getSQL(CommunicationsManager commsManager) {
-			if ((0 == startDate) && (0 == endDate)) {
+			if (!startDateEnabled && !endDateEnabled) {
 				return "";
 			}
 			String sql = "";
-			if (startDate > 0) {
+			if (startDateEnabled) {
 				sql = "(" + " relationships.date_time IS NULL OR relationships.date_time >= " + startDate + ")";
 			}
-			if (endDate > 0) {
+			if (endDateEnabled) {
 				if (!sql.isEmpty()) {
 					sql += " AND ";
 				}
