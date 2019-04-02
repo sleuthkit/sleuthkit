@@ -888,7 +888,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
         }
 
         // read the current node
-        cur_off = cur_node * nodesize;
+        cur_off = (TSK_OFF_T)cur_node * nodesize;
         cnt = tsk_fs_attr_read(hfs->catalog_attr, cur_off,
             node, nodesize, 0);
         if (cnt != nodesize) {
