@@ -37,6 +37,14 @@ public:
     const std::list<std::string> getFilePaths() const;
 
 private:
+    // Internal for testing only
+    void testFilePath();
+    void testExtension();
+    void testFilename();
+    void testFileSize();
+    void testFileDate();
+    void testUserFolder();
+
     std::map<std::string, std::vector<LogicalImagerRuleBase *>> m_rules;
     std::list<std::string> m_filePaths;
 };

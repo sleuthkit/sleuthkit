@@ -11,18 +11,46 @@
 #include <shlwapi.h>
 #include <string>
 #include <algorithm>
+#include <regex>
 
 #include "LogicalImagerPathRule.h"
+
+/* case insensitive user folder prefixes */
+static char *userFolderRegexList[] = { 
+    "/?users/.*/",
+    "/?documents and settings/.*/", 
+    "/?home/.*/"
+};
+static std::regex patterns[3];
+static std::string lowerCaseUserFolder;
 
 LogicalImagerPathRule::LogicalImagerPathRule(std::set<std::string> paths)
 {
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
         m_paths.insert(LogicalImagerRuleBase::toLower(*it));
     }
+    for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
+        patterns[i] = std::regex(userFolderRegexList[i]);
+    }
+    lowerCaseUserFolder = LogicalImagerRuleBase::toLower(getUserFolder());
 }
 
 LogicalImagerPathRule::~LogicalImagerPathRule()
 {
+}
+
+/**
+ * Match all user folder paths using regex_match
+ * @param path Path to be matched
+ * @returns true if there is a match, false otherwise
+ */
+bool LogicalImagerPathRule::matchUserFolder(const std::string path) const {
+    for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
+        if (std::regex_match(path, patterns[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -38,9 +66,12 @@ bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path)
     if (path == NULL)
         return false;
 
-    std::string lowercasePath = LogicalImagerRuleBase::toLower(path);
+    const std::string lowercasePath = LogicalImagerRuleBase::toLower(path);
 
     for (auto it = std::begin(m_paths); it != std::end(m_paths); ++it) {
+        if (*it == lowerCaseUserFolder) {
+            return matchUserFolder(lowercasePath);
+        }
         if (lowercasePath.find(*it) != std::string::npos) {
             return true;
         }
