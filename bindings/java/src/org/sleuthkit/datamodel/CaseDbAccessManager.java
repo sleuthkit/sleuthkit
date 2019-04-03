@@ -113,24 +113,23 @@ public final class CaseDbAccessManager {
 		
 		boolean columnExists = false;
         Statement statement = null;
+		ResultSet resultSet = null;
         try {
 			CaseDbConnection connection = transaction.getConnection();
 			statement = connection.createStatement();
 			if (DbType.SQLITE == tskDB.getDatabaseType()) {
 				String tableInfoQuery = "PRAGMA table_info(%s)";  //NON-NLS
-				ResultSet resultSet = statement.executeQuery(String.format(tableInfoQuery, tableName));
+				resultSet = statement.executeQuery(String.format(tableInfoQuery, tableName));
 				while (resultSet.next()) {
-					// the second value is the column name
-					if (resultSet.getString(2).equals(columnName)) {
+					if (resultSet.getString("name").equalsIgnoreCase(columnName)) {
 						columnExists = true;
 						break;
 					}
 				}
-				resultSet.close();
 			}
 			else {
 				String tableInfoQueryTemplate = "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='%s' AND column_name='%s')";  //NON-NLS	
-				ResultSet resultSet = statement.executeQuery(String.format(tableInfoQueryTemplate, tableName.toLowerCase(), columnName.toLowerCase()));
+				resultSet = statement.executeQuery(String.format(tableInfoQueryTemplate, tableName.toLowerCase(), columnName.toLowerCase()));
 				if (resultSet.next()) {
 					columnExists = resultSet.getBoolean(1);
 				}
@@ -138,10 +137,97 @@ public final class CaseDbAccessManager {
         } 
 		catch (SQLException ex) {
 			throw new TskCoreException("Error checking if column  " + columnName + "exists ", ex);
-		} finally {
+		} 
+		finally {
+			if (resultSet != null) {
+				try {
+					resultSet.close();
+				} catch (SQLException ex2) {
+					logger.log(Level.WARNING, "Failed to to close resultset after checking column", ex2);
+				}
+			}
             closeStatement(statement);
         }
         return columnExists;
+    }
+	
+	/**
+	 * Checks if a table exists in the case database.
+	 *
+	 * @param tableName name of the table to check
+	 * 
+	 * @return true if the table already exists, false otherwise
+	 * @throws TskCoreException 
+	 */
+	public boolean tableExists(String tableName) throws TskCoreException {
+		
+		boolean doesTableExist = false;
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+        try {
+			doesTableExist = tableExists(tableName, localTrans);
+			localTrans.commit();
+			localTrans = null;
+        } 
+		finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex); //NON-NLS
+				}
+			}
+		}
+		
+        return doesTableExist;
+    }
+	
+	/**
+	 * Checks if a table exists in the case database.
+	 *
+	 * @param tableName name of the table to check
+	 * @param transaction transaction 
+	 * 
+	 * @return true if the table already exists, false otherwise
+	 * @throws TskCoreException 
+	 */
+	public boolean tableExists(String tableName, CaseDbTransaction transaction) throws TskCoreException {
+		
+		boolean tableExists = false;
+        Statement statement = null;
+		ResultSet resultSet = null;
+        try {
+			CaseDbConnection connection = transaction.getConnection();
+			statement = connection.createStatement();
+			if (DbType.SQLITE == tskDB.getDatabaseType()) {
+				resultSet = statement.executeQuery("SELECT name FROM sqlite_master WHERE type='table'");  //NON-NLS
+				while (resultSet.next()) {
+					if (resultSet.getString("name").equalsIgnoreCase(tableName)) { //NON-NLS
+						tableExists = true;
+						break;
+					}
+				}
+			}
+			else {
+				String tableInfoQueryTemplate = "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='%s')";  //NON-NLS	
+				resultSet = statement.executeQuery(String.format(tableInfoQueryTemplate, tableName.toLowerCase()));
+				if (resultSet.next()) {
+					tableExists = resultSet.getBoolean(1);
+				}
+			}
+        } 
+		catch (SQLException ex) {
+			throw new TskCoreException("Error checking if table  " + tableName + "exists ", ex);
+		} finally {
+			if (resultSet != null) {
+				try {
+					resultSet.close();
+				} catch (SQLException ex2) {
+					logger.log(Level.WARNING, "Failed to to close resultset after checking table", ex2);
+				}
+			}
+            closeStatement(statement);
+        }
+        return tableExists;
     }
 	
 	/**
