@@ -302,13 +302,13 @@ public interface EventType extends Comparable<EventType> {
 			BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
-			return ImmutableSortedSet.of(OTHER);
+			return ImmutableSortedSet.of(OTHER, USER_CREATED);
 		}
 	};
 
 	//generic catch all other event
 	ArtifactEventType OTHER = new SingleDescriptionArtifactEventType(23,
-			getBundle().getString("CustomTypes.other.name"),
+			getBundle().getString("CustomTypes.other.name"), //NON-NLS
 			CUSTOM_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
@@ -325,6 +325,14 @@ public interface EventType extends Comparable<EventType> {
 	ArtifactEventType REGISTRY = new SingleDescriptionArtifactEventType(25,
 			getBundle().getString("MiscTypes.Registry.name"), //NON-NLS
 			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_TL_EVENT),
+			new BlackboardAttribute.Type(TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_DESCRIPTION));
+
+	//generic catch all other event
+	ArtifactEventType USER_CREATED = new SingleDescriptionArtifactEventType(26,
+			getBundle().getString("CustomTypes.userCreated.name"),//NON-NLS
+			CUSTOM_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));

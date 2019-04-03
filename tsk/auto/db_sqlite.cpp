@@ -430,7 +430,7 @@ TskDbSqlite::initialize()
 	        " med_description TEXT, "
 	        " short_description TEXT,"
 	        " data_source_obj_id INTEGER NOT NULL REFERENCES data_source_info(obj_id), "
-	        " file_obj_id INTEGER NOT NULL REFERENCES tsk_files(obj_id), "
+	        " file_obj_id INTEGER NOT NULL REFERENCES tsk_objects(obj_id), "
 	        " artifact_id INTEGER REFERENCES blackboard_artifacts(artifact_id), "
 	        " hash_hit INTEGER NOT NULL, " //boolean 
 	        " tagged INTEGER NOT NULL)", //boolean 

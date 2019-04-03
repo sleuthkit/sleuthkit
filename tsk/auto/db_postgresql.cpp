@@ -668,7 +668,7 @@ int TskDbPostgreSQL::initialize() {
             " hash_hit INTEGER NOT NULL, " //boolean 
             " tagged INTEGER NOT NULL, " //boolean 
             " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
-            " FOREIGN KEY(file_obj_id) REFERENCES tsk_files(obj_id), "
+            " FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
             " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
             "Error creating tsk_event_descriptions table: %s\n")
         ||
