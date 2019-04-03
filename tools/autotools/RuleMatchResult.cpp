@@ -14,8 +14,7 @@
 * Contains C++ code that implement the Rule Match Resultt class.
 */
 
-RuleMatchResult::RuleMatchResult(const std::string description, bool isMatch, bool shouldSave, bool shouldAlert) {
-    m_isMatch = isMatch;
+RuleMatchResult::RuleMatchResult(const std::string description, bool shouldSave, bool shouldAlert) {
     m_description = description;
     m_shouldSave = shouldSave;
     m_shouldAlert = shouldAlert;

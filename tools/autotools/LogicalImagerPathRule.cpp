@@ -17,9 +17,9 @@
 
 /* case insensitive user folder prefixes */
 static char *userFolderRegexList[] = { 
-    "/?users/.*/",
-    "/?documents and settings/.*/", 
-    "/?home/.*/"
+    "/?users/.*",
+    "/?documents and settings/.*", 
+    "/?home/.*"
 };
 static std::regex patterns[3];
 static std::string lowerCaseUserFolder;
@@ -44,9 +44,14 @@ LogicalImagerPathRule::~LogicalImagerPathRule()
  * @param path Path to be matched
  * @returns true if there is a match, false otherwise
  */
-bool LogicalImagerPathRule::matchUserFolder(const std::string path) const {
+bool LogicalImagerPathRule::matchUserFolder(const std::string rule, std::string path) const {
     for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
-        if (std::regex_match(path, patterns[i])) {
+        std::string newPattern(rule);
+        newPattern.replace(newPattern.find(lowerCaseUserFolder), lowerCaseUserFolder.length(), userFolderRegexList[i]);
+        newPattern.append(".*");
+        std::regex pattern(newPattern);
+
+        if (std::regex_match(path, pattern)) {
             return true;
         }
     }
@@ -69,8 +74,10 @@ bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path)
     const std::string lowercasePath = LogicalImagerRuleBase::toLower(path);
 
     for (auto it = std::begin(m_paths); it != std::end(m_paths); ++it) {
-        if (*it == lowerCaseUserFolder) {
-            return matchUserFolder(lowercasePath);
+        if (it->find(lowerCaseUserFolder) != std::string::npos) {
+            if (matchUserFolder(*it, lowercasePath)) {
+                return true;
+            }
         }
         if (lowercasePath.find(*it) != std::string::npos) {
             return true;

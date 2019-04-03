@@ -24,16 +24,14 @@
 class RuleMatchResult
 {
 public:
-    RuleMatchResult(const std::string description, bool isMatch = false, bool shouldSave = true, bool shouldAlert = false);
+    RuleMatchResult(const std::string description, bool shouldSave = true, bool shouldAlert = false);
     ~RuleMatchResult() {}
 
-    bool isMatch() const { return m_isMatch; }
     const std::string getDescription() const { return m_description; }
     bool isShouldSave() const { return m_shouldSave; }
     bool isShouldAlert() const { return m_shouldAlert; }
     
 private:
-    bool m_isMatch;
     std::string m_description;
     bool m_shouldSave;
     bool m_shouldAlert;

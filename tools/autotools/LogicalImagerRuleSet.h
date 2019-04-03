@@ -34,12 +34,12 @@ public:
     LogicalImagerRuleSet(const std::string configFilename);
     ~LogicalImagerRuleSet();
 
-    RuleMatchResult matches(TSK_FS_FILE *fs_file, const char *path) const;
-    const std::list<std::string> getFilePaths() const;
+    RuleMatchResult *matches(TSK_FS_FILE *fs_file, const char *path) const;
+    const std::pair<RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
 
 private:
     // Internal for testing only
-    void testFilePath();
+    void testFullFilePath();
     void testExtension();
     void testFilename();
     void testFileSize();
@@ -47,5 +47,5 @@ private:
     void testUserFolder();
 
     std::map<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>> m_rules;
-    std::list<std::string> m_filePaths;
+    std::pair<RuleMatchResult *, std::list<std::string>> m_fullFilePaths;
 };
