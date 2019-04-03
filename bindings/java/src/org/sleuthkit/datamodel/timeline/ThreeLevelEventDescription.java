@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import org.sleuthkit.datamodel.DescriptionLoD;
 
-class ThreeLevellEventDescription implements TimelineEvent.EventDescription {
+class ThreeLevelEventDescription implements TimelineEvent.EventDescription {
 
 	/**
 	 * The three descriptions (full, med, short) stored in a map, keyed by
@@ -30,7 +30,7 @@ class ThreeLevellEventDescription implements TimelineEvent.EventDescription {
 	 */
 	private final ImmutableMap<DescriptionLoD, String> descriptions;
 
-	ThreeLevellEventDescription(String fullDescr, String mediumDescr, String shortDescr) {
+	ThreeLevelEventDescription(String fullDescr, String mediumDescr, String shortDescr) {
 		descriptions = ImmutableMap.of(
 				DescriptionLoD.FULL, defaultString(fullDescr),
 				DescriptionLoD.MEDIUM, defaultString(mediumDescr),

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -29,11 +31,20 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 
+	private static final Logger logger = Logger.getLogger(SingleDescriptionArtifactEventType.class.getName());
+
 	@Override
-	public EventPayload buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
+	public EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
 		String description = extractFullDescription(artifact);
-		long time = artifact.getAttribute(getDateTimeAttributeType()).getValueLong();
-		return new EventPayload(time, null, null, description);
+		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
+
+		if (timeAttribute == null) {
+			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.toString()); // NON-NLS
+			return null;
+		}
+
+		long time = timeAttribute.getValueLong();
+		return new EventDescriptionWithTime(time, null, null, description);
 	}
 
 	SingleDescriptionArtifactEventType(int typeID, String displayName,
@@ -43,8 +54,8 @@ class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 	}
 
 	@Override
-	public TimelineEvent.EventDescription getDescription(String fullDescription, String medDescription, String shortDescription) {
-		return new SingeLevelEventDiscription(fullDescription);
+	public TimelineEvent.EventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
+		return TimelineEvent.EventDescription.create(fullDescription);
 	}
 
 	/**

@@ -249,7 +249,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
-			return "(sub_type IN (" + getSubTypeIDs().collect(joining(",")) + "))"; //NON-NLS
+			return "(tsk_events.event_type_id IN (" + getSubTypeIDs().collect(joining(",")) + "))"; //NON-NLS
 		}
 
 		private Stream<String> getSubTypeIDs() {
