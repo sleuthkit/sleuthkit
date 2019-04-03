@@ -17,20 +17,14 @@
 
 /* case insensitive user folder prefixes */
 static char *userFolderRegexList[] = { 
-    "/?users/.*",
-    "/?documents and settings/.*", 
-    "/?home/.*"
+    "/?(documents and settings|users|home)/.*"
 };
-static std::regex patterns[3];
 static std::string lowerCaseUserFolder;
 
 LogicalImagerPathRule::LogicalImagerPathRule(std::set<std::string> paths)
 {
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
         m_paths.insert(LogicalImagerRuleBase::toLower(*it));
-    }
-    for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
-        patterns[i] = std::regex(userFolderRegexList[i]);
     }
     lowerCaseUserFolder = LogicalImagerRuleBase::toLower(getUserFolder());
 }
