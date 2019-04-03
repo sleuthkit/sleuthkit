@@ -38,6 +38,9 @@
     <ClCompile Include="..\..\tools\autotools\LogicalImagerDateRule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tools\autotools\TskHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tools\autotools\TskFindFiles.h">
@@ -62,6 +65,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tools\autotools\LogicalImagerDateRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\TskHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\tsk_logical_imager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

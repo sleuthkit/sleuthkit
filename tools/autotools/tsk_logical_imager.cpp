@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <string>
+#include <list>
 #include <algorithm>
 #include <locale>
 #include <codecvt>
@@ -29,6 +30,8 @@
 #include "tsk/img/img_writer.h"
 #include "LogicalImagerRuleSet.h"
 #include "TskFindFiles.h"
+#include "TskHelper.h"
+#include "tsk_logical_imager.h"
 
 std::wstring GetLastErrorStdStrW();
 std::string GetErrorStdStr(DWORD err);
@@ -627,6 +630,30 @@ BOOL getDriveToProcess(string& driveToProcess) {
     }
 }
 
+void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
+    TSK_FS_INFO *fs_info;
+    if ((fs_info = tsk_fs_open_img(img, byteOffset, TSK_FS_TYPE_DETECT)) != NULL) {
+        // Tell TSKHelper about this FS
+        TskHelper::getInstance().addFSInfo(fs_info);
+    }
+    else {
+        // check if it is bitlocker - POC effort 
+        char buffer[32];
+        tsk_img_read(img, byteOffset, buffer, 32);
+        if ((buffer[3] == '-') && (buffer[4] == 'F') &&
+            (buffer[5] == 'V') && (buffer[6] == 'E') &&
+            (buffer[7] == '-') && (buffer[8] == 'F') &&
+            (buffer[9] == 'S') && (buffer[10] == '-'))
+        {
+            std::cerr << "Volume is encrypted with BitLocker." << std::endl
+                << "Volume did not have a file system and has a BitLocker signature" << std::endl;
+        }
+
+        std::cerr << "Volume does not contain a file system" << std::endl;
+        tsk_error_reset();
+    }
+}
+
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
@@ -653,6 +680,13 @@ main(int argc, char **argv1)
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerRuleSet *ruleSet = NULL;
 
+    // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
+    // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to 
+    // display most non-ASCII characters (tested with European, Japanese, Chinese, Korean, Greek,
+    // Arabic, Hebrew and Cyrillic strings).
+    SetConsoleOutputCP(65001); // Set the CMD Console to Unicode codepage
+    setlocale(LC_ALL, "en_US.UTF-8"); // Set locale to English and UTF-8 encoding.
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -664,7 +698,6 @@ main(int argc, char **argv1)
     argv = (TSK_TCHAR **)argv1;
 #endif
     progname = argv[0];
-    setlocale(LC_ALL, "");
 
     while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV"))) > 0) {
         switch (ch) {
@@ -734,6 +767,42 @@ main(int argc, char **argv1)
     }
 
     ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+
+    TskHelper::getInstance().reset();
+    TskHelper::getInstance().setImgInfo(img);
+    TSK_VS_INFO *vs_info;
+    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+        std::cout << "No volume system found. Looking for file system" << std::endl;
+        openFs(img, 0);
+    } else {
+        // process the volume system
+        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+            std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
+            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                continue;
+            }
+            openFs(img, vs_part->start * vs_part->vs->block_size);
+        }
+        tsk_vs_close(vs_info);
+    }
+
+    const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
+    TSKFileNameInfo filenameInfo;
+    const std::vector<std::string> filePaths = ruleSet->getFilePaths();
+    TSK_FS_FILE *fs_file;
+    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+        for (std::vector<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
+            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
+            fprintf(stdout, "Path2Inum returns %d %s for %s\n", retval, (retval == 0 && fs_file == NULL ? "duplicate" : ""), iter->c_str());
+            if (retval == 0 && fs_file != NULL) {
+                (void) TskFindFiles::extractFile(fs_file);
+                delete fs_file;
+            }
+        }
+    }
+    TskHelper::getInstance().reset();
+
     TskFindFiles findFiles(ruleSet);
 
     if (findFiles.openImageHandle(img)) {

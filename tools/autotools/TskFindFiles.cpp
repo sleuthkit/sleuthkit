@@ -55,8 +55,8 @@ std::string timeToString(time_t time) {
 /**
 * Process a file. If the file matches a rule specified in the LogicalImagerRuleSet,
 * we collect it by reading the file content.
-* @param fs_file file details
-* @param path full path of parent directory
+* @param fs_file File details
+* @param path Full path of parent directory
 * @returns TSK_OK or TSK_ERR. All error must have been registered.
 */
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
@@ -66,25 +66,39 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
 
     if (m_logicialImagerRuleSet->matches(fs_file, path)) {
         // TODO: For verification only
-        fprintf(stdout, "processFile: match name=%s\tsize=%" PRIu64 "\tdate=%s\tpath=%s\n", 
+        fprintf(stdout, "processFile: match name=%s\tsize=%" PRId64 "\tdate=%s\tpath=%s\n", 
             fs_file->name->name, fs_file->meta->size, timeToString(getLatestTime(fs_file->meta)).c_str(), path);
+       return TskFindFiles::extractFile(fs_file);
+    }
+    return TSK_OK;
+}
 
-        TSK_OFF_T offset = 0;
-        size_t bufferLen = 16 * 1024;
-        size_t bytesRead;
-        char buffer[16 * 1024];
+/**
+ * Extract a file. tsk_img_writer_create must have been called prior to this method.
+ * @param fs_file File details
+ * @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
+ */
+TSK_RETVAL_ENUM TskFindFiles::extractFile(TSK_FS_FILE *fs_file) {
+    TSK_OFF_T offset = 0;
+    TSK_OFF_T bufferLen = 16 * 1024;
+    TSK_OFF_T bytesRead;
+    TSK_OFF_T bytesReadTotal = 0;
+    char buffer[16 * 1024];
 
-        while (true) {
-            bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
-            // ts_fs_file_read returns -1 with empty files, don't report it.
-            if (bytesRead == -1 && !(fs_file->meta != NULL && fs_file->meta->size == 0)) {
-                fprintf(stderr, "processFile: tsk_fs_file_read returns -1\tfilename=%s\toffset=%" PRIu64 "\n", fs_file->name->name, offset);
+    while (true) {
+        bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
+        if (bytesRead == -1) {
+            if (fs_file->meta != NULL && fs_file->meta->size == 0) {
+                // ts_fs_file_read returns -1 with empty files, don't report it.
+                return TSK_OK;  
+            } else {
+                fprintf(stderr, "processFile: tsk_fs_file_read returns -1\tfilename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
                 return TSK_ERR;
             }
-            if (bytesRead < bufferLen) {
-                break;
-            }
-            offset += bytesRead;
+        }
+        offset += bytesRead;
+        if (offset >= fs_file->meta->size) {
+            break;
         }
     }
     return TSK_OK;
