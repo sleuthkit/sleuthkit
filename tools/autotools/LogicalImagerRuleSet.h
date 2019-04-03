@@ -30,7 +30,7 @@
 class LogicalImagerRuleSet
 {
 public:
-    LogicalImagerRuleSet(const std::string configFilename);
+    LogicalImagerRuleSet(const std::string &configFilename);
     ~LogicalImagerRuleSet();
 
     bool matches(TSK_FS_FILE *fs_file, const char *path) const;

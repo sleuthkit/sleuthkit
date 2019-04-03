@@ -36,7 +36,7 @@ public:
     static const char *getUserFolder() { return "[USER_FOLDER]"; }
 
 private:
-    bool LogicalImagerPathRule::matchUserFolder(const std::string rule, std::string path) const;
+    bool LogicalImagerPathRule::matchUserFolder(const std::string &rule, std::string path) const;
 
     std::set<std::string> m_paths;
 };

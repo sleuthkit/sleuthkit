@@ -157,7 +157,7 @@ void LogicalImagerRuleSet::testUserFolder() {
  * @param configFilename Configuration filename of the rule set
  *
  */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string configFilename)
+LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename)
 {
     // TODO: read the config yaml file and construct the m_rules map
 
