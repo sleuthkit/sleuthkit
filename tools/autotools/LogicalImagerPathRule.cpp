@@ -16,21 +16,15 @@
 #include "LogicalImagerPathRule.h"
 
 /* case insensitive user folder prefixes */
-static char *userFolderRegexList[] = { 
-    "/?users/.*/",
-    "/?documents and settings/.*/", 
-    "/?home/.*/"
+static char *userFolderRegexList[] = {
+    "/?(documents and settings|users|home)/.*"
 };
-static std::regex patterns[3];
 static std::string lowerCaseUserFolder;
 
 LogicalImagerPathRule::LogicalImagerPathRule(std::set<std::string> paths)
 {
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
         m_paths.insert(LogicalImagerRuleBase::toLower(*it));
-    }
-    for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
-        patterns[i] = std::regex(userFolderRegexList[i]);
     }
     lowerCaseUserFolder = LogicalImagerRuleBase::toLower(getUserFolder());
 }
@@ -40,13 +34,19 @@ LogicalImagerPathRule::~LogicalImagerPathRule()
 }
 
 /**
- * Match all user folder paths using regex_match
- * @param path Path to be matched
- * @returns true if there is a match, false otherwise
- */
-bool LogicalImagerPathRule::matchUserFolder(const std::string path) const {
+* Match all user folder paths using regex_match
+* @param rule Rule specified containing [USER_FOLDER] string
+* @param path Path to be matched
+* @returns true if there is a match, false otherwise
+*/
+bool LogicalImagerPathRule::matchUserFolder(const std::string rule, std::string path) const {
     for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
-        if (std::regex_match(path, patterns[i])) {
+        std::string newPattern(rule);
+        newPattern.replace(newPattern.find(lowerCaseUserFolder), lowerCaseUserFolder.length(), userFolderRegexList[i]);
+        newPattern.append(".*");
+        std::regex pattern(newPattern);
+
+        if (std::regex_match(path, pattern)) {
             return true;
         }
     }
@@ -69,8 +69,10 @@ bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path)
     const std::string lowercasePath = LogicalImagerRuleBase::toLower(path);
 
     for (auto it = std::begin(m_paths); it != std::end(m_paths); ++it) {
-        if (*it == lowerCaseUserFolder) {
-            return matchUserFolder(lowercasePath);
+        if (it->find(lowerCaseUserFolder) != std::string::npos) {
+            if (matchUserFolder(*it, lowercasePath)) {
+                return true;
+            }
         }
         if (lowercasePath.find(*it) != std::string::npos) {
             return true;
