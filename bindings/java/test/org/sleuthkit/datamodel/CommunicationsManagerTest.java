@@ -730,7 +730,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DeviceFilter(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID, DS3_DEVICEID)),
 					new AccountTypeFilter(Arrays.asList(PHONE, EMAIL)),
-					new CommunicationsFilter.DateRangeFilter(false, 0, true, DEC_31_2016)
+					new CommunicationsFilter.DateRangeFilter(0, DEC_31_2016)
 			));
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
@@ -747,7 +747,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DeviceFilter(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID, DS3_DEVICEID)),
 					new AccountTypeFilter(Arrays.asList(PHONE, EMAIL)),
-					new CommunicationsFilter.DateRangeFilter(true, JUL_1_2017, false, 0)
+					new CommunicationsFilter.DateRangeFilter(JUL_1_2017, 0)
 			));
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
@@ -1009,7 +1009,7 @@ public class CommunicationsManagerTest {
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages  on or before Jan 1, 2017
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new DateRangeFilter(false, 0, true, JAN_1_2017)));
+					new DateRangeFilter(0, JAN_1_2017)));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(1, communications.size());
@@ -1018,7 +1018,7 @@ public class CommunicationsManagerTest {
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or after Jan 1, 2017
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new DateRangeFilter(true, JAN_1_2017, false, 0)));
+					new DateRangeFilter(JAN_1_2017, 0)));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(3, communications.size());
@@ -1028,7 +1028,7 @@ public class CommunicationsManagerTest {
 		{
 
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new DateRangeFilter(false, 0, true, MAR_1_2017)));
+					new DateRangeFilter(0, MAR_1_2017)));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(2, communications.size());
@@ -1037,7 +1037,7 @@ public class CommunicationsManagerTest {
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or before Jul 1, 2017
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new DateRangeFilter(false, 0, true, JUL_1_2017)));
+					new DateRangeFilter(0, JUL_1_2017)));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(3, communications.size());
@@ -1046,7 +1046,7 @@ public class CommunicationsManagerTest {
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages between  Feb 1, 2017 & Aug 01 2017
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new DateRangeFilter(true, FEB_1_2017, true, AUG_1_2017)));
+					new DateRangeFilter(FEB_1_2017, AUG_1_2017)));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(2, communications.size());
@@ -1055,7 +1055,7 @@ public class CommunicationsManagerTest {
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or After  Jul 1, 2017 
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new DateRangeFilter(true, JUL_1_2017, false, 0)));
+					new DateRangeFilter(JUL_1_2017, 0)));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(1, communications.size());
@@ -1180,7 +1180,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(false, 0, true, JAN_1_2017)
+					new CommunicationsFilter.DateRangeFilter(0, JAN_1_2017)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
@@ -1191,7 +1191,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(true, JAN_1_2017, false, 0)
+					new CommunicationsFilter.DateRangeFilter(JAN_1_2017, 0)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
@@ -1202,7 +1202,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(false, 0, true, MAR_1_2017)
+					new CommunicationsFilter.DateRangeFilter(0, MAR_1_2017)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
@@ -1213,7 +1213,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(true, MAR_1_2017, false, 0)
+					new CommunicationsFilter.DateRangeFilter(MAR_1_2017, 0)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
@@ -1224,7 +1224,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(true, MAR_1_2017, false, 0)
+					new CommunicationsFilter.DateRangeFilter(MAR_1_2017, 0)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
@@ -1235,7 +1235,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(false, 0, true, JUL_1_2017)
+					new CommunicationsFilter.DateRangeFilter(0, JUL_1_2017)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
@@ -1246,7 +1246,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(true, JUL_1_2017, false, 0)
+					new CommunicationsFilter.DateRangeFilter(JUL_1_2017, 0)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
@@ -1257,7 +1257,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
-					new CommunicationsFilter.DateRangeFilter(true, FEB_1_2017, true, AUG_1_2017)
+					new CommunicationsFilter.DateRangeFilter(FEB_1_2017, AUG_1_2017)
 			));
 			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
