@@ -66,6 +66,15 @@ std::string timeToString(time_t time) {
 
 void TskFindFiles::maybeAlert(TSK_RETVAL_ENUM extractStatus, RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
     if (matchResult->isShouldAlert()) {
+        if (matchResult->isFolderOnly()) {
+            // if m_pathOnlySet contains a prefix to path, we have seen the parent path before. No need to report
+            for (auto it = m_pathOnlySet.begin(); it != m_pathOnlySet.end(); ++it) {
+                std::string pathStr = std::string(path);
+                if (pathStr.find(*it) == 0) {
+                    return;
+                }
+            }
+        }
         // alert file format is "extractStatus<tab>description<tab>name<tab>path"
         fprintf(m_alertFile, "%d\t%s\t%s\t%s\n",
             extractStatus,
@@ -77,6 +86,9 @@ void TskFindFiles::maybeAlert(TSK_RETVAL_ENUM extractStatus, RuleMatchResult *ma
             matchResult->getDescription().c_str(),
             (fs_file->name ? fs_file->name->name : "name is null"),
             path);
+        if (matchResult->isFolderOnly()) {
+            m_pathOnlySet.insert(std::string(path));
+        }
     }
 }
 

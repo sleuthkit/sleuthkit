@@ -31,7 +31,7 @@
 class LogicalImagerRuleSet
 {
 public:
-    LogicalImagerRuleSet(const std::string configFilename);
+    LogicalImagerRuleSet(const std::string &configFilename);
     ~LogicalImagerRuleSet();
 
     RuleMatchResult *matches(TSK_FS_FILE *fs_file, const char *path) const;
@@ -39,6 +39,7 @@ public:
 
 private:
     // Internal for testing only
+    void testFullFolderPath();
     void testFullFilePath();
     void testExtension();
     void testFilename();

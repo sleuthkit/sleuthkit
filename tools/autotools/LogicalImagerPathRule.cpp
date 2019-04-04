@@ -38,7 +38,7 @@ LogicalImagerPathRule::~LogicalImagerPathRule()
  * @param path Path to be matched
  * @returns true if there is a match, false otherwise
  */
-bool LogicalImagerPathRule::matchUserFolder(const std::string rule, std::string path) const {
+bool LogicalImagerPathRule::matchUserFolder(const std::string &rule, std::string path) const {
     for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
         std::string newPattern(rule);
         newPattern.replace(newPattern.find(lowerCaseUserFolder), lowerCaseUserFolder.length(), userFolderRegexList[i]);

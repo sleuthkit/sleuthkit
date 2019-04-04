@@ -14,8 +14,9 @@
 * Contains C++ code that implement the Rule Match Resultt class.
 */
 
-RuleMatchResult::RuleMatchResult(const std::string description, bool shouldSave, bool shouldAlert) {
+RuleMatchResult::RuleMatchResult(const std::string description, bool shouldSave, bool shouldAlert, bool folderOnly) {
     m_description = description;
     m_shouldSave = shouldSave;
     m_shouldAlert = shouldAlert;
+    m_folderOnly = folderOnly;
 }

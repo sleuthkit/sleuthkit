@@ -17,6 +17,7 @@
 #pragma once
 
 #include <string>
+#include <set>
 
 #include "LogicalImagerRuleSet.h"
 
@@ -33,4 +34,5 @@ private:
     const LogicalImagerRuleSet *m_logicialImagerRuleSet;
     std::string m_alertFilePath;
     FILE *m_alertFile;
+    std::set<std::string> m_pathOnlySet;
 };

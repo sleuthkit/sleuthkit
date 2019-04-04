@@ -24,15 +24,17 @@
 class RuleMatchResult
 {
 public:
-    RuleMatchResult(const std::string description, bool shouldSave = true, bool shouldAlert = false);
+    RuleMatchResult(const std::string description, bool shouldSave = true, bool shouldAlert = false, bool folderOnly = false);
     ~RuleMatchResult() {}
 
     const std::string getDescription() const { return m_description; }
     bool isShouldSave() const { return m_shouldSave; }
     bool isShouldAlert() const { return m_shouldAlert; }
-    
+    bool isFolderOnly() const { return m_folderOnly; }
+
 private:
     std::string m_description;
     bool m_shouldSave;
     bool m_shouldAlert;
+    bool m_folderOnly;
 };

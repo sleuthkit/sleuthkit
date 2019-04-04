@@ -657,11 +657,10 @@ void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-i imgPath] -c configPath [-a alertFilePath]\n"),
+        ("usage: %s [-i imgPath] -c configPath\n"),
         progname);
     tsk_fprintf(stderr, "\t-i imgPath: The image file\n");
     tsk_fprintf(stderr, "\t-c configPath: The configuration file\n");
-    tsk_fprintf(stderr, "\t-c alertFilePath: The alert file\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     exit(1);
