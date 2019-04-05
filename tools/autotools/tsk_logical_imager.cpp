@@ -798,21 +798,20 @@ main(int argc, char **argv1)
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
             int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
-            //fprintf(stdout, "Path2Inum returns %d %s for %s\n", retval, (retval == 0 && fs_file == NULL ? "duplicate" : ""), iter->c_str());
             if (retval == 0 && fs_file != NULL) {
                 TSK_RETVAL_ENUM extractStatus = TSK_ERR;
                 if (ruleConfig->isShouldSave()) {
                     extractStatus = TskFindFiles::extractFile(fs_file);
                 }
-                // fake a TSK_FS_NAME for alert purpose
-                fs_file->name = new TSK_FS_NAME();
-                fs_file->name->name = (char *) tsk_malloc(strlen(iter->c_str()) + 1);
-                strcpy(fs_file->name->name, iter->c_str());
                 if (ruleConfig->isShouldAlert()) {
+                    // create a TSK_FS_NAME for alert purpose
+                    fs_file->name = new TSK_FS_NAME();
+                    fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
+                    strcpy(fs_file->name->name, iter->c_str());
                     findFiles.alert(extractStatus, ruleConfig, fs_file, "");
+                    free(fs_file->name->name);
+                    delete fs_file->name;
                 }
-                free(fs_file->name->name);
-                delete fs_file->name;
                 delete fs_file;
             }
         }
