@@ -140,7 +140,7 @@ void LogicalImagerRuleSet::testFilename() {
 
 void LogicalImagerRuleSet::testFileSize() {
     std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("find very large programs", false, true);
+    RuleMatchResult *ruleKey = new RuleMatchResult("find very large programs", false, true); // don't save, but alert
 
     // find by file size 
     std::string archive_strs[] = { "exe", "bin", "dll" };
