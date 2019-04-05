@@ -14,6 +14,7 @@
 #include <regex>
 
 #include "LogicalImagerPathRule.h"
+#include "TskHelper.h"
 
 /* case insensitive user folder prefixes */
 static char *userFolderRegexList[] = {
@@ -21,16 +22,21 @@ static char *userFolderRegexList[] = {
 };
 static std::string lowerCaseUserFolder;
 
-LogicalImagerPathRule::LogicalImagerPathRule(std::set<std::string> paths)
+LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> paths)
 {
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
-        m_paths.insert(LogicalImagerRuleBase::toLower(*it));
+        m_paths.insert(TskHelper::toLower(*it));
     }
-    lowerCaseUserFolder = LogicalImagerRuleBase::toLower(getUserFolder());
+    lowerCaseUserFolder = TskHelper::toLower(getUserFolder());
 }
 
 LogicalImagerPathRule::~LogicalImagerPathRule()
 {
+}
+
+bool endsWith(const std::string &str, const std::string &suffix) {
+    return str.size() >= suffix.size() &&
+        str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 /**
@@ -39,11 +45,15 @@ LogicalImagerPathRule::~LogicalImagerPathRule()
 * @param path Path to be matched
 * @returns true if there is a match, false otherwise
 */
-bool LogicalImagerPathRule::matchUserFolder(const std::string &rule, std::string path) const {
+bool LogicalImagerPathRule::matchUserFolder(const std::string &rule, const std::string path) const {
     for (int i = 0; i < sizeof(userFolderRegexList) / sizeof(userFolderRegexList[0]); ++i) {
         std::string newPattern(rule);
         newPattern.replace(newPattern.find(lowerCaseUserFolder), lowerCaseUserFolder.length(), userFolderRegexList[i]);
-        newPattern.append(".*");
+        if (endsWith(rule, "/")) {
+            newPattern.append(".*");
+        } else {
+            newPattern.append("/.*");
+        }
         std::regex pattern(newPattern);
 
         if (std::regex_match(path, pattern)) {
@@ -66,15 +76,14 @@ bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path)
     if (path == NULL)
         return false;
 
-    const std::string lowercasePath = LogicalImagerRuleBase::toLower(path);
+    const std::string lowercasePath = TskHelper::toLower(path);
 
     for (auto it = std::begin(m_paths); it != std::end(m_paths); ++it) {
         if (it->find(lowerCaseUserFolder) != std::string::npos) {
             if (matchUserFolder(*it, lowercasePath)) {
                 return true;
             }
-        }
-        if (lowercasePath.find(*it) != std::string::npos) {
+        } else if (lowercasePath.find(*it) != std::string::npos) {
             return true;
         }
     }

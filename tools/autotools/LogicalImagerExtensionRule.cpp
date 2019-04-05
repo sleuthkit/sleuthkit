@@ -13,11 +13,12 @@
 #include <algorithm>
 
 #include "LogicalImagerExtensionRule.h"
+#include "TskHelper.h"
 
-LogicalImagerExtensionRule::LogicalImagerExtensionRule(std::set<std::string> extensions)
+LogicalImagerExtensionRule::LogicalImagerExtensionRule(const std::set<std::string> extensions)
 {
     for (auto it = std::begin(extensions); it != std::end(extensions); ++it) {
-        m_extensions.insert(LogicalImagerRuleBase::toLower(*it));
+        m_extensions.insert(TskHelper::toLower(*it));
     }
 }
 
@@ -44,5 +45,5 @@ bool LogicalImagerExtensionRule::matches(TSK_FS_FILE *fs_file, const char * /*pa
         extension = &extension[1];
     }
 
-    return m_extensions.find(LogicalImagerRuleBase::toLower(extension)) != m_extensions.end();
+    return m_extensions.find(TskHelper::toLower(extension)) != m_extensions.end();
 }

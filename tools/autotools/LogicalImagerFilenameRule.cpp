@@ -13,11 +13,12 @@
 #include <algorithm>
 
 #include "LogicalImagerFilenameRule.h"
+#include "TskHelper.h"
 
-LogicalImagerFilenameRule::LogicalImagerFilenameRule(std::set<std::string> filenames)
+LogicalImagerFilenameRule::LogicalImagerFilenameRule(const std::set<std::string> filenames)
 {
     for (auto it = std::begin(filenames); it != std::end(filenames); ++it) {
-        m_filenames.insert(LogicalImagerRuleBase::toLower(*it));
+        m_filenames.insert(TskHelper::toLower(*it));
     }
 }
 
@@ -38,7 +39,7 @@ bool LogicalImagerFilenameRule::matches(TSK_FS_FILE *fs_file, const char * /*pat
     if (fs_file->name == NULL)
         return false;
 
-    std::string lowercaseFilename = LogicalImagerRuleBase::toLower(fs_file->name->name);
+    std::string lowercaseFilename = TskHelper::toLower(fs_file->name->name);
 
     for (auto it = std::begin(m_filenames); it != std::end(m_filenames); ++it) {
         if (lowercaseFilename == *it) {

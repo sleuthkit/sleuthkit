@@ -140,15 +140,16 @@ void LogicalImagerRuleSet::testUserFolder() {
     LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
 
     std::string path_strs[] = {
-        "[USER_FOLDER]/Documents/My Pictures/Sample Pictures/",
+        "[USER_FOLDER]/Desktop",
+        "[USER_FOLDER]/Documents/My Pictures/Sample Pictures",
         "[USER_FOLDER]/My Documents/Downloads/",
-        "[USER_FOLDER]/Local Settings/Application Data/Google/Chrome/"
+        "[USER_FOLDER]/Local Settings/Application Data/Google/Chrome"
     };
     std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
     LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
     vector.push_back(extension_rule);
     vector.push_back(path_rule);
-    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("Find-pictures-in-all-user-folders-rule"), vector));
+    m_rules.insert(std::pair<std::string, std::vector<LogicalImagerRuleBase *>>(std::string("Find-jpg-in-all-user-folders-rule"), vector));
 }
 
 
