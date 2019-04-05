@@ -791,8 +791,8 @@ main(int argc, char **argv1)
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
-    const std::pair<RuleMatchResult *, std::list<std::string>> fullFilePathsRule = ruleSet->getFullFilePaths();
-    RuleMatchResult *ruleConfig = fullFilePathsRule.first;
+    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = ruleSet->getFullFilePaths();
+    const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
     const std::list<std::string> filePaths = fullFilePathsRule.second;
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
@@ -808,7 +808,9 @@ main(int argc, char **argv1)
                 fs_file->name = new TSK_FS_NAME();
                 fs_file->name->name = (char *) tsk_malloc(strlen(iter->c_str()) + 1);
                 strcpy(fs_file->name->name, iter->c_str());
-                findFiles.maybeAlert(extractStatus, ruleConfig, fs_file, "");
+                if (ruleConfig->isShouldAlert()) {
+                    findFiles.alert(extractStatus, ruleConfig, fs_file, "");
+                }
                 free(fs_file->name->name);
                 delete fs_file->name;
                 delete fs_file;

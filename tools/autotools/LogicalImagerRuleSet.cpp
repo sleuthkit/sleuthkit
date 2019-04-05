@@ -56,31 +56,31 @@ void LogicalImagerRuleSet::testFullFilePath() {
 
     filePaths.push_back(u8"Documents and Settings/John/My Documents/Downloads");
 
-    //// File path with Chinese name in the fa_keyword_search_test.img
-    //filePaths.push_back(u8"上交所与香港特许秘书公会签合作协议.doc");
-    //filePaths.push_back(u8"胡锦涛.htm");
+    // File path with Chinese name in the fa_keyword_search_test.img
+    filePaths.push_back(u8"上交所与香港特许秘书公会签合作协议.doc");
+    filePaths.push_back(u8"胡锦涛.htm");
 
-    //// File path with an Arabic folder name in the XP image
-    //filePaths.push_back(u8"Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css");
+    // File path with an Arabic folder name in the XP image
+    filePaths.push_back(u8"Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css");
 
-    //// Test existing files, with some duplicates
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/sunset.jpg");
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/water lilies.jpg");
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/blue hills.jpg");
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/BLUE HILLS.JPG");
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/winter.jpg");
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg");
-    //filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe");
-    //filePaths.push_back("/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
+    // Test existing files, with some duplicates
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/sunset.jpg");
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/water lilies.jpg");
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/blue hills.jpg");
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/BLUE HILLS.JPG");
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/winter.jpg");
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg");
+    filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe");
+    filePaths.push_back("/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
 
-    //// Test invalid or file not found paths
-    //filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt");
-    //filePaths.push_back("No Such Folder/No such subfolder/no-such-file.txt");
-    //filePaths.push_back("No Such Folder/No such subfolder/Winter.jpg");
-    //filePaths.push_back("C:/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-    //filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg");
-    //filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
+    // Test invalid or file not found paths
+    filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt");
+    filePaths.push_back("No Such Folder/No such subfolder/no-such-file.txt");
+    filePaths.push_back("No Such Folder/No such subfolder/Winter.jpg");
+    filePaths.push_back("C:/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
+    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg");
+    filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
 
     m_fullFilePaths.first = ruleKey;
     m_fullFilePaths.second = filePaths;
@@ -88,21 +88,23 @@ void LogicalImagerRuleSet::testFullFilePath() {
 
 void LogicalImagerRuleSet::testFullFolderPath() {
     std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("Full folder path search", true, true);
-    std::list<std::string> filePaths;
-
-//    filePaths.push_back("Documents and Settings/John/My Documents/Downloads/dirty-bomb_files/");
-//    m_fullFilePaths.first = ruleKey;
-//    m_fullFilePaths.second = filePaths;
+    RuleMatchResult *ruleKey = new RuleMatchResult("Test folder path search", true, true);
 
     std::string path_strs[] = { 
-        "Documents and Settings/John/My Documents/Downloads/dirty-bomb_files/",
-        "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/"
+        "Documents and Settings/John/My Documents",
+        "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures"
     };
     std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
     LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
     vector.push_back(path_rule);
-    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
+
+    // find all file/dir call "dirty-bomb_files"
+    std::string filename_strs[] = { "dirty-bomb_files", "جهاد_files", "hidden" };
+    std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
+    LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
+    vector.push_back(filename_rule);
+
+    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testExtension() {
@@ -121,7 +123,7 @@ void LogicalImagerRuleSet::testExtension() {
     vector.push_back(extension_rule);
     vector.push_back(path_rule);
     vector.push_back(size_rule);
-    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
+    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testFilename() {
@@ -133,7 +135,7 @@ void LogicalImagerRuleSet::testFilename() {
     std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
     LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
     vector.push_back(filename_rule);
-    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
+    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testFileSize() {
@@ -147,27 +149,27 @@ void LogicalImagerRuleSet::testFileSize() {
     LogicalImagerSizeRule *archive_size_rule = new LogicalImagerSizeRule(10000000, 0);
     vector.push_back(archive_extension_rule);
     vector.push_back(archive_size_rule);
-    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
+    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testFileDate() {
     std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("find files newer than 2012-03-21");
+    RuleMatchResult *ruleKey = new RuleMatchResult("find files newer than 2012-03-21"); // default is save and not alert
 
     // find files newer than 2012-03-21 (midnight)
     time_t min_time = stringToTimet("2012-03-21 00:00:00");
     LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, 0);
     vector.clear();
     vector.push_back(date_rule);
-    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
+    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 void LogicalImagerRuleSet::testUserFolder() {
     std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("find all pictures under the user folder", true, true);
+    RuleMatchResult *ruleKey = new RuleMatchResult("find all png files under the user folder", true, true);
 
-    // find all pictures under the user folder
-    std::string extension_strs[] = { "jpg", "jpeg", "gif", "png" };
+    // find all png files under the user folder
+    std::string extension_strs[] = { "png" };
     std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs) / sizeof(extension_strs[0]));
     LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
 
@@ -180,7 +182,7 @@ void LogicalImagerRuleSet::testUserFolder() {
     LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
     vector.push_back(extension_rule);
     vector.push_back(path_rule);
-    m_rules.insert(std::pair<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
+    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
 /**
@@ -188,22 +190,24 @@ void LogicalImagerRuleSet::testUserFolder() {
  * @param configFilename Configuration filename of the rule set
  *
  */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename)
-{
+LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
     // TODO: read the config yaml file and construct the m_rules map
 
     // The following rules are for mocking the config file and testing only.
     testFullFolderPath();
     testFullFilePath();
-    //testExtension();
-    //testFilename();
-    //testFileSize();
-    //testFileDate();
-    //testUserFolder();
+    testExtension();
+    testFilename();
+    testFileSize();
+    testFileDate();
+    testUserFolder();
 }
 
-LogicalImagerRuleSet::~LogicalImagerRuleSet() 
-{
+LogicalImagerRuleSet::~LogicalImagerRuleSet() {
+    for (auto it = m_rules.begin(); it != m_rules.end(); ++it) {
+        if (it->first)
+            delete it->first;
+    }
 }
 
 /**
@@ -213,9 +217,8 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet()
  * @param path parent path to fs_file
  * @returns RuleMatchResult * if match, NULL otherwise. Caller should delete the return object.
  */
-RuleMatchResult *LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
-{
-    for (std::map<RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
+RuleMatchResult *LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const {
+    for (std::map<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
         const std::vector<LogicalImagerRuleBase *> vector = it->second;
         bool result = true;
         // All rules in this set must match (ANDed)
@@ -226,21 +229,13 @@ RuleMatchResult *LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char 
             }
         }
         if (result) {
-            bool isFolderOnly = true;
-            for (std::vector<LogicalImagerRuleBase *>::const_iterator iter = vector.begin(); iter != vector.end(); ++iter) {
-                if (dynamic_cast<LogicalImagerPathRule *>(*iter) == nullptr) {
-                    isFolderOnly = false;
-                    break;
-                }
-            }
             // all rules match, no need to apply other rules in the set
-            return new RuleMatchResult(it->first->getDescription(), it->first->isShouldSave(), it->first->isShouldAlert(), isFolderOnly);
+            return new RuleMatchResult(it->first->getDescription(), it->first->isShouldSave(), it->first->isShouldAlert());
         }
     }
     return (RuleMatchResult *) NULL;
 }
 
-const std::pair<RuleMatchResult *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const
-{
+const std::pair<const RuleMatchResult *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {
     return m_fullFilePaths;
 }

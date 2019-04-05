@@ -17,7 +17,6 @@
 #pragma once
 
 #include <string>
-#include <set>
 
 #include "LogicalImagerRuleSet.h"
 
@@ -28,11 +27,10 @@ public:
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
     static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file);
     virtual uint8_t handleError();
-    void TskFindFiles::maybeAlert(TSK_RETVAL_ENUM extractStatus, RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path);
+    void TskFindFiles::alert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path);
 
 private:
     const LogicalImagerRuleSet *m_logicialImagerRuleSet;
     std::string m_alertFilePath;
     FILE *m_alertFile;
-    std::set<std::string> m_pathOnlySet;
 };

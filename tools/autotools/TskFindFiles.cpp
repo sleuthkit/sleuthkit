@@ -32,6 +32,10 @@ TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet, const char *aler
     m_logicialImagerRuleSet = ruleSet;
     m_alertFilePath.assign(alertFilePath);
     m_alertFile = fopen(alertFilePath, "w");
+    if (!m_alertFile) {
+        fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilePath);
+        exit(1);
+    }
     fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
 }
 
@@ -64,32 +68,18 @@ std::string timeToString(time_t time) {
     return std::string(buffer);
 }
 
-void TskFindFiles::maybeAlert(TSK_RETVAL_ENUM extractStatus, RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
-    if (matchResult->isShouldAlert()) {
-        if (matchResult->isFolderOnly()) {
-            // if m_pathOnlySet contains a prefix to path, we have seen the parent path before. No need to report
-            for (auto it = m_pathOnlySet.begin(); it != m_pathOnlySet.end(); ++it) {
-                std::string pathStr = std::string(path);
-                if (pathStr.find(*it) == 0) {
-                    return;
-                }
-            }
-        }
-        // alert file format is "extractStatus<tab>description<tab>name<tab>path"
-        fprintf(m_alertFile, "%d\t%s\t%s\t%s\n",
-            extractStatus,
-            matchResult->getDescription().c_str(),
-            (fs_file->name ? fs_file->name->name : "name is null"),
-            path);
-        fprintf(stdout, "%d\t%s\t%s\t%s\n",
-            extractStatus,
-            matchResult->getDescription().c_str(),
-            (fs_file->name ? fs_file->name->name : "name is null"),
-            path);
-        if (matchResult->isFolderOnly()) {
-            m_pathOnlySet.insert(std::string(path));
-        }
-    }
+void TskFindFiles::alert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
+    // alert file format is "extractStatus<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%d\t%s\t%s\t%s\n",
+        extractStatus,
+        matchResult->getDescription().c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
+    fprintf(stdout, "%d\t%s\t%s\t%s\n",
+        extractStatus,
+        matchResult->getDescription().c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
 }
 
 /**
@@ -100,10 +90,6 @@ void TskFindFiles::maybeAlert(TSK_RETVAL_ENUM extractStatus, RuleMatchResult *ma
 * @returns TSK_OK or TSK_ERR. All error must have been registered.
 */
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    // handle file only
-    if (!isFile(fs_file))
-        return TSK_OK;
-
     RuleMatchResult *matchResult = m_logicialImagerRuleSet->matches(fs_file, path);
     if (matchResult) {
         TSK_RETVAL_ENUM extractStatus = TSK_ERR;
@@ -121,7 +107,9 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
         //    timeToString(getLatestTime(fs_file->meta)).c_str(), 
         //    path);
 
-        maybeAlert(extractStatus, matchResult, fs_file, path);
+        if (matchResult->isShouldAlert()) {
+            alert(extractStatus, matchResult, fs_file, path);
+        }
 
         delete matchResult;
         return extractStatus;
