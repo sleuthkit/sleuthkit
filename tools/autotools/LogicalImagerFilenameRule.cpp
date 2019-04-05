@@ -15,7 +15,7 @@
 #include "LogicalImagerFilenameRule.h"
 #include "TskHelper.h"
 
-LogicalImagerFilenameRule::LogicalImagerFilenameRule(const std::set<std::string> filenames)
+LogicalImagerFilenameRule::LogicalImagerFilenameRule(const std::set<std::string> &filenames)
 {
     for (auto it = std::begin(filenames); it != std::end(filenames); ++it) {
         m_filenames.insert(TskHelper::toLower(*it));

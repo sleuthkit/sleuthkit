@@ -28,7 +28,7 @@
 class LogicalImagerPathRule : public LogicalImagerRuleBase
 {
 public:
-    LogicalImagerPathRule(const std::set<std::string> extensions);
+    LogicalImagerPathRule(const std::set<std::string> &extensions);
     ~LogicalImagerPathRule();
 
     bool matches(TSK_FS_FILE * /*fs_file*/, const char *path) const;

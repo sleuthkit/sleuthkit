@@ -15,7 +15,7 @@
 #include "LogicalImagerExtensionRule.h"
 #include "TskHelper.h"
 
-LogicalImagerExtensionRule::LogicalImagerExtensionRule(const std::set<std::string> extensions)
+LogicalImagerExtensionRule::LogicalImagerExtensionRule(const std::set<std::string> &extensions)
 {
     for (auto it = std::begin(extensions); it != std::end(extensions); ++it) {
         m_extensions.insert(TskHelper::toLower(*it));

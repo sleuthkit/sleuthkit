@@ -22,7 +22,7 @@ static char *userFolderRegexList[] = {
 };
 static std::string lowerCaseUserFolder;
 
-LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> paths)
+LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths)
 {
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
         m_paths.insert(TskHelper::toLower(*it));
