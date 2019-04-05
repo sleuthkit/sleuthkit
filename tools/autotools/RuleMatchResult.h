@@ -24,7 +24,7 @@
 class RuleMatchResult
 {
 public:
-    RuleMatchResult(const std::string description, bool shouldSave = true, bool shouldAlert = false);
+    RuleMatchResult(const std::string &description, bool shouldSave = true, bool shouldAlert = false);
     ~RuleMatchResult() {}
 
     const std::string getDescription() const { return m_description; }
