@@ -18,7 +18,7 @@
 
 /* case insensitive user folder prefixes */
 static char *userFolderRegexList[] = {
-    "/?(documents and settings|users|home)/.*"
+    "/?(documents and settings|users|home)/[^/]+"
 };
 static std::string lowerCaseUserFolder;
 
