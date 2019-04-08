@@ -20,6 +20,8 @@
 
 #include <string>
 #include <set>
+#include <regex>
+#include <list>
 
 /**
 * Implement the logical imager pathname rule.
@@ -36,7 +38,8 @@ public:
     static const char *getUserFolder() { return "[USER_FOLDER]"; }
 
 private:
-    bool LogicalImagerPathRule::matchUserFolder(const std::string &rule, std::string path) const;
+    bool LogicalImagerPathRule::matchUserFolder(std::string path) const;
 
     std::set<std::string> m_paths;
+    std::list<std::regex> m_userFolderRegexes;
 };

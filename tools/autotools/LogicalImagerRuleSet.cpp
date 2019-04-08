@@ -163,11 +163,11 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename)
     // TODO: read the config yaml file and construct the m_rules map
 
     // The following rules are for mocking the config file and testing only.
-//    testFilePath();
-//    testExtension();
-//    testFilename();
-//    testFileSize();
-//    testFileDate();
+    testFilePath();
+    testExtension();
+    testFilename();
+    testFileSize();
+    testFileDate();
     testUserFolder();
 }
 
