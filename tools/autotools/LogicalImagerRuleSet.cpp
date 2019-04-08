@@ -18,6 +18,7 @@
 #include "LogicalImagerSizeRule.h"
 #include "LogicalImagerFilenameRule.h"
 #include "LogicalImagerDateRule.h"
+#include "json.h"
 
 #include <fstream>
 #include <iostream>
@@ -192,15 +193,37 @@ void LogicalImagerRuleSet::testUserFolder() {
  */
 LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
     // TODO: read the config yaml file and construct the m_rules map
+    auto j3 = nlohmann::json::parse("{ \"happy\": true, \"pi\": 3.141 }");
+
+    // explicit conversion to string
+    std::string s = j3.dump();    // {\"happy\":true,\"pi\":3.141}
+
+                                 // serialization with pretty printing
+                                 // pass in the amount of spaces to indent
+    std::cout << j3.dump(4) << std::endl;
+    for (auto it = j3.begin(); it != j3.end(); ++it) {
+        std::cout << it.key() << " : " << it.value() << std::endl;
+    }
+
+    std::ifstream file(configFilename);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string str = buffer.str();
+    std::cout << str;
+
+    nlohmann::json configJson = nlohmann::json::parse(str);
+    std::cout << configJson.dump(4) << std::endl;
+
+    
 
     // The following rules are for mocking the config file and testing only.
-    testFullFolderPath();
-    testFullFilePath();
-    testExtension();
-    testFilename();
-    testFileSize();
-    testFileDate();
-    testUserFolder();
+    //testFullFolderPath();
+    //testFullFilePath();
+    //testExtension();
+    //testFilename();
+    //testFileSize();
+    //testFileDate();
+    //testUserFolder();
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() {

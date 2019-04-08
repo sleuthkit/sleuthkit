@@ -79,5 +79,8 @@
     <ClInclude Include="..\..\tools\autotools\RuleMatchResult.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tools\autotools\json.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

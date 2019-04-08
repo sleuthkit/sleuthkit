@@ -447,6 +447,7 @@
     <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tools\autotools\json.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerDateRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h" />
     <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h" />
