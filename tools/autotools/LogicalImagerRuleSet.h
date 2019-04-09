@@ -23,6 +23,7 @@
 #include "tsk/tsk_tools_i.h"
 #include "LogicalImagerRuleBase.h"
 #include "RuleMatchResult.h"
+#include "json.h"
 
 /**
 * Implement the logical imager rule set.
@@ -38,6 +39,8 @@ public:
     const std::pair<const RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
 
 private:
+    void constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue);
+
     // Internal for testing only
     void testFullFolderPath();
     void testFullFilePath();

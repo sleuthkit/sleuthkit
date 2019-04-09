@@ -27,6 +27,7 @@
 #include <sstream>
 #include <locale>
 #include <iomanip>
+#include <exception>
 
 /**
  * Convert a date time string to time_t
@@ -186,35 +187,94 @@ void LogicalImagerRuleSet::testUserFolder() {
     m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
 
+void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue) {
+    std::string description;
+    bool shouldSave;
+    bool shouldAlert;
+
+    ruleSetValue["description"].get_to(description);
+    ruleSetValue["shouldSave"].get_to(shouldSave);
+    ruleSetValue["shouldAlert"].get_to(shouldAlert);
+//    std::cout << description << "\tshouldSave=" << shouldSave << "\tshouldAlert=" << shouldAlert << std::endl;
+    RuleMatchResult *ruleMatchKey = new RuleMatchResult(description, shouldSave, shouldAlert);
+    std::vector<LogicalImagerRuleBase *> vector;
+
+    auto jsonMap = ruleSetValue.get<std::unordered_map<std::string, nlohmann::json>>();
+    for (auto ruleIter = jsonMap.begin(); ruleIter != jsonMap.end(); ++ruleIter) {
+        std::string ruleKey = ruleIter->first;
+        nlohmann::json ruleJson = ruleIter->second;
+        if (ruleKey == "extensions") {
+            std::set<std::string> extensions;
+            for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
+                std::string str;
+                valueIter.value().get_to(str);
+                extensions.insert(str);
+            }
+            LogicalImagerExtensionRule *extensionRule = new LogicalImagerExtensionRule(extensions);
+            vector.push_back(extensionRule);
+        } else if (ruleKey == "file-names") {
+            std::set<std::string> filenames;
+            for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
+                std::string str;
+                valueIter.value().get_to(str);
+                filenames.insert(str);
+            }
+            LogicalImagerFilenameRule *filenameRule = new LogicalImagerFilenameRule(filenames);
+            vector.push_back(filenameRule);
+        } else if (ruleKey == "folder-names") {
+            std::set<std::string> paths;
+            for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
+                std::string str;
+                valueIter.value().get_to(str);
+                paths.insert(str);
+            }
+            LogicalImagerPathRule *pathRule = new LogicalImagerPathRule(paths);
+            vector.push_back(pathRule);
+        } else if (ruleKey == "size-range") {
+            int sizeMin = 0;
+            int sizeMax = 0;
+            auto sizeJsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
+            for (auto iter = sizeJsonMap.begin(); iter != sizeJsonMap.end(); ++iter) {
+                if (iter->first == "min") {
+                    ruleJson["min"].get_to(sizeMin);
+                } else if (iter->first == "max") {
+                    ruleJson["max"].get_to(sizeMax);
+                }
+                else {
+                    std::cerr << "WARNING: Unsupported key: " << iter->first << std::endl;
+                }
+            }
+            LogicalImagerSizeRule *sizeRule = new LogicalImagerSizeRule(sizeMin, sizeMax);
+            vector.push_back(sizeRule);
+        }
+    }
+    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleMatchKey, vector));
+}
+
 /**
  * Construct the LogicalImagerRuleSet based on a configuration filename
  * @param configFilename Configuration filename of the rule set
  *
  */
 LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
-    // TODO: read the config yaml file and construct the m_rules map
-    auto j3 = nlohmann::json::parse("{ \"happy\": true, \"pi\": 3.141 }");
-
-    // explicit conversion to string
-    std::string s = j3.dump();    // {\"happy\":true,\"pi\":3.141}
-
-                                 // serialization with pretty printing
-                                 // pass in the amount of spaces to indent
-    std::cout << j3.dump(4) << std::endl;
-    for (auto it = j3.begin(); it != j3.end(); ++it) {
-        std::cout << it.key() << " : " << it.value() << std::endl;
-    }
-
     std::ifstream file(configFilename);
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string str = buffer.str();
-    std::cout << str;
 
+    // TODO: handle parse errors
     nlohmann::json configJson = nlohmann::json::parse(str);
-    std::cout << configJson.dump(4) << std::endl;
+//    std::cout << configJson.dump(4) << std::endl;
 
-    
+    for (auto it = configJson.begin(); it != configJson.end(); ++it) {
+        if (it.key() == "rule-set") {
+            for (auto ruleSetIter = it.value().begin(); ruleSetIter != it.value().end(); ++ruleSetIter) {
+                std::string ruleSetKey = ruleSetIter.key();
+                nlohmann::json ruleSetValue = ruleSetIter.value();
+                constructRuleSet(ruleSetKey, ruleSetValue);
+            }
+        }
+    }
 
     // The following rules are for mocking the config file and testing only.
     //testFullFolderPath();
