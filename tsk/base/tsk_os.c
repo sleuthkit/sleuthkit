@@ -10,9 +10,10 @@
 #include "tsk_base_i.h"
 #include "tsk_base.h"
 
+#ifndef HAVE_STRNLEN
+
 #include <string.h>
 
-#ifndef HAVE_STRNLEN
 size_t
 strnlen(const char* s, size_t maxlen) {
   const char* const z = memchr(s, 0, maxlen);
