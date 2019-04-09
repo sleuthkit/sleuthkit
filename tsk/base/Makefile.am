@@ -1,11 +1,26 @@
 AM_CPPFLAGS = -I../..
 
 noinst_LTLIBRARIES = libtskbase.la
-libtskbase_la_SOURCES = md5c.c mymalloc.c sha1c.c \
-    crc.c crc.h \
-    tsk_endian.c tsk_error.c tsk_list.c tsk_os.c tsk_parse.c tsk_printf.c \
-    tsk_unicode.c tsk_version.c tsk_stack.c XGetopt.c tsk_base_i.h \
-    tsk_lock.c tsk_error_win32.cpp tsk_unicode.h
+libtskbase_la_SOURCES = \
+	crc.c \
+	crc.h \
+	md5c.c \
+	mymalloc.c \
+	sha1c.c \
+	tsk_base_i.c \
+	tsk_base_i.h \
+	tsk_endian.c \
+	tsk_error.c \
+	tsk_error_win32.cpp \
+	tsk_list.c \
+	tsk_lock.c \
+	tsk_parse.c \
+	tsk_printf.c \
+	tsk_stack.c \
+	tsk_unicode.c \
+	tsk_unicode.h \
+	tsk_version.c \
+	XGetopt.c
 
 EXTRA_DIST = .indent.pro
 
