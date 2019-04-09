@@ -30,7 +30,9 @@ LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths)
     lowerCaseUserFolder = TskHelper::toLower(getUserFolder());
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
         std::string lowerCasePath = TskHelper::toLower(*it);
-        if (lowerCasePath.find(lowerCaseUserFolder) == 0) {
+        if (lowerCasePath.size() >= lowerCaseUserFolder.size() && 
+            lowerCasePath.compare(0, lowerCaseUserFolder.size(), lowerCaseUserFolder) == 0) {
+            // [USER_FOLDER] must be at the start of path
             // special case, add to regex
             std::string newPattern(lowerCasePath);
             newPattern.replace(newPattern.find(lowerCaseUserFolder), lowerCaseUserFolder.length(), userFolderRegex);
