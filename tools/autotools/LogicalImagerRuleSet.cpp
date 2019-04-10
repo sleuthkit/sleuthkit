@@ -161,7 +161,6 @@ void LogicalImagerRuleSet::testFileDate() {
     // find files newer than 2012-03-21 (midnight)
     time_t min_time = stringToTimet("2012-03-21 00:00:00");
     LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, 0);
-    vector.clear();
     vector.push_back(date_rule);
     m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
 }
@@ -195,7 +194,6 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
     ruleSetValue["description"].get_to(description);
     ruleSetValue["shouldSave"].get_to(shouldSave);
     ruleSetValue["shouldAlert"].get_to(shouldAlert);
-//    std::cout << description << "\tshouldSave=" << shouldSave << "\tshouldAlert=" << shouldAlert << std::endl;
     RuleMatchResult *ruleMatchKey = new RuleMatchResult(description, shouldSave, shouldAlert);
     std::vector<LogicalImagerRuleBase *> vector;
 
@@ -239,13 +237,41 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
                     ruleJson["min"].get_to(sizeMin);
                 } else if (iter->first == "max") {
                     ruleJson["max"].get_to(sizeMax);
-                }
-                else {
+                } else {
                     std::cerr << "WARNING: Unsupported key: " << iter->first << std::endl;
                 }
             }
             LogicalImagerSizeRule *sizeRule = new LogicalImagerSizeRule(sizeMin, sizeMax);
             vector.push_back(sizeRule);
+        } else if (ruleKey == "date-range") {
+            time_t minTime = 0;
+            time_t maxTime = 0;
+            auto sizeJsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
+            for (auto iter = sizeJsonMap.begin(); iter != sizeJsonMap.end(); ++iter) {
+                if (iter->first == "min") {
+                    std::string minTimeStr;
+                    ruleJson["min"].get_to(minTimeStr);
+                    minTime = stringToTimet(minTimeStr);
+                } else if (iter->first == "max") {
+                    std::string maxTimeStr;
+                    ruleJson["max"].get_to(maxTimeStr);
+                    maxTime = stringToTimet(maxTimeStr);
+                } else {
+                    std::cerr << "WARNING: Unsupported key: " << iter->first << std::endl;
+                }
+            }
+            LogicalImagerDateRule *dateRule = new LogicalImagerDateRule(minTime, maxTime);
+            vector.push_back(dateRule);
+        } else if (ruleKey == "full-paths") {
+            std::list<std::string> fullPaths;
+            for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
+                std::string str;
+                valueIter.value().get_to(str);
+                fullPaths.push_back(str);
+            }
+            m_fullFilePaths.first = ruleMatchKey;
+            m_fullFilePaths.second = fullPaths;
+            return;
         }
     }
     m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleMatchKey, vector));
@@ -262,8 +288,15 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
     buffer << file.rdbuf();
     std::string str = buffer.str();
 
-    // TODO: handle parse errors
-    nlohmann::json configJson = nlohmann::json::parse(str);
+    nlohmann::json configJson;
+    try {
+        configJson = nlohmann::json::parse(str);
+    }
+    catch (std::exception &e) {
+        std::cerr << "ERROR parsing configuration file " << configFilename << std::endl;
+        std::cerr << e.what() << std::endl;
+        exit(1);
+    }
 //    std::cout << configJson.dump(4) << std::endl;
 
     for (auto it = configJson.begin(); it != configJson.end(); ++it) {
