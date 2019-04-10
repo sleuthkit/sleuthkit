@@ -41,7 +41,10 @@ uint8_t TskFindFiles::handleError() {
 }
 
 time_t getLatestTime(TSK_FS_META *meta) {
-    return max(max(max(meta->atime, meta->crtime), meta->mtime), meta->ctime);
+    if (meta) {
+        return max(max(max(meta->atime, meta->crtime), meta->mtime), meta->ctime);
+    }
+    return 0;
 }
 
 std::string timeToString(time_t time) {
@@ -67,7 +70,10 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
     if (m_logicialImagerRuleSet->matches(fs_file, path)) {
         // TODO: For verification only
         fprintf(stdout, "processFile: match name=%s\tsize=%" PRId64 "\tdate=%s\tpath=%s\n", 
-            fs_file->name->name, fs_file->meta->size, timeToString(getLatestTime(fs_file->meta)).c_str(), path);
+            (fs_file->name ? fs_file->name->name : "name is null"), 
+            (fs_file->meta ? fs_file->meta->size : 0), 
+            timeToString(getLatestTime(fs_file->meta)).c_str(), 
+            path);
        return TskFindFiles::extractFile(fs_file);
     }
     return TSK_OK;
@@ -88,7 +94,7 @@ TSK_RETVAL_ENUM TskFindFiles::extractFile(TSK_FS_FILE *fs_file) {
     while (true) {
         bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
         if (bytesRead == -1) {
-            if (fs_file->meta != NULL && fs_file->meta->size == 0) {
+            if (fs_file->meta && fs_file->meta->size == 0) {
                 // ts_fs_file_read returns -1 with empty files, don't report it.
                 return TSK_OK;  
             } else {

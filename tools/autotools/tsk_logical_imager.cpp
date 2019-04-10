@@ -54,18 +54,6 @@ string toUpper(const string &srcStr) {
 }
 
 /**
-* toLower: convert string to lowercase
-* @param srcStr to convert
-* @return lowercase string
-*/
-string toLower(const string &srcStr) {
-    string outStr(srcStr);
-    std::transform(srcStr.begin(), srcStr.end(), outStr.begin(), ::tolower);
-
-    return outStr;
-}
-
-/**
 * Convert from UTF-16 to UTF-8.
 * Returns empty string on error
 */
@@ -469,7 +457,7 @@ int checkDriveForLDM(const string& driveLetter) {
             bDriveFound = true;
 
             //wcout << L"Drive: " << toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << endl;
-            if (string::npos != toLower(toNarrow(partitionType)).find("logical disk manager")) {
+            if (string::npos != TskHelper::toLower(toNarrow(partitionType)).find("logical disk manager")) {
                 std::cerr << "Found Logical Disk Manager disk for drive =   " << driveLetter << std::endl;
 
                 isLDM = 1;
@@ -789,10 +777,10 @@ main(int argc, char **argv1)
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
-    const std::vector<std::string> filePaths = ruleSet->getFilePaths();
+    const std::list<std::string> filePaths = ruleSet->getFilePaths();
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-        for (std::vector<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
+        for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
             int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
             fprintf(stdout, "Path2Inum returns %d %s for %s\n", retval, (retval == 0 && fs_file == NULL ? "duplicate" : ""), iter->c_str());
             if (retval == 0 && fs_file != NULL) {

@@ -17,6 +17,7 @@
 
 #include <string>
 #include <set>
+#include <list>
 #include <map>
 
 #include "tsk/tsk_tools_i.h"
@@ -29,13 +30,21 @@
 class LogicalImagerRuleSet
 {
 public:
-    LogicalImagerRuleSet(const std::string configFilename);
+    LogicalImagerRuleSet(const std::string &configFilename);
     ~LogicalImagerRuleSet();
 
     bool matches(TSK_FS_FILE *fs_file, const char *path) const;
-    const std::vector<std::string> getFilePaths() const;
+    const std::list<std::string> getFilePaths() const;
 
 private:
+    // Internal for testing only
+    void testFilePath();
+    void testExtension();
+    void testFilename();
+    void testFileSize();
+    void testFileDate();
+    void testUserFolder();
+
     std::map<std::string, std::vector<LogicalImagerRuleBase *>> m_rules;
-    std::vector<std::string> m_filePaths;
+    std::list<std::string> m_filePaths;
 };

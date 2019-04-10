@@ -28,7 +28,7 @@
 class LogicalImagerFilenameRule : public LogicalImagerRuleBase
 {
 public:
-    LogicalImagerFilenameRule(std::set<std::string> filenames);
+    LogicalImagerFilenameRule(const std::set<std::string> &filenames);
     ~LogicalImagerFilenameRule();
 
     bool matches(TSK_FS_FILE *fs_file, const char * /*path*/) const;
