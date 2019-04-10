@@ -31,7 +31,7 @@
 
 /**
  * Convert a date time string to time_t
- * @param datetimeStr Date time string in yyyy-mm-dd HH:MM:SS format
+ * @param datetimeStr Date time string in yyyy-mm-dd format
  * @returns time_t time_t data
  *
  */
@@ -39,7 +39,7 @@ time_t stringToTimet(const std::string datetimeStr) {
     std::tm t = {};
     std::istringstream ss(datetimeStr);
     ss.imbue(std::locale("C"));
-    ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
+    ss >> std::get_time(&t, "%Y-%m-%d");
     if (ss.fail()) {
         std::cerr << "stringToTimet: Parse failed for " << datetimeStr << std::endl;
         exit(1);
@@ -48,160 +48,40 @@ time_t stringToTimet(const std::string datetimeStr) {
     return time;
 }
 
-void LogicalImagerRuleSet::testFullFilePath() {
-    // NOTE: C++ source code containing UTF-8 string literals should be saved as "Unicode (UTF-8 without signature) - Codepage 65001"
-    // The VC++ compiler option /utf-8 should be used to specify the source code is in UTF-8 encoding.
-    // This is purely for testing only. We can revert this if UTF-8 string literals are removed from the source code.
-
-    RuleMatchResult *ruleKey = new RuleMatchResult("Full file path search", true, true);
-    std::list<std::string> filePaths;
-
-    filePaths.push_back(u8"Documents and Settings/John/My Documents/Downloads");
-
-    // File path with Chinese name in the fa_keyword_search_test.img
-    filePaths.push_back(u8"上交所与香港特许秘书公会签合作协议.doc");
-    filePaths.push_back(u8"胡锦涛.htm");
-
-    // File path with an Arabic folder name in the XP image
-    filePaths.push_back(u8"Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css");
-
-    // Test existing files, with some duplicates
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/sunset.jpg");
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/water lilies.jpg");
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/blue hills.jpg");
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/BLUE HILLS.JPG");
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/winter.jpg");
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg");
-    filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe");
-    filePaths.push_back("/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-
-    // Test invalid or file not found paths
-    filePaths.push_back("Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt");
-    filePaths.push_back("No Such Folder/No such subfolder/no-such-file.txt");
-    filePaths.push_back("No Such Folder/No such subfolder/Winter.jpg");
-    filePaths.push_back("C:/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg");
-    filePaths.push_back("Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg");
-    filePaths.push_back("Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg");
-
-    m_fullFilePaths.first = ruleKey;
-    m_fullFilePaths.second = filePaths;
+int getSize(const std::string &key, nlohmann::json ruleJson) {
+    int size;
+    ruleJson[key].get_to(size);
+    if (size < 0) {
+        throw std::logic_error("ERROR: invalid size-range " + key + ". Value must be >= 0");
+    }
+    return size;
 }
 
-void LogicalImagerRuleSet::testFullFolderPath() {
-    std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("Test folder path search", true, true);
-
-    std::string path_strs[] = { 
-        "Documents and Settings/John/My Documents",
-        "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures"
-    };
-    std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
-    LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
-    vector.push_back(path_rule);
-
-    // find all file/dir call "dirty-bomb_files"
-    std::string filename_strs[] = { "dirty-bomb_files", "جهاد_files", "hidden" };
-    std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
-    LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
-    vector.push_back(filename_rule);
-
-    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
-}
-
-void LogicalImagerRuleSet::testExtension() {
-    std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("Find all pictures smaller than 3000 bytes in the Google folder", true, true);
-
-    // find all pictures smaller than 3000 bytes in the Google folder
-    std::string extension_strs[] = { "jpg", "jpeg", "gif", "png" };
-    std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs) / sizeof(extension_strs[0]));
-    LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
-
-    std::string path_strs[] = { "Google" };
-    std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
-    LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
-    LogicalImagerSizeRule *size_rule = new LogicalImagerSizeRule(0, 3000);
-    vector.push_back(extension_rule);
-    vector.push_back(path_rule);
-    vector.push_back(size_rule);
-    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
-}
-
-void LogicalImagerRuleSet::testFilename() {
-    std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("find all 'readme.txt' and 'autoexec.bat' files", true, true);
-
-    // find all 'readme.txt' and 'autoexec.bat' files
-    std::string filename_strs[] = { "ReadMe.txt", "Autoexec.bat" };
-    std::set<std::string> filenames(filename_strs, filename_strs + sizeof(filename_strs) / sizeof(filename_strs[0]));
-    LogicalImagerFilenameRule *filename_rule = new LogicalImagerFilenameRule(filenames);
-    vector.push_back(filename_rule);
-    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
-}
-
-void LogicalImagerRuleSet::testFileSize() {
-    std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("find very large programs", false, true); // don't save, but alert
-
-    // find by file size 
-    std::string archive_strs[] = { "exe", "bin", "dll" };
-    std::set<std::string> archive_extensions(archive_strs, archive_strs + sizeof(archive_strs) / sizeof(archive_strs[0]));
-    LogicalImagerExtensionRule *archive_extension_rule = new LogicalImagerExtensionRule(archive_extensions);
-    LogicalImagerSizeRule *archive_size_rule = new LogicalImagerSizeRule(10000000, 0);
-    vector.push_back(archive_extension_rule);
-    vector.push_back(archive_size_rule);
-    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
-}
-
-void LogicalImagerRuleSet::testFileDate() {
-    std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("find files newer than 2012-03-21"); // default is save and not alert
-
-    // find files newer than 2012-03-21 (midnight)
-    time_t min_time = stringToTimet("2012-03-21 00:00:00");
-    LogicalImagerDateRule *date_rule = new LogicalImagerDateRule(min_time, 0);
-    vector.push_back(date_rule);
-    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
-}
-
-void LogicalImagerRuleSet::testUserFolder() {
-    std::vector<LogicalImagerRuleBase *> vector;
-    RuleMatchResult *ruleKey = new RuleMatchResult("find all png files under the user folder", true, true);
-
-    // find all png files under the user folder
-    std::string extension_strs[] = { "png" };
-    std::set<std::string> extensions(extension_strs, extension_strs + sizeof(extension_strs) / sizeof(extension_strs[0]));
-    LogicalImagerExtensionRule *extension_rule = new LogicalImagerExtensionRule(extensions);
-
-    std::string path_strs[] = { 
-        "[USER_FOLDER]/Documents/My Pictures/Sample Pictures/", 
-        "[USER_FOLDER]/My Documents/Downloads/", 
-        "[USER_FOLDER]/Local Settings/Application Data/Google/Chrome/" 
-        };
-    std::set<std::string> paths(path_strs, path_strs + sizeof(path_strs) / sizeof(path_strs[0]));
-    LogicalImagerPathRule *path_rule = new LogicalImagerPathRule(paths);
-    vector.push_back(extension_rule);
-    vector.push_back(path_rule);
-    m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleKey, vector));
-}
+// NOTE: C++ source code containing UTF-8 string literals should be saved as "Unicode (UTF-8 without signature) - Codepage 65001"
+// The VC++ compiler option /utf-8 should be used to specify the source code is in UTF-8 encoding.
+// This is purely for testing only. We can revert this if UTF-8 string literals are removed from the source code.
 
 void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue) {
     std::string description;
-    bool shouldSave;
-    bool shouldAlert;
+    bool shouldSave = true;
+    bool shouldAlert = false;
+    bool hasExtensions = false;
+    bool hasFileNames = false;
 
-    ruleSetValue["description"].get_to(description);
-    ruleSetValue["shouldSave"].get_to(shouldSave);
-    ruleSetValue["shouldAlert"].get_to(shouldAlert);
-    RuleMatchResult *ruleMatchKey = new RuleMatchResult(description, shouldSave, shouldAlert);
     std::vector<LogicalImagerRuleBase *> vector;
+    std::list<std::string> fullPaths;
 
     auto jsonMap = ruleSetValue.get<std::unordered_map<std::string, nlohmann::json>>();
     for (auto ruleIter = jsonMap.begin(); ruleIter != jsonMap.end(); ++ruleIter) {
         std::string ruleKey = ruleIter->first;
         nlohmann::json ruleJson = ruleIter->second;
-        if (ruleKey == "extensions") {
+        if (ruleKey == "description") {
+            ruleJson.begin().value().get_to(description);
+        } else if (ruleKey == "shouldSave") {
+            ruleJson.begin().value().get_to(shouldSave);
+        } else if (ruleKey == "shouldAlert") {
+            ruleJson.begin().value().get_to(shouldAlert);
+        } else if (ruleKey == "extensions") {
             std::set<std::string> extensions;
             for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
                 std::string str;
@@ -210,6 +90,7 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
             }
             LogicalImagerExtensionRule *extensionRule = new LogicalImagerExtensionRule(extensions);
             vector.push_back(extensionRule);
+            hasExtensions = true;
         } else if (ruleKey == "file-names") {
             std::set<std::string> filenames;
             for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
@@ -219,6 +100,7 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
             }
             LogicalImagerFilenameRule *filenameRule = new LogicalImagerFilenameRule(filenames);
             vector.push_back(filenameRule);
+            hasFileNames = true;
         } else if (ruleKey == "folder-names") {
             std::set<std::string> paths;
             for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
@@ -234,11 +116,11 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
             auto sizeJsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
             for (auto iter = sizeJsonMap.begin(); iter != sizeJsonMap.end(); ++iter) {
                 if (iter->first == "min") {
-                    ruleJson["min"].get_to(sizeMin);
+                    sizeMin = getSize("min", ruleJson);
                 } else if (iter->first == "max") {
-                    ruleJson["max"].get_to(sizeMax);
+                    sizeMax = getSize("max", ruleJson);
                 } else {
-                    std::cerr << "WARNING: Unsupported key: " << iter->first << std::endl;
+                    throw std::logic_error("ERROR: unsupported size-range key " + iter->first);
                 }
             }
             LogicalImagerSizeRule *sizeRule = new LogicalImagerSizeRule(sizeMin, sizeMax);
@@ -257,22 +139,40 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
                     ruleJson["max"].get_to(maxTimeStr);
                     maxTime = stringToTimet(maxTimeStr);
                 } else {
-                    std::cerr << "WARNING: Unsupported key: " << iter->first << std::endl;
+                    throw std::logic_error("ERROR: unsupported date-range key " + iter->first);
                 }
             }
             LogicalImagerDateRule *dateRule = new LogicalImagerDateRule(minTime, maxTime);
             vector.push_back(dateRule);
         } else if (ruleKey == "full-paths") {
-            std::list<std::string> fullPaths;
             for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
                 std::string str;
                 valueIter.value().get_to(str);
                 fullPaths.push_back(str);
             }
-            m_fullFilePaths.first = ruleMatchKey;
-            m_fullFilePaths.second = fullPaths;
-            return;
         }
+        else {
+            throw std::logic_error("ERROR: unsupported rule key " + ruleKey);
+        }
+    }
+    // Validation
+    if (description.empty()) {
+        throw std::logic_error("ERROR: description is empty");
+    }
+    // A rule should not have both extensions and file name.
+    if (hasExtensions && hasFileNames) {
+        throw std::logic_error("ERROR: a rule cannot have both extensions and file-names");
+    }
+    // A rule with full-paths cannot have other rule definitions
+    if (!fullPaths.empty() && !vector.empty()) {
+        throw std::logic_error("ERROR: a rule with full-paths cannot have other rule definitions");
+    }
+
+    RuleMatchResult *ruleMatchKey = new RuleMatchResult(description, shouldSave, shouldAlert);
+    if (!fullPaths.empty()) {
+        m_fullFilePaths.first = ruleMatchKey;
+        m_fullFilePaths.second = fullPaths;
+        return;
     }
     m_rules.insert(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleMatchKey, vector));
 }
@@ -293,30 +193,33 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
         configJson = nlohmann::json::parse(str);
     }
     catch (std::exception &e) {
-        std::cerr << "ERROR parsing configuration file " << configFilename << std::endl;
+        std::cerr << "ERROR: parsing configuration file " << configFilename << std::endl;
         std::cerr << e.what() << std::endl;
         exit(1);
     }
 //    std::cout << configJson.dump(4) << std::endl;
 
+    bool hasError = false;
     for (auto it = configJson.begin(); it != configJson.end(); ++it) {
         if (it.key() == "rule-set") {
             for (auto ruleSetIter = it.value().begin(); ruleSetIter != it.value().end(); ++ruleSetIter) {
                 std::string ruleSetKey = ruleSetIter.key();
                 nlohmann::json ruleSetValue = ruleSetIter.value();
-                constructRuleSet(ruleSetKey, ruleSetValue);
+                try {
+                    constructRuleSet(ruleSetKey, ruleSetValue);
+                }
+                catch (std::exception &e) {
+                    std::cerr << "ERROR: constructing rule " << ruleSetKey << std::endl;
+                    std::cerr << e.what() << std::endl;
+                    hasError = true;
+                }
             }
         }
     }
 
-    // The following rules are for mocking the config file and testing only.
-    //testFullFolderPath();
-    //testFullFilePath();
-    //testExtension();
-    //testFilename();
-    //testFileSize();
-    //testFileDate();
-    //testUserFolder();
+    if (hasError) {
+        exit(1);
+    }
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() {

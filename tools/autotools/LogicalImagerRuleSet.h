@@ -41,15 +41,6 @@ public:
 private:
     void constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue);
 
-    // Internal for testing only
-    void testFullFolderPath();
-    void testFullFilePath();
-    void testExtension();
-    void testFilename();
-    void testFileSize();
-    void testFileDate();
-    void testUserFolder();
-
     std::map<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>> m_rules;
     std::pair<const RuleMatchResult *, std::list<std::string>> m_fullFilePaths;
 };
