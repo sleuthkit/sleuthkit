@@ -731,6 +731,8 @@ main(int argc, char **argv1)
         exit(1);
     }
 
+    ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+
     std::wstring wImgPathName;
 
     if (!iFlagUsed) {
@@ -767,7 +769,6 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
     TskFindFiles findFiles(ruleSet, alertFileName.c_str());
 
     TskHelper::getInstance().reset();
