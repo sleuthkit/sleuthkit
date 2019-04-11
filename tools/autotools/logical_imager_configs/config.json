@@ -78,7 +78,7 @@
         "shouldSave": false,
         "shouldAlert": true,
         "date-range": {
-            "min-days": "30"
+            "min-days": 30
         }
     }
 }
