@@ -187,8 +187,7 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
 LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
     std::ifstream file(configFilename);
     if (!file) {
-        std::cerr << "ERROR: failed to open config file " << configFilename << std::endl;
-        exit(1);
+        throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
     }
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -199,12 +198,12 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
         configJson = nlohmann::json::parse(str);
     }
     catch (std::exception &e) {
-        std::cerr << "ERROR: parsing configuration file " << configFilename << std::endl;
-        std::cerr << e.what() << std::endl;
-        exit(1);
+        throw std::logic_error("ERROR: parsing configuration file " + configFilename + "\n" + e.what());
     }
 
     bool hasError = false;
+    std::string errorStr;
+    const std::string newline("\n");
     for (auto it = configJson.begin(); it != configJson.end(); ++it) {
         std::string ruleSetKey = it.key();
         nlohmann::json ruleSetValue = it.value();
@@ -212,14 +211,14 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
             constructRuleSet(ruleSetKey, ruleSetValue);
         }
         catch (std::exception &e) {
-            std::cerr << "ERROR: constructing rule set " << ruleSetKey << std::endl;
-            std::cerr << e.what() << std::endl;
+            errorStr.append("ERROR: constructing rule set " + ruleSetKey + newline);
+            errorStr.append(e.what() + newline);
             hasError = true;
         }
     }
 
     if (hasError) {
-        exit(1);
+        throw std::logic_error("ERROR: parsing configuration file " + configFilename + newline + errorStr);
     }
 }
 

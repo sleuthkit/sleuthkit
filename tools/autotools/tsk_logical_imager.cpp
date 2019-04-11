@@ -731,7 +731,12 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+    try {
+        ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        exit(1);
+    }
 
     std::wstring wImgPathName;
 
