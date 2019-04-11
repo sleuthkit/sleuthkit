@@ -186,6 +186,10 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
  */
 LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
     std::ifstream file(configFilename);
+    if (!file) {
+        std::cerr << "ERROR: failed to open config file " << configFilename << std::endl;
+        exit(1);
+    }
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string str = buffer.str();
@@ -199,7 +203,6 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
         std::cerr << e.what() << std::endl;
         exit(1);
     }
-//    std::cout << configJson.dump(4) << std::endl;
 
     bool hasError = false;
     for (auto it = configJson.begin(); it != configJson.end(); ++it) {
@@ -209,7 +212,7 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
             constructRuleSet(ruleSetKey, ruleSetValue);
         }
         catch (std::exception &e) {
-            std::cerr << "ERROR: constructing rule " << ruleSetKey << std::endl;
+            std::cerr << "ERROR: constructing rule set " << ruleSetKey << std::endl;
             std::cerr << e.what() << std::endl;
             hasError = true;
         }
