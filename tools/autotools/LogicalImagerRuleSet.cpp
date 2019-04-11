@@ -41,8 +41,7 @@ time_t stringToTimet(const std::string datetimeStr) {
     ss.imbue(std::locale("C"));
     ss >> std::get_time(&t, "%Y-%m-%d");
     if (ss.fail()) {
-        std::cerr << "stringToTimet: Parse failed for " << datetimeStr << std::endl;
-        exit(1);
+       throw std::logic_error("ERROR: Date parsing failed for " + datetimeStr);
     }
     time_t time = mktime(&t);
     return time;
