@@ -8,7 +8,6 @@
 **
 */
 
-#include <shlwapi.h>
 #include <string>
 #include <algorithm>
 #include <regex>

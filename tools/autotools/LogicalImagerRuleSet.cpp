@@ -34,6 +34,10 @@
  * @param datetimeStr Date time string in yyyy-mm-dd format
  * @returns time_t time_t data
  *
+ * NOTE: There is a known problem: std::get_time on Visual 2015 does not fail on incorrect date
+ * https://stackoverflow.com/questions/43235953/stdget-time-on-visual-2015-does-not-fail-on-incorrect-date
+ * https://social.msdn.microsoft.com/Forums/en-US/d9b650a2-424d-4ee6-b3b6-ea93cfc6cb5f/stdgettime-on-visual-2015-does-not-fail-on-incorrect-date?forum=vclanguage
+ * We have decided to ignore it as the explicit date is not going to be used. Relative days (min-days) will be used.
  */
 time_t stringToTimet(const std::string datetimeStr) {
     std::tm t = {};
@@ -47,18 +51,14 @@ time_t stringToTimet(const std::string datetimeStr) {
     return time;
 }
 
-int getSize(const std::string &key, nlohmann::json ruleJson) {
+int getPositiveInt(const std::string &key, nlohmann::json ruleJson) {
     int size;
     ruleJson[key].get_to(size);
     if (size < 0) {
-        throw std::logic_error("ERROR: invalid size-range " + key + ". Value must be >= 0");
+        throw std::logic_error("ERROR: invalid " + key + ". Value must be >= 0");
     }
     return size;
 }
-
-// NOTE: C++ source code containing UTF-8 string literals should be saved as "Unicode (UTF-8 without signature) - Codepage 65001"
-// The VC++ compiler option /utf-8 should be used to specify the source code is in UTF-8 encoding.
-// This is purely for testing only. We can revert this if UTF-8 string literals are removed from the source code.
 
 void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue) {
     std::string description;
@@ -115,9 +115,9 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
             auto sizeJsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
             for (auto iter = sizeJsonMap.begin(); iter != sizeJsonMap.end(); ++iter) {
                 if (iter->first == "min") {
-                    sizeMin = getSize("min", ruleJson);
+                    sizeMin = getPositiveInt("min", ruleJson);
                 } else if (iter->first == "max") {
-                    sizeMax = getSize("max", ruleJson);
+                    sizeMax = getPositiveInt("max", ruleJson);
                 } else {
                     throw std::logic_error("ERROR: unsupported size-range key " + iter->first);
                 }
@@ -127,6 +127,7 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
         } else if (ruleKey == "date-range") {
             time_t minTime = 0;
             time_t maxTime = 0;
+            int minDays = 0;
             auto sizeJsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
             for (auto iter = sizeJsonMap.begin(); iter != sizeJsonMap.end(); ++iter) {
                 if (iter->first == "min") {
@@ -137,11 +138,13 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
                     std::string maxTimeStr;
                     ruleJson["max"].get_to(maxTimeStr);
                     maxTime = stringToTimet(maxTimeStr);
+                } else if (iter->first == "min-days") {
+                    minDays = getPositiveInt("min-days", ruleJson);
                 } else {
                     throw std::logic_error("ERROR: unsupported date-range key " + iter->first);
                 }
             }
-            LogicalImagerDateRule *dateRule = new LogicalImagerDateRule(minTime, maxTime);
+            LogicalImagerDateRule *dateRule = new LogicalImagerDateRule(minTime, maxTime, minDays);
             vector.push_back(dateRule);
         } else if (ruleKey == "full-paths") {
             for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {

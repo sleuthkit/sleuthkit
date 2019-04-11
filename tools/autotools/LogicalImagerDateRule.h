@@ -28,7 +28,8 @@
 class LogicalImagerDateRule : public LogicalImagerRuleBase
 {
 public:
-    LogicalImagerDateRule(time_t min, time_t max);
+    LogicalImagerDateRule(time_t min, time_t max, int minDays);
+    LogicalImagerDateRule(int minDays) { m_minDays = minDays; }
     ~LogicalImagerDateRule();
 
     bool matches(TSK_FS_FILE *fs_file, const char * /*path*/) const;
@@ -38,4 +39,5 @@ private:
 
     time_t m_min;
     time_t m_max;
+    int m_minDays;
 };
