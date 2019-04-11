@@ -79,8 +79,9 @@ public:
 
     int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
 
+    static std::string TskHelper::toLower(const std::string &srcStr);
+
 private:
-    std::string toLower(const std::string &srcStr);
     std::string stripExt(const char *a_path);    // strip the extension from the given name, if any
     bool compareNames(const char *curFileName, const char *cur_dir, bool ignoreExt, TSK_FS_INFO *a_fs);
 

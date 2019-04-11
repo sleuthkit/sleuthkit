@@ -54,18 +54,6 @@ string toUpper(const string &srcStr) {
 }
 
 /**
-* toLower: convert string to lowercase
-* @param srcStr to convert
-* @return lowercase string
-*/
-string toLower(const string &srcStr) {
-    string outStr(srcStr);
-    std::transform(srcStr.begin(), srcStr.end(), outStr.begin(), ::tolower);
-
-    return outStr;
-}
-
-/**
 * Convert from UTF-16 to UTF-8.
 * Returns empty string on error
 */
@@ -469,7 +457,7 @@ int checkDriveForLDM(const string& driveLetter) {
             bDriveFound = true;
 
             //wcout << L"Drive: " << toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << endl;
-            if (string::npos != toLower(toNarrow(partitionType)).find("logical disk manager")) {
+            if (string::npos != TskHelper::toLower(toNarrow(partitionType)).find("logical disk manager")) {
                 std::cerr << "Found Logical Disk Manager disk for drive =   " << driveLetter << std::endl;
 
                 isLDM = 1;
