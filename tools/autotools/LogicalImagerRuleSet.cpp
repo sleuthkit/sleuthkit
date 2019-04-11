@@ -203,19 +203,15 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
 
     bool hasError = false;
     for (auto it = configJson.begin(); it != configJson.end(); ++it) {
-        if (it.key() == "rule-set") {
-            for (auto ruleSetIter = it.value().begin(); ruleSetIter != it.value().end(); ++ruleSetIter) {
-                std::string ruleSetKey = ruleSetIter.key();
-                nlohmann::json ruleSetValue = ruleSetIter.value();
-                try {
-                    constructRuleSet(ruleSetKey, ruleSetValue);
-                }
-                catch (std::exception &e) {
-                    std::cerr << "ERROR: constructing rule " << ruleSetKey << std::endl;
-                    std::cerr << e.what() << std::endl;
-                    hasError = true;
-                }
-            }
+        std::string ruleSetKey = it.key();
+        nlohmann::json ruleSetValue = it.value();
+        try {
+            constructRuleSet(ruleSetKey, ruleSetValue);
+        }
+        catch (std::exception &e) {
+            std::cerr << "ERROR: constructing rule " << ruleSetKey << std::endl;
+            std::cerr << e.what() << std::endl;
+            hasError = true;
         }
     }
 
