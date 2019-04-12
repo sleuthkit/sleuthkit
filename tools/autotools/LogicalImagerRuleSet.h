@@ -22,6 +22,7 @@
 
 #include "tsk/tsk_tools_i.h"
 #include "LogicalImagerRuleBase.h"
+#include "RuleMatchResult.h"
 
 /**
 * Implement the logical imager rule set.
@@ -33,18 +34,19 @@ public:
     LogicalImagerRuleSet(const std::string &configFilename);
     ~LogicalImagerRuleSet();
 
-    bool matches(TSK_FS_FILE *fs_file, const char *path) const;
-    const std::list<std::string> getFilePaths() const;
+    RuleMatchResult *matches(TSK_FS_FILE *fs_file, const char *path) const;
+    const std::pair<const RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
 
 private:
     // Internal for testing only
-    void testFilePath();
+    void testFullFolderPath();
+    void testFullFilePath();
     void testExtension();
     void testFilename();
     void testFileSize();
     void testFileDate();
     void testUserFolder();
 
-    std::map<std::string, std::vector<LogicalImagerRuleBase *>> m_rules;
-    std::list<std::string> m_filePaths;
+    std::map<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>> m_rules;
+    std::pair<const RuleMatchResult *, std::list<std::string>> m_fullFilePaths;
 };

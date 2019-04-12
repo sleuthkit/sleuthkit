@@ -28,8 +28,21 @@
  * Create the Find Files object given the Logical Imager Configuration
  * @param config LogicalImagerRuleSet to use for finding files
  */
-TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet) {
+TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet, const char *alertFilePath) {
     m_logicialImagerRuleSet = ruleSet;
+    m_alertFilePath.assign(alertFilePath);
+    m_alertFile = fopen(alertFilePath, "w");
+    if (!m_alertFile) {
+        fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilePath);
+        exit(1);
+    }
+    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
+}
+
+TskFindFiles::~TskFindFiles() {
+    if (m_alertFile) {
+        fclose(m_alertFile);
+    }
 }
 
 /**
@@ -55,6 +68,20 @@ std::string timeToString(time_t time) {
     return std::string(buffer);
 }
 
+void TskFindFiles::alert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
+    // alert file format is "extractStatus<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%d\t%s\t%s\t%s\n",
+        extractStatus,
+        matchResult->getDescription().c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
+    fprintf(stdout, "%d\t%s\t%s\t%s\n",
+        extractStatus,
+        matchResult->getDescription().c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
+}
+
 /**
 * Process a file. If the file matches a rule specified in the LogicalImagerRuleSet,
 * we collect it by reading the file content.
@@ -63,18 +90,29 @@ std::string timeToString(time_t time) {
 * @returns TSK_OK or TSK_ERR. All error must have been registered.
 */
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    // handle file only
-    if (!isFile(fs_file))
-        return TSK_OK;
-
-    if (m_logicialImagerRuleSet->matches(fs_file, path)) {
+    RuleMatchResult *matchResult = m_logicialImagerRuleSet->matches(fs_file, path);
+    if (matchResult) {
+        TSK_RETVAL_ENUM extractStatus = TSK_ERR;
+        if (matchResult->isShouldSave()) {
+            extractStatus = TskFindFiles::extractFile(fs_file);
+        }
         // TODO: For verification only
-        fprintf(stdout, "processFile: match name=%s\tsize=%" PRId64 "\tdate=%s\tpath=%s\n", 
-            (fs_file->name ? fs_file->name->name : "name is null"), 
-            (fs_file->meta ? fs_file->meta->size : 0), 
-            timeToString(getLatestTime(fs_file->meta)).c_str(), 
-            path);
-       return TskFindFiles::extractFile(fs_file);
+        //fprintf(stdout, "processFile: extract=%d description=%s save=%d alert=%d name=%s\tsize=%" PRId64 "\tdate=%s\tpath=%s\n",
+        //    (matchResult->isShouldSave() ? extractStatus : -1),
+        //    matchResult->getDescription().c_str(),
+        //    matchResult->isShouldSave(),
+        //    matchResult->isShouldAlert(),
+        //    (fs_file->name ? fs_file->name->name : "name is null"), 
+        //    (fs_file->meta ? fs_file->meta->size : 0), 
+        //    timeToString(getLatestTime(fs_file->meta)).c_str(), 
+        //    path);
+
+        if (matchResult->isShouldAlert()) {
+            alert(extractStatus, matchResult, fs_file, path);
+        }
+
+        delete matchResult;
+        return extractStatus;
     }
     return TSK_OK;
 }
@@ -98,7 +136,7 @@ TSK_RETVAL_ENUM TskFindFiles::extractFile(TSK_FS_FILE *fs_file) {
                 // ts_fs_file_read returns -1 with empty files, don't report it.
                 return TSK_OK;  
             } else {
-                fprintf(stderr, "processFile: tsk_fs_file_read returns -1\tfilename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
+                // fprintf(stderr, "processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
                 return TSK_ERR;
             }
         }

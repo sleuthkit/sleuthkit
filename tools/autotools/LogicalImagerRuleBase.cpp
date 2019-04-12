@@ -10,10 +10,8 @@
 
 #include "LogicalImagerRuleBase.h"
 
-LogicalImagerRuleBase::LogicalImagerRuleBase()
-{
+LogicalImagerRuleBase::LogicalImagerRuleBase() {
 }
 
-LogicalImagerRuleBase::~LogicalImagerRuleBase()
-{
+LogicalImagerRuleBase::~LogicalImagerRuleBase() {
 }

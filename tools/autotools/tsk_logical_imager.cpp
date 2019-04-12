@@ -748,6 +748,7 @@ main(int argc, char **argv1)
 
     string outputFileName = directory_path + "/sparse_image.vhd";
     std::wstring outputFileNameW = toWide(outputFileName);
+    string alertFileName = directory_path + "/alert.txt";
 
     if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
         fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
@@ -755,6 +756,7 @@ main(int argc, char **argv1)
     }
 
     ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+    TskFindFiles findFiles(ruleSet, alertFileName.c_str());
 
     TskHelper::getInstance().reset();
     TskHelper::getInstance().setImgInfo(img);
@@ -777,21 +779,32 @@ main(int argc, char **argv1)
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
-    const std::list<std::string> filePaths = ruleSet->getFilePaths();
+    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = ruleSet->getFullFilePaths();
+    const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
+    const std::list<std::string> filePaths = fullFilePathsRule.second;
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
             int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
-            fprintf(stdout, "Path2Inum returns %d %s for %s\n", retval, (retval == 0 && fs_file == NULL ? "duplicate" : ""), iter->c_str());
             if (retval == 0 && fs_file != NULL) {
-                (void) TskFindFiles::extractFile(fs_file);
+                TSK_RETVAL_ENUM extractStatus = TSK_ERR;
+                if (ruleConfig->isShouldSave()) {
+                    extractStatus = TskFindFiles::extractFile(fs_file);
+                }
+                if (ruleConfig->isShouldAlert()) {
+                    // create a TSK_FS_NAME for alert purpose
+                    fs_file->name = new TSK_FS_NAME();
+                    fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
+                    strcpy(fs_file->name->name, iter->c_str());
+                    findFiles.alert(extractStatus, ruleConfig, fs_file, "");
+                    free(fs_file->name->name);
+                    delete fs_file->name;
+                }
                 delete fs_file;
             }
         }
     }
     TskHelper::getInstance().reset();
-
-    TskFindFiles findFiles(ruleSet);
 
     if (findFiles.openImageHandle(img)) {
         tsk_error_print(stderr);
