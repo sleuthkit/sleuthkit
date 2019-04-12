@@ -7,7 +7,7 @@
  * Brian Carrier.
  */
 
-/* 
+/*
  * Header files for AFF4-specific data structures and functions.
  */
 
