@@ -88,11 +88,6 @@ bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path)
     }
 
     for (auto it = std::begin(m_paths); it != std::end(m_paths); ++it) {
-        if (it->find(lowerCaseUserFolder) != std::string::npos) {
-            if (matchUserFolder(*it)) {
-                return true;
-            }
-        }
         if (lowercasePath.find(*it) != std::string::npos) {
             return true;
         }
