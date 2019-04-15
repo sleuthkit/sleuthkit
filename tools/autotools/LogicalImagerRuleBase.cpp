@@ -15,3 +15,9 @@ LogicalImagerRuleBase::LogicalImagerRuleBase() {
 
 LogicalImagerRuleBase::~LogicalImagerRuleBase() {
 }
+
+void LogicalImagerRuleBase::validatePath(const std::string &path) const {
+    if (path.find("\\") != std::string::npos) {
+        throw std::logic_error("ERROR: Path cannot have backslash: " + path);
+    }
+}

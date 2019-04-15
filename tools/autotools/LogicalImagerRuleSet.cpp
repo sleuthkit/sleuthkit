@@ -184,7 +184,14 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
  * @param configFilename Configuration filename of the rule set
  *
  */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
+LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) {
+    m_alertFilePath = alertFilename;
+    m_alertFile = fopen(m_alertFilePath.c_str(), "w");
+    if (!m_alertFile) {
+        throw std::logic_error("ERROR: Failed to open alert file " + m_alertFilePath);
+    }
+    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
+
     std::ifstream file(configFilename);
     if (!file) {
         throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
@@ -223,6 +230,10 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() {
+    if (m_alertFile) {
+        fclose(m_alertFile);
+    }
+
     for (auto it = m_rules.begin(); it != m_rules.end(); ++it) {
         if (it->first)
             delete it->first;
@@ -236,7 +247,7 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet() {
  * @param path parent path to fs_file
  * @returns RuleMatchResult * if match, NULL otherwise. Caller should delete the return object.
  */
-RuleMatchResult *LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const {
+TSK_RETVAL_ENUM LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const {
     for (std::map<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
         const std::vector<LogicalImagerRuleBase *> vector = it->second;
         bool result = true;
@@ -248,13 +259,73 @@ RuleMatchResult *LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char 
             }
         }
         if (result) {
-            // all rules match, no need to apply other rules in the set
-            return new RuleMatchResult(it->first->getDescription(), it->first->isShouldSave(), it->first->isShouldAlert());
+            // all rules match
+            TSK_RETVAL_ENUM extractStatus = TSK_ERR;
+            if (it->first->isShouldSave()) {
+                extractStatus = extractFile(fs_file);
+            }
+            if (it->first->isShouldAlert()) {
+                alert(extractStatus, it->first->getDescription(), fs_file, path);
+            }
         }
     }
-    return (RuleMatchResult *) NULL;
+    return TSK_OK;
 }
 
 const std::pair<const RuleMatchResult *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {
     return m_fullFilePaths;
+}
+
+TSK_RETVAL_ENUM LogicalImagerRuleSet::processFile(TSK_FS_FILE *fs_file, const char *path) const {
+    return matches(fs_file, path);
+}
+
+/**
+* Extract a file. tsk_img_writer_create must have been called prior to this method.
+* @param fs_file File details
+* @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
+*/
+TSK_RETVAL_ENUM LogicalImagerRuleSet::extractFile(TSK_FS_FILE *fs_file) const {
+    TSK_OFF_T offset = 0;
+    TSK_OFF_T bufferLen = 16 * 1024;
+    TSK_OFF_T bytesRead;
+    TSK_OFF_T bytesReadTotal = 0;
+    char buffer[16 * 1024];
+
+    while (true) {
+        bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
+        if (bytesRead == -1) {
+            if (fs_file->meta && fs_file->meta->size == 0) {
+                // ts_fs_file_read returns -1 with empty files, don't report it.
+                return TSK_OK;
+            }
+            else {
+                // fprintf(stderr, "processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
+                return TSK_ERR;
+            }
+        }
+        offset += bytesRead;
+        if (offset >= fs_file->meta->size) {
+            break;
+        }
+    }
+    return TSK_OK;
+}
+
+void LogicalImagerRuleSet::alert(TSK_RETVAL_ENUM extractStatus, const std::string &description, TSK_FS_FILE *fs_file, const char *path) const {
+    if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
+        // Don't alert . and ..
+        return;
+    }
+    // alert file format is "extractStatus<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%d\t%s\t%s\t%s\n",
+        extractStatus,
+        description.c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
+    fprintf(stdout, "%d\t%s\t%s\t%s\n",
+        extractStatus,
+        description.c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
 }

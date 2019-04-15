@@ -28,6 +28,7 @@ LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths)
 {
     lowerCaseUserFolder = TskHelper::toLower(getUserFolder());
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
+        validatePath(*it);
         std::string lowerCasePath = TskHelper::toLower(*it);
         if (lowerCasePath.size() >= lowerCaseUserFolder.size() && 
             lowerCasePath.compare(0, lowerCaseUserFolder.size(), lowerCaseUserFolder) == 0) {
