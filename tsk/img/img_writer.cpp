@@ -570,7 +570,8 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
              * another thread running tsk_img_writer_add.
             */
             startOfBlock = i * img_writer->blockSize;
-            for(offset = startOfBlock; offset < startOfBlock + img_writer->blockSize;offset += TSK_IMG_INFO_CACHE_LEN){
+            for (offset = startOfBlock; offset < img_writer->img_info->size && offset < startOfBlock + img_writer->blockSize; 
+                offset += TSK_IMG_INFO_CACHE_LEN) {
                 if (img_writer->cancelFinish) {
                     return TSK_ERR;
                 }
