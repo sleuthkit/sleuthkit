@@ -243,9 +243,10 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet() {
 /**
  * Given a file and its path, match it using the logical imager rule set.
  * All rules in a single set must matched (ANDed)
+ * May extract and/or alert depending on the rule setting.
  * @param fs_file TSK_FS_FILE containing the filename
  * @param path parent path to fs_file
- * @returns RuleMatchResult * if match, NULL otherwise. Caller should delete the return object.
+ * @returns TSK_RETVAL_ENUM TSK_OK if match has no errors.
  */
 TSK_RETVAL_ENUM LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const {
     for (std::map<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
