@@ -841,10 +841,12 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    //if (tsk_img_writer_finish(img) == TSK_ERR) {
-    //	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-    //	// not exiting, should call tsk_img_close.
-    //}
+    if (ruleSet->getFinalizeImagerWriter()) {
+        if (tsk_img_writer_finish(img) == TSK_ERR) {
+        	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+        	// not exiting, should call tsk_img_close.
+        }
+    }
 
     if (ruleSet) {
         delete ruleSet;

@@ -38,9 +38,12 @@ public:
     RuleMatchResult *matches(TSK_FS_FILE *fs_file, const char *path) const;
     const std::pair<const RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
 
+    bool getFinalizeImagerWriter() { return m_finalizeImageWriter; }
+
 private:
     void constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue);
 
     std::map<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>> m_rules;
     std::pair<const RuleMatchResult *, std::list<std::string>> m_fullFilePaths;
+    bool m_finalizeImageWriter = false;
 };
