@@ -26,7 +26,10 @@ public:
     ~TskFindFiles();
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
     virtual uint8_t handleError();
+    void TskFindFiles::alert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path);
 
 private:
     const LogicalImagerRuleSet *m_logicialImagerRuleSet;
+    std::string m_alertFilePath;
+    FILE *m_alertFile;
 };

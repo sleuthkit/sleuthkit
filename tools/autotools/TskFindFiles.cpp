@@ -28,8 +28,21 @@
  * Create the Find Files object given the Logical Imager Configuration
  * @param config LogicalImagerRuleSet to use for finding files
  */
-TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet) {
+TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet, const char *alertFilePath) {
     m_logicialImagerRuleSet = ruleSet;
+    m_alertFilePath.assign(alertFilePath);
+    m_alertFile = fopen(alertFilePath, "w");
+    if (!m_alertFile) {
+        fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilePath);
+        exit(1);
+    }
+    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
+}
+
+TskFindFiles::~TskFindFiles() {
+    if (m_alertFile) {
+        fclose(m_alertFile);
+    }
 }
 
 TskFindFiles::~TskFindFiles() {
