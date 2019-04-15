@@ -184,8 +184,9 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
  * @param configFilename Configuration filename of the rule set
  *
  */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) {
-    m_alertFilePath = alertFilename;
+LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) :
+    m_alertFilePath(alertFilename)
+{
     m_alertFile = fopen(m_alertFilePath.c_str(), "w");
     if (!m_alertFile) {
         throw std::logic_error("ERROR: Failed to open alert file " + m_alertFilePath);
