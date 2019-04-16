@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel.timeline;
 
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.DescriptionLoD;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
@@ -105,12 +104,12 @@ public interface ArtifactEventType extends EventType {
 	EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
-	 * Bundles the per event information derived from a BlackBoard Artifact into
-	 * one object. Primarily used to have a single return value for
+	 * Bundles the event specific information derived from a BlackBoard Artifact
+	 * into one object. Primarily used to have a single return value for
 	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
 	 * BlackboardArtifact).
 	 */
-	final class EventDescriptionWithTime extends ThreeLevellEventDescription {
+	final class EventDescriptionWithTime extends ThreeLevelEventDescription {
 
 		final private long time;
 
@@ -125,6 +124,5 @@ public interface ArtifactEventType extends EventType {
 			this.time = time;
 
 		}
-
 	}
 }

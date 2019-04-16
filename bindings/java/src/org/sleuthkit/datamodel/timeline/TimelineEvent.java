@@ -143,8 +143,8 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Get the Content obj id of the file (which could be a data source) this
-	 * event is derived from.
+	 * Get the Content obj id of the "file" (which could be a data source or
+	 * other non AbstractFile ContentS) this event is derived from.
 	 *
 	 * @return the object id.
 	 */
@@ -243,10 +243,14 @@ public final class TimelineEvent {
 		return this.eventID == other.eventID;
 	}
 
-	static interface EventDescription {
+	/**
+	 * Encapsulates the potential multiple levels of description for an event in
+	 * to one object.
+	 */
+	interface EventDescription {
 
 		public static EventDescription create(String fullDescription, String medDescription, String shortDescription) {
-			return new ThreeLevellEventDescription(fullDescription, medDescription, shortDescription);
+			return new ThreeLevelEventDescription(fullDescription, medDescription, shortDescription);
 		}
 
 		public static EventDescription create(String fullDescription) {
@@ -288,6 +292,5 @@ public final class TimelineEvent {
 		 * @return The description of this event at the given level of detail.
 		 */
 		public String getDescription(DescriptionLoD lod);
-
 	}
 }

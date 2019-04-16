@@ -61,6 +61,13 @@ class EventTypes {
 
 		@Override
 		public EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+			/**
+			 * Parses the full description from db, which is the full URL, to a
+			 * EventDescription object with three levels of detail. Just ignores
+			 * the passed in medium and short descriptions which should be
+			 * empty/null anyways.
+			 *
+			 */
 			String fullDescription = fullDescriptionRaw;
 			try {
 				URI uri = new URI(fullDescription);
@@ -83,8 +90,7 @@ class EventTypes {
 
 				return TimelineEvent.EventDescription.create(fullDescription, mediumDescription, shortDescription);
 			} catch (URISyntaxException ex) {
-				//JMTODO: do we need to bother logging this?
-				Logger.getLogger(EventType.class.getName()).log(Level.WARNING, "Error parsing {0} as a URL:  Ignoring description levels.", fullDescription);
+				//There was an error parsing the description as a URL, just ignore the description levels.
 				return TimelineEvent.EventDescription.create(fullDescription);
 			}
 		}
@@ -98,7 +104,7 @@ class EventTypes {
 
 		@Override
 		public EventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
-			return getFilePathDescription(fullDescription);
+			return parseFilePathDescription(fullDescription);
 		}
 
 	}
@@ -111,11 +117,19 @@ class EventTypes {
 
 		@Override
 		public TimelineEvent.EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
-			return getFilePathDescription(fullDescriptionRaw);
+			return parseFilePathDescription(fullDescriptionRaw);
 		}
 	}
 
-	static TimelineEvent.EventDescription getFilePathDescription(String fullDescription) {
+	/**
+	 * Parse the full description from the DB, which is just the file path, into
+	 * three levels.
+	 *
+	 * @param fullDescription
+	 *
+	 * @return An EventDescription with three levels of detail.
+	 */
+	static TimelineEvent.EventDescription parseFilePathDescription(String fullDescription) {
 
 		String[] split = fullDescription.split("/");
 		String mediumDescription = Stream.of(split)
