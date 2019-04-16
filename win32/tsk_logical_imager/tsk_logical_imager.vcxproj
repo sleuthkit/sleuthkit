@@ -434,37 +434,37 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerDateRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerExtensionRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerFilenameRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerPathRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleBase.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleSet.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\RuleMatchResult.cpp" />
-    <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp" />
-    <ClCompile Include="..\..\tools\autotools\TskHelper.cpp" />
-    <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\tools\autotools\json.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerDateRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerPathRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleBase.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleSet.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h" />
-    <ClInclude Include="..\..\tools\autotools\RuleMatchResult.h" />
-    <ClInclude Include="..\..\tools\autotools\TskFindFiles.h" />
-    <ClInclude Include="..\..\tools\autotools\TskHelper.h" />
-    <ClInclude Include="..\..\tools\autotools\tsk_logical_imager.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\libtsk\libtsk.vcxproj">
       <Project>{76efc06c-1f64-4478-abe8-79832716b393}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\tools\logicalimager\json.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerDateRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerFilenameRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerPathRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerRuleBase.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerRuleSet.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerSizeRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RuleMatchResult.h" />
+    <ClInclude Include="..\..\tools\logicalimager\TskFindFiles.h" />
+    <ClInclude Include="..\..\tools\logicalimager\TskHelper.h" />
+    <ClInclude Include="..\..\tools\logicalimager\tsk_logical_imager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerDateRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerFilenameRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerPathRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerRuleBase.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerRuleSet.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerSizeRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RuleMatchResult.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\TskFindFiles.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\TskHelper.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\tsk_logical_imager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
