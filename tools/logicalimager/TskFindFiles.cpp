@@ -40,9 +40,7 @@ TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet, const char *aler
 }
 
 TskFindFiles::~TskFindFiles() {
-    if (m_alertFile) {
-        fclose(m_alertFile);
-    }
+    closeAlert();
 }
 
 /**
@@ -146,4 +144,14 @@ TSK_RETVAL_ENUM TskFindFiles::extractFile(TSK_FS_FILE *fs_file) {
         }
     }
     return TSK_OK;
+}
+
+/*
+ * Close the alert file if it is opened.
+ */
+void TskFindFiles::closeAlert() {
+    if (m_alertFile) {
+        fclose(m_alertFile);
+        m_alertFile = NULL;
+    }
 }

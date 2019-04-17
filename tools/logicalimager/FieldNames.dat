@@ -1,0 +1,70 @@
+
+/***************************************************************************
+** This data and information is proprietary to, and a valuable trade secret
+** of, Basis Technology Corp.  It is given in confidence by Basis Technology
+** and may only be used as permitted under the license agreement under which
+** it has been distributed, and in no other way.
+**
+** Copyright (c) 2015 Basis Technology Corp. All rights reserved.
+**
+** The technical data and information provided herein are provided with
+** `limited rights', and the computer software provided herein is provided
+** with `restricted rights' as those terms are defined in DAR and ASPR
+** 7-104.9(a).
+***************************************************************************/
+
+X(UNKNOWN,				"unknown"),
+
+X(ACCOUNT_TYPE,			"accountType"),
+X(ACCOUNT_STATUS,		"accountStatus"),
+X(ACCOUNT_LOCATION,		"accountLocation"),
+
+X(DATE_ACCESSED,		"dateAccessed"),	
+X(DATE_CHANGED,			"dateChanged"),	
+X(DATE_CREATED,			"dateCreated"),	
+X(DATE_MODIFIED,		"dateModified"),	
+X(DATE_LASTLOGIN,		"lastLoginDate"),
+X(DESCRIPTION,			"description"),	
+
+X(FILE_CONTENT,			"fileContent"),
+X(FILE_CONTENT_LEN,		"fileContentLength"),
+X(FILE_SIZE,            "fileSize"),
+X(IS_DELETED,           "isDeleted"),	// 
+X(IS_NAME_DELETED,      "isNameDel"),
+		 
+X(LOGIN_COUNT,			"loginCount"),	
+
+X(LOCAL_HOSTNAME,		"localHostName"),
+X(LOCAL_IP,				"localIP"),
+X(LOCAL_PORT,			"localPort"),
+
+X(NAME,					"name"),	
+X(NEXT_HOP_ADDRESS,		"nextHopAddress"),	
+
+X(PATH,					"path"),		
+X(PID,					"pid"),
+X(PPID,					"ppid"),
+X(PHYSICAL_ADDRESS,		"physicalAddress"),
+
+X(REMOTE_HOSTNAME,		"remoteHostName"),
+X(REMOTE_IP,			"remoteIP"),
+X(REMOTE_PORT,			"remotePort"),
+X(REMOTE_SHARENAME,		"remoteShareName"),
+X(REMOTE_USER,			"remoteUser"),
+X(REMOTE_DOMAIN,		"remoteDomain"),
+
+X(TIME,					"time"),
+X(STATE,				"state"),
+	  
+X(USER_ID,				"userID"),
+X(USER_DOMAIN,			"userDomain"),
+X(USER_SID,				"userSID"),
+X(USER_HOMEDIR,			"userHomeDir"),		
+X(META_TYPE,			"metaType"),
+
+X(FN_DATE_ACCESSED,		"fn_dateAccessed"),	
+X(FN_DATE_CHANGED,		"fn_dateChanged"),	
+X(FN_DATE_CREATED,		"fn_dateCreated"),	
+X(FN_DATE_MODIFIED,		"fn_dateModified"),
+	  
+			

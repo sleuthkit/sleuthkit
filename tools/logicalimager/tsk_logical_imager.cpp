@@ -32,6 +32,7 @@
 #include "TskFindFiles.h"
 #include "TskHelper.h"
 #include "tsk_logical_imager.h"
+#include "RegistryAnalyzer.h"
 
 std::wstring GetLastErrorStdStrW();
 std::string GetErrorStdStr(DWORD err);
@@ -41,47 +42,7 @@ static TSK_TCHAR *progname;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
-/**
-* toUpper: convert string to uppercase
-* @param srcStr to convert
-* @return uppercase string
-*/
-string toUpper(const string &srcStr) {
-    string outStr(srcStr);
-    std::transform(srcStr.begin(), srcStr.end(), outStr.begin(), ::toupper);
 
-    return outStr;
-}
-
-/**
-* Convert from UTF-16 to UTF-8.
-* Returns empty string on error
-*/
-string toNarrow(const std::wstring& a_utf16Str) {
-    try {
-        std::string narrow = converter.to_bytes(a_utf16Str);
-        return narrow;
-    }
-    catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        return "";
-    }
-}
-
-/**
-* Convert from UTF-8 to UTF-16.
-* Returns empty string on error
-*/
-std::wstring toWide(const string& a_utf8Str) {
-    try {
-        std::wstring wide = converter.from_bytes(a_utf8Str);
-        return wide;
-    }
-    catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        return L"";
-    }
-}
 
 /**
 * GetErrorStdStr - returns readable error message for the given error code
@@ -90,7 +51,7 @@ std::wstring toWide(const string& a_utf8Str) {
 * @returns error message string
 */
 string GetErrorStdStr(DWORD err) {
-    return toNarrow(GetErrorStdStrW(err));
+    return TskHelper::toNarrow(GetErrorStdStrW(err));
 }
 
 /**
@@ -337,7 +298,7 @@ long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLocator, IW
     if (FAILED(hres)) {
         if (WBEM_E_INVALID_NAMESPACE != hres) {
             fprintf(stderr, "wmi_init: Could not connect to namespace %s, Error = %s\n",
-                toNarrow(wmiNamespace).c_str(), GetErrorStdStr(hres).c_str());
+                TskHelper::toNarrow(wmiNamespace).c_str(), GetErrorStdStr(hres).c_str());
         }
 
         (*ppWbemLocator)->Release();
@@ -417,7 +378,7 @@ int checkDriveForLDM(const string& driveLetter) {
     int isLDM = 0;
 
     std::wstring wstrQuery = L"ASSOCIATORS OF {Win32_LogicalDisk.DeviceID='";
-    wstrQuery += toWide(driveLetter);
+    wstrQuery += TskHelper::toWide(driveLetter);
     wstrQuery += L"'} where AssocClass=Win32_LogicalDiskToPartition";
 
     // Run WMI query
@@ -457,7 +418,7 @@ int checkDriveForLDM(const string& driveLetter) {
             bDriveFound = true;
 
             //wcout << L"Drive: " << toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << endl;
-            if (string::npos != TskHelper::toLower(toNarrow(partitionType)).find("logical disk manager")) {
+            if (string::npos != TskHelper::toLower(TskHelper::toNarrow(partitionType)).find("logical disk manager")) {
                 std::cerr << "Found Logical Disk Manager disk for drive =   " << driveLetter << std::endl;
 
                 isLDM = 1;
@@ -503,7 +464,7 @@ int checkDriveForBitlocker(const string& driveLetter) {
             std::cerr << " Bitlocker is not installed." << std::endl;
             return 0;
         } else {
-            std::cerr << "Failed to connect to WMI namespace = " << toNarrow(wsBitLockerNamespace) << std::endl;
+            std::cerr << "Failed to connect to WMI namespace = " << TskHelper::toNarrow(wsBitLockerNamespace) << std::endl;
             return -1;
         }
     }
@@ -517,7 +478,7 @@ int checkDriveForBitlocker(const string& driveLetter) {
 
                                                                       // WMI query
     std::wstring wstrQuery = L"SELECT * FROM Win32_EncryptableVolume where driveletter = '";
-    wstrQuery += toWide(driveLetter);
+    wstrQuery += TskHelper::toWide(driveLetter);
     wstrQuery += L"'";
 
     // Run WMI query
@@ -720,7 +681,7 @@ main(int argc, char **argv1)
     }
 
     try {
-        ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+        ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename));
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(1);
@@ -731,7 +692,7 @@ main(int argc, char **argv1)
     if (!iFlagUsed) {
         string driveToProcess;
         if (getDriveToProcess(driveToProcess)) {
-            wImgPathName = _TSK_T("\\\\.\\") + toWide(driveToProcess);
+            wImgPathName = _TSK_T("\\\\.\\") + TskHelper::toWide(driveToProcess);
             imgPath[0] = (TSK_TCHAR *)wImgPathName.c_str();
         }
         else {
@@ -754,7 +715,7 @@ main(int argc, char **argv1)
     fprintf(stdout, "Created directory %s\n", directory_path.c_str());
 
     string outputFileName = directory_path + "/sparse_image.vhd";
-    std::wstring outputFileNameW = toWide(outputFileName);
+    std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
     string alertFileName = directory_path + "/alert.txt";
 
     if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
@@ -810,6 +771,11 @@ main(int argc, char **argv1)
             }
         }
     }
+
+    // Enumerate Users with RegistryAnalyzer
+    RegistryAnalyzer registryAnalyzer(NULL);
+    registryAnalyzer.analyzeSAMUsers();
+
     TskHelper::getInstance().reset();
 
     if (findFiles.openImageHandle(img)) {
@@ -828,6 +794,9 @@ main(int argc, char **argv1)
         // should we call findFiles.closeImage() upon error?
         exit(1);
     }
+
+    // close alert file before tsk_img_writer_finish, which may take a long time. 
+    findFiles.closeAlert();
 
     if (ruleSet->getFinalizeImagerWriter()) {
         if (tsk_img_writer_finish(img) == TSK_ERR) {

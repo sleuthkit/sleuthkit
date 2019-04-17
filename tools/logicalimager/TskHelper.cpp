@@ -17,9 +17,13 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <codecvt>
+
 #include "tsk/base/tsk_base_i.h"
 #include "tsk/fs/tsk_fs_i.h"
 #include "TskHelper.h"
+
+static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
 Path2InumCacheData::Path2InumCacheData(TSK_INUM_T a_inum, TSK_FS_DIR *a_tsk_fs_dir) {
     m_inum = a_inum;
@@ -44,6 +48,48 @@ void TskHelper::reset() {
 }
 
 /**
+* toUpper: convert string to uppercase
+* @param srcStr to convert
+* @return uppercase string
+*/
+std::string TskHelper::toUpper(const std::string &srcStr) {
+    std::string outStr(srcStr);
+    std::transform(srcStr.begin(), srcStr.end(), outStr.begin(), ::toupper);
+
+    return outStr;
+}
+
+/**
+* Convert from UTF-16 to UTF-8.
+* Returns empty string on error
+*/
+std::string TskHelper::toNarrow(const std::wstring & a_utf16Str) {
+    try {
+        std::string narrow = converter.to_bytes(a_utf16Str);
+        return narrow;
+    }
+    catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        return "";
+    }
+}
+
+/**
+* Convert from UTF-8 to UTF-16.
+* Returns empty string on error
+*/
+std::wstring TskHelper::toWide(const std::string &a_utf8Str) {
+    try {
+        std::wstring wide = converter.from_bytes(a_utf8Str);
+        return wide;
+    }
+    catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        return L"";
+    }
+}
+
+/**
 * toLower: convert string to lowercase
 * @param srcStr to convert
 * @return lowercase string
@@ -53,6 +99,13 @@ std::string TskHelper::toLower(const std::string &srcStr) {
     std::transform(srcStr.begin(), srcStr.end(), outStr.begin(), ::tolower);
 
     return outStr;
+}
+
+std::string TskHelper::intToStr(long l)
+{
+    std::stringstream ss;
+    ss << l;
+    return ss.str();
 }
 
 std::string TskHelper::stripExt(const char *a_name) {
@@ -99,7 +152,7 @@ bool TskHelper::compareNames(const char *curFileName, const char *targetFileName
 * Check if the bigStr begins with lilStr
 */
 
-bool startsWith(const std::string &bigStr, const std::string &lilStr) {
+bool TskHelper::startsWith(const std::string &bigStr, const std::string &lilStr) {
     return lilStr.length() <= bigStr.length()
         && equal(lilStr.begin(), lilStr.end(), bigStr.begin());
 }
@@ -619,4 +672,35 @@ TSK_FS_INFO *TskHelper::getFSInfo(TSK_OFF_T offset) {
 
 const std::list<TSK_FS_INFO *> TskHelper::getFSInfoList() {
     return m_FSInfoList;
+}
+
+void TskHelper::replaceAll(std::string& str, const std::string& from, const std::string& to) {
+    if (from.empty())
+        return;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
+/**
+* replaceAll - replaces all occurences of 'from' string with the 'to' string, in the given input string, starting the se\
+arch from specified position
+*
+* @param input str - input string to examine
+* @param input from - string to search for
+* @param input to -  string to replace with
+* @param input pos - starting position for search
+*
+* @returns
+*/
+void TskHelper::replaceAll(std::string& str, const std::string& from, const std::string& to, size_t pos) {
+    if (from.empty() || pos >= str.length())
+        return;
+    size_t start_pos = pos;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
 }
