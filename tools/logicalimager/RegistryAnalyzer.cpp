@@ -30,94 +30,21 @@
 
 const string LOCAL_DOMAIN = "local";
 
-RegistryAnalyzer::RegistryAnalyzer(const TSK_FS_INFO *fsInfo)
+RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
+    m_outputFilePath(outputFilePath)
 {
-    m_fsInfo = fsInfo;
+    m_outputFile = fopen(m_outputFilePath.c_str(), "w");
+    if (!m_outputFile) {
+        fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_outputFilePath.c_str());
+        exit(1);
+    }
+    fprintf(m_outputFile, "UserName\tFullName\tUserDomain\tSID\tHomeDir\tAccountType\tAdminPriv\tDateCreated\tLastLoginDate\tLastFailedLoginDate\tLastPasswordResetDate\tLoginCount\tAccountLocation\tisDisabled\taccountStatus\n");
 }
 
 RegistryAnalyzer::~RegistryAnalyzer() {
-}
-
-/* Enumerate the System registry files and save the results to
-* class member variables.
-* @returns -1 on error, 0 on success
-*/
-int RegistryAnalyzer::findSystemRegFiles(TSK_FS_INFO * a_fs_info) const {
-    const std::string SYS_REG_FILES_DIR = "/Windows/System32/config";
-
-    std::cout << "Searching for system registry files" << std::endl;
-
-    TSKFileNameInfo filenameInfo;
-    TSK_FS_FILE *fsFile;
-    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), filenameInfo, NULL, &fsFile);
-    if (retval == -1) {
-        std::cerr << "Error in finding system Registry files. System Registry files will not be analyzed. errno = " << tsk_error_get() << std::endl;
-        return -1;
+    if (m_outputFile) {
+        fclose(m_outputFile);
     }
-    else if (retval > 0) { // not found   // @@@ ACTUALLY CHECK IF IT IS #2
-        std::cout << "File System at Offset " << a_fs_info->offset << " did not have windows/system32/config folder" << std::endl;
-        return 0;
-    }
-
-    // open the directory
-    TSK_FS_DIR *fs_dir;
-    if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-        std::cerr << "Error opening windows/system32/config folder. Some System Registry files may not be analyzed." << std::endl;
-        std::cerr << "findSystemRegFiles(): tsk_fs_dir_open_meta() failed for windows/system32/config folder.  dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << std::endl;
-        return -1;
-    }
-
-    // cycle through each directory entry
-    for (size_t i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
-
-        TSK_OFF_T off = 0;
-        size_t len = 0;
-
-        // get the entry
-        const TSK_FS_NAME *fs_name;
-        if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
-            std::cerr << "Error in finding System Registry files. Some System Registry files may not be analyzed." << std::endl;
-            std::cerr << "findSystemRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << ", some System Registry files may not be analyzed." << std::endl;
-            continue;
-        }
-
-        if (((fs_name->flags & TSK_FS_META_FLAG_ALLOC) == 0) || (fs_name->type != TSK_FS_NAME_TYPE_REG)) {
-            continue;
-        }
-
-        std::string fName = fs_name->name;
-        if ((0 == _stricmp("SYSTEM", fName.c_str())) || (0 == _stricmp("SOFTWARE", fName.c_str())) ||
-            (0 == _stricmp("SECURITY", fName.c_str())) || (0 == _stricmp("SAM", fName.c_str()))) {
-
-            RegHiveType::Enum hiveType = hiveNameToType(fName);
-
-            // @@ FIX THE ERROR MSGS HERE
-            TSK_FS_FILE *fs_file;
-            if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
-                std::cerr << "findSystemRegFiles(): tsk_fs_dir_get failed for file = " << fs_file->name->name << std::endl;
-                continue;
-            }
-
-            std::cout << "findSystemRegFiles: Loading hive" << std::endl;
-            RegParser *pRegParser = new RegParser(hiveType);
-            if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
-                std::cerr << "findSystemRegFiles(): loadHive() failed for file = " << fs_file->name->name << std::endl;
-                continue;
-            }
-
-//            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, CyberTriageUtils::toNormalizedOutputPathName(SYS_REG_FILES_DIR.c_str()), hiveType, fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
-
-//            m_regSystemFiles.push_back(pRegFileInfo);
-            tsk_fs_file_close(fs_file);
-        }
-
-    } // for
-
-    tsk_fs_dir_close(fs_dir);
-
-    return 0;
 }
 
 RegHiveType::Enum RegistryAnalyzer::hiveNameToType(const string aName) const
@@ -257,7 +184,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
     }
     RegParser &aRegParser = aRegFile->getRegParser();
 
-    std::cout << "Registry: Analyzing SAM Users" << std::endl;
+    // std::cout << "Registry: Analyzing SAM Users" << std::endl;
 
     // First collect the known user names and their account creation time.  
     // Account creation time corresponds with creation of a user name key
@@ -290,6 +217,21 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
 
         rc = aRegParser.getSubKeys(wsSAMUsersKeyName, wsSubkeyNames);
         if (0 == rc) {
+
+                std::cout
+                    << "UserName" << ","
+                    << "UserDomain" << ","
+                    << "SID" << ","
+                    << "HomeDir" << ","
+                    << "AccountType" << ","
+                    << "AdminPriv" << ","
+                    << "DateCreated" << ","
+                    << "LastLoginDate" << ","
+                    << "LoginCount" << ","
+                    << "AccountLocation" << ","
+                    << "isDisabled" << ","
+                    << "accountStatus" <<
+                    std::endl;
 
             for (vector<wstring>::iterator it = wsSubkeyNames.begin(); it != wsSubkeyNames.end(); ++it) {
                 if (TskHelper::startsWith(TskHelper::toNarrow((*it)), "0000")) {
@@ -338,6 +280,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     string sDateCreated = "Unknown";
                     string sLastLoginDate;
                     string sAcctExpiryDate;
+                    string slastFailedLoginDate;
+                    string slastPWResetDate;
 
                     uint16_t loginCount = 0;
                     uint16_t  acbFlags = 0;
@@ -353,6 +297,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                         parseSAMFRecord(fRecord.getBinary(), fRecord.getValLen(), lastLoginDate, lastPWResetDate, accountExpiryDate, lastFailedLoginDate, loginCount, acbFlags);
 
                         sLastLoginDate = FiletimeToStr(lastLoginDate);
+                        slastFailedLoginDate = FiletimeToStr(lastFailedLoginDate);
+                        slastPWResetDate = FiletimeToStr(lastPWResetDate);
                         if (accountExpiryDate.dwHighDateTime != 0x7FFFFFFF) {
                             sAcctExpiryDate = FiletimeToStr(accountExpiryDate);
                         }
@@ -387,6 +333,39 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                         pUserAccount->setLoginCount(TskHelper::intToStr(loginCount));
                         pUserAccount->setAccountLocation(USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT);  // all accounts found in SAM registry are local (as opposed to Domain)
                         pUserAccount->setDisabled(accountDisabled); // from flags;
+
+                        std::cout 
+                         << pUserAccount->getUserName() << ","
+                         << pUserAccount->getUserDomain() << ","
+                         << pUserAccount->getSID() << ","
+                         << pUserAccount->getHomeDir() << ","
+                         << pUserAccount->getAccountType() << ","
+                         << pUserAccount->getAdminPriv() << ","
+                         << pUserAccount->getDateCreated() << ","
+                         << pUserAccount->getLastLoginDate() << ","
+                         << pUserAccount->getLoginCount() << ","
+                         << pUserAccount->getAccountLocationStr() << ","
+                         << pUserAccount->isDisabled() << ","
+                         << pUserAccount->getAccountStatus() <<
+                        std::endl;
+
+                        fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
+                            pUserAccount->getUserName().c_str(),
+                            TskHelper::toNarrow(wsFullName).c_str(),
+                            pUserAccount->getUserDomain().c_str(),
+                            pUserAccount->getSID().c_str(),
+                            pUserAccount->getHomeDir().c_str(),
+                            pUserAccount->getAccountType().c_str(),
+                            pUserAccount->getAdminPriv().c_str(),
+                            pUserAccount->getDateCreated().c_str(),
+                            pUserAccount->getLastLoginDate().c_str(),
+                            slastFailedLoginDate.c_str(),
+                            slastPWResetDate.c_str(),
+                            pUserAccount->getLoginCount().c_str(),
+                            pUserAccount->getAccountLocationStr().c_str(),
+                            pUserAccount->isDisabled(),
+                            pUserAccount->getAccountStatus().c_str()
+                        );
 
                         //pUserAccount->setExtractor(CTExtractor::COLLECTION_TOOL);
                         //pUserAccount->getSource().setSourceType(ItemSourceType::REGISTRY_KEY);
@@ -469,7 +448,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     size_t off;
     int len;
 
-    std::cout << "Registry: Parsing SAMV Record" << std::endl;
+    //std::cout << "Registry: Parsing SAMV Record" << std::endl;
     userName = L"";
     userFullName = L"";
     comment = L"";
@@ -543,7 +522,7 @@ int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen,
 
     FILETIME tv;
 
-    std::cout << "Registry: Parsing SAMF Record" << std::endl;
+    //std::cout << "Registry: Parsing SAMF Record" << std::endl;
 
     if (aFRecLen < 68) {
         std::cerr << "ERROR: SAMF record too short" << std::endl;

@@ -21,10 +21,9 @@
 
 class RegistryAnalyzer {
 public:
-    RegistryAnalyzer(const TSK_FS_INFO *fsInfo);
+    RegistryAnalyzer(const string &outputFilePath);
     ~RegistryAnalyzer();
 
-    int findSystemRegFiles(TSK_FS_INFO *a_fs_info) const;
     int analyzeSAMUsers() const;
 
 private:
@@ -35,5 +34,6 @@ private:
         FILETIME& lastPWResetDate, FILETIME& accountExpiryDate, FILETIME& lastFailedLoginDate,
         unsigned short& loginCount, unsigned short& acbFlags) const;
 
-    const TSK_FS_INFO *m_fsInfo;
+    std::string m_outputFilePath;
+    FILE *m_outputFile;
 };
