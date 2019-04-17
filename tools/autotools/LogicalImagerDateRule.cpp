@@ -8,15 +8,19 @@
 **
 */
 
-#include <shlwapi.h>
+//#include <shlwapi.h>
 #include <string>
 #include <algorithm>
+#include <ctime>
+#include <stdio.h>
+#include <iostream>
 
 #include "LogicalImagerDateRule.h"
 
-LogicalImagerDateRule::LogicalImagerDateRule(time_t min, time_t max) {
+LogicalImagerDateRule::LogicalImagerDateRule(time_t min, time_t max, int minDays) {
     m_min = min;
     m_max = max;
+    m_minDays = minDays;
 }
 
 LogicalImagerDateRule::~LogicalImagerDateRule()
@@ -47,6 +51,27 @@ bool LogicalImagerDateRule::matches(TSK_FS_FILE *fs_file, const char * /* path *
         return false;
 
     time_t latest_time = getLatestTime(fs_file->meta);
+
+    // m_minDays takes priority over explicit date
+    if (m_minDays) {
+        std::time_t now;
+        std::tm localTime = {0};
+
+        std::time(&now);
+        gmtime_s(&localTime, &now);
+        localTime.tm_mday -= m_minDays;
+        std::time_t daysAgo = std::mktime(&localTime);
+        if (daysAgo == -1) {
+            std::cerr << "daysAgo failed, m_minDays = " << m_minDays << std::endl;
+            return false;
+        }
+
+        if (latest_time > daysAgo)
+            return true;
+        else
+            return false;
+    }
+
     if (m_max == 0) {
         // no upper limit, check the min date
         if (latest_time > m_min)
