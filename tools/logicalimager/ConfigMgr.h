@@ -22,9 +22,7 @@
 using namespace std;
 
 class ConfigMgr {
-
 public:
-
     static const size_t FILEDATA_SIZE_THRESHOLD = 150UL * 1024UL * 1024UL;
 
     static ConfigMgr& getInstance()

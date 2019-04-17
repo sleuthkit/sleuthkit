@@ -28,6 +28,7 @@ public:
     ~CollectionConfig();
 
     // parse the CSV CLI arguments
+
     int CollectionConfig::setFromArgs(const std::string args);
 
     // string that maps the two letter CLI arguments to their type

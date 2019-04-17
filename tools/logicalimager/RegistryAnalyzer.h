@@ -28,8 +28,10 @@ public:
 
 private:
     RegHiveType::Enum hiveNameToType(const string aName) const;
-    int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, wstring& userName, 
-                        wstring& userFullName, wstring& comment, uint32_t& acctType) const;
+
+    int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, wstring& userName,
+        wstring& userFullName, wstring& comment, uint32_t& acctType) const;
+
     int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen, FILETIME& lastLoginDate,
         FILETIME& lastPWResetDate, FILETIME& accountExpiryDate, FILETIME& lastFailedLoginDate,
         unsigned short& loginCount, unsigned short& acbFlags) const;
