@@ -17,11 +17,8 @@
  * limitations under the License.
  */package org.sleuthkit.datamodel.timeline;
 
-import org.junit.After;
-import org.junit.AfterClass;
+import static java.util.Objects.isNull;
 import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sleuthkit.datamodel.timeline.TimelineFilter.EventTypeFilter;
 
@@ -29,30 +26,6 @@ import org.sleuthkit.datamodel.timeline.TimelineFilter.EventTypeFilter;
  * Test class for EventTypeFilter
  */
 public class EventTypeFilterTest {
-
-	public EventTypeFilterTest() {
-	}
-
-	@BeforeClass
-	public static void setUpClass() {
-	}
-
-	@AfterClass
-	public static void tearDownClass() {
-	}
-
-	@Before
-	public void setUp() {
-	}
-
-	@After
-	public void tearDown() {
-	}
-
-	// @Test
-	public void testDisplayName() {
-
-	}
 
 	/**
 	 * Test of getEventType method, of class EventTypeFilter.
@@ -113,7 +86,7 @@ public class EventTypeFilterTest {
 		EventTypeFilter root = new EventTypeFilter(EventType.ROOT_EVENT_TYPE);
 		EventTypeFilter root2 = new EventTypeFilter(EventType.ROOT_EVENT_TYPE);
 
-		assertFalse(root.equals(null));
+		assertFalse(isNull(root));
 		assertTrue(root.equals(root));
 		assertTrue(root.equals(root2));
 		assertTrue(root2.equals(root));

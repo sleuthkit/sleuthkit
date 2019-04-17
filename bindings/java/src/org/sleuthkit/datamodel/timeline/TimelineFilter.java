@@ -454,31 +454,29 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final RootFilter other = (RootFilter) obj;
-			if (!Objects.equals(this.knownFilter, other.knownFilter)) {
+			if (notEqual(this.knownFilter, other.knownFilter)) {
 				return false;
 			}
-			if (!Objects.equals(this.tagsFilter, other.tagsFilter)) {
+			if (notEqual(this.tagsFilter, other.tagsFilter)) {
 				return false;
 			}
-			if (!Objects.equals(this.hashFilter, other.hashFilter)) {
+			if (notEqual(this.hashFilter, other.hashFilter)) {
 				return false;
 			}
-			if (!Objects.equals(this.textFilter, other.textFilter)) {
+			if (notEqual(this.textFilter, other.textFilter)) {
 				return false;
 			}
-			if (!Objects.equals(this.typeFilter, other.typeFilter)) {
+			if (notEqual(this.typeFilter, other.typeFilter)) {
 				return false;
 			}
-			if (!Objects.equals(this.dataSourcesFilter, other.dataSourcesFilter)) {
+			if (notEqual(this.dataSourcesFilter, other.dataSourcesFilter)) {
 				return false;
 			}
-			if (!Objects.equals(this.fileTypesFilter, other.fileTypesFilter)) {
+
+			if (notEqual(this.fileTypesFilter, other.fileTypesFilter)) {
 				return false;
 			}
-			if (!Objects.equals(this.namedSubFilters, other.namedSubFilters)) {
-				return false;
-			}
-			return true;
+			return Objects.equals(this.namedSubFilters, other.namedSubFilters);
 		}
 
 	}
@@ -585,7 +583,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final CompoundFilter<?> other = (CompoundFilter<?>) obj;
-			return Objects.equals(this.getSubFilters() , other.getSubFilters());
+			return Objects.equals(this.getSubFilters(), other.getSubFilters());
 		}
 
 		@Override

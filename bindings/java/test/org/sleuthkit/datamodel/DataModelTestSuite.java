@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.sleuthkit.datamodel.timeline.RootFilterTest;
 
 /**
  *

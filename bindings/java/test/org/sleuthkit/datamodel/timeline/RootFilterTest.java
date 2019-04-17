@@ -20,11 +20,7 @@ package org.sleuthkit.datamodel.timeline;
 
 import java.util.Collections;
 import java.util.List;
-import org.junit.After;
-import org.junit.AfterClass;
 import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sleuthkit.datamodel.PublicTagName;
 import org.sleuthkit.datamodel.TagName;
@@ -36,36 +32,17 @@ import org.sleuthkit.datamodel.timeline.TimelineFilter.EventTypeFilter;
  */
 public class RootFilterTest {
 
-	public RootFilterTest() {
-	}
-
-	@BeforeClass
-	public static void setUpClass() {
-	}
-
-	@AfterClass
-	public static void tearDownClass() {
-	}
-
-	@Before
-	public void setUp() {
-	}
-
-	@After
-	public void tearDown() {
-	}
-
 	/**
 	 * Test of copyOf method, of class TimelineFilter.
 	 */
 	@Test
 	public void testCopyOf() {
 		System.out.println("copyOf");
-		TimelineFilter instance = getInstance();
+		TimelineFilter instance = getNewRootFilter();
 		assertEquals(instance, instance.copyOf());
 	}
 
-	TimelineFilter.RootFilter getInstance() {
+	TimelineFilter.RootFilter getNewRootFilter() {
 		TimelineFilter.TagsFilter tagsFilter = new TimelineFilter.TagsFilter();
 		tagsFilter.addSubFilter(new TimelineFilter.TagNameFilter(new PublicTagName(0, "test tagName", "test tag name description", TagName.HTML_COLOR.NONE, TskData.FileKnown.KNOWN)));
 		TimelineFilter.HashHitsFilter hashHitsFilter = new TimelineFilter.HashHitsFilter();
