@@ -719,6 +719,13 @@ main(int argc, char **argv1)
         exit(1);
     }
 
+    try {
+        ruleSet = new LogicalImagerRuleSet(toNarrow(configFilename));
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        exit(1);
+    }
+
     std::wstring wImgPathName;
 
     if (!iFlagUsed) {
@@ -763,7 +770,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    TskFindFiles findFiles(ruleSet);
+    TskFindFiles findFiles(ruleSet, alertFileName.c_str());
 
     TskHelper::getInstance().reset();
     TskHelper::getInstance().setImgInfo(img);
@@ -830,10 +837,12 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    //if (tsk_img_writer_finish(img) == TSK_ERR) {
-    //	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-    //	// not exiting, should call tsk_img_close.
-    //}
+    if (ruleSet->getFinalizeImagerWriter()) {
+        if (tsk_img_writer_finish(img) == TSK_ERR) {
+        	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+        	// not exiting, should call tsk_img_close.
+        }
+    }
 
     if (ruleSet) {
         delete ruleSet;

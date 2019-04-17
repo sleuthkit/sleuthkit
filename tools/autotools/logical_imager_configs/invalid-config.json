@@ -1,4 +1,6 @@
 {
+  "finalize_image_writer": false,
+  "rule-sets": {
     "invalid-date-3": {
         "description": "bad date",
         "date-range": {
@@ -24,4 +26,5 @@
         "bad-rule-key": [ "foo" ],
         "extensions": [ "jpg" ]
     }
+  }
 }

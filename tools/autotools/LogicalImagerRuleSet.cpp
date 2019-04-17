@@ -184,15 +184,7 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
  * @param configFilename Configuration filename of the rule set
  *
  */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) :
-    m_alertFilePath(alertFilename)
-{
-    m_alertFile = fopen(m_alertFilePath.c_str(), "w");
-    if (!m_alertFile) {
-        throw std::logic_error("ERROR: Failed to open alert file " + m_alertFilePath);
-    }
-    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
-
+LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
     std::ifstream file(configFilename);
     if (!file) {
         throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
@@ -212,16 +204,15 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, co
     bool hasError = false;
     std::string errorStr;
     const std::string newline("\n");
-    for (auto it = configJson.begin(); it != configJson.end(); ++it) {
-        std::string ruleSetKey = it.key();
-        nlohmann::json ruleSetValue = it.value();
-        try {
-            constructRuleSet(ruleSetKey, ruleSetValue);
-        }
-        catch (std::exception &e) {
-            errorStr.append("ERROR: constructing rule set " + ruleSetKey + newline);
-            errorStr.append(e.what() + newline);
-            hasError = true;
+    for (auto it = configJson.begin(); it != configJson.end(); it++) {
+        if (it.key() == "rule-sets") {
+            for (auto ruleSetIter = it.value().begin(); ruleSetIter != it.value().end(); ++ruleSetIter) {
+                std::string ruleSetKey = ruleSetIter.key();
+                nlohmann::json ruleSetValue = ruleSetIter.value();
+                constructRuleSet(ruleSetKey, ruleSetValue);
+            }
+        } else if (it.key() == "finalize_image_writer") {
+            it.value().get_to(m_finalizeImageWriter);
         }
     }
 
