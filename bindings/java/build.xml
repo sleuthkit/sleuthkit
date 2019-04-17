@@ -11,7 +11,7 @@
 	<import file="build-${os.family}.xml"/>
 
     <!-- Careful changing this because release-windows.pl updates it by pattern -->
-<property name="VERSION" value="4.6.5"/>
+<property name="VERSION" value="4.6.6"/>
 
 	<!-- set global properties for this build -->
 	<property name="default-jar-location" location="/usr/share/java"/>

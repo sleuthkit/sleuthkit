@@ -4459,50 +4459,17 @@ public class SleuthkitCase {
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
+		long parentId;
+		TskData.ObjectType type;
+		
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_objects WHERE obj_id = " + id + " LIMIT  1"); //NON-NLS
 			if (!rs.next()) {
 				return null;
 			}
-
-			long parentId = rs.getLong("par_obj_id"); //NON-NLS
-			final TskData.ObjectType type = TskData.ObjectType.valueOf(rs.getShort("type")); //NON-NLS
-			switch (type) {
-				case IMG:
-					content = getImageById(id);
-					frequentlyUsedContentMap.put(id, content);
-					break;
-				case VS:
-					content = getVolumeSystemById(id, parentId);
-					break;
-				case VOL:
-					content = getVolumeById(id, parentId);
-					frequentlyUsedContentMap.put(id, content);
-					break;
-				case FS:
-					content = getFileSystemById(id, parentId);
-					frequentlyUsedContentMap.put(id, content);
-					break;
-				case ABSTRACTFILE:
-					content = getAbstractFileById(id);
-
-					// Add virtual and root directories to frequently used map.
-					if (((AbstractFile) content).isVirtual() || ((AbstractFile) content).isRoot()) {
-						frequentlyUsedContentMap.put(id, content);
-					}
-					break;
-				case ARTIFACT:
-					content = getArtifactById(id);
-					break;
-				case REPORT:
-					content = getReportById(id);
-					break;
-				default:
-					throw new TskCoreException("Could not obtain Content object with ID: " + id);
-			}
-
-			return content;
+			parentId = rs.getLong("par_obj_id"); //NON-NLS
+			type = TskData.ObjectType.valueOf(rs.getShort("type")); //NON-NLS
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Content by ID.", ex);
 		} finally {
@@ -4511,6 +4478,47 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
+		
+		// Construct the object
+		switch (type) {
+			case IMG:
+				content = getImageById(id);
+				frequentlyUsedContentMap.put(id, content);
+				break;
+			case VS:
+				content = getVolumeSystemById(id, parentId);
+				break;
+			case VOL:
+				content = getVolumeById(id, parentId);
+				frequentlyUsedContentMap.put(id, content);
+				break;
+			case FS:
+				content = getFileSystemById(id, parentId);
+				frequentlyUsedContentMap.put(id, content);
+				break;
+			case ABSTRACTFILE:
+				content = getAbstractFileById(id);
+
+				// Add virtual and root directories to frequently used map.
+				// Calling isRoot() on local directories goes up the entire directory structure
+				// and they can only be the root of portable cases, so skip trying to add
+				// them to the cache.
+				if (((AbstractFile) content).isVirtual() || 
+						(( ! (content instanceof LocalDirectory)) && ((AbstractFile) content).isRoot())) {
+					frequentlyUsedContentMap.put(id, content);
+				}
+				break;
+			case ARTIFACT:
+				content = getArtifactById(id);
+				break;
+			case REPORT:
+				content = getReportById(id);
+				break;
+			default:
+				throw new TskCoreException("Could not obtain Content object with ID: " + id);
+		}
+
+		return content;
 	}
 
 	/**
@@ -5048,13 +5056,17 @@ public class SleuthkitCase {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
 
-			String parentPath = getFileParentPath(parentId, connection);
-			if (parentPath == null) {
-				parentPath = "/"; //NON-NLS
-			}
-			String parentName = getFileName(parentId, connection);
-			if (parentName != null && !parentName.isEmpty()) {
-				parentPath = parentPath + parentName + "/"; //NON-NLS
+			String parentPath;
+			Content parent = this.getAbstractFileById(parentId, connection);
+			if (parent instanceof AbstractFile) {
+				if (isRootDirectory((AbstractFile)parent, transaction)) {
+					parentPath = "/";
+				} else {
+					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
+			} else {
+				// The parent was either null or not an abstract file
+				parentPath = "/";
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
@@ -5200,14 +5212,10 @@ public class SleuthkitCase {
 			CaseDbConnection connection = transaction.getConnection();
 			AbstractFile parent = getAbstractFileById(parentId, connection);
 			String parentPath;
-			if (parent != null) {
-				if ((! hasParent(parent, transaction)) && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-					parentPath = "/";
-				} else {
-					parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
-				}
-			} else {
+			if ((parent == null) || isRootDirectory(parent, transaction)) {
 				parentPath = "/";
+			} else {
+				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			}
 
 			// Insert a row for the local directory into the tsk_objects table.
@@ -6332,7 +6340,7 @@ public class SleuthkitCase {
 			String parentPath;
 
 			if (parent instanceof AbstractFile) {
-				if ((! hasParent(parent, transaction)) && ((AbstractFile)parent).getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+				if (isRootDirectory((AbstractFile)parent, transaction)) {
 					parentPath = "/";
 				} else {
 					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
@@ -6375,34 +6383,46 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Check if the given content has a parent object.
+	 * Check whether a given AbstractFile is the "root" directory.
+	 * True if the AbstractFile either has no parent or its parent is
+	 * an image, volume, volume system, or file system.
 	 * 
-	 * @param content
-	 * @param transaction
+	 * @param file         the file to test
+	 * @param transaction  the current transaction
 	 * 
-	 * @return true if it has a parent in the tsk_objects table, false otherwise
+	 * @return             true if the file is a root directory, false otherwise
 	 * 
 	 * @throws TskCoreException 
 	 */
-	private boolean hasParent(Content content, CaseDbTransaction transaction) throws TskCoreException {
-		
+	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
 		transaction.acquireSingleUserCaseWriteLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
 		
 		try {
-			String query = String.format("SELECT par_obj_id FROM tsk_objects WHERE obj_id = %s;", content.getId());
+			String query = String.format("SELECT ParentRow.type AS parent_type, ParentRow.obj_id AS parent_object_id " + 
+				"FROM tsk_objects ParentRow JOIN tsk_objects ChildRow ON ChildRow.par_obj_id = ParentRow.obj_id " + 	
+				"WHERE ChildRow.obj_id = %s;", file.getId());
+
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery(query);
 			if (resultSet.next()) {
-				long parentId = resultSet.getLong("par_obj_id");
-				return (parentId != 0);
+				long parentId = resultSet.getLong("parent_object_id");
+				if (parentId == 0) {
+					return true;
+				}
+				int type = resultSet.getInt("parent_type");
+				return (type == TskData.ObjectType.IMG.getObjectType()
+						|| type == TskData.ObjectType.VS.getObjectType()
+						|| type == TskData.ObjectType.VOL.getObjectType()
+						|| type == TskData.ObjectType.FS.getObjectType());
+						
 			} else {
-				throw new TskCoreException(String.format("tsk_objects table is corrupt, SQL query returned no result: %s", query));
+				return true; // The file has no parent
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Failed to lookup parent of content (%s) with id %d", content.getName(), content.getId()), ex);
+			throw new TskCoreException(String.format("Failed to lookup parent of file (%s) with id %d", file.getName(), file.getId()), ex);
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
