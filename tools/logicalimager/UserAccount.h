@@ -99,7 +99,6 @@ public:
     UserAccount(std::string aUserName);
     ~UserAccount();
 
-    // Overrides
     std::string getItemJSONName() const { return "userAccount"; };
 
     void setAccountType(USER_ACCOUNT_TYPE::Enum aType) { m_accountType = aType; }
@@ -125,7 +124,6 @@ public:
     USER_ACCOUNT_LOCATION::Enum getAccountLocation() const { return m_accountLocation; };
     std::string getAccountLocationStr() const { return USER_ACCOUNT_LOCATION::String[m_accountLocation]; };
     bool isDisabled() const { return m_isDisabled; };
-
     std::string getAccountStatus() const;
 
 private:
