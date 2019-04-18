@@ -309,11 +309,11 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
 
                         userAccount.setDateCreated(sDateCreated);
                         userAccount.setLastLoginDate(sLastLoginDate); //  Fri Jan 20 17:10:41 2012 Z
-                        userAccount.setLoginCount(TskHelper::intToStr(loginCount));
+                        userAccount.setLoginCount(loginCount);
                         userAccount.setAccountLocation(USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT);  // all accounts found in SAM registry are local (as opposed to Domain)
                         userAccount.setDisabled(accountDisabled); // from flags;
 
-                        fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
+                        fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\n",
                             userAccount.getUserName().c_str(),
                             TskHelper::toNarrow(wsFullName).c_str(),
                             userAccount.getUserDomain().c_str(),
@@ -324,7 +324,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                             userAccount.getLastLoginDate().c_str(),
                             slastFailedLoginDate.c_str(),
                             slastPWResetDate.c_str(),
-                            userAccount.getLoginCount().c_str(),
+                            userAccount.getLoginCount(),
                             userAccount.getAccountLocationStr().c_str(),
                             userAccount.isDisabled(),
                             userAccount.getAccountStatus().c_str()

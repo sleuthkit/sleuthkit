@@ -16,22 +16,6 @@
 
 #include "TskHelper.h"
 
-namespace NAMEMATCH_TYPE {
-    enum Enum {
-        NMT_PREFIX,
-        NMT_SUBSTR,
-        NMT_EXACT,
-        NMT_UNKNOWN
-    };
-};
-
-namespace ACTIVITY_MODERATOR_TYPE {
-    enum Enum {
-        BAM,
-        DAM
-    };
-};
-
 namespace ERRORTYPE {
     enum Enum {
         ET_CRITICAL,
@@ -108,7 +92,7 @@ public:
     void setHomeDir(const std::string aDir) { m_userHomeDir = aDir; };
     void setDateCreated(const std::string aDateStr) { m_dateCreatedStr = aDateStr; };
     void setLastLoginDate(const std::string aDateStr) { m_lastLoginDateStr = aDateStr; };
-    void setLoginCount(const std::string aCountStr) { m_loginCountStr = aCountStr; };
+    void setLoginCount(uint16_t aCountStr) { m_loginCountStr = aCountStr; };
     void setAccountLocation(USER_ACCOUNT_LOCATION::Enum aLocn) { m_accountLocation = aLocn; };
     void setDisabled(bool a_bool) { m_isDisabled = a_bool; };
 
@@ -120,7 +104,7 @@ public:
     std::string getAdminPriv() const { return USER_ADMIN_PRIV::String[m_adminPriv]; };
     std::string getDateCreated() const { return m_dateCreatedStr; };
     std::string getLastLoginDate() const { return m_lastLoginDateStr; };
-    std::string getLoginCount() const { return m_loginCountStr; };
+    uint16_t getLoginCount() const { return m_loginCountStr; };
     USER_ACCOUNT_LOCATION::Enum getAccountLocation() const { return m_accountLocation; };
     std::string getAccountLocationStr() const { return USER_ACCOUNT_LOCATION::String[m_accountLocation]; };
     bool isDisabled() const { return m_isDisabled; };
@@ -135,7 +119,7 @@ private:
     USER_ADMIN_PRIV::Enum m_adminPriv;
     std::string m_dateCreatedStr;
     std::string m_lastLoginDateStr;
-    std::string m_loginCountStr;
+    uint16_t m_loginCountStr;
     USER_ACCOUNT_LOCATION::Enum m_accountLocation;   // local or domain
     bool m_isDisabled;
 };
