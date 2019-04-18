@@ -4,8 +4,6 @@
 #include "RegistryLoader.h"
 #include "TskHelper.h"
 
-//#include "WindowsPhase1Processor.h" // needed only for the user folder paths
-
 /** Responsible for loading and caching registry hives for the various modules that will need it. */
 
 RegistryLoader::RegistryLoader() {
