@@ -2008,6 +2008,8 @@ parse_dir_block(
             }
         }
     }
+
+    return TSK_OK;
 }
 
 /* visit the btree node (or leaf) */
@@ -2676,7 +2678,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         free(dino_buf);
 
-         if (tsk_verbose) { tsk_fprintf(stderr, "finished TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE btree traversal \n"); }
+        if (tsk_verbose) { tsk_fprintf(stderr, "finished TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE btree traversal \n"); }
     }
 
     return retval;

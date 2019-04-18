@@ -2,9 +2,6 @@
  * Contains the structures and function APIs for XFS file system support.
  */
 
-#include <map>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
