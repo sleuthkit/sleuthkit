@@ -198,12 +198,13 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
             for (std::vector<std::wstring>::iterator it = wsUserNameSubkeys.begin(); it != wsUserNameSubkeys.end(); ++it) {
                 std::wstring wsName = (*it);
                 std::wstring wsKeyName = wsSAMUserNamesKeyName + L"\\" + wsName;
-                RegKey* pUserNameSubkey = new RegKey(wsKeyName);
+                RegKey *pUserNameSubkey = new RegKey(wsKeyName);
                 if (0 == aRegParser.getKey(wsKeyName, *pUserNameSubkey)) {
                     FILETIME ft = { 0, 0 };
                     pUserNameSubkey->getModifyTime(ft);
                     acctCreationDateMap[wsName] = ft;
                 }
+                delete pUserNameSubkey;
             }
         }
         else if (-2 == rc) {
@@ -300,43 +301,34 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     if (!bError) {
 
                         // SAM is parsed first and has only local accounts. We assume none of these users already exist.
-                        UserAccount *pUserAccount = new UserAccount(sUserName);
+                        UserAccount userAccount(sUserName);
 
-                        pUserAccount->setUserDomain(LOCAL_DOMAIN);   // this is a local account
-                        pUserAccount->setAccountType(acctType);
-                        pUserAccount->setAdminPriv(acctAdminPriv);
+                        userAccount.setUserDomain(LOCAL_DOMAIN);   // this is a local account
+                        userAccount.setAccountType(acctType);
+                        userAccount.setAdminPriv(acctAdminPriv);
 
-                        pUserAccount->setDateCreated(sDateCreated);
-                        pUserAccount->setLastLoginDate(sLastLoginDate); //  Fri Jan 20 17:10:41 2012 Z
-                        pUserAccount->setLoginCount(TskHelper::intToStr(loginCount));
-                        pUserAccount->setAccountLocation(USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT);  // all accounts found in SAM registry are local (as opposed to Domain)
-                        pUserAccount->setDisabled(accountDisabled); // from flags;
+                        userAccount.setDateCreated(sDateCreated);
+                        userAccount.setLastLoginDate(sLastLoginDate); //  Fri Jan 20 17:10:41 2012 Z
+                        userAccount.setLoginCount(TskHelper::intToStr(loginCount));
+                        userAccount.setAccountLocation(USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT);  // all accounts found in SAM registry are local (as opposed to Domain)
+                        userAccount.setDisabled(accountDisabled); // from flags;
 
                         fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
-                            pUserAccount->getUserName().c_str(),
+                            userAccount.getUserName().c_str(),
                             TskHelper::toNarrow(wsFullName).c_str(),
-                            pUserAccount->getUserDomain().c_str(),
-                            pUserAccount->getHomeDir().c_str(),
-                            pUserAccount->getAccountType().c_str(),
-                            pUserAccount->getAdminPriv().c_str(),
-                            pUserAccount->getDateCreated().c_str(),
-                            pUserAccount->getLastLoginDate().c_str(),
+                            userAccount.getUserDomain().c_str(),
+                            userAccount.getHomeDir().c_str(),
+                            userAccount.getAccountType().c_str(),
+                            userAccount.getAdminPriv().c_str(),
+                            userAccount.getDateCreated().c_str(),
+                            userAccount.getLastLoginDate().c_str(),
                             slastFailedLoginDate.c_str(),
                             slastPWResetDate.c_str(),
-                            pUserAccount->getLoginCount().c_str(),
-                            pUserAccount->getAccountLocationStr().c_str(),
-                            pUserAccount->isDisabled(),
-                            pUserAccount->getAccountStatus().c_str()
+                            userAccount.getLoginCount().c_str(),
+                            userAccount.getAccountLocationStr().c_str(),
+                            userAccount.isDisabled(),
+                            userAccount.getAccountStatus().c_str()
                         );
-
-                        //pUserAccount->setExtractor(CTExtractor::COLLECTION_TOOL);
-                        //pUserAccount->getSource().setSourceType(ItemSourceType::REGISTRY_KEY);
-                        //pUserAccount->getSource().setPath(aRegFile->getPathName());
-                        //pUserAccount->getSource().setKeyName(TskHelper::toNarrow(wsSAMRIDKeyName));
-                        //pUserAccount->getSource().setValueName(TskHelper::toNarrow(wsVRecordValname));
-
-                        // Since we gather user accounts from multiple places and must be deduped, all the user accounts are reported alltogether.
-                        // TODO DataCollector::getInstance().addUserAccount(pUserAccount);
                     }
                 }
             }
