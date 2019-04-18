@@ -717,10 +717,15 @@ main(int argc, char **argv1)
     string outputFileName = directory_path + "/sparse_image.vhd";
     std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
     string alertFileName = directory_path + "/alert.txt";
-
-    if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
-        fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
-        exit(1);
+    
+    if (img->itype == TSK_IMG_TYPE_RAW) {
+        if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
+            fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
+            exit(1);
+        }
+    }
+    else {
+        fprintf(stderr, "Image is not a RAW image, sparse_image.vhd is not created\n");
     }
 
     TskFindFiles findFiles(ruleSet, alertFileName.c_str());
@@ -800,10 +805,12 @@ main(int argc, char **argv1)
     // close alert file before tsk_img_writer_finish, which may take a long time. 
     findFiles.closeAlert();
 
-    if (ruleSet->getFinalizeImagerWriter()) {
-        if (tsk_img_writer_finish(img) == TSK_ERR) {
-        	fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-        	// not exiting, should call tsk_img_close.
+    if (img->itype == TSK_IMG_TYPE_RAW) {
+        if (ruleSet->getFinalizeImagerWriter()) {
+            if (tsk_img_writer_finish(img) == TSK_ERR) {
+        	    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+        	    // not exiting, should call tsk_img_close.
+            }
         }
     }
 

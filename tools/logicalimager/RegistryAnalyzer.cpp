@@ -180,6 +180,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
     std::map<std::wstring, FILETIME> acctCreationDateMap;
     RegFileInfo *aRegFile = RegistryLoader::getInstance().getSAMHive();
     if (aRegFile == NULL) {
+        fprintf(m_outputFile, "SAM HIVE not found\n");
+        fclose(m_outputFile);
         std::cerr << "ERROR: SAM HIVE not found" << std::endl;
         return -1;
     }
@@ -352,6 +354,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         }
         rc = -1;
     }
+    fclose(m_outputFile);
     return rc;
 }
 
@@ -402,7 +405,6 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     size_t off;
     int len;
 
-    //std::cout << "Registry: Parsing SAMV Record" << std::endl;
     userName = L"";
     userFullName = L"";
     comment = L"";
@@ -446,7 +448,6 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
         }
         comment = utf16LEToWString(&pVRec[off], len);
     }
-
     return rc;
 }
 
@@ -473,10 +474,7 @@ int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen,
     FILETIME& lastPWResetDate, FILETIME& accountExpiryDate, FILETIME& lastFailedLoginDate,
     unsigned short& loginCount, unsigned short& acbFlags) const {
     int rc = 0;
-
     FILETIME tv;
-
-    //std::cout << "Registry: Parsing SAMF Record" << std::endl;
 
     if (aFRecLen < 68) {
         std::cerr << "ERROR: SAMF record too short" << std::endl;
@@ -507,9 +505,7 @@ int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen,
         lastFailedLoginDate = tv;
     }
 
-
     acbFlags = makeWORD(&pFRec[56]);
     loginCount = makeWORD(&pFRec[66]);
-
     return rc;
 }
