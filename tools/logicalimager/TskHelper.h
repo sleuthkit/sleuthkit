@@ -79,7 +79,7 @@ public:
 
     int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
 
-    static std::string toLower(const std::string &srcStr);
+    static std::string toLower      (const std::string &srcStr);
     static std::string toUpper(const std::string &srcStr);
     static std::string toNarrow(const std::wstring& a_utf16Str);
     static std::wstring toWide(const std::string& a_utf8Str);

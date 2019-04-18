@@ -65,10 +65,10 @@
     <ClInclude Include="..\..\tools\logicalimager\RegistryLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tools\logicalimager\CyberTriageDefs.h">
+    <ClInclude Include="..\..\tools\logicalimager\RegFileInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tools\logicalimager\RegFileInfo.h">
+    <ClInclude Include="..\..\tools\logicalimager\UserAccount.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -121,10 +121,10 @@
     <ClCompile Include="..\..\tools\logicalimager\RegistryLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tools\logicalimager\CyberTriageDefs.cpp">
+    <ClCompile Include="..\..\tools\logicalimager\RegFileInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tools\logicalimager\RegFileInfo.cpp">
+    <ClCompile Include="..\..\tools\logicalimager\UserAccount.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

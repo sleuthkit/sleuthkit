@@ -25,7 +25,7 @@
 #include "RegHiveType.h"
 #include "RegParser.h"
 #include "RegistryLoader.h"
-#include "CyberTriageDefs.h"
+#include "UserAccount.h"
 
 const string LOCAL_DOMAIN = "local";
 

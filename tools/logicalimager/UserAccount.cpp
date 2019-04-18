@@ -14,11 +14,9 @@
 
 #include <string>
 
-#include "CyberTriageDefs.h"
+#include "UserAccount.h"
 
-using namespace std;
-
-UserAccount::UserAccount(string aUserName) :
+UserAccount::UserAccount(std::string aUserName) :
 	m_userName(aUserName),
 	m_userDomain(""),
 	m_userHomeDir(""),
@@ -39,9 +37,9 @@ UserAccount:: ~UserAccount(void) {
  *
  * @returns - account status
  */
-string UserAccount::getAccountStatus() const {
+std::string UserAccount::getAccountStatus() const {
 
-	string accountStatus;
+	std::string accountStatus;
 
 	// For local account we know definitively if an account is enabled or disabled
 	if (USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT == m_accountLocation) {

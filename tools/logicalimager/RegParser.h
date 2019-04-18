@@ -20,42 +20,41 @@
 #include "RegKey.h"
 #include "RegVal.h"
 
-/**
- * RegParser - a registry parser that uses the Rejistry++ library to search
- * the registry for keys/values.
- */
+ /**
+  * RegParser - a registry parser that uses the Rejistry++ library to search
+  * the registry for keys/values.
+  */
 class RegParser
 {
- public:
+public:
+    RegParser(const RegHiveType::Enum aHiveType);
+    RegParser(const std::wstring& filePath);
+    ~RegParser();
 
-  RegParser(const RegHiveType::Enum aHiveType);
-  RegParser(const std::wstring& filePath);
-  ~RegParser();
+    virtual int loadHive(TSK_FS_FILE * aHiveFile, RegHiveType::Enum aHiveType);
 
-  virtual int loadHive(TSK_FS_FILE * aHiveFile, RegHiveType::Enum aHiveType);
+    // get the root key
+    virtual int getRootKey(RegKey& aKey);
 
-  // get the root key
-  virtual int getRootKey(RegKey& aKey);
+    // get the subkey for the given key name
+    virtual int getKey(const wstring& keyName, RegKey& aKey);
 
-  // get the subkey for the given key name
-  virtual int getKey(const wstring& keyName, RegKey& aKey);
+    //returns all subkeys of given key
+    virtual int getSubKeys(const wstring& keyName, vector<wstring>& subKeysList);
+    virtual int getSubKeys(const wstring& keyName, vector<RegKey *>& subKeysList);
 
-  //returns all subkeys of given key
-  virtual int getSubKeys(const wstring& keyName, vector<wstring>& subKeysList);
-  virtual int getSubKeys(const wstring& keyName, vector<RegKey *>& subKeysList);
+    // return the data for the given named value
+    virtual int getValue(const wstring& keyName, const wstring& valName, RegVal& val);
+    virtual int getValue(const RegKey * startKey, const wstring& subpathName, const wstring& valName, RegVal& val);
 
-  // return the data for the given named value
-  virtual int getValue(const wstring& keyName, const wstring& valName, RegVal& val );
-  virtual int getValue(const RegKey * startKey, const wstring& subpathName, const wstring& valName, RegVal& val );
+    // return all values for the given key
+    virtual int getValues(const wstring& keyName, vector<RegVal *>& valList);
+    virtual int getValues(const RegKey * startKey, const wstring& subpathName, vector<RegVal *>& valList);
 
-  // return all values for the given key
-  virtual int getValues(const wstring& keyName, vector<RegVal *>& valList ); 
-  virtual int getValues(const RegKey * startKey, const wstring& subpathName, vector<RegVal *>& valList ); 
+private:
+    Rejistry::RegistryHive * m_registryHive;
+    Rejistry::RegistryKey * m_rootKey;
 
- private:
-  Rejistry::RegistryHive * m_registryHive;
-  Rejistry::RegistryKey * m_rootKey;
-
-  std::vector<std::wstring> splitKeyName(const std::wstring& keyName) const;
-  const Rejistry::RegistryKey * findKey(const std::wstring& keyName, const Rejistry::RegistryKey* startingKey = NULL) const;
+    std::vector<std::wstring> splitKeyName(const std::wstring& keyName) const;
+    const Rejistry::RegistryKey * findKey(const std::wstring& keyName, const Rejistry::RegistryKey* startingKey = NULL) const;
 };

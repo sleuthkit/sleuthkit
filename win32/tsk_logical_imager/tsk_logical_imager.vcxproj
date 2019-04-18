@@ -444,7 +444,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\tools\logicalimager\CyberTriageDefs.h" />
+    <ClInclude Include="..\..\tools\logicalimager\UserAccount.h" />
     <ClInclude Include="..\..\tools\logicalimager\json.h" />
     <ClInclude Include="..\..\tools\logicalimager\LogicalImagerDateRule.h" />
     <ClInclude Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.h" />
@@ -466,7 +466,7 @@
     <ClInclude Include="..\..\tools\logicalimager\tsk_logical_imager.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\tools\logicalimager\CyberTriageDefs.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\UserAccount.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerDateRule.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerFilenameRule.cpp" />
