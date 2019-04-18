@@ -12,13 +12,6 @@
 * \file LogicalImagerRuleSet.cpp
 * Contains C++ code that creates the Logical Imager Rul Set class.
 */
-#include "LogicalImagerRuleSet.h"
-#include "LogicalImagerExtensionRule.h"
-#include "LogicalImagerPathRule.h"
-#include "LogicalImagerSizeRule.h"
-#include "LogicalImagerFilenameRule.h"
-#include "LogicalImagerDateRule.h"
-#include "json.h"
 
 #include <fstream>
 #include <iostream>
@@ -28,6 +21,14 @@
 #include <locale>
 #include <iomanip>
 #include <exception>
+
+#include "LogicalImagerRuleSet.h"
+#include "LogicalImagerExtensionRule.h"
+#include "LogicalImagerPathRule.h"
+#include "LogicalImagerSizeRule.h"
+#include "LogicalImagerFilenameRule.h"
+#include "LogicalImagerDateRule.h"
+#include "json.h"
 
 /**
  * Convert a date time string to time_t

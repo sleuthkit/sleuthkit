@@ -22,7 +22,7 @@ RegParser::RegParser(const RegHiveType::Enum aHiveType)
     : m_registryHive(NULL), m_rootKey(NULL) {
 }
 
-RegParser::RegParser(const std::wstring& filePath) {
+RegParser::RegParser(const std::wstring &filePath) {
     m_registryHive = new RegistryHiveFile(filePath);
     m_rootKey = m_registryHive->getRoot();
 }
@@ -42,7 +42,7 @@ RegParser::~RegParser() {
 /**
  * @returns -1 on error
  */
-int RegParser::loadHive(TSK_FS_FILE * aHiveFile, RegHiveType::Enum aHiveType) {
+int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     if (aHiveFile == NULL) {
         std::string errMsg = "Null pointer passed to RegParser::loadHive.";
         std::string details = "loadHive() failed.";
@@ -98,7 +98,7 @@ int RegParser::loadHive(TSK_FS_FILE * aHiveFile, RegHiveType::Enum aHiveType) {
     return 0;
 }
 
-int RegParser::getRootKey(RegKey& aKey) {
+int RegParser::getRootKey(RegKey &aKey) {
     aKey.initialize(m_rootKey);
     return 0;
 }
@@ -120,8 +120,8 @@ int RegParser::getRootKey(RegKey& aKey) {
  *      -1 if the key was not found.
  *      -2 if there was an error getting the key.
  */
-int RegParser::getKey(const std::wstring& keyName, RegKey& aKey) {
-    const RegistryKey * key = NULL;
+int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
+    const RegistryKey *key = NULL;
 
     try {
         key = findKey(keyName);
@@ -152,7 +152,7 @@ int RegParser::getKey(const std::wstring& keyName, RegKey& aKey) {
  *      -1 if the key is not found.
  *      -2 if there was an error getting the key.
  */
-int RegParser::getSubKeys(const std::wstring& keyName, std::vector<std::wstring>& subKeyNamesList) {
+int RegParser::getSubKeys(const std::wstring &keyName, std::vector<std::wstring> &subKeyNamesList) {
     try {
         std::auto_ptr<RegistryKey const> key(findKey(keyName));
 
@@ -192,7 +192,7 @@ int RegParser::getSubKeys(const std::wstring& keyName, std::vector<std::wstring>
  *      -1 if the key is not found.
  *      -2 if there was an error getting the key.
  */
-int RegParser::getSubKeys(const std::wstring& keyName, std::vector<RegKey*>& subKeysList) {
+int RegParser::getSubKeys(const std::wstring &keyName, std::vector<RegKey*> &subKeysList) {
     try {
         std::auto_ptr<RegistryKey const> key(findKey(keyName));
 
@@ -219,7 +219,6 @@ int RegParser::getSubKeys(const std::wstring& keyName, std::vector<RegKey*>& sub
     catch (...) {
         return -2;
     }
-
     return 0;
 }
 
@@ -237,10 +236,10 @@ int RegParser::getSubKeys(const std::wstring& keyName, std::vector<RegKey*>& sub
  *      -1 if the key/value was not found.
  *      -2 if there was an error getting the key/value.
  */
-int RegParser::getValue(const std::wstring& keyName, const std::wstring& valName, RegVal& val) {
+int RegParser::getValue(const std::wstring &keyName, const std::wstring &valName, RegVal &val) {
     try {
         std::auto_ptr<RegistryKey const> key(findKey(keyName));
-        RegistryValue * value = key->getValue(valName);
+        RegistryValue *value = key->getValue(valName);
         val.initialize(value);
     }
     catch (Rejistry::NoSuchElementException&) {
@@ -272,14 +271,14 @@ int RegParser::getValue(const std::wstring& keyName, const std::wstring& valName
  *      -1 if the key/value was not found.
  *      -2 if there was an error getting the key/value.
  */
-int RegParser::getValue(const RegKey * startKey, const std::wstring& subpathName, const std::wstring& valName, RegVal& val) {
+int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName, const std::wstring &valName, RegVal &val) {
     if (NULL == startKey) {
         return -1;
     }
 
     try {
         std::auto_ptr<RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
-        RegistryValue * value = key->getValue(valName);
+        RegistryValue *value = key->getValue(valName);
         val.initialize(value);
     }
     catch (Rejistry::NoSuchElementException&) {
@@ -306,7 +305,7 @@ int RegParser::getValue(const RegKey * startKey, const std::wstring& subpathName
 *      -1 if the key was not found.
 *      -2 if there was an error getting the key.
 */
-int RegParser::getValues(const std::wstring& keyName, std::vector<RegVal *>& valList) {
+int RegParser::getValues(const std::wstring &keyName, std::vector<RegVal *> &valList) {
     try {
         std::auto_ptr<RegistryKey const> key(findKey(keyName));
 
@@ -331,7 +330,6 @@ int RegParser::getValues(const std::wstring& keyName, std::vector<RegVal *>& val
     catch (...) {
         return -2;
     }
-
     return 0;
 }
 
@@ -348,7 +346,7 @@ int RegParser::getValues(const std::wstring& keyName, std::vector<RegVal *>& val
 *      -1 if the key was not found.
 *      -2 if there was an error getting the key.
 */
-int RegParser::getValues(const RegKey * startKey, const std::wstring& subpathName, std::vector<RegVal *>& valList) {
+int RegParser::getValues(const RegKey *startKey, const std::wstring &subpathName, std::vector<RegVal *> &valList) {
     if (NULL == startKey) {
         return -1;
     }
@@ -377,7 +375,6 @@ int RegParser::getValues(const RegKey * startKey, const std::wstring& subpathNam
     catch (...) {
         return -2;
     }
-
     return 0;
 }
 
@@ -391,7 +388,7 @@ int RegParser::getValues(const RegKey * startKey, const std::wstring& subpathNam
 * @throws Rejistry::RegistryParseException if there was an error getting
 * the key.
 */
-const RegistryKey * RegParser::findKey(const std::wstring& keyName, const RegistryKey * startingKey) const {
+const RegistryKey *RegParser::findKey(const std::wstring &keyName, const RegistryKey *startingKey) const {
 
     if (keyName == m_rootKey->getName()) {
         return new RegistryKey(*m_rootKey);
@@ -399,12 +396,12 @@ const RegistryKey * RegParser::findKey(const std::wstring& keyName, const Regist
 
     std::vector<std::wstring> keyElements = splitKeyName(keyName);
     std::vector<std::wstring>::iterator keyIter = keyElements.begin();
-    const RegistryKey * currentKey = startingKey == NULL ? m_rootKey : startingKey;
+    const RegistryKey *currentKey = startingKey == NULL ? m_rootKey : startingKey;
 
     // Navigate our way down the tree looking to locate the desired key.
     for (; keyIter != keyElements.end(); ++keyIter) {
         try {
-            RegistryKey * nextKey = currentKey->getSubkey((*keyIter));
+            RegistryKey *nextKey = currentKey->getSubkey((*keyIter));
             if (currentKey != m_rootKey && currentKey != startingKey) {
                 // Free the key we just searched (as long as its not the root or the starting key)
                 delete currentKey;
@@ -435,7 +432,7 @@ const RegistryKey * RegParser::findKey(const std::wstring& keyName, const Regist
  * @param input keyName The key to split.
  * @returns The split key elements as a vector of strings.
  */
-std::vector<std::wstring> RegParser::splitKeyName(const std::wstring& keyName) const {
+std::vector<std::wstring> RegParser::splitKeyName(const std::wstring &keyName) const {
     std::vector<std::wstring> keys;
     size_t start = 0;
     size_t end = 0;
@@ -453,6 +450,5 @@ std::vector<std::wstring> RegParser::splitKeyName(const std::wstring& keyName) c
         keys.push_back(std::wstring(&keyName[start], &keyName[end]));
         start = end + 1;
     }
-
     return keys;
 }

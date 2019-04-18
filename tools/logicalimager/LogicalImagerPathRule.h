@@ -10,18 +10,18 @@
 
 /**
 * \file LogicalImagerPathRule.h
-* Contains the base class definitions for the Logicial Imager Rule.
+* Contains the class definitions for the Logicial Imager Path Rule.
 */
 
 #pragma once
-
-#include "tsk/tsk_tools_i.h"
-#include "LogicalImagerRuleBase.h"
 
 #include <string>
 #include <set>
 #include <regex>
 #include <list>
+
+#include "tsk/tsk_tools_i.h"
+#include "LogicalImagerRuleBase.h"
 
 /**
 * Implement the logical imager pathname rule.

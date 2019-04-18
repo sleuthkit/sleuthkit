@@ -31,12 +31,12 @@ public:
 private:
     RegHiveType::Enum hiveNameToType(const std::string aName) const;
 
-    int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring& userName,
-        std::wstring& userFullName, std::wstring& comment, uint32_t& acctType) const;
+    int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring &userName,
+        std::wstring &userFullName, std::wstring &comment, uint32_t &acctType) const;
 
-    int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen, FILETIME& lastLoginDate,
-        FILETIME& lastPWResetDate, FILETIME& accountExpiryDate, FILETIME& lastFailedLoginDate,
-        unsigned short& loginCount, unsigned short& acbFlags) const;
+    int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen, FILETIME &lastLoginDate,
+        FILETIME &lastPWResetDate, FILETIME &accountExpiryDate, FILETIME &lastFailedLoginDate,
+        unsigned short &loginCount, unsigned short &acbFlags) const;
 
     std::string m_outputFilePath;
     FILE *m_outputFile;

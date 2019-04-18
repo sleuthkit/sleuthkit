@@ -12,7 +12,6 @@
 ** 7-104.9(a).
 ***************************************************************************/
 
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -109,7 +108,6 @@ std::string TskHelper::intToStr(long l)
 }
 
 std::string TskHelper::stripExt(const char *a_name) {
-
     std::string nameNoExt;
     std::string nameStr = std::string(a_name);
 
@@ -685,8 +683,7 @@ void TskHelper::replaceAll(std::string& str, const std::string& from, const std:
 }
 
 /**
-* replaceAll - replaces all occurences of 'from' string with the 'to' string, in the given input string, starting the se\
-arch from specified position
+* replaceAll - replaces all occurences of 'from' string with the 'to' string, in the given input string, starting the search from specified position
 *
 * @param input str - input string to examine
 * @param input from - string to search for

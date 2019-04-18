@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string>
+
 #include "tsk/auto/tsk_auto.h"
 #include "RegParser.h"
 #include "RegHiveType.h"
@@ -54,5 +55,5 @@ private:
 
 class CompareRegfileType {
 public:
-    bool operator()(RegFileInfo * lhs, RegFileInfo * rhs) { return lhs->getHiveType() < rhs->getHiveType(); }
+    bool operator()(RegFileInfo *lhs, RegFileInfo *rhs) { return lhs->getHiveType() < rhs->getHiveType(); }
 };

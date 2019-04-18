@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+
 #include "RegistryLoader.h"
 #include "TskHelper.h"
 
@@ -15,8 +16,7 @@ RegistryLoader::~RegistryLoader() {
 }
 
 // free the registry hives loaded into memory. 
-void RegistryLoader::freeHives()
-{
+void RegistryLoader::freeHives() {
     for (auto itr = m_regSystemFiles.begin(); itr != m_regSystemFiles.end(); itr++) {
         RegFileInfo *regFile = (*itr);
         delete regFile;
@@ -46,8 +46,7 @@ void RegistryLoader::freeHives()
 * @param input aHostName hostname to resolve
 * @returns FQDN if success, original hostname if the name cannot be resolved.
 */
-std::string getFQDN(const std::string& aHostName)
-{
+std::string getFQDN(const std::string &aHostName) {
     std::string sFQDN = aHostName;
     return sFQDN;
 }
@@ -84,7 +83,6 @@ std::string toNormalizedOutputPathName(const std::string &aPath) {
                                                         // resolve UNC hostname to FQDN                                                                          
         size_t secondSlashPos = pathNameNoDrive.find_first_of("/", 2); // look for / after the hostname          
         if (std::string::npos != secondSlashPos) {
-
             std::string hostname = pathNameNoDrive.substr(2, secondSlashPos - 2);
             std::string targetPath = pathNameNoDrive.substr(secondSlashPos);
             std::string hostFQDN = getFQDN(hostname);
@@ -97,7 +95,6 @@ std::string toNormalizedOutputPathName(const std::string &aPath) {
 
             pathNameNoDrive = "//" + hostFQDN;
         }
-
         return pathNameNoDrive;
     }
 
@@ -112,12 +109,10 @@ std::string toNormalizedOutputPathName(const std::string &aPath) {
     }
 
     TskHelper::replaceAll(pathNameNoDrive, "//", "/");         // fix any redundant slashes                                     
-
     return pathNameNoDrive;
 }
 
-RegFileInfo *RegistryLoader::getSAMHive()
-{
+RegFileInfo *RegistryLoader::getSAMHive() {
     loadSystemHives();
     for (auto itr = m_regSystemFiles.begin(); itr != m_regSystemFiles.end(); itr++) {
         RegFileInfo *regFile = (*itr);
@@ -128,8 +123,7 @@ RegFileInfo *RegistryLoader::getSAMHive()
     return NULL;
 }
 
-RegFileInfo *RegistryLoader::getSystemHive()
-{
+RegFileInfo *RegistryLoader::getSystemHive() {
     loadSystemHives();
     for (auto itr = m_regSystemFiles.begin(); itr != m_regSystemFiles.end(); itr++) {
         RegFileInfo *regFile = (*itr);
@@ -140,8 +134,7 @@ RegFileInfo *RegistryLoader::getSystemHive()
     return NULL;
 }
 
-RegFileInfo *RegistryLoader::getSoftwareHive()
-{
+RegFileInfo *RegistryLoader::getSoftwareHive() {
     loadSystemHives();
     for (auto itr = m_regSystemFiles.begin(); itr != m_regSystemFiles.end(); itr++) {
         RegFileInfo *regFile = (*itr);
@@ -152,8 +145,7 @@ RegFileInfo *RegistryLoader::getSoftwareHive()
     return NULL;
 }
 
-RegFileInfo *RegistryLoader::getSecurityHive()
-{
+RegFileInfo *RegistryLoader::getSecurityHive() {
     loadSystemHives();
     for (auto itr = m_regSystemFiles.begin(); itr != m_regSystemFiles.end(); itr++) {
         RegFileInfo *regFile = (*itr);
@@ -164,21 +156,18 @@ RegFileInfo *RegistryLoader::getSecurityHive()
     return NULL;
 }
 
-std::list<RegFileInfo *>RegistryLoader::getUsrClassHives()
-{
+std::list<RegFileInfo *>RegistryLoader::getUsrClassHives() {
     loadUserHives();
     return m_regUsrClassFiles;
 }
 
-std::list<RegFileInfo *>RegistryLoader::getNtUserHives()
-{
+std::list<RegFileInfo *>RegistryLoader::getNtUserHives() {
     loadUserHives();
     return m_regNtUserFiles;
 }
 
 // lazy loading method for hives in system32
-void RegistryLoader::loadSystemHives()
-{
+void RegistryLoader::loadSystemHives() {
     if (m_sysHivesLoaded)
         return;
 
@@ -194,8 +183,7 @@ void RegistryLoader::loadSystemHives()
 }
 
 // lazy loading method for hives in user folders
-void RegistryLoader::loadUserHives()
-{
+void RegistryLoader::loadUserHives() {
     if (m_userHivesLoaded)
         return;
 
@@ -212,7 +200,7 @@ void RegistryLoader::loadUserHives()
  * class member variables.
  * @returns -1 on error, 0 on success
  */
-int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
+int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
     const std::string SYS_REG_FILES_DIR = "/Windows/System32/config";
 
     //JSONWriter::getInstance().writeProgressRecord("Searching for system registry files");
@@ -294,11 +282,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
             m_regSystemFiles.push_back(pRegFileInfo);
             tsk_fs_file_close(fs_file);
         }
-
     } // for
-
     tsk_fs_dir_close(fs_dir);
-
     return 0;
 }
 
@@ -306,7 +291,7 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
  * results are saved to class member variables.
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info) {
+int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info) {
     //JSONWriter::getInstance().writeProgressRecord("Searching for user registry files");
 
     const std::string XP_USER_ROOT_DIR = "/Documents and Settings";
@@ -324,8 +309,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info) {
  * @returns -1 on error, 0 on success (NOTE THERE IS A BUG IN THE CODE)
  */
 
-int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const std::string a_starting_dir) {
-
+int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string a_starting_dir) {
     TSK_FS_DIR *fs_dir;
     TSKFileNameInfo filenameInfo;
     TSK_FS_FILE *fsFile;
@@ -378,10 +362,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const std::string 
                 }
             }
         }
-
         tsk_fs_file_close(fs_file);
     } // for
-
     return retval;
 }
 
@@ -393,7 +375,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const std::string 
  * @param aUserDirName Name of user for folder
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T a_dir_inum, const std::string& a_userFolderPath, const std::string aUserDirName) {
+int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a_dir_inum, const std::string &a_userFolderPath, const std::string aUserDirName) {
     TSK_FS_DIR *fs_dir;
 
     // 1. open the directory
@@ -470,7 +452,6 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T 
             tsk_fs_file_close(fs_file);
         }
     } // for
-
     tsk_fs_dir_close(fs_dir);
     return 0;
 }
@@ -481,7 +462,7 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T 
  * @param aUserDirPathName Path to user folder
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const std::string aUserDirPathName) {
+int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::string aUserDirPathName) {
 
     // Look for usrclass.dat
     const std::string WIN7_USRCLASS_SUBDIR = "/AppData/Local/Microsoft/Windows";

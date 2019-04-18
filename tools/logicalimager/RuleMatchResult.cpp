@@ -1,4 +1,3 @@
-#include "RuleMatchResult.h"
 /*
 ** The Sleuth Kit
 **
@@ -13,6 +12,8 @@
 * \file RuleMatchResult.cpp
 * Contains C++ code that implement the Rule Match Resultt class.
 */
+
+#include "RuleMatchResult.h"
 
 RuleMatchResult::RuleMatchResult(const std::string &description, bool shouldSave, bool shouldAlert) :
     m_description(description),

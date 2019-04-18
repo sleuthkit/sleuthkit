@@ -24,7 +24,6 @@ RegKey::RegKey(std::wstring keyName) : m_regKey(NULL) {
 
     m_modifyTime.dwLowDateTime = 0;
     m_modifyTime.dwHighDateTime = 0;
-
 }
 
 RegKey::RegKey(std::wstring keyName, long numSubkeys, long numValues) : m_regKey(NULL) {
@@ -48,7 +47,7 @@ RegKey::~RegKey() {
  * Initialize a RegKey object from a Rejistry::RegistryKey object.
  * @returns 0 if initialization is successful, otherwise false.
  */
-int RegKey::initialize(const Rejistry::RegistryKey * regKey) {
+int RegKey::initialize(const Rejistry::RegistryKey *regKey) {
     if (regKey == NULL) {
         return -1;
     }
@@ -66,9 +65,7 @@ int RegKey::initialize(const Rejistry::RegistryKey * regKey) {
 }
 
 void RegKey::print() {
-
     std::wcout << L"Key: " << m_keyName << std::endl;
     std::wcout << L"\t" << L"Subkeys: " << m_numSubkeys << std::endl;
     std::wcout << L"\t" << L"Values: " << m_numValues << std::endl;
-
 }

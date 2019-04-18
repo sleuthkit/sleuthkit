@@ -17,6 +17,7 @@
 #include <string>
 #include <list>
 #include <map>
+
 #include "tsk/auto/tsk_auto.h"
 
 typedef std::pair<TSK_OFF_T, std::string> Path2InumCacheKey;

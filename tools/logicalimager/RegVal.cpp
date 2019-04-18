@@ -15,9 +15,9 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <iomanip>
 
 #include "RegVal.h"
-#include <iomanip>
 
 std::string ValTypStrArr[] = {
   "REG_NONE",                    // ( 0 )   // No value type
@@ -79,7 +79,7 @@ RegVal::RegVal(std::wstring valName, int valType, long valLen, std::wstring wsDa
     m_wsData = wsData;
 }
 
-RegVal::RegVal(std::wstring valName, int valType, long valLen, unsigned char * binData) : m_registryValue(NULL) {
+RegVal::RegVal(std::wstring valName, int valType, long valLen, unsigned char *binData) : m_registryValue(NULL) {
     m_valName = valName;
     m_valType = valType;
     m_valLen = valLen;
@@ -89,11 +89,11 @@ RegVal::RegVal(std::wstring valName, int valType, long valLen, unsigned char * b
     }
 }
 
-RegVal::RegVal(const Rejistry::RegistryValue * value) {
+RegVal::RegVal(const Rejistry::RegistryValue *value) {
     initialize(value);
 }
 
-int RegVal::initialize(const Rejistry::RegistryValue * value) {
+int RegVal::initialize(const Rejistry::RegistryValue *value) {
     try {
         m_valName = value->getName();
         m_valType = (int)value->getValueType();

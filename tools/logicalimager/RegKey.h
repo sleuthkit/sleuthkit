@@ -29,7 +29,7 @@ public:
     RegKey(std::wstring keyName, long numKeys, long numValues);
     ~RegKey();
 
-    int initialize(const Rejistry::RegistryKey * regKey);
+    int initialize(const Rejistry::RegistryKey *regKey);
 
     std::wstring getKeyName() const { return m_keyName; };
     size_t getNumSubkeys() const { return m_numSubkeys; };
@@ -49,5 +49,5 @@ private:
     size_t m_numSubkeys;
     size_t m_numValues;
 
-    const Rejistry::RegistryKey * m_regKey;
+    const Rejistry::RegistryKey *m_regKey;
 };
