@@ -65,19 +65,7 @@
     <ClInclude Include="..\..\tools\logicalimager\RegistryLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tools\logicalimager\ConfigMgr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\tools\logicalimager\CollectionConfig.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\tools\logicalimager\CyberTriageDefs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\tools\logicalimager\ThreatDefs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\tools\logicalimager\ScheduledTaskAction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tools\logicalimager\RegFileInfo.h">
@@ -133,22 +121,11 @@
     <ClCompile Include="..\..\tools\logicalimager\RegistryLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tools\logicalimager\ConfigMgr.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tools\logicalimager\CollectionConfig.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tools\logicalimager\CyberTriageDefs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tools\logicalimager\RegFileInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\tools\logicalimager\FieldNames.dat">
-      <Filter>Source Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

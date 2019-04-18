@@ -17,7 +17,6 @@
 
 #include <string>
 #include "tsk/auto/tsk_auto.h"
-#include "ThreatItem.h"
 #include "RegParser.h"
 #include "RegHiveType.h"
 

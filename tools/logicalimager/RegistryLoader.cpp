@@ -2,7 +2,6 @@
 #include <sstream>
 #include "RegistryLoader.h"
 #include "TskHelper.h"
-#include "ConfigMgr.h"
 
 //#include "WindowsPhase1Processor.h" // needed only for the user folder paths
 

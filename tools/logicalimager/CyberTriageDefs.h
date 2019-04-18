@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include "ThreatDefs.h"
 #include "TskHelper.h"
+
+using namespace std;
 
 const unsigned int RECENT_RUN_THRESHOLD_SECS = 15 * 24 * 60 * 60;  // 15 days
 
@@ -50,24 +51,6 @@ namespace ERRORTYPE {
         "WARNING",
         "UNKNOWN"
     };
-};
-
-/*
- * KnownSuspiciousFile: defines a black-listed file name
- */
-class KnownSuspiciousFileName {
-public:
-    KnownSuspiciousFileName(string aFileNamePrefix, const ThreatCriteria* aCriteria);
-    ~KnownSuspiciousFileName(void);
-
-public:
-    string getName() const { return m_namePrefix; };
-    const ThreatCriteria* getCriteria() const { return m_criteria; };
-    bool isMatch(string aLowerCaseName) const { return TskHelper::startsWith(aLowerCaseName, m_namePrefix); };;
-
-private:
-    string m_namePrefix;
-    const ThreatCriteria* m_criteria;
 };
 
 namespace USER_ACCOUNT_LOCATION {
@@ -163,119 +146,3 @@ private:
     bool m_isDisabled;
 };
 
-// Stores info for a configured service
-class SvcInfo {
-public:
-    SvcInfo(string& a_name, DWORD a_type, string& a_groupName, string& a_PathName);
-    ~SvcInfo();
-
-    string getName() const { return m_svcName; }
-    string getGroupName() const { return m_svcGroupName; }
-    string getPathName() const { return m_svcPathName; }
-
-private:
-    string m_svcName;			// name only
-    DWORD  m_svcType;			// svc type
-    string m_svcGroupName;		// group name, if svc type is SHARED_PROCESSS
-    string m_svcPathName;		// executable's pathname
-};
-
-// Stores info about a running Service - pid/name etc.
-class RunningService {
-public:
-    RunningService(long a_pid, string& a_serviceName);
-    ~RunningService();
-
-    void setDisplayName(string & a_dispName) { m_displayName = a_dispName; };
-    void setSvcType(DWORD a_svcType) { m_serviceType = a_svcType; };
-
-    long getPID() const { return m_procId; }
-    DWORD getSvcType() const { return m_serviceType; }
-    string getName() const { return m_serviceName; }
-    string getDisplayName() const { return m_displayName; }
-
-private:
-    long   m_procId;
-    DWORD  m_serviceType;
-    string m_serviceName;
-    string m_displayName;
-};
-
-// Stores info about a host
-class HostInfo {
-public:
-    HostInfo(string& aHostName);
-    ~HostInfo();
-
-    void setHostFQDN(const string & aHostFQDN) { m_hostFQDN = aHostFQDN; };
-
-    string getHostName() const { return m_hostName; };
-    string getHostFQDN() const { return m_hostFQDN; };
-
-private:
-    string m_hostName;
-    string m_hostFQDN;
-    string m_hostIP;
-};
-
-/*
- * AppGUIDInfo: captures information applications with GUID
- *
- * An Application GUID (either CLSID or AppID) may be mapped to an executable
- * Alternatively, it may map to a string ProgID or a Service name which are then in turn mapped to an executable
- */
-class AppGUIDInfo {
-public:
-    AppGUIDInfo();
-    AppGUIDInfo(const string& aGUID);
-
-    string getGUID() const { return m_appGUID; }
-    wstring getExe() const { return m_exe; }
-    wstring getWow6432Exe() const { return m_wow6432Exe; }
-    string getProgID() const { return m_progID; }
-    string getServiceName() const { return m_serviceName; }
-
-    void setGUID(const string & a_GUID) { m_appGUID = a_GUID; }
-    void setExe(const wstring& aPath) { m_exe = aPath; };
-    void setWow6432Exe(const wstring& aPath) { m_wow6432Exe = aPath; };
-    void setProgID(const string & a_progID) { m_progID = a_progID; };
-    void setServiceName(const string & a_name) { m_serviceName = a_name; };
-
-    void copy(const AppGUIDInfo& a_src);
-
-private:
-    string m_appGUID;
-    wstring m_exe; // name, with or without path, of the executable
-    wstring m_wow6432Exe;	// name, usualy with path, of the WOW6432 executable
-    string m_progID;
-    string m_serviceName;
-};
-
-/*
- * AppCompatCacheEntry: captures information found in AppCompat cache
- */
-class AppCompatCacheEntry {
-public:
-    AppCompatCacheEntry(const wstring& exePathName);
-    ~AppCompatCacheEntry();
-
-    wstring getExePathname() const { return exePathName; }
-    FILETIME getEntryUpdateTime() const { return entryUpdateTime; }
-    FILETIME getExeModTime() const { return exeModifyTime; }
-    bool isExecuted() const { return isExeExecuted; }
-
-    void setExePathname(const wstring& aPath) { exePathName = aPath; };
-    void setEntryUpdateTime(const FILETIME& a_ft) { entryUpdateTime = a_ft; }
-    void setExeModTime(const FILETIME& a_ft) { exeModifyTime = a_ft; }
-    void setIsExecuted(bool a_bool) { isExeExecuted = a_bool; }
-
-private:
-    wstring exePathName;
-
-    FILETIME entryUpdateTime;	// Not available for all versions of Windows, when available, can be interpreted as the most recent execution time;
-    FILETIME exeModifyTime;		// last modify time on the exe file
-
-    bool isExeExecuted;			// was the exe actually executed ?
-    DWORD insertFlags;
-    DWORD shimFlags;
-};

@@ -47,5 +47,4 @@ RegFileInfo::~RegFileInfo()
           return RegHiveType::USRCLASS;
       else 
            return RegHiveType::UNKNOWN;
-
  }

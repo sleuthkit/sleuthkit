@@ -25,7 +25,6 @@
 #include "RegHiveType.h"
 #include "RegParser.h"
 #include "RegistryLoader.h"
-#include "ConfigMgr.h"
 #include "CyberTriageDefs.h"
 
 const string LOCAL_DOMAIN = "local";
@@ -38,7 +37,7 @@ RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_outputFilePath.c_str());
         exit(1);
     }
-    fprintf(m_outputFile, "UserName\tFullName\tUserDomain\tSID\tHomeDir\tAccountType\tAdminPriv\tDateCreated\tLastLoginDate\tLastFailedLoginDate\tLastPasswordResetDate\tLoginCount\tAccountLocation\tisDisabled\taccountStatus\n");
+    fprintf(m_outputFile, "UserName\tFullName\tUserDomain\tHomeDir\tAccountType\tAdminPriv\tDateCreated\tLastLoginDate\tLastFailedLoginDate\tLastPasswordResetDate\tLoginCount\tAccountLocation\tisDisabled\taccountStatus\n");
 }
 
 RegistryAnalyzer::~RegistryAnalyzer() {
@@ -217,32 +216,10 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
 
         rc = aRegParser.getSubKeys(wsSAMUsersKeyName, wsSubkeyNames);
         if (0 == rc) {
-
-                std::cout
-                    << "UserName" << ","
-                    << "UserDomain" << ","
-                    << "SID" << ","
-                    << "HomeDir" << ","
-                    << "AccountType" << ","
-                    << "AdminPriv" << ","
-                    << "DateCreated" << ","
-                    << "LastLoginDate" << ","
-                    << "LoginCount" << ","
-                    << "AccountLocation" << ","
-                    << "isDisabled" << ","
-                    << "accountStatus" <<
-                    std::endl;
-
             for (vector<wstring>::iterator it = wsSubkeyNames.begin(); it != wsSubkeyNames.end(); ++it) {
                 if (TskHelper::startsWith(TskHelper::toNarrow((*it)), "0000")) {
                     wstring wsRID = (*it);
                     wstring wsSAMRIDKeyName = wsSAMUsersKeyName + L"\\" + wsRID;
-
-                    //Make users SID from RID and computer SID
-                    long lRID = strtol(TskHelper::toNarrow(wsRID).c_str(), NULL, 16);
-                    string compSID = ConfigMgr::getInstance().getTargetComputerSID();
-                    string userSID = compSID + "-" + to_string(lRID);
-
 
                     bool bError = false;
                     wstring wsUserName(L"");
@@ -326,7 +303,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                         pUserAccount->setUserDomain(LOCAL_DOMAIN);   // this is a local account
                         pUserAccount->setAccountType(acctType);
                         pUserAccount->setAdminPriv(acctAdminPriv);
-                        pUserAccount->setSID(userSID);
 
                         pUserAccount->setDateCreated(sDateCreated);
                         pUserAccount->setLastLoginDate(sLastLoginDate); //  Fri Jan 20 17:10:41 2012 Z
@@ -334,26 +310,10 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                         pUserAccount->setAccountLocation(USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT);  // all accounts found in SAM registry are local (as opposed to Domain)
                         pUserAccount->setDisabled(accountDisabled); // from flags;
 
-                        std::cout 
-                         << pUserAccount->getUserName() << ","
-                         << pUserAccount->getUserDomain() << ","
-                         << pUserAccount->getSID() << ","
-                         << pUserAccount->getHomeDir() << ","
-                         << pUserAccount->getAccountType() << ","
-                         << pUserAccount->getAdminPriv() << ","
-                         << pUserAccount->getDateCreated() << ","
-                         << pUserAccount->getLastLoginDate() << ","
-                         << pUserAccount->getLoginCount() << ","
-                         << pUserAccount->getAccountLocationStr() << ","
-                         << pUserAccount->isDisabled() << ","
-                         << pUserAccount->getAccountStatus() <<
-                        std::endl;
-
-                        fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
+                        fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
                             pUserAccount->getUserName().c_str(),
                             TskHelper::toNarrow(wsFullName).c_str(),
                             pUserAccount->getUserDomain().c_str(),
-                            pUserAccount->getSID().c_str(),
                             pUserAccount->getHomeDir().c_str(),
                             pUserAccount->getAccountType().c_str(),
                             pUserAccount->getAdminPriv().c_str(),

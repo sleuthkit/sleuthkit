@@ -444,8 +444,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\tools\logicalimager\CollectionConfig.h" />
-    <ClInclude Include="..\..\tools\logicalimager\ConfigMgr.h" />
     <ClInclude Include="..\..\tools\logicalimager\CyberTriageDefs.h" />
     <ClInclude Include="..\..\tools\logicalimager\json.h" />
     <ClInclude Include="..\..\tools\logicalimager\LogicalImagerDateRule.h" />
@@ -463,15 +461,11 @@
     <ClInclude Include="..\..\tools\logicalimager\RegParser.h" />
     <ClInclude Include="..\..\tools\logicalimager\RegVal.h" />
     <ClInclude Include="..\..\tools\logicalimager\RuleMatchResult.h" />
-    <ClInclude Include="..\..\tools\logicalimager\ScheduledTaskAction.h" />
-    <ClInclude Include="..\..\tools\logicalimager\ThreatDefs.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskFindFiles.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskHelper.h" />
     <ClInclude Include="..\..\tools\logicalimager\tsk_logical_imager.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\tools\logicalimager\CollectionConfig.cpp" />
-    <ClCompile Include="..\..\tools\logicalimager\ConfigMgr.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\CyberTriageDefs.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerDateRule.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.cpp" />
@@ -490,9 +484,6 @@
     <ClCompile Include="..\..\tools\logicalimager\TskFindFiles.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\TskHelper.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\tsk_logical_imager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\tools\logicalimager\FieldNames.dat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
