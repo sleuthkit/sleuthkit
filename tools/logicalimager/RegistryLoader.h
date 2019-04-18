@@ -2,8 +2,7 @@
 #include "RegParser.h"
 #include "RegFileInfo.h"
 
-class RegistryLoader
-{
+class RegistryLoader {
 private:
     bool m_sysHivesLoaded = false;
     bool m_userHivesLoaded = false;
@@ -11,9 +10,9 @@ private:
     std::list<RegFileInfo *> m_regNtUserFiles;
     std::list<RegFileInfo *> m_regUsrClassFiles;
 
-    int findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const string aUserDirPathName);
-    int findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T a_dir_inum, const string& a_path, const string aUserDirName);
-    int findUserRegFiles(TSK_FS_INFO * a_fs_info, const string a_starting_dir);
+    int findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const std::string aUserDirPathName);
+    int findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T a_dir_inum, const std::string& a_path, const std::string aUserDirName);
+    int findUserRegFiles(TSK_FS_INFO * a_fs_info, const std::string a_starting_dir);
     int findUserRegFiles(TSK_FS_INFO * a_fs_info);
     int findSystemRegFiles(TSK_FS_INFO * a_fs_info);
     void loadSystemHives();

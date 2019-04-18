@@ -15,10 +15,7 @@
 
 #pragma once
 
-using namespace std;
-
 namespace RegHiveType {
-
   enum Enum {
     SYSTEM,
     SAM,

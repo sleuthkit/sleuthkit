@@ -24,8 +24,7 @@
   * RegParser - a registry parser that uses the Rejistry++ library to search
   * the registry for keys/values.
   */
-class RegParser
-{
+class RegParser {
 public:
     RegParser(const RegHiveType::Enum aHiveType);
     RegParser(const std::wstring& filePath);
@@ -37,19 +36,19 @@ public:
     virtual int getRootKey(RegKey& aKey);
 
     // get the subkey for the given key name
-    virtual int getKey(const wstring& keyName, RegKey& aKey);
+    virtual int getKey(const std::wstring& keyName, RegKey& aKey);
 
     //returns all subkeys of given key
-    virtual int getSubKeys(const wstring& keyName, vector<wstring>& subKeysList);
-    virtual int getSubKeys(const wstring& keyName, vector<RegKey *>& subKeysList);
+    virtual int getSubKeys(const std::wstring& keyName, std::vector<std::wstring>& subKeysList);
+    virtual int getSubKeys(const std::wstring& keyName, std::vector<RegKey *>& subKeysList);
 
     // return the data for the given named value
-    virtual int getValue(const wstring& keyName, const wstring& valName, RegVal& val);
-    virtual int getValue(const RegKey * startKey, const wstring& subpathName, const wstring& valName, RegVal& val);
+    virtual int getValue(const std::wstring& keyName, const std::wstring& valName, RegVal& val);
+    virtual int getValue(const RegKey * startKey, const std::wstring& subpathName, const std::wstring& valName, RegVal& val);
 
     // return all values for the given key
-    virtual int getValues(const wstring& keyName, vector<RegVal *>& valList);
-    virtual int getValues(const RegKey * startKey, const wstring& subpathName, vector<RegVal *>& valList);
+    virtual int getValues(const std::wstring& keyName, std::vector<RegVal *>& valList);
+    virtual int getValues(const RegKey * startKey, const std::wstring& subpathName, std::vector<RegVal *>& valList);
 
 private:
     Rejistry::RegistryHive * m_registryHive;

@@ -15,22 +15,24 @@
 
 #pragma once
 
+#include <string>
+
 #include "rejistry++/include/librejistry++.h"
 #include "tsk/tsk_tools_i.h"
 #include "RegHiveType.h"
 
 class RegistryAnalyzer {
 public:
-    RegistryAnalyzer(const string &outputFilePath);
+    RegistryAnalyzer(const std::string &outputFilePath);
     ~RegistryAnalyzer();
 
     int analyzeSAMUsers() const;
 
 private:
-    RegHiveType::Enum hiveNameToType(const string aName) const;
+    RegHiveType::Enum hiveNameToType(const std::string aName) const;
 
-    int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, wstring& userName,
-        wstring& userFullName, wstring& comment, uint32_t& acctType) const;
+    int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring& userName,
+        std::wstring& userFullName, std::wstring& comment, uint32_t& acctType) const;
 
     int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen, FILETIME& lastLoginDate,
         FILETIME& lastPWResetDate, FILETIME& accountExpiryDate, FILETIME& lastFailedLoginDate,

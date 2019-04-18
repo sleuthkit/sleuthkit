@@ -19,88 +19,88 @@
 using namespace Rejistry;
 
 RegParser::RegParser(const RegHiveType::Enum aHiveType)
-  : m_registryHive(NULL), m_rootKey(NULL) {
+    : m_registryHive(NULL), m_rootKey(NULL) {
 }
 
 RegParser::RegParser(const std::wstring& filePath) {
-  m_registryHive = new RegistryHiveFile(filePath);
-  m_rootKey = m_registryHive->getRoot();
+    m_registryHive = new RegistryHiveFile(filePath);
+    m_rootKey = m_registryHive->getRoot();
 }
 
 RegParser::~RegParser() {
-  if (m_rootKey != NULL) {
-    delete m_rootKey;
-    m_rootKey = NULL;
-  }
+    if (m_rootKey != NULL) {
+        delete m_rootKey;
+        m_rootKey = NULL;
+    }
 
-  if (m_registryHive != NULL) {
-    delete m_registryHive;
-    m_registryHive = NULL;
-  }
+    if (m_registryHive != NULL) {
+        delete m_registryHive;
+        m_registryHive = NULL;
+    }
 }
 
 /**
- * @returns -1 on error 
+ * @returns -1 on error
  */
 int RegParser::loadHive(TSK_FS_FILE * aHiveFile, RegHiveType::Enum aHiveType) {
-  if (aHiveFile == NULL) {
-    string errMsg = "Null pointer passed to RegParser::loadHive.";
-    string details = "loadHive() failed.";
+    if (aHiveFile == NULL) {
+        std::string errMsg = "Null pointer passed to RegParser::loadHive.";
+        std::string details = "loadHive() failed.";
 
-//    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
-    return -1;
-  }
+        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
+        return -1;
+    }
 
-  // If there already is a loaded hive, free it.
-  if (m_registryHive != NULL) {
-    delete m_registryHive;
-    m_registryHive = NULL;
-  }
+    // If there already is a loaded hive, free it.
+    if (m_registryHive != NULL) {
+        delete m_registryHive;
+        m_registryHive = NULL;
+    }
 
-  // Read the contents of the TSK_FS_FILE into memory.
-  uint8_t *registryBuffer;
-  if ((registryBuffer = (uint8_t *)malloc((size_t)aHiveFile->meta->size)) == NULL) {
-    string errMsg = "loadHive(): Error allocating memory for hive file.";
-    string details = "tsk_fs_file_read() failed.";
-//    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
-    return -1;
-  }
+    // Read the contents of the TSK_FS_FILE into memory.
+    uint8_t *registryBuffer;
+    if ((registryBuffer = (uint8_t *)malloc((size_t)aHiveFile->meta->size)) == NULL) {
+        std::string errMsg = "loadHive(): Error allocating memory for hive file.";
+        std::string details = "tsk_fs_file_read() failed.";
+        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
+        return -1;
+    }
 
-  ssize_t bytesRead = tsk_fs_file_read(aHiveFile, 0, (char *)&registryBuffer[0],
-					(size_t)aHiveFile->meta->size, TSK_FS_FILE_READ_FLAG_NONE);
-  if (bytesRead != aHiveFile->meta->size) {
-    string errMsg = "loadHive(): Error reading content from hive file.";
-    string details = "tsk_fs_file_read() failed.";
+    ssize_t bytesRead = tsk_fs_file_read(aHiveFile, 0, (char *)&registryBuffer[0],
+        (size_t)aHiveFile->meta->size, TSK_FS_FILE_READ_FLAG_NONE);
+    if (bytesRead != aHiveFile->meta->size) {
+        std::string errMsg = "loadHive(): Error reading content from hive file.";
+        std::string details = "tsk_fs_file_read() failed.";
 
-//    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
+        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
+        free(registryBuffer);
+        return -1;
+    }
+
+    try {
+        m_registryHive = new RegistryHiveBuffer(registryBuffer, (uint32_t)aHiveFile->meta->size);
+    }
+    catch (RegistryParseException e) {
+        std::string errMsg = "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size.";
+        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, e.what());
+        free(registryBuffer);
+        return -1;
+    }
+    catch (...) {
+        std::string errMsg = "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size.";
+        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, "");
+        free(registryBuffer);
+        return -1;
+    }
+    m_rootKey = m_registryHive->getRoot();
+
     free(registryBuffer);
-    return -1;
-  }
-
-  try {
-    m_registryHive = new RegistryHiveBuffer(registryBuffer, (uint32_t)aHiveFile->meta->size);
-  }
-  catch (RegistryParseException e) {
-    string errMsg = "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size.";
-//    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, e.what());
-    free(registryBuffer);
-    return -1;
-  }
-  catch (...) {
-    string errMsg = "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size.";
-//    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, "");
-    free(registryBuffer);
-    return -1;
-  }
-  m_rootKey = m_registryHive->getRoot();
-
-  free(registryBuffer);
-  return 0;
+    return 0;
 }
 
 int RegParser::getRootKey(RegKey& aKey) {
-  aKey.initialize(m_rootKey);
-  return 0;
+    aKey.initialize(m_rootKey);
+    return 0;
 }
 
 /**
@@ -120,24 +120,24 @@ int RegParser::getRootKey(RegKey& aKey) {
  *      -1 if the key was not found.
  *      -2 if there was an error getting the key.
  */
-int RegParser::getKey(const wstring& keyName, RegKey& aKey) {
-  const RegistryKey * key = NULL;
+int RegParser::getKey(const std::wstring& keyName, RegKey& aKey) {
+    const RegistryKey * key = NULL;
 
-  try {
-    key = findKey(keyName);
-  }
-  catch (Rejistry::NoSuchElementException&) {
-    return -1;
-  }
-  catch (Rejistry::RegistryParseException&) {
-    return -2;
-  }
-  catch (...) {
-    return -2;
-  }
+    try {
+        key = findKey(keyName);
+    }
+    catch (Rejistry::NoSuchElementException&) {
+        return -1;
+    }
+    catch (Rejistry::RegistryParseException&) {
+        return -2;
+    }
+    catch (...) {
+        return -2;
+    }
 
-  aKey.initialize(key);
-  return 0;
+    aKey.initialize(key);
+    return 0;
 }
 
 /**
@@ -152,32 +152,32 @@ int RegParser::getKey(const wstring& keyName, RegKey& aKey) {
  *      -1 if the key is not found.
  *      -2 if there was an error getting the key.
  */
-int RegParser::getSubKeys(const wstring& keyName, vector<wstring>& subKeyNamesList) {
-  try {
-    std::auto_ptr<RegistryKey const> key(findKey(keyName));
+int RegParser::getSubKeys(const std::wstring& keyName, std::vector<std::wstring>& subKeyNamesList) {
+    try {
+        std::auto_ptr<RegistryKey const> key(findKey(keyName));
 
-    RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
-    subKeyNamesList.reserve(subkeys.size());
-    RegistryKey::RegistryKeyPtrList::iterator subKeyIter = subkeys.begin();
+        RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
+        subKeyNamesList.reserve(subkeys.size());
+        RegistryKey::RegistryKeyPtrList::iterator subKeyIter = subkeys.begin();
 
-    for (; subKeyIter != subkeys.end(); ++subKeyIter) {
-      subKeyNamesList.push_back((*subKeyIter)->getName());
+        for (; subKeyIter != subkeys.end(); ++subKeyIter) {
+            subKeyNamesList.push_back((*subKeyIter)->getName());
+        }
+
+        for (subKeyIter = subkeys.begin(); subKeyIter != subkeys.end(); ++subKeyIter) {
+            delete *subKeyIter;
+        }
     }
-
-    for (subKeyIter = subkeys.begin(); subKeyIter != subkeys.end(); ++subKeyIter) {
-      delete *subKeyIter;
+    catch (Rejistry::NoSuchElementException&) {
+        return -1;
     }
-  }
-  catch (Rejistry::NoSuchElementException&) {
-    return -1;
-  }
-  catch (Rejistry::RegistryParseException&) {
-    return -2;
-  }
-  catch (...) {
-    return -2;
-  }
-  return 0;
+    catch (Rejistry::RegistryParseException&) {
+        return -2;
+    }
+    catch (...) {
+        return -2;
+    }
+    return 0;
 }
 
 /**
@@ -192,35 +192,35 @@ int RegParser::getSubKeys(const wstring& keyName, vector<wstring>& subKeyNamesLi
  *      -1 if the key is not found.
  *      -2 if there was an error getting the key.
  */
-int RegParser::getSubKeys(const wstring& keyName, vector<RegKey*>& subKeysList) {
-  try {
-    std::auto_ptr<RegistryKey const> key(findKey(keyName));
+int RegParser::getSubKeys(const std::wstring& keyName, std::vector<RegKey*>& subKeysList) {
+    try {
+        std::auto_ptr<RegistryKey const> key(findKey(keyName));
 
-    RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
-    subKeysList.reserve(subkeys.size());
-    RegistryKey::RegistryKeyPtrList::iterator subKeyIter = subkeys.begin();
+        RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
+        subKeysList.reserve(subkeys.size());
+        RegistryKey::RegistryKeyPtrList::iterator subKeyIter = subkeys.begin();
 
-    for (; subKeyIter != subkeys.end(); ++subKeyIter) {
-      RegKey * key = new RegKey((*subKeyIter)->getName());
-      key->initialize(*subKeyIter);
-      subKeysList.push_back(key);
+        for (; subKeyIter != subkeys.end(); ++subKeyIter) {
+            RegKey * key = new RegKey((*subKeyIter)->getName());
+            key->initialize(*subKeyIter);
+            subKeysList.push_back(key);
+        }
+
+        for (subKeyIter = subkeys.begin(); subKeyIter != subkeys.end(); ++subKeyIter) {
+            delete *subKeyIter;
+        }
+    }
+    catch (Rejistry::NoSuchElementException&) {
+        return -1;
+    }
+    catch (Rejistry::RegistryParseException&) {
+        return -2;
+    }
+    catch (...) {
+        return -2;
     }
 
-    for (subKeyIter = subkeys.begin(); subKeyIter != subkeys.end(); ++subKeyIter) {
-      delete *subKeyIter;
-    }
-  }
-  catch (Rejistry::NoSuchElementException&) {
-    return -1;
-  }
-  catch (Rejistry::RegistryParseException&) {
-    return -2;
-  }
-  catch (...) {
-    return -2;
-  }
-
-  return 0;
+    return 0;
 }
 
 /**
@@ -237,22 +237,22 @@ int RegParser::getSubKeys(const wstring& keyName, vector<RegKey*>& subKeysList) 
  *      -1 if the key/value was not found.
  *      -2 if there was an error getting the key/value.
  */
-int RegParser::getValue(const wstring& keyName, const wstring& valName, RegVal& val) {
-  try {
-    std::auto_ptr<RegistryKey const> key(findKey(keyName));
-    RegistryValue * value = key->getValue(valName);
-    val.initialize(value);
-  }
-  catch (Rejistry::NoSuchElementException&) {
-    return -1;
-  }
-  catch (Rejistry::RegistryParseException&) {
-    return -2;
-  }
-  catch (...) {
-    return -2;
-  }
-  return 0;
+int RegParser::getValue(const std::wstring& keyName, const std::wstring& valName, RegVal& val) {
+    try {
+        std::auto_ptr<RegistryKey const> key(findKey(keyName));
+        RegistryValue * value = key->getValue(valName);
+        val.initialize(value);
+    }
+    catch (Rejistry::NoSuchElementException&) {
+        return -1;
+    }
+    catch (Rejistry::RegistryParseException&) {
+        return -2;
+    }
+    catch (...) {
+        return -2;
+    }
+    return 0;
 }
 
 /**
@@ -272,26 +272,26 @@ int RegParser::getValue(const wstring& keyName, const wstring& valName, RegVal& 
  *      -1 if the key/value was not found.
  *      -2 if there was an error getting the key/value.
  */
-int RegParser::getValue(const RegKey * startKey, const wstring& subpathName, const wstring& valName, RegVal& val) {
-  if (NULL == startKey) {
-    return -1;
-  }
+int RegParser::getValue(const RegKey * startKey, const std::wstring& subpathName, const std::wstring& valName, RegVal& val) {
+    if (NULL == startKey) {
+        return -1;
+    }
 
-  try {
-    std::auto_ptr<RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
-    RegistryValue * value = key->getValue(valName);
-    val.initialize(value);
-  }
-  catch (Rejistry::NoSuchElementException&) {
-    return -1;
-  }
-  catch (Rejistry::RejistryException &) {
-    return -2;
-  }
-  catch (...) {
-    return -2;
-  }
-  return 0;
+    try {
+        std::auto_ptr<RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
+        RegistryValue * value = key->getValue(valName);
+        val.initialize(value);
+    }
+    catch (Rejistry::NoSuchElementException&) {
+        return -1;
+    }
+    catch (Rejistry::RejistryException &) {
+        return -2;
+    }
+    catch (...) {
+        return -2;
+    }
+    return 0;
 }
 
 /**
@@ -306,7 +306,7 @@ int RegParser::getValue(const RegKey * startKey, const wstring& subpathName, con
 *      -1 if the key was not found.
 *      -2 if there was an error getting the key.
 */
-int RegParser::getValues(const wstring& keyName, vector<RegVal *>& valList) {
+int RegParser::getValues(const std::wstring& keyName, std::vector<RegVal *>& valList) {
     try {
         std::auto_ptr<RegistryKey const> key(findKey(keyName));
 
@@ -348,7 +348,7 @@ int RegParser::getValues(const wstring& keyName, vector<RegVal *>& valList) {
 *      -1 if the key was not found.
 *      -2 if there was an error getting the key.
 */
-int RegParser::getValues(const RegKey * startKey, const wstring& subpathName, vector<RegVal *>& valList) {
+int RegParser::getValues(const RegKey * startKey, const std::wstring& subpathName, std::vector<RegVal *>& valList) {
     if (NULL == startKey) {
         return -1;
     }
@@ -436,23 +436,23 @@ const RegistryKey * RegParser::findKey(const std::wstring& keyName, const Regist
  * @returns The split key elements as a vector of strings.
  */
 std::vector<std::wstring> RegParser::splitKeyName(const std::wstring& keyName) const {
-  std::vector<std::wstring> keys;
-  size_t start = 0;
-  size_t end = 0;
+    std::vector<std::wstring> keys;
+    size_t start = 0;
+    size_t end = 0;
 
-  while (start < keyName.size()) {
-    size_t pos = keyName.find('\\', start);
+    while (start < keyName.size()) {
+        size_t pos = keyName.find('\\', start);
 
-    if (pos == std::wstring::npos) {
-      end = keyName.size();
+        if (pos == std::wstring::npos) {
+            end = keyName.size();
+        }
+        else {
+            end = pos;
+        }
+
+        keys.push_back(std::wstring(&keyName[start], &keyName[end]));
+        start = end + 1;
     }
-    else {
-      end = pos;
-    }
 
-    keys.push_back(std::wstring(&keyName[start], &keyName[end]));
-    start = end + 1;
-  }
-
-  return keys;
+    return keys;
 }

@@ -46,9 +46,9 @@ void RegistryLoader::freeHives()
 * @param input aHostName hostname to resolve
 * @returns FQDN if success, original hostname if the name cannot be resolved.
 */
-string getFQDN(const string& aHostName)
+std::string getFQDN(const std::string& aHostName)
 {
-    string sFQDN = aHostName;
+    std::string sFQDN = aHostName;
     return sFQDN;
 }
 
@@ -64,8 +64,8 @@ string getFQDN(const string& aHostName)
 * @returns  fixed output pth
 *
 */
-string toNormalizedOutputPathName(const string &aPath) {
-    string pathNameNoDrive("");
+std::string toNormalizedOutputPathName(const std::string &aPath) {
+    std::string pathNameNoDrive("");
 
     char drive[_MAX_DRIVE];
     char dir[_MAX_DIR];
@@ -75,7 +75,7 @@ string toNormalizedOutputPathName(const string &aPath) {
 
     // if its a UNC path and not drive letter                                                                        
     if ((TskHelper::startsWith(aPath, "\\\\") || TskHelper::startsWith(aPath, "//")) &&
-        aPath.find(":") == string::npos) {
+        aPath.find(":") == std::string::npos) {
 
         pathNameNoDrive = aPath;
         TskHelper::replaceAll(pathNameNoDrive, "\\", "/");         // change to unix style slash                            
@@ -83,17 +83,17 @@ string toNormalizedOutputPathName(const string &aPath) {
 
                                                         // resolve UNC hostname to FQDN                                                                          
         size_t secondSlashPos = pathNameNoDrive.find_first_of("/", 2); // look for / after the hostname          
-        if (string::npos != secondSlashPos) {
+        if (std::string::npos != secondSlashPos) {
 
-            string hostname = pathNameNoDrive.substr(2, secondSlashPos - 2);
-            string targetPath = pathNameNoDrive.substr(secondSlashPos);
-            string hostFQDN = getFQDN(hostname);
+            std::string hostname = pathNameNoDrive.substr(2, secondSlashPos - 2);
+            std::string targetPath = pathNameNoDrive.substr(secondSlashPos);
+            std::string hostFQDN = getFQDN(hostname);
 
             pathNameNoDrive = "//" + hostFQDN + targetPath;
         }
         else {  // Theres a UNC hostname but no sharename/targetPath                                             
-            string hostname = pathNameNoDrive.substr(2, string::npos);
-            string hostFQDN = getFQDN(hostname);
+            std::string hostname = pathNameNoDrive.substr(2, std::string::npos);
+            std::string hostFQDN = getFQDN(hostname);
 
             pathNameNoDrive = "//" + hostFQDN;
         }
@@ -103,7 +103,7 @@ string toNormalizedOutputPathName(const string &aPath) {
 
     _splitpath_s(aPath.c_str(), drive, dir, fname, ext);
 
-    pathNameNoDrive = string(dir) + string(fname) + string(ext);
+    pathNameNoDrive = std::string(dir) + std::string(fname) + std::string(ext);
     TskHelper::replaceAll(pathNameNoDrive, "\\", "/");    // change to fwd slashes so they can be looked up by TskAuto          
 
                                                // @TODO - remove this when fixing CT-2372                                                                       
@@ -213,7 +213,7 @@ void RegistryLoader::loadUserHives()
  * @returns -1 on error, 0 on success
  */
 int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
-    const string SYS_REG_FILES_DIR = "/Windows/System32/config";
+    const std::string SYS_REG_FILES_DIR = "/Windows/System32/config";
 
     //JSONWriter::getInstance().writeProgressRecord("Searching for system registry files");
 
@@ -221,8 +221,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
     TSK_FS_FILE *fsFile;
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), filenameInfo, NULL, &fsFile);
     if (retval == -1) {
-        string errMsg = "Error in finding system Registry files. System Registry files will not be analyzed.";
-        stringstream detailsSS;
+        std::string errMsg = "Error in finding system Registry files. System Registry files will not be analyzed.";
+        std::stringstream detailsSS;
         detailsSS << "findSystemRegFiles(): tsk_fs_path2inum() failed for dir = " << SYS_REG_FILES_DIR << ", errno = " << tsk_error_get();
         //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
         return -1;
@@ -235,8 +235,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
     // open the directory
     TSK_FS_DIR *fs_dir;
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-        string errMsg = "Error opening windows/system32/config folder. Some System Registry files may not be analyzed.";
-        stringstream detailsSS;
+        std::string errMsg = "Error opening windows/system32/config folder. Some System Registry files may not be analyzed.";
+        std::stringstream detailsSS;
         detailsSS << "findSystemRegFiles(): tsk_fs_dir_open_meta() failed for windows/system32/config folder.  dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();
         //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_WARNING, errMsg, detailsSS.str());
         return -1;
@@ -251,8 +251,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
         // get the entry
         const TSK_FS_NAME *fs_name;
         if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
-            string errMsg = "Error in finding System Registry files. Some System Registry files may not be analyzed.";
-            stringstream detailsSS;
+            std::string errMsg = "Error in finding System Registry files. Some System Registry files may not be analyzed.";
+            std::stringstream detailsSS;
             detailsSS << "findSystemRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << ", some System Registry files may not be analyzed.";
 
             //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
@@ -263,7 +263,7 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
             continue;
         }
 
-        string fName = fs_name->name;
+        std::string fName = fs_name->name;
         if ((0 == _stricmp("SYSTEM", fName.c_str())) || (0 == _stricmp("SOFTWARE", fName.c_str())) ||
             (0 == _stricmp("SECURITY", fName.c_str())) || (0 == _stricmp("SAM", fName.c_str()))) {
 
@@ -272,8 +272,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
             // @@ FIX THE ERROR MSGS HERE
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                stringstream detailsSS;
+                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
+                std::stringstream detailsSS;
                 detailsSS << "findSystemRegFiles(): tsk_fs_dir_get failed for file = " << fs_file->name->name;
                 //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
                 continue;
@@ -282,8 +282,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
             //CyberTriageUtils::DEBUG_PRINT("findSystemRegFiles: Loading hive");
             RegParser *pRegParser = new RegParser(hiveType);
             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                stringstream detailsSS;
+                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
+                std::stringstream detailsSS;
                 detailsSS << "findSystemRegFiles(): loadHive() failed for file = " << fs_file->name->name;
                 //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
                 continue;
@@ -309,8 +309,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO * a_fs_info) {
 int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info) {
     //JSONWriter::getInstance().writeProgressRecord("Searching for user registry files");
 
-    const string XP_USER_ROOT_DIR = "/Documents and Settings";
-    const string WIN7_USER_ROOT_DIR = "/Users";
+    const std::string XP_USER_ROOT_DIR = "/Documents and Settings";
+    const std::string WIN7_USER_ROOT_DIR = "/Users";
 
     // expect one will fail and the other will hopefully succeed
     int rc1 = findUserRegFiles(a_fs_info, XP_USER_ROOT_DIR.c_str());
@@ -324,7 +324,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info) {
  * @returns -1 on error, 0 on success (NOTE THERE IS A BUG IN THE CODE)
  */
 
-int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const string a_starting_dir) {
+int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const std::string a_starting_dir) {
 
     TSK_FS_DIR *fs_dir;
     TSKFileNameInfo filenameInfo;
@@ -332,8 +332,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const string a_sta
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, a_starting_dir.c_str(), filenameInfo, NULL, &fsFile);
 
     if (retval == -1) {
-        string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
-        stringstream detailsSS;
+        std::string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
+        std::stringstream detailsSS;
         detailsSS << "findUserRegFiles(): tsk_fs_path2inum() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get();
         //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_WARNING, errMsg, detailsSS.str());
         return -1;
@@ -344,8 +344,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const string a_sta
 
     // open the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-        string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
-        stringstream detailsSS;
+        std::string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
+        std::stringstream detailsSS;
         detailsSS << "findUserRegFiles(): tsk_fs_dir_open_meta() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get();
         //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
         return -1;
@@ -359,8 +359,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const string a_sta
 
         // get the entry
         if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-            string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
-            stringstream detailsSS;
+            std::string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
+            std::stringstream detailsSS;
             detailsSS << "findUserRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();;
             //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
             continue;
@@ -373,7 +373,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const string a_sta
                     // @@@ We are ignoring the return value here...  Only the last value will be returned
                     retval = findNTUserRegFilesInDir(a_fs_info, fs_file->name->meta_addr, a_starting_dir, fs_file->name->name);
 
-                    string userHomeDirPath = a_starting_dir + "/" + fs_file->name->name;
+                    std::string userHomeDirPath = a_starting_dir + "/" + fs_file->name->name;
                     retval = findUsrclassRegFile(a_fs_info, userHomeDirPath);
                 }
             }
@@ -393,14 +393,14 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO * a_fs_info, const string a_sta
  * @param aUserDirName Name of user for folder
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T a_dir_inum, const string& a_userFolderPath, const string aUserDirName) {
+int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T a_dir_inum, const std::string& a_userFolderPath, const std::string aUserDirName) {
     TSK_FS_DIR *fs_dir;
 
     // 1. open the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, a_dir_inum)) == NULL) {
-        string errMsg = "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.";
+        std::string errMsg = "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.";
 
-        stringstream detailsSS;
+        std::stringstream detailsSS;
         detailsSS << "findNTUserRegFilesInDir(): tsk_fs_dir_open_meta() failed for dir = " << aUserDirName << ", errno = " << tsk_error_get();
 
         //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_WARNING, errMsg, detailsSS.str());
@@ -416,8 +416,8 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T 
         // get the entry
         const TSK_FS_NAME *fs_name;
         if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
-            string errMsg = "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.";
-            stringstream detailsSS;
+            std::string errMsg = "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.";
+            std::stringstream detailsSS;
             detailsSS << "findNTUserRegFilesInDir(): Error getting directory entry = " << i << " in dir inum = " << a_dir_inum << ", errno = " << tsk_error_get();
             //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
             continue;
@@ -428,25 +428,25 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T 
         }
 
         if ((0 == _stricmp("NTUSER.DAT", fs_name->name))) {
-            string fName = fs_name->name;
+            std::string fName = fs_name->name;
             RegHiveType::Enum hiveType = RegFileInfo::hiveNameToType(fName);
 
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                stringstream detailsSS;
+                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
+                std::stringstream detailsSS;
                 detailsSS << "findNTUserRegFilesInDir(): tsk_fs_dir_get() failed for file = " << fs_file->name->name;
                 //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
                 continue;
             }
 
-           // CyberTriageUtils::DEBUG_PRINT("analyzeRegFilesSystemInfo: Loading hive");
+            // CyberTriageUtils::DEBUG_PRINT("analyzeRegFilesSystemInfo: Loading hive");
             RegParser *pRegParser = new RegParser(hiveType);
             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                stringstream detailsSS;
+                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
+                std::stringstream detailsSS;
                 detailsSS << "findNTUserRegFilesInDir(): loadHive() failed for file = " << fs_file->name->name;
-               // JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+                // JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
                 continue;
             }
             RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(a_userFolderPath + "/" + aUserDirName), hiveType, fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
@@ -455,9 +455,9 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T 
             if (aUserDirName.length() > 0) {
                 if (_stricmp(aUserDirName.c_str(), "All Users") != 0) { // thats not a real username
 
-                    string userName("");
+                    std::string userName("");
                     size_t dotPos = aUserDirName.find_first_of(".");
-                    if (string::npos != dotPos) {
+                    if (std::string::npos != dotPos) {
                         userName = aUserDirName.substr(0, dotPos);
                     }
                     else {
@@ -481,13 +481,13 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO * a_fs_info, TSK_INUM_T 
  * @param aUserDirPathName Path to user folder
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const string aUserDirPathName) {
+int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const std::string aUserDirPathName) {
 
     // Look for usrclass.dat
-    const string WIN7_USRCLASS_SUBDIR = "/AppData/Local/Microsoft/Windows";
-    const string XP_USRCLASS_SUBDIR = "/Local Settings/Application Data/Microsoft/Windows";
+    const std::string WIN7_USRCLASS_SUBDIR = "/AppData/Local/Microsoft/Windows";
+    const std::string XP_USRCLASS_SUBDIR = "/Local Settings/Application Data/Microsoft/Windows";
 
-    string usrClassSubdir("");
+    std::string usrClassSubdir("");
     if (TskHelper::startsWith(aUserDirPathName, "/Users")) {
         usrClassSubdir = aUserDirPathName + WIN7_USRCLASS_SUBDIR;
     }
@@ -500,8 +500,8 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const string aU
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, usrClassSubdir.c_str(), filenameInfo, NULL, &fsFile);
 
     if (retval == -1) {
-        string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
-        stringstream detailsSS;
+        std::string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
+        std::stringstream detailsSS;
         detailsSS << "findUsrclassRegFile(): tsk_fs_path2inum() failed for dir = " << usrClassSubdir << ", errno = " << tsk_error_get();
         //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
         return -1;
@@ -512,8 +512,8 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const string aU
 
         // open the directory
         if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-            string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
-            stringstream detailsSS;
+            std::string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
+            std::stringstream detailsSS;
             detailsSS << "findUsrclassRegFile(): tsk_fs_dir_open_meta() failed for dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();
             //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
             return -1;
@@ -527,8 +527,8 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const string aU
 
             // get the entry
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
-                stringstream detailsSS;
+                std::string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
+                std::stringstream detailsSS;
                 detailsSS << "findUsrclassRegFile(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();
                 //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
                 continue;
@@ -538,7 +538,7 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const string aU
             if (fs_file->meta) {
                 if ((fs_file->meta->type == TSK_FS_META_TYPE_REG) && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)) {
                     if (fs_file->name) {
-                        string fName = fs_file->name->name;
+                        std::string fName = fs_file->name->name;
 
                         if ((0 == _stricmp("USRCLASS.DAT", fName.c_str()))) {
 
@@ -547,24 +547,24 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO * a_fs_info, const string aU
                             //CyberTriageUtils::DEBUG_PRINT("findUsrclassRegFile: Loading hive");
                             RegParser *pRegParser = new RegParser(hiveType);
                             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                                string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                                stringstream detailsSS;
+                                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
+                                std::stringstream detailsSS;
                                 detailsSS << "findUsrclassRegFile(): loadHive() failed for file = " << fs_file->name->name;
-                               // JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+                                // JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
                                 return -1;
                             }
                             RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(usrClassSubdir), hiveType, fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
 
                             // determine the user for this file, from the homedir name
-                            string userName("");
-                            string aUserDirName("");
+                            std::string userName("");
+                            std::string aUserDirName("");
 
                             size_t lastSlashPos = aUserDirPathName.find_last_of("/");
-                            if ((string::npos != lastSlashPos)) {
+                            if ((std::string::npos != lastSlashPos)) {
                                 aUserDirName = aUserDirPathName.substr(lastSlashPos + 1);
                             }
                             size_t dotPos = aUserDirName.find_first_of(".");
-                            if (string::npos != dotPos) {
+                            if (std::string::npos != dotPos) {
                                 userName = aUserDirName.substr(0, dotPos);
                             }
                             else {

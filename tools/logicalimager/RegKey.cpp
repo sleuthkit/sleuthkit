@@ -16,34 +16,32 @@
 
 #include "RegKey.h"
 
-using namespace std;
+RegKey::RegKey(std::wstring keyName) : m_regKey(NULL) {
+    m_keyName = keyName;
 
-RegKey::RegKey(wstring keyName) : m_regKey(NULL) {
-  m_keyName = keyName;
+    m_numSubkeys = -1;// unknown
+    m_numValues = -1; // unknown
 
-  m_numSubkeys = -1;// unknown
-  m_numValues = -1; // unknown
-
-  m_modifyTime.dwLowDateTime = 0;
-  m_modifyTime.dwHighDateTime = 0;
+    m_modifyTime.dwLowDateTime = 0;
+    m_modifyTime.dwHighDateTime = 0;
 
 }
 
-RegKey::RegKey(wstring keyName, long numSubkeys, long numValues) : m_regKey(NULL) {
-  m_keyName = keyName;
+RegKey::RegKey(std::wstring keyName, long numSubkeys, long numValues) : m_regKey(NULL) {
+    m_keyName = keyName;
 
-  m_numSubkeys = numSubkeys;
-  m_numValues = numValues;
+    m_numSubkeys = numSubkeys;
+    m_numValues = numValues;
 
-  m_modifyTime.dwLowDateTime = 0;
-  m_modifyTime.dwHighDateTime = 0;
+    m_modifyTime.dwLowDateTime = 0;
+    m_modifyTime.dwHighDateTime = 0;
 }
 
 RegKey::~RegKey() {
-  if (m_regKey != NULL) {
-    delete m_regKey;
-    m_regKey = NULL;
-  }
+    if (m_regKey != NULL) {
+        delete m_regKey;
+        m_regKey = NULL;
+    }
 }
 
 /**
@@ -51,26 +49,26 @@ RegKey::~RegKey() {
  * @returns 0 if initialization is successful, otherwise false.
  */
 int RegKey::initialize(const Rejistry::RegistryKey * regKey) {
-  if (regKey == NULL) {
-    return -1;
-  }
+    if (regKey == NULL) {
+        return -1;
+    }
 
-  m_keyName = regKey->getName();
-  m_numSubkeys = regKey->getSubkeyList().size();
-  m_numValues = regKey->getValueList().size();
-  uint64_t timestamp = regKey->getTimestamp();
-  m_modifyTime.dwLowDateTime = (DWORD)(timestamp & 0xFFFFFFFF);
-  m_modifyTime.dwHighDateTime = (DWORD)(timestamp >> 32);
+    m_keyName = regKey->getName();
+    m_numSubkeys = regKey->getSubkeyList().size();
+    m_numValues = regKey->getValueList().size();
+    uint64_t timestamp = regKey->getTimestamp();
+    m_modifyTime.dwLowDateTime = (DWORD)(timestamp & 0xFFFFFFFF);
+    m_modifyTime.dwHighDateTime = (DWORD)(timestamp >> 32);
 
-  m_regKey = new Rejistry::RegistryKey(*regKey);
+    m_regKey = new Rejistry::RegistryKey(*regKey);
 
-  return 0;
+    return 0;
 }
 
 void RegKey::print() {
 
-  wcout << L"Key: " << m_keyName << endl;
-  wcout << L"\t" << L"Subkeys: " << m_numSubkeys << endl;
-  wcout << L"\t" << L"Values: " << m_numValues << endl;
+    std::wcout << L"Key: " << m_keyName << std::endl;
+    std::wcout << L"\t" << L"Subkeys: " << m_numSubkeys << std::endl;
+    std::wcout << L"\t" << L"Values: " << m_numValues << std::endl;
 
 }

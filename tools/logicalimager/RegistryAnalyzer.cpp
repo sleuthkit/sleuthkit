@@ -18,6 +18,8 @@
 #include <iostream>
 #include <codecvt>
 #include <iomanip> 
+#include <vector>
+#include <map>
 
 #include "RegistryAnalyzer.h"
 #include "tsk/tsk_tools_i.h"
@@ -27,7 +29,7 @@
 #include "RegistryLoader.h"
 #include "UserAccount.h"
 
-const string LOCAL_DOMAIN = "local";
+const std::string LOCAL_DOMAIN = "local";
 
 RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
     m_outputFilePath(outputFilePath)
@@ -46,7 +48,7 @@ RegistryAnalyzer::~RegistryAnalyzer() {
     }
 }
 
-RegHiveType::Enum RegistryAnalyzer::hiveNameToType(const string aName) const
+RegHiveType::Enum RegistryAnalyzer::hiveNameToType(const std::string aName) const
 {
     if (0 == _stricmp("SYSTEM", aName.c_str()))
         return RegHiveType::SYSTEM;
@@ -65,9 +67,9 @@ RegHiveType::Enum RegistryAnalyzer::hiveNameToType(const string aName) const
 }
 
 // Returns a 8601 time string for the given time_t.  Assumes that the time_t value is in UTC and returns readable timestamp in UTC                                                                                                               
-string getTimeStr(time_t aTime, unsigned long a_fractionSecs = 0) {
+std::string getTimeStr(time_t aTime, unsigned long a_fractionSecs = 0) {
 
-    string retStr;
+    std::string retStr;
     retStr.clear();
 
     if (0 == aTime)
@@ -85,7 +87,7 @@ string getTimeStr(time_t aTime, unsigned long a_fractionSecs = 0) {
     // append the fraction of seconds                                                                                
     std::stringstream ss;
     ss << std::setfill('0') << std::setw(9) << a_fractionSecs;
-    string fractionStr = ss.str();
+    std::string fractionStr = ss.str();
     retStr += "." + fractionStr;
     retStr += "Z";
     return retStr;
@@ -105,7 +107,7 @@ time_t filetimeToTimet(const FILETIME& ft)
 * FiletimeToStr - converts the given FILETIME stamp into a ISO 8601 timmestamp string
 *  Returns:  ISO 8601 formatted time string, "Unknown" is FILETIME is 0
 */
-string FiletimeToStr(FILETIME filetime) {
+std::string FiletimeToStr(FILETIME filetime) {
     if (filetime.dwLowDateTime == 0 && filetime.dwHighDateTime == 0)
         return "Unknown";
     return getTimeStr(filetimeToTimet(filetime));
@@ -175,7 +177,7 @@ USER_ADMIN_PRIV::Enum samUserTypeToAdminPriv(uint32_t& acctType) {
 */
 
 int RegistryAnalyzer::analyzeSAMUsers() const {
-    map<wstring, FILETIME> acctCreationDateMap;
+    std::map<std::wstring, FILETIME> acctCreationDateMap;
     RegFileInfo *aRegFile = RegistryLoader::getInstance().getSAMHive();
     if (aRegFile == NULL) {
         std::cerr << "ERROR: SAM HIVE not found" << std::endl;
@@ -187,15 +189,15 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
 
     // First collect the known user names and their account creation time.  
     // Account creation time corresponds with creation of a user name key
-    wstring wsSAMUserNamesKeyName = L"SAM\\Domains\\Account\\Users\\Names";
-    vector<wstring> wsUserNameSubkeys;
+    std::wstring wsSAMUserNamesKeyName = L"SAM\\Domains\\Account\\Users\\Names";
+    std::vector<std::wstring> wsUserNameSubkeys;
     int rc;
     try {
         rc = aRegParser.getSubKeys(wsSAMUserNamesKeyName, wsUserNameSubkeys);
         if (0 == rc) {
-            for (vector<wstring>::iterator it = wsUserNameSubkeys.begin(); it != wsUserNameSubkeys.end(); ++it) {
-                wstring wsName = (*it);
-                wstring wsKeyName = wsSAMUserNamesKeyName + L"\\" + wsName;
+            for (std::vector<std::wstring>::iterator it = wsUserNameSubkeys.begin(); it != wsUserNameSubkeys.end(); ++it) {
+                std::wstring wsName = (*it);
+                std::wstring wsKeyName = wsSAMUserNamesKeyName + L"\\" + wsName;
                 RegKey* pUserNameSubkey = new RegKey(wsKeyName);
                 if (0 == aRegParser.getKey(wsKeyName, *pUserNameSubkey)) {
                     FILETIME ft = { 0, 0 };
@@ -205,27 +207,27 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
             }
         }
         else if (-2 == rc) {
-            string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUserNamesKeyName) + " Local user accounts may not be reported.";
-            string details = "analyzeSAMUsers() failed.";
+            std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUserNamesKeyName) + " Local user accounts may not be reported.";
+            std::string details = "analyzeSAMUsers() failed.";
             std::cerr << errMsg << std::endl;
             rc = -1;
         }
 
-        wstring wsSAMUsersKeyName = L"SAM\\Domains\\Account\\Users";
-        vector<wstring> wsSubkeyNames;
+        std::wstring wsSAMUsersKeyName = L"SAM\\Domains\\Account\\Users";
+        std::vector<std::wstring> wsSubkeyNames;
 
         rc = aRegParser.getSubKeys(wsSAMUsersKeyName, wsSubkeyNames);
         if (0 == rc) {
-            for (vector<wstring>::iterator it = wsSubkeyNames.begin(); it != wsSubkeyNames.end(); ++it) {
+            for (std::vector<std::wstring>::iterator it = wsSubkeyNames.begin(); it != wsSubkeyNames.end(); ++it) {
                 if (TskHelper::startsWith(TskHelper::toNarrow((*it)), "0000")) {
-                    wstring wsRID = (*it);
-                    wstring wsSAMRIDKeyName = wsSAMUsersKeyName + L"\\" + wsRID;
+                    std::wstring wsRID = (*it);
+                    std::wstring wsSAMRIDKeyName = wsSAMUsersKeyName + L"\\" + wsRID;
 
                     bool bError = false;
-                    wstring wsUserName(L"");
-                    wstring wsFullName(L"");
-                    wstring wsComment(L"");
-                    string sUserName("");
+                    std::wstring wsUserName(L"");
+                    std::wstring wsFullName(L"");
+                    std::wstring wsComment(L"");
+                    std::string sUserName("");
 
                     uint32_t samAcctType = 0;
                     USER_ACCOUNT_TYPE::Enum acctType;
@@ -233,7 +235,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
 
                     // Get V Record
                     RegVal vRecord;
-                    wstring wsVRecordValname = L"V";
+                    std::wstring wsVRecordValname = L"V";
                     vRecord.setValName(wsVRecordValname);
                     if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsVRecordValname, vRecord)) {
                         if (parseSAMVRecord(vRecord.getBinary(), vRecord.getValLen(), wsUserName, wsFullName, wsComment, samAcctType)) {
@@ -254,11 +256,11 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     FILETIME accountExpiryDate = { 0,0 };
                     FILETIME lastFailedLoginDate = { 0,0 };
 
-                    string sDateCreated = "Unknown";
-                    string sLastLoginDate;
-                    string sAcctExpiryDate;
-                    string slastFailedLoginDate;
-                    string slastPWResetDate;
+                    std::string sDateCreated = "Unknown";
+                    std::string sLastLoginDate;
+                    std::string sAcctExpiryDate;
+                    std::string slastFailedLoginDate;
+                    std::string slastPWResetDate;
 
                     uint16_t loginCount = 0;
                     uint16_t  acbFlags = 0;
@@ -266,7 +268,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
 
                     // GET F Record
                     RegVal fRecord;
-                    wstring wsFRecordValname = L"F";
+                    std::wstring wsFRecordValname = L"F";
                     fRecord.setValName(wsFRecordValname);
 
                     if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsFRecordValname, fRecord)) {
@@ -283,12 +285,12 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                             sAcctExpiryDate = "Never";
                         }
 
-                        map<wstring, FILETIME>::iterator it = acctCreationDateMap.find(wsUserName);
+                        std::map<std::wstring, FILETIME>::iterator it = acctCreationDateMap.find(wsUserName);
                         if (it != acctCreationDateMap.end()) {
                             sDateCreated = FiletimeToStr(it->second);
                         }
                         else {
-                            wcerr << "User name = " << wsUserName << " not found in acctCreationDateMap" << endl;
+                            std::wcerr << "User name = " << wsUserName << " not found in acctCreationDateMap" << std::endl;
                         }
 
                         if ((acbFlags & 0x0001) == 0x0001)
@@ -340,8 +342,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
             }
         }
         else {
-            string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUsersKeyName) + " Local user accounts may not be reported.";
-            string details = "analyzeSAMUsers() failed.";
+            std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUsersKeyName) + " Local user accounts may not be reported.";
+            std::string details = "analyzeSAMUsers() failed.";
             std::cerr << errMsg << std::endl;
             rc = -1;
         }
@@ -352,7 +354,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
             std::rethrow_exception(eptr);
         }
         catch (const std::exception& e) {
-            string errMsg = "RegisteryAnalyzer: Uncaught exception in analyzeSAMUsers.";
+            std::string errMsg = "RegisteryAnalyzer: Uncaught exception in analyzeSAMUsers.";
             std::cerr << errMsg << std::endl;
             std::cerr << e.what() << std::endl;
         }
@@ -375,11 +377,11 @@ WORD makeWORD(const unsigned char *buf) {
 */
 std::wstring utf16LEToWString(const unsigned char *buf, size_t len) {
     if (NULL == buf || len == 0)
-        return wstring();
+        return std::wstring();
 
-    wstring_convert<codecvt_utf16<wchar_t, 0x10ffff, little_endian>,
+    std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>,
         wchar_t> conv;
-    wstring ws = conv.from_bytes(
+    std::wstring ws = conv.from_bytes(
         reinterpret_cast<const char*> (buf),
         reinterpret_cast<const char*> (buf + len));
 
@@ -402,7 +404,7 @@ std::wstring utf16LEToWString(const unsigned char *buf, size_t len) {
 *
 * @returns 0 on success, -1 if error
 */
-int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, wstring& userName, wstring& userFullName, wstring& comment, uint32_t& acctType) const {
+int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring& userName, std::wstring& userFullName, std::wstring& comment, uint32_t& acctType) const {
 
     int rc = 0;
     size_t off;

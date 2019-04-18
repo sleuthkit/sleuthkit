@@ -20,70 +20,68 @@
 
 #include "rejistry++\include\librejistry++.h"
 
-using namespace std;
-
-/**
- * RegValue - Abstracts a Registry Value
- *                 
- *
- */
+ /**
+  * RegValue - Abstracts a Registry Value
+  *
+  *
+  */
 class RegVal
 {
- public:
-  RegVal();
-  RegVal(wstring valName);
-  RegVal(wstring valName, int valType, long valLen);
-  RegVal(wstring valName, int valType, long valLen, unsigned long dwData); // numeric data
-  RegVal(wstring valName, int valType, long valLen, unsigned _int64 dwData64); // numeric data 64
-  RegVal(wstring valName, int valType, long valLen, wstring wsData); // string data
-  RegVal(wstring valName, int valType, long valLen, unsigned char * binData); // bin data
-  RegVal(const Rejistry::RegistryValue * value);
+public:
+    RegVal();
+    RegVal(std::wstring valName);
+    RegVal(std::wstring valName, int valType, long valLen);
+    RegVal(std::wstring valName, int valType, long valLen, unsigned long dwData); // numeric data
+    RegVal(std::wstring valName, int valType, long valLen, unsigned _int64 dwData64); // numeric data 64
+    RegVal(std::wstring valName, int valType, long valLen, std::wstring wsData); // string data
+    RegVal(std::wstring valName, int valType, long valLen, unsigned char * binData); // bin data
+    RegVal(const Rejistry::RegistryValue * value);
 
-  int initialize(const Rejistry::RegistryValue * value);
+    int initialize(const Rejistry::RegistryValue * value);
 
-  void setValName(wstring valName)  { m_valName = valName; }
-  void setValType(int valType)  { m_valType = valType; }
-  void setValLen(long valLen)  {  m_valLen = valLen; }
+    void setValName(std::wstring valName) { m_valName = valName; }
+    void setValType(int valType) { m_valType = valType; }
+    void setValLen(long valLen) { m_valLen = valLen; }
 
-  void setDWORD(unsigned long dwData) { m_dwData = dwData; }
-  void setQWORD(unsigned _int64 dwData64) { m_dwData64 = dwData64; }
-  void setString(wstring wsData) { m_wsData = wsData; }
-  void setBinaryData(unsigned char *pData);
-  void addMultiStringData(wstring strData); // multi string data
+    void setDWORD(unsigned long dwData) { m_dwData = dwData; }
+    void setQWORD(unsigned _int64 dwData64) { m_dwData64 = dwData64; }
+    void setString(std::wstring wsData) { m_wsData = wsData; }
+    void setBinaryData(unsigned char *pData);
+    void addMultiStringData(std::wstring strData); // multi string data
 
-  wstring getValName() const { return m_valName; }; 
-  int getValType() const { return m_valType; };
-  long getValLen() const { return m_valLen; };
-  
-  unsigned long getDWORD() const { return m_dwData; }
-  unsigned _int64 getDWORD64() const { return m_dwData64; }
-  wstring getString() const { return m_wsData; }
-  long getBinary(vector<unsigned char *>& vBytes) const;
-  const unsigned char * getBinary() const { return &m_vBytes[0];};
-  vector<wstring> getMultiString() const { return m_vMultiString;};
+    std::wstring getValName() const { return m_valName; };
+    int getValType() const { return m_valType; };
+    long getValLen() const { return m_valLen; };
 
-  bool isString() { return (m_valType == REG_SZ) || (m_valType == REG_EXPAND_SZ) ; }
-  bool isDWORD()  { return (m_valType == REG_DWORD) || (m_valType == REG_DWORD_LITTLE_ENDIAN) || (m_valType == REG_DWORD_BIG_ENDIAN); }
-  bool isQWORD()  { return (m_valType == REG_QWORD) || (m_valType == REG_QWORD_LITTLE_ENDIAN); }
-  bool isBinary()      { return (m_valType == REG_BINARY); }   
-  bool isMultiString() { return (m_valType == REG_MULTI_SZ); }
-    
-  string  valTypeStr();
-  wstring dataToStr();
-  void print();
+    unsigned long getDWORD() const { return m_dwData; }
+    unsigned _int64 getDWORD64() const { return m_dwData64; }
+    std::wstring getString() const { return m_wsData; }
+    long getBinary(std::vector<unsigned char *>& vBytes) const;
+    const unsigned char * getBinary() const { return &m_vBytes[0]; };
+    std::vector<std::wstring> getMultiString() const { return m_vMultiString; };
 
- private:
-  Rejistry::RegistryValue * m_registryValue;
+    bool isString() { return (m_valType == REG_SZ) || (m_valType == REG_EXPAND_SZ); }
+    bool isDWORD() { return (m_valType == REG_DWORD) || (m_valType == REG_DWORD_LITTLE_ENDIAN) || (m_valType == REG_DWORD_BIG_ENDIAN); }
+    bool isQWORD() { return (m_valType == REG_QWORD) || (m_valType == REG_QWORD_LITTLE_ENDIAN); }
+    bool isBinary() { return (m_valType == REG_BINARY); }
+    bool isMultiString() { return (m_valType == REG_MULTI_SZ); }
 
-  // metadata
-  wstring m_valName;
-  int m_valType;
-  long m_valLen;
+    std::string valTypeStr();
+    std::wstring dataToStr();
+    void print();
 
-  // data
-  unsigned long       m_dwData;    
-  unsigned _int64     m_dwData64; 
-  wstring m_wsData;
-  vector<unsigned char> m_vBytes;
-  std::vector<wstring> m_vMultiString;
+private:
+    Rejistry::RegistryValue * m_registryValue;
+
+    // metadata
+    std::wstring m_valName;
+    int m_valType;
+    long m_valLen;
+
+    // data
+    unsigned long       m_dwData;
+    unsigned _int64     m_dwData64;
+    std::wstring m_wsData;
+    std::vector<unsigned char> m_vBytes;
+    std::vector<std::wstring> m_vMultiString;
 };
