@@ -790,6 +790,7 @@ main(int argc, char **argv1)
         if (ruleSet) {
             delete ruleSet;
         }
+        fprintf(stderr, "openImageHandle failed\n");
         exit(1);
     }
 
@@ -799,6 +800,7 @@ main(int argc, char **argv1)
             delete ruleSet;
         }
         // should we call findFiles.closeImage() upon error?
+        fprintf(stderr, "findFilesInImg failed\n");
         exit(1);
     }
 
@@ -811,6 +813,9 @@ main(int argc, char **argv1)
         	    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
         	    // not exiting, should call tsk_img_close.
             }
+        }
+        else {
+            fprintf(stderr, "Not calling tsk_img_writer_finish\n");
         }
     }
 
