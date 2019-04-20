@@ -269,17 +269,37 @@ typedef struct xfs_dir2_sf {
     xfs_dir2_sf_entry_t list[1];
 } xfs_dir2_sf_t;
 
+/*
+ * Attribute flags
+ * NOTE: the INCOMPLETE bit must not collide with the flags bits specified
+ * on the system call, they are "or"ed together for various operations.
+ */
+#define	XFS_ATTR_LOCAL_BIT	0	/* attr is stored locally */
+#define	XFS_ATTR_ROOT_BIT	1	/* limit access to trusted attrs */
+#define	XFS_ATTR_SECURE_BIT	2	/* limit access to secure attrs */
+#define	XFS_ATTR_INCOMPLETE_BIT	7	/* attr in middle of create/delete */
+#define XFS_ATTR_LOCAL		(1 << XFS_ATTR_LOCAL_BIT)
+#define XFS_ATTR_ROOT		(1 << XFS_ATTR_ROOT_BIT)
+#define XFS_ATTR_SECURE		(1 << XFS_ATTR_SECURE_BIT)
+#define XFS_ATTR_INCOMPLETE	(1 << XFS_ATTR_INCOMPLETE_BIT)
+
+#define ATTR_SF_HDR_SIZE 3
+struct xfs_attr_sf_hdr {
+    uint16_t totsize;
+    uint8_t count;
+};
+/* size of attribute entry without name+value */
+#define ATTR_SF_ENTRY_SIZE 3
+struct xfs_attr_sf_entry {
+    uint8_t namelen;
+    uint8_t valuelen;
+    uint8_t flags;
+    uint8_t nameval[1];
+};
+
 typedef struct xfs_attr_shortform {
-    struct xfs_attr_sf_hdr {
-        uint16_t totsize;
-        uint8_t count;
- } hdr;
-    struct xfs_attr_sf_entry {
-        uint8_t namelen;
-        uint8_t valuelen;
-        uint8_t flags;
-        uint8_t nameval[1];
-    } list[1];
+    xfs_attr_sf_hdr hdr;
+    xfs_attr_sf_entry list[1];
 } xfs_attr_shortform_t;
 
 typedef struct xfs_dinode

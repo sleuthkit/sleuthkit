@@ -1056,7 +1056,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     {
         free(agf);
         free(agfl);
-        
+
         if (inode_flag == TSK_FS_META_FLAG_ALLOC)
             return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_ALLOC);
         else if (inode_flag == TSK_FS_META_FLAG_UNALLOC)
@@ -1574,6 +1574,95 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     return TSK_WALK_CONT;
 }
 
+
+/**
+ * Parse extended attributes
+ *
+ * @param a_fs File system file is located in
+ * @param a_dino_buf Inode buffer
+ * @param a_hFile File handle to print text to
+ *
+ * @returns 1 on error and 0 on success
+ */
+static uint8_t
+parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFile)
+{
+    if (a_dino_buf->di_core.di_forkoff == 0)
+    {
+        return 0;
+    }
+
+    tsk_fprintf(a_hFile, "\nExtended Attributes: \n");
+
+    void* in_base = (void*) &a_dino_buf->di_core;
+    uint64_t in_offset = a_xfsfs->inode_size -
+        XFS_DFORK_ASIZE(&a_dino_buf->di_core, a_xfsfs);
+
+    if (a_dino_buf->di_core.di_aformat == XFS_DINODE_FMT_LOCAL)
+    {
+        uint16_t attr_fork_size = XFS_DFORK_ASIZE(&a_dino_buf->di_core, a_xfsfs);
+
+        xfs_attr_sf_hdr *attr_hdr = (xfs_attr_sf_hdr*) (in_base + in_offset);
+        uint16_t totsize = tsk_getu16(TSK_BIG_ENDIAN, &attr_hdr->totsize);
+
+        if (attr_fork_size < ATTR_SF_HDR_SIZE ||
+            attr_fork_size - ATTR_SF_HDR_SIZE < totsize)
+        {
+            tsk_fprintf(a_hFile, "incorrect attribute header");
+            return 1;
+        }
+
+        in_offset = roundup(in_offset + ATTR_SF_HDR_SIZE, sizeof(uint64_t));
+        xfs_attr_sf_entry *sf_entry = (xfs_attr_sf_entry*) (in_base + in_offset);
+        uint64_t limit = a_xfsfs->inode_size;
+
+        // we intentionally attempt to go beyond entry_num and not
+        // beyond inode end if more (hidden) attributes are allocated
+        for (uint8_t entry_num = 0; in_offset < limit; entry_num++)
+        {
+            uint64_t sf_entry_size = ATTR_SF_ENTRY_SIZE + sf_entry->namelen
+                + sf_entry->valuelen;
+            if (sf_entry_size >= limit)
+            {
+                tsk_fprintf(a_hFile, "sf_entry goes past the inode literal area");
+                return 1;
+            }
+
+            if(sf_entry->flags & XFS_ATTR_ROOT)
+            {
+                tsk_fprintf(a_hFile, "root,");
+            }
+            else
+            {
+                tsk_fprintf(a_hFile, "user,");
+            }
+            if(sf_entry->flags & XFS_ATTR_SECURE)
+            {
+                tsk_fprintf(a_hFile, "secure,");
+            }
+            if(sf_entry->flags & XFS_ATTR_LOCAL)
+            {
+                tsk_fprintf(a_hFile, "local,");
+            }
+            if(sf_entry->flags & XFS_ATTR_INCOMPLETE)
+            {
+                tsk_fprintf(a_hFile, "incomplete,");
+            }
+
+            char name[sf_entry->namelen + 1] = {0};
+            memcpy(&name, &sf_entry->nameval, sf_entry->namelen);
+            char val[sf_entry->valuelen + 1] = {0};
+            memcpy(&val, &sf_entry->nameval + sf_entry->namelen,
+                sf_entry->valuelen);
+
+            tsk_fprintf(a_hFile, ".%s=%s\n", &name, &val);
+
+            in_offset = roundup(in_offset + sf_entry_size, sizeof(uint64_t));
+            sf_entry = (xfs_attr_sf_entry*) (in_base + in_offset);
+        }
+    }
+}
+
 /**
  * Print details on a specific file to a file handle.
  *
@@ -1678,19 +1767,7 @@ xfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     tsk_fprintf(hFile, "size: %" PRIuOFF "\n", fs_meta->size);
     tsk_fprintf(hFile, "num of links: %d\n", fs_meta->nlink);
 
-    // Extended attributes
-    /*
-    if (dino_buf->di_core.di_forkoff != 0)
-    {
-        xfs_dinode_core_t* _di_core = &dino_buf->di_core;
-        void attr_offset = XFS_DFORK_PTR(_di_core, XFS_ATTR_FORK);
-        tsk_fprintf(hFile, "attr_offset: 0x %x\n", attr_offset);
-
-        // TODO: parse extended attributes and test
-        // 14.4 Attribute Fork of 
-        // http://ftp.ntu.edu.tw/linux/utils/fs/xfs/docs/xfs_filesystem_structure.pdf
-    }
-    */
+    parse_extended_attrs(xfsfs, dino_buf, hFile);
 
     if (sec_skew != 0) {
         tsk_fprintf(hFile, "\nAdjusted Inode Times:\n");
@@ -1816,7 +1893,7 @@ parse_dir_block(
     char *dirbuf = NULL;
     XFSFS_INFO *xfs = (XFSFS_INFO *) a_fs;
     xfs_sb_t *sb = xfs->fs;
-    
+
     uint8_t ftype_size = (sb->sb_features2 & XFS_SB_VERSION2_FTYPE)
         ? sizeof(uint8_t)
         : 0;
@@ -2167,7 +2244,7 @@ visit_btree_node(
 
         free(node_recs);
         free(node_ptrs);
-        
+
         return TSK_OK;
     }
     else
@@ -2310,8 +2387,8 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         *    sf_entry goes after xfs_dir2_sf_hdr, which is defined as:
         *
         *    typedef struct xfs_dir2_sf_hdr {
-        *         __uint8_t count;
-        *         __uint8_t i8count;
+        *         uint8_t count;
+        *         uint8_t i8count;
         *         xfs_dir2_inou_t parent; <-- uint32_t (uint64_t if i8count > 0)
         *    } xfs_dir2_sf_hdr_t;
         */
@@ -2326,10 +2403,10 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         {
             /*
             *    typedef struct   {
-            *         __uint8_t namelen;
+            *         uint8_t namelen;
             *         xfs_dir2_sf_off_t offset;
-            *         __uint8_t name[1];
-            *         __uint8_t ftype;
+            *         uint8_t name[1];
+            *         uint8_t ftype;
             *         xfs_dir2_inou_t inumber;
             *    } xfs_dir2_sf_entry_t;
             */
@@ -2368,7 +2445,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 }
 
                 ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
-                
+
                 free(dino_buf);
             }
 
@@ -2780,7 +2857,7 @@ TSK_FS_INFO *
     }
 
     sb = xfsfs->fs;
-    
+
     sb->sb_magicnum = tsk_getu32(TSK_BIG_ENDIAN, &sb->sb_magicnum);
     sb->sb_blocksize = tsk_getu32(TSK_BIG_ENDIAN, &sb->sb_blocksize);
     sb->sb_dblocks = tsk_getu64(TSK_BIG_ENDIAN, &sb->sb_dblocks);
