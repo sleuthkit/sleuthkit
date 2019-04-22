@@ -23,6 +23,20 @@ xfs_inobt_key_t ikeys[0x10000];
 xfs_inobt_ptr_t iptrs[0x10000];
 xfs_inobt_rec_t irecs[0x10000];
 
+/*
+ * Calculate number of records in an inobt btree block.
+ */
+uint32_t
+xfs_inobt_maxrecs(xfs_sb_t *sb, int leaf)
+{
+    uint32_t blocklen = sb->sb_blocksize;
+	blocklen -= XFS_INOBT_BLOCK_LEN(sb);
+
+	if (leaf)
+		return blocklen / sizeof(xfs_inobt_rec_t);
+	return blocklen / (sizeof(xfs_inobt_key_t) + sizeof(xfs_inobt_ptr_t));
+}
+
 /* xfs_inode_getallocflag - get an allocation state of the inode
  * @param xfsfs A xfsfs file system information structure
  * @param dino_inum Metadata address
@@ -105,10 +119,20 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
     // while not leaf node
     while(cur_inobt_block->bb_level > 0)
     {
+        if(cur_inobt_block->bb_numrecs == 0)
+        {
+            if (tsk_verbose)
+            {
+                tsk_fprintf(stderr, "xfs_inode_getallocflag: empty node in AGI tree");
+            }
+
+            return (TSK_FS_META_FLAG_ENUM) NULL;
+        }
+
         // read all the keys
         len = cur_inobt_block->bb_numrecs * sizeof(xfs_inobt_key_t);
         cnt = tsk_fs_read(fs, 
-            (TSK_OFF_T) sb->sb_blocksize * cur_block_num + sizeof(xfs_inobt_key_t),
+            (TSK_OFF_T) sb->sb_blocksize * cur_block_num + sizeof(xfs_inobt_block_t),
             (char *) ikeys,
             len);
         if (cnt != len) {
@@ -122,12 +146,14 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
             return (TSK_FS_META_FLAG_ENUM) NULL;
         }
 
+        uint32_t maxrecs = xfs_inobt_maxrecs(sb, 0 /* not leaf */);
+
         // read all the node pointers
         len = cur_inobt_block->bb_numrecs * sizeof(xfs_inobt_ptr_t);
         cnt = tsk_fs_read(fs,
             (TSK_OFF_T) sb->sb_blocksize * cur_block_num 
                 + (TSK_OFF_T) sizeof(xfs_inobt_block_t) 
-                + (TSK_OFF_T) (cur_inobt_block->bb_numrecs * sizeof(xfs_inobt_key_t)),
+                + (TSK_OFF_T) (maxrecs * sizeof(xfs_inobt_key_t)),
                 (char *) iptrs, 
                 len);
         if (cnt != len) {
@@ -141,48 +167,68 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
             return (TSK_FS_META_FLAG_ENUM) NULL;
         }
 
-        // iterate over the keys
+        // iterate over the keys (in linear time for now, todo binary search)
+        // XFS should guarantee that keys/ptrs are sorted from lo to hi
         found_key = false;
         for(cur_key = 0; cur_key < cur_inobt_block->bb_numrecs; cur_key++)
         {
             ikeys[cur_key].ir_startino = 
                 tsk_getu32(TSK_BIG_ENDIAN, &ikeys[cur_key].ir_startino);
 
-            if(dino_aginum >= ikeys[cur_key].ir_startino
-                && dino_aginum - ikeys[cur_key].ir_startino < 64)
+            if(dino_aginum == ikeys[cur_key].ir_startino)
             {
-                // found in a range, go one level down in b+tree, read the next
+                // exact match found, increment the cur_key, terminate the loop
                 found_key = true;
-
-                cur_block_num = (TSK_DADDR_T) ag_num * (TSK_DADDR_T) sb->sb_agblocks
-                    + (TSK_DADDR_T) tsk_getu32(TSK_BIG_ENDIAN, &iptrs[cur_key]);
-
-                if (tsk_verbose) { tsk_fprintf(stderr, "go one level down in b+tree, cur_block_num = %u \n", cur_block_num); }
-
-                len = sizeof(xfs_inobt_block_t);
-                cnt = tsk_fs_read(fs,
-                    (TSK_OFF_T) sb->sb_blocksize * cur_block_num,
-                    (char *) cur_inobt_block,
-                    sizeof(xfs_inobt_block_t));
-                if (cnt != len) {
-                    if (cnt >= 0) {
-                        tsk_error_reset();
-                        tsk_error_set_errno(TSK_ERR_FS_READ);
-                    }
-                    tsk_error_set_errstr2("%s: Inode %" PRIuINUM, myname,
-                        dino_inum);
-                    free(cur_inobt_block);
-                    return (TSK_FS_META_FLAG_ENUM) NULL;
-                }
-
-                cur_inobt_block->bb_level = 
-                    tsk_getu16(TSK_BIG_ENDIAN, &cur_inobt_block->bb_level);
-                cur_inobt_block->bb_numrecs =
-                    tsk_getu16(TSK_BIG_ENDIAN, &cur_inobt_block->bb_numrecs);
+                cur_key++;
+                break;
+            }
+            else if(dino_aginum > ikeys[cur_key].ir_startino)
+            {
+                // inode can be in the range, but we aren't sure
+                // just take note, continue search
+                found_key = true;
+            }
+            else
+            {
+                // current key's startino is larger than the inode we look for
+                // terminate the loop
+                break;
             }
         }
 
-        if(!found_key)
+        if(found_key)
+        {
+            // if exact match was found, cur_key is artificially incremented
+            // otherwise cur_key also one value more than the valid one
+            cur_key--;
+
+            cur_block_num = (TSK_DADDR_T) ag_num * (TSK_DADDR_T) sb->sb_agblocks
+                    + (TSK_DADDR_T) tsk_getu32(TSK_BIG_ENDIAN, &iptrs[cur_key]);
+
+            if (tsk_verbose) { tsk_fprintf(stderr, "go one level down in b+tree, cur_block_num = %u at bb_level = %" PRIu64 "\n", cur_block_num, cur_inobt_block->bb_level); }
+
+            len = sizeof(xfs_inobt_block_t);
+            cnt = tsk_fs_read(fs,
+                (TSK_OFF_T) sb->sb_blocksize * cur_block_num,
+                (char *) cur_inobt_block,
+                sizeof(xfs_inobt_block_t));
+            if (cnt != len) {
+                if (cnt >= 0) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_READ);
+                }
+                tsk_error_set_errstr2("%s: Inode %" PRIuINUM, myname,
+                    dino_inum);
+                free(cur_inobt_block);
+                return (TSK_FS_META_FLAG_ENUM) NULL;
+            }
+
+            cur_inobt_block->bb_level =
+                tsk_getu16(TSK_BIG_ENDIAN, &cur_inobt_block->bb_level);
+            cur_inobt_block->bb_numrecs =
+                tsk_getu16(TSK_BIG_ENDIAN, &cur_inobt_block->bb_numrecs);
+        }
+        else
         {
             // The inode is not in a Inode B+tree, that means it's not tracked
             if (tsk_verbose) { tsk_fprintf(stderr, "xfs_inode_getallocflag: Inode %" PRIuINUM " not found in AGI tree, it's not tracked \n", dino_inum); }
@@ -194,11 +240,21 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
 
     // Now we are at the leaf node
 
+    if(cur_inobt_block->bb_numrecs == 0)
+    {
+        if (tsk_verbose)
+        {
+            tsk_fprintf(stderr, "xfs_inode_getallocflag: empty leaf in AGI tree");
+        }
+
+        return (TSK_FS_META_FLAG_ENUM) NULL;
+    }
+
     // read all the records
     len = cur_inobt_block->bb_numrecs * sizeof(xfs_inobt_rec_t);
     cnt = tsk_fs_read(fs,
         (TSK_OFF_T) sb->sb_blocksize * cur_block_num
-            + sizeof(xfs_btree_sblock_t),
+            + sizeof(xfs_inobt_block_t),
                 (char *) irecs,
                 len);
     if (cnt != len) {
@@ -1152,7 +1208,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 
         // iterate over the keys
         found = false;
-        for(cur_key = 0; cur_key < cur_btree_sblock->bb_numrecs; cur_key++)
+        for(cur_key = 0; !found && cur_key < cur_btree_sblock->bb_numrecs; cur_key++)
         {
             recs[cur_key].ar_startblock =
                 tsk_getu32(TSK_BIG_ENDIAN, &recs[cur_key].ar_startblock);
@@ -1870,9 +1926,7 @@ xfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
  * Calculate number of records in a bmap btree inode root.
  */
 uint32_t
-xfs_bmdr_maxrecs(
-	uint32_t	blocklen,
-	bool		leaf)
+xfs_bmdr_maxrecs(uint32_t blocklen, bool leaf)
 {
 	blocklen -= sizeof(xfs_bmdr_block_t);
 
@@ -2101,9 +2155,11 @@ visit_btree_node(
         bool is_root)
 {
     XFSFS_INFO *xfs = (XFSFS_INFO *) a_fs;
-    // xfs_bmdr_block  and xfs_bmbt_block_t share those two fields
+
+    // xfs_bmdr_block and xfs_bmbt_block_t share those two fields
     uint16_t bb_numrecs = 0;
     uint16_t bb_level = 0;
+
     uint16_t header_offset = 0;
     ssize_t len = 0;
     ssize_t cnt = 0;

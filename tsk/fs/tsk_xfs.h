@@ -154,6 +154,43 @@ typedef uint32_t xfs_alloc_ptr_t;
 #define XFS_IN_IWOTH   0000002
 #define XFS_IN_IXOTH   0000001
 
+/* size of a short form block:
+*    uint32_t   bb_magic;
+*    uint16_t   bb_level;
+*    uint16_t	bb_numrecs;
+*    +
+*    uint32_t   bb_leftsib
+*    uint32_t   bb_rightsib
+*/
+#define XFS_BTREE_SBLOCK_LEN \
+	(sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
+	 sizeof(uint32_t) + sizeof(uint32_t))
+
+/* sizes of CRC enabled btree blocks:
+*    uint32_t   bb_magic;
+*    uint16_t   bb_level;
+*    uint16_t	bb_numrecs;
+*    +
+*    uint32_t   bb_leftsib
+*    uint32_t   bb_rightsib
+*    uint64_t	bb_blkno;
+*	 uint64_t	bb_lsn;
+*	 xfs_uuid_t	bb_uuid;
+*	 uint32_t	bb_owner;
+*	 uint32_t	bb_crc;
+*/
+#define XFS_BTREE_SBLOCK_CRC_LEN \
+	(sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
+	 sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + \
+     sizeof(xfs_uuid_t) + sizeof(uint32_t) + sizeof(uint32_t))
+
+/*
+ * Btree block header size depends on a superblock flag.
+ */
+#define XFS_INOBT_BLOCK_LEN(sb) \
+	(xfs_sb_version_hascrc(sb) ? \
+		XFS_BTREE_SBLOCK_CRC_LEN : XFS_BTREE_SBLOCK_LEN)
+
 typedef struct xfs_btree_sblock xfs_inobt_block_t;
 
 typedef struct xfs_inobt_rec {
@@ -473,6 +510,13 @@ typedef struct xfs_dir2_leaf_entry {
 ** Super Block and related definitions 
 */
 
+#define	XFS_SB_MAGIC		0x58465342	/* 'XFSB' */
+#define	XFS_SB_VERSION_1	1		/* 5.3, 6.0.1, 6.1 */
+#define	XFS_SB_VERSION_2	2		/* 6.2 - attributes */
+#define	XFS_SB_VERSION_3	3		/* 6.2 - new inode version */
+#define	XFS_SB_VERSION_4	4		/* 6.2+ - bitmask version */
+#define	XFS_SB_VERSION_5	5		/* CRC enabled filesystem */
+
 /*
  * There are two words to hold XFS "feature" bits: the original
  * word, sb_versionnum, and sb_features2.  Whenever a bit is set in
@@ -622,6 +666,13 @@ typedef struct xfs_sb
     xfs_ino_t             sb_rrmapino;
 } xfs_sb_t;
 
+/*
+ * V5 superblock specific feature checks
+ */
+static inline bool xfs_sb_version_hascrc(xfs_sb *sb)
+{
+	return sb->sb_versionnum == XFS_SB_VERSION_5;
+}
 
 /*
  * Structure of an xfs file system handle.
