@@ -48,7 +48,7 @@ RegistryAnalyzer::~RegistryAnalyzer() {
     }
 }
 
-RegHiveType::Enum RegistryAnalyzer::hiveNameToType(const std::string aName) const
+RegHiveType::Enum RegistryAnalyzer::hiveNameToType(const std::string &aName) const
 {
     if (0 == _stricmp("SYSTEM", aName.c_str()))
         return RegHiveType::SYSTEM;
@@ -261,12 +261,11 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
 
                     std::string sDateCreated = "Unknown";
                     std::string sLastLoginDate;
-                    std::string sAcctExpiryDate;
                     std::string slastFailedLoginDate;
                     std::string slastPWResetDate;
 
                     uint16_t loginCount = 0;
-                    uint16_t  acbFlags = 0;
+                    uint16_t acbFlags = 0;
                     bool accountDisabled = false;
 
                     // GET F Record
@@ -281,12 +280,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                         sLastLoginDate = FiletimeToStr(lastLoginDate);
                         slastFailedLoginDate = FiletimeToStr(lastFailedLoginDate);
                         slastPWResetDate = FiletimeToStr(lastPWResetDate);
-                        if (accountExpiryDate.dwHighDateTime != 0x7FFFFFFF) {
-                            sAcctExpiryDate = FiletimeToStr(accountExpiryDate);
-                        }
-                        else {
-                            sAcctExpiryDate = "Never";
-                        }
 
                         std::map<std::wstring, FILETIME>::iterator it = acctCreationDateMap.find(wsUserName);
                         if (it != acctCreationDateMap.end()) {
@@ -337,7 +330,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         }
         else {
             std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUsersKeyName) + " Local user accounts may not be reported.";
-            std::string details = "analyzeSAMUsers() failed.";
             std::cerr << errMsg << std::endl;
             rc = -1;
         }

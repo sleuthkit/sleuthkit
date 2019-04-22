@@ -64,7 +64,6 @@ std::string TskHelper::toNarrow(const std::wstring & a_utf16Str) {
         return narrow;
     }
     catch (...) {
-        std::exception_ptr eptr = std::current_exception();
         return "";
     }
 }

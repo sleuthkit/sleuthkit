@@ -372,7 +372,6 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
     for (size_t i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
 
         TSK_OFF_T off = 0;
-        size_t len = 0;
 
         // get the entry
         const TSK_FS_NAME *fs_name;

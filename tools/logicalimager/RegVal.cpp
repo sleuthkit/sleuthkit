@@ -41,8 +41,7 @@ RegVal::RegVal() : m_registryValue(NULL) {
     m_vMultiString.clear();
 }
 
-RegVal::RegVal(std::wstring &valName) : m_registryValue(NULL) {
-    m_valName = valName;
+RegVal::RegVal(std::wstring &valName) : m_registryValue(NULL), m_valName(valName) {
     m_valType = -1;
     m_valLen = -1;
     m_dwData = 0;
@@ -58,6 +57,8 @@ RegVal::RegVal(std::wstring &valName, int valType, long valLen) :
     m_valType(valType),
     m_valLen(valLen) 
 {
+    m_dwData = 0;
+    m_dwData64 = 0;
 }
 
 RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned long dwData) :
@@ -67,6 +68,7 @@ RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned long dw
     m_valLen(valLen),
     m_dwData(dwData)
 {
+    m_dwData64 = 0;
 }
 
 RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned _int64 dwData64) :
@@ -76,6 +78,7 @@ RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned _int64 
     m_valLen(valLen),
     m_dwData64(dwData64)
 {
+    m_dwData = 0;
 }
 
 RegVal::RegVal(std::wstring &valName, int valType, long valLen, std::wstring &wsData) :
@@ -85,6 +88,7 @@ RegVal::RegVal(std::wstring &valName, int valType, long valLen, std::wstring &ws
     m_valLen(valLen),
     m_wsData(wsData)
 {
+    m_dwData64 = 0;
 }
 
 RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned char *binData) :
@@ -93,6 +97,8 @@ RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned char *b
     m_valType(valType),
     m_valLen(valLen)
 {
+    m_dwData = 0;
+    m_dwData64 = 0;
     if (valLen >= 2) {
         m_vBytes.assign(&binData[0], &binData[valLen - 1]);
     }

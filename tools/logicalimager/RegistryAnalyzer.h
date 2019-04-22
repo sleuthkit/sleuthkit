@@ -29,7 +29,7 @@ public:
     int analyzeSAMUsers() const;
 
 private:
-    RegHiveType::Enum hiveNameToType(const std::string aName) const;
+    RegHiveType::Enum hiveNameToType(const std::string &aName) const;
 
     int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring &userName,
         std::wstring &userFullName, std::wstring &comment, uint32_t &acctType) const;
@@ -37,6 +37,8 @@ private:
     int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen, FILETIME &lastLoginDate,
         FILETIME &lastPWResetDate, FILETIME &accountExpiryDate, FILETIME &lastFailedLoginDate,
         unsigned short &loginCount, unsigned short &acbFlags) const;
+
+    RegistryAnalyzer(const RegistryAnalyzer&) = delete;
 
     std::string m_outputFilePath;
     FILE *m_outputFile;

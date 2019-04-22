@@ -20,9 +20,9 @@ UserAccount::UserAccount(std::string &aUserName) :
 	m_adminPriv(USER_ADMIN_PRIV::UNKNOWN),
 	m_accountLocation(USER_ACCOUNT_LOCATION::UNKNOWN),
 	m_SID(""),
-	m_isDisabled(false)
+	m_isDisabled(false),
+    m_loginCount(0)
 {
-
 }
 
 UserAccount:: ~UserAccount(void) {
