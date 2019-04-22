@@ -1,20 +1,16 @@
-/***************************************************************************
-** This data and information is proprietary to, and a valuable trade secret
-** of, Basis Technology Corp.  It is given in confidence by Basis Technology
-** and may only be used as permitted under the license agreement under which
-** it has been distributed, and in no other way.
+/*
+** The Sleuth Kit
 **
-** Copyright (c) 2014 Basis Technology Corp. All rights reserved.
+** Brian Carrier [carrier <at> sleuthkit [dot] org]
+** Copyright (c) 2010-2019 Brian Carrier.  All Rights reserved
 **
-** The technical data and information provided herein are provided with
-** `limited rights', and the computer software provided herein is provided
-** with `restricted rights' as those terms are defined in DAR and ASPR
-** 7-104.9(a).
-***************************************************************************/
+** This software is distributed under the Common Public License 1.0
+**
+*/
 
 #include "RegFileInfo.h"
 
-RegFileInfo::RegFileInfo(std::string aName, std::string aPath, RegHiveType::Enum a_hiveType, 
+RegFileInfo::RegFileInfo(std::string &aName, std::string &aPath, RegHiveType::Enum a_hiveType, 
                          TSK_OFF_T aOff, TSK_INUM_T aMetaAddr, RegParser *a_regParser) :
     m_name(aName),
     m_path(aPath),
