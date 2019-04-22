@@ -21,8 +21,8 @@
   */
 class RegKey {
 public:
-    RegKey(std::wstring keyName);
-    RegKey(std::wstring keyName, long numKeys, long numValues);
+    RegKey(std::wstring &keyName);
+    RegKey(std::wstring &keyName, long numKeys, long numValues);
     ~RegKey();
 
     int initialize(const Rejistry::RegistryKey *regKey);

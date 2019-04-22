@@ -34,52 +34,65 @@ RegVal::RegVal() : m_registryValue(NULL) {
     m_valName.clear();
     m_valType = -1;
     m_valLen = -1;
+    m_dwData = 0;
+    m_dwData64 = 0;
     m_wsData.clear();
     m_vBytes.clear();
     m_vMultiString.clear();
 }
 
-RegVal::RegVal(std::wstring valName) : m_registryValue(NULL) {
+RegVal::RegVal(std::wstring &valName) : m_registryValue(NULL) {
     m_valName = valName;
     m_valType = -1;
     m_valLen = -1;
+    m_dwData = 0;
+    m_dwData64 = 0;
     m_wsData.clear();
     m_vBytes.clear();
     m_vMultiString.clear();
 }
 
-RegVal::RegVal(std::wstring valName, int valType, long valLen) : m_registryValue(NULL) {
-    m_valName = valName;
-    m_valType = valType;
-    m_valLen = valLen;
+RegVal::RegVal(std::wstring &valName, int valType, long valLen) : 
+    m_registryValue(NULL),
+    m_valName(valName),
+    m_valType(valType),
+    m_valLen(valLen) 
+{
 }
 
-RegVal::RegVal(std::wstring valName, int valType, long valLen, unsigned long dwData) : m_registryValue(NULL) {
-    m_valName = valName;
-    m_valType = valType;
-    m_valLen = valLen;
-    m_dwData = dwData;
+RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned long dwData) :
+    m_registryValue(NULL),
+    m_valName(valName),
+    m_valType(valType),
+    m_valLen(valLen),
+    m_dwData(dwData)
+{
 }
 
-RegVal::RegVal(std::wstring valName, int valType, long valLen, unsigned _int64 dwData64) : m_registryValue(NULL) {
-    m_valName = valName;
-    m_valType = valType;
-    m_valLen = valLen;
-    m_dwData64 = dwData64;
+RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned _int64 dwData64) :
+    m_registryValue(NULL),
+    m_valName(valName),
+    m_valType(valType),
+    m_valLen(valLen),
+    m_dwData64(dwData64)
+{
 }
 
-RegVal::RegVal(std::wstring valName, int valType, long valLen, std::wstring wsData) : m_registryValue(NULL) {
-    m_valName = valName;
-    m_valType = valType;
-    m_valLen = valLen;
-    m_wsData = wsData;
+RegVal::RegVal(std::wstring &valName, int valType, long valLen, std::wstring &wsData) :
+    m_registryValue(NULL),
+    m_valName(valName),
+    m_valType(valType),
+    m_valLen(valLen),
+    m_wsData(wsData)
+{
 }
 
-RegVal::RegVal(std::wstring valName, int valType, long valLen, unsigned char *binData) : m_registryValue(NULL) {
-    m_valName = valName;
-    m_valType = valType;
-    m_valLen = valLen;
-
+RegVal::RegVal(std::wstring &valName, int valType, long valLen, unsigned char *binData) :
+    m_registryValue(NULL),
+    m_valName(valName),
+    m_valType(valType),
+    m_valLen(valLen)
+{
     if (valLen >= 2) {
         m_vBytes.assign(&binData[0], &binData[valLen - 1]);
     }
@@ -134,10 +147,7 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
     }
     catch (Rejistry::RegistryParseException& e)
     {
-        std::stringstream errSS;
-        errSS << "Failed to initialize registry value due to registry parse exception: " << e.message();
-        std::string details = "";
-        //      CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errSS.str(), details);
+        std::cerr << "Failed to initialize registry value due to registry parse exception: " << e.message() << std::endl;
         return -1;
     }
     return 0;
@@ -149,11 +159,11 @@ void RegVal::setBinaryData(unsigned char *pData) {
     m_vBytes.assign(&pData[0], &pData[m_valLen - 1]);
 }
 
-void RegVal::addMultiStringData(std::wstring strData) {
+void RegVal::addMultiStringData(std::wstring &strData) {
     m_vMultiString.push_back(strData);
 }
 
-std::string  RegVal::valTypeStr() {
+std::string RegVal::valTypeStr() {
     if ((m_valType < REG_NONE) || (m_valType > REG_QWORD)) {
         return "unknown";
     }

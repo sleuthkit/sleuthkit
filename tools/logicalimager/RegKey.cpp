@@ -12,7 +12,7 @@
 
 #include "RegKey.h"
 
-RegKey::RegKey(std::wstring keyName) : m_regKey(NULL) {
+RegKey::RegKey(std::wstring &keyName) : m_regKey(NULL) {
     m_keyName = keyName;
 
     m_numSubkeys = -1;// unknown
@@ -22,9 +22,7 @@ RegKey::RegKey(std::wstring keyName) : m_regKey(NULL) {
     m_modifyTime.dwHighDateTime = 0;
 }
 
-RegKey::RegKey(std::wstring keyName, long numSubkeys, long numValues) : m_regKey(NULL) {
-    m_keyName = keyName;
-
+RegKey::RegKey(std::wstring &keyName, long numSubkeys, long numValues) : m_regKey(NULL), m_keyName(keyName) {
     m_numSubkeys = numSubkeys;
     m_numValues = numValues;
 

@@ -38,10 +38,7 @@ RegParser::~RegParser() {
  */
 int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     if (aHiveFile == NULL) {
-        std::string errMsg = "Null pointer passed to RegParser::loadHive.";
-        std::string details = "loadHive() failed.";
-
-        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
+        std::cerr << "Null pointer passed to RegParser::loadHive. loadHive() failed." << std::endl;
         return -1;
     }
 
@@ -54,19 +51,14 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     // Read the contents of the TSK_FS_FILE into memory.
     uint8_t *registryBuffer;
     if ((registryBuffer = (uint8_t *)malloc((size_t)aHiveFile->meta->size)) == NULL) {
-        std::string errMsg = "loadHive(): Error allocating memory for hive file.";
-        std::string details = "tsk_fs_file_read() failed.";
-        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
+        std::cerr << "loadHive(): Error allocating memory for hive file. tsk_fs_file_read() failed." << std::endl;
         return -1;
     }
 
     ssize_t bytesRead = tsk_fs_file_read(aHiveFile, 0, (char *)&registryBuffer[0],
         (size_t)aHiveFile->meta->size, TSK_FS_FILE_READ_FLAG_NONE);
     if (bytesRead != aHiveFile->meta->size) {
-        std::string errMsg = "loadHive(): Error reading content from hive file.";
-        std::string details = "tsk_fs_file_read() failed.";
-
-        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, details);
+        std::cerr << "loadHive(): Error reading content from hive file. tsk_fs_file_read() failed." << std::endl;
         free(registryBuffer);
         return -1;
     }
@@ -74,15 +66,13 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     try {
         m_registryHive = new Rejistry::RegistryHiveBuffer(registryBuffer, (uint32_t)aHiveFile->meta->size);
     }
-    catch (Rejistry::RegistryParseException e) {
-        std::string errMsg = "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size.";
-        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, e.what());
+    catch (Rejistry::RegistryParseException &) {
+        std::cerr << "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size." << std::endl;
         free(registryBuffer);
         return -1;
     }
     catch (...) {
-        std::string errMsg = "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size.";
-        //    CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, "");
+        std::cerr << "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size." << std::endl;
         free(registryBuffer);
         return -1;
     }

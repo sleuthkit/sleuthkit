@@ -28,7 +28,7 @@ RegFileInfo::~RegFileInfo()
     delete m_regParser;
 }
 
-RegHiveType::Enum RegFileInfo::hiveNameToType(const std::string aName)
+RegHiveType::Enum RegFileInfo::hiveNameToType(const std::string &aName)
 {
     if (0 == _stricmp("SYSTEM", aName.c_str()))
         return RegHiveType::SYSTEM;

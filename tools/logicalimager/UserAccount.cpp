@@ -12,7 +12,7 @@
 
 #include "UserAccount.h"
 
-UserAccount::UserAccount(std::string aUserName) :
+UserAccount::UserAccount(std::string &aUserName) :
 	m_userName(aUserName),
 	m_userDomain(""),
 	m_userHomeDir(""),

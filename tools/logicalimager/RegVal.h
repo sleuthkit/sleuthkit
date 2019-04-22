@@ -23,25 +23,25 @@ class RegVal
 {
 public:
     RegVal();
-    RegVal(std::wstring valName);
-    RegVal(std::wstring valName, int valType, long valLen);
-    RegVal(std::wstring valName, int valType, long valLen, unsigned long dwData); // numeric data
-    RegVal(std::wstring valName, int valType, long valLen, unsigned _int64 dwData64); // numeric data 64
-    RegVal(std::wstring valName, int valType, long valLen, std::wstring wsData); // string data
-    RegVal(std::wstring valName, int valType, long valLen, unsigned char *binData); // bin data
+    RegVal(std::wstring &valName);
+    RegVal(std::wstring &valName, int valType, long valLen);
+    RegVal(std::wstring &valName, int valType, long valLen, unsigned long dwData); // numeric data
+    RegVal(std::wstring &valName, int valType, long valLen, unsigned _int64 dwData64); // numeric data 64
+    RegVal(std::wstring &valName, int valType, long valLen, std::wstring &wsData); // string data
+    RegVal(std::wstring &valName, int valType, long valLen, unsigned char *binData); // bin data
     RegVal(const Rejistry::RegistryValue *value);
 
     int initialize(const Rejistry::RegistryValue *value);
 
-    void setValName(std::wstring valName) { m_valName = valName; }
+    void setValName(std::wstring &valName) { m_valName = valName; }
     void setValType(int valType) { m_valType = valType; }
     void setValLen(long valLen) { m_valLen = valLen; }
 
     void setDWORD(unsigned long dwData) { m_dwData = dwData; }
     void setQWORD(unsigned _int64 dwData64) { m_dwData64 = dwData64; }
-    void setString(std::wstring wsData) { m_wsData = wsData; }
+    void setString(std::wstring &wsData) { m_wsData = wsData; }
     void setBinaryData(unsigned char *pData);
-    void addMultiStringData(std::wstring strData); // multi string data
+    void addMultiStringData(std::wstring &strData); // multi string data
 
     std::wstring getValName() const { return m_valName; };
     int getValType() const { return m_valType; };

@@ -257,7 +257,7 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
                 std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
-                std::cerr <<  "findSystemRegFiles(): tsk_fs_dir_get failed for file = " << fs_file->name->name << std::endl;
+                std::cerr <<  "findSystemRegFiles(): tsk_fs_dir_get failed for file = fs_file is null." << std::endl;
                 continue;
             }
 
@@ -268,7 +268,7 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
                 continue;
             }
 
-            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(SYS_REG_FILES_DIR.c_str()), hiveType, fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
+            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(SYS_REG_FILES_DIR), hiveType, fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
 
             m_regSystemFiles.push_back(pRegFileInfo);
             tsk_fs_file_close(fs_file);
@@ -298,7 +298,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info) {
  * @returns -1 on error, 0 on success (NOTE THERE IS A BUG IN THE CODE)
  */
 
-int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string a_starting_dir) {
+int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &a_starting_dir) {
     TSK_FS_DIR *fs_dir;
     TSKFileNameInfo filenameInfo;
     TSK_FS_FILE *fsFile;
@@ -338,7 +338,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string a
                 if (TSK_FS_ISDOT(fs_file->name->name) == 0) {
 
                     // @@@ We are ignoring the return value here...  Only the last value will be returned
-                    retval = findNTUserRegFilesInDir(a_fs_info, fs_file->name->meta_addr, a_starting_dir, fs_file->name->name);
+                    (void) findNTUserRegFilesInDir(a_fs_info, fs_file->name->meta_addr, a_starting_dir, fs_file->name->name);
 
                     std::string userHomeDirPath = a_starting_dir + "/" + fs_file->name->name;
                     retval = findUsrclassRegFile(a_fs_info, userHomeDirPath);
@@ -358,7 +358,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string a
  * @param aUserDirName Name of user for folder
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a_dir_inum, const std::string &a_userFolderPath, const std::string aUserDirName) {
+int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a_dir_inum, const std::string &a_userFolderPath, const std::string &aUserDirName) {
     TSK_FS_DIR *fs_dir;
 
     // 1. open the directory
@@ -393,7 +393,7 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
                 std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
-                std::cerr << "findNTUserRegFilesInDir(): tsk_fs_dir_get() failed for file = " << fs_file->name->name << std::endl;
+                std::cerr << "findNTUserRegFilesInDir(): tsk_fs_dir_get() failed for file = fs_file is null." << std::endl;
                 continue;
             }
 
@@ -434,7 +434,7 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
  * @param aUserDirPathName Path to user folder
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::string aUserDirPathName) {
+int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::string &aUserDirPathName) {
 
     // Look for usrclass.dat
     const std::string WIN7_USRCLASS_SUBDIR = "/AppData/Local/Microsoft/Windows";
@@ -472,7 +472,6 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
         for (size_t i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
             TSK_FS_FILE *fs_file;
             TSK_OFF_T off = 0;
-            size_t len = 0;
 
             // get the entry
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {

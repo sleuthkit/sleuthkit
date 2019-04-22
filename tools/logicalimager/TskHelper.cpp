@@ -79,7 +79,6 @@ std::wstring TskHelper::toWide(const std::string &a_utf8Str) {
         return wide;
     }
     catch (...) {
-        std::exception_ptr eptr = std::current_exception();
         return L"";
     }
 }

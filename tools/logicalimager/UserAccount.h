@@ -76,18 +76,18 @@ namespace USER_ADMIN_PRIV {
 
 class UserAccount {
 public:
-    UserAccount(std::string aUserName);
+    UserAccount(std::string &aUserName);
     ~UserAccount();
 
     std::string getItemJSONName() const { return "userAccount"; };
 
     void setAccountType(USER_ACCOUNT_TYPE::Enum aType) { m_accountType = aType; }
     void setAdminPriv(USER_ADMIN_PRIV::Enum aPriv) { m_adminPriv = aPriv; }
-    void setUserDomain(const std::string aDomain) { m_userDomain = aDomain; };
-    void setSID(const std::string aSID) { m_SID = aSID; };
-    void setHomeDir(const std::string aDir) { m_userHomeDir = aDir; };
-    void setDateCreated(const std::string aDateStr) { m_dateCreatedStr = aDateStr; };
-    void setLastLoginDate(const std::string aDateStr) { m_lastLoginDateStr = aDateStr; };
+    void setUserDomain(const std::string &aDomain) { m_userDomain = aDomain; };
+    void setSID(const std::string &aSID) { m_SID = aSID; };
+    void setHomeDir(const std::string &aDir) { m_userHomeDir = aDir; };
+    void setDateCreated(const std::string &aDateStr) { m_dateCreatedStr = aDateStr; };
+    void setLastLoginDate(const std::string &aDateStr) { m_lastLoginDateStr = aDateStr; };
     void setLoginCount(uint16_t aCountStr) { m_loginCountStr = aCountStr; };
     void setAccountLocation(USER_ACCOUNT_LOCATION::Enum aLocn) { m_accountLocation = aLocn; };
     void setDisabled(bool a_bool) { m_isDisabled = a_bool; };
