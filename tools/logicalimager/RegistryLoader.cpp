@@ -180,7 +180,6 @@ void RegistryLoader::loadSystemHives() {
         return;
 
     m_sysHivesLoaded = true;
-    //CyberTriageUtils::DEBUG_PRINT("Searching for system registry files");
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     for (auto itr = fsList.begin(); itr != fsList.end(); itr++) {
         TSK_FS_INFO *fs_info = (*itr);
@@ -196,7 +195,6 @@ void RegistryLoader::loadUserHives() {
         return;
 
     m_userHivesLoaded = true;
-    //CyberTriageUtils::DEBUG_PRINT("Searching for user registry files");
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     for (auto itr = fsList.begin(); itr != fsList.end(); itr++) {
         TSK_FS_INFO *fs_info = (*itr);
@@ -211,30 +209,23 @@ void RegistryLoader::loadUserHives() {
 int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
     const std::string SYS_REG_FILES_DIR = "/Windows/System32/config";
 
-    //JSONWriter::getInstance().writeProgressRecord("Searching for system registry files");
-
     TSKFileNameInfo filenameInfo;
     TSK_FS_FILE *fsFile;
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), filenameInfo, NULL, &fsFile);
     if (retval == -1) {
-        std::string errMsg = "Error in finding system Registry files. System Registry files will not be analyzed.";
-        std::stringstream detailsSS;
-        detailsSS << "findSystemRegFiles(): tsk_fs_path2inum() failed for dir = " << SYS_REG_FILES_DIR << ", errno = " << tsk_error_get();
-        //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+        std::cerr << "Error in finding system Registry files. System Registry files will not be analyzed." << std::endl;
+        std::cerr << "findSystemRegFiles(): path2inum() failed for dir = " << SYS_REG_FILES_DIR << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
     else if (retval > 0) { // not found   // @@@ ACTUALLY CHECK IF IT IS #2
-        //CyberTriageUtils::DEBUG_PRINT("File System at Offset " + to_string(a_fs_info->offset) + " did not have windows/system32/config folder");
         return 0;
     }
 
     // open the directory
     TSK_FS_DIR *fs_dir;
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-        std::string errMsg = "Error opening windows/system32/config folder. Some System Registry files may not be analyzed.";
-        std::stringstream detailsSS;
-        detailsSS << "findSystemRegFiles(): tsk_fs_dir_open_meta() failed for windows/system32/config folder.  dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();
-        //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_WARNING, errMsg, detailsSS.str());
+        std::cerr << "Error opening windows/system32/config folder. Some System Registry files may not be analyzed.";
+        std::cerr << "findSystemRegFiles(): tsk_fs_dir_open_meta() failed for windows/system32/config folder.  dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
 
@@ -247,11 +238,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
         // get the entry
         const TSK_FS_NAME *fs_name;
         if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
-            std::string errMsg = "Error in finding System Registry files. Some System Registry files may not be analyzed.";
-            std::stringstream detailsSS;
-            detailsSS << "findSystemRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << ", some System Registry files may not be analyzed.";
-
-            //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
+            std::cerr << "Error in finding System Registry files. Some System Registry files may not be analyzed." << std::endl;
+            std::cerr << "findSystemRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << ", some System Registry files may not be analyzed." << std::endl;
             continue;
         }
 
@@ -268,20 +256,15 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
             // @@ FIX THE ERROR MSGS HERE
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                std::stringstream detailsSS;
-                detailsSS << "findSystemRegFiles(): tsk_fs_dir_get failed for file = " << fs_file->name->name;
-                //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr <<  "findSystemRegFiles(): tsk_fs_dir_get failed for file = " << fs_file->name->name << std::endl;
                 continue;
             }
 
-            //CyberTriageUtils::DEBUG_PRINT("findSystemRegFiles: Loading hive");
             RegParser *pRegParser = new RegParser(hiveType);
             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                std::stringstream detailsSS;
-                detailsSS << "findSystemRegFiles(): loadHive() failed for file = " << fs_file->name->name;
-                //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr << "findSystemRegFiles(): loadHive() failed for file = " << fs_file->name->name << std::endl;
                 continue;
             }
 
@@ -300,8 +283,6 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
  * @returns -1 on error and 0 on success
  */
 int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info) {
-    //JSONWriter::getInstance().writeProgressRecord("Searching for user registry files");
-
     const std::string XP_USER_ROOT_DIR = "/Documents and Settings";
     const std::string WIN7_USER_ROOT_DIR = "/Users";
 
@@ -324,10 +305,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string a
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, a_starting_dir.c_str(), filenameInfo, NULL, &fsFile);
 
     if (retval == -1) {
-        std::string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
-        std::stringstream detailsSS;
-        detailsSS << "findUserRegFiles(): tsk_fs_path2inum() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get();
-        //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_WARNING, errMsg, detailsSS.str());
+        std::cerr << "Error in finding User Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findUserRegFiles(): tsk_fs_path2inum() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
     else if (retval > 0) { // not found
@@ -336,10 +315,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string a
 
     // open the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-        std::string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
-        std::stringstream detailsSS;
-        detailsSS << "findUserRegFiles(): tsk_fs_dir_open_meta() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get();
-        //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+        std::cerr << "Error in finding User Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findUserRegFiles(): tsk_fs_dir_open_meta() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
 
@@ -351,10 +328,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string a
 
         // get the entry
         if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-            std::string errMsg = "Error in finding User Registry files. Some User Registry files may not be analyzed.";
-            std::stringstream detailsSS;
-            detailsSS << "findUserRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();;
-            //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
+            std::cerr << "Error in finding User Registry files. Some User Registry files may not be analyzed." << std::endl;
+            std::cerr << "findUserRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << std::endl;
             continue;
         }
 
@@ -388,12 +363,8 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
 
     // 1. open the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, a_dir_inum)) == NULL) {
-        std::string errMsg = "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.";
-
-        std::stringstream detailsSS;
-        detailsSS << "findNTUserRegFilesInDir(): tsk_fs_dir_open_meta() failed for dir = " << aUserDirName << ", errno = " << tsk_error_get();
-
-        //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_WARNING, errMsg, detailsSS.str());
+        std::cerr << "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findNTUserRegFilesInDir(): tsk_fs_dir_open_meta() failed for dir = " << aUserDirName << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
 
@@ -406,10 +377,8 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
         // get the entry
         const TSK_FS_NAME *fs_name;
         if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
-            std::string errMsg = "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.";
-            std::stringstream detailsSS;
-            detailsSS << "findNTUserRegFilesInDir(): Error getting directory entry = " << i << " in dir inum = " << a_dir_inum << ", errno = " << tsk_error_get();
-            //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+            std::cerr << "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed." << std::endl;
+            std::cerr << "findNTUserRegFilesInDir(): Error getting directory entry = " << i << " in dir inum = " << a_dir_inum << ", errno = " << tsk_error_get() << std::endl;
             continue;
         }
 
@@ -423,20 +392,15 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
 
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                std::stringstream detailsSS;
-                detailsSS << "findNTUserRegFilesInDir(): tsk_fs_dir_get() failed for file = " << fs_file->name->name;
-                //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr << "findNTUserRegFilesInDir(): tsk_fs_dir_get() failed for file = " << fs_file->name->name << std::endl;
                 continue;
             }
 
-            // CyberTriageUtils::DEBUG_PRINT("analyzeRegFilesSystemInfo: Loading hive");
             RegParser *pRegParser = new RegParser(hiveType);
             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                std::stringstream detailsSS;
-                detailsSS << "findNTUserRegFilesInDir(): loadHive() failed for file = " << fs_file->name->name;
-                // JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr << "findNTUserRegFilesInDir(): loadHive() failed for file = " << fs_file->name->name << std::endl;
                 continue;
             }
             RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(a_userFolderPath + "/" + aUserDirName), hiveType, fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
@@ -489,10 +453,8 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, usrClassSubdir.c_str(), filenameInfo, NULL, &fsFile);
 
     if (retval == -1) {
-        std::string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
-        std::stringstream detailsSS;
-        detailsSS << "findUsrclassRegFile(): tsk_fs_path2inum() failed for dir = " << usrClassSubdir << ", errno = " << tsk_error_get();
-        //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
+        std::cerr << "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findUsrclassRegFile(): tsk_fs_path2inum() failed for dir = " << usrClassSubdir << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
     else if (retval == 0) {     //  found
@@ -501,10 +463,8 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
         // open the directory
         if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-            std::string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
-            std::stringstream detailsSS;
-            detailsSS << "findUsrclassRegFile(): tsk_fs_dir_open_meta() failed for dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();
-            //JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
+            std::cerr << "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed." << std::endl;
+            std::cerr << "findUsrclassRegFile(): tsk_fs_dir_open_meta() failed for dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << std::endl;
             return -1;
         }
 
@@ -516,10 +476,8 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
             // get the entry
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                std::string errMsg = "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.";
-                std::stringstream detailsSS;
-                detailsSS << "findUsrclassRegFile(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get();
-                //CyberTriageUtils::getInstance().logError(ERRORTYPE::ET_MINOR, errMsg, detailsSS.str());
+                std::cerr << "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed." << std::endl;
+                std::cerr << "findUsrclassRegFile(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() << ", errno = " << tsk_error_get() << std::endl;
                 continue;
             }
 
@@ -533,13 +491,10 @@ int RegistryLoader::findUsrclassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
                             RegHiveType::Enum hiveType = RegFileInfo::hiveNameToType(fName);
 
-                            //CyberTriageUtils::DEBUG_PRINT("findUsrclassRegFile: Loading hive");
                             RegParser *pRegParser = new RegParser(hiveType);
                             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                                std::string errMsg = "Error in loading Registry file. The Registry file will not be analyzed.";
-                                std::stringstream detailsSS;
-                                detailsSS << "findUsrclassRegFile(): loadHive() failed for file = " << fs_file->name->name;
-                                // JSONWriter::getInstance().writeErrorRecord(ERRORTYPE::ET_MAJOR, errMsg, detailsSS.str());
+                                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                                std::cerr << "findUsrclassRegFile(): loadHive() failed for file = " << fs_file->name->name << std::endl;
                                 return -1;
                             }
                             RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(usrClassSubdir), hiveType, fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);

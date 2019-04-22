@@ -114,7 +114,7 @@ std::string FiletimeToStr(FILETIME filetime) {
 }
 
 /**
-* samUserTypeToAccountType - maps SAM user account type to CyberTriage user acccount type.
+* samUserTypeToAccountType - maps SAM user account type to user acccount type.
 */
 USER_ACCOUNT_TYPE::Enum samUserTypeToAccountType(uint32_t& acctType) {
     switch (acctType & 0x000000FF) {
