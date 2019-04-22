@@ -1101,7 +1101,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     }
 
     uint64_t aginode_num = rel_blk * (uint64_t) sb->sb_inopblock;
-    uint64_t inode_num = (uint64_t) ag_num << sb->sb_agblklog + aginode_num;
+    uint64_t inode_num = (uint64_t) ag_num << (sb->sb_agblklog + aginode_num);
 
     // Pet trick here: if the block possibly stores inodes, try to read the corresponding inode flags
     if (tsk_verbose) { tsk_fprintf(stderr, "trying to treat rel_block %" PRId64 " in ag %" PRId64 " as rel inode %" PRId64 " (abs inode %" PRId64 ") \n", rel_blk, ag_num, aginode_num, inode_num); }
@@ -1521,6 +1521,54 @@ static uint8_t
             tsk_getu16(fs->endian, &sb->sb_uuid.b[8]),
             tsk_getu32(fs->endian, &sb->sb_uuid.b[10]),
             tsk_getu16(fs->endian, &sb->sb_uuid.b[14]));
+
+    tsk_fprintf(hFile, "Version: %");
+    if (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_1)
+        tsk_fprintf(hFile, "V1");
+    else if (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_2)
+        tsk_fprintf(hFile, "V2");
+    else if (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_3)
+        tsk_fprintf(hFile, "V3");
+    else if (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_4)
+        tsk_fprintf(hFile, "V4");
+    else if (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5)
+        tsk_fprintf(hFile, "V5");
+    if (xfs_sb_version_hasattr(sb))
+        tsk_fprintf(hFile, ",ATTR");
+    if (xfs_sb_version_hasnlink(sb))
+        tsk_fprintf(hFile, ",NLINK");
+    if (xfs_sb_version_hasquota(sb))
+        tsk_fprintf(hFile, ",QUOTA");
+    if (xfs_sb_version_hasalign(sb))
+        tsk_fprintf(hFile, ",ALIGN");
+    if (xfs_sb_version_hasdalign(sb))
+        tsk_fprintf(hFile, ",DALIGN");
+    if (xfs_sb_version_hasshared(sb))
+        tsk_fprintf(hFile, ",SHARED");
+    if (xfs_sb_version_hasdirv2(sb))
+        tsk_fprintf(hFile, ",DIRV2");
+    if (xfs_sb_version_haslogv2(sb))
+        tsk_fprintf(hFile, ",LOGV2");
+    if (xfs_sb_version_hasextflgbit(sb))
+        tsk_fprintf(hFile, ",EXTFLG");
+    if (xfs_sb_version_hassector(sb))
+        tsk_fprintf(hFile, ",SECTOR");
+    if (xfs_sb_version_hasasciici(sb))
+        tsk_fprintf(hFile, ",ASCII_CI");
+    if (xfs_sb_version_hasmorebits(sb))
+        tsk_fprintf(hFile, ",MOREBITS");
+    if (xfs_sb_version_hasattr2(sb))
+        tsk_fprintf(hFile, ",ATTR2");
+    if (xfs_sb_version_haslazysbcount(sb))
+        tsk_fprintf(hFile, ",LAZYSBCOUNT");
+    if (xfs_sb_version_hasprojid32bit(sb))
+        tsk_fprintf(hFile, ",PROJID32BIT");
+    if (xfs_sb_version_hascrc(sb))
+        tsk_fprintf(hFile, ",CRC");
+    if (xfs_sb_version_hasftype(sb))
+        tsk_fprintf(hFile, ",FTYPE");
+    tsk_fprintf(hFile, "\n");
+
     tsk_fprintf(hFile, "Features Compat: %" PRIu32 "\n", sb->sb_features_compat);
     tsk_fprintf(hFile, "Features Read-Only Compat: %" PRIu32 "\n", sb->sb_features_ro_compat);
     if (sb->sb_features_ro_compat) {
@@ -1650,7 +1698,7 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
 
     tsk_fprintf(a_hFile, "\nExtended Attributes: \n");
 
-    void* in_base = (void*) &a_dino_buf->di_core;
+    uint8_t *in_base = (uint8_t*) &a_dino_buf->di_core;
     uint64_t in_offset = a_xfsfs->inode_size -
         XFS_DFORK_ASIZE(&a_dino_buf->di_core, a_xfsfs);
 
@@ -1716,6 +1764,12 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
             in_offset = roundup(in_offset + sf_entry_size, sizeof(uint64_t));
             sf_entry = (xfs_attr_sf_entry*) (in_base + in_offset);
         }
+    }
+    else
+    {
+        tsk_fprintf(a_hFile, "xfs_istat: parsing non-XFS_DINODE_FMT_LOCAL"
+            "long-form attributes (%d) is not supported yet \n",
+            a_dino_buf->di_core.di_aformat);
     }
 }
 
@@ -2964,6 +3018,11 @@ TSK_FS_INFO *
         free(xfsfs->fs);
         tsk_fs_free(&xfsfs->fs_info);
         return NULL;
+    }
+
+    if(XFS_SB_VERSION_NUM(sb) > 4)
+    {
+        tsk_fprintf(stderr, "Version 5 and newer are not fully supported yet, be careful (current version: %d) \n", XFS_SB_VERSION_NUM(sb));
     }
 
     len = sizeof(xfs_agi) * xfsfs->fs->sb_agcount;

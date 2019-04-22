@@ -155,41 +155,41 @@ typedef uint32_t xfs_alloc_ptr_t;
 #define XFS_IN_IXOTH   0000001
 
 /* size of a short form block:
-*    uint32_t   bb_magic;
-*    uint16_t   bb_level;
-*    uint16_t	bb_numrecs;
+*    uint32_t    bb_magic;
+*    uint16_t    bb_level;
+*    uint16_t    bb_numrecs;
 *    +
-*    uint32_t   bb_leftsib
-*    uint32_t   bb_rightsib
+*    uint32_t    bb_leftsib
+*    uint32_t    bb_rightsib
 */
 #define XFS_BTREE_SBLOCK_LEN \
-	(sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
-	 sizeof(uint32_t) + sizeof(uint32_t))
+    (sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
+     sizeof(uint32_t) + sizeof(uint32_t))
 
 /* sizes of CRC enabled btree blocks:
-*    uint32_t   bb_magic;
-*    uint16_t   bb_level;
-*    uint16_t	bb_numrecs;
+*    uint32_t    bb_magic;
+*    uint16_t    bb_level;
+*    uint16_t    bb_numrecs;
 *    +
-*    uint32_t   bb_leftsib
-*    uint32_t   bb_rightsib
-*    uint64_t	bb_blkno;
-*	 uint64_t	bb_lsn;
-*	 xfs_uuid_t	bb_uuid;
-*	 uint32_t	bb_owner;
-*	 uint32_t	bb_crc;
+*    uint32_t    bb_leftsib
+*    uint32_t    bb_rightsib
+*    uint64_t    bb_blkno;
+*    uint64_t    bb_lsn;
+*    xfs_uuid_t  bb_uuid;
+*    uint32_t    bb_owner;
+*    uint32_t    bb_crc;
 */
 #define XFS_BTREE_SBLOCK_CRC_LEN \
-	(sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
-	 sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + \
+    (sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
+     sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + \
      sizeof(xfs_uuid_t) + sizeof(uint32_t) + sizeof(uint32_t))
 
 /*
  * Btree block header size depends on a superblock flag.
  */
 #define XFS_INOBT_BLOCK_LEN(sb) \
-	(xfs_sb_version_hascrc(sb) ? \
-		XFS_BTREE_SBLOCK_CRC_LEN : XFS_BTREE_SBLOCK_LEN)
+    (xfs_sb_version_hascrc(sb) ? \
+        XFS_BTREE_SBLOCK_CRC_LEN : XFS_BTREE_SBLOCK_LEN)
 
 typedef struct xfs_btree_sblock xfs_inobt_block_t;
 
@@ -311,14 +311,14 @@ typedef struct xfs_dir2_sf {
  * NOTE: the INCOMPLETE bit must not collide with the flags bits specified
  * on the system call, they are "or"ed together for various operations.
  */
-#define	XFS_ATTR_LOCAL_BIT	0	/* attr is stored locally */
-#define	XFS_ATTR_ROOT_BIT	1	/* limit access to trusted attrs */
-#define	XFS_ATTR_SECURE_BIT	2	/* limit access to secure attrs */
-#define	XFS_ATTR_INCOMPLETE_BIT	7	/* attr in middle of create/delete */
-#define XFS_ATTR_LOCAL		(1 << XFS_ATTR_LOCAL_BIT)
-#define XFS_ATTR_ROOT		(1 << XFS_ATTR_ROOT_BIT)
-#define XFS_ATTR_SECURE		(1 << XFS_ATTR_SECURE_BIT)
-#define XFS_ATTR_INCOMPLETE	(1 << XFS_ATTR_INCOMPLETE_BIT)
+#define XFS_ATTR_LOCAL_BIT          0    /* attr is stored locally */
+#define XFS_ATTR_ROOT_BIT           1    /* limit access to trusted attrs */
+#define XFS_ATTR_SECURE_BIT         2    /* limit access to secure attrs */
+#define XFS_ATTR_INCOMPLETE_BIT     7    /* attr in middle of create/delete */
+#define XFS_ATTR_LOCAL              (1 << XFS_ATTR_LOCAL_BIT)
+#define XFS_ATTR_ROOT               (1 << XFS_ATTR_ROOT_BIT)
+#define XFS_ATTR_SECURE             (1 << XFS_ATTR_SECURE_BIT)
+#define XFS_ATTR_INCOMPLETE         (1 << XFS_ATTR_INCOMPLETE_BIT)
 
 #define ATTR_SF_HDR_SIZE 3
 struct xfs_attr_sf_hdr {
@@ -498,24 +498,38 @@ typedef struct xfs_dir2_leaf_entry {
     xfs_dir2_dataptr_t      address;
 } xfs_dir2_leaf_entry_t;
 
-#define    XFS_DIR2_DATA_ALIGN_LOG    3        /* i.e., 8 bytes */
-#define    XFS_DIR2_SPACE_SIZE        (1ULL << (32 + XFS_DIR2_DATA_ALIGN_LOG))
-#define    XFS_DIR2_LEAF_SPACE        1
-#define    XFS_DIR2_LEAF_OFFSET       (XFS_DIR2_LEAF_SPACE * XFS_DIR2_SPACE_SIZE)
-#define    XFS_DIR2_FREE_SPACE        2
-#define    XFS_DIR2_FREE_OFFSET       (XFS_DIR2_FREE_SPACE * XFS_DIR2_SPACE_SIZE)
+#define XFS_DIR2_DATA_ALIGN_LOG    3        /* i.e., 8 bytes */
+#define XFS_DIR2_SPACE_SIZE        (1ULL << (32 + XFS_DIR2_DATA_ALIGN_LOG))
+#define XFS_DIR2_LEAF_SPACE        1
+#define XFS_DIR2_LEAF_OFFSET       (XFS_DIR2_LEAF_SPACE * XFS_DIR2_SPACE_SIZE)
+#define XFS_DIR2_FREE_SPACE        2
+#define XFS_DIR2_FREE_OFFSET       (XFS_DIR2_FREE_SPACE * XFS_DIR2_SPACE_SIZE)
 
 
 /*
 ** Super Block and related definitions 
 */
 
-#define	XFS_SB_MAGIC		0x58465342	/* 'XFSB' */
-#define	XFS_SB_VERSION_1	1		/* 5.3, 6.0.1, 6.1 */
-#define	XFS_SB_VERSION_2	2		/* 6.2 - attributes */
-#define	XFS_SB_VERSION_3	3		/* 6.2 - new inode version */
-#define	XFS_SB_VERSION_4	4		/* 6.2+ - bitmask version */
-#define	XFS_SB_VERSION_5	5		/* CRC enabled filesystem */
+#define XFS_SB_MAGIC            0x58465342      /* 'XFSB' */
+#define XFS_SB_VERSION_1        1               /* 5.3, 6.0.1, 6.1 */
+#define XFS_SB_VERSION_2        2               /* 6.2 - attributes */
+#define XFS_SB_VERSION_3        3               /* 6.2 - new inode version */
+#define XFS_SB_VERSION_4        4               /* 6.2+ - bitmask version */
+#define XFS_SB_VERSION_5        5               /* CRC enabled filesystem */
+#define XFS_SB_VERSION_NUMBITS          0x000f
+#define XFS_SB_VERSION_ALLFBITS         0xfff0
+#define XFS_SB_VERSION_ATTRBIT          0x0010
+#define XFS_SB_VERSION_NLINKBIT         0x0020
+#define XFS_SB_VERSION_QUOTABIT         0x0040
+#define XFS_SB_VERSION_ALIGNBIT         0x0080
+#define XFS_SB_VERSION_DALIGNBIT        0x0100
+#define XFS_SB_VERSION_SHAREDBIT        0x0200
+#define XFS_SB_VERSION_LOGV2BIT         0x0400
+#define XFS_SB_VERSION_SECTORBIT        0x0800
+#define XFS_SB_VERSION_EXTFLGBIT        0x1000
+#define XFS_SB_VERSION_DIRV2BIT         0x2000
+#define XFS_SB_VERSION_BORGBIT          0x4000  /* ASCII only case-insens. */
+#define XFS_SB_VERSION_MOREBITSBIT      0x8000
 
 /*
  * There are two words to hold XFS "feature" bits: the original
@@ -533,9 +547,9 @@ typedef struct xfs_dir2_leaf_entry {
 #define XFS_SB_VERSION2_CRCBIT            0x00000100    /* metadata CRCs */
 #define XFS_SB_VERSION2_FTYPE             0x00000200    /* inode type in dir */
 
-#define    XFS_SB_VERSION2_OKBITS        \
-    (XFS_SB_VERSION2_LAZYSBCOUNTBIT    | \
-     XFS_SB_VERSION2_ATTR2BIT    | \
+#define XFS_SB_VERSION2_OKBITS  \
+    (XFS_SB_VERSION2_LAZYSBCOUNTBIT | \
+     XFS_SB_VERSION2_ATTR2BIT       | \
      XFS_SB_VERSION2_PROJID32BIT    | \
      XFS_SB_VERSION2_FTYPE)
 
@@ -666,13 +680,103 @@ typedef struct xfs_sb
     xfs_ino_t             sb_rrmapino;
 } xfs_sb_t;
 
+static inline bool xfs_sb_has_incompat_feature(xfs_sb *sb, uint32_t feature)
+{
+    return (sb->sb_features_incompat & feature) != 0;
+}
+static inline bool xfs_sb_version_hasattr(xfs_sb *sb)
+{
+    return (sb->sb_versionnum & XFS_SB_VERSION_ATTRBIT);
+}
+static inline int xfs_sb_version_hasnlink(xfs_sb *sb)
+{
+    return sb->sb_versionnum == XFS_SB_VERSION_3 ||
+         (XFS_SB_VERSION_NUM(sb) >= XFS_SB_VERSION_4 &&
+          (sb->sb_versionnum & XFS_SB_VERSION_NLINKBIT));
+}
+static inline bool xfs_sb_version_hasquota(xfs_sb *sb)
+{
+    return (sb->sb_versionnum & XFS_SB_VERSION_QUOTABIT);
+}
+static inline bool xfs_sb_version_hasalign(xfs_sb *sb)
+{
+    return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ||
+        (sb->sb_versionnum & XFS_SB_VERSION_ALIGNBIT));
+}
+static inline bool xfs_sb_version_hasdalign(xfs_sb *sb)
+{
+    return (sb->sb_versionnum & XFS_SB_VERSION_DALIGNBIT);
+}
+static inline int xfs_sb_version_hasshared(xfs_sb_t *sb)
+{
+    return XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_4 &&
+        (sb->sb_versionnum & XFS_SB_VERSION_SHAREDBIT);
+}
+static inline int xfs_sb_version_hasdirv2(xfs_sb_t *sb)
+{
+    return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
+           (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_4 &&
+        (sb->sb_versionnum & XFS_SB_VERSION_DIRV2BIT));
+}
+static inline bool xfs_sb_version_haslogv2(xfs_sb *sb)
+{
+    return XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ||
+           (sb->sb_versionnum & XFS_SB_VERSION_LOGV2BIT);
+}
+static inline int xfs_sb_version_hasextflgbit(xfs_sb_t *sb)
+{
+    return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
+           (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_4 &&
+        (sb->sb_versionnum & XFS_SB_VERSION_EXTFLGBIT));
+}
+static inline bool xfs_sb_version_hassector(xfs_sb *sb)
+{
+    return (sb->sb_versionnum & XFS_SB_VERSION_SECTORBIT);
+}
+static inline bool xfs_sb_version_hasasciici(xfs_sb *sb)
+{
+    return (sb->sb_versionnum & XFS_SB_VERSION_BORGBIT);
+}
+static inline bool xfs_sb_version_hasmorebits(xfs_sb *sb)
+{
+    return XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ||
+           (sb->sb_versionnum & XFS_SB_VERSION_MOREBITSBIT);
+}
+static inline bool xfs_sb_version_hasattr2(xfs_sb *sb)
+{
+    return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
+           (xfs_sb_version_hasmorebits(sb) &&
+        (sb->sb_features2 & XFS_SB_VERSION2_ATTR2BIT));
+}
+static inline bool xfs_sb_version_haslazysbcount(xfs_sb *sb)
+{
+    return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
+           (xfs_sb_version_hasmorebits(sb) &&
+        (sb->sb_features2 & XFS_SB_VERSION2_LAZYSBCOUNTBIT));
+}
+static inline bool xfs_sb_version_hasprojid32bit(xfs_sb *sb)
+{
+    return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
+           (xfs_sb_version_hasmorebits(sb) &&
+        (sb->sb_features2 & XFS_SB_VERSION2_PROJID32BIT));
+}
+
 /*
  * V5 superblock specific feature checks
  */
 static inline bool xfs_sb_version_hascrc(xfs_sb *sb)
 {
-	return sb->sb_versionnum == XFS_SB_VERSION_5;
+    return sb->sb_versionnum == XFS_SB_VERSION_5;
 }
+static inline int xfs_sb_version_hasftype(xfs_sb *sb)
+{
+    return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 &&
+        xfs_sb_has_incompat_feature(sb, XFS_SB_FEAT_INCOMPAT_FTYPE)) ||
+           (xfs_sb_version_hasmorebits(sb) &&
+         (sb->sb_features2 & XFS_SB_VERSION2_FTYPE));
+}
+
+
 
 /*
  * Structure of an xfs file system handle.
