@@ -1753,11 +1753,13 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
                 tsk_fprintf(a_hFile, "incomplete,");
             }
 
-            char name[sf_entry->namelen + 1] = {0};
+            char name[sf_entry->namelen + 1];
             memcpy(&name, &sf_entry->nameval, sf_entry->namelen);
+            name[sf_entry->namelen + 1] = '\0';
             char val[sf_entry->valuelen + 1] = {0};
             memcpy(&val, &sf_entry->nameval + sf_entry->namelen,
                 sf_entry->valuelen);
+            val[sf_entry->valuelen + 1] = '\0';
 
             tsk_fprintf(a_hFile, ".%s=%s\n", &name, &val);
 
