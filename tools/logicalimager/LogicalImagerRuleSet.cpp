@@ -40,7 +40,7 @@
  * https://social.msdn.microsoft.com/Forums/en-US/d9b650a2-424d-4ee6-b3b6-ea93cfc6cb5f/stdgettime-on-visual-2015-does-not-fail-on-incorrect-date?forum=vclanguage
  * We have decided to ignore it as the explicit date is not going to be used. Relative days (min-days) will be used.
  */
-time_t stringToTimet(const std::string datetimeStr) {
+time_t stringToTimet(const std::string &datetimeStr) {
     std::tm t = {};
     std::istringstream ss(datetimeStr);
     ss.imbue(std::locale("C"));

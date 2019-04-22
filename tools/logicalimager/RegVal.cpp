@@ -88,6 +88,7 @@ RegVal::RegVal(std::wstring &valName, int valType, long valLen, std::wstring &ws
     m_valLen(valLen),
     m_wsData(wsData)
 {
+    m_dwData = 0;
     m_dwData64 = 0;
 }
 

@@ -211,7 +211,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         }
         else if (-2 == rc) {
             std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUserNamesKeyName) + " Local user accounts may not be reported.";
-            std::string details = "analyzeSAMUsers() failed.";
             std::cerr << errMsg << std::endl;
             rc = -1;
         }
@@ -232,7 +231,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     std::wstring wsComment(L"");
                     std::string sUserName("");
 
-                    uint32_t samAcctType = 0;
                     USER_ACCOUNT_TYPE::Enum acctType;
                     USER_ADMIN_PRIV::Enum acctAdminPriv;
 
@@ -241,6 +239,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     std::wstring wsVRecordValname = L"V";
                     vRecord.setValName(wsVRecordValname);
                     if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsVRecordValname, vRecord)) {
+                        uint32_t samAcctType = 0;
                         if (parseSAMVRecord(vRecord.getBinary(), vRecord.getValLen(), wsUserName, wsFullName, wsComment, samAcctType)) {
                             bError = true;
                         }
@@ -265,7 +264,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     std::string slastPWResetDate;
 
                     uint16_t loginCount = 0;
-                    uint16_t acbFlags = 0;
                     bool accountDisabled = false;
 
                     // GET F Record
@@ -274,6 +272,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     fRecord.setValName(wsFRecordValname);
 
                     if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsFRecordValname, fRecord)) {
+                        uint16_t acbFlags = 0;
                         // Parse F Record
                         parseSAMFRecord(fRecord.getBinary(), fRecord.getValLen(), lastLoginDate, lastPWResetDate, accountExpiryDate, lastFailedLoginDate, loginCount, acbFlags);
 

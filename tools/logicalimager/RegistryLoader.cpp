@@ -233,7 +233,6 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
     for (size_t i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
 
         TSK_OFF_T off = 0;
-        size_t len = 0;
 
         // get the entry
         const TSK_FS_NAME *fs_name;
@@ -324,7 +323,6 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &
     for (size_t i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
         TSK_FS_FILE *fs_file;
         TSK_OFF_T off = 0;
-        size_t len = 0;
 
         // get the entry
         if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {

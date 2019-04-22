@@ -53,6 +53,5 @@ private:
     std::vector<std::wstring> splitKeyName(const std::wstring &keyName) const;
     const Rejistry::RegistryKey *findKey(const std::wstring &keyName, const Rejistry::RegistryKey *startingKey = NULL) const;
 
-    RegParser(const RegParser const&) = delete;
-
+    RegParser(const RegParser &) = delete;
 };
