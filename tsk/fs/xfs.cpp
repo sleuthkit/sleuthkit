@@ -1477,8 +1477,9 @@ xfs_load_attrs(TSK_FS_FILE * fs_file)
                 * (TSK_OFF_T) fs_info->block_size;
 
             // converting logical xfs block number into a "physical" number
-            // this block number is later processed by tsk_fs_read_block, which does (TSK_OFF_T) (a_addr) * a_fs->block_size
-            data_run->addr = offset / fs_info->block_size;
+            // this block number is later processed by tsk_fs_read_block,
+            // which does (TSK_OFF_T) (a_addr) * a_fs->block_size
+            data_run->offset = data_run->addr = offset / fs_info->block_size;
             data_run->len = irec.br_blockcount;
 
             if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
@@ -1756,7 +1757,7 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
             char name[sf_entry->namelen + 1];
             memcpy(&name, &sf_entry->nameval, sf_entry->namelen);
             name[sf_entry->namelen + 1] = '\0';
-            char val[sf_entry->valuelen + 1] = {0};
+            char val[sf_entry->valuelen + 1];
             memcpy(&val, &sf_entry->nameval + sf_entry->namelen,
                 sf_entry->valuelen);
             val[sf_entry->valuelen + 1] = '\0';
