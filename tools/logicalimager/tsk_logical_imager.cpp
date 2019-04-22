@@ -725,7 +725,7 @@ main(int argc, char **argv1)
         }
     }
     else {
-        fprintf(stderr, "Image is not a RAW image, sparse_image.vhd is not created\n");
+        fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
     }
 
     TskFindFiles findFiles(ruleSet, alertFileName.c_str());
@@ -801,6 +801,10 @@ main(int argc, char **argv1)
         }
         // should we call findFiles.closeImage() upon error?
         fprintf(stderr, "findFilesInImg failed\n");
+        const std::vector<TskAuto::error_record> error_records = findFiles.getErrorList();
+        for (auto iter = error_records.begin(); iter != error_records.end(); ++iter) {
+            fprintf(stderr, "code=%d, msg1=%s, msg2=%s\n", iter->code, iter->msg1.c_str(), iter->msg2.c_str());
+        }
         exit(1);
     }
 
@@ -813,9 +817,6 @@ main(int argc, char **argv1)
         	    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
         	    // not exiting, should call tsk_img_close.
             }
-        }
-        else {
-            fprintf(stderr, "Not calling tsk_img_writer_finish\n");
         }
     }
 
