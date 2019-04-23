@@ -166,6 +166,8 @@ dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
 TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
+dnl Check if we should link with libqcow
+TSK_OPT_DEP_CHECK([libqcow], [QCOW], [libqcow], [libqcow.h], [qcow], [libqcow_get_version])
 
 dnl check for cppunit
 AC_ARG_ENABLE([cppunit],
@@ -357,10 +359,13 @@ AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
-   zlib support:                          $ax_zlib
-
+   libqcow support:                       $ax_libqcow
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
+
+   zlib support:                          $ax_zlib
+   openssl support:                       $ax_openssl
+
 Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
