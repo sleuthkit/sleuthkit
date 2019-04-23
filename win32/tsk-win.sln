@@ -839,8 +839,8 @@ Global
 		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_NoLibs|Win32.Build.0 = Release_NoLibs|Win32
 		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_NoLibs|x64.ActiveCfg = Release_NoLibs|x64
 		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_NoLibs|x64.Build.0 = Release_NoLibs|x64
-		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|Win32.ActiveCfg = Release_NoLibs|Win32
-		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|Win32.Build.0 = Release_NoLibs|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|Win32.ActiveCfg = Release|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|Win32.Build.0 = Release|Win32
 		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|x64.ActiveCfg = Release|x64
 		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|x64.Build.0 = Release|x64
 		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release|Win32.ActiveCfg = Release|Win32
