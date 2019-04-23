@@ -294,11 +294,10 @@ TSK_RETVAL_ENUM LogicalImagerRuleSet::processFile(TSK_FS_FILE *fs_file, const ch
 TSK_RETVAL_ENUM LogicalImagerRuleSet::extractFile(TSK_FS_FILE *fs_file) const {
     TSK_OFF_T offset = 0;
     size_t bufferLen = 16 * 1024;
-    ssize_t bytesRead;
     char buffer[16 * 1024];
 
     while (true) {
-        bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
+        ssize_t bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
         if (bytesRead == -1) {
             if (fs_file->meta && fs_file->meta->size == 0) {
                 // ts_fs_file_read returns -1 with empty files, don't report it.
