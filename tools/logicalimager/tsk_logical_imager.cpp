@@ -680,17 +680,10 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    try {
-        ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename));
-    } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        exit(1);
-    }
-
     std::wstring wImgPathName;
 
     if (!iFlagUsed) {
-        string driveToProcess;
+        std::string driveToProcess;
         if (getDriveToProcess(driveToProcess)) {
             wImgPathName = _TSK_T("\\\\.\\") + TskHelper::toWide(driveToProcess);
             imgPath[0] = (TSK_TCHAR *)wImgPathName.c_str();
@@ -708,27 +701,34 @@ main(int argc, char **argv1)
     }
 
     // create a directory with hostname_timestamp
-    string directory_path;
-    if (createDirectory(directory_path) == -1) {
+    std::string directoryPath;
+    if (createDirectory(directoryPath) == -1) {
         exit(1);
     }
-    fprintf(stdout, "Created directory %s\n", directory_path.c_str());
+    fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
-    string outputFileName = directory_path + "/sparse_image.vhd";
+    std::string outputFileName = directoryPath + "/sparse_image.vhd";
     std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
-    string alertFileName = directory_path + "/alert.txt";
-    
+    std::string alertFileName = directoryPath + "/alert.txt";
+
+    try {
+        ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename), alertFileName);
+    }
+    catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        exit(1);
+    }
+
     if (img->itype == TSK_IMG_TYPE_RAW) {
         if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
             fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
             exit(1);
         }
-    }
-    else {
+    } else {
         fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
     }
 
-    TskFindFiles findFiles(ruleSet, alertFileName.c_str());
+    TskFindFiles findFiles(ruleSet);
 
     TskHelper::getInstance().reset();
     TskHelper::getInstance().setImgInfo(img);
@@ -761,14 +761,14 @@ main(int argc, char **argv1)
             if (retval == 0 && fs_file != NULL) {
                 TSK_RETVAL_ENUM extractStatus = TSK_ERR;
                 if (ruleConfig->isShouldSave()) {
-                    extractStatus = TskFindFiles::extractFile(fs_file);
+                    extractStatus = ruleSet->extractFile(fs_file);
                 }
                 if (ruleConfig->isShouldAlert()) {
                     // create a TSK_FS_NAME for alert purpose
                     fs_file->name = new TSK_FS_NAME();
                     fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
                     strcpy(fs_file->name->name, iter->c_str());
-                    findFiles.alert(extractStatus, ruleConfig, fs_file, "");
+                    ruleSet->alert(extractStatus, ruleConfig->getDescription(), fs_file, "");
                     free(fs_file->name->name);
                     delete fs_file->name;
                 }
@@ -777,7 +777,7 @@ main(int argc, char **argv1)
         }
     }
 
-    string usersFileName = directory_path + "/users.txt";
+    string usersFileName = directoryPath + "/users.txt";
 
     // Enumerate Users with RegistryAnalyzer
     RegistryAnalyzer registryAnalyzer(usersFileName);

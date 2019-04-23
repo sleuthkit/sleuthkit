@@ -22,16 +22,12 @@
 
 class TskFindFiles : public TskAuto {
 public:
-    TskFindFiles(const LogicalImagerRuleSet *ruleSet, const char *alertFilePath);
+    TskFindFiles(const LogicalImagerRuleSet *ruleSet);
     ~TskFindFiles();
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
-    static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file);
     virtual uint8_t handleError();
-    void alert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path);
-    void closeAlert();
+    void closeAlert() const;
 
 private:
     const LogicalImagerRuleSet *m_logicialImagerRuleSet;
-    std::string m_alertFilePath;
-    FILE *m_alertFile;
 };
