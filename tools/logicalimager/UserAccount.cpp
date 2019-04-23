@@ -40,9 +40,9 @@ std::string UserAccount::getAccountStatus() const {
 	// For local account we know definitively if an account is enabled or disabled
 	if (USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT == m_accountLocation) {
 		if (isDisabled())
-			accountStatus += "Disabled";
+			accountStatus = "Disabled";
 		else
-			accountStatus += "Enabled";
+			accountStatus = "Enabled";
 	}
 	else {
 		accountStatus = "Unknown";

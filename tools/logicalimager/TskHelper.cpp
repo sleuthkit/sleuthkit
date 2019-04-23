@@ -666,7 +666,7 @@ const std::list<TSK_FS_INFO *> TskHelper::getFSInfoList() {
     return m_FSInfoList;
 }
 
-void TskHelper::replaceAll(std::string& str, const std::string& from, const std::string& to) {
+void TskHelper::replaceAll(std::string &str, const std::string &from, const std::string &to) {
     if (from.empty())
         return;
     size_t start_pos = 0;
@@ -679,14 +679,14 @@ void TskHelper::replaceAll(std::string& str, const std::string& from, const std:
 /**
 * replaceAll - replaces all occurences of 'from' string with the 'to' string, in the given input string, starting the search from specified position
 *
-* @param input str - input string to examine
+* @param input str - input string to examine and modified
 * @param input from - string to search for
 * @param input to -  string to replace with
 * @param input pos - starting position for search
 *
 * @returns
 */
-void TskHelper::replaceAll(std::string& str, const std::string& from, const std::string& to, size_t pos) {
+void TskHelper::replaceAll(std::string &str, const std::string &from, const std::string &to, size_t pos) {
     if (from.empty() || pos >= str.length())
         return;
     size_t start_pos = pos;

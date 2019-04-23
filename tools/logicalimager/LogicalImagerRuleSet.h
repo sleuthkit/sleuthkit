@@ -35,7 +35,6 @@ public:
     LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename);
     ~LogicalImagerRuleSet();
 
-    TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path) const;
     TSK_RETVAL_ENUM matches(TSK_FS_FILE *fs_file, const char *path) const;
     const std::pair<const RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
     TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) const;

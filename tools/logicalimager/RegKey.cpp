@@ -39,7 +39,9 @@ RegKey::~RegKey() {
 
 /**
  * Initialize a RegKey object from a Rejistry::RegistryKey object.
- * @returns 0 if initialization is successful, otherwise false.
+ *
+ * @param regKey a Rejistry::RegistryKey object
+ * @returns 0 if initialization is successful, otherwise -1.
  */
 int RegKey::initialize(const Rejistry::RegistryKey *regKey) {
     if (regKey == NULL) {
@@ -58,6 +60,9 @@ int RegKey::initialize(const Rejistry::RegistryKey *regKey) {
     return 0;
 }
 
+/**
+* Print the RegKey
+*/
 void RegKey::print() {
     std::wcout << L"Key: " << m_keyName << std::endl;
     std::wcout << L"\t" << L"Subkeys: " << m_numSubkeys << std::endl;

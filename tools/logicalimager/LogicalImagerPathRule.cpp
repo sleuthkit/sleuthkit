@@ -24,8 +24,19 @@ bool endsWith(const std::string &str, const std::string &suffix) {
         str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths)
-{
+/*
+* Construct a path rule.
+*
+* @param paths A set of path strings. The path should not contain any filename.
+* The path is case-insensitive. It it normalize to lowercase.
+* A path starting with the "[USER_FOLDER]" special string will match any user folder prefix.
+* For example: "[USER_FOLDER]/Downloads" will match all Downloads folder under the user folder.
+*    Microsoft Windows Vista, 7, 8 and 10 - /Users/john/Downloads
+*    Microsoft Windows 2000, XP and 2003- /Documents and Settings/john/Downloads
+*    Linux - /home/john/Downloads
+*    macOS - /Users/john/Downloads
+*/
+LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths) {
     lowerCaseUserFolder = TskHelper::toLower(getUserFolder());
     for (auto it = std::begin(paths); it != std::end(paths); ++it) {
         validatePath(*it);
@@ -49,8 +60,7 @@ LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths)
     }
 }
 
-LogicalImagerPathRule::~LogicalImagerPathRule()
-{
+LogicalImagerPathRule::~LogicalImagerPathRule() {
 }
 
 /**
@@ -73,11 +83,10 @@ bool LogicalImagerPathRule::matchUserFolder(const std::string path) const {
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if the path is in the rule
+* @returns true if the path matches this rule
 *          false otherwise
 */
-bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path) const
-{
+bool LogicalImagerPathRule::matches(TSK_FS_FILE * /*fs_file*/, const char *path) const {
     if (path == NULL)
         return false;
 

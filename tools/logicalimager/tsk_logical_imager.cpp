@@ -769,10 +769,8 @@ main(int argc, char **argv1)
                     fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
                     strcpy(fs_file->name->name, iter->c_str());
                     ruleSet->alert(extractStatus, ruleConfig->getDescription(), fs_file, "");
-                    free(fs_file->name->name);
-                    delete fs_file->name;
                 }
-                delete fs_file;
+                tsk_fs_file_close(fs_file);
             }
         }
     }

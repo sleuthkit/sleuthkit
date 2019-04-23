@@ -61,6 +61,13 @@ int getPositiveInt(const std::string &key, nlohmann::json ruleJson) {
     return size;
 }
 
+/* 
+* Construct a rule set
+*
+* @param ruleSetKey String key for the rule set
+* @param ruleSetValue JSON of the rule set
+* @throws std::logic_error on any error
+*/
 void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue) {
     std::string description;
     bool shouldSave = true;
@@ -182,7 +189,67 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
 
 /**
  * Construct the LogicalImagerRuleSet based on a configuration filename
+ * The configuration file is in JSON format. It has the following key and values.
+
+{
+  "finalize_image_writer": false,
+  "rule-sets": {
+    "full-path-search": {
+      "description": "Full file path search",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "full-paths": [
+        "Documents and Settings/John/My Documents/Downloads",
+        "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg",
+      ]
+    },
+    "example-rule-1": {
+      "description": "Find all pictures smaller than 3000 bytes, under the 'Google' folder",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "extensions": [ "jpg", "jpeg", "png", "gif" ],
+      "size-range": { "max": 3000 },
+      "folder-names": [ "Google" ]
+    },
+    "example-rule-2": {
+      "description": "Find all 'readme.txt' and 'autoexec.bat' files",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "file-names": [ "readme.txt", "autoexec.bat" ]
+    },
+    "example-rule-3": {
+      "description": "find files newer than 2012-03-22",
+      "shouldSave": false,
+      "shouldAlert": true,
+      "date-range": { "min": "2012-03-22" }
+    },
+    "example-rule-4": {
+      "description": "find all png files under the user folder",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "extensions": [ "png" ],
+      "folder-names": [ "[USER_FOLDER]/My Documents/Downloads" ]
+    },
+    "example-rule-5": {
+      "description": "find files 30 days or newer",
+      "shouldSave": false,
+      "shouldAlert": true,
+      "date-range": { "min-days": 30 }
+    }
+  }
+}
+ * "finalize_image_writer" is optional. Default is false. If true, it will finalize the image writer by writing the 
+ *     remaing sectors to the sparse_image.vhd file.
+ * "description" is required.
+ * "shouldSave" is optional. Default is true. If true, any matched files will be save to the sparse_image.vhd.
+ * "shouldAlert" is optional. Default is false. If true, an alert record will be send to the console and the alert file.
+ *
+ * Creates an alert file based on the alertFilename. 
+ * Files matching the logical imager rule set are recorded in the alert file, if shouldAlert is true.
+ *
  * @param configFilename Configuration filename of the rule set
+ * @param alertFilename Alert filename
+ * @throws std::logic_error if there is any error 
  *
  */
 LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) {
@@ -239,6 +306,9 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet() {
     }
 }
 
+/*
+* Close the alert file.
+*/
 void LogicalImagerRuleSet::closeAlert() const {
     if (m_alertFile) {
         fclose(m_alertFile);
@@ -249,6 +319,7 @@ void LogicalImagerRuleSet::closeAlert() const {
  * Given a file and its path, match it using the logical imager rule set.
  * All rules in a single set must matched (ANDed)
  * May extract and/or alert depending on the rule setting.
+ *
  * @param fs_file TSK_FS_FILE containing the filename
  * @param path parent path to fs_file
  * @returns TSK_RETVAL_ENUM TSK_OK if match has no errors.
@@ -278,16 +349,18 @@ TSK_RETVAL_ENUM LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *
     return TSK_OK;
 }
 
+/*
+* Get the full file path rule set
+* 
+* @returns the fulll file paths rule set
+*/
 const std::pair<const RuleMatchResult *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {
     return m_fullFilePaths;
 }
 
-TSK_RETVAL_ENUM LogicalImagerRuleSet::processFile(TSK_FS_FILE *fs_file, const char *path) const {
-    return matches(fs_file, path);
-}
-
 /**
 * Extract a file. tsk_img_writer_create must have been called prior to this method.
+*
 * @param fs_file File details
 * @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
 */
@@ -316,6 +389,19 @@ TSK_RETVAL_ENUM LogicalImagerRuleSet::extractFile(TSK_FS_FILE *fs_file) const {
     return TSK_OK;
 }
 
+/*
+* Write an file match alert record to the alert file. Also send same record to stdout.
+* An alert file record contains tab-separated fields: 
+*   - extractStatus
+*   - description
+*   - name
+*   - path
+*
+* @param extractStatus Extract status: 0 if file was extracted, 1 otherwise
+* @param description File match rule description
+* @param fs_file TSK_FS_FILE that matches
+* @param path Parent path of fs_file
+*/
 void LogicalImagerRuleSet::alert(TSK_RETVAL_ENUM extractStatus, const std::string &description, TSK_FS_FILE *fs_file, const char *path) const {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..

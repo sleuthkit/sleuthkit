@@ -34,7 +34,11 @@ RegParser::~RegParser() {
 }
 
 /**
- * @returns -1 on error
+ * Load a hive
+ *
+ * @param aHiveFile TSK_FS_FILE hive file
+ * @param aHiveType RegHiveType::Enum hive type
+ * @returns 0 on success, -1 on error
  */
 int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     if (aHiveFile == NULL) {
@@ -82,6 +86,12 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     return 0;
 }
 
+/**
+* Get the root key
+*
+* @param output aKey RegKey to receive the root key
+* @returns 0 on success
+*/
 int RegParser::getRootKey(RegKey &aKey) {
     aKey.initialize(m_rootKey);
     return 0;
@@ -126,6 +136,7 @@ int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
 
 /**
  * Get the names of the subkeys (if any) for the given registry key.
+ *
  * @param input keyName The name of the registry key to retrieve subkeys for.
  * See the RegParser::getKey documentation for key name format rules.
  * @param output subKeyNamesList The returned list of subkey names. The list
@@ -166,6 +177,7 @@ int RegParser::getSubKeys(const std::wstring &keyName, std::vector<std::wstring>
 
 /**
  * Get the subkeys (if any) for the given registry key.
+ *
  * @param input keyName The name of the registry key to retrieve subkeys for.
  * See the RegParser::getKey documentation for key name format rules.
  * @param output subKeysList The returned list of subkeys. The list
@@ -208,6 +220,7 @@ int RegParser::getSubKeys(const std::wstring &keyName, std::vector<RegKey*> &sub
 
 /**
  * Get the value associated with the given key name and value name.
+ *
  * @param input keyName The name of the registry key in which to look for
  * the given value name.
  * See the RegParser::getKey documentation for key name format rules.
@@ -241,6 +254,7 @@ int RegParser::getValue(const std::wstring &keyName, const std::wstring &valName
 /**
  * Get the value associated with the given value name relative to the given
  * key and optional subpath.
+ *
  * @param input startKey The key in which to look for the given subpath and
  * value name.
  * See the RegParser::getKey documentation for key name format rules.
@@ -279,6 +293,7 @@ int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName,
 
 /**
 * Get the values (if any) for the given registry key.
+*
 * @param input keyName The name of the registry key to retrieve values for.
 * See the RegParser::getKey documentation for key name format rules.
 * @param output valList The returned list of values. The list will be empty
@@ -319,6 +334,7 @@ int RegParser::getValues(const std::wstring &keyName, std::vector<RegVal *> &val
 
 /**
 * Get all values (if any) for the given subpath relative to the given registry key.
+*
 * @param input startKey The registry key in which to look for the given subpath.
 * @param input subPath The path to the key to retrieve values for.
 * See the RegParser::getKey documentation for key name format rules.
@@ -364,6 +380,7 @@ int RegParser::getValues(const RegKey *startKey, const std::wstring &subpathName
 
 /**
 * Find the key with the given name relative to the optional starting key.
+*
 * @param input keyName The name of the key to find.
 * @param input startingKey An optional starting point from which to search.
 * If not provided, the search will start at the root of the registry.
@@ -413,6 +430,7 @@ const Rejistry::RegistryKey *RegParser::findKey(const std::wstring &keyName, con
 /**
  * Splits a key into its constituent parts. The key name parts must be
  * separated by the backslash character.
+ *
  * @param input keyName The key to split.
  * @returns The split key elements as a vector of strings.
  */

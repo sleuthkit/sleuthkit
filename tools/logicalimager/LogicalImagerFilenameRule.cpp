@@ -14,16 +14,20 @@
 #include "LogicalImagerFilenameRule.h"
 #include "TskHelper.h"
 
-LogicalImagerFilenameRule::LogicalImagerFilenameRule(const std::set<std::string> &filenames)
-{
+/*
+* Construct a filename rule.
+*
+* @param filenames A set of filename strings. The filename should not contain any parent path.
+* The filenames is case-insensitive. It it normalize to lowercase.
+*/
+LogicalImagerFilenameRule::LogicalImagerFilenameRule(const std::set<std::string> &filenames) {
     for (auto it = std::begin(filenames); it != std::end(filenames); ++it) {
         validatePath(*it);
         m_filenames.insert(TskHelper::toLower(*it));
     }
 }
 
-LogicalImagerFilenameRule::~LogicalImagerFilenameRule()
-{
+LogicalImagerFilenameRule::~LogicalImagerFilenameRule() {
 }
 
 /**
@@ -31,11 +35,10 @@ LogicalImagerFilenameRule::~LogicalImagerFilenameRule()
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if filename is in the rule
+* @returns true if filename matches this rule
 *          false otherwise
 */
-bool LogicalImagerFilenameRule::matches(TSK_FS_FILE *fs_file, const char * /*path*/) const
-{
+bool LogicalImagerFilenameRule::matches(TSK_FS_FILE *fs_file, const char * /*path*/) const {
     if (fs_file->name == NULL)
         return false;
 

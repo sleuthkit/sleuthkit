@@ -51,7 +51,7 @@ uint8_t TskFindFiles::handleError() {
 * @returns TSK_OK or TSK_ERR. All error must have been registered.
 */
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    return m_logicialImagerRuleSet->processFile(fs_file, path);
+    return m_logicialImagerRuleSet->matches(fs_file, path);
 }
 
 void TskFindFiles::closeAlert() const {

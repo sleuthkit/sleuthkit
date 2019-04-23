@@ -30,7 +30,23 @@ public:
     LogicalImagerRuleBase();
     ~LogicalImagerRuleBase();
 
+    /**
+    * Base method for matching a file and its path against derived classes.
+    * Derived classes must implement the matches method.
+    *
+    * @param fs_file TSK_FS_FILE containing the filename
+    * @param path parent path to fs_file
+    * @returns true if the path is in the rule
+    *          false otherwise
+    */
     virtual bool matches(TSK_FS_FILE *fs_file, const char *path) const = 0;
 
+    /**
+    * Validate a path.
+    * Path containing the backslash character is invalid.
+    *
+    * @param path parent path to a file
+    * @throws std::logic_error if the path is invalid
+    */
     void validatePath(const std::string &path) const;
 };

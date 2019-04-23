@@ -29,8 +29,6 @@ public:
     int analyzeSAMUsers() const;
 
 private:
-    RegHiveType::Enum hiveNameToType(const std::string &aName) const;
-
     int parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring &userName,
         std::wstring &userFullName, std::wstring &comment, uint32_t &acctType) const;
 

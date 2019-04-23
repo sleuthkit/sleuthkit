@@ -23,13 +23,17 @@ RegFileInfo::RegFileInfo(std::string &aName, std::string &aPath, RegHiveType::En
     m_userSID.clear();
 }
 
-RegFileInfo::~RegFileInfo()
-{
+RegFileInfo::~RegFileInfo() {
     delete m_regParser;
 }
 
-RegHiveType::Enum RegFileInfo::hiveNameToType(const std::string &aName)
-{
+/**
+* Covert a hive name to a hive type.
+*
+* @param aName hive name
+* @returns RegHiveType::Enum hive type
+*/
+RegHiveType::Enum RegFileInfo::hiveNameToType(const std::string &aName) {
     if (0 == _stricmp("SYSTEM", aName.c_str()))
         return RegHiveType::SYSTEM;
     else if (0 == _stricmp("SOFTWARE", aName.c_str()))

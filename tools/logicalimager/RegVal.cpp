@@ -109,6 +109,12 @@ RegVal::RegVal(const Rejistry::RegistryValue *value) {
     initialize(value);
 }
 
+/*
+* Initialize a RegVal object
+* 
+* @param value Rejistry::RegistryValue pointer to value
+* @returns 0 on success, -1 otherwise
+*/
 int RegVal::initialize(const Rejistry::RegistryValue *value) {
     try {
         m_valName = value->getName();
@@ -160,16 +166,31 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
     return 0;
 }
 
+/*
+* Set binary data
+* 
+* @param pData point to data
+*/
 void RegVal::setBinaryData(unsigned char *pData) {
     // @@@ BC: Seems like we should be forcing them to pass in the size of pData here
 
     m_vBytes.assign(&pData[0], &pData[m_valLen - 1]);
 }
 
+/*
+* Add multiple string data
+*
+* @param strData reference to wstring data
+*/
 void RegVal::addMultiStringData(std::wstring &strData) {
     m_vMultiString.push_back(strData);
 }
 
+/*
+* Get the valType string
+* 
+* @return string associated with valType value
+*/
 std::string RegVal::valTypeStr() {
     if ((m_valType < REG_NONE) || (m_valType > REG_QWORD)) {
         return "unknown";
@@ -179,6 +200,9 @@ std::string RegVal::valTypeStr() {
     }
 }
 
+/*
+* Print the RegVal object
+*/
 void RegVal::print() {
     std::wcout << L"Val Name: " << m_valName << std::endl;
     std::cout << "\t" << "Type: " << valTypeStr() << std::endl;
@@ -186,6 +210,14 @@ void RegVal::print() {
     std::wcout << L"\t" << L"Data: " << dataToStr() << std::endl;
 }
 
+/*
+* Return a buffer in hexadecimals
+*
+* @param buf buffer of data
+* @param maxSize maximum size of string to return
+* @param len size of buffer
+* @returns string of hexadecimals representation of buffer
+*/
 std::string hexprintBuf(const unsigned char *buf, size_t maxSize, size_t len) {
     std::stringstream ss;
 
@@ -200,6 +232,11 @@ std::string hexprintBuf(const unsigned char *buf, size_t maxSize, size_t len) {
     return ss.str();
 }
 
+/*
+* Return RegVal data object as a wstring
+*
+* @returns wstring of the data 
+*/
 std::wstring RegVal::dataToStr() {
     std::wstringstream wss;
 
