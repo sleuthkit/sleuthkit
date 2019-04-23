@@ -392,12 +392,12 @@ const Rejistry::RegistryKey *RegParser::findKey(const std::wstring &keyName, con
             }
             currentKey = nextKey;
         }
-        catch (Rejistry::NoSuchElementException& e) {
+        catch (Rejistry::NoSuchElementException&) {
             // If we fail on the root element, we will continue and
             // try the next element in the path. Otherwise we rethrow
             // the exception.
             if ((*keyIter) != m_rootKey->getName()) {
-                throw e;
+                throw;
             }
         }
     }
