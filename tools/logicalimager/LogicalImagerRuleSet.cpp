@@ -293,9 +293,8 @@ TSK_RETVAL_ENUM LogicalImagerRuleSet::processFile(TSK_FS_FILE *fs_file, const ch
 */
 TSK_RETVAL_ENUM LogicalImagerRuleSet::extractFile(TSK_FS_FILE *fs_file) const {
     TSK_OFF_T offset = 0;
-    TSK_OFF_T bufferLen = 16 * 1024;
-    TSK_OFF_T bytesRead;
-    TSK_OFF_T bytesReadTotal = 0;
+    size_t bufferLen = 16 * 1024;
+    ssize_t bytesRead;
     char buffer[16 * 1024];
 
     while (true) {
