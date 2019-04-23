@@ -46,6 +46,7 @@ public:
 
 private:
     void constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue);
+    LogicalImagerRuleSet(const LogicalImagerRuleSet&) == delete;
 
     std::map<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>> m_rules;
     std::pair<const RuleMatchResult *, std::list<std::string>> m_fullFilePaths;
