@@ -69,7 +69,19 @@
 /* Define to 1 if you have the <libewf.h> header file. */
 #undef HAVE_LIBEWF_H
 
-/* Define to 1 if you have the 'stdc++' library (-lstdc++). */
+/* Define if using opensll */
+#undef HAVE_LIBOPENSSL
+
+/* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
+#undef HAVE_LIBSQLITE3
+
+/* Define to 1 if you have the `qcow' library (-lqcow). */
+#undef HAVE_LIBQCOW
+
+/* Define to 1 if you have the <libqcow.h> header file. */
+#undef HAVE_LIBQCOW_H
+
+/* Define to 1 if you have the `stdc++' library (-lstdc++). */
 #undef HAVE_LIBSTDC__
 
 /* Define to 1 if you have the 'vhdi' library (-lvhdi). */
