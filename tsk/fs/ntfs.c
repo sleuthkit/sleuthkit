@@ -5014,32 +5014,39 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         goto on_error;
     }
 
-    if ((ntfs->fs->csize != 0x01) &&
-        (ntfs->fs->csize != 0x02) &&
-        (ntfs->fs->csize != 0x04) &&
-        (ntfs->fs->csize != 0x08) &&
-        (ntfs->fs->csize != 0x10) &&
-        (ntfs->fs->csize != 0x20) && (ntfs->fs->csize != 0x40)
-        && (ntfs->fs->csize != 0x80)) {
+    if (ntfs->fs->csize <= 0x80) {
+        ntfs->csize = ntfs->fs->csize;
+    }
+    else {
+        ntfs->csize = 1 << - (int8_t)ntfs->fs->csize;
+    }
+
+    if ((ntfs->csize != 0x01) && (ntfs->csize != 0x02) &&
+        (ntfs->csize != 0x04) && (ntfs->csize != 0x08) &&
+        (ntfs->csize != 0x10) && (ntfs->csize != 0x20) &&
+        (ntfs->csize != 0x40) && (ntfs->csize != 0x80) &&
+        (ntfs->csize != 0x100) && (ntfs->csize != 0x200) &&
+        (ntfs->csize != 0x400) && (ntfs->csize != 0x800) &&
+        (ntfs->csize != 0x1000)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid cluster size %d)",
-            ntfs->fs->csize);
+            ntfs->csize);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid cluster size: %d\n",
-                ntfs->fs->csize);
+                ntfs->csize);
         goto on_error;
     }
 
-    ntfs->csize_b = ntfs->fs->csize * ntfs->ssize_b;
+    ntfs->csize_b = ntfs->csize * ntfs->ssize_b;
     fs->first_block = 0;
     /* This field is defined as 64-bits but according to the
      * NTFS drivers in Linux, old Windows versions used only 32-bits
      */
     fs->block_count =
         (TSK_DADDR_T) tsk_getu64(fs->endian,
-        ntfs->fs->vol_size_s) / ntfs->fs->csize;
+        ntfs->fs->vol_size_s) / ntfs->csize;
     if (fs->block_count == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
@@ -5232,7 +5239,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             "ssize: %" PRIu16
             " csize: %d serial: %" PRIx64 "\n",
             tsk_getu16(fs->endian, ntfs->fs->ssize),
-            ntfs->fs->csize, tsk_getu64(fs->endian, ntfs->fs->serial));
+            ntfs->csize, tsk_getu64(fs->endian, ntfs->fs->serial));
         tsk_fprintf(stderr,
             "mft_rsize: %d idx_rsize: %d vol: %d mft: %"
             PRIu64 " mft_mir: %" PRIu64 "\n",
