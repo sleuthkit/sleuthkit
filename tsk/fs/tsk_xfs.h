@@ -74,6 +74,12 @@ typedef struct xfs_btree_sblock {
     uint16_t    bb_numrecs;
     uint32_t    bb_leftsib;
     uint32_t    bb_rightsib;
+    /* version 5 filesystem fields start here */
+    uint64_t    bb_blkno;
+    uint64_t    bb_lsn;
+    xfs_uuid_t  bb_uuid;
+    uint32_t    bb_owner;
+    uint32_t    bb_crc;
 } xfs_btree_sblock_t;
 
 typedef struct xfs_alloc_rec {
@@ -449,15 +455,34 @@ typedef struct xfs_dir2_data_free {
     uint16_t                length;        /* length of freespace */
 } xfs_dir2_data_free_t;
 
-#define    XFS_DIR2_DATA_FD_COUNT    3
 /*
- * Header for the data blocks.
+ * Header for the data blocks (non-v5 XFS)
  */
+#define XFS_DIR2_HDR_LEN        16
+#define XFS_DIR2_DATA_FD_COUNT  3
 typedef struct xfs_dir2_data_hdr {
     uint32_t                magic;        /* XFS_DIR2_DATA_MAGIC or */
                                           /* XFS_DIR2_BLOCK_MAGIC */
     xfs_dir2_data_free_t    bestfree[XFS_DIR2_DATA_FD_COUNT];
 } xfs_dir2_data_hdr_t;
+
+/*
+ * Header for the data blocks (v5 XFS)
+ */
+#define XFS_DIR3_HDR_LEN        64
+struct xfs_dir3_blk_hdr {
+    uint32_t                magic;
+    uint32_t                crc;
+    uint64_t                blkno;
+    uint64_t                lsn;
+    xfs_uuid_t              uuid;
+    uint64_t                owner;
+};
+struct xfs_dir3_data_hdr {
+    struct xfs_dir3_blk_hdr hdr;
+    xfs_dir2_data_free_t    best_free[XFS_DIR2_DATA_FD_COUNT];
+    /* uint32_t pad; */
+};
 
 /*
  * Active entry in a data block.
@@ -766,7 +791,7 @@ static inline bool xfs_sb_version_hasprojid32bit(xfs_sb *sb)
  */
 static inline bool xfs_sb_version_hascrc(xfs_sb *sb)
 {
-    return sb->sb_versionnum == XFS_SB_VERSION_5;
+    return XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5;
 }
 static inline int xfs_sb_version_hasftype(xfs_sb *sb)
 {
