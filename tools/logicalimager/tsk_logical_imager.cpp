@@ -721,6 +721,7 @@ main(int argc, char **argv1)
 
     if (img->itype == TSK_IMG_TYPE_RAW) {
         if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
+            tsk_error_print(stderr);
             fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
             exit(1);
         }
@@ -793,17 +794,9 @@ main(int argc, char **argv1)
     }
 
     if (findFiles.findFilesInImg()) {
-        // we already logged the errors
-        if (ruleSet) {
-            delete ruleSet;
-        }
-        // should we call findFiles.closeImage() upon error?
-        fprintf(stderr, "findFilesInImg failed\n");
-        const std::vector<TskAuto::error_record> error_records = findFiles.getErrorList();
-        for (auto iter = error_records.begin(); iter != error_records.end(); ++iter) {
-            fprintf(stderr, "code=%d, msg1=%s, msg2=%s\n", iter->code, iter->msg1.c_str(), iter->msg2.c_str());
-        }
-        exit(1);
+        // we already logged the errors in findFiles.handleError()
+        // Don't exit, just let it continue
+        fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
     }
 
     // close alert file before tsk_img_writer_finish, which may take a long time. 
@@ -813,7 +806,7 @@ main(int argc, char **argv1)
         if (ruleSet->getFinalizeImagerWriter()) {
             if (tsk_img_writer_finish(img) == TSK_ERR) {
         	    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-        	    // not exiting, should call tsk_img_close.
+        	    // not exiting, findFiles.closeImage() will call tsk_img_close
             }
         }
     }
