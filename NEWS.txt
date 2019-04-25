@@ -1,6 +1,25 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.6 --------------
+
+C/C++ Code:
+- Acquisition deteails are set in DB for E01 files
+- Fix NTFS decompression issue (from Joe Sylve)
+- Image reading fix when cache fails (Joe Sylve)
+- Fix HFS+ issue with large catalog files (Joe Sylve) 
+- Fix free memory issue in srch_strings (Derrick Karpo)
+
+Java:
+- Fix so that local files can be relative
+- More Blackboard artifacts and attributes for web data
+- Added methods to CaseDbManager to enable checking for and modifying tables.
+- APIs to get and set acquisition details
+- Added methods to add volume and file systems to database
+- Added method to add LayoutFile for allocated files
+- Changed handling of JNI handles to better support multiple cases
+
+
 ---------------- VERSION 4.6.5 --------------
 C/C++ Code:
 - HFS boundary check fix
