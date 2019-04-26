@@ -38,9 +38,6 @@
     <ClInclude Include="..\..\tools\logicalimager\RuleMatchResult.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tools\logicalimager\tsk_logical_imager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\tools\logicalimager\TskFindFiles.h">
       <Filter>Header Files</Filter>
     </ClInclude>

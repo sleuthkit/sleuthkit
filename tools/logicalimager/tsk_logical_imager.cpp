@@ -31,7 +31,6 @@
 #include "LogicalImagerRuleSet.h"
 #include "TskFindFiles.h"
 #include "TskHelper.h"
-#include "tsk_logical_imager.h"
 #include "RegistryAnalyzer.h"
 
 std::wstring GetLastErrorStdStrW();
@@ -41,8 +40,6 @@ std::wstring GetErrorStdStrW(DWORD err);
 static TSK_TCHAR *progname;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-
-
 
 /**
 * GetErrorStdStr - returns readable error message for the given error code
@@ -209,7 +206,7 @@ int createDirectory(string &directoryPathname) {
     string outDirName;
     string hostName;
     if (0 == getLocalHost(hostName)) {
-        outDirName = "C:/Users/jkho/Logical_Imager_" + hostName + "_" + timeStr;
+        outDirName = "Logical_Imager_" + hostName + "_" + timeStr;
     }
 
     struct stat st;
@@ -695,11 +692,6 @@ main(int argc, char **argv1)
     }
     TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), imgPath[0]);
 
-    if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
-        tsk_error_print(stderr);
-        exit(1);
-    }
-
     // create a directory with hostname_timestamp
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
@@ -714,8 +706,13 @@ main(int argc, char **argv1)
     try {
         ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename), alertFileName);
     }
-    catch (std::exception &e) {
+    catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
+        exit(1);
+    }
+
+    if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
+        tsk_error_print(stderr);
         exit(1);
     }
 
@@ -723,6 +720,7 @@ main(int argc, char **argv1)
         if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
             tsk_error_print(stderr);
             fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
+            tsk_img_close(img);
             exit(1);
         }
     } else {
@@ -751,7 +749,7 @@ main(int argc, char **argv1)
             tsk_vs_close(vs_info);
         }
     }
-    catch (std::exception &e) {
+    catch (const std::exception &e) {
         fprintf(stderr, "tsk_vs_open exception: %s\n", e.what());
     }
 
@@ -795,6 +793,7 @@ main(int argc, char **argv1)
             delete ruleSet;
         }
         fprintf(stderr, "openImageHandle failed\n");
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -805,7 +804,7 @@ main(int argc, char **argv1)
             fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
         }
     }
-    catch (std::exception &e) {
+    catch (const std::exception &e) {
         fprintf(stderr, "findFilesInImg exception: %s\n", e.what());
     }
 
@@ -820,7 +819,7 @@ main(int argc, char **argv1)
         	        // not exiting, findFiles.closeImage() will call tsk_img_close
                 }
             }
-            catch (std::exception &e) {
+            catch (const std::exception &e) {
                 fprintf(stderr, "tsk_img_writer_finish exception: %s\n", e.what());
             }
         }
