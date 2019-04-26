@@ -19,7 +19,6 @@
 #include "img_writer.h"
 #include "raw.h"
 #include <time.h>
-#include <WinError.h>
 #include <string>
 
 #ifdef TSK_WIN32
