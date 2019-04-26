@@ -173,7 +173,16 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
         if (raw_info->img_writer != NULL) {
             /* img_writer is not used with split images, so rel_offset is just the normal offset*/
-            raw_info->img_writer->add(raw_info->img_writer, rel_offset, buf, cnt);
+            if (raw_info->img_writer->add(raw_info->img_writer, rel_offset, buf, cnt) != TSK_OK) {
+                int lastError = GetLastError();
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_WRITE);
+                tsk_error_set_errstr("img_writer->add: file \"%" PRIttocTSK
+                    "\" offset: %" PRIuOFF " read len: %" PRIuSIZE " - %d",
+                    raw_info->img_info.images[idx], rel_offset, len,
+                    lastError);
+                return -1;
+            }
         }
     }
 #else

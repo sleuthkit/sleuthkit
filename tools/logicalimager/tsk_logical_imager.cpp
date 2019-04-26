@@ -209,7 +209,7 @@ int createDirectory(string &directoryPathname) {
     string outDirName;
     string hostName;
     if (0 == getLocalHost(hostName)) {
-        outDirName = "Logical_Imager_" + hostName + "_" + timeStr;
+        outDirName = "C:/Users/jkho/Logical_Imager_" + hostName + "_" + timeStr;
     }
 
     struct stat st;
@@ -734,20 +734,25 @@ main(int argc, char **argv1)
     TskHelper::getInstance().reset();
     TskHelper::getInstance().setImgInfo(img);
     TSK_VS_INFO *vs_info;
-    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-        std::cout << "No volume system found. Looking for file system" << std::endl;
-        openFs(img, 0);
-    } else {
-        // process the volume system
-        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
-            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-            std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
-            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
-                continue;
+    try {
+        if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+            std::cout << "No volume system found. Looking for file system" << std::endl;
+            openFs(img, 0);
+        } else {
+            // process the volume system
+            for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+                const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+                std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
+                if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                    continue;
+                }
+                openFs(img, vs_part->start * vs_part->vs->block_size);
             }
-            openFs(img, vs_part->start * vs_part->vs->block_size);
+            tsk_vs_close(vs_info);
         }
-        tsk_vs_close(vs_info);
+    }
+    catch (std::exception &e) {
+        fprintf(stderr, "tsk_vs_open exception: %s\n", e.what());
     }
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
@@ -793,10 +798,15 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (findFiles.findFilesInImg()) {
-        // we already logged the errors in findFiles.handleError()
-        // Don't exit, just let it continue
-        fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
+    try {
+        if (findFiles.findFilesInImg()) {
+            // we already logged the errors in findFiles.handleError()
+            // Don't exit, just let it continue
+            fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
+        }
+    }
+    catch (std::exception &e) {
+        fprintf(stderr, "findFilesInImg exception: %s\n", e.what());
     }
 
     // close alert file before tsk_img_writer_finish, which may take a long time. 
@@ -804,9 +814,14 @@ main(int argc, char **argv1)
 
     if (img->itype == TSK_IMG_TYPE_RAW) {
         if (ruleSet->getFinalizeImagerWriter()) {
-            if (tsk_img_writer_finish(img) == TSK_ERR) {
-        	    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-        	    // not exiting, findFiles.closeImage() will call tsk_img_close
+            try {
+                if (tsk_img_writer_finish(img) == TSK_ERR) {
+        	        fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+        	        // not exiting, findFiles.closeImage() will call tsk_img_close
+                }
+            }
+            catch (std::exception &e) {
+                fprintf(stderr, "tsk_img_writer_finish exception: %s\n", e.what());
             }
         }
     }

@@ -19,6 +19,8 @@
 #include "img_writer.h"
 #include "raw.h"
 #include <time.h>
+#include <WinError.h>
+#include <string>
 
 #ifdef TSK_WIN32
 #include <winioctl.h>
@@ -34,6 +36,22 @@
 #define VHD_DISK_HEADER_LENGTH 0x400
 
 static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer);
+
+static std::string getErrorMessage(int errorNo) {
+    char msgBuff[512];  // Buffer for text.
+    DWORD   dwChars;  // Number of chars returned.
+
+    // Try to get the message from the system errors.
+    dwChars = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        errorNo,
+        0,
+        msgBuff,
+        512,
+        NULL);
+    std::string msg(msgBuff);
+    return msg;
+}
 
 /*
  * Considering the buffer to be an array of bits, get the entry at
@@ -96,6 +114,7 @@ static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
         tsk_error_set_errstr("img_writer::seekAhead: offset %" PRIuOFF " seek - %d",
             dist,
             lastError);
+        fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
         return TSK_ERR;
     }
     return TSK_OK;
@@ -165,6 +184,7 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
                 tsk_error_set_errstr("addToExistingBlock: error writing sector",
                     lastError);
+                fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
                 return TSK_ERR;
             }
             setBit(writer->blockToSectorBitmap[blockNum], currentSector, true);
@@ -184,6 +204,7 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addToExistingBlock: error writing sector",
             lastError);
+        fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
         return TSK_ERR;
     }
 
@@ -243,6 +264,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addNewBlock: error writing BAT entry",
             lastError);
+        fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
         return TSK_ERR;
     }
 
@@ -256,6 +278,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addNewBlock: error writing sector bitmap",
             lastError);
+        fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
         return TSK_ERR;
     }
     if (FALSE == WriteFile(writer->outputFileHandle, fullBuffer, writer->blockSize, &bytesWritten, NULL)) {
@@ -264,6 +287,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addNewBlock: error writing block data",
             lastError);
+        fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
         return TSK_ERR;
     }
 
@@ -283,6 +307,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
  * Add a buffer that fits in a single block of the VHD 
  */
 static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
+    TSK_RETVAL_ENUM result;
     TSK_OFF_T blockNum = addr / writer->blockSize;
 
     if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_FINISHED){
@@ -290,16 +315,16 @@ static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *bu
     }
 
     if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_ALLOC) {
-        addToExistingBlock(writer, addr, buffer, len, blockNum);
+        result = addToExistingBlock(writer, addr, buffer, len, blockNum);
     }
     else {
-        addNewBlock(writer, addr, buffer, len, blockNum);
+        result = addNewBlock(writer, addr, buffer, len, blockNum);
     }
 
     /* Check whether the block is now done */
     checkIfBlockIsFinished(writer, blockNum);
 
-    return TSK_OK;
+    return result;
 }
 
 
@@ -412,6 +437,7 @@ static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("writeFooter: error writing VHD footer",
             lastError);
+        fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
         return TSK_ERR;
     }
     return TSK_OK;
@@ -442,6 +468,7 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("writeFooter: error writing VHD header",
             lastError);
+        fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
         return TSK_ERR;
     }
     return TSK_OK;
@@ -473,20 +500,25 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
         return TSK_ERR;
     }
 
+    TSK_RETVAL_ENUM result;
+
     if ((addr / writer->blockSize) == ((addr + len) / writer->blockSize)) {
         /* The buffer is contained in a single block */
-        return addBlock(writer, addr, buffer, len);
+        result = addBlock(writer, addr, buffer, len);
     }
     else {
         /* The buffer spans two blocks */
         TSK_OFF_T firstPartLength = writer->blockSize - (addr % writer->blockSize);
-        addBlock(writer, addr, buffer, firstPartLength);
+        result = addBlock(writer, addr, buffer, firstPartLength);
         if (addr + firstPartLength < writer->imageSize) {
-            addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
+            result = addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
         }
     }
 
-    return TSK_OK;
+    if (result == TSK_ERR) {
+        throw std::logic_error("ERROR tsk_img_writer_add failed");
+    }
+    return result;
 }
 
 /*
@@ -726,6 +758,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_WRITE);
             tsk_error_set_errstr("tsk_img_writer_create: Error writing block allocation table", lastError);
+            fprintf(stderr, "Error in %s:%i %s", __FILE__, __LINE__, getErrorMessage(lastError).c_str());
             return TSK_ERR;
         }
     }
