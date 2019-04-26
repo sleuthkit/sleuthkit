@@ -761,7 +761,7 @@ main(int argc, char **argv1)
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
-            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), filenameInfo, NULL, &fs_file);
+            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
             if (retval == 0 && fs_file != NULL) {
                 TSK_RETVAL_ENUM extractStatus = TSK_ERR;
                 if (ruleConfig->isShouldSave()) {

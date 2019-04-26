@@ -249,7 +249,7 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
 
     TSKFileNameInfo filenameInfo;
     TSK_FS_FILE *fsFile;
-    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), filenameInfo, NULL, &fsFile);
+    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), false, filenameInfo, NULL, &fsFile);
     if (retval == -1) {
         std::cerr << "Error in finding system Registry files. System Registry files will not be analyzed." << std::endl;
         std::cerr << "findSystemRegFiles(): path2inum() failed for dir = " << SYS_REG_FILES_DIR << ", errno = " << tsk_error_get() << std::endl;
@@ -347,7 +347,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &
     TSK_FS_DIR *fs_dir;
     TSKFileNameInfo filenameInfo;
     TSK_FS_FILE *fsFile;
-    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, a_starting_dir.c_str(), filenameInfo, NULL, &fsFile);
+    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, a_starting_dir.c_str(), false, filenameInfo, NULL, &fsFile);
 
     if (retval == -1) {
         std::cerr << "Error in finding User Registry files. Some User Registry files may not be analyzed." << std::endl;
@@ -499,7 +499,7 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
     TSKFileNameInfo filenameInfo;
     TSK_FS_FILE *fsFile;
-    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, usrClassSubdir.c_str(), filenameInfo, NULL, &fsFile);
+    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, usrClassSubdir.c_str(), false, filenameInfo, NULL, &fsFile);
 
     if (retval == -1) {
         std::cerr << "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed." << std::endl;
