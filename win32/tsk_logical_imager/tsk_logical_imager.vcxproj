@@ -277,7 +277,7 @@
       <AdditionalOptions>/utf-8</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;Ws2_32.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;Shlwapi.lib;Ws2_32.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\release;$(LIBVHDI_HOME)\msvscpp\release;$(LIBEWF_HOME)\msvscpp\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -300,7 +300,7 @@
       <AdditionalOptions>/utf-8</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Ws2_32.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Shlwapi.lib;Ws2_32.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBEWF_HOME)\msvscpp\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -344,7 +344,7 @@
       <AdditionalOptions>/utf-8</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;Ws2_32.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;Shlwapi.lib;Ws2_32.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\x64\release;$(LIBVHDI_HOME)\msvscpp\x64\release;$(LIBEWF_HOME)\msvscpp\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -432,39 +432,57 @@
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>Shlwapi.lib;Ws2_32.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ProjectReference />
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerDateRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerExtensionRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerFilenameRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerPathRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleBase.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerRuleSet.cpp" />
-    <ClCompile Include="..\..\tools\autotools\LogicalImagerSizeRule.cpp" />
-    <ClCompile Include="..\..\tools\autotools\RuleMatchResult.cpp" />
-    <ClCompile Include="..\..\tools\autotools\TskFindFiles.cpp" />
-    <ClCompile Include="..\..\tools\autotools\TskHelper.cpp" />
-    <ClCompile Include="..\..\tools\autotools\tsk_logical_imager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\tools\autotools\json.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerDateRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerExtensionRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerFilenameRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerPathRule.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleBase.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerRuleSet.h" />
-    <ClInclude Include="..\..\tools\autotools\LogicalImagerSizeRule.h" />
-    <ClInclude Include="..\..\tools\autotools\RuleMatchResult.h" />
-    <ClInclude Include="..\..\tools\autotools\TskFindFiles.h" />
-    <ClInclude Include="..\..\tools\autotools\TskHelper.h" />
-    <ClInclude Include="..\..\tools\autotools\tsk_logical_imager.h" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libtsk\libtsk.vcxproj">
       <Project>{76efc06c-1f64-4478-abe8-79832716b393}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\rejistry++\Rejistry++.vcxproj">
+      <Project>{c41acd23-6d88-4999-b79d-7e7828b2dbde}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\tools\logicalimager\UserAccount.h" />
+    <ClInclude Include="..\..\tools\logicalimager\json.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerDateRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerFilenameRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerPathRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerRuleBase.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerRuleSet.h" />
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerSizeRule.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RegFileInfo.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RegHiveType.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RegistryAnalyzer.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RegistryLoader.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RegKey.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RegParser.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RegVal.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RuleMatchResult.h" />
+    <ClInclude Include="..\..\tools\logicalimager\TskFindFiles.h" />
+    <ClInclude Include="..\..\tools\logicalimager\TskHelper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\tools\logicalimager\UserAccount.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerDateRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerFilenameRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerPathRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerRuleBase.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerRuleSet.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerSizeRule.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RegFileInfo.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RegistryAnalyzer.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RegistryLoader.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RegKey.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RegParser.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RegVal.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RuleMatchResult.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\TskFindFiles.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\TskHelper.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\tsk_logical_imager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

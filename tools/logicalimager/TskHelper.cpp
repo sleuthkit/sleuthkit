@@ -1,25 +1,24 @@
-/***************************************************************************
-** This data and information is proprietary to, and a valuable trade secret
-** of, Basis Technology Corp.  It is given in confidence by Basis Technology
-** and may only be used as permitted under the license agreement under which
-** it has been distributed, and in no other way.
+/*
+** The Sleuth Kit
 **
-** Copyright (c) 2014-2016 Basis Technology Corp. All rights reserved.
+** Brian Carrier [carrier <at> sleuthkit [dot] org]
+** Copyright (c) 2010-2019 Brian Carrier.  All Rights reserved
 **
-** The technical data and information provided herein are provided with
-** `limited rights', and the computer software provided herein is provided
-** with `restricted rights' as those terms are defined in DAR and ASPR
-** 7-104.9(a).
-***************************************************************************/
-
+** This software is distributed under the Common Public License 1.0
+**
+*/
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <codecvt>
+
 #include "tsk/base/tsk_base_i.h"
 #include "tsk/fs/tsk_fs_i.h"
 #include "TskHelper.h"
+
+static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
 Path2InumCacheData::Path2InumCacheData(TSK_INUM_T a_inum, TSK_FS_DIR *a_tsk_fs_dir) {
     m_inum = a_inum;
@@ -44,6 +43,46 @@ void TskHelper::reset() {
 }
 
 /**
+* toUpper: convert string to uppercase
+* @param srcStr to convert
+* @return uppercase string
+*/
+std::string TskHelper::toUpper(const std::string &srcStr) {
+    std::string outStr(srcStr);
+    std::transform(srcStr.begin(), srcStr.end(), outStr.begin(), ::toupper);
+
+    return outStr;
+}
+
+/**
+* Convert from UTF-16 to UTF-8.
+* Returns empty string on error
+*/
+std::string TskHelper::toNarrow(const std::wstring & a_utf16Str) {
+    try {
+        std::string narrow = converter.to_bytes(a_utf16Str);
+        return narrow;
+    }
+    catch (...) {
+        return "";
+    }
+}
+
+/**
+* Convert from UTF-8 to UTF-16.
+* Returns empty string on error
+*/
+std::wstring TskHelper::toWide(const std::string &a_utf8Str) {
+    try {
+        std::wstring wide = converter.from_bytes(a_utf8Str);
+        return wide;
+    }
+    catch (...) {
+        return L"";
+    }
+}
+
+/**
 * toLower: convert string to lowercase
 * @param srcStr to convert
 * @return lowercase string
@@ -55,8 +94,14 @@ std::string TskHelper::toLower(const std::string &srcStr) {
     return outStr;
 }
 
-std::string TskHelper::stripExt(const char *a_name) {
+std::string TskHelper::intToStr(long l)
+{
+    std::stringstream ss;
+    ss << l;
+    return ss.str();
+}
 
+std::string TskHelper::stripExt(const char *a_name) {
     std::string nameNoExt;
     std::string nameStr = std::string(a_name);
 
@@ -99,7 +144,7 @@ bool TskHelper::compareNames(const char *curFileName, const char *targetFileName
 * Check if the bigStr begins with lilStr
 */
 
-bool startsWith(const std::string &bigStr, const std::string &lilStr) {
+bool TskHelper::startsWith(const std::string &bigStr, const std::string &lilStr) {
     return lilStr.length() <= bigStr.length()
         && equal(lilStr.begin(), lilStr.end(), bigStr.begin());
 }
@@ -114,13 +159,14 @@ bool startsWith(const std::string &bigStr, const std::string &lilStr) {
  *
  * @param a_fs FS to analyze
  * @param a_path UTF-8 path of file to search for
+ * @param anyExtension If true AND the path does not have an extension, then match any file with the same name, but different extension.  If false, then exact match is always done.
  * @param [out] a_result Meta data address, and TSK_FS_NAME_FLAGS of the file
  * @param [out] a_fs_name Copy of name details (or NULL if details not wanted)
  * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted). The caller should free the a_fs_file.
  * @returns -1 on (system) error, 0 if found, 1 if not found, 2 if the file path is found but the inode has been reallocated
  */
 int
-TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path,
+TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
     TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file) {
     char *cpath;
     size_t clen;
@@ -149,10 +195,12 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path,
     //cerr << getNowTimeStr() << "  TSKHlprPath2inum(): Looking for = " << std::string(a_path) << endl;
 
     // check if we will be looking for an extension
-    if (stripExt(a_path).compare(a_path) == 0) {
-        ignoreExt = true;
+    if (anyExtension) {
+        // check if they gave us an extension
+        if (stripExt(a_path).compare(a_path) == 0) {
+            ignoreExt = true;
+        }
     }
-
 
     // Get the first part of the directory path. 
     cur_name_to_match = (char *)strtok_r(cpath, "/", &strtok_last);
@@ -619,4 +667,34 @@ TSK_FS_INFO *TskHelper::getFSInfo(TSK_OFF_T offset) {
 
 const std::list<TSK_FS_INFO *> TskHelper::getFSInfoList() {
     return m_FSInfoList;
+}
+
+void TskHelper::replaceAll(std::string &str, const std::string &from, const std::string &to) {
+    if (from.empty())
+        return;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
+/**
+* replaceAll - replaces all occurences of 'from' string with the 'to' string, in the given input string, starting the search from specified position
+*
+* @param input str - input string to examine and modified
+* @param input from - string to search for
+* @param input to -  string to replace with
+* @param input pos - starting position for search
+*
+* @returns
+*/
+void TskHelper::replaceAll(std::string &str, const std::string &from, const std::string &to, size_t pos) {
+    if (from.empty() || pos >= str.length())
+        return;
+    size_t start_pos = pos;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
 }

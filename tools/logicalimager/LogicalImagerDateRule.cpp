@@ -8,7 +8,6 @@
 **
 */
 
-//#include <shlwapi.h>
 #include <string>
 #include <algorithm>
 #include <ctime>
@@ -17,14 +16,22 @@
 
 #include "LogicalImagerDateRule.h"
 
+/*
+* Construct a file date rule.
+*
+* @param min Minimum date in time_t
+* @param max Maximum data in time_t
+* @param minDays Minimum days for matching file minDays or newer
+* minDays has higher priority over exact (min and max) dates
+*/
+
 LogicalImagerDateRule::LogicalImagerDateRule(time_t min, time_t max, int minDays) {
     m_min = min;
     m_max = max;
     m_minDays = minDays;
 }
 
-LogicalImagerDateRule::~LogicalImagerDateRule()
-{
+LogicalImagerDateRule::~LogicalImagerDateRule() {
 }
 
 /**
@@ -38,11 +45,13 @@ time_t LogicalImagerDateRule::getLatestTime(TSK_FS_META *meta) const {
 }
 
 /**
-* Is the file latest time within the min and max date
+* Is the file latest time more than the minDays (match file minDays or newer)
+* Is the file latest time within the min and max dates.
+* Matching minDays takes priority over min and max dates.
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if extension is in the rule
+* @returns true if the file matches this rule
 *          false otherwise
 */
 bool LogicalImagerDateRule::matches(TSK_FS_FILE *fs_file, const char * /* path */) const

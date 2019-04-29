@@ -12,13 +12,6 @@
 * \file LogicalImagerRuleSet.cpp
 * Contains C++ code that creates the Logical Imager Rul Set class.
 */
-#include "LogicalImagerRuleSet.h"
-#include "LogicalImagerExtensionRule.h"
-#include "LogicalImagerPathRule.h"
-#include "LogicalImagerSizeRule.h"
-#include "LogicalImagerFilenameRule.h"
-#include "LogicalImagerDateRule.h"
-#include "json.h"
 
 #include <fstream>
 #include <iostream>
@@ -28,6 +21,14 @@
 #include <locale>
 #include <iomanip>
 #include <exception>
+
+#include "LogicalImagerRuleSet.h"
+#include "LogicalImagerExtensionRule.h"
+#include "LogicalImagerPathRule.h"
+#include "LogicalImagerSizeRule.h"
+#include "LogicalImagerFilenameRule.h"
+#include "LogicalImagerDateRule.h"
+#include "json.h"
 
 /**
  * Convert a date time string to time_t
@@ -39,7 +40,7 @@
  * https://social.msdn.microsoft.com/Forums/en-US/d9b650a2-424d-4ee6-b3b6-ea93cfc6cb5f/stdgettime-on-visual-2015-does-not-fail-on-incorrect-date?forum=vclanguage
  * We have decided to ignore it as the explicit date is not going to be used. Relative days (min-days) will be used.
  */
-time_t stringToTimet(const std::string datetimeStr) {
+time_t stringToTimet(const std::string &datetimeStr) {
     std::tm t = {};
     std::istringstream ss(datetimeStr);
     ss.imbue(std::locale("C"));
@@ -60,6 +61,13 @@ int getPositiveInt(const std::string &key, nlohmann::json ruleJson) {
     return size;
 }
 
+/* 
+* Construct a rule set
+*
+* @param ruleSetKey String key for the rule set
+* @param ruleSetValue JSON of the rule set
+* @throws std::logic_error on any error
+*/
 void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohmann::json ruleSetValue) {
     std::string description;
     bool shouldSave = true;
@@ -181,10 +189,70 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
 
 /**
  * Construct the LogicalImagerRuleSet based on a configuration filename
+ * The configuration file is in JSON format. It has the following key and values.
+
+{
+  "finalize_image_writer": false,
+  "rule-sets": {
+    "full-path-search": {
+      "description": "Full file path search",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "full-paths": [
+        "Documents and Settings/John/My Documents/Downloads",
+        "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg",
+      ]
+    },
+    "example-rule-1": {
+      "description": "Find all pictures smaller than 3000 bytes, under the 'Google' folder",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "extensions": [ "jpg", "jpeg", "png", "gif" ],
+      "size-range": { "max": 3000 },
+      "folder-names": [ "Google" ]
+    },
+    "example-rule-2": {
+      "description": "Find all 'readme.txt' and 'autoexec.bat' files",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "file-names": [ "readme.txt", "autoexec.bat" ]
+    },
+    "example-rule-3": {
+      "description": "find files newer than 2012-03-22",
+      "shouldSave": false,
+      "shouldAlert": true,
+      "date-range": { "min": "2012-03-22" }
+    },
+    "example-rule-4": {
+      "description": "find all png files under the user folder",
+      "shouldSave": true,
+      "shouldAlert": true,
+      "extensions": [ "png" ],
+      "folder-names": [ "[USER_FOLDER]/My Documents/Downloads" ]
+    },
+    "example-rule-5": {
+      "description": "find files 30 days or newer",
+      "shouldSave": false,
+      "shouldAlert": true,
+      "date-range": { "min-days": 30 }
+    }
+  }
+}
+ * "finalize_image_writer" is optional. Default is false. If true, it will finalize the image writer by writing the 
+ *     remaing sectors to the sparse_image.vhd file.
+ * "description" is required.
+ * "shouldSave" is optional. Default is true. If true, any matched files will be save to the sparse_image.vhd.
+ * "shouldAlert" is optional. Default is false. If true, an alert record will be send to the console and the alert file.
+ *
+ * Creates an alert file based on the alertFilename. 
+ * Files matching the logical imager rule set are recorded in the alert file, if shouldAlert is true.
+ *
  * @param configFilename Configuration filename of the rule set
+ * @param alertFilename Alert filename
+ * @throws std::logic_error if there is any error 
  *
  */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
+LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) {
     std::ifstream file(configFilename);
     if (!file) {
         throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
@@ -219,12 +287,18 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename) {
     if (hasError) {
         throw std::logic_error("ERROR: parsing configuration file " + configFilename + newline + errorStr);
     }
+
+    m_alertFilePath.assign(alertFilename);
+    m_alertFile = fopen(m_alertFilePath.c_str(), "w");
+    if (!m_alertFile) {
+        fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_alertFilePath.c_str());
+        exit(1);
+    }
+    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() {
-    if (m_alertFile) {
-        fclose(m_alertFile);
-    }
+    closeAlert();
 
     for (auto it = m_rules.begin(); it != m_rules.end(); ++it) {
         if (it->first)
@@ -232,10 +306,20 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet() {
     }
 }
 
+/*
+* Close the alert file.
+*/
+void LogicalImagerRuleSet::closeAlert() const {
+    if (m_alertFile) {
+        fclose(m_alertFile);
+    }
+}
+
 /**
  * Given a file and its path, match it using the logical imager rule set.
  * All rules in a single set must matched (ANDed)
  * May extract and/or alert depending on the rule setting.
+ *
  * @param fs_file TSK_FS_FILE containing the filename
  * @param path parent path to fs_file
  * @returns TSK_RETVAL_ENUM TSK_OK if match has no errors.
@@ -265,28 +349,28 @@ TSK_RETVAL_ENUM LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *
     return TSK_OK;
 }
 
+/*
+* Get the full file path rule set
+* 
+* @returns the fulll file paths rule set
+*/
 const std::pair<const RuleMatchResult *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {
     return m_fullFilePaths;
 }
 
-TSK_RETVAL_ENUM LogicalImagerRuleSet::processFile(TSK_FS_FILE *fs_file, const char *path) const {
-    return matches(fs_file, path);
-}
-
 /**
 * Extract a file. tsk_img_writer_create must have been called prior to this method.
+*
 * @param fs_file File details
 * @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
 */
 TSK_RETVAL_ENUM LogicalImagerRuleSet::extractFile(TSK_FS_FILE *fs_file) const {
     TSK_OFF_T offset = 0;
-    TSK_OFF_T bufferLen = 16 * 1024;
-    TSK_OFF_T bytesRead;
-    TSK_OFF_T bytesReadTotal = 0;
+    size_t bufferLen = 16 * 1024;
     char buffer[16 * 1024];
 
     while (true) {
-        bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
+        ssize_t bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
         if (bytesRead == -1) {
             if (fs_file->meta && fs_file->meta->size == 0) {
                 // ts_fs_file_read returns -1 with empty files, don't report it.
@@ -305,6 +389,19 @@ TSK_RETVAL_ENUM LogicalImagerRuleSet::extractFile(TSK_FS_FILE *fs_file) const {
     return TSK_OK;
 }
 
+/*
+* Write an file match alert record to the alert file. Also send same record to stdout.
+* An alert file record contains tab-separated fields: 
+*   - extractStatus
+*   - description
+*   - name
+*   - path
+*
+* @param extractStatus Extract status: 0 if file was extracted, 1 otherwise
+* @param description File match rule description
+* @param fs_file TSK_FS_FILE that matches
+* @param path Parent path of fs_file
+*/
 void LogicalImagerRuleSet::alert(TSK_RETVAL_ENUM extractStatus, const std::string &description, TSK_FS_FILE *fs_file, const char *path) const {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..

@@ -15,16 +15,20 @@
 #include "LogicalImagerExtensionRule.h"
 #include "TskHelper.h"
 
-LogicalImagerExtensionRule::LogicalImagerExtensionRule(const std::set<std::string> &extensions)
-{
+/*
+* Construct a file extension rule.
+* 
+* @param extensions A set of extension strings. The extension should not contain any period.
+* Extension is case-insensitive. It it normalize to lowercase.
+*/
+LogicalImagerExtensionRule::LogicalImagerExtensionRule(const std::set<std::string> &extensions) {
     for (auto it = std::begin(extensions); it != std::end(extensions); ++it) {
         validatePath(*it);
         m_extensions.insert(TskHelper::toLower(*it));
     }
 }
 
-LogicalImagerExtensionRule::~LogicalImagerExtensionRule()
-{
+LogicalImagerExtensionRule::~LogicalImagerExtensionRule() {
 }
 
 /**
@@ -32,11 +36,10 @@ LogicalImagerExtensionRule::~LogicalImagerExtensionRule()
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if extension is in the rule
+* @returns true if extension matches this rule
 *          false otherwise
 */
-bool LogicalImagerExtensionRule::matches(TSK_FS_FILE *fs_file, const char * /*path*/) const
-{
+bool LogicalImagerExtensionRule::matches(TSK_FS_FILE *fs_file, const char * /*path*/) const {
     if (fs_file->name == NULL)
         return false;
 

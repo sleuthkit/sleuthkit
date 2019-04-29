@@ -1,22 +1,19 @@
-/***************************************************************************
-** This data and information is proprietary to, and a valuable trade secret
-** of, Basis Technology Corp.  It is given in confidence by Basis Technology
-** and may only be used as permitted under the license agreement under which
-** it has been distributed, and in no other way.
+/*
+** The Sleuth Kit
 **
-** Copyright (c) 2014-2016 Basis Technology Corp. All rights reserved.
+** Brian Carrier [carrier <at> sleuthkit [dot] org]
+** Copyright (c) 2010-2019 Brian Carrier.  All Rights reserved
 **
-** The technical data and information provided herein are provided with
-** `limited rights', and the computer software provided herein is provided
-** with `restricted rights' as those terms are defined in DAR and ASPR
-** 7-104.9(a).
-***************************************************************************/
+** This software is distributed under the Common Public License 1.0
+**
+*/
 
 #pragma once
 
 #include <string>
 #include <list>
 #include <map>
+
 #include "tsk/auto/tsk_auto.h"
 
 typedef std::pair<TSK_OFF_T, std::string> Path2InumCacheKey;
@@ -77,9 +74,16 @@ public:
 
     void setImgInfo(TSK_IMG_INFO *a_img_info) { m_img_info = a_img_info; }
 
-    int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
+    int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
 
-    static std::string TskHelper::toLower(const std::string &srcStr);
+    static std::string toLower(const std::string &srcStr);
+    static std::string toUpper(const std::string &srcStr);
+    static std::string toNarrow(const std::wstring& a_utf16Str);
+    static std::wstring toWide(const std::string& a_utf8Str);
+    static bool startsWith(const std::string &bigStr, const std::string &lilStr);
+    static std::string intToStr(long l);
+    static void replaceAll(std::string& str, const std::string& from, const std::string& to);
+    static void replaceAll(std::string& str, const std::string& from, const std::string& to, size_t pos);
 
 private:
     std::string stripExt(const char *a_path);    // strip the extension from the given name, if any

@@ -15,11 +15,11 @@
 
 #pragma once
 
-#include "tsk/tsk_tools_i.h"
-#include "LogicalImagerRuleBase.h"
-
 #include <string>
 #include <set>
+
+#include "tsk/tsk_tools_i.h"
+#include "LogicalImagerRuleBase.h"
 
 /**
 * Implement the logical imager file size rule.

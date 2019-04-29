@@ -13,13 +13,18 @@
 
 #include "LogicalImagerSizeRule.h"
 
+/*
+* Construct a file size rule.
+*
+* @param min Minimum file size in bytes, 0 if no minimum
+* @param max Maximum file size in bytes, 0 if no maximum
+*/
 LogicalImagerSizeRule::LogicalImagerSizeRule(TSK_OFF_T min, TSK_OFF_T max) {
     m_min = min;
     m_max = max;
 }
 
-LogicalImagerSizeRule::~LogicalImagerSizeRule()
-{
+LogicalImagerSizeRule::~LogicalImagerSizeRule() {
 }
 
 /**
@@ -27,7 +32,7 @@ LogicalImagerSizeRule::~LogicalImagerSizeRule()
 *
 * @param fs_file TSK_FS_FILE containing the filename
 * @param path parent path to fs_file
-* @returns true if file size is in the rule
+* @returns true if file size matches this rule
 *          false otherwise
 */
 bool LogicalImagerSizeRule::matches(TSK_FS_FILE *fs_file, const char * /*path*/) const
