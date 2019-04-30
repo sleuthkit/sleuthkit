@@ -159,13 +159,14 @@ bool TskHelper::startsWith(const std::string &bigStr, const std::string &lilStr)
  *
  * @param a_fs FS to analyze
  * @param a_path UTF-8 path of file to search for
+ * @param anyExtension If true AND the path does not have an extension, then match any file with the same name, but different extension.  If false, then exact match is always done.
  * @param [out] a_result Meta data address, and TSK_FS_NAME_FLAGS of the file
  * @param [out] a_fs_name Copy of name details (or NULL if details not wanted)
  * @param [out] a_fs_file TSK_FS_FILE data if result is 0 (or NULL if file data not wanted). The caller should free the a_fs_file.
  * @returns -1 on (system) error, 0 if found, 1 if not found, 2 if the file path is found but the inode has been reallocated
  */
 int
-TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path,
+TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
     TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file) {
     char *cpath;
     size_t clen;
@@ -194,10 +195,12 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path,
     //cerr << getNowTimeStr() << "  TSKHlprPath2inum(): Looking for = " << std::string(a_path) << endl;
 
     // check if we will be looking for an extension
-    if (stripExt(a_path).compare(a_path) == 0) {
-        ignoreExt = true;
+    if (anyExtension) {
+        // check if they gave us an extension
+        if (stripExt(a_path).compare(a_path) == 0) {
+            ignoreExt = true;
+        }
     }
-
 
     // Get the first part of the directory path. 
     cur_name_to_match = (char *)strtok_r(cpath, "/", &strtok_last);

@@ -463,7 +463,6 @@
     <ClInclude Include="..\..\tools\logicalimager\RuleMatchResult.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskFindFiles.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskHelper.h" />
-    <ClInclude Include="..\..\tools\logicalimager\tsk_logical_imager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tools\logicalimager\UserAccount.cpp" />
