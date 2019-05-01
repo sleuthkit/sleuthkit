@@ -1200,7 +1200,13 @@ public class BlackboardArtifact implements Content {
 		 * Indicates web cache data
 		 */
 		TSK_WEB_CACHE (52, "TSK_WEB_CACHE",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebCache.text"));
+				bundle.getString("BlackboardArtifact.tskWebCache.text")),
+		
+		/**
+		 * Indicates clipboard content
+		 */
+		TSK_CLIPBOARD_CONTENT (53, "TSK_CLIPBOARD_CONTENT",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskClipboardContent.text"));
 		
 		private final String label;
 		private final int typeId;
