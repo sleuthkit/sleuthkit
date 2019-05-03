@@ -682,11 +682,26 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
 
         fs_meta->content_len = sizeof(TSK_OFF_T);
 
-        // data fork pointer offset -> data fork raw file offset
         di_core_ptr = (xfs_dinode_core_t*) &dino_buf->di_core;
         char *dfork_ptr = XFS_DFORK_PTR(di_core_ptr, XFS_DATA_FORK);
         TSK_OFF_T dfork_off = dfork_ptr - (char*) di_core_ptr;
-        TSK_OFF_T bmap_root_offset = (TSK_OFF_T) inum * (TSK_OFF_T) xfsfs->inode_size + dfork_off;
+
+        xfs_sb_t *sb = xfsfs->fs;
+        xfs_agnumber_t ag_num = inum >> sb->sb_agblklog >> sb->sb_inopblog;
+        uint64_t rel_inum_neg = 1 << (sb->sb_agblklog + sb->sb_inopblog);
+        rel_inum_neg -= 1;
+        xfs_agino_t dino_aginum = inum & rel_inum_neg;
+        TSK_DADDR_T ag_block = dino_aginum >> sb->sb_inopblog;
+        uint64_t offset_neg = 1 << sb->sb_inopblog;
+        offset_neg -= 1;
+        TSK_OFF_T offset = inum & offset_neg;
+
+        TSK_OFF_T inode_offset =
+         (TSK_OFF_T) ag_num * (TSK_OFF_T) sb->sb_agblocks * (TSK_OFF_T) sb->sb_blocksize
+         + (TSK_OFF_T) ag_block * (TSK_OFF_T) sb->sb_blocksize
+         + (TSK_OFF_T) offset * (TSK_OFF_T) sb->sb_inodesize;
+
+        TSK_OFF_T bmap_root_offset = inode_offset + dfork_off;
 
         memcpy(fs_meta->content_ptr, &bmap_root_offset, sizeof(TSK_OFF_T));
     }
