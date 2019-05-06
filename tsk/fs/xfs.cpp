@@ -2622,8 +2622,17 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         if (tsk_verbose) { tsk_fprintf(stderr, "nextents == %" PRId64 ", fs_meta->size = %" PRId64 " \n", nextents, fs_meta->size); }
 
-        if (fs_meta->size <= xfs->fs_info.block_size /* nextents can be used too */)
+        if (nextents == 0)
         {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_ARG);
+            tsk_error_set_errstr
+                ("xfs_dir_open_meta: fs_meta->nextents is 0 for TSK_FS_META_CONTENT_TYPE_XFS_EXTENTS type");
+            return TSK_ERR;
+        } else if (nextents == 1)
+        {
+            // parsing "block directory" format
+
             // unpack extent
             xfs_bmbt_irec_t irec;
             memset(&irec, 0, sizeof(irec));
@@ -2816,6 +2825,8 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
         else
         {
+            // parsing "leaf direcory" and "node directory" formats
+
             for(uint32_t extent_num = 0; extent_num < nextents; extent_num++)
             {
                 // unpack extent
