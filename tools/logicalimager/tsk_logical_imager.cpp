@@ -748,9 +748,13 @@ main(int argc, char **argv1)
             }
             tsk_vs_close(vs_info);
         }
-    }
+    } 
     catch (const std::exception &e) {
         fprintf(stderr, "tsk_vs_open exception: %s\n", e.what());
+        if (ruleSet) {
+            delete ruleSet;
+        }
+        exit(1);
     }
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
@@ -759,31 +763,49 @@ main(int argc, char **argv1)
     const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
     const std::list<std::string> filePaths = fullFilePathsRule.second;
     TSK_FS_FILE *fs_file;
-    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-        for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
-            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
-            if (retval == 0 && fs_file != NULL) {
-                TSK_RETVAL_ENUM extractStatus = TSK_ERR;
-                if (ruleConfig->isShouldSave()) {
-                    extractStatus = ruleSet->extractFile(fs_file);
+    try {
+        for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+            for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
+                int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
+                if (retval == 0 && fs_file != NULL) {
+                    TSK_RETVAL_ENUM extractStatus = TSK_ERR;
+                    if (ruleConfig->isShouldSave()) {
+                        extractStatus = ruleSet->extractFile(fs_file);
+                    }
+                    if (ruleConfig->isShouldAlert()) {
+                        // create a TSK_FS_NAME for alert purpose
+                        fs_file->name = new TSK_FS_NAME();
+                        fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
+                        strcpy(fs_file->name->name, iter->c_str());
+                        ruleSet->alert(extractStatus, ruleConfig->getDescription(), fs_file, "");
+                    }
+                    tsk_fs_file_close(fs_file);
                 }
-                if (ruleConfig->isShouldAlert()) {
-                    // create a TSK_FS_NAME for alert purpose
-                    fs_file->name = new TSK_FS_NAME();
-                    fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
-                    strcpy(fs_file->name->name, iter->c_str());
-                    ruleSet->alert(extractStatus, ruleConfig->getDescription(), fs_file, "");
-                }
-                tsk_fs_file_close(fs_file);
             }
         }
+    } 
+    catch (const std::exception &e) {
+        fprintf(stderr, "extractFile exception: %s\n", e.what());
+        if (ruleSet) {
+            delete ruleSet;
+        }
+        exit(1);
     }
 
     string usersFileName = directoryPath + "/users.txt";
 
-    // Enumerate Users with RegistryAnalyzer
-    RegistryAnalyzer registryAnalyzer(usersFileName);
-    registryAnalyzer.analyzeSAMUsers();
+    try {
+        // Enumerate Users with RegistryAnalyzer
+        RegistryAnalyzer registryAnalyzer(usersFileName);
+        registryAnalyzer.analyzeSAMUsers();
+    } 
+    catch (const std::exception &e) {
+        fprintf(stderr, "analyzeSAMUsers exception: %s\n", e.what());
+        if (ruleSet) {
+            delete ruleSet;
+        }
+        exit(1);
+    }
 
     TskHelper::getInstance().reset();
 
@@ -806,6 +828,10 @@ main(int argc, char **argv1)
     }
     catch (const std::exception &e) {
         fprintf(stderr, "findFilesInImg exception: %s\n", e.what());
+        if (ruleSet) {
+            delete ruleSet;
+        }
+        exit(1);
     }
 
     // close alert file before tsk_img_writer_finish, which may take a long time. 
