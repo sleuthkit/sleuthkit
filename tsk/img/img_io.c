@@ -12,6 +12,39 @@
 
 #include "tsk_img_i.h"
 
+// This function assumes that we hold the cache_lock even though we're not modyfying
+// the cache.  This is because the lower-level read callbacks make the same assumption.
+static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
+    char *a_buf, size_t a_len)
+{
+    ssize_t nbytes;
+
+    /* Some of the lower-level methods like block-sized reads.
+        * So if the len is not that multiple, then make it. */
+    if (a_len % a_img_info->sector_size) {
+        char *buf2 = a_buf;
+
+        size_t len_tmp;
+        len_tmp = roundup(a_len, a_img_info->sector_size);
+        if ((buf2 = (char *) tsk_malloc(len_tmp)) == NULL) {
+            return -1;
+        }
+        nbytes = a_img_info->read(a_img_info, a_off, buf2, len_tmp);
+        if ((nbytes > 0) && (nbytes < (ssize_t) a_len)) {
+            memcpy(a_buf, buf2, nbytes);
+        }
+        else {
+            memcpy(a_buf, buf2, a_len);
+            nbytes = (ssize_t)a_len;
+        }
+        free(buf2);
+    }
+    else {
+        nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
+    }
+    return nbytes;
+}
+
 /**
  * \ingroup imglib
  * Reads data from an open disk image
@@ -73,34 +106,9 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     // if they ask for more than the cache length, skip the cache
     if ((a_len + (a_off % 512)) > TSK_IMG_INFO_CACHE_LEN) {
-        ssize_t nbytes;
-
-        /* Some of the lower-level methods like block-sized reads.
-         * So if the len is not that multiple, then make it. */
-        if (a_len % a_img_info->sector_size) {
-            char *buf2 = a_buf;
-
-            size_t len_tmp;
-            len_tmp = roundup(a_len, a_img_info->sector_size);
-            if ((buf2 = (char *) tsk_malloc(len_tmp)) == NULL) {
-                tsk_release_lock(&(a_img_info->cache_lock));
-                return -1;
-            }
-            nbytes = a_img_info->read(a_img_info, a_off, buf2, len_tmp);
-            if ((nbytes > 0) && (nbytes < (ssize_t) a_len)) {
-                memcpy(a_buf, buf2, nbytes);
-            }
-            else {
-                memcpy(a_buf, buf2, a_len);
-                nbytes = (ssize_t)a_len;
-            }
-            free(buf2);
-        }
-        else {
-            nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
-        }
+        read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
         tsk_release_lock(&(a_img_info->cache_lock));
-        return nbytes;
+        return read_count;
     }
 
     // TODO: why not just return 0 here (and be POSIX compliant)?
@@ -229,6 +237,9 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
             a_img_info->cache_len[cache_next] = 0;
             a_img_info->cache_age[cache_next] = 0;
             a_img_info->cache_off[cache_next] = 0;
+
+            // Something went wrong so let's try skipping the cache
+            read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
         }
     }
 

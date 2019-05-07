@@ -808,6 +808,7 @@ public class SleuthkitJNI {
 	 *
 	 * @param imgHandle pointer to imgHandle in sleuthkit
 	 * @param fsOffset  byte offset to the file system
+	 * @param skCase    the case containing the file system
 	 *
 	 * @return pointer to a fsHandle structure in the sleuthkit
 	 *
@@ -1144,6 +1145,7 @@ public class SleuthkitJNI {
 	 * frees the fileHandle pointer
 	 *
 	 * @param fileHandle pointer to file structure in sleuthkit
+	 * @param skCase     the case containing the file
 	 */
 	public static void closeFile(long fileHandle, SleuthkitCase skCase) {		
 		getTSKReadLock();
