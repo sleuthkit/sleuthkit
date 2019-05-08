@@ -1193,6 +1193,34 @@ public final class CommunicationsManager {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Get a list AccountFileInstance for the given accounts.
+	 * 
+	 * @param account List of accounts
+	 * 
+	 * @return	A lit of AccountFileInstances for the given accounts or null if 
+	 *			none are found.
+	 * 
+	 * @throws org.sleuthkit.datamodel.TskCoreException 
+	 */
+	public List<AccountFileInstance> getAccountFileInstances(Account account) throws TskCoreException {
+		List<AccountFileInstance> accountFileInstanceList = new ArrayList<>();
+		
+		List<BlackboardArtifact> artifactList = getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, account.getTypeSpecificID());
+		
+		if(artifactList != null && !artifactList.isEmpty()) {
+			for(BlackboardArtifact artifact : artifactList) {
+				accountFileInstanceList.add(new AccountFileInstance(artifact, account));
+			}
+		}
+		
+		if(!accountFileInstanceList.isEmpty()) {
+			return accountFileInstanceList;
+		} else {
+			return null;
+		}
+	}
 
 	/**
 	 * Get account_type_id for the given account type.
