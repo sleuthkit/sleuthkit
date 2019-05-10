@@ -444,6 +444,53 @@ xfs_dinode_load(XFSFS_INFO * xfsfs, TSK_INUM_T dino_inum,
     return 0;
 }
 
+static TSK_FS_META_TYPE_ENUM
+get_file_type(uint16_t xfs_ftype)
+{
+    switch (xfs_ftype) {
+        case XFS_IN_REG:
+            return TSK_FS_META_TYPE_REG;
+        case XFS_IN_DIR:
+            return TSK_FS_META_TYPE_DIR;
+        case XFS_IN_SOCK:
+            return TSK_FS_META_TYPE_SOCK;
+        case XFS_IN_LNK:
+            return TSK_FS_META_TYPE_LNK;
+        case XFS_IN_BLK:
+            return TSK_FS_META_TYPE_BLK;
+        case XFS_IN_CHR:
+            return TSK_FS_META_TYPE_CHR;
+        case XFS_IN_FIFO:
+            return TSK_FS_META_TYPE_FIFO;
+        default:
+            return TSK_FS_META_TYPE_UNDEF;
+    }
+}
+
+static TSK_RETVAL_ENUM
+get_inode_file_type(XFSFS_INFO *xfs, TSK_INUM_T meta_addr, uint8_t *xfs_ftype)
+{
+    xfs_dinode_t *dino_buf = NULL;
+    xfs_sb_t *sb = xfs->fs;
+
+    ssize_t dinodesize = sb->sb_inodesize > sizeof(xfs_dinode)
+        ? sb->sb_inodesize
+        : sizeof(xfs_dinode);
+
+    if ((dino_buf = static_cast<xfs_dinode_t *>(tsk_malloc(dinodesize))) == NULL)
+        return TSK_ERR;
+
+    if (xfs_dinode_load(xfs, meta_addr, dino_buf)) {
+        free(dino_buf);
+        return TSK_ERR;
+    }
+
+    *xfs_ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
+    free(dino_buf);
+
+    return TSK_OK;
+}
+
 static inline uint64_t xfs_mask64lo(int n)
 {
     return ((uint64_t)1 << (n)) - 1;
@@ -501,32 +548,7 @@ xfs_dinode_copy(XFSFS_INFO * xfsfs, TSK_FS_META * fs_meta,
     }
 
     // set the type
-    switch (dino_buf->di_core.di_mode & XFS_IN_FMT) {
-    case XFS_IN_REG:
-        fs_meta->type = TSK_FS_META_TYPE_REG;
-        break;
-    case XFS_IN_DIR:
-        fs_meta->type = TSK_FS_META_TYPE_DIR;
-        break;
-    case XFS_IN_SOCK:
-        fs_meta->type = TSK_FS_META_TYPE_SOCK;
-        break;
-    case XFS_IN_LNK:
-        fs_meta->type = TSK_FS_META_TYPE_LNK;
-        break;
-    case XFS_IN_BLK:
-        fs_meta->type = TSK_FS_META_TYPE_BLK;
-        break;
-    case XFS_IN_CHR:
-        fs_meta->type = TSK_FS_META_TYPE_CHR;
-        break;
-    case XFS_IN_FIFO:
-        fs_meta->type = TSK_FS_META_TYPE_FIFO;
-        break;
-    default:
-        fs_meta->type = TSK_FS_META_TYPE_UNDEF;
-        break;
-    }
+    fs_meta->type = get_file_type(dino_buf->di_core.di_mode & XFS_IN_FMT);
 
     // set the mode
     fs_meta->mode = (TSK_FS_META_MODE_ENUM) 0;
@@ -2018,6 +2040,7 @@ parse_dir_block(
     char *dirbuf = NULL;
     XFSFS_INFO *xfs = (XFSFS_INFO *) a_fs;
     xfs_sb_t *sb = xfs->fs;
+    TSK_RETVAL_ENUM ret;
 
     uint8_t ftype_size = xfs_sb_version_hasftype(sb) ? sizeof(uint8_t) : 0;
 
@@ -2132,52 +2155,15 @@ parse_dir_block(
                 }
                 else
                 {
-                    xfs_dinode_t *dino_buf = NULL;
-                    ssize_t dinodesize = sb->sb_inodesize > sizeof(xfs_dinode)
-                        ? sb->sb_inodesize
-                        : sizeof(xfs_dinode);
-                    if ((dino_buf = static_cast<xfs_dinode_t *>(tsk_malloc(dinodesize))) == NULL) {
+                    ret = get_inode_file_type(xfs, fs_name->meta_addr, &ftype);
+                    if (ret) {
                         free(dirbuf);
-                        return TSK_ERR;
+                        return ret;
                     }
-
-                    if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
-                        free(dirbuf);
-                        free(dino_buf);
-                        return TSK_ERR;
-                    }
-
-                    ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
-                    free(dino_buf);
                 }
 
                 uint32_t ftype32 = (uint32_t) ftype << 12;
-                switch (ftype32) {
-                case XFS_IN_REG:
-                    fs_meta->type = TSK_FS_META_TYPE_REG;
-                    break;
-                case XFS_IN_DIR:
-                    fs_meta->type = TSK_FS_META_TYPE_DIR;
-                    break;
-                case XFS_IN_SOCK:
-                    fs_meta->type = TSK_FS_META_TYPE_SOCK;
-                    break;
-                case XFS_IN_LNK:
-                    fs_meta->type = TSK_FS_META_TYPE_LNK;
-                    break;
-                case XFS_IN_BLK:
-                    fs_meta->type = TSK_FS_META_TYPE_BLK;
-                    break;
-                case XFS_IN_CHR:
-                    fs_meta->type = TSK_FS_META_TYPE_CHR;
-                    break;
-                case XFS_IN_FIFO:
-                    fs_meta->type = TSK_FS_META_TYPE_FIFO;
-                    break;
-                default:
-                    fs_meta->type = TSK_FS_META_TYPE_UNDEF;
-                    break;
-                }
+                fs_meta->type = get_file_type(ftype32);
 
                 // we iterate over allocated directories
                 fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
@@ -2434,6 +2420,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_FS_DIR *fs_dir;
     TSK_RETVAL_ENUM retval = TSK_OK;
     TSK_FS_NAME *fs_name;
+    TSK_RETVAL_ENUM ret;
 
     // Assuming fs_meta->type == TSK_FS_META_TYPE_DIR
 
@@ -2542,52 +2529,15 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             }
             else
             {
-                xfs_dinode_t *dino_buf = NULL;
-                ssize_t dinode_size = sb->sb_inodesize > sizeof(xfs_dinode)
-                    ? sb->sb_inodesize
-                    : sizeof(xfs_dinode);
-                if ((dino_buf =
-                    static_cast<xfs_dinode_t *>(tsk_malloc(dinode_size))) == NULL) {
-                    return TSK_ERR;
+                ret = get_inode_file_type(xfs, fs_name->meta_addr, &ftype);
+                if (ret) {
+                    free(dirbuf);
+                    return ret;
                 }
-
-                if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
-                    free(dino_buf);
-                    return TSK_ERR;
-                }
-
-                ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
-
-                free(dino_buf);
             }
 
             uint32_t ftype32 = (uint32_t) ftype << 12;
-            switch (ftype32) {
-            case XFS_IN_REG:
-                fs_meta->type = TSK_FS_META_TYPE_REG;
-                break;
-            case XFS_IN_DIR:
-                fs_meta->type = TSK_FS_META_TYPE_DIR;
-                break;
-            case XFS_IN_SOCK:
-                fs_meta->type = TSK_FS_META_TYPE_SOCK;
-                break;
-            case XFS_IN_LNK:
-                fs_meta->type = TSK_FS_META_TYPE_LNK;
-                break;
-            case XFS_IN_BLK:
-                fs_meta->type = TSK_FS_META_TYPE_BLK;
-                break;
-            case XFS_IN_CHR:
-                fs_meta->type = TSK_FS_META_TYPE_CHR;
-                break;
-            case XFS_IN_FIFO:
-                fs_meta->type = TSK_FS_META_TYPE_FIFO;
-                break;
-            default:
-                fs_meta->type = TSK_FS_META_TYPE_UNDEF;
-                break;
-            }
+            fs_meta->type = get_file_type(ftype32);
 
             fs_name->flags = (TSK_FS_NAME_FLAG_ENUM) 0;
 
@@ -2757,52 +2707,15 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     }
                     else
                     {
-                        xfs_dinode_t *dino_buf = NULL;
-                        ssize_t dinodesize = sb->sb_inodesize > sizeof(xfs_dinode)
-                            ? sb->sb_inodesize
-                            : sizeof(xfs_dinode);
-                        if ((dino_buf =
-                            static_cast<xfs_dinode_t *>(tsk_malloc(dinodesize))) == NULL) {
-                            return TSK_ERR;
-                        }
-
-                        if (xfs_dinode_load(xfs, fs_name->meta_addr, dino_buf)) {
+                        ret = get_inode_file_type(xfs, fs_name->meta_addr, &ftype);
+                        if (ret) {
                             free(dirbuf);
-                            free(dino_buf);
-                            return TSK_ERR;
+                            return ret;
                         }
-
-                        ftype = dino_buf->di_core.di_mode & XFS_IN_FMT;
-                        free(dino_buf);
                     }
 
                     uint32_t ftype32 = (uint32_t) ftype << 12;
-                    switch (ftype32) {
-                    case XFS_IN_REG:
-                        fs_meta->type = TSK_FS_META_TYPE_REG;
-                        break;
-                    case XFS_IN_DIR:
-                        fs_meta->type = TSK_FS_META_TYPE_DIR;
-                        break;
-                    case XFS_IN_SOCK:
-                        fs_meta->type = TSK_FS_META_TYPE_SOCK;
-                        break;
-                    case XFS_IN_LNK:
-                        fs_meta->type = TSK_FS_META_TYPE_LNK;
-                        break;
-                    case XFS_IN_BLK:
-                        fs_meta->type = TSK_FS_META_TYPE_BLK;
-                        break;
-                    case XFS_IN_CHR:
-                        fs_meta->type = TSK_FS_META_TYPE_CHR;
-                        break;
-                    case XFS_IN_FIFO:
-                        fs_meta->type = TSK_FS_META_TYPE_FIFO;
-                        break;
-                    default:
-                        fs_meta->type = TSK_FS_META_TYPE_UNDEF;
-                        break;
-                    }
+                    fs_meta->type = get_file_type(ftype32);
 
                     // we iterate over allocated directories
                     fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
