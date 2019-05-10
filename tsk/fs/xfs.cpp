@@ -468,7 +468,7 @@ get_file_type(uint16_t xfs_ftype)
 }
 
 static TSK_RETVAL_ENUM
-get_inode_file_type(XFSFS_INFO *xfs, TSK_INUM_T meta_addr, uint8_t *xfs_ftype)
+get_inode_file_type(XFSFS_INFO *xfs, TSK_INUM_T meta_addr, uint16_t *xfs_ftype)
 {
     xfs_dinode_t *dino_buf = NULL;
     xfs_sb_t *sb = xfs->fs;
@@ -2148,10 +2148,11 @@ parse_dir_block(
                 offset_in_block += data_entry.namelen;
                 fs_name->name[data_entry.namelen] = '\0';
 
-                uint8_t ftype = 0;
+                uint16_t ftype = 0;
                 if (ftype_size > 0)
                 {
                     ftype = * (uint8_t *) (name + data_entry.namelen);
+                    ftype = ftype << 12;
                 }
                 else
                 {
@@ -2161,9 +2162,7 @@ parse_dir_block(
                         return ret;
                     }
                 }
-
-                uint32_t ftype32 = (uint32_t) ftype << 12;
-                fs_meta->type = get_file_type(ftype32);
+                fs_meta->type = get_file_type(ftype);
 
                 // we iterate over allocated directories
                 fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
@@ -2522,10 +2521,11 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 ? tsk_getu64(TSK_BIG_ENDIAN, &inum_p->i8)
                 : tsk_getu32(TSK_BIG_ENDIAN, &inum_p->i4);
 
-            uint8_t ftype = 0;
+            uint16_t ftype = 0;
             if (ftype_size > 0)
             {
                 ftype = * (uint8_t *) (name + namelen);
+                ftype = ftype << 12;
             }
             else
             {
@@ -2535,9 +2535,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     return ret;
                 }
             }
-
-            uint32_t ftype32 = (uint32_t) ftype << 12;
-            fs_meta->type = get_file_type(ftype32);
+            fs_meta->type = get_file_type(ftype);
 
             fs_name->flags = (TSK_FS_NAME_FLAG_ENUM) 0;
 
@@ -2700,10 +2698,11 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     offset_in_block += data_entry.namelen;
                     fs_name->name[data_entry.namelen] = '\0';
 
-                    uint8_t ftype = 0;
+                    uint16_t ftype = 0;
                     if (ftype_size > 0)
                     {
                         ftype = * (uint8_t *) (name + data_entry.namelen);
+                        ftype = ftype << 12;
                     }
                     else
                     {
@@ -2713,9 +2712,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                             return ret;
                         }
                     }
-
-                    uint32_t ftype32 = (uint32_t) ftype << 12;
-                    fs_meta->type = get_file_type(ftype32);
+                    fs_meta->type = get_file_type(ftype);
 
                     // we iterate over allocated directories
                     fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
