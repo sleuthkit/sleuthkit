@@ -637,7 +637,7 @@ public final class CommunicationsManager {
 	 * relationship that meets the criteria listed in the filters.
 	 *
 	 * Applicable filters: DeviceFilter, AccountTypeFilter, DateRangeFilter,
-	 * RelationshipTypeFilter
+	 * RelationshipTypeFilter, MostRecentFilter
 	 *
 	 * @param filter filters to apply
 	 *
@@ -665,7 +665,8 @@ public final class CommunicationsManager {
 
 			String innerQueryTemplate
 					= " SELECT %1$1s as account_id,"
-					+ "		  data_source_obj_id"
+					+ "		  data_source_obj_id,"
+					+ "		  date_time"
 					+ " FROM account_relationships as relationships"
 					+ (innerQueryfilterSQL.isEmpty() ? "" : " WHERE " + innerQueryfilterSQL);
 
@@ -674,8 +675,8 @@ public final class CommunicationsManager {
 
 			//this query groups by account_id and data_source_obj_id across both innerQueries
 			String combinedInnerQuery
-					= "SELECT count(*) as relationship_count, account_id, data_source_obj_id "
-					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) AS  inner_union"
+					= "SELECT DISTINCT account_id, data_source_obj_id"
+					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " " + getUnionLimitSQL(filter) + " ) AS  inner_union"
 					+ " GROUP BY account_id, data_source_obj_id";
 
 			// set up applicable filters
@@ -692,7 +693,6 @@ public final class CommunicationsManager {
 					//account type info
 					+ " account_types.type_name AS type_name,"
 					//Account device instance info
-					+ " relationship_count,"
 					+ " data_source_info.device_id AS device_id"
 					+ " FROM ( " + combinedInnerQuery + " ) AS account_device_instances"
 					+ " JOIN accounts AS accounts"
@@ -895,10 +895,16 @@ public final class CommunicationsManager {
 
 		try {
 			s = connection.createStatement();
+			
+			String innerQuery = " account_relationships AS relationships";
+			String limitStr = getUnionLimitSQL(filter);
+			if(!limitStr.isEmpty()) {
+				innerQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
+			}
 
 			String queryStr
 					= "SELECT count(DISTINCT relationships.relationship_source_obj_id) as count "
-					+ "	FROM account_relationships AS relationships"
+					+ "	FROM" + innerQuery 
 					+ " WHERE relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " )"
 					+ " AND ( relationships.account1_id = " + account_id
 					+ "      OR  relationships.account2_id = " + account_id + " )"
@@ -922,7 +928,7 @@ public final class CommunicationsManager {
 	 * with accounts on specific devices (AccountDeviceInstance) that meet the
 	 * filter criteria.
 	 *
-	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
+	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter, MostRecentFilter
 	 *
 	 * @param accountDeviceInstanceList set of account device instances for
 	 *                                  which to get the relationship sources.
@@ -972,6 +978,12 @@ public final class CommunicationsManager {
 						.getName()
 		));
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+		
+		String limitQuery = " account_relationships AS relationships";
+		String limitStr = getUnionLimitSQL(filter);
+		if(!limitStr.isEmpty()) {
+			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
+		}
 
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
@@ -988,7 +1000,7 @@ public final class CommunicationsManager {
 					+ " artifacts.artifact_type_id AS artifact_type_id, "
 					+ " artifacts.review_status_id AS review_status_id  "
 					+ " FROM blackboard_artifacts as artifacts"
-					+ " JOIN account_relationships AS relationships"
+					+ " JOIN " + limitQuery
 					+ "	ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
 					// append sql to restrict search to specified account device instances 
 					+ " WHERE (" + adiSQLClause + " )"
@@ -1133,7 +1145,8 @@ public final class CommunicationsManager {
 	 * Get the sources (artifacts, content) of relationships between the given
 	 * account device instances.
 	 *
-	 * Applicable filters: DeviceFilter, DateRangeFilter, RelationshipTypeFilter
+	 * Applicable filters: DeviceFilter, DateRangeFilter, RelationshipTypeFilter,
+	 *						MostRecentFilter
 	 *
 	 * @param account1 First AccountDeviceInstance
 	 * @param account2 Second AccountDeviceInstance
@@ -1152,6 +1165,13 @@ public final class CommunicationsManager {
 				CommunicationsFilter.DeviceFilter.class.getName(),
 				CommunicationsFilter.RelationshipTypeFilter.class.getName()
 		));
+		
+		String limitQuery = " account_relationships AS relationships";
+		String limitStr = getUnionLimitSQL(filter);
+		if(!limitStr.isEmpty()) {
+			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
+		}
+		
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 		final String queryString = "SELECT artifacts.artifact_id AS artifact_id,"
 				+ "		artifacts.obj_id AS obj_id,"
@@ -1160,7 +1180,7 @@ public final class CommunicationsManager {
 				+ "		artifacts.artifact_type_id AS artifact_type_id,"
 				+ "		artifacts.review_status_id AS review_status_id"
 				+ " FROM blackboard_artifacts AS artifacts"
-				+ "	JOIN account_relationships AS relationships"
+				+ "	JOIN " + limitQuery 
 				+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
 				+ " WHERE (( relationships.account1_id = " + account1.getAccount().getAccountID()
 				+ " AND relationships.account2_id  = " + account2.getAccount().getAccountID()
@@ -1303,5 +1323,15 @@ public final class CommunicationsManager {
 			sqlStr = "( " + sqlSB.toString() + " )";
 		}
 		return sqlStr;
+	}
+	
+	private String getUnionLimitSQL(CommunicationsFilter commFilter) {
+		for (CommunicationsFilter.SubFilter subFilter : commFilter.getAndFilters()) {
+			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
+				return subFilter.getSQL(this);
+			}
+		}
+		
+		return "";
 	}
 }
