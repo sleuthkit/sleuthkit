@@ -4352,50 +4352,17 @@ public class SleuthkitCase {
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
+		long parentId;
+		TskData.ObjectType type;
+		
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_objects WHERE obj_id = " + id + " LIMIT  1"); //NON-NLS
 			if (!rs.next()) {
 				return null;
 			}
-
-			long parentId = rs.getLong("par_obj_id"); //NON-NLS
-			final TskData.ObjectType type = TskData.ObjectType.valueOf(rs.getShort("type")); //NON-NLS
-			switch (type) {
-				case IMG:
-					content = getImageById(id);
-					frequentlyUsedContentMap.put(id, content);
-					break;
-				case VS:
-					content = getVolumeSystemById(id, parentId);
-					break;
-				case VOL:
-					content = getVolumeById(id, parentId);
-					frequentlyUsedContentMap.put(id, content);
-					break;
-				case FS:
-					content = getFileSystemById(id, parentId);
-					frequentlyUsedContentMap.put(id, content);
-					break;
-				case ABSTRACTFILE:
-					content = getAbstractFileById(id);
-
-					// Add virtual and root directories to frequently used map.
-					if (((AbstractFile) content).isVirtual() || ((AbstractFile) content).isRoot()) {
-						frequentlyUsedContentMap.put(id, content);
-					}
-					break;
-				case ARTIFACT:
-					content = getArtifactById(id);
-					break;
-				case REPORT:
-					content = getReportById(id);
-					break;
-				default:
-					throw new TskCoreException("Could not obtain Content object with ID: " + id);
-			}
-
-			return content;
+			parentId = rs.getLong("par_obj_id"); //NON-NLS
+			type = TskData.ObjectType.valueOf(rs.getShort("type")); //NON-NLS
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Content by ID.", ex);
 		} finally {
@@ -4404,6 +4371,47 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
+		
+		// Construct the object
+		switch (type) {
+			case IMG:
+				content = getImageById(id);
+				frequentlyUsedContentMap.put(id, content);
+				break;
+			case VS:
+				content = getVolumeSystemById(id, parentId);
+				break;
+			case VOL:
+				content = getVolumeById(id, parentId);
+				frequentlyUsedContentMap.put(id, content);
+				break;
+			case FS:
+				content = getFileSystemById(id, parentId);
+				frequentlyUsedContentMap.put(id, content);
+				break;
+			case ABSTRACTFILE:
+				content = getAbstractFileById(id);
+
+				// Add virtual and root directories to frequently used map.
+				// Calling isRoot() on local directories goes up the entire directory structure
+				// and they can only be the root of portable cases, so skip trying to add
+				// them to the cache.
+				if (((AbstractFile) content).isVirtual() || 
+						(( ! (content instanceof LocalDirectory)) && ((AbstractFile) content).isRoot())) {
+					frequentlyUsedContentMap.put(id, content);
+				}
+				break;
+			case ARTIFACT:
+				content = getArtifactById(id);
+				break;
+			case REPORT:
+				content = getReportById(id);
+				break;
+			default:
+				throw new TskCoreException("Could not obtain Content object with ID: " + id);
+		}
+
+		return content;
 	}
 
 	/**
@@ -6221,18 +6229,21 @@ public class SleuthkitCase {
 			}
 			statement.setString(17, mimeType);
 			String parentPath;
-
+			long dataSourceObjId; 
+			
 			if (parent instanceof AbstractFile) {
-				if (isRootDirectory((AbstractFile)parent, transaction)) {
+				AbstractFile parentFile = (AbstractFile) parent;
+				if (isRootDirectory(parentFile, transaction)) {
 					parentPath = "/";
 				} else {
-					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
+					parentPath = parentFile.getParentPath() + parent.getName() + "/"; //NON-NLS
 				}
+				dataSourceObjId = parentFile.getDataSourceObjectId();
 			} else {
 				parentPath = "/";
+				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			}
 			statement.setString(18, parentPath);
-			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			statement.setLong(19, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			statement.setString(20, extension);

@@ -85,6 +85,18 @@ public final class AccountFileInstance {
 	public Account getAccount() throws TskCoreException {
 		return this.account;
 	}
+	
+	/**
+	 * Gets the source content (data source or file within a
+	 * data source) of the underlying Account artifact for this instance.
+	 * 
+	 * @return The source content.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public Content getFile() throws TskCoreException {
+		return artifact.getSleuthkitCase().getContentById(artifact.getObjectID());
+	}
 
 	/**
 	 * Get the object ID of the artifact this account file instance maps to.
