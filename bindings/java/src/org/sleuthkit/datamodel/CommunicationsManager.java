@@ -662,13 +662,24 @@ public final class CommunicationsManager {
 					CommunicationsFilter.RelationshipTypeFilter.class.getName()
 			));
 			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
+			
+			String limitSQL = "";
+			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
+				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
+					limitSQL =  subFilter.getSQL(this);
+				}
+			}
+			
+			String filterQuery = 
+					"SELECT * "
+					+ "FROM account_relationships as relationships"
+					+ (innerQueryfilterSQL.isEmpty() ? "" : " WHERE " + innerQueryfilterSQL)
+					+ (limitSQL.isEmpty() ? "" : limitSQL);
 
 			String innerQueryTemplate
 					= " SELECT %1$1s as account_id,"
-					+ "		  data_source_obj_id,"
-					+ "		  date_time"
-					+ " FROM account_relationships as relationships"
-					+ (innerQueryfilterSQL.isEmpty() ? "" : " WHERE " + innerQueryfilterSQL);
+					+ "		  data_source_obj_id"
+					+ " FROM ( " + filterQuery + ")";
 
 			String innerQuery1 = String.format(innerQueryTemplate, "account1_id");
 			String innerQuery2 = String.format(innerQueryTemplate, "account2_id");
@@ -676,7 +687,7 @@ public final class CommunicationsManager {
 			//this query groups by account_id and data_source_obj_id across both innerQueries
 			String combinedInnerQuery
 					= "SELECT DISTINCT account_id, data_source_obj_id"
-					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " " + getUnionLimitSQL(filter) + " ) AS  inner_union"
+					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) AS  inner_union"
 					+ " GROUP BY account_id, data_source_obj_id";
 
 			// set up applicable filters
@@ -897,7 +908,13 @@ public final class CommunicationsManager {
 			s = connection.createStatement();
 			
 			String innerQuery = " account_relationships AS relationships";
-			String limitStr = getUnionLimitSQL(filter);
+			String limitStr = "";
+			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
+				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
+					limitStr =  subFilter.getSQL(this);
+				}
+			}
+			
 			if(!limitStr.isEmpty()) {
 				innerQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
 			}
@@ -980,7 +997,13 @@ public final class CommunicationsManager {
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 		
 		String limitQuery = " account_relationships AS relationships";
-		String limitStr = getUnionLimitSQL(filter);
+		String innerQuery = " account_relationships AS relationships";
+		String limitStr = "";
+		for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
+			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
+				limitStr =  subFilter.getSQL(this);
+			}
+		}
 		if(!limitStr.isEmpty()) {
 			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
 		}
@@ -1167,7 +1190,13 @@ public final class CommunicationsManager {
 		));
 		
 		String limitQuery = " account_relationships AS relationships";
-		String limitStr = getUnionLimitSQL(filter);
+		String innerQuery = " account_relationships AS relationships";
+		String limitStr = "";
+		for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
+			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
+				limitStr =  subFilter.getSQL(this);
+			}
+		}
 		if(!limitStr.isEmpty()) {
 			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
 		}
@@ -1351,15 +1380,5 @@ public final class CommunicationsManager {
 			sqlStr = "( " + sqlSB.toString() + " )";
 		}
 		return sqlStr;
-	}
-	
-	private String getUnionLimitSQL(CommunicationsFilter commFilter) {
-		for (CommunicationsFilter.SubFilter subFilter : commFilter.getAndFilters()) {
-			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
-				return subFilter.getSQL(this);
-			}
-		}
-		
-		return "";
 	}
 }
