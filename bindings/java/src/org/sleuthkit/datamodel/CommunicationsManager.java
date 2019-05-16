@@ -661,33 +661,33 @@ public final class CommunicationsManager {
 					CommunicationsFilter.DeviceFilter.class.getName(),
 					CommunicationsFilter.RelationshipTypeFilter.class.getName()
 			));
-			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
+			String relationshipFilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
 			
-			String limitSQL = "";
+			String relationshipLimitSQL = "";
 			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
 				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
-					limitSQL =  subFilter.getSQL(this);
+					relationshipLimitSQL =  subFilter.getSQL(this);
 				}
 			}
 			
-			String filterQuery = 
+			String relTblfilterQuery = 
 					"SELECT * "
 					+ "FROM account_relationships as relationships"
-					+ (innerQueryfilterSQL.isEmpty() ? "" : " WHERE " + innerQueryfilterSQL)
-					+ (limitSQL.isEmpty() ? "" : limitSQL);
+					+ (relationshipFilterSQL.isEmpty() ? "" : " WHERE " + relationshipFilterSQL)
+					+ (relationshipLimitSQL.isEmpty() ? "" : relationshipLimitSQL);
 
-			String innerQueryTemplate
+			String uniqueAccountQueryTemplate
 					= " SELECT %1$1s as account_id,"
 					+ "		  data_source_obj_id"
-					+ " FROM ( " + filterQuery + ")";
+					+ " FROM ( " + relTblfilterQuery + ")";
 
-			String innerQuery1 = String.format(innerQueryTemplate, "account1_id");
-			String innerQuery2 = String.format(innerQueryTemplate, "account2_id");
+			String relationshipTableFilterQuery1 = String.format(uniqueAccountQueryTemplate, "account1_id");
+			String relationshipTableFilterQuery2 = String.format(uniqueAccountQueryTemplate, "account2_id");
 
 			//this query groups by account_id and data_source_obj_id across both innerQueries
-			String combinedInnerQuery
+			String uniqueAccountQuery
 					= "SELECT DISTINCT account_id, data_source_obj_id"
-					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) AS  inner_union"
+					+ " FROM ( " + relationshipTableFilterQuery1 + " UNION " + relationshipTableFilterQuery2 + " ) AS  inner_union"
 					+ " GROUP BY account_id, data_source_obj_id";
 
 			// set up applicable filters
@@ -695,7 +695,7 @@ public final class CommunicationsManager {
 					CommunicationsFilter.AccountTypeFilter.class.getName()
 			));
 
-			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+			String accountTypeFilterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 			String queryStr
 					= //account info
@@ -705,14 +705,14 @@ public final class CommunicationsManager {
 					+ " account_types.type_name AS type_name,"
 					//Account device instance info
 					+ " data_source_info.device_id AS device_id"
-					+ " FROM ( " + combinedInnerQuery + " ) AS account_device_instances"
+					+ " FROM ( " + uniqueAccountQuery + " ) AS account_device_instances"
 					+ " JOIN accounts AS accounts"
 					+ "		ON accounts.account_id = account_device_instances.account_id"
 					+ " JOIN account_types AS account_types"
 					+ "		ON accounts.account_type_id = account_types.account_type_id"
 					+ " JOIN data_source_info AS data_source_info"
 					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
-					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL);
+					+ (accountTypeFilterSQL.isEmpty() ? "" : " WHERE " + accountTypeFilterSQL);
 
 			switch (db.getDatabaseType()) {
 				case POSTGRESQL:
