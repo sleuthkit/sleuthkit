@@ -94,7 +94,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 2);
+			= new CaseDbSchemaVersionNumber(8, 3);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -7512,6 +7512,35 @@ public class SleuthkitCase {
 		}
 	}
 
+	public void deleteDataSource(long obj_id) throws TskCoreException {
+        CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		Statement statement2 = null;
+		ResultSet resultSet = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			connection.beginTransaction();
+			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + Long.toString(obj_id));
+			statement.execute("DELETE FROM image_gallery_groups WHERE data_source_obj_id = " + Long.toString(obj_id));
+			String accountSQL = "SELECT account_id FROM accounts " +
+                                "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) " +
+                                "AND account_id NOT IN (SELECT account2_id FROM account_relationships);";
+            statement2 = connection.createStatement();
+			resultSet = connection.executeQuery(statement2, accountSQL); //NON-NLS
+			while (resultSet.next()) {
+				statement.execute("DELETE FROM accounts WHERE account_id = " + resultSet.getString("account_id"));
+			}
+			connection.commitTransaction();
+		} catch (SQLException ex) {
+				connection.rollbackTransaction();
+			    throw new TskCoreException("Error deleting data source.", ex);	
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}	
+	}
+
 	/**
 	 * Creates file object from a SQL query result set of rows from the
 	 * tsk_files table. Assumes that the query was of the form "SELECT * FROM
@@ -10306,7 +10335,8 @@ public class SleuthkitCase {
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		SELECT_CREATE_SCHEMA_VERSION("SELECT ");
 		
 		
 		private final String sql;
