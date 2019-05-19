@@ -283,13 +283,14 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
         if(dino_aginum >= irecs[cur_key].ir_startino
             && dino_aginum - irecs[cur_key].ir_startino < 64)
         {
-            if (tsk_verbose) { tsk_fprintf(stderr, "found at cur_inobt_block->bb_level = %u, cur_key = %u, irecs[cur_key].ir_startino = %u, irecs[cur_key].ir_free = %" PRIx64 " \n",
-                cur_inobt_block->bb_level, cur_key, irecs[cur_key].ir_startino, irecs[cur_key].ir_free); }
+            uint8_t rel_inum = dino_aginum - irecs[cur_key].ir_startino;
+
+            if (tsk_verbose) { tsk_fprintf(stderr, "found at cur_inobt_block->bb_level = %u, cur_key = %u, irecs[cur_key].ir_startino = %u, irecs[cur_key].ir_free = %" PRIx64 ", rel_inum = %u \n",
+                cur_inobt_block->bb_level, cur_key, irecs[cur_key].ir_startino, irecs[cur_key].ir_free, rel_inum); }
 
             free(cur_inobt_block);
 
-            uint8_t rel_inum = dino_aginum - irecs[cur_key].ir_startino;
-            if (irecs[cur_key].ir_free & (1 << rel_inum))
+            if (irecs[cur_key].ir_free & ((uint64_t) 1 << rel_inum))
                 return TSK_FS_META_FLAG_UNALLOC;
             else
                 return TSK_FS_META_FLAG_ALLOC;
