@@ -865,6 +865,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
+                connection.executeUpdate(statement, "UPDATE tsk_db_info_extended set value = " + dbSchemaVersion.getMajor() + " WHERE name = 'SCHEMA_MAJOR_VERSION'");
+                connection.executeUpdate(statement, "UPDATE tsk_db_info_extended set value = " + dbSchemaVersion.getMinor() + " WHERE name = 'SCHEMA_MINOR_VERSION'");
 				statement.close();
 				statement = null;
 			}
