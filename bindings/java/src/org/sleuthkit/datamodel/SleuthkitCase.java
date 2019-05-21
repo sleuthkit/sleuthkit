@@ -862,6 +862,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				statement.close();
@@ -1660,6 +1661,42 @@ public class SleuthkitCase {
 			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + CREATION_SCHEMA_MINOR_VERSION_KEY + "', '0')");
 
 			return new CaseDbSchemaVersionNumber(8, 2);
+
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
+	 * Updates a schema version 8.2 database to a schema version 8.3 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot2toSchema8dot3(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 2) {
+			return schemaVersion;
+		}
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// Add new hash columns
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION';");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION';");
+			
+			return new CaseDbSchemaVersionNumber(8, 3);
 
 		} finally {
 			closeStatement(statement);
