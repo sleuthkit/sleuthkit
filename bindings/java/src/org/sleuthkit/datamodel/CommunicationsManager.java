@@ -667,6 +667,7 @@ public final class CommunicationsManager {
 			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
 				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
 					relationshipLimitSQL =  subFilter.getSQL(this);
+					break;
 				}
 			}
 			
@@ -912,6 +913,7 @@ public final class CommunicationsManager {
 			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
 				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
 					limitStr =  subFilter.getSQL(this);
+					break;
 				}
 			}
 			
@@ -1002,6 +1004,7 @@ public final class CommunicationsManager {
 		for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
 			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
 				limitStr =  subFilter.getSQL(this);
+				break;
 			}
 		}
 		if(!limitStr.isEmpty()) {
@@ -1190,11 +1193,11 @@ public final class CommunicationsManager {
 		));
 		
 		String limitQuery = " account_relationships AS relationships";
-		String innerQuery = " account_relationships AS relationships";
 		String limitStr = "";
 		for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
 			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
 				limitStr =  subFilter.getSQL(this);
+				break;
 			}
 		}
 		if(!limitStr.isEmpty()) {
