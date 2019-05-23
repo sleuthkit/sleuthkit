@@ -987,7 +987,6 @@ public final class CommunicationsManager {
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 		
 		String limitQuery = " account_relationships AS relationships";
-		String innerQuery = " account_relationships AS relationships";
 		String limitStr = getMostRecentFilterLimitSQL(filter);
 		if(!limitStr.isEmpty()) {
 			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
@@ -1371,14 +1370,13 @@ public final class CommunicationsManager {
 	private String getMostRecentFilterLimitSQL(CommunicationsFilter filter) {
 		String limitStr = "";
 		
-		if (null == filter || filter.getAndFilters().isEmpty()) {
-			return "";
-		}
-		
-		for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
-			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
-				limitStr =  subFilter.getSQL(this);
-				break;
+		if (filter != null && !filter.getAndFilters().isEmpty()) {
+
+			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
+				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
+					limitStr =  subFilter.getSQL(this);
+					break;
+				}
 			}
 		}
 		
