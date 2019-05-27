@@ -1505,6 +1505,7 @@ xfs_load_attrs(TSK_FS_FILE * fs_file)
                 return 1;
             }
 
+            // converting xfs block numbers to disk addr
             xfs_agnumber_t ag_num = irec.br_startblock >> xfs->fs->sb_agblklog;
             uint64_t rel_blk_neg = 1 << (xfs->fs->sb_agblklog);
             rel_blk_neg -= 1;
@@ -1513,10 +1514,8 @@ xfs_load_attrs(TSK_FS_FILE * fs_file)
                 * (TSK_OFF_T) xfs->fs->sb_agblocks + rel_blk) 
                 * (TSK_OFF_T) fs_info->block_size;
 
-            // converting logical xfs block number into a "physical" number
-            // this block number is later processed by tsk_fs_read_block,
-            // which does (TSK_OFF_T) (a_addr) * a_fs->block_size
-            data_run->offset = data_run->addr = offset / fs_info->block_size;
+            data_run->offset = irec.br_startoff;
+            data_run->addr = offset / fs_info->block_size;
             data_run->len = irec.br_blockcount;
 
             if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
@@ -1692,17 +1691,22 @@ static TSK_WALK_RET_ENUM
 print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *a_ptr)
 {
-    TSK_FS_INFO *fs = fs_file->fs_info;
+    XFSFS_INFO *xfs = (XFSFS_INFO *) fs_file->fs_info;
     XFS_PRINT_ADDR *print = (XFS_PRINT_ADDR *) a_ptr;
+
+    // addr -> xfs fsblock
+    xfs_agnumber_t ag_num = addr >> xfs->fs->sb_agblklog;
+    uint64_t rel_blk = addr -(TSK_DADDR_T) ag_num * (TSK_DADDR_T) xfs->fs->sb_agblocks;
+    TSK_DADDR_T fsblock_addr = (ag_num << xfs->fs->sb_agblklog) | rel_blk;
 
     if (flags & TSK_FS_BLOCK_FLAG_CONT) {
         int i, s;
         /* cycle through the blocks if they exist */
-        for (i = 0, s = (int) size; s > 0; s -= fs->block_size, i++) {
+        for (i = 0, s = (int) size; s > 0; s -= xfs->fs_info.block_size, i++) {
 
             /* sparse file */
-            if (addr)
-                tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr + i);
+            if (fsblock_addr)
+                tsk_fprintf(print->hFile, "%" PRIuDADDR " ", fsblock_addr + i);
             else
                 tsk_fprintf(print->hFile, "0 ");
 
