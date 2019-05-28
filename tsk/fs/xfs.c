@@ -271,7 +271,6 @@ static uint8_t
 xfs_load_attrs(TSK_FS_FILE * fs_file)
 {
     TSK_FS_INFO * fs = (TSK_FS_INFO*)fs_file->fs_info;
-
     // not needed to implement about shortform data fork. shortform does not have location of real file.
     if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS) {
         xfs_load_attrs_block(fs_file);
@@ -417,6 +416,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     fs_meta->size = tsk_getu64(fs->endian, dino_buf->di_size);
     fs_meta->addr = inum;
 
+
     /* the general size value in the inode is only 32-bits,
      * but the i_dir_acl value is used for regular files to
      * hold the upper 32-bits
@@ -508,15 +508,20 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
         tsk_error_set_errstr("%s: end inode: %s" PRIuINUM "", myname, end_inum);
         return 1;
     }
+
+    printf("xfs.c(520): 1\n");    
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
+        printf("xfs.c(522): 1\n");    
         flags |= TSK_FS_META_FLAG_UNALLOC;
         flags &= ~TSK_FS_META_FLAG_ALLOC;
         flags |= TSK_FS_META_FLAG_USED;
         flags &= ~TSK_FS_META_FLAG_UNUSED;
     }
     else {
+        printf("xfs.c(529): 2\n");   
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
+            printf("xfs.c(532): 3\n");    
             flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
@@ -525,6 +530,7 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
          */
         if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
+            printf("xfs.c(541): 4\n");    
             flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
@@ -532,14 +538,16 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
      * in the list of unalloc inodes that are pointed to, then fill
      * in the list
      */
+    printf("xfs.c(549): 5\n");    
     if ((flags & TSK_FS_META_FLAG_ORPHAN)) {
+        printf("xfs.c(551): 6\n");   
         if (tsk_fs_dir_load_inum_named(fs) != TSK_OK) {
             tsk_error_errstr2_concat
                 ("- ext2fs_inode_walk: identifying inodes allocated by file names");
             return 1;
         }
     }
-    
+    printf("xfs.c(558): 7\n");        
     if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
         return 1;
 
@@ -569,6 +577,7 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
     xfs_dinode * dino_buf = NULL;
     unsigned int size = 0;
 
+
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("ext2fs_inode_lookup: fs_file is NULL");
@@ -583,15 +592,18 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
     else {
         tsk_fs_meta_reset(a_fs_file->meta);
     }
-
+    
     // see if they are looking for the special "orphans" directory
-    if (inum == TSK_FS_ORPHANDIR_INUM(fs)) {
-        if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta))
-            return 1;
-        else
-            return 0;
+  /*  if (a_fs_file->fs_info->root_inum != inum) {
+        if ((a_fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC) == TSK_FS_NAME_FLAG_UNALLOC) {
+            printf("xfs.c(591): I'm orphan\n");
+            if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta))
+                return 1;
+            else
+                return 0;
+        }
     }
-
+*/
     size =
         xfs->inode_size > 
         sizeof(xfs_dinode) ? xfs->inode_size : sizeof(xfs_dinode);
@@ -599,7 +611,7 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
     if((dino_buf = (xfs_dinode *)tsk_malloc(size)) == NULL){
         return 1;
     }
-
+   
     if (xfs_dinode_load(xfs, inum, dino_buf)){
         free(dino_buf);
         return 1;
@@ -609,7 +621,14 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
         free(dino_buf);
         return 1;
     }
-
+    if (a_fs_file->fs_info->root_inum != inum) {
+        if ((a_fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC) == TSK_FS_NAME_FLAG_UNALLOC) {
+    
+            xfs_bmbt_irec_t *irec = (xfs_bmbt_irec_t*)tsk_malloc(sizeof(xfs_bmbt_irec_t));
+            xfs_bmbt_disk_get_all(xfs, a_fs_file->meta->content_ptr, irec);
+            a_fs_file->meta->size = irec->br_blockcount * fs->block_size;
+        }
+    }
     free(dino_buf);
     return 0;
 }
@@ -768,7 +787,6 @@ xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_free((TSK_FS_INFO *)xfs);
         return NULL;
     }
-
     cnt = tsk_fs_read(fs, XFS_SBOFF, (char *) xfs->fs, len);
 
     if (cnt != len){
@@ -783,6 +801,7 @@ xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
     
+
     if(tsk_fs_guessu32(fs, xfs->fs->sb_magicnum, XFS_FS_MAGIC)){
         if (tsk_verbose){
             fprintf(stderr, "xfs_open : superblock magic failed\n");

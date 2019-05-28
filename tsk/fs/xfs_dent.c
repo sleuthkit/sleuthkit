@@ -181,13 +181,14 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
     ent = (char*)(hdr + 1) - (hdr->i8count == 0) * 4; // code of miracle
     
     uint16_t num_entries = (hdr->i8count > 0) ? hdr->i8count : hdr->count;
+    uint16_t num_entries_chk = 0;
 
-    for (i = 0; i < num_entries; i++)
+    while (1)
     {
         uint8_t namelen;
         uint64_t inode;
         char* name;
-
+        
         dir2_sf->entry = ent;
         namelen = ent->namelen;
         inode = xfs_dir2_sf_get_ino(hdr, ent);
@@ -195,19 +196,24 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
         name[namelen] = '\0';
 
         memcpy(name, ent->name, namelen);
-
+        
         if (inode > fs->last_inum || namelen > XFS_MAXNAMELEN || namelen == 0) {
-            fprintf(stderr, "[i] xfs_dent_parse_shortform: xfs_dent.c: %d - sanity check error\n", __LINE__);
-            return TSK_ERR;
+            break;
         }
 
         if (xfs_dent_copy(xfs, dir2_sf, fs_name, fs_file)) {
             tsk_fs_name_free(fs_name);
             return TSK_ERR;
         }
+        num_entries_chk++;
 
-        fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-
+        if (num_entries < num_entries_chk) {
+            fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
+            
+        }
+        else {
+            fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+        }
         if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
             tsk_fs_name_free(fs_name);
             return TSK_ERR;
@@ -215,6 +221,21 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
 
         ent = xfs_dir3_sf_nextentry(hdr, ent);
     }
+
+    // print number of the dir entries
+    if (num_entries == 0) {
+        printf("deleted num_entries : %d\n", num_entries_chk);
+    }
+    else if (num_entries != 0 && num_entries_chk == 0){
+        printf("there is no deleted file, num_entries : %d\n", num_entries);
+    }
+    else if (num_entries != 0 && num_entries_chk != 0 && num_entries_chk != num_entries_chk) {
+        printf("there is deleted file, alloc file num is %d, unalloc file num is %d\n", num_entries, num_entries_chk);
+    }
+    else {
+        printf("there is no deleted file, num_entries : %d\n", num_entries);
+    }
+
     tsk_fs_name_free(fs_name);
     return TSK_OK;
 }
@@ -323,7 +344,6 @@ xfs_dent_parse(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
             xfs_dent_parse_block(xfs, a_fs_dir, a_is_del, list_seen, buf, offset);
             break;
     }
-
     return TSK_OK;
 }
 
@@ -348,6 +368,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_FS_DIR * fs_dir;
     TSK_LIST *list_seen = NULL;
     TSK_OFF_T size;
+
 
     char *dirbuf;
     

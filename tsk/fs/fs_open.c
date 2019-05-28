@@ -84,7 +84,6 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     TSK_FS_TYPE_ENUM a_ftype)
 {
     TSK_FS_INFO *fs_info;
-
     const struct {
         char* name;
         TSK_FS_INFO* (*open)(TSK_IMG_INFO*, TSK_OFF_T,
@@ -154,7 +153,6 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
         }
-
         return fs_first;
     }
     else if (TSK_FS_TYPE_ISNTFS(a_ftype)) {

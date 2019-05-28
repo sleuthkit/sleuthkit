@@ -184,7 +184,6 @@ tsk_img_findFiles(const TSK_TCHAR * a_startingName, int *a_numFound)
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "tsk_img_findFiles: %" PRIttocTSK " found\n", nextName);
-
         // add to list
         fileCount++;
         if (fileCount == 1)

@@ -523,7 +523,6 @@ TSK_WALK_RET_ENUM
         // we have no way to register an error...
         return TSK_WALK_STOP;
     }
-
     TSK_RETVAL_ENUM retval = tsk->processFile(a_fs_file, a_path);
     if ((retval == TSK_STOP) || (tsk->getStopProcessing()))
         return TSK_WALK_STOP;

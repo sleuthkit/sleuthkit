@@ -362,11 +362,12 @@ uint8_t
 TskRecover::findFiles(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T a_dirInum)
 {
     uint8_t retval;
-    if (a_dirInum)
+    if (a_dirInum){
         retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype, a_dirInum);
-    else
+    }
+    else{
         retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype);
-
+    }
     printf("Files Recovered: %d\n", m_fileCount);
     return retval;
 }
