@@ -663,13 +663,7 @@ public final class CommunicationsManager {
 			));
 			String relationshipFilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
 			
-			String relationshipLimitSQL = "";
-			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
-				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
-					relationshipLimitSQL =  subFilter.getSQL(this);
-					break;
-				}
-			}
+			String relationshipLimitSQL = getMostRecentFilterLimitSQL(filter);
 			
 			String relTblfilterQuery = 
 					"SELECT * "
@@ -909,13 +903,7 @@ public final class CommunicationsManager {
 			s = connection.createStatement();
 			
 			String innerQuery = " account_relationships AS relationships";
-			String limitStr = "";
-			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
-				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
-					limitStr =  subFilter.getSQL(this);
-					break;
-				}
-			}
+			String limitStr = getMostRecentFilterLimitSQL(filter);
 			
 			if(!limitStr.isEmpty()) {
 				innerQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
@@ -999,14 +987,7 @@ public final class CommunicationsManager {
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 		
 		String limitQuery = " account_relationships AS relationships";
-		String innerQuery = " account_relationships AS relationships";
-		String limitStr = "";
-		for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
-			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
-				limitStr =  subFilter.getSQL(this);
-				break;
-			}
-		}
+		String limitStr = getMostRecentFilterLimitSQL(filter);
 		if(!limitStr.isEmpty()) {
 			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
 		}
@@ -1193,13 +1174,7 @@ public final class CommunicationsManager {
 		));
 		
 		String limitQuery = " account_relationships AS relationships";
-		String limitStr = "";
-		for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
-			if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
-				limitStr =  subFilter.getSQL(this);
-				break;
-			}
-		}
+		String limitStr = getMostRecentFilterLimitSQL(filter);
 		if(!limitStr.isEmpty()) {
 			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
 		}
@@ -1383,5 +1358,28 @@ public final class CommunicationsManager {
 			sqlStr = "( " + sqlSB.toString() + " )";
 		}
 		return sqlStr;
+	}
+	
+	/**
+	 * Builds the SQL for the MostRecentFilter.
+	 * 
+	 * @param filter	The CommunicationsFilter to get the SQL for.
+	 * @return			Order BY and LIMIT clause or empty 
+	 *					string if no filter is available.
+	 */
+	private String getMostRecentFilterLimitSQL(CommunicationsFilter filter) {
+		String limitStr = "";
+		
+		if (filter != null && !filter.getAndFilters().isEmpty()) {
+
+			for (CommunicationsFilter.SubFilter subFilter : filter.getAndFilters()) {
+				if(subFilter.getClass().getName().equals(CommunicationsFilter.MostRecentFilter.class.getName())) {
+					limitStr =  subFilter.getSQL(this);
+					break;
+				}
+			}
+		}
+		
+		return limitStr;
 	}
 }
