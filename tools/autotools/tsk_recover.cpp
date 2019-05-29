@@ -368,6 +368,7 @@ TskRecover::findFiles(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T 
     else{
         retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype);
     }
+
     printf("Files Recovered: %d\n", m_fileCount);
     return retval;
 }
@@ -496,7 +497,6 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
-
     if (tskRecover.findFiles(soffset, fstype, dirInum)) {
         // errors were already logged
         exit(1);

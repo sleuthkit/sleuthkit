@@ -271,11 +271,17 @@ static uint8_t
 xfs_load_attrs(TSK_FS_FILE * fs_file)
 {
     TSK_FS_INFO * fs = (TSK_FS_INFO*)fs_file->fs_info;
+ 
     // not needed to implement about shortform data fork. shortform does not have location of real file.
     if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS) {
         xfs_load_attrs_block(fs_file);
     }
     else if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_BTREE) {
+        printf("We are devleoping this\n");
+        return 1;
+    }
+    else if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM) {
+        printf("We are devleoping this\n");
         return 1;
     }
     else {
@@ -468,7 +474,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     }
 
     fs_meta->content_ptr = (void*) content_buf;
-
+  
     if (dino_buf->di_format == XFS_DINODE_FMT_LOCAL){
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM;  
     }
@@ -481,7 +487,6 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     else{
         fprintf(stderr, "xfs : inode core format not supported : inode format %d\n", dino_buf->di_format);
     } 
-
     return 0;
 }    
 
@@ -509,19 +514,15 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
         return 1;
     }
 
-    printf("xfs.c(520): 1\n");    
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        printf("xfs.c(522): 1\n");    
         flags |= TSK_FS_META_FLAG_UNALLOC;
         flags &= ~TSK_FS_META_FLAG_ALLOC;
         flags |= TSK_FS_META_FLAG_USED;
         flags &= ~TSK_FS_META_FLAG_UNUSED;
     }
     else {
-        printf("xfs.c(529): 2\n");   
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
-            printf("xfs.c(532): 3\n");    
             flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
@@ -530,7 +531,6 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
          */
         if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-            printf("xfs.c(541): 4\n");    
             flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
@@ -538,16 +538,13 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
      * in the list of unalloc inodes that are pointed to, then fill
      * in the list
      */
-    printf("xfs.c(549): 5\n");    
     if ((flags & TSK_FS_META_FLAG_ORPHAN)) {
-        printf("xfs.c(551): 6\n");   
         if (tsk_fs_dir_load_inum_named(fs) != TSK_OK) {
             tsk_error_errstr2_concat
                 ("- ext2fs_inode_walk: identifying inodes allocated by file names");
             return 1;
         }
     }
-    printf("xfs.c(558): 7\n");        
     if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
         return 1;
 
@@ -577,7 +574,6 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
     xfs_dinode * dino_buf = NULL;
     unsigned int size = 0;
 
-
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("ext2fs_inode_lookup: fs_file is NULL");
@@ -594,16 +590,13 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
     }
     
     // see if they are looking for the special "orphans" directory
-  /*  if (a_fs_file->fs_info->root_inum != inum) {
-        if ((a_fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC) == TSK_FS_NAME_FLAG_UNALLOC) {
-            printf("xfs.c(591): I'm orphan\n");
-            if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta))
-                return 1;
-            else
-                return 0;
-        }
+    if (inum == TSK_FS_ORPHANDIR_INUM(fs)) {
+        if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta))
+            return 1;
+        else
+            return 0;
     }
-*/
+
     size =
         xfs->inode_size > 
         sizeof(xfs_dinode) ? xfs->inode_size : sizeof(xfs_dinode);
@@ -616,19 +609,42 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
         free(dino_buf);
         return 1;
     }
-
     if (xfs_dinode_copy(xfs, a_fs_file->meta, inum, dino_buf)){
         free(dino_buf);
         return 1;
     }
-    if (a_fs_file->fs_info->root_inum != inum) {
-        if ((a_fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC) == TSK_FS_NAME_FLAG_UNALLOC) {
-    
+
+    // Trick to walk unalloc file and dent
+    if (a_fs_file->name != NULL){
+        if ((TSK_FS_IS_DIR_META(a_fs_file->meta->type) == 0) && (TSK_FS_IS_DIR_NAME(a_fs_file->name->type) == 0) 
+            && ((a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) == 0) && (a_fs_file->meta->size == 0)) 
+        {
             xfs_bmbt_irec_t *irec = (xfs_bmbt_irec_t*)tsk_malloc(sizeof(xfs_bmbt_irec_t));
             xfs_bmbt_disk_get_all(xfs, a_fs_file->meta->content_ptr, irec);
             a_fs_file->meta->size = irec->br_blockcount * fs->block_size;
+
+        }  
+        else if(a_fs_file->meta->type == TSK_FS_META_TYPE_UNDEF) {
+            TSK_FS_META * new_meta;
+            new_meta = tsk_fs_meta_alloc(fs);
+            if ((new_meta = tsk_fs_meta_alloc(XFS_CONTENT_LEN_V5(xfs))) == NULL) // #define XFS_CONTENT_LEN 
+                return 1;        
+
+            dino_buf->di_mode[0] = 0x41;
+            dino_buf->di_mode[1] = 0xED;
+
+            if(xfs_dinode_copy(xfs, new_meta, inum, dino_buf)){
+                free(dino_buf);
+                return 1;
+            }
+
+            a_fs_file->meta = new_meta;
+            a_fs_file->meta->flags = TSK_FS_META_FLAG_UNALLOC;
+            a_fs_file->name->flags = TSK_FS_NAME_FLAG_UNALLOC;
+
         }
     }
+    
     free(dino_buf);
     return 0;
 }

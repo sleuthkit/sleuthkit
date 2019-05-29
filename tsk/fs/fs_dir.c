@@ -564,14 +564,12 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         tsk_fs_dir_close(fs_dir);
         return TSK_WALK_ERROR;
     }
-
     for (i = 0; i < fs_dir->names_used; i++) {
         TSK_WALK_RET_ENUM retval;
 
         /* Point name to the buffer of names.  We need to be
          * careful about resetting this before we free fs_file */
         fs_file->name = (TSK_FS_NAME *) & fs_dir->names[i];
-
         /* load the fs_meta structure if possible.
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
         if (((fs_file->name->meta_addr)
@@ -585,7 +583,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 tsk_error_reset();
             }
         }
-
         // call the action if we have the right flags.
         if ((fs_file->name->flags & a_flags) == fs_file->name->flags) {
             retval = a_action(fs_file, a_dinfo->dirs, a_ptr);
@@ -625,7 +622,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 a_dinfo->save_inum_named = 0;
             }
         }
-
 
         /* Optimization. If we are about to recurse into the
          * orphan directory and we are the last item in the
@@ -707,6 +703,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     save_bak = a_dinfo->save_inum_named;
                     a_dinfo->save_inum_named = 0;
                 }
+
                 retval = tsk_fs_dir_walk_lcl(a_fs,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
                     a_action, a_ptr);
@@ -729,9 +726,11 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     return TSK_WALK_STOP;
                 }
 
+
                 // reset the save status
                 if (fs_file->name->meta_addr ==
                     TSK_FS_ORPHANDIR_INUM(a_fs)) {
+
                     a_dinfo->save_inum_named = save_bak;
                 }
 
@@ -741,6 +740,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     *a_dinfo->didx[a_dinfo->depth] = '\0';
             }
             else {
+
                 if (tsk_verbose)
                     fprintf(stderr,
                         "tsk_fs_dir_walk_lcl: Loop detected with address %"
@@ -818,10 +818,12 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     // if we were saving the list of named files in the temp list,
     // then now save them to FS_INFO
     if (dinfo.save_inum_named == 1) {
+
         if (retval != TSK_WALK_CONT) {
             /* There was an error and we stopped early, so we should get
              * rid of the partial list we were making.
              */
+
             tsk_list_free(dinfo.list_inum_named);
             dinfo.list_inum_named = NULL;
         }

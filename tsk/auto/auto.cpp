@@ -377,6 +377,7 @@ TSK_RETVAL_ENUM
 
     TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
     tsk_fs_close(fs_info);
+
     if (m_errors.empty() == false)
         return TSK_ERR;
     else 
@@ -462,6 +463,7 @@ uint8_t
     }
 
     findFilesInFsInt(fs_info, a_inum);
+
     tsk_fs_close(fs_info);
     return m_errors.empty() ? 0 : 1;
 }
@@ -518,6 +520,7 @@ TSK_WALK_RET_ENUM
     TskAuto::dirWalkCb(TSK_FS_FILE * a_fs_file, const char *a_path,
     void *a_ptr)
 {
+
     TskAuto *tsk = (TskAuto *) a_ptr;
     if (tsk->m_tag != TSK_AUTO_TAG) {
         // we have no way to register an error...

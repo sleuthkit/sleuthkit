@@ -158,8 +158,7 @@ xfs_dent_copy(XFS_INFO * xfs,
 }
 
 static TSK_RETVAL_ENUM
-xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
-    uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
+xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
 {
     TSK_FS_INFO *fs = &(xfs->fs_info);
     
@@ -207,33 +206,14 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
         }
         num_entries_chk++;
 
-        if (num_entries < num_entries_chk) {
-            fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
-            
-        }
-        else {
-            fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-        }
+        fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+
         if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
             tsk_fs_name_free(fs_name);
             return TSK_ERR;
         }
 
         ent = xfs_dir3_sf_nextentry(hdr, ent);
-    }
-
-    // print number of the dir entries
-    if (num_entries == 0) {
-        printf("deleted num_entries : %d\n", num_entries_chk);
-    }
-    else if (num_entries != 0 && num_entries_chk == 0){
-        printf("there is no deleted file, num_entries : %d\n", num_entries);
-    }
-    else if (num_entries != 0 && num_entries_chk != 0 && num_entries_chk != num_entries_chk) {
-        printf("there is deleted file, alloc file num is %d, unalloc file num is %d\n", num_entries, num_entries_chk);
-    }
-    else {
-        printf("there is no deleted file, num_entries : %d\n", num_entries);
     }
 
     tsk_fs_name_free(fs_name);
@@ -267,8 +247,7 @@ xfs_dent_parse_btree(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
  *                      or leaf
  */
 static TSK_RETVAL_ENUM
-xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
-    uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
+xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
 {
     TSK_FS_INFO *fs_info = &(xfs->fs_info);
     TSK_FS_NAME *fs_name;
@@ -299,9 +278,15 @@ xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
 
     // sanity check
     if (hdr->hdr.magic != 0x33424458) { // XDB3
-        fprintf(stderr, "[i] xfs_dent_parse_block: xfs.c: %d - not a dir2_data_hdr: %8x\n",
-            __LINE__, hdr->hdr.magic);
-        return TSK_ERR;
+        // Trick to explore unalloc dent
+        a_fs_dir->fs_file->meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM;
+        if (xfs_dent_parse_shortform(xfs, a_fs_dir, a_is_del, list_seen, buf, offset) == TSK_OK){
+            return TSK_OK;
+        }else{
+            fprintf(stderr, "[i] xfs_dent_parse_block: xfs_dent.c: %d - not a dir2_data_hdr: %8x\n",
+            __LINE__, hdr->hdr.magic);            
+            return TSK_ERR;
+        }
     }
 
     xfs_dir2_data_entry_t *ent = (xfs_dir2_data_entry_t*)((char*)(hdr + 1) + 32); // magically should be happened
@@ -330,11 +315,9 @@ xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
 }
 
 static TSK_RETVAL_ENUM
-xfs_dent_parse(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
-    uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
+xfs_dent_parse(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
 {
     TSK_FS_INFO* fs_info = (TSK_FS_INFO*) xfs;
-    
     switch(a_fs_dir->fs_file->meta->content_type){
         case TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM:
             xfs_dent_parse_shortform(xfs, a_fs_dir, a_is_del, list_seen, buf, offset);
@@ -368,7 +351,6 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_FS_DIR * fs_dir;
     TSK_LIST *list_seen = NULL;
     TSK_OFF_T size;
-
 
     char *dirbuf;
     
@@ -425,11 +407,10 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     memcpy(dirbuf, fs_dir->fs_file->meta->content_ptr, XFS_CONTENT_LEN_V5(xfs));
 
     retval_tmp =
-        xfs_dent_parse(xfs, fs_dir,
-        (fs_dir->fs_file->meta->
+        xfs_dent_parse(xfs, fs_dir, (fs_dir->fs_file->meta->
             flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, &list_seen,
         dirbuf, XFS_CONTENT_LEN_V5(xfs));
-
+ 
     if (retval_tmp == TSK_ERR)
         retval_final = TSK_ERR;
     else if (retval_tmp == TSK_COR)
