@@ -6229,18 +6229,21 @@ public class SleuthkitCase {
 			}
 			statement.setString(17, mimeType);
 			String parentPath;
-
+			long dataSourceObjId; 
+			
 			if (parent instanceof AbstractFile) {
-				if (isRootDirectory((AbstractFile)parent, transaction)) {
+				AbstractFile parentFile = (AbstractFile) parent;
+				if (isRootDirectory(parentFile, transaction)) {
 					parentPath = "/";
 				} else {
-					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
+					parentPath = parentFile.getParentPath() + parent.getName() + "/"; //NON-NLS
 				}
+				dataSourceObjId = parentFile.getDataSourceObjectId();
 			} else {
 				parentPath = "/";
+				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			}
 			statement.setString(18, parentPath);
-			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			statement.setLong(19, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			statement.setString(20, extension);

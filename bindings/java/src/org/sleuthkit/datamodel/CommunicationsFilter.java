@@ -324,4 +324,45 @@ final public class CommunicationsFilter {
 			return sql;
 		}
 	}
+	
+	/**
+	 * Filters by the most recent given relationships.
+	 */
+	final public static class MostRecentFilter extends SubFilter {
+		private final int limit;
+		
+		/**
+		 * Constructs a MostRecentFilter.
+		 * 
+		 * @param limit An integer limit value or -1 for no limit.
+		 *				
+		 */
+		public MostRecentFilter(int limit) {
+			super();
+			this.limit = limit;
+		}
+		
+		/**
+		 * Returns the filter limit.
+		 * 
+		 * @return Integer filter limit
+		 */
+		public int getLimit() {
+			return limit;
+		}
+
+		@Override
+		public String getDescription() {
+			return "Filters accounts and relationships by the most recent given relationships.";
+		}
+
+		@Override
+		String getSQL(CommunicationsManager commsManager) {
+			if(limit > 0) {
+				return "ORDER BY relationships.date_time LIMIT " + limit;
+			} else {
+				return "";
+			}
+		}
+	}
 }
