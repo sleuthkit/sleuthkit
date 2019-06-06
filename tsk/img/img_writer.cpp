@@ -283,6 +283,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
  * Add a buffer that fits in a single block of the VHD 
  */
 static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
+    TSK_RETVAL_ENUM result;
     TSK_OFF_T blockNum = addr / writer->blockSize;
 
     if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_FINISHED){
@@ -290,10 +291,14 @@ static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *bu
     }
 
     if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_ALLOC) {
-        addToExistingBlock(writer, addr, buffer, len, blockNum);
+        result = addToExistingBlock(writer, addr, buffer, len, blockNum);
     }
     else {
-        addNewBlock(writer, addr, buffer, len, blockNum);
+        result = addNewBlock(writer, addr, buffer, len, blockNum);
+    }
+
+    if (result != TSK_OK) {
+        return result;
     }
 
     /* Check whether the block is now done */
@@ -480,9 +485,13 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     else {
         /* The buffer spans two blocks */
         TSK_OFF_T firstPartLength = writer->blockSize - (addr % writer->blockSize);
+        TSK_RETVAL_ENUM result;
         addBlock(writer, addr, buffer, firstPartLength);
         if (addr + firstPartLength < writer->imageSize) {
-            addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
+            result = addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
+            if (result != TSK_OK) {
+                return result;
+            }
         }
     }
 
