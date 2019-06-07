@@ -32,7 +32,7 @@
 class LogicalImagerRuleSet
 {
 public:
-    LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename);
+    LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename, const std::string &driveName);
     ~LogicalImagerRuleSet();
 
     TSK_RETVAL_ENUM matches(TSK_FS_FILE *fs_file, const char *path) const;
@@ -52,4 +52,5 @@ private:
     bool m_finalizeImageWriter = false;
     std::string m_alertFilePath;
     FILE *m_alertFile;
+    std::string m_driveName;
 };

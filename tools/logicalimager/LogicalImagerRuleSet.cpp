@@ -249,10 +249,13 @@ void LogicalImagerRuleSet::constructRuleSet(const std::string &ruleSetKey, nlohm
  *
  * @param configFilename Configuration filename of the rule set
  * @param alertFilename Alert filename
+ * @param driveName Name of drive
  * @throws std::logic_error if there is any error 
  *
  */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) {
+LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename, const std::string &driveName) :
+    m_driveName(driveName) 
+{
     std::ifstream file(configFilename);
     if (!file) {
         throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
@@ -288,13 +291,19 @@ LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, co
         throw std::logic_error("ERROR: parsing configuration file " + configFilename + newline + errorStr);
     }
 
+    bool doHeader = false;
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributesA(alertFilename.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND) {
+        doHeader = true;
+    }
     m_alertFilePath.assign(alertFilename);
-    m_alertFile = fopen(m_alertFilePath.c_str(), "w");
+    m_alertFile = fopen(m_alertFilePath.c_str(), "a");
     if (!m_alertFile) {
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_alertFilePath.c_str());
         exit(1);
     }
-    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
+    if (doHeader) {
+        fprintf(m_alertFile, "Drive\tExtraction Status\tDescription\tFilename\tPath\n");
+    }
 }
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() {
@@ -407,13 +416,15 @@ void LogicalImagerRuleSet::alert(TSK_RETVAL_ENUM extractStatus, const std::strin
         // Don't alert . and ..
         return;
     }
-    // alert file format is "extractStatus<tab>description<tab>name<tab>path"
-    fprintf(m_alertFile, "%d\t%s\t%s\t%s\n",
+    // alert file format is "driveName<tab>extractStatus<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%s\t%d\t%s\t%s\t%s\n",
+        m_driveName.c_str(),
         extractStatus,
         description.c_str(),
         (fs_file->name ? fs_file->name->name : "name is null"),
         path);
-    fprintf(stdout, "%d\t%s\t%s\t%s\n",
+    fprintf(stdout, "%s\t%d\t%s\t%s\t%s\n",
+        m_driveName.c_str(),
         extractStatus,
         description.c_str(),
         (fs_file->name ? fs_file->name->name : "name is null"),

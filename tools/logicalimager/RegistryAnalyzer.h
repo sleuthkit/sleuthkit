@@ -23,7 +23,7 @@
 
 class RegistryAnalyzer {
 public:
-    RegistryAnalyzer(const std::string &outputFilePath);
+    RegistryAnalyzer(const std::string &outputFilePath, const std::string &driveName);
     ~RegistryAnalyzer();
 
     int analyzeSAMUsers() const;
@@ -40,4 +40,5 @@ private:
 
     std::string m_outputFilePath;
     FILE *m_outputFile;
+    std::string m_driveName;
 };

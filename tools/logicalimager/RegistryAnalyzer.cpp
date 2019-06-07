@@ -30,22 +30,31 @@ const std::string LOCAL_DOMAIN = "local";
 * Create a RegistryAnalyzer, create a file for SAM user information
 *
 * @param outputFilePath output file to print SAM user information
+* @param driveName Name of the drive
 */
-RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
-    m_outputFilePath(outputFilePath)
+RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath, const std::string &driveName) :
+    m_outputFilePath(outputFilePath), m_driveName(driveName)
 {
-    m_outputFile = fopen(m_outputFilePath.c_str(), "w");
+    bool doHeader = false;
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributesA(m_outputFilePath.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND) {
+        doHeader = true;
+    }
+
+    m_outputFile = fopen(m_outputFilePath.c_str(), "a");
     if (!m_outputFile) {
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_outputFilePath.c_str());
         exit(1);
     }
-    char *headers[] = { "UserName", "FullName", "UserDomain", "HomeDir", "AccountType", "AdminPriv", 
-                        "DateCreated", "LastLoginDate", "LastFailedLoginDate", "LastPasswordResetDate", 
-                        "LoginCount", "AccountLocation", "isDisabled", "accountStatus" };
-    int headerCount = sizeof(headers) / sizeof(char *);
-    for (int i = 0; i < headerCount; ++i) {
-        fprintf(m_outputFile, headers[i]);
-        fprintf(m_outputFile, (i < headerCount - 1) ? "\t" : "\n");
+
+    if (doHeader) {
+        char *headers[] = { "Drive", "UserName", "FullName", "UserDomain", "HomeDir", "AccountType", "AdminPriv", 
+                            "DateCreated", "LastLoginDate", "LastFailedLoginDate", "LastPasswordResetDate", 
+                            "LoginCount", "AccountLocation", "isDisabled", "accountStatus" };
+        int headerCount = sizeof(headers) / sizeof(char *);
+        for (int i = 0; i < headerCount; ++i) {
+            fprintf(m_outputFile, headers[i]);
+            fprintf(m_outputFile, (i < headerCount - 1) ? "\t" : "\n");
+        }
     }
 }
 
@@ -317,7 +326,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                         userAccount.setAccountLocation(USER_ACCOUNT_LOCATION::LOCAL_ACCOUNT);
                         userAccount.setDisabled(accountDisabled); // from flags;
 
-                        fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\n",
+                        fprintf(m_outputFile, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\n",
+                            m_driveName.c_str(),
                             userAccount.getUserName().c_str(),
                             TskHelper::toNarrow(wsFullName).c_str(),
                             userAccount.getUserDomain().c_str(),

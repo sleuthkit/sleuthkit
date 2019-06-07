@@ -520,6 +520,12 @@ int checkDriveForBitlocker(const string& driveLetter) {
     return bitLockerStatus;
 }
 
+/**
+* getPhysicalDrives: return a list of physical drives
+*
+* @param output a vector of physicalDrives
+* @returns true on success, or false on error
+*/
 BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
     TCHAR physical[60000];
 
@@ -553,9 +559,9 @@ BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
 BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 
     // check if they are admin before we give them some ugly error messages
-//    if (isProcessElevated() == FALSE) {
-//        return FALSE;
-//    }
+    if (isProcessElevated() == FALSE) {
+        return FALSE;
+    }
 
     int checkLDMStatus = 0;
     int checkBitlockerStatus = 0;
@@ -624,17 +630,20 @@ void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
     }
 }
 
+/**
+* hasTskLogicalImage - test if /tsk_logical_image.exe is in the image
+*
+* @param image - path to image
+* @return true if found, false otherwise
+*/
 bool hasTskLogicalImager(const TSK_TCHAR *image) {
     TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     unsigned int ssize = 0;
     bool result = false;
 
-    printf("In hasTskLogicalImager\n");
-
     if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
         tsk_error_print(stderr);
-        printf("Exit hasTskLogicalImager img_open failed, result=%d\n", result);
         return result;
     }
 
@@ -643,14 +652,12 @@ bool hasTskLogicalImager(const TSK_TCHAR *image) {
 
     TSK_VS_INFO *vs_info;
     if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-        std::cout << "No volume system found. Looking for file system" << std::endl;
         openFs(img, 0);
     }
     else {
         // process the volume system
         for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
             const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-            std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
             if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
                 continue;
             }
@@ -664,10 +671,8 @@ bool hasTskLogicalImager(const TSK_TCHAR *image) {
     RuleMatchResult matchResult = RuleMatchResult("no description", false, false);
     std::list<std::string> pathForTskLogicalImagerExe;
     pathForTskLogicalImagerExe.push_back("/tsk_logical_imager.exe");
-    std::pair<const RuleMatchResult *, std::list<std::string>> pair(&matchResult, pathForTskLogicalImagerExe);
-    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = pair;
-    const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
-    const std::list<std::string> filePaths = pathForTskLogicalImagerExe;
+    const RuleMatchResult *ruleConfig = &matchResult;
+    const std::list<std::string> filePaths(pathForTskLogicalImagerExe);
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
@@ -682,8 +687,6 @@ bool hasTskLogicalImager(const TSK_TCHAR *image) {
     img->close(img);
 
     TskHelper::getInstance().reset();
-    printf("Exit hasTskLogicalImager result=%d\n", result);
-
     return result;
 }
 
@@ -775,9 +778,9 @@ main(int argc, char **argv1)
     std::wstring wImgPathName;
     std::vector<std::wstring> drivesToProcess;
 
-//    if (iFlagUsed) {
-//        imgPaths.push_back(imgPath);
-//    } else {
+    if (iFlagUsed) {
+        imgPaths.push_back(imgPath);
+    } else {
         if (getDrivesToProcess(drivesToProcess)) {
             for (auto it = std::begin(drivesToProcess); it != std::end(drivesToProcess); ++it) {
                 imgPaths.push_back(std::wstring(_TSK_T("\\\\.\\")) + *it);
@@ -787,20 +790,20 @@ main(int argc, char **argv1)
             fprintf(stderr, "Process is not running in elevated mode\n");
             exit(1);
         }
-//    }
+    }
 
-
+    // Loop through all images
     for (int i = 0; i < imgPaths.size(); ++i) {
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
-        std::string driveToProcess = drivesToProcess.size() == imgPaths.size() ? TskHelper::toNarrow(drivesToProcess[i]) : "sparse_image";
+        std::string driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
 
         TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), image);
 
-        std::string outputFileName = directoryPath + "/" + driveToProcess + ".vhd";
+        std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            continue;
+            continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
@@ -819,10 +822,10 @@ main(int argc, char **argv1)
             fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
         }
 
-        std::string alertFileName = directoryPath + "/" + driveToProcess + "-alert.txt";
+        std::string alertFileName = directoryPath + "/alert.txt";
 
         try {
-            ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename), alertFileName);
+            ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename), alertFileName, driveToProcess);
         }
         catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
@@ -879,7 +882,7 @@ main(int argc, char **argv1)
 
         string usersFileName = directoryPath + "/users.txt";
         // Enumerate Users with RegistryAnalyzer
-        RegistryAnalyzer registryAnalyzer(usersFileName);
+        RegistryAnalyzer registryAnalyzer(usersFileName, driveToProcess);
         registryAnalyzer.analyzeSAMUsers();
 
         TskHelper::getInstance().reset();
