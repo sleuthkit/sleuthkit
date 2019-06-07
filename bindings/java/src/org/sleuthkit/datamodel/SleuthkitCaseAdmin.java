@@ -21,12 +21,12 @@ package org.sleuthkit.datamodel;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.logging.Logger;
 
+/**
+ * 
+ * Class to perform sleuthkit case admin functions
+ */
 public class SleuthkitCaseAdmin {
-	
-		private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
-
 	
 	private SleuthkitCaseAdmin() {
 	
