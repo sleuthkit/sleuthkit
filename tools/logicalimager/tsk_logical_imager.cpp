@@ -520,28 +520,50 @@ int checkDriveForBitlocker(const string& driveLetter) {
     return bitLockerStatus;
 }
 
+BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
+    TCHAR physical[60000];
+
+    if (QueryDosDevice(NULL, (LPWSTR)physical, sizeof(physical))) {
+        phyiscalDrives.clear();
+        for (TCHAR *pos = physical; *pos; pos += TSTRLEN(pos) + 1) {
+            std::wstring str(pos);
+            if (str.rfind(_TSK_T("PhysicalDrive")) == 0 &&
+                (!str.rfind(_TSK_T("PhysicalDrive0")) == 0)
+             ) {
+                phyiscalDrives.push_back(str);
+            }
+        }
+    } else {
+        fprintf(stderr, "QueryDosDevice() return error: %d\n", GetLastError());
+        return false;
+    }
+    return true;
+}
+
 /**
-* getDriveToProcess() - returns the drive to process
-*          By default we process PhysicalDrive0, unless
+* getDrivesToProcess() - returns the drive to process
+*          By default we process all available PhysicalDrives, unless
 *          C: is paritioned with LDM or has Bitlocker enabled, in which case we process 'C:'
 *
-* @param output driveToProcess
+* @param output a set of drivesToProcess
 *
 * @returns  TRUE on success or FALSE in case of failure.
 *
 */
-BOOL getDriveToProcess(string& driveToProcess) {
+BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 
     // check if they are admin before we give them some ugly error messages
-    if (isProcessElevated() == FALSE) {
-        return FALSE;
-    }
+//    if (isProcessElevated() == FALSE) {
+//        return FALSE;
+//    }
 
     int checkLDMStatus = 0;
     int checkBitlockerStatus = 0;
 
     // By default, cast a wide net
-    driveToProcess = "PhysicalDrive0";
+    if (!getPhysicalDrives(drivesToProcess)) {
+        return FALSE;
+    }
 
     const string systemDriveLetter = "C:";
 
@@ -549,7 +571,8 @@ BOOL getDriveToProcess(string& driveToProcess) {
     checkLDMStatus = checkDriveForLDM(systemDriveLetter);
     if (1 == checkLDMStatus) {
         fprintf(stderr, "System drive %s is an LDM disk\n", systemDriveLetter.c_str());
-        driveToProcess = systemDriveLetter;
+        drivesToProcess.clear();
+        drivesToProcess.push_back((TSK_TCHAR *) systemDriveLetter.c_str());
         return TRUE;
     }
 
@@ -557,7 +580,8 @@ BOOL getDriveToProcess(string& driveToProcess) {
     checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
     if (1 == checkBitlockerStatus) {
         fprintf(stderr, "System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
-        driveToProcess = systemDriveLetter;
+        drivesToProcess.clear();
+        drivesToProcess.push_back((TSK_TCHAR *)systemDriveLetter.c_str());
         return TRUE;
     }
 
@@ -571,7 +595,7 @@ BOOL getDriveToProcess(string& driveToProcess) {
             fprintf(stderr, "Error in checking BitLocker protection status\n");
         }
 
-        // Take a chance and go after PhysicalDrive0,  few systems have LDM or Bitlocker 
+        // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker 
         return TRUE;
     }
 }
@@ -600,6 +624,69 @@ void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
     }
 }
 
+bool hasTskLogicalImager(const TSK_TCHAR *image) {
+    TSK_IMG_INFO *img;
+    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+    unsigned int ssize = 0;
+    bool result = false;
+
+    printf("In hasTskLogicalImager\n");
+
+    if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
+        tsk_error_print(stderr);
+        printf("Exit hasTskLogicalImager img_open failed, result=%d\n", result);
+        return result;
+    }
+
+    TskHelper::getInstance().reset();
+    TskHelper::getInstance().setImgInfo(img);
+
+    TSK_VS_INFO *vs_info;
+    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+        std::cout << "No volume system found. Looking for file system" << std::endl;
+        openFs(img, 0);
+    }
+    else {
+        // process the volume system
+        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+            std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
+            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                continue;
+            }
+            openFs(img, vs_part->start * vs_part->vs->block_size);
+        }
+        tsk_vs_close(vs_info);
+    }
+
+    const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
+    TSKFileNameInfo filenameInfo;
+    RuleMatchResult matchResult = RuleMatchResult("no description", false, false);
+    std::list<std::string> pathForTskLogicalImagerExe;
+    pathForTskLogicalImagerExe.push_back("/tsk_logical_imager.exe");
+    std::pair<const RuleMatchResult *, std::list<std::string>> pair(&matchResult, pathForTskLogicalImagerExe);
+    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = pair;
+    const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
+    const std::list<std::string> filePaths = pathForTskLogicalImagerExe;
+    TSK_FS_FILE *fs_file;
+    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+        for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
+            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
+            if (retval == 0 && fs_file != NULL) {
+                // found it
+                result = true;
+                tsk_fs_file_close(fs_file);
+            }
+        }
+    }
+    img->close(img);
+
+    TskHelper::getInstance().reset();
+    printf("Exit hasTskLogicalImager result=%d\n", result);
+
+    return result;
+}
+
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
@@ -621,7 +708,8 @@ main(int argc, char **argv1)
     int ch;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
-    const TSK_TCHAR *imgPath[1];
+    std::vector<std::wstring> imgPaths;
+    const TSK_TCHAR *imgPath;
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerRuleSet *ruleSet = NULL;
@@ -666,7 +754,7 @@ main(int argc, char **argv1)
             exit(0);
 
         case _TSK_T('i'):
-            imgPath[0] = OPTARG;
+            imgPath = OPTARG;
             iFlagUsed = TRUE;
             break;
         }
@@ -677,26 +765,6 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    std::wstring wImgPathName;
-
-    if (!iFlagUsed) {
-        std::string driveToProcess;
-        if (getDriveToProcess(driveToProcess)) {
-            wImgPathName = _TSK_T("\\\\.\\") + TskHelper::toWide(driveToProcess);
-            imgPath[0] = (TSK_TCHAR *)wImgPathName.c_str();
-        }
-        else {
-            fprintf(stderr, "Process is not running in elevated mode\n");
-            exit(1);
-        }
-    }
-    TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), imgPath[0]);
-
-    if ((img = tsk_img_open(1, imgPath, imgtype, ssize)) == NULL) {
-        tsk_error_print(stderr);
-        exit(1);
-    }
-
     // create a directory with hostname_timestamp
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
@@ -704,114 +772,153 @@ main(int argc, char **argv1)
     }
     fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
-    std::string outputFileName = directoryPath + "/sparse_image.vhd";
-    std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
-    std::string alertFileName = directoryPath + "/alert.txt";
+    std::wstring wImgPathName;
+    std::vector<std::wstring> drivesToProcess;
 
-    try {
-        ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename), alertFileName);
-    }
-    catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        exit(1);
-    }
-
-    if (img->itype == TSK_IMG_TYPE_RAW) {
-        if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
-            tsk_error_print(stderr);
-            fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
+//    if (iFlagUsed) {
+//        imgPaths.push_back(imgPath);
+//    } else {
+        if (getDrivesToProcess(drivesToProcess)) {
+            for (auto it = std::begin(drivesToProcess); it != std::end(drivesToProcess); ++it) {
+                imgPaths.push_back(std::wstring(_TSK_T("\\\\.\\")) + *it);
+            }
+        }
+        else {
+            fprintf(stderr, "Process is not running in elevated mode\n");
             exit(1);
         }
-    } else {
-        fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
-    }
+//    }
 
-    TskFindFiles findFiles(ruleSet);
 
-    TskHelper::getInstance().reset();
-    TskHelper::getInstance().setImgInfo(img);
-    TSK_VS_INFO *vs_info;
-    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-        std::cout << "No volume system found. Looking for file system" << std::endl;
-        openFs(img, 0);
-    } else {
-        // process the volume system
-        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
-            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-            std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
-            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
-                continue;
-            }
-            openFs(img, vs_part->start * vs_part->vs->block_size);
+    for (int i = 0; i < imgPaths.size(); ++i) {
+        const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
+        std::string driveToProcess = drivesToProcess.size() == imgPaths.size() ? TskHelper::toNarrow(drivesToProcess[i]) : "sparse_image";
+
+        TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), image);
+
+        std::string outputFileName = directoryPath + "/" + driveToProcess + ".vhd";
+        std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
+
+        if (hasTskLogicalImager(image)) {
+            continue;
         }
-        tsk_vs_close(vs_info);
-    }
 
-    const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
-    TSKFileNameInfo filenameInfo;
-    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = ruleSet->getFullFilePaths();
-    const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
-    const std::list<std::string> filePaths = fullFilePathsRule.second;
-    TSK_FS_FILE *fs_file;
-    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-        for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
-            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
-            if (retval == 0 && fs_file != NULL) {
-                TSK_RETVAL_ENUM extractStatus = TSK_ERR;
-                if (ruleConfig->isShouldSave()) {
-                    extractStatus = ruleSet->extractFile(fs_file);
+        if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
+            tsk_error_print(stderr);
+            exit(1);
+        }
+
+        if (img->itype == TSK_IMG_TYPE_RAW) {
+            if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
+                tsk_error_print(stderr);
+                fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
+                exit(1);
+            }
+        }
+        else {
+            fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
+        }
+
+        std::string alertFileName = directoryPath + "/" + driveToProcess + "-alert.txt";
+
+        try {
+            ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename), alertFileName);
+        }
+        catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+            exit(1);
+        }
+
+        TskFindFiles findFiles(ruleSet);
+
+        TskHelper::getInstance().reset();
+        TskHelper::getInstance().setImgInfo(img);
+        TSK_VS_INFO *vs_info;
+        if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+            std::cout << "No volume system found. Looking for file system" << std::endl;
+            openFs(img, 0);
+        }
+        else {
+            // process the volume system
+            for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+                const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+                std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
+                if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                    continue;
                 }
-                if (ruleConfig->isShouldAlert()) {
-                    // create a TSK_FS_NAME for alert purpose
-                    fs_file->name = new TSK_FS_NAME();
-                    fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
-                    strcpy(fs_file->name->name, iter->c_str());
-                    ruleSet->alert(extractStatus, ruleConfig->getDescription(), fs_file, "");
+                openFs(img, vs_part->start * vs_part->vs->block_size);
+            }
+            tsk_vs_close(vs_info);
+        }
+
+        const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
+        TSKFileNameInfo filenameInfo;
+        const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = ruleSet->getFullFilePaths();
+        const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
+        const std::list<std::string> filePaths = fullFilePathsRule.second;
+        TSK_FS_FILE *fs_file;
+        for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+            for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
+                int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
+                if (retval == 0 && fs_file != NULL) {
+                    TSK_RETVAL_ENUM extractStatus = TSK_ERR;
+                    if (ruleConfig->isShouldSave()) {
+                        extractStatus = ruleSet->extractFile(fs_file);
+                    }
+                    if (ruleConfig->isShouldAlert()) {
+                        // create a TSK_FS_NAME for alert purpose
+                        fs_file->name = new TSK_FS_NAME();
+                        fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
+                        strcpy(fs_file->name->name, iter->c_str());
+                        ruleSet->alert(extractStatus, ruleConfig->getDescription(), fs_file, "");
+                    }
+                    tsk_fs_file_close(fs_file);
                 }
-                tsk_fs_file_close(fs_file);
             }
         }
-    }
 
-    string usersFileName = directoryPath + "/users.txt";
+        string usersFileName = directoryPath + "/users.txt";
+        // Enumerate Users with RegistryAnalyzer
+        RegistryAnalyzer registryAnalyzer(usersFileName);
+        registryAnalyzer.analyzeSAMUsers();
 
-    // Enumerate Users with RegistryAnalyzer
-    RegistryAnalyzer registryAnalyzer(usersFileName);
-    registryAnalyzer.analyzeSAMUsers();
+        TskHelper::getInstance().reset();
 
-    TskHelper::getInstance().reset();
-
-    if (findFiles.openImageHandle(img)) {
-        tsk_error_print(stderr);
-        if (ruleSet) {
-            delete ruleSet;
+        if (findFiles.openImageHandle(img)) {
+            tsk_error_print(stderr);
+            if (ruleSet) {
+                delete ruleSet;
+            }
+            fprintf(stderr, "openImageHandle failed\n");
+            exit(1);
         }
-        fprintf(stderr, "openImageHandle failed\n");
-        exit(1);
-    }
 
-    if (findFiles.findFilesInImg()) {
-        // we already logged the errors in findFiles.handleError()
-        // Don't exit, just let it continue
-        fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
-    }
+        if (findFiles.findFilesInImg()) {
+            // we already logged the errors in findFiles.handleError()
+            // Don't exit, just let it continue
+            fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
+        }
 
-    // close alert file before tsk_img_writer_finish, which may take a long time. 
-    findFiles.closeAlert();
+        // close alert file before tsk_img_writer_finish, which may take a long time. 
+        findFiles.closeAlert();
 
-    if (img->itype == TSK_IMG_TYPE_RAW) {
-        if (ruleSet->getFinalizeImagerWriter()) {
-            if (tsk_img_writer_finish(img) == TSK_ERR) {
-        	    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-        	    // not exiting, findFiles.closeImage() will call tsk_img_close
+        if (img->itype == TSK_IMG_TYPE_RAW) {
+            if (ruleSet->getFinalizeImagerWriter()) {
+                if (tsk_img_writer_finish(img) == TSK_ERR) {
+                    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+                    // not exiting, findFiles.closeImage() will call tsk_img_close
+                }
             }
         }
+
+        findFiles.closeImage();
+        TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     }
+
 
     if (ruleSet) {
         delete ruleSet;
     }
-    findFiles.closeImage();
-    TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
+
     exit(0);
 }
