@@ -666,10 +666,8 @@ bool hasTskLogicalImager(const TSK_TCHAR *image) {
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
-    RuleMatchResult matchResult = RuleMatchResult("no description", false, false);
     std::list<std::string> pathForTskLogicalImagerExe;
     pathForTskLogicalImagerExe.push_back("/tsk_logical_imager.exe");
-    const RuleMatchResult *ruleConfig = &matchResult;
     const std::list<std::string> filePaths(pathForTskLogicalImagerExe);
     TSK_FS_FILE *fs_file;
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
