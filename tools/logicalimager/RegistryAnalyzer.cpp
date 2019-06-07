@@ -34,7 +34,7 @@ const std::string LOCAL_DOMAIN = "local";
 RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
     m_outputFilePath(outputFilePath)
 {
-    m_outputFile = fopen(m_outputFilePath.c_str(), "a");
+    m_outputFile = fopen(m_outputFilePath.c_str(), "w");
     if (!m_outputFile) {
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_outputFilePath.c_str());
         exit(1);
