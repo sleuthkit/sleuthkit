@@ -30,7 +30,6 @@ const std::string LOCAL_DOMAIN = "local";
 * Create a RegistryAnalyzer, create a file for SAM user information
 *
 * @param outputFilePath output file to print SAM user information
-* @param driveName Name of the drive
 */
 RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
     m_outputFilePath(outputFilePath)
