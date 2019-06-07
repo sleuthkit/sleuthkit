@@ -884,7 +884,7 @@ main(int argc, char **argv1)
 
         string usersFileName = directoryPath + "/users.txt";
         // Enumerate Users with RegistryAnalyzer
-        RegistryAnalyzer registryAnalyzer(usersFileName, driveToProcess);
+        RegistryAnalyzer registryAnalyzer(usersFileName);
         registryAnalyzer.analyzeSAMUsers();
 
         TskHelper::getInstance().reset();
