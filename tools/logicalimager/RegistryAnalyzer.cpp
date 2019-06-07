@@ -198,9 +198,9 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
     std::map<std::wstring, FILETIME> acctCreationDateMap;
     RegFileInfo *aRegFile = RegistryLoader::getInstance().getSAMHive();
     if (aRegFile == NULL) {
-        fprintf(m_outputFile, "SAM HIVE not found\n");
+        fprintf(m_outputFile, "%s\tSAM HIVE not found\n", m_driveName.c_str());
         fclose(m_outputFile);
-        std::cerr << "ERROR: SAM HIVE not found" << std::endl;
+        std::cerr << m_driveName.c_str() << "\tSAM HIVE not found" << std::endl;
         return -1;
     }
     RegParser &aRegParser = aRegFile->getRegParser();

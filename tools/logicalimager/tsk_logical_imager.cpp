@@ -533,9 +533,7 @@ BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
         phyiscalDrives.clear();
         for (TCHAR *pos = physical; *pos; pos += TSTRLEN(pos) + 1) {
             std::wstring str(pos);
-            if (str.rfind(_TSK_T("PhysicalDrive")) == 0 &&
-                (!str.rfind(_TSK_T("PhysicalDrive0")) == 0)
-             ) {
+            if (str.rfind(_TSK_T("PhysicalDrive")) == 0) {
                 phyiscalDrives.push_back(str);
             }
         }
@@ -705,7 +703,6 @@ static void usage() {
 int
 main(int argc, char **argv1)
 {
-    TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
     int ch;
@@ -792,12 +789,12 @@ main(int argc, char **argv1)
         }
     }
 
+    std::list<TSK_IMG_INFO *>imgFinalizePending;
+
     // Loop through all images
     for (int i = 0; i < imgPaths.size(); ++i) {
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         std::string driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
-
-        TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), image);
 
         std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
@@ -806,6 +803,9 @@ main(int argc, char **argv1)
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
+        TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), image);
+
+        TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
@@ -831,6 +831,8 @@ main(int argc, char **argv1)
             std::cerr << e.what() << std::endl;
             exit(1);
         }
+
+        imgFinalizePending.push_back(img);
 
         TskFindFiles findFiles(ruleSet);
 
@@ -905,19 +907,21 @@ main(int argc, char **argv1)
         // close alert file before tsk_img_writer_finish, which may take a long time. 
         findFiles.closeAlert();
 
+        TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
+    }
+
+    // Delayed finialize image write
+    for (auto it = std::begin(imgFinalizePending); it != std::end(imgFinalizePending); ++it) {
+        TSK_IMG_INFO *img = *it;
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (ruleSet->getFinalizeImagerWriter()) {
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
-                    // not exiting, findFiles.closeImage() will call tsk_img_close
                 }
             }
         }
-
-        findFiles.closeImage();
-        TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
+        img->close(img);
     }
-
 
     if (ruleSet) {
         delete ruleSet;
