@@ -7551,7 +7551,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	public void deleteDataSource(long obj_id) throws TskCoreException {
+	private void deleteDataSource(long obj_id) throws TskCoreException {
         CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		Statement statement2 = null;
