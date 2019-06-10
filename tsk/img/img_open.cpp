@@ -122,7 +122,7 @@ tsk_img_open(int num_img,
          * we try all of the embedded formats
          */
         TSK_IMG_INFO *img_set = NULL;
-#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI
+#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW
         const char *set = NULL;
 #endif
 
@@ -212,6 +212,26 @@ tsk_img_open(int num_img,
         }
 #endif
 
+#if HAVE_LIBQCOW
+        if ((img_info = qcow_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "QCOW";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("QCOW or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
         // if any of the non-raw formats were detected, then use it.
         if (img_set != NULL) {
             img_info = img_set;
@@ -263,6 +283,12 @@ tsk_img_open(int num_img,
 #if HAVE_LIBVHDI
     case TSK_IMG_TYPE_VHD_VHD:
         img_info = vhdi_open(num_img, images, a_ssize);
+        break;
+#endif
+
+#if HAVE_LIBQCOW
+    case TSK_IMG_TYPE_QCOW_QCOW:
+        img_info = qcow_open(num_img, images, a_ssize);
         break;
 #endif
 
