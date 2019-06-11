@@ -9759,9 +9759,13 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet resultSet = null;
+		ResultSet resultSet2 = null;
+		PreparedStatement statement = null;
+		Statement statement2 = null;
 		try {
 			// SELECT * FROM reports
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORTS);
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORTS);
+			statement2 = connection.createStatement();
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
@@ -9770,17 +9774,35 @@ public class SleuthkitCase {
 					// make path absolute
 					localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
 				}
-				reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
-						localpath, //NON-NLS
+				
+				// get the report parent
+				Content parent = null;
+				long reportId = resultSet.getLong("obj_id"); // NON-NLS
+				String parentQuery = String.format("SELECT * FROM tsk_objects WHERE obj_id = %s;", reportId);
+				resultSet2 = statement2.executeQuery(parentQuery);
+				if (resultSet2.next()) {
+					long parentId = resultSet2.getLong("par_obj_id");	// NON-NLS
+					parent = this.getContentById(parentId);
+				}
+				resultSet2.close();
+				
+				reports.add(new Report(this, 
+						reportId, 
+						localpath,
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
-						resultSet.getString("report_name"), null));  //NON-NLS
+						resultSet.getString("report_name"), 
+						parent));  //NON-NLS
 			}
 			return reports;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error querying reports table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			closeResultSet(resultSet2);
+			closeStatement(statement);
+			closeStatement(statement2);
+				
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
@@ -9798,21 +9820,35 @@ public class SleuthkitCase {
 	public Report getReportById(long id) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
+		PreparedStatement statement  = null;
+		Statement statement2 = null;
 		ResultSet resultSet = null;
+		ResultSet resultSet2 = null;
 		Report report = null;
 		try {
 			// SELECT * FROM reports WHERE obj_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORT_BY_ID);
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORT_BY_ID);
+			statement2 = connection.createStatement();
 			statement.clearParameters();
 			statement.setLong(1, id);
 			resultSet = connection.executeQuery(statement);
 
 			if (resultSet.next()) {
+				// get the report parent
+				Content parent = null;
+				String parentQuery = String.format("SELECT * FROM tsk_objects WHERE obj_id = %s;", id);
+				resultSet2 = statement2.executeQuery(parentQuery);
+				if (resultSet2.next()) {
+					long parentId = resultSet2.getLong("par_obj_id"); // NON-NLS
+					parent = this.getContentById(parentId);
+				}
+					
 				report = new Report(this, resultSet.getLong("obj_id"), //NON-NLS
 						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
-						resultSet.getString("report_name"), null);  //NON-NLS
+						resultSet.getString("report_name"), 
+						parent);  //NON-NLS
 			} else {
 				throw new TskCoreException("No report found for id: " + id);
 			}
@@ -9820,6 +9856,9 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error querying reports table for id: " + id, ex);
 		} finally {
 			closeResultSet(resultSet);
+			closeResultSet(resultSet2);
+			closeStatement(statement);
+			closeStatement(statement2);
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
