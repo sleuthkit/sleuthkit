@@ -9759,13 +9759,13 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet resultSet = null;
-		ResultSet resultSet2 = null;
+		ResultSet parentResultSet = null;
 		PreparedStatement statement = null;
-		Statement statement2 = null;
+		Statement parentStatement = null;
 		try {
 			// SELECT * FROM reports
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORTS);
-			statement2 = connection.createStatement();
+			parentStatement = connection.createStatement();
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
@@ -9779,12 +9779,12 @@ public class SleuthkitCase {
 				Content parent = null;
 				long reportId = resultSet.getLong("obj_id"); // NON-NLS
 				String parentQuery = String.format("SELECT * FROM tsk_objects WHERE obj_id = %s;", reportId);
-				resultSet2 = statement2.executeQuery(parentQuery);
-				if (resultSet2.next()) {
-					long parentId = resultSet2.getLong("par_obj_id");	// NON-NLS
+				parentResultSet = parentStatement.executeQuery(parentQuery);
+				if (parentResultSet.next()) {
+					long parentId = parentResultSet.getLong("par_obj_id");	// NON-NLS
 					parent = this.getContentById(parentId);
 				}
-				resultSet2.close();
+				parentResultSet.close();
 				
 				reports.add(new Report(this, 
 						reportId, 
@@ -9799,9 +9799,9 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error querying reports table", ex);
 		} finally {
 			closeResultSet(resultSet);
-			closeResultSet(resultSet2);
+			closeResultSet(parentResultSet);
 			closeStatement(statement);
-			closeStatement(statement2);
+			closeStatement(parentStatement);
 				
 			connection.close();
 			releaseSingleUserCaseReadLock();
@@ -9821,14 +9821,14 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		PreparedStatement statement  = null;
-		Statement statement2 = null;
+		Statement parentStatement = null;
 		ResultSet resultSet = null;
-		ResultSet resultSet2 = null;
+		ResultSet parentResultSet = null;
 		Report report = null;
 		try {
 			// SELECT * FROM reports WHERE obj_id = ?
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORT_BY_ID);
-			statement2 = connection.createStatement();
+			parentStatement = connection.createStatement();
 			statement.clearParameters();
 			statement.setLong(1, id);
 			resultSet = connection.executeQuery(statement);
@@ -9837,9 +9837,9 @@ public class SleuthkitCase {
 				// get the report parent
 				Content parent = null;
 				String parentQuery = String.format("SELECT * FROM tsk_objects WHERE obj_id = %s;", id);
-				resultSet2 = statement2.executeQuery(parentQuery);
-				if (resultSet2.next()) {
-					long parentId = resultSet2.getLong("par_obj_id"); // NON-NLS
+				parentResultSet = parentStatement.executeQuery(parentQuery);
+				if (parentResultSet.next()) {
+					long parentId = parentResultSet.getLong("par_obj_id"); // NON-NLS
 					parent = this.getContentById(parentId);
 				}
 					
@@ -9856,9 +9856,9 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error querying reports table for id: " + id, ex);
 		} finally {
 			closeResultSet(resultSet);
-			closeResultSet(resultSet2);
+			closeResultSet(parentResultSet);
 			closeStatement(statement);
-			closeStatement(statement2);
+			closeStatement(parentStatement);
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
