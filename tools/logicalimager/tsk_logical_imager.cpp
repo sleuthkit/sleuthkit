@@ -28,6 +28,7 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/img/img_writer.h"
+#include "LogicalImagerConfiguration.h"
 #include "LogicalImagerRuleSet.h"
 #include "TskFindFiles.h"
 #include "TskHelper.h"
@@ -600,6 +601,48 @@ void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
     }
 }
 
+FILE *m_alertFile = NULL;
+
+void openAlert(const std::string &alertFilename) {
+    FILE *m_alertFile = fopen(alertFilename.c_str(), "w");
+    if (!m_alertFile) {
+        fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
+        exit(1);
+    }
+    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
+}
+
+void localAlert2(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
+    if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
+        // Don't alert . and ..
+        return;
+    }
+    // alert file format is "extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%d\t%s\t%s\t%s\t%s\t%s\n",
+        extractStatus,
+        ruleMatchResult->getRuleSetName().c_str(),
+        ruleMatchResult->getName().c_str(),
+        ruleMatchResult->getDescription().c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
+    fprintf(stdout, "%d\t%s\t%s\t%s\t%s\t%s\n",
+        extractStatus,
+        ruleMatchResult->getRuleSetName().c_str(),
+        ruleMatchResult->getName().c_str(),
+        ruleMatchResult->getDescription().c_str(),
+        (fs_file->name ? fs_file->name->name : "name is null"),
+        path);
+}
+
+/*
+* Close the alert file.
+*/
+void closeAlert() {
+    if (m_alertFile) {
+        fclose(m_alertFile);
+    }
+}
+
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
@@ -625,6 +668,7 @@ main(int argc, char **argv1)
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerRuleSet *ruleSet = NULL;
+    LogicalImagerConfiguration *config = NULL;
 
     // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
     // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to 
@@ -708,8 +752,10 @@ main(int argc, char **argv1)
     std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
     std::string alertFileName = directoryPath + "/alert.txt";
 
+    openAlert(alertFileName);
+
     try {
-        ruleSet = new LogicalImagerRuleSet(TskHelper::toNarrow(configFilename), alertFileName);
+        config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename));
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -726,7 +772,7 @@ main(int argc, char **argv1)
         fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
     }
 
-    TskFindFiles findFiles(ruleSet);
+    TskFindFiles findFiles(config);
 
     TskHelper::getInstance().reset();
     TskHelper::getInstance().setImgInfo(img);
@@ -749,7 +795,7 @@ main(int argc, char **argv1)
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
-    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = ruleSet->getFullFilePaths();
+    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = config->getFullFilePaths();
     const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
     const std::list<std::string> filePaths = fullFilePathsRule.second;
     TSK_FS_FILE *fs_file;
@@ -759,14 +805,14 @@ main(int argc, char **argv1)
             if (retval == 0 && fs_file != NULL) {
                 TSK_RETVAL_ENUM extractStatus = TSK_ERR;
                 if (ruleConfig->isShouldSave()) {
-                    extractStatus = ruleSet->extractFile(fs_file);
+                    extractStatus = config->extractFile(fs_file);
                 }
                 if (ruleConfig->isShouldAlert()) {
                     // create a TSK_FS_NAME for alert purpose
                     fs_file->name = new TSK_FS_NAME();
                     fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
                     strcpy(fs_file->name->name, iter->c_str());
-                    ruleSet->alert(extractStatus, ruleConfig->getDescription(), fs_file, "");
+                    localAlert2(extractStatus, ruleConfig, fs_file, "");
                 }
                 tsk_fs_file_close(fs_file);
             }
@@ -796,11 +842,10 @@ main(int argc, char **argv1)
         fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
     }
 
-    // close alert file before tsk_img_writer_finish, which may take a long time. 
-    findFiles.closeAlert();
+    closeAlert();
 
     if (img->itype == TSK_IMG_TYPE_RAW) {
-        if (ruleSet->getFinalizeImagerWriter()) {
+        if (config->getFinalizeImagerWriter()) {
             if (tsk_img_writer_finish(img) == TSK_ERR) {
         	    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
         	    // not exiting, findFiles.closeImage() will call tsk_img_close
@@ -808,8 +853,8 @@ main(int argc, char **argv1)
         }
     }
 
-    if (ruleSet) {
-        delete ruleSet;
+    if (config) {
+        delete config;
     }
     findFiles.closeImage();
     TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
