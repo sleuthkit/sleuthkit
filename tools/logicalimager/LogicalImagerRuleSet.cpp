@@ -62,6 +62,13 @@ int getPositiveInt(const std::string &key, nlohmann::json ruleJson) {
     return size;
 }
 
+/*
+* Construct a rule
+* 
+* @param ruleSetName The rule set name to which  this rule belongs
+* @param rule JSON of the rule to be constructed
+* @throws logic_error if the rule is invalid
+*/
 void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohmann::json rule) {
     std::string name;
     std::string description;
@@ -179,6 +186,9 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
     } // for
 
     // Validation
+    if (name.empty()) {
+        throw std::logic_error("ERROR: name is empty");
+    }
     if (description.empty()) {
         throw std::logic_error("ERROR: description is empty");
     }
@@ -204,8 +214,8 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
 /* 
 * Construct a rule set
 *
-* @param ruleSetKey String key for the rule set
 * @param ruleSetValue JSON of the rule set
+* @param outRules Output of a list of rules
 * @throws std::logic_error on any error
 */
 void LogicalImagerRuleSet::constructRuleSet(const nlohmann::json ruleSet,
@@ -238,150 +248,14 @@ void LogicalImagerRuleSet::constructRuleSet(const nlohmann::json ruleSet,
     }
 }
 
-/**
- * Construct the LogicalImagerRuleSet based on a configuration filename
- * The configuration file is in JSON format. It has the following key and values.
-
-{
-  "finalize_image_writer": false,
-  "rule-sets": {
-    "full-path-search": {
-      "description": "Full file path search",
-      "shouldSave": true,
-      "shouldAlert": true,
-      "full-paths": [
-        "Documents and Settings/John/My Documents/Downloads",
-        "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg",
-      ]
-    },
-    "example-rule-1": {
-      "description": "Find all pictures smaller than 3000 bytes, under the 'Google' folder",
-      "shouldSave": true,
-      "shouldAlert": true,
-      "extensions": [ "jpg", "jpeg", "png", "gif" ],
-      "size-range": { "max": 3000 },
-      "folder-names": [ "Google" ]
-    },
-    "example-rule-2": {
-      "description": "Find all 'readme.txt' and 'autoexec.bat' files",
-      "shouldSave": true,
-      "shouldAlert": true,
-      "file-names": [ "readme.txt", "autoexec.bat" ]
-    },
-    "example-rule-3": {
-      "description": "find files newer than 2012-03-22",
-      "shouldSave": false,
-      "shouldAlert": true,
-      "date-range": { "min": "2012-03-22" }
-    },
-    "example-rule-4": {
-      "description": "find all png files under the user folder",
-      "shouldSave": true,
-      "shouldAlert": true,
-      "extensions": [ "png" ],
-      "folder-names": [ "[USER_FOLDER]/My Documents/Downloads" ]
-    },
-    "example-rule-5": {
-      "description": "find files 30 days or newer",
-      "shouldSave": false,
-      "shouldAlert": true,
-      "date-range": { "min-days": 30 }
-    }
-  }
-}
- * "finalize_image_writer" is optional. Default is false. If true, it will finalize the image writer by writing the 
- *     remaing sectors to the sparse_image.vhd file.
- * "description" is required.
- * "shouldSave" is optional. Default is true. If true, any matched files will be save to the sparse_image.vhd.
- * "shouldAlert" is optional. Default is false. If true, an alert record will be send to the console and the alert file.
- *
- * Creates an alert file based on the alertFilename. 
- * Files matching the logical imager rule set are recorded in the alert file, if shouldAlert is true.
- *
- * @param configFilename Configuration filename of the rule set
- * @param alertFilename Alert filename
- * @throws std::logic_error if there is any error 
- *
- */
-LogicalImagerRuleSet::LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename) {
-    return;
-}
-
 LogicalImagerRuleSet::LogicalImagerRuleSet() {
-    m_rules.empty();
 }
-
-    /*
-    std::ifstream file(configFilename);
-    if (!file) {
-        throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string str = buffer.str();
-
-    nlohmann::json configJson;
-    try {
-        configJson = nlohmann::json::parse(str);
-    }
-    catch (std::exception &e) {
-        throw std::logic_error("ERROR: parsing configuration file " + configFilename + "\n" + e.what());
-    }
-
-    bool hasError = false;
-    std::string errorStr;
-    const std::string newline("\n");
-    for (auto it = configJson.begin(); it != configJson.end(); it++) {
-        if (it.key() == "rule-sets") {
-            for (auto ruleSetIter = it.value().begin(); ruleSetIter != it.value().end(); ++ruleSetIter) {
-                std::string ruleSetKey = ruleSetIter.key();
-                nlohmann::json ruleSetValue = ruleSetIter.value();
-                constructRuleSet(ruleSetKey, ruleSetValue);
-            }
-        } else if (it.key() == "finalize_image_writer") {
-            it.value().get_to(m_finalizeImageWriter);
-        }
-    }
-
-    if (hasError) {
-        throw std::logic_error("ERROR: parsing configuration file " + configFilename + newline + errorStr);
-    }
-
-    m_alertFilePath.assign(alertFilename);
-    m_alertFile = fopen(m_alertFilePath.c_str(), "w");
-    if (!m_alertFile) {
-        fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_alertFilePath.c_str());
-        exit(1);
-    }
-    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
-}
-*/
 
 LogicalImagerRuleSet::~LogicalImagerRuleSet() {
     for (auto it = m_rules.begin(); it != m_rules.end(); ++it) {
         if (it->first)
             delete it->first;
     }
-}
-
-void localAlert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
-    if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
-        // Don't alert . and ..
-        return;
-    }
-    // alert file format is "extractStatus<tab>description<tab>name<tab>path"
-    //fprintf(m_alertFile, "%d\t%s\t%s\t%s\n",
-    //    extractStatus,
-    //    description.c_str(),
-    //    (fs_file->name ? fs_file->name->name : "name is null"),
-    //    path);
-    fprintf(stdout, "%d\t%s\t%s\t%s\t%s\t%s\n",
-        extractStatus,
-        ruleMatchResult->getRuleSetName().c_str(),
-        ruleMatchResult->getName().c_str(),
-        ruleMatchResult->getDescription().c_str(),
-        (fs_file->name ? fs_file->name->name : "name is null"),
-        path);
 }
 
 /**
@@ -393,7 +267,7 @@ void localAlert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchR
  * @param path parent path to fs_file
  * @returns TSK_RETVAL_ENUM TSK_OK if match has no errors.
  */
-bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const {
+bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path, matchCallback callbackFunc) const {
     bool result = true;
     for (std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
         const std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>> tuple = *it;
@@ -406,16 +280,10 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
                 break;
             }
         }
+
         if (result) {
             // all rules match
-            TSK_RETVAL_ENUM extractStatus = TSK_ERR;
-            if (it->first->isShouldSave()) {
-                extractStatus = LogicalImagerConfiguration::extractFile(fs_file);
-            }
-            if (it->first->isShouldAlert()) {
-                // alert(extractStatus, it->first->getDescription(), fs_file, path);
-                localAlert(extractStatus, it->first, fs_file, path);
-            }
+            (void) callbackFunc(it->first, fs_file, path);
         }
     }
     return result;
@@ -424,7 +292,7 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path) const
 /*
 * Get the full file path rule set
 * 
-* @returns the fulll file paths rule set
+* @returns the full file paths rule set
 */
 const std::pair<const RuleMatchResult *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {
     return m_fullFilePaths;

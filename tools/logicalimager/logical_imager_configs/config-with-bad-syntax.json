@@ -1,16 +1,20 @@
 {
-    "finalize_image_writer": false,
-    "rule-sets": {
-        "rule-1": {
+    "finalize-image-writer": false,
+    "rule-sets": [
+        {
+            "name": "rule-1",
             "description": "a description",
             "extensions": [ "txt", ]
         },
-        "rule-2": {
+        {
+            "name": "rule-2",
             "extensions": [ "jpg" ],
         },
-        "rule-3": {
-            "folder-name": [ "foo" ,
-            "extensions: [ "jpg" ]
+        {
+            "name": "rule-2",
+            "folder-name": [
+                "foo",
+                "extensions: [ "jpg" ]
         }
-    }
+    ]
 }

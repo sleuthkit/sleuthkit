@@ -32,7 +32,157 @@
 LogicalImagerConfiguration::~LogicalImagerConfiguration() {
 }
 
-LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &configFilename) {
+/*
+* Construct the LogicalImagerRuleSet based on a configuration filename
+* The configuration file is in JSON format. 
+* It has the following key and values.
+
+* "finalize_image_writer" is optional. Default is false. If true, it will finalize the image writer by writing the
+*     remaing sectors to the sparse_image.vhd file.
+* "rule-sets" is required. It is a list of rule-set.
+* A rule set is has a "set-name" (required) and a list of "rules"
+* A rule is has the following key/value pairs:
+     "name" - name of the rule (required)
+     "description" - rule description (required)
+     "shouldSave" is optional. Default is true. If true, any matched files will be save to the sparse_image.vhd.
+     "shouldAlert" is optional. Default is false. If true, an alert record will be send to the console and the alert file.
+
+An example:
+{
+  "finalize-image-writer": false,
+  "rule-sets": [
+    {
+      "set-name": "rule-set-full-paths",
+      "rules": [
+        {
+          "name": "rule-1",
+          "description": "a full path rule",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "full-paths": [
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Sunset.jpg",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/WINTER.JPG",
+            "/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg"
+          ]
+        }
+      ]
+    },
+    {
+      "set-name": "rule-set-full-paths-2",
+      "rules": [
+        {
+          "name": "rule-2",
+          "description": "a full path rule 2",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "full-paths": [
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Sunset.jpg",
+            "/AUTOEXEC.BAT"
+          ]
+        }
+      ]
+    },
+    {
+      "set-name": "rule-set-1",
+      "rules": [
+        {
+          "name": "example-rule-1",
+          "description": "find file with extension png",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "extensions": [
+            "png",
+            "gif"
+          ],
+          "folder-names": [
+            "Google"
+          ]
+        },
+        {
+          "name": "example-rule-2",
+          "description": "Find all 'readme.txt' and 'autoexec.bat' files",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "file-names": [
+            "readme.txt",
+            "autoexec.bat"
+          ]
+        },
+        {
+          "name": "example-rule-3",
+          "description": "find files newer than 2012-03-22",
+          "shouldSave": false,
+          "shouldAlert": true,
+          "date-range": {
+            "min": "2012-03-22"
+          }
+        },
+        {
+          "name": "example-rule-4",
+          "shouldAlert": false,
+          "shouldSave": true,
+          "description": "find files newer than 30 days",
+          "date-range": {
+            "min-days": 30
+          }
+        },
+        {
+          "name": "example-rule-5",
+          "description": "find all png files under the user folder",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "extensions": [
+            "png"
+          ],
+          "folder-names": [
+            "[USER_FOLDER]/My Documents/Downloads"
+          ]
+        }
+      ]
+    },
+    {
+      "set-name": "rule-set-3",
+      "rules": [
+        {
+          "name": "rule-1",
+          "description": "find file with extension jpg",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "extensions": [
+            "jpg"
+          ],
+          "folder-names": [
+            "My Pictures"
+          ]
+        }
+      ]
+    },
+    {
+      "set-name": "encryption-rule",
+      "rules": [
+        {
+          "name": "encryption-rule",
+          "description": "find encryption programs",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "file-names": [
+            "truecrypt.exe"
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+
+* @param configFilename Configuration filename of the rule set
+* @param callbackFunc A callback function when a file matches.
+* @throws std::logic_error if there is any error
+*/
+
+LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &configFilename, LogicalImagerRuleSet::matchCallback callbackFunc) :
+    m_callbackFunc(callbackFunc)
+ {
     std::ifstream file(configFilename);
     if (!file) {
         throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
@@ -85,52 +235,20 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
 */
 TSK_RETVAL_ENUM LogicalImagerConfiguration::matches(TSK_FS_FILE *fs_file, const char *path) const {
     for (std::vector<LogicalImagerRuleSet *>::const_iterator iter = m_ruleSets.begin(); iter != m_ruleSets.end(); ++iter) {
-        (void)(*iter)->matches(fs_file, path);
+        (void)(*iter)->matches(fs_file, path, m_callbackFunc);
     }
     return TSK_OK;
 }
 
 /**
-* Extract a file. tsk_img_writer_create must have been called prior to this method.
-*
-* @param fs_file File details
-* @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
+* Return a list of full-paths rule sets in the Logical Imager Configuration
+* @returns each element in the list consists of a RuleMatchResult and a list of full-paths.
 */
-TSK_RETVAL_ENUM LogicalImagerConfiguration::extractFile(TSK_FS_FILE *fs_file) {
-    TSK_OFF_T offset = 0;
-    size_t bufferLen = 16 * 1024;
-    char buffer[16 * 1024];
-
-    while (true) {
-        ssize_t bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
-        if (bytesRead == -1) {
-            if (fs_file->meta && fs_file->meta->size == 0) {
-                // ts_fs_file_read returns -1 with empty files, don't report it.
-                return TSK_OK;
-            }
-            else {
-                // fprintf(stderr, "processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
-                return TSK_ERR;
-            }
-        }
-        offset += bytesRead;
-        if (offset >= fs_file->meta->size) {
-            break;
-        }
-    }
-    return TSK_OK;
-}
-
-const std::pair<const RuleMatchResult *, std::list<std::string>> LogicalImagerConfiguration::getFullFilePaths() const
+const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> LogicalImagerConfiguration::getFullFilePaths() const
 {
-    if (m_ruleSets.size()) {
-        return m_ruleSets[0]->getFullFilePaths();
+    std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> vector;
+    for (std::vector<LogicalImagerRuleSet *>::const_iterator iter = m_ruleSets.begin(); iter != m_ruleSets.end(); ++iter) {
+        vector.push_back((*iter)->getFullFilePaths());
     }
-    else {
-        std::list<std::string> fullPaths;
-        std::pair<const RuleMatchResult *, std::list<std::string>> xxx;
-        xxx.first = (const RuleMatchResult *) NULL;
-        xxx.second = fullPaths;
-        return xxx;
-    }
+    return vector;
 }

@@ -32,11 +32,12 @@
 class LogicalImagerRuleSet
 {
 public:
+    typedef TSK_RETVAL_ENUM(*matchCallback)(const RuleMatchResult *, TSK_FS_FILE *, const char *);
+
     LogicalImagerRuleSet();
-    LogicalImagerRuleSet(const std::string &configFilename, const std::string &alertFilename);
     ~LogicalImagerRuleSet();
 
-    bool matches(TSK_FS_FILE *fs_file, const char *path) const;
+    bool matches(TSK_FS_FILE *fs_file, const char *path, matchCallback callbackFunc) const;
     const std::pair<const RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
 
     const std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>> getRules() {

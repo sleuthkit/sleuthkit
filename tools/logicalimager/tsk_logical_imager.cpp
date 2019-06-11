@@ -602,17 +602,36 @@ void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
 }
 
 FILE *m_alertFile = NULL;
-
+/*
+* Create the alert file and print the header.
+*
+* @param alertFilename Name of the alert file
+*/
 void openAlert(const std::string &alertFilename) {
-    FILE *m_alertFile = fopen(alertFilename.c_str(), "w");
+    m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         exit(1);
     }
-    fprintf(m_alertFile, "Extraction Status\tDescription\tFilename\tPath\n");
+    fprintf(m_alertFile, "Extraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
 }
 
-void localAlert2(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
+/*
+* Write an file match alert record to the alert file. Also send same record to stdout.
+* An alert file record contains tab-separated fields:
+*   - extractStatus
+*   - ruleSetName
+*   - ruleName
+*   - description
+*   - name
+*   - path
+*
+* @param extractStatus Extract status: 0 if file was extracted, 1 otherwise
+* @param ruleMatchResult The rule match result
+* @param fs_file TSK_FS_FILE that matches
+* @param path Parent path of fs_file
+*/
+void alert(TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..
         return;
@@ -641,6 +660,59 @@ void closeAlert() {
     if (m_alertFile) {
         fclose(m_alertFile);
     }
+}
+
+/**
+* Extract a file. tsk_img_writer_create must have been called prior to this method.
+*
+* @param fs_file File details
+* @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
+*/
+TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
+    TSK_OFF_T offset = 0;
+    size_t bufferLen = 16 * 1024;
+    char buffer[16 * 1024];
+
+    while (true) {
+        ssize_t bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
+        if (bytesRead == -1) {
+            if (fs_file->meta && fs_file->meta->size == 0) {
+                // ts_fs_file_read returns -1 with empty files, don't report it.
+                return TSK_OK;
+            }
+            else {
+                // fprintf(stderr, "processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
+                return TSK_ERR;
+            }
+        }
+        offset += bytesRead;
+        if (offset >= fs_file->meta->size) {
+            break;
+        }
+    }
+    return TSK_OK;
+}
+
+/*
+* matchCallback - The function is passed into the LogicalImagerConfiguration.
+*                 It is called when a file matches a rule. Depending on the matchResult setting,
+*                 this function may extract the matched file and alert the user.
+* 
+* @param matchResult The RuleMatchResult
+* @param fs_file TSK_FS_FILE that matches the rule
+* @param path Path of the file
+*
+* @returns TSK_IMG_TYPE_ENUM TSK_OK if callback has no error
+*/
+TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
+    TSK_RETVAL_ENUM extractStatus = TSK_ERR;
+    if (matchResult->isShouldSave()) {
+        extractStatus = extractFile(fs_file);
+    }
+    if (matchResult->isShouldAlert()) {
+        alert(extractStatus, matchResult, fs_file, path);
+    }
+    return TSK_OK;
 }
 
 static void usage() {
@@ -755,7 +827,7 @@ main(int argc, char **argv1)
     openAlert(alertFileName);
 
     try {
-        config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename));
+        config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename), (LogicalImagerRuleSet::matchCallback)matchCallback);
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -795,26 +867,23 @@ main(int argc, char **argv1)
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
-    const std::pair<const RuleMatchResult *, std::list<std::string>> fullFilePathsRule = config->getFullFilePaths();
-    const RuleMatchResult *ruleConfig = fullFilePathsRule.first;
-    const std::list<std::string> filePaths = fullFilePathsRule.second;
-    TSK_FS_FILE *fs_file;
-    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-        for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
-            int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
-            if (retval == 0 && fs_file != NULL) {
-                TSK_RETVAL_ENUM extractStatus = TSK_ERR;
-                if (ruleConfig->isShouldSave()) {
-                    extractStatus = config->extractFile(fs_file);
-                }
-                if (ruleConfig->isShouldAlert()) {
+    const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
+    for (std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>>::const_iterator iter = fullFilePathsRules.begin(); iter != fullFilePathsRules.end(); ++iter) {
+        const RuleMatchResult *matchResult = iter->first;
+        const std::list<std::string> filePaths = iter->second;
+        TSK_FS_FILE *fs_file;
+        for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+            for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
+                int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
+                if (retval == 0 && fs_file != NULL) {
                     // create a TSK_FS_NAME for alert purpose
                     fs_file->name = new TSK_FS_NAME();
                     fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
                     strcpy(fs_file->name->name, iter->c_str());
-                    localAlert2(extractStatus, ruleConfig, fs_file, "");
+                    matchCallback(matchResult, fs_file, "");
+
+                    tsk_fs_file_close(fs_file);
                 }
-                tsk_fs_file_close(fs_file);
             }
         }
     }

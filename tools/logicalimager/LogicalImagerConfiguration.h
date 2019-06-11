@@ -32,13 +32,11 @@
 class LogicalImagerConfiguration
 {
 public:
-    LogicalImagerConfiguration(const std::string &configFilename);
+    LogicalImagerConfiguration(const std::string &configFilename, LogicalImagerRuleSet::matchCallback callbackFunc);
     ~LogicalImagerConfiguration();
 
     TSK_RETVAL_ENUM matches(TSK_FS_FILE *fs_file, const char *path) const;
-    const std::pair<const RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
-    static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file);
-
+    const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> getFullFilePaths() const;
     bool getFinalizeImagerWriter() { return m_finalizeImageWriter; }
 
 private:
@@ -46,4 +44,5 @@ private:
 
     std::vector<LogicalImagerRuleSet *> m_ruleSets;
     bool m_finalizeImageWriter = false;
+    LogicalImagerRuleSet::matchCallback m_callbackFunc;
 };
