@@ -174,7 +174,6 @@ An example:
   ]
 }
 
-
 * @param configFilename Configuration filename of the rule set
 * @param callbackFunc A callback function when a file matches.
 * @throws std::logic_error if there is any error
