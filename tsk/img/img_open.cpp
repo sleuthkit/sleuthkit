@@ -27,6 +27,10 @@
 #include "ewf.h"
 #endif
 
+#if HAVE_LIBQCOW
+#include "qcow.h"
+#endif
+
 #if HAVE_LIBVMDK
 #include "vmdk.h"
 #endif
