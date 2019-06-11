@@ -10,7 +10,7 @@
 
 /**
 * \file LogicalImagerConfiguration.h
-* Contains the class definitions for the Logicial Imager Rule Set.
+* Contains the class definitions for the Logicial Imager Rule Configuration.
 */
 
 #pragma once
