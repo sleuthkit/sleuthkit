@@ -26,13 +26,13 @@
 extern "C" {
 #endif
 
-    extern TSK_IMG_INFO *vhdi_file_open(int, const TSK_TCHAR * const images[],
+    extern TSK_IMG_INFO *qcow_file_open(int, const TSK_TCHAR * const images[],
         unsigned int a_ssize);
 
     typedef struct {
         TSK_IMG_INFO img_info;
         libqcow_file_t *handle;
-        tsk_lock_t read_lock;   // Lock for reads since according to documentation libvhdi is not fully thread safe yet
+        tsk_lock_t read_lock;   // Lock for reads since according to documentation libqcow is not fully thread safe yet
     } IMG_QCOW_INFO;
 
 #ifdef __cplusplus

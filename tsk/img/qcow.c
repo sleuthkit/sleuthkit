@@ -8,7 +8,7 @@
  */
 
 
-/** \file vhd.c
+/** \file qcow.c
  * Internal code for TSK to interface with libqcow.
  */
 
@@ -271,7 +271,7 @@ qcow_open(int a_num_img,
     else {
         img_info->sector_size = 512;
     }
-    img_info->itype = TSK_IMG_TYPE_VHD_VHD;
+    img_info->itype = TSK_IMG_TYPE_QCOW_QCOW;
     img_info->read = &qcow_image_read;
     img_info->close = &qcow_image_close;
     img_info->imgstat = &qcow_image_imgstat;
