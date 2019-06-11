@@ -259,10 +259,12 @@ public class SleuthkitJNI {
 				 * Close any cached file system handles.
 				 */
 				for (Map<Long, Long> imageToFsMap : getCaseHandles(caseDbPointer).fsHandleCache.values()) {
-					for (Long fsHandle : imageToFsMap.values()) {
+					for (Long fsHandle : imageToFsMap.values()) {						
 						// First close all open file handles for the file system.
-						for (Long fileHandle : getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle)) {
-							closeFile(fileHandle);
+						if (getCaseHandles(caseDbPointer).fileSystemToFileHandles.containsKey(fsHandle)) {
+							for (Long fileHandle : getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle)) {
+								closeFile(fileHandle);
+							}
 						}
 						// Then close the file system handle.
 						closeFsNat(fsHandle);
