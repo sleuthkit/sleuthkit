@@ -199,8 +199,6 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
         throw std::logic_error("ERROR: parsing configuration file " + configFilename + "\n" + e.what());
     }
 
-    m_ruleSets.empty();
-
     bool hasError = false;
     std::string errorStr;
     const std::string newline("\n");

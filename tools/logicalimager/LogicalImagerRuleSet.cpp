@@ -221,12 +221,6 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
 void LogicalImagerRuleSet::constructRuleSet(const nlohmann::json ruleSet,
     std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>> &outRules
 ) {
-    std::string description;
-    bool shouldSave = true;
-    bool shouldAlert = false;
-    bool hasExtensions = false;
-    bool hasFileNames = false;
-
     std::vector<LogicalImagerRuleBase *> vector;
     std::list<std::string> fullPaths;
 
