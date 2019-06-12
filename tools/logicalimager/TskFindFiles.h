@@ -19,15 +19,15 @@
 #include <string>
 
 #include "LogicalImagerRuleSet.h"
+#include "LogicalImagerConfiguration.h"
 
 class TskFindFiles : public TskAuto {
 public:
-    TskFindFiles(const LogicalImagerRuleSet *ruleSet);
+    TskFindFiles(const LogicalImagerConfiguration *config);
     ~TskFindFiles();
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
     virtual uint8_t handleError();
-    void closeAlert() const;
 
 private:
-    const LogicalImagerRuleSet *m_logicialImagerRuleSet;
+    const LogicalImagerConfiguration *m_logicialImagerConfiguration;
 };
