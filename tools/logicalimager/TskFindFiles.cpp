@@ -28,8 +28,8 @@
  * Create the Find Files object given the Logical Imager Configuration
  * @param config LogicalImagerRuleSet to use for finding files
  */
-TskFindFiles::TskFindFiles(const LogicalImagerRuleSet *ruleSet) {
-    m_logicialImagerRuleSet = ruleSet;
+TskFindFiles::TskFindFiles(const LogicalImagerConfiguration *config) {
+    m_logicialImagerConfiguration = config;
 }
 
 TskFindFiles::~TskFindFiles() {
@@ -51,9 +51,5 @@ uint8_t TskFindFiles::handleError() {
 * @returns TSK_OK or TSK_ERR. All error must have been registered.
 */
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    return m_logicialImagerRuleSet->matches(fs_file, path);
-}
-
-void TskFindFiles::closeAlert() const {
-    m_logicialImagerRuleSet->closeAlert();
+    return m_logicialImagerConfiguration->matches(fs_file, path);
 }
