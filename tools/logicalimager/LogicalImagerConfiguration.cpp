@@ -181,7 +181,7 @@ An example:
 
 LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &configFilename, LogicalImagerRuleSet::matchCallback callbackFunc) :
     m_callbackFunc(callbackFunc)
- {
+{
     std::ifstream file(configFilename);
     if (!file) {
         throw std::logic_error("ERROR: failed to open configuration file " + configFilename);
