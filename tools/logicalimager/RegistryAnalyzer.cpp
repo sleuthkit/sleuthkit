@@ -39,6 +39,7 @@ RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_outputFilePath.c_str());
         exit(1);
     }
+
     char *headers[] = { "UserName", "FullName", "UserDomain", "HomeDir", "AccountType", "AdminPriv", 
                         "DateCreated", "LastLoginDate", "LastFailedLoginDate", "LastPasswordResetDate", 
                         "LoginCount", "AccountLocation", "isDisabled", "accountStatus" };
@@ -191,7 +192,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
     if (aRegFile == NULL) {
         fprintf(m_outputFile, "SAM HIVE not found\n");
         fclose(m_outputFile);
-        std::cerr << "ERROR: SAM HIVE not found" << std::endl;
+        std::cerr << "SAM HIVE not found" << std::endl;
         return -1;
     }
     RegParser &aRegParser = aRegFile->getRegParser();
