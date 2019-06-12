@@ -41,6 +41,14 @@ static TSK_TCHAR *progname;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
+static BOOL debug = FALSE;
+
+void printDebug(char *msg, const char *fmt...) {
+    if (debug) {
+        fprintf(stderr, msg, fmt);
+    }
+}
+
 /**
 * GetErrorStdStr - returns readable error message for the given error code
 *
@@ -535,6 +543,7 @@ BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
             std::wstring str(pos);
             if (str.rfind(_TSK_T("PhysicalDrive")) == 0) {
                 phyiscalDrives.push_back(str);
+                printDebug("Found %s\n", TskHelper::toNarrow(str).c_str());
             }
         }
     } else {
@@ -673,11 +682,15 @@ bool hasTskLogicalImager(const TSK_TCHAR *image) {
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
         for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
             int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
-            if (retval == 0 && fs_file != NULL) {
+            if (retval == 0 && fs_file != NULL && fs_file->meta != NULL) {
                 // found it
                 result = true;
                 tsk_fs_file_close(fs_file);
+                break;
             }
+        }
+        if (result) {
+            break;
         }
     }
     img->close(img);
@@ -694,6 +707,7 @@ static void usage() {
     tsk_fprintf(stderr, "\t-i imgPath: The image file\n");
     tsk_fprintf(stderr, "\t-c configPath: The configuration file\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
+    tsk_fprintf(stderr, "\t-d: debug output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     exit(1);
 }
@@ -731,7 +745,7 @@ main(int argc, char **argv1)
 #endif
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV:d"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -754,6 +768,10 @@ main(int argc, char **argv1)
         case _TSK_T('i'):
             imgPath = OPTARG;
             iFlagUsed = TRUE;
+            break;
+
+        case _TSK_T('d'):
+            debug = TRUE;
             break;
         }
     }
@@ -798,6 +816,7 @@ main(int argc, char **argv1)
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
+            printDebug("Skipping drive %s\n", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
