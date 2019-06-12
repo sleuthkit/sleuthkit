@@ -826,10 +826,10 @@ TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *f
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-i imgPath] -c configPath\n"),
+        ("usage: %s [-i imgPath] [-c configPath]\n"),
         progname);
     tsk_fprintf(stderr, "\t-i imgPath: The image file\n");
-    tsk_fprintf(stderr, "\t-c configPath: The configuration file\n");
+    tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-d: debug output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
@@ -901,8 +901,8 @@ main(int argc, char **argv1)
     }
 
     if (configFilename == NULL) {
-        TFPRINTF(stderr, _TSK_T("-c configPath is required\n"));
-        exit(1);
+        configFilename = _TSK_T("config.json");
+        fprintf(stdout, "Using default configuration file config.json\n");
     }
 
     // create a directory with hostname_timestamp
