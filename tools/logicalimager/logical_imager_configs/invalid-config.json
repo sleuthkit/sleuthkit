@@ -1,0 +1,35 @@
+{
+  "finalize-image-writer": false,
+    "rule-sets": [
+        {
+            "name": "invalid-date-3",
+            "description": "bad date",
+            "date-range": {
+                "min": "today"
+            }
+        },
+        {
+            "name": "invalid-size",
+                "description": "invalid-size",
+                "size-range": {
+                    "min": -10,
+                    "max": -20
+                }
+            },
+        {
+            "name": "rule-with-extensions-and-file-names",
+                "description": "a description",
+                "extensions": [ "txt" ],
+                "file-names": [ "file.txt" ]
+            },
+        {
+            "name": "rule-with-no-description",
+            "extensions": [ "jpg" ]
+        },
+        {
+            "name": "rule-with-unsupported-rule-key",
+                "bad-rule-key": [ "foo" ],
+                "extensions": [ "jpg" ]
+        }
+    ]
+}
