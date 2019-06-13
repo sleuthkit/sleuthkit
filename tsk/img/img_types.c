@@ -52,7 +52,7 @@ static IMG_TYPES img_open_table[] = {
 #ifdef TSK_WIN32
 	{"logical", TSK_IMG_TYPE_LOGICAL, "Logical Directory"},
 #endif
-    {0,0,""},
+    {NULL, 0, NULL},
 };
 
 
