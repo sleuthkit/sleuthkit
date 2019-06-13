@@ -536,11 +536,11 @@ int checkDriveForBitlocker(const string& driveLetter) {
 * @returns true on success, or false on error
 */
 BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
-    TCHAR physical[60000];
+    TSK_TCHAR physical[60000];
 
-    if (QueryDosDevice(NULL, (LPWSTR)physical, sizeof(physical))) {
+    if (QueryDosDevice(NULL, physical, sizeof(physical))) {
         phyiscalDrives.clear();
-        for (TCHAR *pos = physical; *pos; pos += TSTRLEN(pos) + 1) {
+        for (TSK_TCHAR *pos = physical; *pos; pos += TSTRLEN(pos) + 1) {
             std::wstring str(pos);
             if (str.rfind(_TSK_T("PhysicalDrive")) == 0) {
                 phyiscalDrives.push_back(str);
