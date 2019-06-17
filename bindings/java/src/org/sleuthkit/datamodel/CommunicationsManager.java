@@ -1249,6 +1249,14 @@ public final class CommunicationsManager {
 		}
 	}
 	
+	/**
+	 * Gets a list of the distinct account types that can currently be found in
+	 * the case db.
+	 * 
+	 * @return A list of distinct accounts or an empty list.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	public List<Account.Type> getAccountTypesInUse()  throws TskCoreException{
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
