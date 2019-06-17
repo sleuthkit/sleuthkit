@@ -103,9 +103,11 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
                 valueIter.value().get_to(str);
                 extensions.insert(str);
             }
-            LogicalImagerExtensionRule *extensionRule = new LogicalImagerExtensionRule(extensions);
-            vector.push_back(extensionRule);
-            hasExtensions = true;
+            if (!extensions.empty()) {
+                LogicalImagerExtensionRule *extensionRule = new LogicalImagerExtensionRule(extensions);
+                vector.push_back(extensionRule);
+                hasExtensions = true;
+            }
         }
         else if (ruleKey == "file-names") {
             std::set<std::string> filenames;
@@ -114,9 +116,11 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
                 valueIter.value().get_to(str);
                 filenames.insert(str);
             }
-            LogicalImagerFilenameRule *filenameRule = new LogicalImagerFilenameRule(filenames);
-            vector.push_back(filenameRule);
-            hasFileNames = true;
+            if (!filenames.empty()) {
+                LogicalImagerFilenameRule *filenameRule = new LogicalImagerFilenameRule(filenames);
+                vector.push_back(filenameRule);
+                hasFileNames = true;
+            }
         }
         else if (ruleKey == "folder-names") {
             std::set<std::string> paths;
@@ -125,52 +129,58 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
                 valueIter.value().get_to(str);
                 paths.insert(str);
             }
-            LogicalImagerPathRule *pathRule = new LogicalImagerPathRule(paths);
-            vector.push_back(pathRule);
+            if (!paths.empty()) {
+                LogicalImagerPathRule *pathRule = new LogicalImagerPathRule(paths);
+                vector.push_back(pathRule);
+            }
         }
         else if (ruleKey == "size-range") {
-            int sizeMin = 0;
-            int sizeMax = 0;
-            auto sizeJsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
-            for (auto iter = sizeJsonMap.begin(); iter != sizeJsonMap.end(); ++iter) {
-                if (iter->first == "min") {
-                    sizeMin = getPositiveInt("min", ruleJson);
+            auto jsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
+            if (!jsonMap.empty()) {
+                int sizeMin = 0;
+                int sizeMax = 0;
+                for (auto iter = jsonMap.begin(); iter != jsonMap.end(); ++iter) {
+                    if (iter->first == "min") {
+                        sizeMin = getPositiveInt("min", ruleJson);
+                    }
+                    else if (iter->first == "max") {
+                        sizeMax = getPositiveInt("max", ruleJson);
+                    }
+                    else {
+                        throw std::logic_error("ERROR: unsupported size-range key " + iter->first);
+                    }
                 }
-                else if (iter->first == "max") {
-                    sizeMax = getPositiveInt("max", ruleJson);
-                }
-                else {
-                    throw std::logic_error("ERROR: unsupported size-range key " + iter->first);
-                }
+                LogicalImagerSizeRule *sizeRule = new LogicalImagerSizeRule(sizeMin, sizeMax);
+                vector.push_back(sizeRule);
             }
-            LogicalImagerSizeRule *sizeRule = new LogicalImagerSizeRule(sizeMin, sizeMax);
-            vector.push_back(sizeRule);
         }
         else if (ruleKey == "date-range") {
-            time_t minTime = 0;
-            time_t maxTime = 0;
-            int minDays = 0;
-            auto sizeJsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
-            for (auto iter = sizeJsonMap.begin(); iter != sizeJsonMap.end(); ++iter) {
-                if (iter->first == "min") {
-                    std::string minTimeStr;
-                    ruleJson["min"].get_to(minTimeStr);
-                    minTime = stringToTimet(minTimeStr);
+            auto jsonMap = ruleJson.get<std::unordered_map<std::string, nlohmann::json>>();
+            if (!jsonMap.empty()) {
+                time_t minTime = 0;
+                time_t maxTime = 0;
+                int minDays = 0;
+                for (auto iter = jsonMap.begin(); iter != jsonMap.end(); ++iter) {
+                    if (iter->first == "min") {
+                        std::string minTimeStr;
+                        ruleJson["min"].get_to(minTimeStr);
+                        minTime = stringToTimet(minTimeStr);
+                    }
+                    else if (iter->first == "max") {
+                        std::string maxTimeStr;
+                        ruleJson["max"].get_to(maxTimeStr);
+                        maxTime = stringToTimet(maxTimeStr);
+                    }
+                    else if (iter->first == "min-days") {
+                        minDays = getPositiveInt("min-days", ruleJson);
+                    }
+                    else {
+                        throw std::logic_error("ERROR: unsupported date-range key " + iter->first);
+                    }
                 }
-                else if (iter->first == "max") {
-                    std::string maxTimeStr;
-                    ruleJson["max"].get_to(maxTimeStr);
-                    maxTime = stringToTimet(maxTimeStr);
-                }
-                else if (iter->first == "min-days") {
-                    minDays = getPositiveInt("min-days", ruleJson);
-                }
-                else {
-                    throw std::logic_error("ERROR: unsupported date-range key " + iter->first);
-                }
+                LogicalImagerDateRule *dateRule = new LogicalImagerDateRule(minTime, maxTime, minDays);
+                vector.push_back(dateRule);
             }
-            LogicalImagerDateRule *dateRule = new LogicalImagerDateRule(minTime, maxTime, minDays);
-            vector.push_back(dateRule);
         }
         else if (ruleKey == "full-paths") {
             for (auto valueIter = ruleJson.begin(); valueIter != ruleJson.end(); ++valueIter) {
@@ -189,9 +199,6 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
     if (name.empty()) {
         throw std::logic_error("ERROR: name is empty");
     }
-    if (description.empty()) {
-        throw std::logic_error("ERROR: description is empty");
-    }
     // A rule should not have both extensions and file name.
     if (hasExtensions && hasFileNames) {
         throw std::logic_error("ERROR: a rule cannot have both extensions and file-names");
@@ -206,7 +213,7 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
         m_fullFilePaths.first = ruleMatchKey;
         m_fullFilePaths.second = fullPaths;
     }
-    else {
+    else if (!vector.empty()) {
         m_rules.push_back(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleMatchKey, vector));
     }
 }
