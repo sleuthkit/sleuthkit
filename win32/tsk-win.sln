@@ -150,6 +150,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcat", "fcat\fcat.vcxproj",
 		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_logical_imager", "tsk_logical_imager\tsk_logical_imager.vcxproj", "{38429B36-9802-42DE-90DD-DA692F7412C2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE} = {C41ACD23-6D88-4999-B79D-7E7828B2DBDE}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rejistry++", "rejistry++\Rejistry++.vcxproj", "{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_NoLibs|Win32 = Debug_NoLibs|Win32
@@ -886,6 +893,50 @@ Global
 		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Release|Win32.Build.0 = Release|Win32
 		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Release|x64.ActiveCfg = Release|x64
 		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Release|x64.Build.0 = Release|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug_NoLibs|Win32.ActiveCfg = Debug_NoLibs|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug_NoLibs|Win32.Build.0 = Debug_NoLibs|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug_NoLibs|x64.ActiveCfg = Debug_NoLibs|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug_NoLibs|x64.Build.0 = Debug_NoLibs|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug_PostgreSQL|Win32.ActiveCfg = Debug_PostgreSQL|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug_PostgreSQL|x64.ActiveCfg = Debug_PostgreSQL|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug_PostgreSQL|x64.Build.0 = Debug_PostgreSQL|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug|x64.ActiveCfg = Debug|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Debug|x64.Build.0 = Debug|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release_NoLibs|Win32.ActiveCfg = Release_NoLibs|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release_NoLibs|Win32.Build.0 = Release_NoLibs|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release_NoLibs|x64.ActiveCfg = Release_NoLibs|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release_NoLibs|x64.Build.0 = Release_NoLibs|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release_PostgreSQL|Win32.ActiveCfg = Release_PostgreSQL|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release_PostgreSQL|x64.ActiveCfg = Release_PostgreSQL|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release_PostgreSQL|x64.Build.0 = Release_PostgreSQL|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release|Win32.ActiveCfg = Release|Win32
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release|x64.ActiveCfg = Release|x64
+		{38429B36-9802-42DE-90DD-DA692F7412C2}.Release|x64.Build.0 = Release|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_NoLibs|Win32.ActiveCfg = Debug_NoLibs|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_NoLibs|Win32.Build.0 = Debug_NoLibs|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_NoLibs|x64.ActiveCfg = Debug_NoLibs|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_NoLibs|x64.Build.0 = Debug_NoLibs|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_PostgreSQL|Win32.ActiveCfg = Debug_NoLibs|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_PostgreSQL|Win32.Build.0 = Debug_NoLibs|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_PostgreSQL|x64.ActiveCfg = Debug|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug_PostgreSQL|x64.Build.0 = Debug|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug|Win32.Build.0 = Debug|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug|x64.ActiveCfg = Debug|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Debug|x64.Build.0 = Debug|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_NoLibs|Win32.ActiveCfg = Release_NoLibs|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_NoLibs|Win32.Build.0 = Release_NoLibs|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_NoLibs|x64.ActiveCfg = Release_NoLibs|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_NoLibs|x64.Build.0 = Release_NoLibs|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|Win32.ActiveCfg = Release|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|Win32.Build.0 = Release|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|x64.ActiveCfg = Release|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release_PostgreSQL|x64.Build.0 = Release|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release|Win32.ActiveCfg = Release|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release|Win32.Build.0 = Release|Win32
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release|x64.ActiveCfg = Release|x64
+		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
