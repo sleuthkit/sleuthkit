@@ -1,2 +1,0 @@
-UserName	FullName	UserDomain	HomeDir	AccountType	AdminPriv	DateCreated	LastLoginDate	LastFailedLoginDate	LastPasswordResetDate	LoginCount	AccountLocation	isDisabled	accountStatus
-SAM HIVE not found

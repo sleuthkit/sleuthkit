@@ -1,7 +1,0 @@
-Drive	Extraction Status	Rule Set Name	Rule Name	Description	Filename	Path
-c:\Users\jkho\fat.img	1	no-set-name	jpg	Find all jpg files	_9M-PA~1.JPG	
-c:\Users\jkho\fat.img	0	no-set-name	jpg	Find all jpg files	19M-page-2 copy.jpg	
-c:\Users\jkho\fat.img	0	no-set-name	jpg	Find all jpg files	._19M-page-1 copy.jpg	
-c:\Users\jkho\fat.img	1	no-set-name	jpg	Find all jpg files	19M-page-1 copy.jpg	
-c:\Users\jkho\fat.img	0	no-set-name	png	Find png files under Google folder	pngfileInUSBDrive.png	Google/
-c:\Users\jkho\fat.img	0	no-set-name	jpg	Find all jpg files	Happy New Year 2019.jpg	Google/
