@@ -42,11 +42,11 @@ static TSK_TCHAR *progname;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
-static BOOL debug = FALSE;
-
 void printDebug(char *msg, const char *fmt...) {
-    if (debug) {
-        fprintf(stderr, msg, fmt);
+    if (tsk_verbose) {
+        string prefix("tsk_logical_imager: ");
+        string message = prefix + msg + "\n";
+        tsk_fprintf(stderr, message.c_str(), fmt);
     }
 }
 
@@ -544,7 +544,7 @@ BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
             std::wstring str(TskHelper::toWide(pos));
             if (str.rfind(_TSK_T("PhysicalDrive")) == 0) {
                 phyiscalDrives.push_back(str);
-                printDebug("Found %s\n", pos);
+                printDebug("Found %s", pos);
             }
         }
     } else {
@@ -831,7 +831,6 @@ static void usage() {
     tsk_fprintf(stderr, "\t-i imgPath: The image file\n");
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
-    tsk_fprintf(stderr, "\t-d: debug output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     exit(1);
 }
@@ -894,9 +893,6 @@ main(int argc, char **argv1)
             iFlagUsed = TRUE;
             break;
 
-        case _TSK_T('d'):
-            debug = TRUE;
-            break;
         }
     }
 
@@ -904,6 +900,7 @@ main(int argc, char **argv1)
         configFilename = _TSK_T("config.json");
         fprintf(stdout, "Using default configuration file config.json\n");
     }
+    printDebug("Using config file %s", TskHelper::toNarrow(configFilename).c_str());
 
     // create a directory with hostname_timestamp
     std::string directoryPath;
@@ -917,8 +914,10 @@ main(int argc, char **argv1)
 
     if (iFlagUsed) {
         imgPaths.push_back(imgPath);
+        printDebug("Process is not running in elevated mode", NULL);
     } else {
         if (getDrivesToProcess(drivesToProcess)) {
+            printDebug("Process is running in elevated mode", NULL);
             for (auto it = std::begin(drivesToProcess); it != std::end(drivesToProcess); ++it) {
                 imgPaths.push_back(std::wstring(_TSK_T("\\\\.\\")) + *it);
             }
@@ -946,12 +945,13 @@ main(int argc, char **argv1)
     for (int i = 0; i < imgPaths.size(); ++i) {
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
+        printDebug("Processing drive %s", driveToProcess.c_str());
 
         std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            printDebug("Skipping drive %s\n", driveToProcess.c_str());
+            printDebug("Skipping drive %s", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
@@ -1053,6 +1053,7 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img = *it;
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (config->getFinalizeImagerWriter()) {
+                printDebug("finalize image writer for %s", driveToProcess.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
                 }
@@ -1064,5 +1065,6 @@ main(int argc, char **argv1)
     if (config) {
         delete config;
     }
+    printDebug("Exiting", NULL);
     exit(0);
 }
