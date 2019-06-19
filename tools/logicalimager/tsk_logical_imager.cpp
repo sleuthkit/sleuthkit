@@ -793,6 +793,9 @@ TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
                 return TSK_ERR;
             }
         }
+        else if (bytesRead == 0) {
+            return TSK_ERR;
+        }
         offset += bytesRead;
         if (offset >= fs_file->meta->size) {
             break;
@@ -1064,5 +1067,5 @@ main(int argc, char **argv1)
     if (config) {
         delete config;
     }
-    exit(0);
+     exit(0);
 }
