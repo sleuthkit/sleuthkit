@@ -1067,5 +1067,5 @@ main(int argc, char **argv1)
     if (config) {
         delete config;
     }
-     exit(0);
+    exit(0);
 }
