@@ -484,6 +484,18 @@ struct xfs_dir3_data_hdr {
     /* uint32_t pad; */
 };
 
+/* Values for ftype */
+#define XFS_DIR3_FT_UNKNOWN     0
+#define XFS_DIR3_FT_REG_FILE    1
+#define XFS_DIR3_FT_DIR         2
+#define XFS_DIR3_FT_CHRDEV      3
+#define XFS_DIR3_FT_BLKDEV      4
+#define XFS_DIR3_FT_FIFO        5
+#define XFS_DIR3_FT_SOCK        6
+#define XFS_DIR3_FT_SYMLINK     7
+#define XFS_DIR3_FT_WHT         8
+#define XFS_DIR3_FT_MAX         9
+
 /*
  * Active entry in a data block.
  *
