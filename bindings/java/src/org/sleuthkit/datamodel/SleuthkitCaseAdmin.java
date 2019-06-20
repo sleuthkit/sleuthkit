@@ -28,16 +28,31 @@ import java.lang.reflect.Method;
  */
 public class SleuthkitCaseAdmin {
 	
-	private SleuthkitCaseAdmin() {
+	private String dbPath = null;
+	private String caseName = null;
+	private CaseDbConnectionInfo info = null;
+	private String caseDirPath = null;
+	private final SleuthkitCase sleuthkitCase;
 	
+	public SleuthkitCaseAdmin(String dbPath) throws TskCoreException {
+	    this.dbPath = dbPath;
+		this.sleuthkitCase = SleuthkitCase.openCase(this.dbPath);
+		
 	}
 	
-	public static void deleteDataSource(SleuthkitCase theCase, Long dataSourceObjId) throws TskCoreException {
+	public SleuthkitCaseAdmin(String caseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+		this.caseName = caseName;
+		this.info = info;
+		this.caseDirPath = caseDirPath;
+		this.sleuthkitCase = SleuthkitCase.openCase(this.caseName, this.info, this.caseDirPath);
+	}
+	
+	public void deleteDataSource(Long dataSourceObjId) throws TskCoreException {
 	
 		try {
-            Method m=theCase.getClass().getDeclaredMethod("deleteDataSource", long.class);	
+            Method m=sleuthkitCase.getClass().getDeclaredMethod("deleteDataSource", long.class);	
 		    m.setAccessible(true);
-		    m.invoke(theCase, dataSourceObjId);
+		    m.invoke(sleuthkitCase, dataSourceObjId);
 		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
 			throw new TskCoreException("Error deleting data source.", ex);	
 		}
