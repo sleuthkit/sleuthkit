@@ -2188,12 +2188,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWrit
 (JNIEnv * env, jclass obj, jlong a_img_info) {
     // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
-    IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
-
-    if (raw_info->img_writer != NULL) {
-        return raw_info->img_writer->finish_image(raw_info->img_writer);
-    }
-    return -1;
+    return tsk_img_writer_finish(img_info);
 }
 
 /*
