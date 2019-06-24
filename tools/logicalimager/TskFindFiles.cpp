@@ -44,6 +44,30 @@ uint8_t TskFindFiles::handleError() {
 }
 
 /**
+* Skip the processing of FAT orphans
+* @param fs_info File system info
+* @returns TSK_FILTER_CONT
+*/
+TSK_FILTER_ENUM
+TskFindFiles::filterFs(TSK_FS_INFO * fs_info)
+{
+    // make sure that flags are set to get all files -- we need this to
+    // find parent directory
+
+    TSK_FS_DIR_WALK_FLAG_ENUM filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM)
+        (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC);
+
+    //check if to skip processing of FAT orphans
+    if (TSK_FS_TYPE_ISFAT(fs_info->ftype)) {
+        filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM)(filterFlags | TSK_FS_DIR_WALK_FLAG_NOORPHAN);
+    }
+
+    setFileFilterFlags(filterFlags);
+
+    return TSK_FILTER_CONT;
+}
+
+/**
 * Process a file. If the file matches a rule specified in the LogicalImagerRuleSet,
 * we collect it by reading the file content.
 * @param fs_file File details

@@ -1,5 +1,5 @@
 Name:		sleuthkit	
-Version:	4.6.6
+Version:	4.6.7
 Release:	1%{?dist}
 Summary:	The Sleuth Kit (TSK) is a library and collection of command line tools that allow you to investigate volume and file system data.	
 
