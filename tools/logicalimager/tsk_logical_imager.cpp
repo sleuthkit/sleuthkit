@@ -909,13 +909,6 @@ main(int argc, char **argv1)
     }
     printDebug("Using config file %s", TskHelper::toNarrow(configFilename).c_str());
 
-    // create a directory with hostname_timestamp
-    std::string directoryPath;
-    if (createDirectory(directoryPath) == -1) {
-        exit(1);
-    }
-    fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
-
     std::wstring wImgPathName;
     std::vector<std::wstring> drivesToProcess;
 
@@ -941,6 +934,14 @@ main(int argc, char **argv1)
         std::cerr << e.what() << std::endl;
         exit(1);
     }
+
+    // create a directory with hostname_timestamp
+    std::string directoryPath;
+    if (createDirectory(directoryPath) == -1) {
+        fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
+        exit(1);
+    }
+    fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
     std::string alertFileName = directoryPath + "/alert.txt";
     openAlert(alertFileName);
