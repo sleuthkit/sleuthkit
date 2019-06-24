@@ -225,7 +225,7 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
     }
 
     // check version
-    Version supportedVersion(m_CurrentVersion);
+    Version supportedVersion(m_currentVersion);
     Version version(m_version);
     
     if (!supportedVersion.isSupported(version)) {
