@@ -32,6 +32,7 @@ public:
         }
     }
 
+    // Future changes that are backward compatible will be 1.x and a backward incompatible version will become 2.0.
     bool isSupported(const Version& other) const {
         return m_major >= other.m_major;
     }
@@ -45,6 +46,9 @@ public:
     bool operator < (const Version& other) const {
         if (m_major < other.m_major)
             return true;
+        if (m_major > other.m_major)
+            return false;
+        // major is equal, check minor
         if (m_minor < other.m_minor)
             return true;
         return false;

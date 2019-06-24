@@ -48,5 +48,5 @@ private:
     std::string m_version;
     LogicalImagerRuleSet::matchCallback m_callbackFunc;
 
-    const std::string m_DefaultVersion = std::string("1.0");
+    const std::string m_CurrentVersion = std::string("1.0");
 };
