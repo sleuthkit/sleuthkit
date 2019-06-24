@@ -11,6 +11,7 @@
 			<sysproperty key="inpt" value="${test-input}"/>
 			<classpath refid="libraries"/>
 			<formatter type="plain" usefile="false"/>
+			<test name="org.sleuthkit.datamodel.timeline.TimelineTestSuite" />
 			<test name="org.sleuthkit.datamodel.DataModelTestSuite"/>
 		</junit>
 	</target>
