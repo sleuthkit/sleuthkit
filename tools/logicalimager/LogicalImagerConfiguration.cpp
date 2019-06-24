@@ -225,13 +225,13 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
     }
 
     // check version
-    Version supportedVersion(m_currentVersion);
+    Version currentVersion(m_currentVersion);
     Version version(m_version);
     
-    if (!supportedVersion.isSupported(version)) {
+    if (!(version == currentVersion || version < currentVersion)) {
         throw std::logic_error("ERROR: unsupported configuration version " + m_version
          + ". Supported version is "
-         + supportedVersion.getSupportedVersion() + " or less.");
+         + m_currentVersion + " or less.");
     }
 
 }

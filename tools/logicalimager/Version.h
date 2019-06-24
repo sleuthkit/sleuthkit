@@ -32,24 +32,10 @@ public:
         }
     }
 
-    // Future changes that are backward compatible will be 1.x and a backward incompatible version will become 2.0.
-    bool isSupported(const Version& other) const {
-        return m_major >= other.m_major;
-    }
-
-    std::string getSupportedVersion() const {
-        std::string str;
-        str = std::to_string(m_major) + ".x";
-        return str;
-    }
-
-    bool operator < (const Version& other) const {
-        if (m_major < other.m_major)
+    bool operator < (const Version& rhs) const {
+        if (m_major < rhs.m_major)
             return true;
-        if (m_major > other.m_major)
-            return false;
-        // major is equal, check minor
-        if (m_minor < other.m_minor)
+        if (m_minor < rhs.m_minor)
             return true;
         return false;
     }
