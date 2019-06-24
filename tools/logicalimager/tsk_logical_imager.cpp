@@ -50,6 +50,10 @@ void printDebug(char *msg, const char *fmt...) {
     }
 }
 
+void printDebug(char *msg) {
+    printDebug(msg, "");
+}
+
 /**
 * GetErrorStdStr - returns readable error message for the given error code
 *
@@ -916,7 +920,7 @@ main(int argc, char **argv1)
         imgPaths.push_back(imgPath);
     } else {
         if (getDrivesToProcess(drivesToProcess)) {
-            printDebug("Process is running in elevated mode", NULL);
+            printDebug("Process is running in elevated mode");
             for (auto it = std::begin(drivesToProcess); it != std::end(drivesToProcess); ++it) {
                 imgPaths.push_back(std::wstring(_TSK_T("\\\\.\\")) + *it);
             }
@@ -1064,6 +1068,6 @@ main(int argc, char **argv1)
     if (config) {
         delete config;
     }
-    printDebug("Exiting", NULL);
+    printDebug("Exiting");
     exit(0);
 }
