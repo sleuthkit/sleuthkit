@@ -53,8 +53,17 @@ time_t stringToTimet(const std::string &datetimeStr) {
     return time;
 }
 
-TSK_OFF_T getPositiveInt(const std::string &key, nlohmann::json ruleJson) {
+TSK_OFF_T getPositiveInt64(const std::string &key, nlohmann::json ruleJson) {
     TSK_OFF_T size;
+    ruleJson[key].get_to(size);
+    if (size < 0) {
+        throw std::logic_error("ERROR: invalid " + key + ". Value must be >= 0");
+    }
+    return size;
+}
+
+int getPositiveInt(const std::string &key, nlohmann::json ruleJson) {
+    int size;
     ruleJson[key].get_to(size);
     if (size < 0) {
         throw std::logic_error("ERROR: invalid " + key + ". Value must be >= 0");
@@ -141,10 +150,10 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
                 TSK_OFF_T sizeMax = 0;
                 for (auto iter = jsonMap.begin(); iter != jsonMap.end(); ++iter) {
                     if (iter->first == "min") {
-                        sizeMin = getPositiveInt("min", ruleJson);
+                        sizeMin = getPositiveInt64("min", ruleJson);
                     }
                     else if (iter->first == "max") {
-                        sizeMax = getPositiveInt("max", ruleJson);
+                        sizeMax = getPositiveInt64("max", ruleJson);
                     }
                     else {
                         throw std::logic_error("ERROR: unsupported size-range key " + iter->first);
