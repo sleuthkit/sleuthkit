@@ -914,7 +914,6 @@ main(int argc, char **argv1)
 
     if (iFlagUsed) {
         imgPaths.push_back(imgPath);
-        printDebug("Process is not running in elevated mode", NULL);
     } else {
         if (getDrivesToProcess(drivesToProcess)) {
             printDebug("Process is running in elevated mode", NULL);
@@ -951,7 +950,7 @@ main(int argc, char **argv1)
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            printDebug("Skipping drive %s", driveToProcess.c_str());
+            printDebug("Skipping drive %s because tsk_logical_imager.exe exists at the root directory.", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
