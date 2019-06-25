@@ -1248,6 +1248,48 @@ public final class CommunicationsManager {
 			return null;
 		}
 	}
+	
+	/**
+	 * Gets a list of the distinct account types that can currently be found in
+	 * the case db.
+	 * 
+	 * @return A list of distinct accounts or an empty list.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public List<Account.Type> getAccountTypesInUse()  throws TskCoreException{
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+		List<Account.Type> inUseAccounts = new ArrayList<>();
+
+		try {
+			String query = "SELECT DISTINCT accounts.account_type_id, type_name, display_name FROM accounts JOIN account_types ON accounts.account_type_id = account_types.account_type_id";
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, query); //NON-NLS
+			Account.Type accountType = null;
+			while (rs.next()) {
+				String accountTypeName = rs.getString("type_name");
+				accountType = this.typeNameToAccountTypeMap.get(accountTypeName);
+				
+				if(accountType == null) {
+					accountType = new Account.Type(accountTypeName, rs.getString("display_name"));
+					this.accountTypeToTypeIdMap.put(accountType, rs.getInt("account_type_id"));
+				}
+				
+				inUseAccounts.add(accountType);
+			}
+			return inUseAccounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting account type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
 
 	/**
 	 * Get account_type_id for the given account type.

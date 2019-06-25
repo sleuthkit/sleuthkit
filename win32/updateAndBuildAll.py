@@ -78,15 +78,15 @@ def buildTSKAll():
         if(passed):
             buildTSK(32, "Release")
         if(passed):
-            buildTSK(32, "Release_NoLibs")
-        if(passed):
             buildTSK(32, "Release_PostgreSQL")
-
         if(passed):
             buildTSK(64, "Release")
         if(passed):
             buildTSK(64, "Release_NoLibs")
 
+    # MINIMAL is 64-bit for Autopsy and 32-bit with no deps for logical imager et al.
+    if(passed):
+        buildTSK(32, "Release_NoLibs")
     if(passed):
         buildTSK(64, "Release_PostgreSQL")
 

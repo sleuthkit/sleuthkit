@@ -444,6 +444,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tools\logicalimager\LogicalImagerConfiguration.h" />
     <ClInclude Include="..\..\tools\logicalimager\UserAccount.h" />
     <ClInclude Include="..\..\tools\logicalimager\json.h" />
     <ClInclude Include="..\..\tools\logicalimager\LogicalImagerDateRule.h" />
@@ -463,8 +464,10 @@
     <ClInclude Include="..\..\tools\logicalimager\RuleMatchResult.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskFindFiles.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskHelper.h" />
+    <ClInclude Include="..\..\tools\logicalimager\Version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tools\logicalimager\LogicalImagerConfiguration.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\UserAccount.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerDateRule.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.cpp" />

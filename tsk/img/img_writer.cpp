@@ -506,7 +506,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "tsk_img_writer_close: Closing image writer");
+            "tsk_img_writer_close: Closing image writer\n");
     }
     
     if (img_writer->outputFileHandle != 0) {
@@ -546,7 +546,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "tsk_img_writer_finish_image: Finishing image");
+            "tsk_img_writer_finish_image: Finishing image\n");
     }
 
     if (img_writer->is_finished == 1) {
