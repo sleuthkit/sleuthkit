@@ -71,6 +71,9 @@
     <ClInclude Include="..\..\tools\logicalimager\LogicalImagerConfiguration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tools\logicalimager\Version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerDateRule.cpp">

@@ -24,6 +24,7 @@
 
 #include "LogicalImagerConfiguration.h"
 #include "LogicalImagerRuleSet.h"
+#include "Version.h"
 
 /**
 * Implement the logical imager configuration.
@@ -214,11 +215,25 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
         else if (it.key() == "finalize-image-writer") {
             it.value().get_to(m_finalizeImageWriter);
         }
+        else if (it.key() == "version") {
+            it.value().get_to(m_version);
+        }
     }
 
     if (hasError) {
         throw std::logic_error("ERROR: parsing configuration file " + configFilename + newline + errorStr);
     }
+
+    // check version
+    Version currentVersion(m_currentVersion);
+    Version version(m_version);
+    
+    if (!(version == currentVersion || version < currentVersion)) {
+        throw std::logic_error("ERROR: unsupported configuration version " + m_version
+         + ". Supported version is "
+         + m_currentVersion + " or less.");
+    }
+
 }
 
 /**
