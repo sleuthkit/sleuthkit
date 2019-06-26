@@ -211,13 +211,13 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
     }
 
     char * sectorBitmap = (char *)tsk_malloc(writer->sectorBitmapLength * sizeof(char));
-    if (fullBuffer == NULL) {
+    if (sectorBitmap == NULL) {
         free(fullBuffer);
         return TSK_ERR;
     }
 
     unsigned char * completedSectors = (unsigned char *)tsk_malloc(((writer->sectorBitmapArrayLength) * sizeof(char)));
-    if (fullBuffer == NULL) {
+    if (completedSectors == NULL) {
         free(fullBuffer);
         free(sectorBitmap);
         return TSK_ERR;
