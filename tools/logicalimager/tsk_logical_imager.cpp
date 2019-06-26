@@ -835,9 +835,8 @@ static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-i imgPath] [-c configPath]\n"),
+        ("usage: %s [-c configPath]\n"),
         progname);
-    tsk_fprintf(stderr, "\t-i imgPath: The image file\n");
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
@@ -877,12 +876,12 @@ main(int argc, char **argv1)
 #endif
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV:d"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("c:i:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
-                argv[OPTIND]);
+                argv[OPTIND-1]);
             usage();
 
         case _TSK_T('c'):
@@ -903,6 +902,11 @@ main(int argc, char **argv1)
             break;
 
         }
+    }
+
+    // If there is extra argument, bail out.
+    if (OPTIND != argc) {
+        usage();
     }
 
     if (configFilename == NULL) {
