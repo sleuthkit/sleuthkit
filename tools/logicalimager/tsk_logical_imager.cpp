@@ -1064,6 +1064,7 @@ main(int argc, char **argv1)
             if (config->getFinalizeImagerWriter()) {
                 printDebug("finalize image writer for %s", driveToProcess.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
+                    tsk_error_print(stderr);
                     fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
                 }
             }
