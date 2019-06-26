@@ -10,6 +10,7 @@
  */
 
 #include <iostream>
+#include <conio.h>
 #include <string>
 #include <list>
 #include <algorithm>
@@ -44,7 +45,7 @@ static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
 static void pressAnyKeyToExit(int code) {
     std::cout << std::endl << "Press any key to exit";
-    (void)getchar();
+    (void) _getch(); 
     exit(code);
 }
 
