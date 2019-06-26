@@ -42,12 +42,16 @@ static TSK_TCHAR *progname;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
-static BOOL debug = FALSE;
-
 void printDebug(char *msg, const char *fmt...) {
-    if (debug) {
-        fprintf(stderr, msg, fmt);
+    if (tsk_verbose) {
+        string prefix("tsk_logical_imager: ");
+        string message = prefix + msg + "\n";
+        tsk_fprintf(stderr, message.c_str(), fmt);
     }
+}
+
+void printDebug(char *msg) {
+    printDebug(msg, "");
 }
 
 /**
@@ -65,7 +69,7 @@ string GetErrorStdStr(DWORD err) {
 *
 * @returns error message wide string
 */
-std::wstring GetLastErrorStdStrW() {
+static std::wstring GetLastErrorStdStrW() {
     DWORD error = GetLastError();
     return GetErrorStdStrW(error);
 }
@@ -76,7 +80,7 @@ std::wstring GetLastErrorStdStrW() {
 * @param err error code
 * @returns error message wide string
 */
-std::wstring GetErrorStdStrW(DWORD a_err) {
+static std::wstring GetErrorStdStrW(DWORD a_err) {
     if (ERROR_SUCCESS != a_err) {
         LPVOID lpMsgBuf;
         DWORD bufLen = FormatMessageW(
@@ -121,7 +125,7 @@ std::wstring GetErrorStdStrW(DWORD a_err) {
 *           FALSE otherwise
 *
 */
-BOOL isWinXPOrOlder() {
+static BOOL isWinXPOrOlder() {
     OSVERSIONINFO vi;
     memset(&vi, 0, sizeof vi);
     vi.dwOSVersionInfoSize = sizeof vi;
@@ -173,7 +177,7 @@ static BOOL isProcessElevated() {
 *           -1 if error
 *
 */
-int getLocalHost(string &a_hostName) {
+static int getLocalHost(string &a_hostName) {
 
     // Initialize Winsock
     WSADATA wsaData;
@@ -202,7 +206,7 @@ int getLocalHost(string &a_hostName) {
 *           -1 if error
 *
 */
-int createDirectory(string &directoryPathname) {
+static int createDirectory(string &directoryPathname) {
     time_t now;
     struct tm localTime;
 
@@ -242,7 +246,7 @@ int createDirectory(string &directoryPathname) {
 *
 */
 
-long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLocator, IWbemServices **ppWbemServices) {
+static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLocator, IWbemServices **ppWbemServices) {
     HRESULT hres;
 
     // Step 1: Initialize COM.
@@ -342,7 +346,7 @@ long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLocator, IW
 *           -1 if error
 *
 */
-int wmi_close(IWbemLocator **ppWbemLocator, IWbemServices **ppWbemServices) {
+static int wmi_close(IWbemLocator **ppWbemLocator, IWbemServices **ppWbemServices) {
     // Cleanup
     // ========
 
@@ -366,7 +370,7 @@ int wmi_close(IWbemLocator **ppWbemLocator, IWbemServices **ppWbemServices) {
 *           -1 if error, or if drive not found
 *
 */
-int checkDriveForLDM(const string& driveLetter) {
+static int checkDriveForLDM(const string& driveLetter) {
 
     IWbemLocator *pWbemLocator = NULL;
     IWbemServices *pWbemServices = NULL;
@@ -452,7 +456,7 @@ int checkDriveForLDM(const string& driveLetter) {
 *           -1 if error
 *
 */
-int checkDriveForBitlocker(const string& driveLetter) {
+static int checkDriveForBitlocker(const string& driveLetter) {
 
     IWbemLocator *pWbemLocator = NULL;
     IWbemServices *pWbemServices = NULL;
@@ -535,16 +539,18 @@ int checkDriveForBitlocker(const string& driveLetter) {
 * @param output a vector of physicalDrives
 * @returns true on success, or false on error
 */
-BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
+static BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
     char physical[60000];
 
+    /* Get list of Windows devices.  Result is a list of NULL
+     * terminated device names. */
     if (QueryDosDeviceA(NULL, (LPSTR)physical, sizeof(physical))) {
         phyiscalDrives.clear();
         for (char *pos = physical; *pos; pos += strlen(pos) + 1) {
             std::wstring str(TskHelper::toWide(pos));
             if (str.rfind(_TSK_T("PhysicalDrive")) == 0) {
                 phyiscalDrives.push_back(str);
-                printDebug("Found %s\n", pos);
+                printDebug("Found %s from QueryDosDeviceA", pos);
             }
         }
     } else {
@@ -564,7 +570,7 @@ BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
 * @returns  TRUE on success or FALSE in case of failure.
 *
 */
-BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
+static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 
     // check if they are admin before we give them some ugly error messages
     if (isProcessElevated() == FALSE) {
@@ -614,7 +620,7 @@ BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
     }
 }
 
-void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
+static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(img, byteOffset, TSK_FS_TYPE_DETECT)) != NULL) {
         // Tell TSKHelper about this FS
@@ -644,7 +650,7 @@ void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
 * @param image - path to image
 * @return true if found, false otherwise
 */
-bool hasTskLogicalImager(const TSK_TCHAR *image) {
+static bool hasTskLogicalImager(const TSK_TCHAR *image) {
     TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     unsigned int ssize = 0;
@@ -709,7 +715,7 @@ std::string driveToProcess;
 *
 * @param alertFilename Name of the alert file
 */
-void openAlert(const std::string &alertFilename) {
+static void openAlert(const std::string &alertFilename) {
     m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
@@ -735,7 +741,7 @@ void openAlert(const std::string &alertFilename) {
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
 */
-void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
+static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..
         return;
@@ -764,7 +770,7 @@ void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, const Rul
 /*
 * Close the alert file.
 */
-void closeAlert() {
+static void closeAlert() {
     if (m_alertFile) {
         fclose(m_alertFile);
     }
@@ -776,7 +782,7 @@ void closeAlert() {
 * @param fs_file File details
 * @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
 */
-TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
+static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
     TSK_OFF_T offset = 0;
     size_t bufferLen = 16 * 1024;
     char buffer[16 * 1024];
@@ -792,6 +798,9 @@ TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
                 // fprintf(stderr, "processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
                 return TSK_ERR;
             }
+        }
+        else if (bytesRead == 0) {
+            return TSK_ERR;
         }
         offset += bytesRead;
         if (offset >= fs_file->meta->size) {
@@ -812,7 +821,7 @@ TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
 *
 * @returns TSK_IMG_TYPE_ENUM TSK_OK if callback has no error
 */
-TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
+static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM extractStatus = TSK_ERR;
     if (matchResult->isShouldSave()) {
         extractStatus = extractFile(fs_file);
@@ -829,9 +838,8 @@ static void usage() {
         ("usage: %s [-i imgPath] [-c configPath]\n"),
         progname);
     tsk_fprintf(stderr, "\t-i imgPath: The image file\n");
-    tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is config.json\n");
+    tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
-    tsk_fprintf(stderr, "\t-d: debug output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     exit(1);
 }
@@ -894,23 +902,14 @@ main(int argc, char **argv1)
             iFlagUsed = TRUE;
             break;
 
-        case _TSK_T('d'):
-            debug = TRUE;
-            break;
         }
     }
 
     if (configFilename == NULL) {
-        configFilename = _TSK_T("config.json");
-        fprintf(stdout, "Using default configuration file config.json\n");
+        configFilename = _TSK_T("logical-imager-config.json");
+        fprintf(stdout, "Using default configuration file logical-imager-config.json\n");
     }
-
-    // create a directory with hostname_timestamp
-    std::string directoryPath;
-    if (createDirectory(directoryPath) == -1) {
-        exit(1);
-    }
-    fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
+    printDebug("Using config file %s", TskHelper::toNarrow(configFilename).c_str());
 
     std::wstring wImgPathName;
     std::vector<std::wstring> drivesToProcess;
@@ -919,6 +918,7 @@ main(int argc, char **argv1)
         imgPaths.push_back(imgPath);
     } else {
         if (getDrivesToProcess(drivesToProcess)) {
+            printDebug("Process is running in elevated mode");
             for (auto it = std::begin(drivesToProcess); it != std::end(drivesToProcess); ++it) {
                 imgPaths.push_back(std::wstring(_TSK_T("\\\\.\\")) + *it);
             }
@@ -937,6 +937,14 @@ main(int argc, char **argv1)
         exit(1);
     }
 
+    // create a directory with hostname_timestamp
+    std::string directoryPath;
+    if (createDirectory(directoryPath) == -1) {
+        fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
+        exit(1);
+    }
+    fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
+
     std::string alertFileName = directoryPath + "/alert.txt";
     openAlert(alertFileName);
 
@@ -946,12 +954,13 @@ main(int argc, char **argv1)
     for (int i = 0; i < imgPaths.size(); ++i) {
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
+        printDebug("Processing drive %s", driveToProcess.c_str());
 
         std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            printDebug("Skipping drive %s\n", driveToProcess.c_str());
+            printDebug("Skipping drive %s because tsk_logical_imager.exe exists at the root directory.", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
@@ -1053,6 +1062,7 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img = *it;
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (config->getFinalizeImagerWriter()) {
+                printDebug("finalize image writer for %s", driveToProcess.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
                 }
@@ -1064,5 +1074,6 @@ main(int argc, char **argv1)
     if (config) {
         delete config;
     }
+    printDebug("Exiting");
     exit(0);
 }

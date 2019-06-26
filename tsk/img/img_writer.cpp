@@ -206,8 +206,22 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
     writer->blockToSectorNumber[blockNum] = uint32_t(writer->nextDataOffset / VHD_SECTOR_SIZE);
 
     char * fullBuffer = (char *)tsk_malloc(writer->blockSize * sizeof(char));
+    if (fullBuffer == NULL) {
+        return TSK_ERR;
+    }
+
     char * sectorBitmap = (char *)tsk_malloc(writer->sectorBitmapLength * sizeof(char));
+    if (sectorBitmap == NULL) {
+        free(fullBuffer);
+        return TSK_ERR;
+    }
+
     unsigned char * completedSectors = (unsigned char *)tsk_malloc(((writer->sectorBitmapArrayLength) * sizeof(char)));
+    if (completedSectors == NULL) {
+        free(fullBuffer);
+        free(sectorBitmap);
+        return TSK_ERR;
+    }
 
     /* Create the full new block and record the sectors written */
     TSK_OFF_T startingOffset = addr % writer->blockSize;
@@ -234,6 +248,8 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
 
     /* Write the new offset to the BAT */
     if (TSK_OK != seekToOffset(writer, writer->batOffset + 4 * blockNum)) {
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
     DWORD bytesWritten;
@@ -243,11 +259,15 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addNewBlock: error writing BAT entry",
             lastError);
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
 
     /* Write the sector bitmap and the data */
     if (TSK_OK != seekToOffset(writer, writer->nextDataOffset)) {
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
     if (FALSE == WriteFile(writer->outputFileHandle, sectorBitmap, writer->sectorBitmapLength, &bytesWritten, NULL)) {
@@ -256,6 +276,8 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addNewBlock: error writing sector bitmap",
             lastError);
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
     if (FALSE == WriteFile(writer->outputFileHandle, fullBuffer, writer->blockSize, &bytesWritten, NULL)) {
@@ -264,6 +286,8 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addNewBlock: error writing block data",
             lastError);
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
 
@@ -497,7 +521,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "tsk_img_writer_close: Closing image writer");
+            "tsk_img_writer_close: Closing image writer\n");
     }
     
     if (img_writer->outputFileHandle != 0) {
@@ -537,7 +561,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "tsk_img_writer_finish_image: Finishing image");
+            "tsk_img_writer_finish_image: Finishing image\n");
     }
 
     if (img_writer->is_finished == 1) {

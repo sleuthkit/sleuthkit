@@ -314,6 +314,8 @@ sub update_libver {
         print "Invalid response: $a (should be 1:2:3)\n";
     }
 
+    print "NOTE: To see what interfaces have changed, use 'git diff sleuthkit-4.6.6 '*.h' '";
+
     my $irem;
     while (1) {
         $irem = prompt_user("Have any interfaces been removed or changed? [y/n]");
