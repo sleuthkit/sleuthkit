@@ -10,6 +10,7 @@
  */
 
 #include <iostream>
+#include <conio.h>
 #include <string>
 #include <list>
 #include <algorithm>
@@ -41,6 +42,12 @@ std::wstring GetErrorStdStrW(DWORD err);
 static TSK_TCHAR *progname;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+
+static void pressAnyKeyToExit(int code) {
+    std::cout << std::endl << "Press any key to exit";
+    (void) _getch(); 
+    exit(code);
+}
 
 void printDebug(char *msg, const char *fmt...) {
     if (tsk_verbose) {
@@ -719,7 +726,7 @@ static void openAlert(const std::string &alertFilename) {
     m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
         fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
-        exit(1);
+        pressAnyKeyToExit(1);
     }
     fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
 }
@@ -840,7 +847,7 @@ static void usage() {
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-    exit(1);
+    pressAnyKeyToExit(1);
 }
 
 int
@@ -869,7 +876,7 @@ main(int argc, char **argv1)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
-        exit(1);
+        pressAnyKeyToExit(1);
     }
 #else
     argv = (TSK_TCHAR **)argv1;
@@ -929,7 +936,7 @@ main(int argc, char **argv1)
         }
         else {
             fprintf(stderr, "Process is not running in elevated mode\n");
-            exit(1);
+            pressAnyKeyToExit(1);
         }
     }
 
@@ -938,14 +945,14 @@ main(int argc, char **argv1)
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
-        exit(1);
+        pressAnyKeyToExit(1);
     }
 
     // create a directory with hostname_timestamp
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        exit(1);
+        pressAnyKeyToExit(1);
     }
     fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
@@ -973,14 +980,14 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            exit(1);
+            pressAnyKeyToExit(1);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
                 fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
-                exit(1);
+                pressAnyKeyToExit(1);
             }
         }
         else {
@@ -1046,7 +1053,7 @@ main(int argc, char **argv1)
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
             fprintf(stderr, "openImageHandle failed\n");
-            exit(1);
+            pressAnyKeyToExit(1);
         }
 
         if (findFiles.findFilesInImg()) {
@@ -1080,5 +1087,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    exit(0);
+    pressAnyKeyToExit(0);
 }
