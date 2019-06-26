@@ -38,11 +38,15 @@ public:
     TSK_RETVAL_ENUM matches(TSK_FS_FILE *fs_file, const char *path) const;
     const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> getFullFilePaths() const;
     bool getFinalizeImagerWriter() { return m_finalizeImageWriter; }
+    std::string getVersion() { return m_version; }
 
 private:
     LogicalImagerConfiguration(const LogicalImagerConfiguration &) = delete;
 
     std::vector<LogicalImagerRuleSet *> m_ruleSets;
     bool m_finalizeImageWriter = false;
+    std::string m_version;
     LogicalImagerRuleSet::matchCallback m_callbackFunc;
+
+    const std::string m_currentVersion = std::string("1.0");
 };
