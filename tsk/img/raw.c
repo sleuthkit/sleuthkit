@@ -174,7 +174,8 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         if (raw_info->img_writer != NULL) {
             /* img_writer is not used with split images, so rel_offset is just the normal offset*/
             TSK_RETVAL_ENUM result = raw_info->img_writer->add(raw_info->img_writer, rel_offset, buf, cnt);
-            if (raw_info->img_writer->inFinalizeImageWriter == 1 && result != TSK_OK) {
+            // If WriteFile returns error in the addNewBlock, writeError is 1
+            if (raw_info->img_writer->inFinalizeImageWriter && raw_info->img_writer->writeError) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
