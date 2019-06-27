@@ -1009,7 +1009,7 @@ main(int argc, char **argv1)
             // process the volume system
             for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
                 const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-                //std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
+                printDebug("Partition: %s    Start: %s", vs_part->desc, std::to_string(vs_part->start).c_str());
                 if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
                     continue;
                 }
