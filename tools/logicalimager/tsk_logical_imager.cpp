@@ -526,8 +526,6 @@ static int checkDriveForBitlocker(const string& driveLetter) {
                 bitLockerStatus = 0;
             } else {
                 unsigned int encryptionMethod = vtProp.uintVal;
-                std::cerr << "Drive: " << driveLetter << ",  found in Win32_EncryptableVolume.  EncryptionMethod:  " 
-                    << encryptionMethod << std::endl;
                 bitLockerStatus = (0 == encryptionMethod) ? 0 : 1;
             }
             VariantClear(&vtProp);
@@ -968,7 +966,7 @@ main(int argc, char **argv1)
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
-        fprintf(stdout, "Analyzing drive %zi of %zi (%s)\n", i+1, imgPaths.size(), driveToProcess.c_str());
+        fprintf(stdout, "Analyzing drive %zi of %zi (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
 
         std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
