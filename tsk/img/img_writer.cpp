@@ -190,10 +190,41 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     return TSK_OK;
 }
 
+/*
+ * Get the File Pointer position
+ */
+static TSK_OFF_T GetFilePointerEx(HANDLE hFile) {
+    LARGE_INTEGER liOfs = { 0 };
+    LARGE_INTEGER liNew = { 0 };
+    SetFilePointerEx(hFile, liOfs, &liNew, FILE_CURRENT);
+    return liNew.QuadPart;
+}
+
+/*
+ * Write the footer at the lastPosition.
+ * Call this method when WriteFile failed and you want to output the footer at lastPosition for a valid VHD.
+ */
+static void writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T lastPosition) {
+    if (TSK_OK == seekToOffset(writer, lastPosition)) {
+        writeFooter(writer); // write footer at lastPosition prior to WriteFile error
+    }
+    else {
+        int lastError = GetLastError();
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
+        tsk_error_set_errstr("addNewBlock: error seekToOffset",
+            lastError);
+    }
+}
+
 /* 
  * Add a new block to the VHD and copy in the buffer
  */
 static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len, TSK_OFF_T blockNum) {
+
+    if (writer->cancelFinish) {
+        return TSK_ERR;
+    }
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "addNewBlock: Adding new block 0x%x\n", blockNum);
@@ -270,6 +301,9 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         free(sectorBitmap);
         return TSK_ERR;
     }
+
+    TSK_OFF_T lastPosition = GetFilePointerEx(writer->outputFileHandle);
+
     if (FALSE == WriteFile(writer->outputFileHandle, sectorBitmap, writer->sectorBitmapLength, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
@@ -278,6 +312,9 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
             lastError);
         free(fullBuffer);
         free(sectorBitmap);
+
+        writeFooterAtPosition(writer, lastPosition);
+        writer->cancelFinish = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
     if (FALSE == WriteFile(writer->outputFileHandle, fullBuffer, writer->blockSize, &bytesWritten, NULL)) {
@@ -288,6 +325,9 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
             lastError);
         free(fullBuffer);
         free(sectorBitmap);
+
+        writeFooterAtPosition(writer, lastPosition);
+        writer->cancelFinish = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
 
