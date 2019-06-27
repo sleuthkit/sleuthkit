@@ -764,14 +764,16 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         path);
     fflush(m_alertFile);
 
-    fprintf(stdout, "%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
-        driveName.c_str(),
-        extractStatus,
+    std::string fullPath(path);
+    if (fs_file->name) {
+        fullPath += fs_file->name->name;
+    } else {
+        fullPath += "name is null";
+    }
+
+    fprintf(stdout, "Alert for %s:%s\n",
         ruleMatchResult->getRuleSetName().c_str(),
-        ruleMatchResult->getName().c_str(),
-        ruleMatchResult->getDescription().c_str(),
-        (fs_file->name ? fs_file->name->name : "name is null"),
-        path);
+        fullPath.c_str());
 }
 
 /*
