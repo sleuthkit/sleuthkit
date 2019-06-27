@@ -962,10 +962,11 @@ main(int argc, char **argv1)
     std::list<TSK_IMG_INFO *>imgFinalizePending;
 
     // Loop through all images
-    for (int i = 0; i < imgPaths.size(); ++i) {
+    for (size_t i = 0; i < imgPaths.size(); ++i) {
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
+        fprintf(stdout, "Analyzing drive %zi of %zi (%s)\n", i+1, imgPaths.size(), driveToProcess.c_str());
 
         std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
@@ -974,8 +975,6 @@ main(int argc, char **argv1)
             printDebug("Skipping drive %s because tsk_logical_imager.exe exists at the root directory.", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
-
-        TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), image);
 
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
@@ -1010,7 +1009,7 @@ main(int argc, char **argv1)
             // process the volume system
             for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
                 const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-                std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
+                //std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
                 if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
                     continue;
                 }
@@ -1018,6 +1017,8 @@ main(int argc, char **argv1)
             }
             tsk_vs_close(vs_info);
         }
+
+        fprintf(stdout, "- Searching for full path files\n");
 
         const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
         TSKFileNameInfo filenameInfo;
@@ -1042,6 +1043,8 @@ main(int argc, char **argv1)
             }
         }
 
+        fprintf(stdout, "- Searching for registry\n");
+
         string usersFileName = directoryPath + "/users.txt";
 
         // Enumerate Users with RegistryAnalyzer
@@ -1055,6 +1058,8 @@ main(int argc, char **argv1)
             fprintf(stderr, "openImageHandle failed\n");
             pressAnyKeyToExit(1);
         }
+
+        fprintf(stdout, "- Searching for files by attribute\n");
 
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
@@ -1074,6 +1079,7 @@ main(int argc, char **argv1)
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (config->getFinalizeImagerWriter()) {
                 printDebug("finalize image writer for %s", driveToProcess.c_str());
+                fprintf(stdout, "Copying remainder of %s\n", driveToProcess.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
                     fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
