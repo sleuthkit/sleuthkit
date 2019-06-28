@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,27 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel;
+package org.sleuthkit.datamodel.timeline;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Static utilities for dealing with Collections. At some point this could be
- * replaced with apache commons or guava...
+ * Test Suite for Timeline classes
  */
-final class CollectionUtils {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+	RootFilterTest.class,
+	EventTypeFilterTest.class})
+public class TimelineTestSuite {
 
-	@SuppressWarnings("unchecked")
-	static <T> HashSet<T> hashSetOf(T... values) {
-		return new HashSet<>(Arrays.asList(values));
-	}
-
-	static <T> boolean isNotEmpty(Collection<T> collection) {
-		return collection.isEmpty() == false;
-	}
-
-	private CollectionUtils() {
-	}
 }
