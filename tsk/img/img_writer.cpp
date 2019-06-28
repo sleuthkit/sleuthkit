@@ -191,22 +191,12 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
 }
 
 /*
- * Get the File Pointer position
+ * Write the footer at the position.
+ * Call this method when WriteFile failed and you want to output the footer at position for a valid VHD.
  */
-static TSK_OFF_T GetFilePointerEx(HANDLE hFile) {
-    LARGE_INTEGER liOfs = { 0 };
-    LARGE_INTEGER liNew = { 0 };
-    SetFilePointerEx(hFile, liOfs, &liNew, FILE_CURRENT);
-    return liNew.QuadPart;
-}
-
-/*
- * Write the footer at the lastPosition.
- * Call this method when WriteFile failed and you want to output the footer at lastPosition for a valid VHD.
- */
-static void writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T lastPosition) {
-    if (TSK_OK == seekToOffset(writer, lastPosition)) {
-        writeFooter(writer); // write footer at lastPosition prior to WriteFile error
+static TSK_RETVAL_ENUM writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T position) {
+    if (TSK_OK == seekToOffset(writer, position)) {
+        return writeFooter(writer); // write footer at lastPosition prior to WriteFile error
     }
     else {
         int lastError = GetLastError();
@@ -214,6 +204,7 @@ static void writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T lastPosition
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("addNewBlock: error seekToOffset",
             lastError);
+        return TSK_ERR;
     }
 }
 
@@ -302,7 +293,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         return TSK_ERR;
     }
 
-    TSK_OFF_T lastPosition = GetFilePointerEx(writer->outputFileHandle);
+    TSK_OFF_T lastFooterPosition = writer->nextDataOffset;
 
     if (FALSE == WriteFile(writer->outputFileHandle, sectorBitmap, writer->sectorBitmapLength, &bytesWritten, NULL)) {
         int lastError = GetLastError();
@@ -313,12 +304,12 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         free(fullBuffer);
         free(sectorBitmap);
 
-        writeFooterAtPosition(writer, lastPosition); // so VHD is valid
+        writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
         writer->writeError = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
 
-    lastPosition = GetFilePointerEx(writer->outputFileHandle);
+    lastFooterPosition = writer->nextDataOffset;
 
     if (FALSE == WriteFile(writer->outputFileHandle, fullBuffer, writer->blockSize, &bytesWritten, NULL)) {
         int lastError = GetLastError();
@@ -329,7 +320,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         free(fullBuffer);
         free(sectorBitmap);
 
-        writeFooterAtPosition(writer, lastPosition); // so VHD is valid
+        writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
         writer->writeError = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
