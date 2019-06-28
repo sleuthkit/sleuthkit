@@ -213,7 +213,7 @@ static TSK_RETVAL_ENUM writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T p
  */
 static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len, TSK_OFF_T blockNum) {
 
-    if (writer->writeError) {
+    if (writer->hadErrorExtending) {
         return TSK_OK; // pretend we are OK, NOOP
     }
 
@@ -305,11 +305,9 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         free(sectorBitmap);
 
         writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
-        writer->writeError = 1; // WriteFile returns error, don't write anymore
+        writer->hadErrorExtending = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
-
-    lastFooterPosition = writer->nextDataOffset;
 
     if (FALSE == WriteFile(writer->outputFileHandle, fullBuffer, writer->blockSize, &bytesWritten, NULL)) {
         int lastError = GetLastError();
@@ -321,7 +319,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         free(sectorBitmap);
 
         writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
-        writer->writeError = 1; // WriteFile returns error, don't write anymore
+        writer->hadErrorExtending = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
 
@@ -520,7 +518,7 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
  */
 static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
 
-    if (writer->is_finished || writer->writeError) {
+    if (writer->is_finished || writer->hadErrorExtending) {
         return TSK_OK;
     }
 
@@ -713,7 +711,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
     writer->finishProgress = 0;
     writer->cancelFinish = 0;
     writer->inFinalizeImageWriter = 0;
-    writer->writeError = 0;
+    writer->hadErrorExtending = 0;
     writer->footer = NULL;
     writer->img_info = img_info;
     writer->add = tsk_img_writer_add;

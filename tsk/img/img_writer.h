@@ -36,7 +36,7 @@ extern "C" {
         int finishProgress; // finalize image progress indicator (0-100)
         int cancelFinish; // set to 1 if finalize image is cancelled
         int inFinalizeImageWriter; // set to 1 if we are in finalize image
-        int writeError; // set to 1 if there is a WriteFile error
+        int hadErrorExtending; // set to 1 if there is a WriteFile error in addNewBlock
 
         TSK_TCHAR* fileName;
 #ifdef TSK_WIN32
