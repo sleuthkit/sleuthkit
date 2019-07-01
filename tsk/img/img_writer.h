@@ -35,6 +35,7 @@ extern "C" {
         int is_finished;
         int finishProgress;
         int cancelFinish;
+        int inFinalizeImageWriter;
 
         TSK_TCHAR* fileName;
 #ifdef TSK_WIN32

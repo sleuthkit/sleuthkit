@@ -40,6 +40,7 @@ RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
         exit(1);
     }
 
+    fprintf(m_outputFile, "LOCAL USER ACCOUNTS ONLY\n\n");
     char *headers[] = { "UserName", "FullName", "UserDomain", "HomeDir", "AccountType", "AdminPriv", 
                         "DateCreated", "LastLoginDate", "LastFailedLoginDate", "LastPasswordResetDate", 
                         "LoginCount", "AccountLocation", "isDisabled", "accountStatus" };
