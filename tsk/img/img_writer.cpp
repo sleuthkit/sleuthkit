@@ -830,6 +830,11 @@ TSK_RETVAL_ENUM tsk_img_writer_finish(TSK_IMG_INFO *img_info) {
     return raw_info->img_writer->finish_image(raw_info->img_writer);
 }
 
+/*
+* Set the TSK_IMG_WRITER to exit on any error.
+* @param img_info        the TSK_IMG_INFO object
+* @param flag            1 if exit on error, 0 otherwise
+*/
 TSK_RETVAL_ENUM tsk_img_writer_set_exit_on_error(TSK_IMG_INFO *img_info, int flag) {
     if (img_info->itype != TSK_IMG_TYPE_RAW) {
         tsk_error_reset();
