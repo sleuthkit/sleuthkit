@@ -40,7 +40,7 @@ class EventTypes {
 	 * applied to.
 	 *
 	 */
-	final static class EmptyExtractor implements PredefinedArtifactEventType.TSKCoreCheckedFunction<BlackboardArtifact, String> {
+	final static class EmptyExtractor implements ArtifactEventTypeImpl.TSKCoreCheckedFunction<BlackboardArtifact, String> {
 
 		@Override
 		public String apply(BlackboardArtifact ignored) throws TskCoreException {

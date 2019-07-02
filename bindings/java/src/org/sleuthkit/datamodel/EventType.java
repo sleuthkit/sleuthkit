@@ -36,8 +36,8 @@ import org.sleuthkit.datamodel.EventTypes.EmptyExtractor;
 import org.sleuthkit.datamodel.EventTypes.FilePathArtifactEventType;
 import org.sleuthkit.datamodel.EventTypes.FilePathEventType;
 import org.sleuthkit.datamodel.EventTypes.URLArtifactEventType;
-import org.sleuthkit.datamodel.PredefinedArtifactEventType.AttributeExtractor;
-import static org.sleuthkit.datamodel.PredefinedArtifactEventType.getAttributeSafe;
+import org.sleuthkit.datamodel.ArtifactEventTypeImpl.AttributeExtractor;
+import static org.sleuthkit.datamodel.ArtifactEventTypeImpl.getAttributeSafe;
 import org.sleuthkit.datamodel.TimelineEvent.EventDescription;
 
 /**
@@ -225,12 +225,12 @@ public interface EventType extends Comparable<EventType> {
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_DOMAIN));
 
-	ArtifactEventType MESSAGE = new PredefinedArtifactEventType(13,
+	ArtifactEventType MESSAGE = new ArtifactEventTypeImpl(13,
 			getBundle().getString("MiscTypes.message.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_MESSAGE),
 			new Type(TSK_DATETIME),
-			new PredefinedArtifactEventType.AttributeExtractor(new Type(TSK_MESSAGE_TYPE)),
+			new ArtifactEventTypeImpl.AttributeExtractor(new Type(TSK_MESSAGE_TYPE)),
 			artf -> {
 				final BlackboardAttribute dir = getAttributeSafe(artf, new Type(TSK_DIRECTION));
 				final BlackboardAttribute readStatus = getAttributeSafe(artf, new Type(TSK_READ_STATUS));
@@ -248,7 +248,7 @@ public interface EventType extends Comparable<EventType> {
 			},
 			new AttributeExtractor(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT)));
 
-	ArtifactEventType GPS_ROUTE = new PredefinedArtifactEventType(14,
+	ArtifactEventType GPS_ROUTE = new ArtifactEventTypeImpl(14,
 			getBundle().getString("MiscTypes.GPSRoutes.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_ROUTE),
@@ -263,7 +263,7 @@ public interface EventType extends Comparable<EventType> {
 				return String.format("from %1$s %2$s to %3$s %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
 			});
 
-	ArtifactEventType GPS_TRACKPOINT = new PredefinedArtifactEventType(15,
+	ArtifactEventType GPS_TRACKPOINT = new ArtifactEventTypeImpl(15,
 			getBundle().getString("MiscTypes.GPSTrackpoint.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_TRACKPOINT),
@@ -276,7 +276,7 @@ public interface EventType extends Comparable<EventType> {
 			},
 			new EmptyExtractor());
 
-	ArtifactEventType CALL_LOG = new PredefinedArtifactEventType(16,
+	ArtifactEventType CALL_LOG = new ArtifactEventTypeImpl(16,
 			getBundle().getString("MiscTypes.Calls.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_CALLLOG),
@@ -285,7 +285,7 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_PHONE_NUMBER)),
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
 
-	ArtifactEventType EMAIL = new PredefinedArtifactEventType(17,
+	ArtifactEventType EMAIL = new ArtifactEventTypeImpl(17,
 			getBundle().getString("MiscTypes.Email.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_EMAIL_MSG),
@@ -305,7 +305,7 @@ public interface EventType extends Comparable<EventType> {
 			new Type(TSK_DATETIME),
 			new Type(TSK_PATH));
 
-	ArtifactEventType INSTALLED_PROGRAM = new PredefinedArtifactEventType(19,
+	ArtifactEventType INSTALLED_PROGRAM = new ArtifactEventTypeImpl(19,
 			getBundle().getString("MiscTypes.installedPrograms.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
@@ -314,7 +314,7 @@ public interface EventType extends Comparable<EventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 
-	ArtifactEventType EXIF = new PredefinedArtifactEventType(20,
+	ArtifactEventType EXIF = new ArtifactEventTypeImpl(20,
 			getBundle().getString("MiscTypes.exif.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA_EXIF),
@@ -324,7 +324,7 @@ public interface EventType extends Comparable<EventType> {
 			artf -> artf.getSleuthkitCase().getAbstractFileById(artf.getObjectID()).getName()
 	);
 
-	ArtifactEventType DEVICES_ATTACHED = new PredefinedArtifactEventType(21,
+	ArtifactEventType DEVICES_ATTACHED = new ArtifactEventTypeImpl(21,
 			getBundle().getString("MiscTypes.devicesAttached.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_DEVICE_ATTACHED),

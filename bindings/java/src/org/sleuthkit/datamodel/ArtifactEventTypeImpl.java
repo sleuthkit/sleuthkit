@@ -30,9 +30,9 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOM
  * Implementation of ArtifactEventType for the standard predefined artifact
  * based event types.
  */
-class PredefinedArtifactEventType extends ArtifactEventType {
+class ArtifactEventTypeImpl extends EventTypeImpl implements ArtifactEventType {
 
-	private static final Logger logger = Logger.getLogger(PredefinedArtifactEventType.class.getName());
+	private static final Logger logger = Logger.getLogger(ArtifactEventTypeImpl.class.getName());
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
@@ -41,7 +41,7 @@ class PredefinedArtifactEventType extends ArtifactEventType {
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, EventDescriptionWithTime> eventPayloadFunction;
 
-	PredefinedArtifactEventType(int typeID, String displayName,
+	ArtifactEventTypeImpl(int typeID, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
@@ -51,7 +51,7 @@ class PredefinedArtifactEventType extends ArtifactEventType {
 		this(typeID, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, fullExtractor, null);
 	}
 
-	PredefinedArtifactEventType(int typeID, String displayName,
+	ArtifactEventTypeImpl(int typeID, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,

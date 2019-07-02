@@ -22,11 +22,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Package level extension of PredefinedArtifactEventType for event types 
- * that have only one description (because we don't know how to break it 
- * up further). 
+ * Package level extension of ArtifactEventTypeImpl for event types 
+ that have only one description (because we don't know how to break it 
+ up further). 
  */
-class SingleDescriptionArtifactEventType extends PredefinedArtifactEventType {
+class SingleDescriptionArtifactEventType extends ArtifactEventTypeImpl {
 
 	private static final Logger logger = Logger.getLogger(SingleDescriptionArtifactEventType.class.getName());
 
