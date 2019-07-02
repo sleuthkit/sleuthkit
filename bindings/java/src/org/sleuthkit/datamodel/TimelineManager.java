@@ -47,11 +47,6 @@ import static org.sleuthkit.datamodel.CollectionUtils.isNotEmpty;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
-import org.sleuthkit.datamodel.ArtifactEventType;
-import org.sleuthkit.datamodel.EventType;
-import org.sleuthkit.datamodel.EventType;
-import org.sleuthkit.datamodel.TimelineEvent;
-import org.sleuthkit.datamodel.TimelineFilter;
 
 /**
  * Provides access to the Timeline features of SleuthkitCase

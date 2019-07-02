@@ -245,6 +245,9 @@ public final class TimelineEvent {
 		return this.eventID == other.eventID;
 	}
 
+	/**
+	 * Defines the zoom levels that are available for the event description
+	 */
 	public enum DescriptionLevel {
 		SHORT(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.short")),
 		MEDIUM(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.medium")),

@@ -29,9 +29,6 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
 import static org.sleuthkit.datamodel.BundleProvider.getBundle;
-import static org.sleuthkit.datamodel.EventType.TypeLevel.BASE_TYPE;
-import static org.sleuthkit.datamodel.EventType.TypeLevel.ROOT_TYPE;
-import static org.sleuthkit.datamodel.EventType.TypeLevel.SUB_TYPE;
 import org.sleuthkit.datamodel.EventTypes.EmptyExtractor;
 import org.sleuthkit.datamodel.EventTypes.FilePathArtifactEventType;
 import org.sleuthkit.datamodel.EventTypes.FilePathEventType;
@@ -145,7 +142,7 @@ public interface EventType extends Comparable<EventType> {
 	 */
 	EventType ROOT_EVENT_TYPE = new EventTypeImpl(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
-			ROOT_TYPE, null) {
+			TypeLevel.ROOT_TYPE, null) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
@@ -154,7 +151,7 @@ public interface EventType extends Comparable<EventType> {
 
 	EventType FILE_SYSTEM = new EventTypeImpl(1,
 			getBundle().getString("BaseTypes.fileSystem.name"),// NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED,
@@ -163,7 +160,7 @@ public interface EventType extends Comparable<EventType> {
 	};
 	EventType WEB_ACTIVITY = new EventTypeImpl(2,
 			getBundle().getString("BaseTypes.webActivity.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< ArtifactEventType> getSubTypes() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK,
@@ -172,7 +169,7 @@ public interface EventType extends Comparable<EventType> {
 	};
 	EventType MISC_TYPES = new EventTypeImpl(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet<EventType> getSubTypes() {
 			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
@@ -183,16 +180,16 @@ public interface EventType extends Comparable<EventType> {
 
 	EventType FILE_MODIFIED = new FilePathEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 	EventType FILE_ACCESSED = new FilePathEventType(5,
 			getBundle().getString("FileSystemTypes.fileAccessed.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 	EventType FILE_CREATED = new FilePathEventType(6,
 			getBundle().getString("FileSystemTypes.fileCreated.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 	EventType FILE_CHANGED = new FilePathEventType(7,
 			getBundle().getString("FileSystemTypes.fileChanged.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 
 	ArtifactEventType WEB_DOWNLOADS = new URLArtifactEventType(8,
 			getBundle().getString("WebTypes.webDownloads.name"), // NON-NLS
@@ -336,7 +333,7 @@ public interface EventType extends Comparable<EventType> {
 	//custom event type base type
 	EventType CUSTOM_TYPES = new EventTypeImpl(22,
 			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(OTHER, USER_CREATED);

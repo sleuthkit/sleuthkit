@@ -30,14 +30,14 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @return The artifact type this event type is derived from.
 	 */
-	abstract BlackboardArtifact.Type getArtifactType();
+	BlackboardArtifact.Type getArtifactType();
 
 	/**
 	 * The attribute type this event type is derived from.
 	 *
 	 * @return The attribute type this event type is derived from.
 	 */
-	abstract BlackboardAttribute.Type getDateTimeAttributeType();
+	BlackboardAttribute.Type getDateTimeAttributeType();
 
 	/**
 	 * Extract the full description for an event of this type from the given
@@ -50,7 +50,7 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	abstract String extractFullDescription(BlackboardArtifact artifact) throws TskCoreException;
+	String extractFullDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Extract the medium description for an event of this type from the given
@@ -63,7 +63,7 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	abstract String extractMedDescription(BlackboardArtifact artifact) throws TskCoreException;
+	String extractMedDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Extract the short description for an event of this type from the given
@@ -76,7 +76,7 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	abstract String extractShortDescription(BlackboardArtifact artifact) throws TskCoreException;
+	String extractShortDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Get the ID of the the artifact type that this EventType is derived from.
@@ -99,7 +99,7 @@ public interface ArtifactEventType extends EventType {
 	 * @throws TskCoreException is there is a problem accessing the blackboard
 	 *                          data
 	 */
-	abstract EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
+	EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Bundles the event specific information derived from a BlackBoard Artifact
