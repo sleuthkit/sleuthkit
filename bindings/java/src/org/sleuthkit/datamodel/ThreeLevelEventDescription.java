@@ -16,25 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import com.google.common.collect.ImmutableMap;
 import static org.apache.commons.lang3.StringUtils.defaultString;
-import org.sleuthkit.datamodel.DescriptionLoD;
 
+/**
+ * Stores all levels of the event descriptions in a single class
+ */
 class ThreeLevelEventDescription implements TimelineEvent.EventDescription {
 
 	/**
 	 * The three descriptions (full, med, short) stored in a map, keyed by
-	 * DescriptionLOD (Level of Detail)
+ DescriptionLOD (DescriptionLevel of Detail)
 	 */
-	private final ImmutableMap<DescriptionLoD, String> descriptions;
+	private final ImmutableMap<TimelineEvent.DescriptionLevel, String> descriptions;
 
 	ThreeLevelEventDescription(String fullDescr, String mediumDescr, String shortDescr) {
-		descriptions = ImmutableMap.of(
-				DescriptionLoD.FULL, defaultString(fullDescr),
-				DescriptionLoD.MEDIUM, defaultString(mediumDescr),
-				DescriptionLoD.SHORT, defaultString(shortDescr)
+		descriptions = ImmutableMap.of(TimelineEvent.DescriptionLevel.FULL, defaultString(fullDescr),
+				TimelineEvent.DescriptionLevel.MEDIUM, defaultString(mediumDescr),
+				TimelineEvent.DescriptionLevel.SHORT, defaultString(shortDescr)
 		);
 	}
 
@@ -46,7 +47,7 @@ class ThreeLevelEventDescription implements TimelineEvent.EventDescription {
 	 * @return The description of this event at the given level of detail.
 	 */
 	@Override
-	public String getDescription(DescriptionLoD lod) {
+	public String getDescription(TimelineEvent.DescriptionLevel lod) {
 		return descriptions.get(lod);
 	}
 }

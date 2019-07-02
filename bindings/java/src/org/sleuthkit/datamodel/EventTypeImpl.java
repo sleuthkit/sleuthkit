@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Optional;
@@ -26,14 +26,21 @@ import org.apache.commons.lang3.ObjectUtils;
 /**
  * Implementation of EventType for the standard predefined event types.
  */
-class StandardEventType implements EventType {
+class EventTypeImpl implements EventType {
 
 	private final long typeID;
 	private final String displayName;
 	private final EventType superType;
-	private final EventTypeZoomLevel eventTypeZoomLevel;
+	private final EventType.TypeLevel eventTypeZoomLevel;
 
-	StandardEventType(long typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+	/**
+	 * 
+	 * @param typeID  ID (from the Database)
+	 * @param displayName
+	 * @param eventTypeZoomLevel Where it is in the type hierarchy
+	 * @param superType 
+	 */
+	EventTypeImpl(long typeID, String displayName, EventType.TypeLevel eventTypeZoomLevel, EventType superType) {
 		this.superType = superType;
 		this.typeID = typeID;
 		this.displayName = displayName;
@@ -70,7 +77,7 @@ class StandardEventType implements EventType {
 	}
 
 	@Override
-	public EventTypeZoomLevel getZoomLevel() {
+	public EventType.TypeLevel getTypeLevel() {
 		return eventTypeZoomLevel;
 	}
 

@@ -3,11 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
-import org.sleuthkit.datamodel.DescriptionLoD;
-
- class SingeLevelEventDiscription implements TimelineEvent.EventDescription {
+class SingeLevelEventDiscription implements TimelineEvent.EventDescription {
 
 	private final String fullDescr;
 
@@ -17,7 +15,7 @@ import org.sleuthkit.datamodel.DescriptionLoD;
 	}
 
 	@Override
-	public String getDescription(DescriptionLoD lod) {
+	public String getDescription(TimelineEvent.DescriptionLevel lod) {
 		return fullDescr;
 	}
 }

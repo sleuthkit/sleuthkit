@@ -47,11 +47,11 @@ import static org.sleuthkit.datamodel.CollectionUtils.isNotEmpty;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
-import org.sleuthkit.datamodel.timeline.ArtifactEventType;
-import org.sleuthkit.datamodel.timeline.EventType;
-import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
-import org.sleuthkit.datamodel.timeline.TimelineEvent;
-import org.sleuthkit.datamodel.timeline.TimelineFilter;
+import org.sleuthkit.datamodel.ArtifactEventType;
+import org.sleuthkit.datamodel.EventType;
+import org.sleuthkit.datamodel.EventType;
+import org.sleuthkit.datamodel.TimelineEvent;
+import org.sleuthkit.datamodel.TimelineFilter;
 
 /**
  * Provides access to the Timeline features of SleuthkitCase
@@ -902,10 +902,10 @@ public final class TimelineManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, TimelineFilter.RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
+	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, TimelineFilter.RootFilter filter, EventType.TypeLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		//do we want the base or subtype column of the databse
-		String typeColumn = typeColumnHelper(EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel));
+		String typeColumn = typeColumnHelper(EventType.TypeLevel.SUB_TYPE.equals(zoomLevel));
 
 		String queryString = "SELECT count(DISTINCT tsk_events.event_id) AS count, " + typeColumn//NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(filter)//NON-NLS
@@ -1060,7 +1060,7 @@ public final class TimelineManager {
 		return result;
 	}
 
-	public String getDescriptionColumn(DescriptionLoD lod) {
+	public String getDescriptionColumn(TimelineEvent.DescriptionLevel lod) {
 		switch (lod) {
 			case FULL:
 				return "full_description"; //NON-NLS

@@ -16,30 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
-import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Interface for EventTypes that are derived from Artifacts.
  */
-public interface ArtifactEventType extends EventType {
+abstract class ArtifactEventType implements EventType {
 
 	/**
 	 * Get the artifact type this event type is derived from.
 	 *
 	 * @return The artifact type this event type is derived from.
 	 */
-	BlackboardArtifact.Type getArtifactType();
+	abstract BlackboardArtifact.Type getArtifactType();
 
 	/**
 	 * The attribute type this event type is derived from.
 	 *
 	 * @return The attribute type this event type is derived from.
 	 */
-	BlackboardAttribute.Type getDateTimeAttributeType();
+	abstract BlackboardAttribute.Type getDateTimeAttributeType();
 
 	/**
 	 * Extract the full description for an event of this type from the given
@@ -52,7 +49,7 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	String extractFullDescription(BlackboardArtifact artifact) throws TskCoreException;
+	abstract String extractFullDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Extract the medium description for an event of this type from the given
@@ -65,7 +62,7 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	String extractMedDescription(BlackboardArtifact artifact) throws TskCoreException;
+	abstract String extractMedDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Extract the short description for an event of this type from the given
@@ -78,7 +75,7 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	String extractShortDescription(BlackboardArtifact artifact) throws TskCoreException;
+	abstract String extractShortDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Get the ID of the the artifact type that this EventType is derived from.
@@ -86,7 +83,7 @@ public interface ArtifactEventType extends EventType {
 	 * @return the ID of the the artifact type that this EventType is derived
 	 *         from.
 	 */
-	default int getArtifactTypeID() {
+	int getArtifactTypeID() {
 		return getArtifactType().getTypeID();
 	}
 
@@ -101,7 +98,7 @@ public interface ArtifactEventType extends EventType {
 	 * @throws TskCoreException is there is a problem accessing the blackboard
 	 *                          data
 	 */
-	EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
+	abstract EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Bundles the event specific information derived from a BlackBoard Artifact

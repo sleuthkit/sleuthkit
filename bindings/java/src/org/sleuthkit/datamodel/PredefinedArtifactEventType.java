@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import com.google.common.net.InternetDomainName;
 import java.text.MessageFormat;
@@ -24,18 +24,15 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN;
-import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Implementation of ArtifactEventType for the standard predefined artifact
  * based event types.
  */
-class StandardArtifactEventType extends StandardEventType implements ArtifactEventType {
+class PredefinedArtifactEventType extends EventTypeImpl implements ArtifactEventType {
 
-	private static final Logger logger = Logger.getLogger(StandardArtifactEventType.class.getName());
+	private static final Logger logger = Logger.getLogger(PredefinedArtifactEventType.class.getName());
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
@@ -44,7 +41,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, EventDescriptionWithTime> eventPayloadFunction;
 
-	StandardArtifactEventType(int typeID, String displayName,
+	PredefinedArtifactEventType(int typeID, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
@@ -54,7 +51,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		this(typeID, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, fullExtractor, null);
 	}
 
-	StandardArtifactEventType(int typeID, String displayName,
+	PredefinedArtifactEventType(int typeID, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
@@ -63,7 +60,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, EventDescriptionWithTime> eventPayloadFunction) {
 
-		super(typeID, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
+		super(typeID, displayName, EventType.TypeLevel.SUB_TYPE, superType);
 		this.artifactType = artifactType;
 		this.dateTimeAttributeType = dateTimeAttributeType;
 		this.shortExtractor = shortExtractor;

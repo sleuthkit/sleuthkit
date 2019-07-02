@@ -16,23 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import com.google.common.net.InternetDomainName;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.timeline.TimelineEvent.EventDescription;
+import org.sleuthkit.datamodel.TimelineEvent.EventDescription;
 
 /**
- *
+ * Container class for various types of timeline events
  *
  */
 class EventTypes {
@@ -45,7 +40,7 @@ class EventTypes {
 	 * applied to.
 	 *
 	 */
-	final static class EmptyExtractor implements StandardArtifactEventType.TSKCoreCheckedFunction<BlackboardArtifact, String> {
+	final static class EmptyExtractor implements PredefinedArtifactEventType.TSKCoreCheckedFunction<BlackboardArtifact, String> {
 
 		@Override
 		public String apply(BlackboardArtifact ignored) throws TskCoreException {
@@ -96,9 +91,9 @@ class EventTypes {
 		}
 	}
 
-	static class FilePathEventType extends StandardEventType {
+	static class FilePathEventType extends EventTypeImpl {
 
-		FilePathEventType(long typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+		FilePathEventType(long typeID, String displayName, EventType.TypeLevel eventTypeZoomLevel, EventType superType) {
 			super(typeID, displayName, eventTypeZoomLevel, superType);
 		}
 
@@ -116,7 +111,7 @@ class EventTypes {
 		}
 
 		@Override
-		public TimelineEvent.EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+		public EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 			return parseFilePathDescription(fullDescriptionRaw);
 		}
 	}

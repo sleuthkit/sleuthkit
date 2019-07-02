@@ -16,11 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import java.util.Optional;
-import org.sleuthkit.datamodel.DescriptionLoD;
-import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
+import java.util.ResourceBundle;
+import static org.sleuthkit.datamodel.EventType.TypeLevel.SUB_TYPE;
 
 /**
  * A single event.
@@ -55,7 +55,7 @@ public final class TimelineEvent {
 
 	/**
 	 * The three descriptions (full, med, short) stored in a map, keyed by
-	 * DescriptionLOD (Level of Detail)
+ DescriptionLOD (TypeLevel of Detail)
 	 */
 	private final EventDescription descriptions;
 
@@ -84,7 +84,7 @@ public final class TimelineEvent {
 	 * @param hashHit
 	 * @param tagged
 	 */
-	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
+	TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
 			long time, EventType type,
 			String fullDescription,
 			String medDescription,
@@ -165,7 +165,7 @@ public final class TimelineEvent {
 		return type;
 	}
 
-	public EventType getEventType(EventTypeZoomLevel zoomLevel) {
+	public EventType getEventType(EventType.TypeLevel zoomLevel) {
 		return zoomLevel.equals(SUB_TYPE) ? type : type.getBaseType();
 	}
 
@@ -175,7 +175,7 @@ public final class TimelineEvent {
 	 * @return the full description
 	 */
 	public String getFullDescription() {
-		return getDescription(DescriptionLoD.FULL);
+		return getDescription(TimelineEvent.DescriptionLevel.FULL);
 	}
 
 	/**
@@ -184,7 +184,7 @@ public final class TimelineEvent {
 	 * @return the medium description
 	 */
 	public String getMedDescription() {
-		return getDescription(DescriptionLoD.MEDIUM);
+		return getDescription(TimelineEvent.DescriptionLevel.MEDIUM);
 	}
 
 	/**
@@ -193,7 +193,7 @@ public final class TimelineEvent {
 	 * @return the short description
 	 */
 	public String getShortDescription() {
-		return getDescription(DescriptionLoD.SHORT);
+		return getDescription(TimelineEvent.DescriptionLevel.SHORT);
 	}
 
 	/**
@@ -203,7 +203,7 @@ public final class TimelineEvent {
 	 *
 	 * @return The description of this event at the given level of detail.
 	 */
-	public String getDescription(DescriptionLoD lod) {
+	public String getDescription(TimelineEvent.DescriptionLevel lod) {
 		return descriptions.getDescription(lod);
 	}
 
@@ -243,6 +243,38 @@ public final class TimelineEvent {
 		return this.eventID == other.eventID;
 	}
 
+	public enum DescriptionLevel {
+		SHORT(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.short")),
+		MEDIUM(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.medium")),
+		FULL(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.full"));
+
+		private final String displayName;
+
+		public String getDisplayName() {
+			return displayName;
+		}
+
+		private DescriptionLevel(String displayName) {
+			this.displayName = displayName;
+		}
+
+		public DescriptionLevel moreDetailed() {
+			try {
+				return values()[ordinal() + 1];
+			} catch (ArrayIndexOutOfBoundsException e) {
+				return null;
+			}
+		}
+
+		public DescriptionLevel lessDetailed() {
+			try {
+				return values()[ordinal() - 1];
+			} catch (ArrayIndexOutOfBoundsException e) {
+				return null;
+			}
+		}
+
+	}
 	/**
 	 * Encapsulates the potential multiple levels of description for an event in
 	 * to one object.
@@ -263,7 +295,7 @@ public final class TimelineEvent {
 		 * @return the full description
 		 */
 		default public String getFullDescription() {
-			return getDescription(DescriptionLoD.FULL);
+			return getDescription(TimelineEvent.DescriptionLevel.FULL);
 		}
 
 		/**
@@ -272,7 +304,7 @@ public final class TimelineEvent {
 		 * @return the medium description
 		 */
 		default public String getMediumDescription() {
-			return getDescription(DescriptionLoD.MEDIUM);
+			return getDescription(TimelineEvent.DescriptionLevel.MEDIUM);
 		}
 
 		/**
@@ -281,7 +313,7 @@ public final class TimelineEvent {
 		 * @return the short description
 		 */
 		default public String getShortDescription() {
-			return getDescription(DescriptionLoD.SHORT);
+			return getDescription(TimelineEvent.DescriptionLevel.SHORT);
 		}
 
 		/**
@@ -291,6 +323,6 @@ public final class TimelineEvent {
 		 *
 		 * @return The description of this event at the given level of detail.
 		 */
-		public String getDescription(DescriptionLoD lod);
+		public String getDescription(TimelineEvent.DescriptionLevel lod);
 	}
 }

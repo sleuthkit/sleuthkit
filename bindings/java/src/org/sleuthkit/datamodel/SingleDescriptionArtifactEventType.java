@@ -16,20 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- * Package level extension of StandardArtifactEventType for event types only
- * store one description in the db. They may support parsing the description in
- * memory, or one one zoom level
+ * Package level extension of PredefinedArtifactEventType for event types 
+ * that have only one description (because we don't know how to break it 
+ * up further). 
  */
-class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
+class SingleDescriptionArtifactEventType extends PredefinedArtifactEventType {
 
 	private static final Logger logger = Logger.getLogger(SingleDescriptionArtifactEventType.class.getName());
 
