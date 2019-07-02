@@ -710,7 +710,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
     writer->is_finished = 0;
     writer->finishProgress = 0;
     writer->cancelFinish = 0;
-    writer->inFinalizeImageWriter = 0;
+    writer->exitOnError = 0;
     writer->hadErrorExtending = 0;
     writer->footer = NULL;
     writer->img_info = img_info;
@@ -827,7 +827,26 @@ TSK_RETVAL_ENUM tsk_img_writer_finish(TSK_IMG_INFO *img_info) {
         tsk_error_set_errstr("tsk_img_writer_finish: image writer not set");
         return TSK_ERR;
     }
-    raw_info->img_writer->inFinalizeImageWriter = 1;
     return raw_info->img_writer->finish_image(raw_info->img_writer);
+}
+
+TSK_RETVAL_ENUM tsk_img_writer_set_exit_on_error(TSK_IMG_INFO *img_info, int flag) {
+    if (img_info->itype != TSK_IMG_TYPE_RAW) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_writer_set_exit_on_error: image writer can be used on only raw images");
+        return TSK_ERR;
+    }
+        
+    IMG_RAW_INFO* raw_info = (IMG_RAW_INFO *)img_info;
+    if (raw_info->img_writer == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_writer_set_exit_on_error: image writer not set");
+        return TSK_ERR;
+    }
+
+    raw_info->img_writer->exitOnError = flag;
+    return TSK_OK;
 }
 

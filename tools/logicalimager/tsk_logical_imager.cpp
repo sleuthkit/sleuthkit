@@ -989,6 +989,7 @@ main(int argc, char **argv1)
                 fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
                 pressAnyKeyToExit(1);
             }
+            tsk_img_writer_set_exit_on_error(img, 1);
         }
         else {
             fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
