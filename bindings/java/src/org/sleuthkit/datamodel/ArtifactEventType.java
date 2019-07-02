@@ -22,7 +22,11 @@ package org.sleuthkit.datamodel;
 /**
  * Interface for EventTypes that are derived from Artifacts.
  */
-abstract class ArtifactEventType implements EventType {
+abstract class ArtifactEventType extends EventTypeImpl {
+
+	ArtifactEventType(long typeID, String displayName, TypeLevel eventTypeZoomLevel, EventType superType) {
+		super(typeID, displayName, eventTypeZoomLevel, superType);
+	}
 
 	/**
 	 * Get the artifact type this event type is derived from.

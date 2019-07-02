@@ -30,7 +30,7 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOM
  * Implementation of ArtifactEventType for the standard predefined artifact
  * based event types.
  */
-class PredefinedArtifactEventType extends EventTypeImpl implements ArtifactEventType {
+class PredefinedArtifactEventType extends ArtifactEventType {
 
 	private static final Logger logger = Logger.getLogger(PredefinedArtifactEventType.class.getName());
 
