@@ -413,12 +413,10 @@ int
         return 1;
     }
 
-    if (m_blkMapFlag) {
-        if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-            "Error creating tsk_fs_blocks table: %s\n")) {
-                return 1;
-        }
+    if (attempt_exec
+        ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        "Error creating tsk_fs_blocks table: %s\n")) {
+            return 1;
     }
 
     if (createIndexes())
