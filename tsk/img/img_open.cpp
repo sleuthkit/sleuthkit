@@ -268,6 +268,14 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
+    /* check if img_info is good */
+    if (img_info == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
+        tsk_error_set_errstr("%d", type);
+        return NULL;
+    }
+
     /* we have a good img_info, set up the cache lock */
     tsk_init_lock(&(img_info->cache_lock));
     return img_info;
