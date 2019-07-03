@@ -592,14 +592,14 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
         return FALSE;
     }
 
-    const string systemDriveLetter = "C:";
+    const string systemDriveLetter = "H:";
 
     // if C: is part of LDM, then we'll just analyze C:
     checkLDMStatus = checkDriveForLDM(systemDriveLetter);
     if (1 == checkLDMStatus) {
         fprintf(stderr, "System drive %s is an LDM disk\n", systemDriveLetter.c_str());
         drivesToProcess.clear();
-        drivesToProcess.push_back((TSK_TCHAR *) systemDriveLetter.c_str());
+        drivesToProcess.push_back(TskHelper::toWide(systemDriveLetter));
         return TRUE;
     }
 
@@ -608,7 +608,7 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
     if (1 == checkBitlockerStatus) {
         fprintf(stderr, "System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
         drivesToProcess.clear();
-        drivesToProcess.push_back((TSK_TCHAR *)systemDriveLetter.c_str());
+        drivesToProcess.push_back(TskHelper::toWide(systemDriveLetter));
         return TRUE;
     }
 
