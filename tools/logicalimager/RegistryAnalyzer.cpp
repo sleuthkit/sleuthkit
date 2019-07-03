@@ -193,7 +193,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
     if (aRegFile == NULL) {
         fprintf(m_outputFile, "SAM HIVE not found\n");
         fclose(m_outputFile);
-        std::cerr << "SAM HIVE not found" << std::endl;
         return -1;
     }
     RegParser &aRegParser = aRegFile->getRegParser();
