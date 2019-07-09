@@ -32,10 +32,11 @@ extern "C" {
     typedef struct TSK_IMG_WRITER TSK_IMG_WRITER;
     struct TSK_IMG_WRITER {
         TSK_IMG_INFO * img_info;
-        int is_finished;
-        int finishProgress;
-        int cancelFinish;
-        int inFinalizeImageWriter;
+        int is_finished; // set to 1 if finalize image is finished
+        int finishProgress; // finalize image progress indicator (0-100)
+        int cancelFinish; // set to 1 if finalize image is cancelled
+        int inFinalizeImageWriter; // set to 1 if we are in finalize image
+        int hadErrorExtending; // set to 1 if there is a WriteFile error in addNewBlock
 
         TSK_TCHAR* fileName;
 #ifdef TSK_WIN32
