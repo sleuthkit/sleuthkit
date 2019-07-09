@@ -526,8 +526,6 @@ static int checkDriveForBitlocker(const string& driveLetter) {
                 bitLockerStatus = 0;
             } else {
                 unsigned int encryptionMethod = vtProp.uintVal;
-                std::cerr << "Drive: " << driveLetter << ",  found in Win32_EncryptableVolume.  EncryptionMethod:  " 
-                    << encryptionMethod << std::endl;
                 bitLockerStatus = (0 == encryptionMethod) ? 0 : 1;
             }
             VariantClear(&vtProp);
@@ -646,7 +644,7 @@ static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
                 << "Volume did not have a file system and has a BitLocker signature" << std::endl;
         }
 
-        std::cerr << "Volume does not contain a file system" << std::endl;
+        printDebug("Volume does not contain a file system");
         tsk_error_reset();
     }
 }
@@ -764,14 +762,16 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         path);
     fflush(m_alertFile);
 
-    fprintf(stdout, "%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
-        driveName.c_str(),
-        extractStatus,
+    std::string fullPath(path);
+    if (fs_file->name) {
+        fullPath += fs_file->name->name;
+    } else {
+        fullPath += "name is null";
+    }
+
+    fprintf(stdout, "Alert for %s:%s\n",
         ruleMatchResult->getRuleSetName().c_str(),
-        ruleMatchResult->getName().c_str(),
-        ruleMatchResult->getDescription().c_str(),
-        (fs_file->name ? fs_file->name->name : "name is null"),
-        path);
+        fullPath.c_str());
 }
 
 /*
@@ -959,23 +959,22 @@ main(int argc, char **argv1)
     std::string alertFileName = directoryPath + "/alert.txt";
     openAlert(alertFileName);
 
-    std::list<TSK_IMG_INFO *>imgFinalizePending;
+    std::list<std::pair<TSK_IMG_INFO *, std::string>> imgFinalizePending;
 
     // Loop through all images
-    for (int i = 0; i < imgPaths.size(); ++i) {
+    for (size_t i = 0; i < imgPaths.size(); ++i) {
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
+        fprintf(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
 
         std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            printDebug("Skipping drive %s because tsk_logical_imager.exe exists at the root directory.", driveToProcess.c_str());
+            fprintf(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
-
-        TFPRINTF(stdout, _TSK_T("logical image path = %s\n"), image);
 
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
@@ -996,7 +995,7 @@ main(int argc, char **argv1)
         }
 
 
-        imgFinalizePending.push_back(img);
+        imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
 
         TskFindFiles findFiles(config);
 
@@ -1004,14 +1003,16 @@ main(int argc, char **argv1)
         TskHelper::getInstance().setImgInfo(img);
         TSK_VS_INFO *vs_info;
         if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-            std::cout << "No volume system found. Looking for file system" << std::endl;
+            printDebug("No volume system found. Looking for file system");
             openFs(img, 0);
         }
         else {
             // process the volume system
+            //fprintf(stdout, "Partition:\n");
             for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
                 const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-                std::cout << "Partition: " + string(vs_part->desc) + "    Start: " + std::to_string(vs_part->start) << std::endl;
+                //fprintf(stdout, "#%i: %s Start: %s Length: %s\n",
+                //    i, vs_part->desc, std::to_string(vs_part->start).c_str(), std::to_string(vs_part->len).c_str());
                 if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
                     continue;
                 }
@@ -1019,6 +1020,8 @@ main(int argc, char **argv1)
             }
             tsk_vs_close(vs_info);
         }
+
+        fprintf(stdout, "%s - Searching for full path files\n", driveToProcess.c_str());
 
         const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
         TSKFileNameInfo filenameInfo;
@@ -1043,6 +1046,8 @@ main(int argc, char **argv1)
             }
         }
 
+        fprintf(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
+
         string usersFileName = directoryPath + "/users.txt";
 
         // Enumerate Users with RegistryAnalyzer
@@ -1057,13 +1062,13 @@ main(int argc, char **argv1)
             pressAnyKeyToExit(1);
         }
 
+        fprintf(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
+
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
             // Don't exit, just let it continue
             fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
         }
-
-        TFPRINTF(stdout, _TSK_T("Created VHD file %s\n"), (TSK_TCHAR *)outputFileNameW.c_str());
     }
 
     // close alert file before tsk_img_writer_finish, which may take a long time. 
@@ -1071,10 +1076,11 @@ main(int argc, char **argv1)
 
     // Delayed finialize image write
     for (auto it = std::begin(imgFinalizePending); it != std::end(imgFinalizePending); ++it) {
-        TSK_IMG_INFO *img = *it;
+        TSK_IMG_INFO *img = it->first;
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (config->getFinalizeImagerWriter()) {
-                printDebug("finalize image writer for %s", driveToProcess.c_str());
+                printDebug("finalize image writer for %s", it->second.c_str());
+                fprintf(stdout, "Copying remainder of %s\n", it->second.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
                     fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
