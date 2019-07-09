@@ -230,6 +230,18 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
+#if HAVE_LIBVHDI
+    case TSK_IMG_TYPE_VHD_VHD:
+        img_info = vhdi_open(num_img, images, a_ssize);
+        break;
+#endif
+
+#if HAVE_LIBVMDK
+    case TSK_IMG_TYPE_VMDK_VMDK:
+        img_info = vmdk_open(num_img, images, a_ssize);
+        break;
+#endif
+
     case TSK_IMG_TYPE_RAW:
         img_info = raw_open(num_img, images, a_ssize);
         break;
@@ -253,6 +265,11 @@ tsk_img_open(int num_img,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
         tsk_error_set_errstr("%d", type);
+        return NULL;
+    }
+
+    /* check if img_info is good */
+    if (img_info == NULL) {
         return NULL;
     }
 
