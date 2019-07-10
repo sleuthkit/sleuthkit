@@ -411,9 +411,7 @@ static int checkDriveForLDM(const string& driveLetter) {
             << std::hex << hres << std::endl;
         wmi_close(&pWbemLocator, &pWbemServices);
         return -1;
-
     } else {
-
         IWbemClassObject *pclsObj;
         ULONG uReturn = 0;
         while (pEnumerator) {
@@ -433,9 +431,9 @@ static int checkDriveForLDM(const string& driveLetter) {
 
             bDriveFound = true;
 
-            std::wcout << L"Drive: " << TskHelper::toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << std::endl;
+            //std::wcout << L"Drive: " << TskHelper::toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << std::endl;
             if (string::npos != TskHelper::toLower(TskHelper::toNarrow(partitionType)).find("logical disk manager")) {
-                std::cerr << "Found Logical Disk Manager disk for drive =   " << driveLetter << std::endl;
+                //std::cerr << "Found Logical Disk Manager disk for drive = " << driveLetter << std::endl;
                 isLDM = 1;
             }
         }
@@ -444,9 +442,6 @@ static int checkDriveForLDM(const string& driveLetter) {
 
     wmi_close(&pWbemLocator, &pWbemServices);
 
-    if (!bDriveFound) {
-        std::cerr << "Drive =  " << driveLetter << " not found in Win32_LogicalDiskToPartition" << std::endl;
-    }
     return bDriveFound ? isLDM : -1;
 }
 
@@ -468,7 +463,6 @@ static int checkDriveForBitlocker(const string& driveLetter) {
     long rc = 0;
 
     std::wstring wsBitLockerNamespace = L"ROOT\\CIMV2\\Security\\MicrosoftVolumeEncryption";
-
 
     // Init WMI with the requisite namespace. This may fail on some versions of Windows, if Bitlocker in not installed.
     rc = wmi_init(wsBitLockerNamespace, &pWbemLocator, &pWbemServices);
@@ -641,10 +635,10 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 
     // Detect if we have a BitLocker or LDM drive amount all drives
     for (int iDrive = 0; iDrive < 26; iDrive++) {
-        char    szDrive[_MAX_DRIVE + 1];
+        char szDrive[_MAX_DRIVE + 1];
         sprintf(szDrive, "%c:\\", iDrive + 'A');
         UINT uDriveType = GetDriveTypeA(szDrive);
-        printf("Drive %s Type %s\n", szDrive, driveTypeToString(uDriveType));
+        //printf("Drive %s Type %s\n", szDrive, driveTypeToString(uDriveType));
         if (uDriveType == DRIVE_FIXED || uDriveType == DRIVE_REMOVABLE) {
             sprintf(szDrive, "%c:", iDrive + 'A');
             systemDriveLetter = szDrive;
@@ -657,11 +651,11 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
     if (status) {
         // Some of the drives has BitLocker or LDM, enumerate all driver letters
         for (int iDrive = 0; iDrive < 26; iDrive++) {
-            char    szDrive[_MAX_DRIVE + 1];
+            char szDrive[_MAX_DRIVE + 1];
             sprintf(szDrive, "%c:\\", iDrive + 'A');
             UINT uDriveType = GetDriveTypeA(szDrive);
             if (uDriveType == DRIVE_FIXED || uDriveType == DRIVE_REMOVABLE) {
-                printf("Drive %s Type %s\n", szDrive, driveTypeToString(uDriveType));
+                //printf("Drive %s Type %s\n", szDrive, driveTypeToString(uDriveType));
                 sprintf(szDrive, "%c:", iDrive + 'A');
                 systemDriveLetter = szDrive;
                 drivesToProcess.push_back(TskHelper::toWide(systemDriveLetter));
