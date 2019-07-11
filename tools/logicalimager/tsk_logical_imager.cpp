@@ -568,7 +568,6 @@ static int isDriveLocked(const string& driveLetter) {
     HRESULT hres;
     IEnumWbemClassObject* pEnumerator = NULL;
 
-    unsigned int bitLockerStatus = 0; // assume no Bitlocker
     int returnStatus = 0;
     // WMI query
     std::wstring wstrQuery = L"SELECT * FROM Win32_EncryptableVolume where driveletter = '";
@@ -600,10 +599,7 @@ static int isDriveLocked(const string& driveLetter) {
             VARIANT vtProp;
             hres = pclsObj->Get(_bstr_t(L"ProtectionStatus"), 0, &vtProp, 0, 0);
 
-            if (WBEM_E_NOT_FOUND == hres) { // Means Bitlocker is not installed
-                bitLockerStatus = 0;
-            }
-            else {
+            if (WBEM_E_NOT_FOUND != hres) {
                 unsigned int protectionStatus = vtProp.uintVal;
                 if (2 == protectionStatus) {
                     returnStatus = 1;
@@ -667,7 +663,7 @@ static char *driveTypeToString(UINT type) {
     }
 }
 
-static bool hasBitLockerOrLDM(std::string systemDriveLetter) {
+static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
     int checkLDMStatus = 0;
     int checkBitlockerStatus = 0;
 
