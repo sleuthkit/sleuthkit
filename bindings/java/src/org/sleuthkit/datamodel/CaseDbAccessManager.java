@@ -316,6 +316,15 @@ public final class CaseDbAccessManager {
 			statement = connection.createStatement();
 			statement.execute(sql);
 		} catch (SQLException ex) {
+			// SQLite occasionally returns false for columnExists() if a table was just created with that column
+			// leading to "duplicate column name" exception.
+			// We ignore this exception
+			if (DbType.SQLITE == tskDB.getDatabaseType() &&
+					alterSQL.toLowerCase().contains("add column") &&
+					ex.getMessage().toLowerCase().contains("duplicate column name")) {
+				logger.log(Level.WARNING, String.format("Column being added by SQL = %s already exists in table %s", alterSQL, tableName));
+				return;
+			}
 			throw new TskCoreException(String.format("Error altering table  %s with SQL = %s", tableName, sql), ex);
 		} finally {
 			closeStatement(statement);
