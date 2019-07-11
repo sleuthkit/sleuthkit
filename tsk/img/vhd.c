@@ -196,7 +196,7 @@ vhdi_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Unable to create vhdi handle\n");
         }
-        return (NULL);
+        return NULL;
     }
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
@@ -219,7 +219,7 @@ vhdi_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error checking file signature for vhd file\n");
         }
-        return (NULL);
+        return NULL;
     }
 #if defined( TSK_WIN32 )
     if (libvhdi_file_open_wide(vhdi_info->handle,
@@ -244,7 +244,7 @@ vhdi_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening vhdi file\n");
         }
-        return (NULL);
+        return NULL;
     }
     if (libvhdi_file_get_media_size(vhdi_info->handle,
             (size64_t *) & (img_info->size), &vhdi_error) != 1) {
@@ -262,7 +262,7 @@ vhdi_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting size of vhdi file\n");
         }
-        return (NULL);
+        return NULL;
     }
 
     if (a_ssize != 0) {
@@ -279,7 +279,7 @@ vhdi_open(int a_num_img,
     // initialize the read lock
     tsk_init_lock(&(vhdi_info->read_lock));
 
-    return (img_info);
+    return img_info;
 }
 
 #endif /* HAVE_LIBVHDI */
