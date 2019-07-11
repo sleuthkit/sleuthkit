@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
@@ -25,36 +25,39 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
-import org.sleuthkit.datamodel.BlackboardArtifact;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
-import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
-import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
-import static org.sleuthkit.datamodel.timeline.EventType.RECENT_DOCUMENTS;
-import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.BASE_TYPE;
-import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.ROOT_TYPE;
-import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
-import org.sleuthkit.datamodel.timeline.EventTypes.EmptyExtractor;
-import org.sleuthkit.datamodel.timeline.EventTypes.FilePathArtifactEventType;
-import org.sleuthkit.datamodel.timeline.EventTypes.FilePathEventType;
-import org.sleuthkit.datamodel.timeline.EventTypes.URLArtifactEventType;
-import org.sleuthkit.datamodel.timeline.StandardArtifactEventType.AttributeExtractor;
-import static org.sleuthkit.datamodel.timeline.StandardArtifactEventType.getAttributeSafe;
-import org.sleuthkit.datamodel.timeline.TimelineEvent.EventDescription;
+import static org.sleuthkit.datamodel.BundleProvider.getBundle;
+import org.sleuthkit.datamodel.EventTypes.EmptyExtractor;
+import org.sleuthkit.datamodel.EventTypes.FilePathArtifactEventType;
+import org.sleuthkit.datamodel.EventTypes.FilePathEventType;
+import org.sleuthkit.datamodel.EventTypes.URLArtifactEventType;
+import org.sleuthkit.datamodel.ArtifactEventTypeImpl.AttributeExtractor;
+import static org.sleuthkit.datamodel.ArtifactEventTypeImpl.getAttributeSafe;
+import org.sleuthkit.datamodel.TimelineEvent.EventDescription;
 
 /**
- * An Event Type represents a distinct kind of event ie file system or web
- * activity. An EventType may have an optional super-type and 0 or more
- * subtypes, allowing events to be organized in a type hierarchy.
+ * Interface for distinct kinds of events (ie file system or web
+ * activity) in a hierarchy. An EventType may have an optional 
+ * super-type and 0 or more subtypes.  NOTE: this is not currently
+ * extensible by modules. The structure is hard coded.
  */
 public interface EventType extends Comparable<EventType> {
 
 	String getDisplayName();
 
+	/**
+	 * 
+	 * @return Unique type iD (from database)
+	 */
 	long getTypeID();
 
-	EventTypeZoomLevel getZoomLevel();
+	/**
+	 * 
+	 * @return The level that this event is in the type hierarchy.
+	 */
+	EventType.TypeLevel getTypeLevel();
 
 	/**
 	 * @return A list of EventTypes, one for each subtype of this EventTYpe, or
@@ -101,41 +104,72 @@ public interface EventType extends Comparable<EventType> {
 	default int compareTo(EventType otherType) {
 		return Comparator.comparing(EventType::getTypeID).compare(this, otherType);
 	}
+	
+	/**
+	 * Enum of event type zoom levels.
+	 */
+	public enum TypeLevel {
+		/**
+		 * The root event type zoom level. All event are the same type at this
+		 * level.
+		 */
+		ROOT_TYPE(getBundle().getString("EventTypeZoomLevel.rootType")),
+		/**
+		 * The zoom level of base event types like files system, and web activity
+		 */
+		BASE_TYPE(getBundle().getString("EventTypeZoomLevel.baseType")),
+		/**
+		 * The zoom level of specific type such as file modified time, or web
+		 * download.
+		 */
+		SUB_TYPE(getBundle().getString("EventTypeZoomLevel.subType"));
+
+		private final String displayName;
+
+		public String getDisplayName() {
+			return displayName;
+		}
+
+		private TypeLevel(String displayName) {
+			this.displayName = displayName;
+		}
+	}
+
 
 	/**
 	 * The root type of all event types. No event should actually have this
 	 * type.
 	 */
-	EventType ROOT_EVENT_TYPE = new StandardEventType(0,
+	EventType ROOT_EVENT_TYPE = new EventTypeImpl(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
-			ROOT_TYPE, null) {
+			TypeLevel.ROOT_TYPE, null) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
 		}
 	};
 
-	EventType FILE_SYSTEM = new StandardEventType(1,
+	EventType FILE_SYSTEM = new EventTypeImpl(1,
 			getBundle().getString("BaseTypes.fileSystem.name"),// NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED,
 					FILE_CREATED, FILE_CHANGED);
 		}
 	};
-	EventType WEB_ACTIVITY = new StandardEventType(2,
+	EventType WEB_ACTIVITY = new EventTypeImpl(2,
 			getBundle().getString("BaseTypes.webActivity.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< ArtifactEventType> getSubTypes() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH);
 		}
 	};
-	EventType MISC_TYPES = new StandardEventType(3,
+	EventType MISC_TYPES = new EventTypeImpl(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet<EventType> getSubTypes() {
 			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
@@ -146,16 +180,16 @@ public interface EventType extends Comparable<EventType> {
 
 	EventType FILE_MODIFIED = new FilePathEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 	EventType FILE_ACCESSED = new FilePathEventType(5,
 			getBundle().getString("FileSystemTypes.fileAccessed.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 	EventType FILE_CREATED = new FilePathEventType(6,
 			getBundle().getString("FileSystemTypes.fileCreated.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 	EventType FILE_CHANGED = new FilePathEventType(7,
 			getBundle().getString("FileSystemTypes.fileChanged.name"), // NON-NLS
-			SUB_TYPE, FILE_SYSTEM);
+			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 
 	ArtifactEventType WEB_DOWNLOADS = new URLArtifactEventType(8,
 			getBundle().getString("WebTypes.webDownloads.name"), // NON-NLS
@@ -188,12 +222,12 @@ public interface EventType extends Comparable<EventType> {
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_DOMAIN));
 
-	ArtifactEventType MESSAGE = new StandardArtifactEventType(13,
+	ArtifactEventType MESSAGE = new ArtifactEventTypeImpl(13,
 			getBundle().getString("MiscTypes.message.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_MESSAGE),
 			new Type(TSK_DATETIME),
-			new StandardArtifactEventType.AttributeExtractor(new Type(TSK_MESSAGE_TYPE)),
+			new ArtifactEventTypeImpl.AttributeExtractor(new Type(TSK_MESSAGE_TYPE)),
 			artf -> {
 				final BlackboardAttribute dir = getAttributeSafe(artf, new Type(TSK_DIRECTION));
 				final BlackboardAttribute readStatus = getAttributeSafe(artf, new Type(TSK_READ_STATUS));
@@ -211,7 +245,7 @@ public interface EventType extends Comparable<EventType> {
 			},
 			new AttributeExtractor(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT)));
 
-	ArtifactEventType GPS_ROUTE = new StandardArtifactEventType(14,
+	ArtifactEventType GPS_ROUTE = new ArtifactEventTypeImpl(14,
 			getBundle().getString("MiscTypes.GPSRoutes.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_ROUTE),
@@ -226,7 +260,7 @@ public interface EventType extends Comparable<EventType> {
 				return String.format("from %1$s %2$s to %3$s %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
 			});
 
-	ArtifactEventType GPS_TRACKPOINT = new StandardArtifactEventType(15,
+	ArtifactEventType GPS_TRACKPOINT = new ArtifactEventTypeImpl(15,
 			getBundle().getString("MiscTypes.GPSTrackpoint.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_TRACKPOINT),
@@ -239,7 +273,7 @@ public interface EventType extends Comparable<EventType> {
 			},
 			new EmptyExtractor());
 
-	ArtifactEventType CALL_LOG = new StandardArtifactEventType(16,
+	ArtifactEventType CALL_LOG = new ArtifactEventTypeImpl(16,
 			getBundle().getString("MiscTypes.Calls.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_CALLLOG),
@@ -248,7 +282,7 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_PHONE_NUMBER)),
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
 
-	ArtifactEventType EMAIL = new StandardArtifactEventType(17,
+	ArtifactEventType EMAIL = new ArtifactEventTypeImpl(17,
 			getBundle().getString("MiscTypes.Email.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_EMAIL_MSG),
@@ -268,7 +302,7 @@ public interface EventType extends Comparable<EventType> {
 			new Type(TSK_DATETIME),
 			new Type(TSK_PATH));
 
-	ArtifactEventType INSTALLED_PROGRAM = new StandardArtifactEventType(19,
+	ArtifactEventType INSTALLED_PROGRAM = new ArtifactEventTypeImpl(19,
 			getBundle().getString("MiscTypes.installedPrograms.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
@@ -277,7 +311,7 @@ public interface EventType extends Comparable<EventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 
-	ArtifactEventType EXIF = new StandardArtifactEventType(20,
+	ArtifactEventType EXIF = new ArtifactEventTypeImpl(20,
 			getBundle().getString("MiscTypes.exif.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA_EXIF),
@@ -287,7 +321,7 @@ public interface EventType extends Comparable<EventType> {
 			artf -> artf.getSleuthkitCase().getAbstractFileById(artf.getObjectID()).getName()
 	);
 
-	ArtifactEventType DEVICES_ATTACHED = new StandardArtifactEventType(21,
+	ArtifactEventType DEVICES_ATTACHED = new ArtifactEventTypeImpl(21,
 			getBundle().getString("MiscTypes.devicesAttached.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_DEVICE_ATTACHED),
@@ -297,9 +331,9 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
 
 	//custom event type base type
-	EventType CUSTOM_TYPES = new StandardEventType(22,
+	EventType CUSTOM_TYPES = new EventTypeImpl(22,
 			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVENT_TYPE) {
+			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(OTHER, USER_CREATED);

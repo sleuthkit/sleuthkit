@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import java.util.ResourceBundle;
 
@@ -25,7 +25,7 @@ import java.util.ResourceBundle;
  */
 final class BundleProvider {
 
-	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.Bundle");
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	static ResourceBundle getBundle() {
 		return BUNDLE;

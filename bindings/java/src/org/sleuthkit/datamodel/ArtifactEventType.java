@@ -16,16 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
-import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Interface for EventTypes that are derived from Artifacts.
  */
 public interface ArtifactEventType extends EventType {
+
 
 	/**
 	 * Get the artifact type this event type is derived from.

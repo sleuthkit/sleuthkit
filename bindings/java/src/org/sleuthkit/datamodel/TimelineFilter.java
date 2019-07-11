@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -38,9 +38,6 @@ import javafx.collections.ObservableList;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
-import org.sleuthkit.datamodel.TagName;
-import org.sleuthkit.datamodel.TimelineManager;
-import org.sleuthkit.datamodel.TskData;
 
 /**
  * Interface for timeline event filters. Filters are given to the
