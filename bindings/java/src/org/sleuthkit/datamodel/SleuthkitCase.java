@@ -1696,7 +1696,8 @@ public class SleuthkitCase {
 		try {
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION';");
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION';");
-			
+			statement.execute("UPDATE tsk_db_info_extended SET value = '8' WHERE name = 'SCHEMA_MAJOR_VERSION");
+			statement.execute("UPDATE tsk_db_info_extended SET value = '3' WHERE name = 'SCHEMA_MINOR_VERSION");			
 			return new CaseDbSchemaVersionNumber(8, 3);
 
 		} finally {
@@ -10376,7 +10377,7 @@ public class SleuthkitCase {
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),;
 		
 		
 		private final String sql;
