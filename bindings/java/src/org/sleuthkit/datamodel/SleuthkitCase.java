@@ -1694,7 +1694,6 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-			// Add new hash columns
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION';");
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION';");
 			
@@ -7550,8 +7549,15 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
-	public void deleteDataSource(long obj_id) throws TskCoreException {
+    /**
+	 * Deletes a datasource from the open case, the database has foreign keys with a delete cascade
+	 * so that all the tables that have a datasource object id will have their data deleted.
+	 * 
+	 * @param dataSourceObjectid
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
         CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		Statement statement2 = null;
@@ -7560,16 +7566,12 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			connection.beginTransaction();
-			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + Long.toString(obj_id));
-			statement.execute("DELETE FROM image_gallery_groups WHERE data_source_obj_id = " + Long.toString(obj_id));
-			String accountSQL = "SELECT account_id FROM accounts " +
+			// The following delete(s) is a delete cascade so it may take a some time to process for large data sources
+			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
+			String accountSql = "DELETE FROM accounts where account_id in (SELECT account_id FROM accounts " +
                                 "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) " +
-                                "AND account_id NOT IN (SELECT account2_id FROM account_relationships);";
-            statement2 = connection.createStatement();
-			resultSet = connection.executeQuery(statement2, accountSQL); //NON-NLS
-			while (resultSet.next()) {
-				statement.execute("DELETE FROM accounts WHERE account_id = " + resultSet.getString("account_id"));
-			}
+                                "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
+            statement.execute(accountSql);
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 				connection.rollbackTransaction();
@@ -10374,8 +10376,7 @@ public class SleuthkitCase {
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		SELECT_CREATE_SCHEMA_VERSION("SELECT ");
+					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 		
 		
 		private final String sql;
