@@ -1065,7 +1065,6 @@ main(int argc, char **argv1)
 
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
-            // This is frequently caused by finding a partition with no file system, which isn't really an error.
             // Don't exit, just let it continue
         }
     }
