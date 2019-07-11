@@ -985,13 +985,13 @@ main(int argc, char **argv1)
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
-                fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
+                fprintf(stderr, "Failed to initialize VHD writer\n");
                 pressAnyKeyToExit(1);
             }
             tsk_img_writer_set_exit_on_error(img, 1);
         }
         else {
-            fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
+            fprintf(stderr, "Image is not a RAW image, VHD will not be created\n");
         }
 
 
@@ -1058,7 +1058,7 @@ main(int argc, char **argv1)
 
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
-            fprintf(stderr, "openImageHandle failed\n");
+            fprintf(stderr, "Failed to open image\n");
             pressAnyKeyToExit(1);
         }
 
@@ -1067,7 +1067,6 @@ main(int argc, char **argv1)
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
             // Don't exit, just let it continue
-            fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
         }
     }
 
@@ -1083,7 +1082,7 @@ main(int argc, char **argv1)
                 fprintf(stdout, "Copying remainder of %s\n", it->second.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
-                    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+                    fprintf(stderr, "Error finishing VHD for %s\n", it->second.c_str());
                 }
             }
         }
