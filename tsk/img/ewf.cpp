@@ -324,7 +324,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Not an EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
 
     if (libewf_handle_initialize(&(ewf_info->handle), &ewf_error) != 1) {
@@ -341,7 +341,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Unable to create EWF handle\n");
         }
-        return (NULL);
+        return NULL;
     }
 #if defined( TSK_WIN32 )
     is_error = (libewf_handle_open_wide(ewf_info->handle,
@@ -367,7 +367,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
     if (libewf_handle_get_media_size(ewf_info->handle,
             (size64_t *) & (img_info->size), &ewf_error) != 1) {
@@ -385,7 +385,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
     result = libewf_handle_get_utf8_hash_value_md5(ewf_info->handle,
         (uint8_t *) ewf_info->md5hash, 33, &ewf_error);
@@ -405,7 +405,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting MD5 of EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
     ewf_info->md5hash_isset = result;
 
@@ -471,7 +471,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
 #if defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 )
     // 2007 version
@@ -491,7 +491,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
     if (libewf_get_md5_hash(ewf_info->handle, md5_hash, 16) == 1) {
         int md5_string_iterator = 0;
@@ -565,7 +565,7 @@ ewf_open(int a_num_img,
     // initialize the read lock
     tsk_init_lock(&(ewf_info->read_lock));
 
-    return (img_info);
+    return img_info;
 }
 
 
