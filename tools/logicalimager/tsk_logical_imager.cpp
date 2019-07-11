@@ -49,6 +49,14 @@ static void pressAnyKeyToExit(int code) {
     exit(code);
 }
 
+static void mayBePressAnyKeyToExit(int code, bool promptBeforeExit) {
+    if (promptBeforeExit) {
+        std::cout << std::endl << "Press any key to exit";
+        (void)_getch();
+    }
+    exit(code);
+}
+
 void printDebug(char *msg, const char *fmt...) {
     if (tsk_verbose) {
         string prefix("tsk_logical_imager: ");
@@ -863,6 +871,7 @@ main(int argc, char **argv1)
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerConfiguration *config = NULL;
+    bool promptBeforeExit = true;
 
     // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
     // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to 
@@ -942,6 +951,7 @@ main(int argc, char **argv1)
 
     try {
         config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename), (LogicalImagerRuleSet::matchCallback)matchCallback);
+        promptBeforeExit = config->getPromptBeforeExit();
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -952,7 +962,7 @@ main(int argc, char **argv1)
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        pressAnyKeyToExit(1);
+        mayBePressAnyKeyToExit(1, promptBeforeExit);
     }
     fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
@@ -979,14 +989,14 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            pressAnyKeyToExit(1);
+            mayBePressAnyKeyToExit(1, promptBeforeExit);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
                 fprintf(stderr, "Failed to initialize VHD writer\n");
-                pressAnyKeyToExit(1);
+                mayBePressAnyKeyToExit(1, promptBeforeExit);
             }
         }
         else {
@@ -1058,7 +1068,7 @@ main(int argc, char **argv1)
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
             fprintf(stderr, "Failed to open image\n");
-            pressAnyKeyToExit(1);
+            mayBePressAnyKeyToExit(1, promptBeforeExit);
         }
 
         fprintf(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
@@ -1092,5 +1102,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    pressAnyKeyToExit(0);
+    mayBePressAnyKeyToExit(0, promptBeforeExit);
 }
