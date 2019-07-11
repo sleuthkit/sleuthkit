@@ -67,7 +67,7 @@ void printDebug(char *msg) {
 * @param err error code
 * @returns error message string
 */
-string GetErrorStdStr(DWORD err) {
+std::string GetErrorStdStr(DWORD err) {
     return TskHelper::toNarrow(GetErrorStdStrW(err));
 }
 
@@ -233,7 +233,7 @@ static int createDirectory(string &directoryPathname) {
     if (stat(outDirName.c_str(), &st) != 0) {
         int rc = _mkdir(outDirName.c_str());
         if (rc != 0) {
-            fprintf(stderr, "Failed to create output folder = %s Error: %d\n", outDirName.c_str(), rc);
+            fprintf(stderr, "Failed to create output folder = %s Error: %d Reason: %s\n", outDirName.c_str(), rc, GetErrorStdStr(GetLastError()).c_str());
             return -1;
         }
     }
