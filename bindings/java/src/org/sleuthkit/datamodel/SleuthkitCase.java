@@ -7554,9 +7554,10 @@ public class SleuthkitCase {
 	 * Deletes a datasource from the open case, the database has foreign keys with a delete cascade
 	 * so that all the tables that have a datasource object id will have their data deleted.
 	 * 
-	 * @param dataSourceObjectid
+	 * @param dataSourceObjectid id of Datasource to be Deleted
 	 * 
-	 * @throws TskCoreException 
+	 * @throws TskCoreException exception thrown when critical error occurs
+	 *                          within tsk core and the update fails
 	 */
 	public void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
         CaseDbConnection connection = connections.getConnection();
@@ -10417,7 +10418,7 @@ public class SleuthkitCase {
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),;
+					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 		
 		
 		private final String sql;
