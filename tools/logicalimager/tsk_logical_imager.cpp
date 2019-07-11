@@ -467,7 +467,6 @@ static int checkDriveForBitlocker(const string& driveLetter) {
     // Init WMI with the requisite namespace. This may fail on some versions of Windows, if Bitlocker in not installed.
     rc = wmi_init(wsBitLockerNamespace, &pWbemLocator, &pWbemServices);
     if (0 != rc) {
-
         if ((WBEM_E_INVALID_NAMESPACE == rc)) {
             std::cerr << " Bitlocker is not installed." << std::endl;
             return 0;
@@ -519,6 +518,94 @@ static int checkDriveForBitlocker(const string& driveLetter) {
                 unsigned int encryptionMethod = vtProp.uintVal;
                 bitLockerStatus = (0 == encryptionMethod) ? 0 : 1;
                 if (bitLockerStatus == 1) {
+                    returnStatus = 1;
+                }
+            }
+            VariantClear(&vtProp);
+        }
+    }
+    pEnumerator->Release();
+
+    wmi_close(&pWbemLocator, &pWbemServices);
+
+    return returnStatus;
+}
+
+/**
+* isDriveLocked: checks if the given drive is BitLocker locked
+*
+* @param input driveLetter drive to check, for example C:
+*
+* @returns  0  if the drive is not locked
+*           1  if the drive is Bitlocker locked
+*           -1 if error
+*
+*/
+static int isDriveLocked(const string& driveLetter) {
+
+    IWbemLocator *pWbemLocator = NULL;
+    IWbemServices *pWbemServices = NULL;
+
+    long rc = 0;
+
+    std::wstring wsBitLockerNamespace = L"ROOT\\CIMV2\\Security\\MicrosoftVolumeEncryption";
+
+    // Init WMI with the requisite namespace. This may fail on some versions of Windows, if Bitlocker in not installed.
+    rc = wmi_init(wsBitLockerNamespace, &pWbemLocator, &pWbemServices);
+    if (0 != rc) {
+        if ((WBEM_E_INVALID_NAMESPACE == rc)) {
+            std::cerr << " Bitlocker is not installed." << std::endl;
+            return 0;
+        }
+        else {
+            std::cerr << "Failed to connect to WMI namespace = " << TskHelper::toNarrow(wsBitLockerNamespace) << std::endl;
+            return -1;
+        }
+    }
+
+    // Use the IWbemServices pointer to make requests of WMI. 
+    // Make requests here:
+    HRESULT hres;
+    IEnumWbemClassObject* pEnumerator = NULL;
+
+    unsigned int bitLockerStatus = 0; // assume no Bitlocker
+    int returnStatus = 0;
+    // WMI query
+    std::wstring wstrQuery = L"SELECT * FROM Win32_EncryptableVolume where driveletter = '";
+    wstrQuery += TskHelper::toWide(driveLetter);
+    wstrQuery += L"'";
+
+    // Run WMI query
+    hres = pWbemServices->ExecQuery(
+        bstr_t("WQL"),
+        bstr_t(wstrQuery.c_str()),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        NULL,
+        &pEnumerator);
+
+    if (FAILED(hres)) {
+        std::cerr << "WMI Query for Win32_EncryptableVolume failed. "
+            << "Error code = 0x"
+            << std::hex << hres << std::endl;
+        wmi_close(&pWbemLocator, &pWbemServices);
+        return -1;
+    }
+    else {
+        IWbemClassObject *pclsObj;
+        ULONG uReturn = 0;
+        while (pEnumerator) {
+            hres = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+            if (0 == uReturn) break;
+
+            VARIANT vtProp;
+            hres = pclsObj->Get(_bstr_t(L"ProtectionStatus"), 0, &vtProp, 0, 0);
+
+            if (WBEM_E_NOT_FOUND == hres) { // Means Bitlocker is not installed
+                bitLockerStatus = 0;
+            }
+            else {
+                unsigned int protectionStatus = vtProp.uintVal;
+                if (2 == protectionStatus) {
                     returnStatus = 1;
                 }
             }
@@ -1014,6 +1101,11 @@ main(int argc, char **argv1)
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
         fprintf(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
+
+        if (isDriveLocked(driveToProcess) == 1) {
+            fprintf(stdout, "Skipping drive %s because it is bitlocked.\n", driveToProcess.c_str());
+            continue;
+        }
 
         if (driveToProcess.back() == ':') {
             driveToProcess = driveToProcess.substr(0, driveToProcess.size() - 1);
