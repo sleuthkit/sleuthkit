@@ -55,13 +55,6 @@ static char* get_messages(AFF4_Message* msg) {
     return ret;
 }
 
-static void free_image_names(TSK_IMG_INFO* img_info) {
-    for (int i = 0; i < img_info->num_img; ++i) {
-        free(img_info->images[i]);
-    }
-    free(img_info->images);
-}
-
 static ssize_t
 aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
     size_t len)
@@ -124,7 +117,6 @@ aff4_image_close(TSK_IMG_INFO* img_info)
     tsk_release_lock(&(aff4_info->read_lock));
     tsk_deinit_lock(&(aff4_info->read_lock));
 
-    free_image_names(img_info);
     tsk_img_free(aff4_info);
 }
 
@@ -174,22 +166,10 @@ aff4_open(int a_num_img,
     img_info->images = NULL;
     img_info->num_img = 0;
 
-    const char* filename = NULL;
-
-    // copy the image filename into the img_info
-    img_info->images = (TSK_TCHAR**) tsk_malloc(sizeof(TSK_TCHAR*));
-    if (img_info->images == NULL) {
-        goto on_error;
+    // a_num_img should be 1; libaff4 handles image assembly
+    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+       goto on_error;
     }
-
-    const size_t len = TSTRLEN(a_images[0]) + 1;
-    img_info->images[0] = (TSK_TCHAR*) tsk_malloc(sizeof(TSK_TCHAR) * len);
-    if (img_info->images[0] == NULL) {
-        goto on_error;
-    }
-
-    TSTRNCPY(img_info->images[0], a_images[0], len);
-    img_info->num_img = 1; // libaff4 handles image assembly
 
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
 #if defined (TSK_WIN32)
@@ -209,9 +189,9 @@ aff4_open(int a_num_img,
         goto on_error;
     }
 
-    filename = fn;
+    const char* filename = fn;
 #else
-    filename = img_info->images[0];
+    const char* filename = a_images[0];
 #endif
 
 /*
@@ -260,6 +240,10 @@ aff4_open(int a_num_img,
         goto on_error;
     }
 
+#if defined (TSK_WIN32)
+    free(fn);
+#endif
+
     AFF4_free_messages(msg);
     msg = NULL;
 
@@ -291,10 +275,6 @@ aff4_open(int a_num_img,
     img_info->close = &aff4_image_close;
     img_info->imgstat = &aff4_image_imgstat;
 
-#if defined (TSK_WIN32)
-    free(filename);
-#endif
-
     // initialize the API lock
     tsk_init_lock(&(aff4_info->read_lock));
 
@@ -302,9 +282,8 @@ aff4_open(int a_num_img,
 
 on_error:
 #if defined (TSK_WIN32)
-    free(filename);
+    free(fn);
 #endif
-    free_image_names(img_info);
     tsk_img_free(aff4_info);
     return NULL;
 }
