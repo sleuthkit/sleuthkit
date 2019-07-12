@@ -40,8 +40,9 @@ import org.sleuthkit.datamodel.TimelineEvent.EventDescription;
 /**
  * Interface for distinct kinds of events (ie file system or web
  * activity) in a hierarchy. An EventType may have an optional 
- * super-type and 0 or more subtypes.  NOTE: this is not currently
- * extensible by modules. The structure is hard coded.
+ * super-type and 0 or more subtypes.   NOTE: this is not currently
+ * extensible by modules. The structure is hard coded to a certain
+ * number of levels and types. 
  */
 public interface EventType extends Comparable<EventType> {
 

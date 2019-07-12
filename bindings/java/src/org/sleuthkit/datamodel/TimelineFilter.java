@@ -61,7 +61,7 @@ public abstract class TimelineFilter {
 	 * @return an SQL where clause (without the "where") corresponding to this
 	 *         filter
 	 */
-	public abstract String getSQLWhere(TimelineManager manager);
+	abstract String getSQLWhere(TimelineManager manager);
 
 	public abstract TimelineFilter copyOf();
 
@@ -99,7 +99,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			String trueLiteral = manager.getSQLWhere(null);
 			String join = this.getSubFilters().stream()
 					.filter(Objects::nonNull)
@@ -192,7 +192,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			return "(tsk_events.event_type_id IN (" + getSubTypeIDs().collect(Collectors.joining(",")) + "))"; //NON-NLS
 		}
 
@@ -254,7 +254,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			String join = getSubFilters().stream()
 					.map(subFilter -> subFilter.getSQLWhere(manager))
 					.collect(Collectors.joining(" OR "));
@@ -321,7 +321,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			if (StringUtils.isNotBlank(this.getText())) {
 				return "((med_description like '%" + escapeSingleQuotes(this.getText()) + "%')" //NON-NLS
 						+ " or (full_description like '%" + escapeSingleQuotes(this.getText()) + "%')" //NON-NLS
@@ -511,7 +511,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			return "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")"; // NON-NLS
 		}
 
@@ -636,7 +636,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			return "(hash_set_name = '" + escapeSingleQuotes(getHashSetName()) + "' )"; //NON-NLS
 		}
 
@@ -701,7 +701,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			return "(data_source_obj_id = '" + this.getDataSourceID() + "')"; //NON-NLS
 		}
 
@@ -756,7 +756,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			return " (tsk_events.tag_name_id = " + getTagName().getId() + " ) "; //NON-NLS
 		}
 
@@ -820,6 +820,26 @@ public abstract class TimelineFilter {
 		}
 
 	}
+	
+	/**
+     * Gets all files that are NOT the specified types
+     */
+    static public class InverseFileTypeFilter extends FileTypeFilter {
+
+        public InverseFileTypeFilter(String displayName, Collection<String> mediaTypes) {
+            super(displayName, mediaTypes);
+        }
+
+        @Override
+        public InverseFileTypeFilter copyOf() {
+            return new InverseFileTypeFilter(getDisplayName(), super.mediaTypes);
+        }
+
+        @Override
+        String getSQLWhere(TimelineManager manager) {
+            return " NOT " + super.getSQLWhere(manager);
+        }
+    }
 
 	/**
 	 * Filter for events derived from files with the given media/mime-types.
@@ -828,6 +848,7 @@ public abstract class TimelineFilter {
 
 		private final String displayName;
 		private final String sqlWhere;
+		Collection <String> mediaTypes = new HashSet<>();
 
 		private FileTypeFilter(String displayName, String sql) {
 			this.displayName = displayName;
@@ -840,6 +861,7 @@ public abstract class TimelineFilter {
 							.map(MediaType::parse)
 							.map(FileTypeFilter::mediaTypeToSQL)
 							.collect(Collectors.joining(" OR ", "(", ")")));
+			this.mediaTypes = mediaTypes;
 		}
 
 		private static String mediaTypeToSQL(MediaType mediaType) {
@@ -885,7 +907,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public String getSQLWhere(TimelineManager manager) {
+		String getSQLWhere(TimelineManager manager) {
 			return sqlWhere;
 		}
 

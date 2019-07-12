@@ -115,7 +115,7 @@ public final class TimelineManager {
 		}
 	}
 
-	public SleuthkitCase getSleuthkitCase() {
+	SleuthkitCase getSleuthkitCase() {
 		return sleuthkitCase;
 	}
 
@@ -137,28 +137,6 @@ public final class TimelineManager {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return null;
-	}
-
-	/**
-	 * @return The total number of events in the database or, -1 if there is an
-	 *         error.
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public int countAllEvents() throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement statement = con.createStatement();
-				ResultSet results = statement.executeQuery(STATEMENTS.COUNT_ALL_EVENTS.getSQL());) {
-			if (results.next()) {
-				return results.getInt("count"); // NON-NLS
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error counting all events", ex); //NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseReadLock();
-		}
-		return -1;
 	}
 
 	/**
@@ -308,24 +286,7 @@ public final class TimelineManager {
 		return resultIDs;
 	}
 
-	public Set<Long> getDataSourceIDs() throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();
-				ResultSet results = stmt.executeQuery(STATEMENTS.GET_DATASOURCE_IDS.getSQL());) {
-			HashSet<Long> dataSourceIDs = new HashSet<>();
-			while (results.next()) {
-				long datasourceID = results.getLong("data_source_obj_id"); //NON-NLS
-				dataSourceIDs.add(datasourceID);
-			}
-			return dataSourceIDs;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to get MAX time.", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseReadLock();
-		}
-	}
-
+	
 	/**
 	 * Get a the hashset names for hash sets with hits.
 	 *
@@ -438,16 +399,8 @@ public final class TimelineManager {
 	 */
 	private enum STATEMENTS {
 
-		GET_DATASOURCE_IDS("SELECT DISTINCT data_source_obj_id FROM tsk_event_descriptions WHERE data_source_obj_id != 0"),// NON-NLS
 		GET_MAX_TIME("SELECT Max(time) AS max FROM tsk_events"), // NON-NLS
-		GET_MIN_TIME("SELECT Min(time) AS min FROM tsk_events"), // NON-NLS
-
-		/*
-		 * This SQL query is really just a select count(*), but that has
-		 * performance problems on very large tables unless you include a where
-		 * clause see http://stackoverflow.com/a/9338276/4004683 for more.
-		 */
-		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM tsk_events WHERE event_id IS NOT null"); //NON-NLS
+		GET_MIN_TIME("SELECT Min(time) AS min FROM tsk_events"); // NON-NLS
 
 		private final String sql;
 
@@ -944,7 +897,7 @@ public final class TimelineManager {
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static public String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
+	public static String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
 		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
 
@@ -1031,7 +984,7 @@ public final class TimelineManager {
 	 *
 	 * @return column name to use depending on if we want base types or subtypes
 	 */
-	public static String typeColumnHelper(final boolean useSubTypes) {
+	static String typeColumnHelper(final boolean useSubTypes) {
 		return useSubTypes ? "event_type_id" : "super_type_id"; //NON-NLS
 	}
 
@@ -1055,7 +1008,7 @@ public final class TimelineManager {
 		return result;
 	}
 
-	public String getDescriptionColumn(TimelineEvent.DescriptionLevel lod) {
+	String getDescriptionColumn(TimelineEvent.DescriptionLevel lod) {
 		switch (lod) {
 			case FULL:
 				return "full_description"; //NON-NLS
