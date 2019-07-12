@@ -105,7 +105,7 @@ static void
     char *errmsg = NULL;
     IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
 
-    if (libvmdk_handle_close(vmdk_info->handle, &vmdk_error ) != 0) {
+    if (libvmdk_handle_close(vmdk_info->handle, &vmdk_error) != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vmdk_error, error_string))
@@ -193,6 +193,7 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
+        libvmdk_handle_free(&(vmdk_info->handle), NULL);
         tsk_img_free(vmdk_info);
 
         if (tsk_verbose != 0) {
@@ -210,6 +211,7 @@ vmdk_open(int a_num_img,
             ": Error opening extent data files for image (%s)", a_images[0],
             error_string);
 
+        libvmdk_handle_free(&(vmdk_info->handle), NULL);
         tsk_img_free(vmdk_info);
 
         if (tsk_verbose != 0) {
@@ -227,6 +229,7 @@ vmdk_open(int a_num_img,
             ": Error getting size of image (%s)", a_images[0],
             error_string);
 
+        libvmdk_handle_free(&(vmdk_info->handle), NULL);
         tsk_img_free(vmdk_info);
 
         if (tsk_verbose != 0) {
