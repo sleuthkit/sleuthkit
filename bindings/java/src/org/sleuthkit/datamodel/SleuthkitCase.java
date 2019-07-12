@@ -7556,8 +7556,8 @@ public class SleuthkitCase {
 	/**
 	 * Deletes a datasource from the open case, the database has foreign keys
 	 * with a delete cascade so that all the tables that have a datasource
-	 * object id will have their data deleted.  THis is private to keep it out
-	 * of the public API
+	 * object id will have their data deleted. This is private to keep it out of
+	 * the public API
 	 *
 	 * @param dataSourceObjectId the id of the datasource to be deleted
 	 *
@@ -7571,8 +7571,11 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			connection.beginTransaction();
-			// The following delete(s) is a delete cascade so it may take a some time to process for large data sources
+			// The following delete(s) uses a foreign key delete with cascade in the DB so that it will delete
+			// all associated rows from tsk_object and its children.  For large data sources this may take some time.
 			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
+			// The following delete uses a foreign key delete with cascade in the DB so that it will delete all
+			// associated rows from accounts table and its children.
 			String accountSql = "DELETE FROM accounts WHERE account_id in (SELECT account_id FROM accounts "
 					+ "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) "
 					+ "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
