@@ -31,9 +31,8 @@ getError(libvmdk_error_t * vmdk_error,
     error_string[0] = '\0';
     retval = libvmdk_error_backtrace_sprint(vmdk_error,
         error_string, TSK_VMDK_ERROR_STRING_SIZE);
-    if (retval)
-        return 1;
-    return 0;
+    libvmdk_error_free(&vmdk_error);
+    return retval ? 1 : 0;
 } 
 
 
@@ -170,7 +169,6 @@ vmdk_open(int a_num_img,
         getError(vmdk_error, error_string);
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
-        libvmdk_error_free(&vmdk_error);
 
         tsk_img_free(vmdk_info);
 
@@ -195,7 +193,6 @@ vmdk_open(int a_num_img,
         getError(vmdk_error, error_string);
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
-        libvmdk_error_free(&vmdk_error);
 
         tsk_img_free(vmdk_info);
 
@@ -213,7 +210,6 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error opening extent data files for image (%s)", a_images[0],
             error_string);
-        libvmdk_error_free(&vmdk_error);
 
         tsk_img_free(vmdk_info);
 
@@ -231,7 +227,6 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error getting size of image (%s)", a_images[0],
             error_string);
-        libvmdk_error_free(&vmdk_error);
 
         tsk_img_free(vmdk_info);
 

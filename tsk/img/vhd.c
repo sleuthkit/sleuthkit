@@ -31,9 +31,8 @@ getError(libvhdi_error_t * vhdi_error,
     error_string[0] = '\0';
     retval = libvhdi_error_backtrace_sprint(vhdi_error,
         error_string, TSK_VHDI_ERROR_STRING_SIZE);
-    if (retval)
-        return 1;
-    return 0;
+    libvhdi_error_free(&vhdi_error);
+    return retval ? 1 : 0;
 } 
 
 
@@ -168,7 +167,6 @@ vhdi_open(int a_num_img,
         getError(vhdi_error, error_string);
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
-        libvhdi_error_free(&vhdi_error);
 
         tsk_img_free(vhdi_info);
 
@@ -191,7 +189,6 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error checking file signature for image (%s)", a_images[0],
             error_string);
-        libvhdi_error_free(&vhdi_error);
 
         tsk_img_free(vhdi_info);
 
@@ -216,7 +213,6 @@ vhdi_open(int a_num_img,
         getError(vhdi_error, error_string);
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
-        libvhdi_error_free(&vhdi_error);
 
         tsk_img_free(vhdi_info);
 
@@ -234,7 +230,6 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error getting size of image (%s)", a_images[0],
             error_string);
-        libvhdi_error_free(&vhdi_error);
 
         tsk_img_free(vhdi_info);
 
