@@ -343,6 +343,7 @@ ewf_open(int a_num_img,
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
+        libewf_handle_free(&(ewf_info->handle), NULL);
         tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
@@ -360,6 +361,7 @@ ewf_open(int a_num_img,
             ": Error getting size of image (%s)", a_images[0],
             error_string);
 
+        libewf_handle_free(&(ewf_info->handle), NULL);
         tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
@@ -379,6 +381,7 @@ ewf_open(int a_num_img,
             ": Error getting MD5 of image (%s)", a_images[0],
             error_string);
 
+        libewf_handle_free(&(ewf_info->handle), NULL);
         tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {

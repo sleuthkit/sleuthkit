@@ -103,7 +103,7 @@ static void
     char *errmsg = NULL;
     IMG_VHDI_INFO *vhdi_info = (IMG_VHDI_INFO *) img_info;
 
-    if (libvhdi_file_close(vhdi_info->handle, &vhdi_error ) != 0) {
+    if (libvhdi_file_close(vhdi_info->handle, &vhdi_error) != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vhdi_error, error_string))
@@ -189,6 +189,7 @@ vhdi_open(int a_num_img,
             ": Error checking file signature for image (%s)", a_images[0],
             error_string);
 
+        libvhdi_file_free(&(vhdi_info->handle), NULL);
         tsk_img_free(vhdi_info);
 
         if (tsk_verbose != 0) {
@@ -213,6 +214,7 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
+        libvhdi_file_free(&(vhdi_info->handle), NULL);
         tsk_img_free(vhdi_info);
 
         if (tsk_verbose != 0) {
@@ -230,6 +232,7 @@ vhdi_open(int a_num_img,
             ": Error getting size of image (%s)", a_images[0],
             error_string);
 
+        libvhdi_file_free(&(vhdi_info->handle), NULL);
         tsk_img_free(vhdi_info);
 
         if (tsk_verbose != 0) {
