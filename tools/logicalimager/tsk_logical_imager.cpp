@@ -49,7 +49,7 @@ static void pressAnyKeyToExit(int code) {
     exit(code);
 }
 
-static void mayBePressAnyKeyToExit(int code, bool promptBeforeExit) {
+static void handleExit(int code, bool promptBeforeExit) {
     if (promptBeforeExit) {
         std::cout << std::endl << "Press any key to exit";
         (void)_getch();
@@ -962,7 +962,7 @@ main(int argc, char **argv1)
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        mayBePressAnyKeyToExit(1, promptBeforeExit);
+        handleExit(1, promptBeforeExit);
     }
     fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
@@ -989,14 +989,14 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            mayBePressAnyKeyToExit(1, promptBeforeExit);
+            handleExit(1, promptBeforeExit);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
                 fprintf(stderr, "Failed to initialize VHD writer\n");
-                mayBePressAnyKeyToExit(1, promptBeforeExit);
+                handleExit(1, promptBeforeExit);
             }
         }
         else {
@@ -1068,7 +1068,7 @@ main(int argc, char **argv1)
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
             fprintf(stderr, "Failed to open image\n");
-            mayBePressAnyKeyToExit(1, promptBeforeExit);
+            handleExit(1, promptBeforeExit);
         }
 
         fprintf(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
@@ -1102,5 +1102,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    mayBePressAnyKeyToExit(0, promptBeforeExit);
+    handleExit(0, promptBeforeExit);
 }
