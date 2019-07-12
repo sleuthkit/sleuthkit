@@ -583,7 +583,10 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
         /* The buffer spans two blocks */
         TSK_OFF_T firstPartLength = writer->blockSize - (addr % writer->blockSize);
         TSK_RETVAL_ENUM result;
-        addBlock(writer, addr, buffer, firstPartLength);
+        result = addBlock(writer, addr, buffer, firstPartLength);
+        if (result != TSK_OK) {
+            return result;
+        }
         if (addr + firstPartLength < writer->imageSize) {
             result = addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
             if (result != TSK_OK) {

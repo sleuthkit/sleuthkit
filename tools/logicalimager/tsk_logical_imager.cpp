@@ -632,6 +632,12 @@ static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
         TskHelper::getInstance().addFSInfo(fs_info);
     }
     else {
+
+        if (tsk_abort) {
+            fprintf(stderr, "tsk_fs_open_img: tsk_abort\n");
+            pressAnyKeyToExit(1);
+        }
+
         // check if it is bitlocker - POC effort 
         char buffer[32];
         tsk_img_read(img, byteOffset, buffer, 32);
@@ -1004,6 +1010,10 @@ main(int argc, char **argv1)
         TSK_VS_INFO *vs_info;
         if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
             printDebug("No volume system found. Looking for file system");
+            if (tsk_abort) {
+                fprintf(stderr, "tsk_vs_open: tsk_abort\n");
+                pressAnyKeyToExit(1);
+            }
             openFs(img, 0);
         }
         else {
@@ -1042,6 +1052,13 @@ main(int argc, char **argv1)
 
                         tsk_fs_file_close(fs_file);
                     }
+
+                    if (tsk_abort) {
+                        fprintf(stderr, "Search for full path files: tsk_abort\n");
+                        pressAnyKeyToExit(1);
+                    }
+
+
                 }
             }
         }
@@ -1053,6 +1070,11 @@ main(int argc, char **argv1)
         // Enumerate Users with RegistryAnalyzer
         RegistryAnalyzer registryAnalyzer(usersFileName);
         registryAnalyzer.analyzeSAMUsers();
+
+        if (tsk_abort) {
+            fprintf(stderr, "Search for registry: tsk_abort\n");
+            pressAnyKeyToExit(1);
+        }
 
         TskHelper::getInstance().reset();
 
@@ -1067,7 +1089,13 @@ main(int argc, char **argv1)
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
             // Don't exit, just let it continue
+            tsk_error_print(stderr);
         }
+        if (tsk_abort) {
+            fprintf(stderr, "Searching for files by attribute: tsk_abort\n");
+            pressAnyKeyToExit(1);
+        }
+
     }
 
     // close alert file before tsk_img_writer_finish, which may take a long time. 

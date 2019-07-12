@@ -30,6 +30,10 @@ static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
             return -1;
         }
         nbytes = a_img_info->read(a_img_info, a_off, buf2, len_tmp);
+        if (nbytes < 0) {
+            free(buf2);
+            return -1;
+        }
         if ((nbytes > 0) && (nbytes < (ssize_t) a_len)) {
             memcpy(a_buf, buf2, nbytes);
         }
@@ -41,6 +45,9 @@ static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     }
     else {
         nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
+        if (nbytes < 0) {
+            return -1;
+        }
     }
     return nbytes;
 }
@@ -206,6 +213,10 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         read_count = a_img_info->read(a_img_info,
             a_img_info->cache_off[cache_next],
             a_img_info->cache[cache_next], read_size);
+
+        if (read_count == -2) {
+            return -1;
+        }
 
         // if no error, then set the variables and copy the data
         // Although a read_count of -1 indicates an error,

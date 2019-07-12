@@ -19,7 +19,7 @@
 /* Global variables that fit here as well as anywhere */
 char *progname = "unknown";
 int tsk_verbose = 0;
-
+int tsk_abort = 0;
 
 /* Error messages */
 static const char *tsk_err_aux_str[TSK_ERR_IMG_MAX] = {

@@ -50,7 +50,9 @@
  * @param len Number of bytes to read
  * @param rel_offset Byte offset in the disk image to read from (not the offset in the full disk image set)
  *
- * @return -1 on error or number of bytes read
+ * @return number of bytes read
+ *         -1 on error
+ *         -2 on img_writer error, should exit ASAP
  */
 static ssize_t
 raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
@@ -176,13 +178,15 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             TSK_RETVAL_ENUM result = raw_info->img_writer->add(raw_info->img_writer, rel_offset, buf, cnt);
             // If WriteFile returns error in the addNewBlock, hadErrorExtending is 1
             if (raw_info->img_writer->exitOnError && raw_info->img_writer->hadErrorExtending) {
+//                tsk_error_print(stderr);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
                     "\" offset: %" PRIuOFF " tsk_img_writer_add cnt: %" PRIuSIZE " - %d",
                     raw_info->img_info.images[idx], rel_offset, cnt
                     );
-                return -1;
+                tsk_abort = 1;
+                return -2;
             }
         }
     }
@@ -283,7 +287,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
             cnt = raw_read_segment(raw_info, i, buf, read_len, rel_offset);
             if (cnt < 0) {
-                return -1;
+                return cnt;
             }
             if ((size_t) cnt != read_len) {
                 return cnt;

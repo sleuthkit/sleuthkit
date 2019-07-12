@@ -295,7 +295,7 @@ extern "C" {
 /************ ERROR HANDLING *************/
     //TODO: make this per-thread?
     extern int tsk_verbose;     ///< Set to 1 to have verbose debug messages printed to stderr
-
+    extern int tsk_abort;
 
 #define TSK_ERR_AUX	0x01000000
 #define TSK_ERR_IMG	0x02000000
