@@ -127,11 +127,6 @@ static void
         tsk_error_set_errstr("vhdi_image_close: unable to free handle - %s", errmsg);
     }
 
-    for (i = 0; i < vhdi_info->img_info.num_img; i++) {
-        free(vhdi_info->img_info.images[i]);
-    }
-    free(vhdi_info->img_info.images);
-
     tsk_deinit_lock(&(vhdi_info->read_lock));
     tsk_img_free(img_info);
 }
@@ -159,23 +154,11 @@ vhdi_open(int a_num_img,
     }
     vhdi_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vhdi_info;
- 
-    vhdi_info->img_info.num_img = a_num_img;
-    if ((vhdi_info->img_info.images =
-        (TSK_TCHAR **) tsk_malloc(a_num_img *
-        sizeof(TSK_TCHAR *))) == NULL) {
-            tsk_img_free(vhdi_info);
-            return NULL;
-    }
-    for (i = 0; i < a_num_img; i++) {
-        if ((vhdi_info->img_info.images[i] =
-            (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
-            1) * sizeof(TSK_TCHAR))) == NULL) {
-                tsk_img_free(vhdi_info);
-                return NULL;
-        }
-        TSTRNCPY(vhdi_info->img_info.images[i], a_images[i],
-            TSTRLEN(a_images[i]) + 1);
+
+    // a_num_img should be 1
+    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+        tsk_img_free(vhdi_info);
+        return NULL;
     }
 
     if (libvhdi_file_initialize(&(vhdi_info->handle), &vhdi_error) != 1) {

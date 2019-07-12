@@ -656,28 +656,9 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
         }
     }
     else {
-        raw_info->img_info.num_img = a_num_img;
-        raw_info->img_info.images =
-            (TSK_TCHAR **) tsk_malloc(sizeof(TSK_TCHAR *) * a_num_img);
-        if (raw_info->img_info.images == NULL) {
+        if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
             tsk_img_free(raw_info);
             return NULL;
-        }
-
-        for (i = 0; i < raw_info->img_info.num_img; i++) {
-            size_t len = TSTRLEN(a_images[i]);
-            raw_info->img_info.images[i] =
-                (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
-            if (raw_info->img_info.images[i] == NULL) {
-                int j;
-                for (j = 0; j < i; j++) {
-                    free(raw_info->img_info.images[j]);
-                }
-                free(raw_info->img_info.images);
-                tsk_img_free(raw_info);
-                return NULL;
-            }
-            TSTRNCPY(raw_info->img_info.images[i], a_images[i], len + 1);
         }
     }
 
@@ -689,10 +670,6 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
                 "raw_open: file size is unknown in a segmented raw image\n");
         }
 
-        for (i = 0; i < raw_info->img_info.num_img; i++) {
-            free(raw_info->img_info.images[i]);
-        }
-        free(raw_info->img_info.images);
         tsk_img_free(raw_info);
         return NULL;
     }
@@ -700,10 +677,6 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     /* initialize the split cache */
     raw_info->cptr = (int *) tsk_malloc(raw_info->img_info.num_img * sizeof(int));
     if (raw_info->cptr == NULL) {
-        for (i = 0; i < raw_info->img_info.num_img; i++) {
-            free(raw_info->img_info.images[i]);
-        }
-        free(raw_info->img_info.images);
         tsk_img_free(raw_info);
         return NULL;
     }
@@ -717,10 +690,6 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
         (TSK_OFF_T *) tsk_malloc(raw_info->img_info.num_img * sizeof(TSK_OFF_T));
     if (raw_info->max_off == NULL) {
         free(raw_info->cptr);
-        for (i = 0; i < raw_info->img_info.num_img; i++) {
-            free(raw_info->img_info.images[i]);
-        }
-        free(raw_info->img_info.images);
         tsk_img_free(raw_info);
         return NULL;
     }
@@ -749,10 +718,6 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
                 }
             }
             free(raw_info->cptr);
-            for (i = 0; i < raw_info->img_info.num_img; i++) {
-                free(raw_info->img_info.images[i]);
-            }
-            free(raw_info->img_info.images);
             tsk_img_free(raw_info);
             return NULL;
         }
@@ -770,30 +735,4 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     }
 
     return img_info;
-}
-
-
-/* tsk_img_malloc - tsk_malloc, then set image tag
- * This is for img module and all its inheritances
- */
-void *
-tsk_img_malloc(size_t a_len)
-{
-    TSK_IMG_INFO *imgInfo;
-    if ((imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
-        return NULL;
-    imgInfo->tag = TSK_IMG_INFO_TAG;
-    return (void *) imgInfo;
-}
-
-
-/* tsk_img_free - unset image tag, then free memory
- * This is for img module and all its inheritances
- */
-void
-tsk_img_free(void *a_ptr)
-{
-    TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
-    imgInfo->tag = 0;
-    free(imgInfo);
 }

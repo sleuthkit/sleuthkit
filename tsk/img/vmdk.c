@@ -129,11 +129,6 @@ static void
         tsk_error_set_errstr("vmdk_image_close: unable to free handle - %s", errmsg);
     }
 
-    for (i = 0; i < vmdk_info->img_info.num_img; i++) {
-        free(vmdk_info->img_info.images[i]);
-    }
-    free(vmdk_info->img_info.images);
-
     tsk_deinit_lock(&(vmdk_info->read_lock));
     tsk_img_free(img_info);
 }
@@ -161,23 +156,11 @@ vmdk_open(int a_num_img,
     }
     vmdk_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vmdk_info;
- 
-    vmdk_info->img_info.num_img = a_num_img;
-    if ((vmdk_info->img_info.images =
-        (TSK_TCHAR **) tsk_malloc(a_num_img *
-        sizeof(TSK_TCHAR *))) == NULL) {
-            tsk_img_free(vmdk_info);
-            return NULL;
-    }
-    for (i = 0; i < a_num_img; i++) {
-        if ((vmdk_info->img_info.images[i] =
-            (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
-            1) * sizeof(TSK_TCHAR))) == NULL) {
-                tsk_img_free(vmdk_info);
-                return NULL;
-        }
-        TSTRNCPY(vmdk_info->img_info.images[i], a_images[i],
-            TSTRLEN(a_images[i]) + 1);
+
+    // a_num_img should be 1
+    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+        tsk_img_free(vmdk_info);
+        return NULL;
     }
 
     if (libvmdk_handle_initialize(&(vmdk_info->handle), &vmdk_error) != 1) {

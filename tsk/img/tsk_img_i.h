@@ -37,6 +37,9 @@ extern "C" {
 #endif
 extern void *tsk_img_malloc(size_t);
 extern void tsk_img_free(void *);
+
+extern int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const images[], int num);
+extern void tsk_img_free_image_names(TSK_IMG_INFO* img_info);
 extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR * a_startingName,
     int *a_numFound);
 
