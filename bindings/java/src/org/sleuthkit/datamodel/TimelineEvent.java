@@ -102,8 +102,7 @@ public final class TimelineEvent {
 			this.descriptions = ((TimelineEventTypeImpl)type).parseDescription(fullDescription, medDescription, shortDescription);
 		}
 		else {
-			this.descriptions = null;
-			// @@@ EXCEPTION
+			throw new IllegalArgumentException();
 		}
 		this.hashHit = hashHit;
 		this.tagged = tagged;
