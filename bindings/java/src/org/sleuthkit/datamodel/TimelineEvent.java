@@ -20,7 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.Optional;
 import java.util.ResourceBundle;
-import static org.sleuthkit.datamodel.EventType.TypeLevel.SUB_TYPE;
+import static org.sleuthkit.datamodel.TimelineEventType.TypeLevel.SUB_TYPE;
 
 /**
  * A single event.
@@ -51,13 +51,13 @@ public final class TimelineEvent {
 	/**
 	 * The type of this event.
 	 */
-	private final EventType type;
+	private final TimelineEventType type;
 
 	/**
 	 * The three descriptions (full, med, short) stored in a map, keyed by
  DescriptionLOD (TypeLevel of Detail)
 	 */
-	private final EventDescription descriptions;
+	private final TimelineEventDescription descriptions;
 
 	/**
 	 * True if the file this event is derived from hits any of the configured
@@ -87,7 +87,7 @@ public final class TimelineEvent {
 	// @@@ This should be package scope, but it is currently being used in DetailsViewModel.
 	// Need to investigate why that class is doing a direct DB query
 	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
-			long time, EventType type,
+			long time, TimelineEventType type,
 			String fullDescription,
 			String medDescription,
 			String shortDescription,
@@ -98,7 +98,13 @@ public final class TimelineEvent {
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
-		this.descriptions = type.parseDescription(fullDescription, medDescription, shortDescription);
+		if (type instanceof TimelineEventTypeImpl) {
+			this.descriptions = ((TimelineEventTypeImpl)type).parseDescription(fullDescription, medDescription, shortDescription);
+		}
+		else {
+			this.descriptions = null;
+			// @@@ EXCEPTION
+		}
 		this.hashHit = hashHit;
 		this.tagged = tagged;
 	}
@@ -163,11 +169,11 @@ public final class TimelineEvent {
 		return time;
 	}
 
-	public EventType getEventType() {
+	public TimelineEventType getEventType() {
 		return type;
 	}
 
-	public EventType getEventType(EventType.TypeLevel zoomLevel) {
+	public TimelineEventType getEventType(TimelineEventType.TypeLevel zoomLevel) {
 		return zoomLevel.equals(SUB_TYPE) ? type : type.getBaseType();
 	}
 
@@ -279,55 +285,5 @@ public final class TimelineEvent {
 			}
 		}
 
-	}
-	/**
-	 * Encapsulates the potential multiple levels of description for an event in
-	 * to one object.
-	 */
-	interface EventDescription {
-
-		public static EventDescription create(String fullDescription, String medDescription, String shortDescription) {
-			return new ThreeLevelEventDescription(fullDescription, medDescription, shortDescription);
-		}
-
-		public static EventDescription create(String fullDescription) {
-			return new SingeLevelEventDiscription(fullDescription);
-		}
-
-		/**
-		 * Get the full description of this event.
-		 *
-		 * @return the full description
-		 */
-		default public String getFullDescription() {
-			return getDescription(TimelineEvent.DescriptionLevel.FULL);
-		}
-
-		/**
-		 * Get the medium description of this event.
-		 *
-		 * @return the medium description
-		 */
-		default public String getMediumDescription() {
-			return getDescription(TimelineEvent.DescriptionLevel.MEDIUM);
-		}
-
-		/**
-		 * Get the short description of this event.
-		 *
-		 * @return the short description
-		 */
-		default public String getShortDescription() {
-			return getDescription(TimelineEvent.DescriptionLevel.SHORT);
-		}
-
-		/**
-		 * Get the description of this event at the give level of detail(LoD).
-		 *
-		 * @param lod The level of detail to get.
-		 *
-		 * @return The description of this event at the given level of detail.
-		 */
-		public String getDescription(TimelineEvent.DescriptionLevel lod);
 	}
 }

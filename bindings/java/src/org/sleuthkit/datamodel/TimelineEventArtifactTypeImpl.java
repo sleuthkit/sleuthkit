@@ -27,22 +27,21 @@ import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN;
 
 /**
- * Implementation of ArtifactEventType for the standard predefined artifact
- * based event types.
+ * Version of TimelineEventType for events based on artifacts
  */
-class ArtifactEventTypeImpl extends EventTypeImpl implements ArtifactEventType {
+class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl { 
 
-	private static final Logger logger = Logger.getLogger(ArtifactEventTypeImpl.class.getName());
+	private static final Logger logger = Logger.getLogger(TimelineEventArtifactTypeImpl.class.getName());
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
-	private final TSKCoreCheckedFunction<BlackboardArtifact, EventDescriptionWithTime> eventPayloadFunction;
+	private final TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> artifactParsingFunction;
 
-	ArtifactEventTypeImpl(int typeID, String displayName,
-			EventType superType,
+	TimelineEventArtifactTypeImpl(int typeID, String displayName,
+			TimelineEventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor,
@@ -51,51 +50,46 @@ class ArtifactEventTypeImpl extends EventTypeImpl implements ArtifactEventType {
 		this(typeID, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, fullExtractor, null);
 	}
 
-	ArtifactEventTypeImpl(int typeID, String displayName,
-			EventType superType,
+	TimelineEventArtifactTypeImpl(int typeID, String displayName,
+			TimelineEventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor,
-			TSKCoreCheckedFunction<BlackboardArtifact, EventDescriptionWithTime> eventPayloadFunction) {
+			TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> eventPayloadFunction) {
 
-		super(typeID, displayName, EventType.TypeLevel.SUB_TYPE, superType);
+		super(typeID, displayName, TimelineEventType.TypeLevel.SUB_TYPE, superType);
 		this.artifactType = artifactType;
 		this.dateTimeAttributeType = dateTimeAttributeType;
 		this.shortExtractor = shortExtractor;
 		this.medExtractor = medExtractor;
 		this.fullExtractor = fullExtractor;
-		this.eventPayloadFunction = eventPayloadFunction;
+		this.artifactParsingFunction = eventPayloadFunction;
 	}
 
-	@Override
-	public int getArtifactTypeID() {
+	int getArtifactTypeID() {
 		return getArtifactType().getTypeID();
 	}
 
 	/**
-	 * The attribute type this event type is derived from.
+	 * The attribute type this event type is associated with.
 	 *
 	 * @return The attribute type this event type is derived from.
 	 */
-	@Override
-	public BlackboardAttribute.Type getDateTimeAttributeType() {
+	BlackboardAttribute.Type getDateTimeAttributeType() {
 		return dateTimeAttributeType;
 	}
 
-	@Override
-	public String extractFullDescription(BlackboardArtifact artf) throws TskCoreException {
+	String extractFullDescription(BlackboardArtifact artf) throws TskCoreException {
 		return fullExtractor.apply(artf);
 	}
 
-	@Override
-	public String extractMedDescription(BlackboardArtifact artf) throws TskCoreException {
+	String extractMedDescription(BlackboardArtifact artf) throws TskCoreException {
 		return medExtractor.apply(artf);
 	}
 
-	@Override
-	public String extractShortDescription(BlackboardArtifact artf) throws TskCoreException {
+	String extractShortDescription(BlackboardArtifact artf) throws TskCoreException {
 		return shortExtractor.apply(artf);
 	}
 
@@ -104,13 +98,19 @@ class ArtifactEventTypeImpl extends EventTypeImpl implements ArtifactEventType {
 	 *
 	 * @return The artifact type this event type is derived from.
 	 */
-	@Override
-	public BlackboardArtifact.Type getArtifactType() {
+	BlackboardArtifact.Type getArtifactType() {
 		return artifactType;
 	}
 
-	@Override
-	public EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
+	
+	/**
+	 * Parses the artifact to create a triple description with a time.
+	 * 
+	 * @param artifact
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	TimelineEventDescriptionWithTime makeEventDescription(BlackboardArtifact artifact) throws TskCoreException {
 		//if we got passed an artifact that doesn't correspond to this event type, 
 		//something went very wrong. throw an exception.
 		if (this.getArtifactTypeID() != artifact.getArtifactTypeID()) {
@@ -122,16 +122,17 @@ class ArtifactEventTypeImpl extends EventTypeImpl implements ArtifactEventType {
 			return null;
 		}
 
-		if (this.eventPayloadFunction != null) {
+		/* Use the type-specific method */
+		if (this.artifactParsingFunction != null) {
 			//use the hook provided by this subtype implementation to build the descriptions.
-			return this.eventPayloadFunction.apply(artifact);
+			return this.artifactParsingFunction.apply(artifact);
 		}
 
 		//combine descriptions in standard way
 		String shortDescription = extractShortDescription(artifact);
 		String medDescription = shortDescription + " : " + extractMedDescription(artifact);
 		String fullDescription = medDescription + " : " + extractFullDescription(artifact);
-		return new EventDescriptionWithTime(timeAttribute.getValueLong(), shortDescription, medDescription, fullDescription);
+		return new TimelineEventDescriptionWithTime(timeAttribute.getValueLong(), shortDescription, medDescription, fullDescription);
 	}
 
 	static BlackboardAttribute getAttributeSafe(BlackboardArtifact artf, BlackboardAttribute.Type attrType) {
@@ -203,7 +204,6 @@ class ArtifactEventTypeImpl extends EventTypeImpl implements ArtifactEventType {
 	 */
 	@FunctionalInterface
 	interface TSKCoreCheckedFunction<I, O> {
-
 		O apply(I input) throws TskCoreException;
 	}
 }

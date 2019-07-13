@@ -120,7 +120,7 @@ public abstract class TimelineFilter {
 		/**
 		 * the event type this filter passes
 		 */
-		private final EventType eventType;
+		private final TimelineEventType eventType;
 
 		/**
 		 * private constructor that enables non recursive/tree construction of
@@ -130,12 +130,12 @@ public abstract class TimelineFilter {
 		 * @param recursive true if subfilters should be added for each subtype.
 		 *                  False if no subfilters should be added.
 		 */
-		private EventTypeFilter(EventType eventType, boolean recursive) {
+		private EventTypeFilter(TimelineEventType eventType, boolean recursive) {
 			super(FXCollections.observableArrayList());
 			this.eventType = eventType;
 			if (recursive) {
 				// add subfilters for each subtype
-				for (EventType subType : eventType.getSubTypes()) {
+				for (TimelineEventType subType : eventType.getSubTypes()) {
 					addSubFilter(new EventTypeFilter(subType));
 				}
 			}
@@ -147,17 +147,17 @@ public abstract class TimelineFilter {
 		 *
 		 * @param eventType the event type this filter will pass
 		 */
-		public EventTypeFilter(EventType eventType) {
+		public EventTypeFilter(TimelineEventType eventType) {
 			this(eventType, true);
 		}
 
-		public EventType getEventType() {
+		public TimelineEventType getEventType() {
 			return eventType;
 		}
 
 		@Override
 		public String getDisplayName() {
-			return (EventType.ROOT_EVENT_TYPE.equals(eventType)) ? BundleProvider.getBundle().getString("TypeFilter.displayName.text") : eventType.getDisplayName();
+			return (TimelineEventType.ROOT_EVENT_TYPE.equals(eventType)) ? BundleProvider.getBundle().getString("TypeFilter.displayName.text") : eventType.getDisplayName();
 		}
 
 		@Override
