@@ -371,12 +371,17 @@ public interface EventType extends Comparable<EventType> {
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 	
-	ArtifactEventType WEB_FORM_AUTOFILL = new URLArtifactEventType(27,
+	ArtifactEventType WEB_FORM_AUTOFILL = new ArtifactEventTypeImpl(27,
 			getBundle().getString("WebTypes.webFormAutoFill.name"),//NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_FORM_AUTOFILL),
 			new Type(TSK_DATETIME_ACCESSED),
-			new Type(TSK_NAME));
+			artf -> {
+				final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
+				final BlackboardAttribute value = getAttributeSafe(artf, new Type(TSK_VALUE));
+				final BlackboardAttribute count = getAttributeSafe(artf, new Type(TSK_COUNT));
+				return stringValueOf(name) + ":" + stringValueOf(value) + " count: " + stringValueOf(count); // NON-NLS
+			}, new EmptyExtractor(), new EmptyExtractor());
 	
 	ArtifactEventType WEB_FORM_ADDRESSES = new URLArtifactEventType(28,
 			getBundle().getString("WebTypes.webFormAddress.name"),//NON-NLS
