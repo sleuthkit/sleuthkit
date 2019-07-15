@@ -699,7 +699,8 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
 /**
 * getDrivesToProcess() - returns the drive to process
 *          By default we process all available PhysicalDrives, unless
-*          C: is paritioned with LDM or has Bitlocker enabled, in which case we process 'C:'
+*          a drive is paritioned with LDM or has Bitlocker enabled, in which case we
+*          enumerate all drive letters.
 *
 * @param output a set of drivesToProcess
 *
