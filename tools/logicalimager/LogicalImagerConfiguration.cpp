@@ -215,6 +215,9 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
         else if (it.key() == "finalize-image-writer") {
             it.value().get_to(m_finalizeImageWriter);
         }
+        else if (it.key() == "prompt-before-exit") {
+            it.value().get_to(m_promptBeforeExit);
+        }
         else if (it.key() == "version") {
             it.value().get_to(m_version);
         }
