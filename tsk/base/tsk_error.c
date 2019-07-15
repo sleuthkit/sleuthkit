@@ -19,7 +19,8 @@
 /* Global variables that fit here as well as anywhere */
 char *progname = "unknown";
 int tsk_verbose = 0;
-int tsk_abort = 0;
+int tsk_abort = 0; // If 1, indicates the program should abort ASAP. 
+                   // Typically indicates a disk write error (out of disk space).
 
 /* Error messages */
 static const char *tsk_err_aux_str[TSK_ERR_IMG_MAX] = {

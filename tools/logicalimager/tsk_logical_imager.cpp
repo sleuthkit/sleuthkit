@@ -49,6 +49,13 @@ static void pressAnyKeyToExit(int code) {
     exit(code);
 }
 
+static void checkForAbort() {
+    if (tsk_abort) {
+        fprintf(stderr, "Logical Imager aborted\n");
+        pressAnyKeyToExit(1);
+    }
+}
+
 void printDebug(char *msg, const char *fmt...) {
     if (tsk_verbose) {
         string prefix("tsk_logical_imager: ");
@@ -632,11 +639,7 @@ static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
         TskHelper::getInstance().addFSInfo(fs_info);
     }
     else {
-
-        if (tsk_abort) {
-            fprintf(stderr, "tsk_fs_open_img: tsk_abort\n");
-            pressAnyKeyToExit(1);
-        }
+        checkForAbort();
 
         // check if it is bitlocker - POC effort 
         char buffer[32];
@@ -978,7 +981,7 @@ main(int argc, char **argv1)
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            fprintf(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
+            fprintf(stdout, "Skipping drive %s because the Logical Imager is installed on it\n", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
@@ -1010,10 +1013,7 @@ main(int argc, char **argv1)
         TSK_VS_INFO *vs_info;
         if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
             printDebug("No volume system found. Looking for file system");
-            if (tsk_abort) {
-                fprintf(stderr, "tsk_vs_open: tsk_abort\n");
-                pressAnyKeyToExit(1);
-            }
+            checkForAbort();
             openFs(img, 0);
         }
         else {
@@ -1052,13 +1052,7 @@ main(int argc, char **argv1)
 
                         tsk_fs_file_close(fs_file);
                     }
-
-                    if (tsk_abort) {
-                        fprintf(stderr, "Search for full path files: tsk_abort\n");
-                        pressAnyKeyToExit(1);
-                    }
-
-
+                    checkForAbort();
                 }
             }
         }
@@ -1071,10 +1065,7 @@ main(int argc, char **argv1)
         RegistryAnalyzer registryAnalyzer(usersFileName);
         registryAnalyzer.analyzeSAMUsers();
 
-        if (tsk_abort) {
-            fprintf(stderr, "Search for registry: tsk_abort\n");
-            pressAnyKeyToExit(1);
-        }
+        checkForAbort();
 
         TskHelper::getInstance().reset();
 
@@ -1089,13 +1080,8 @@ main(int argc, char **argv1)
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
             // Don't exit, just let it continue
-            tsk_error_print(stderr);
         }
-        if (tsk_abort) {
-            fprintf(stderr, "Searching for files by attribute: tsk_abort\n");
-            pressAnyKeyToExit(1);
-        }
-
+        checkForAbort();
     }
 
     // close alert file before tsk_img_writer_finish, which may take a long time. 
@@ -1111,6 +1097,7 @@ main(int argc, char **argv1)
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
                     fprintf(stderr, "Error finishing VHD for %s\n", it->second.c_str());
+                    checkForAbort();
                 }
             }
         }
