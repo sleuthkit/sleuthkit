@@ -126,13 +126,11 @@ ewf_glob_free(IMG_EWF_INFO* ewf_info) {
     // @@@ Probably a memory leak in v1 unless libewf_close deals with it
     if (ewf_info->used_ewf_glob != 0) {
 #if defined ( HAVE_LIBEWF_V2_API)
-        libewf_error_t *error = NULL;
 #ifdef TSK_WIN32
-        libewf_glob_wide_free(ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
+        libewf_glob_wide_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
 #else
-        libewf_glob_free(ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
+        libewf_glob_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
 #endif
-        libewf_error_free(&error);
 #endif
         // ensure that tsk_img_free() does not double free images
         ewf_info->img_info.images = NULL;
