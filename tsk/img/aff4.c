@@ -263,7 +263,6 @@ aff4_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of AFF4 file\n");
         }
-        AFF4_close(aff4_info->handle, NULL);
         goto on_error;
     }
 
@@ -285,6 +284,9 @@ on_error:
 #if defined (TSK_WIN32)
     free(fn);
 #endif
+    if (aff4_info->handle) {
+        AFF4_close(aff4_info->handle, NULL);
+    }
     tsk_img_free(aff4_info);
     return NULL;
 }
