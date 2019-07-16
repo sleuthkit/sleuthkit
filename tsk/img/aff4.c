@@ -154,6 +154,16 @@ TSK_IMG_INFO*
 aff4_open(int a_num_img,
     const TSK_TCHAR* const a_images[], unsigned int a_ssize)
 {
+   if (a_num_img != 1) {
+        tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
+            ": expected one image filename, was given %d", a_images[0], a_num_img);
+
+        if (tsk_verbose != 0) {
+            tsk_fprintf(stderr, "aff4 requires exactly 1 image filename for opening\n");
+        }
+        return NULL;
+    }
+
     IMG_AFF4_INFO* aff4_info = NULL;
     if ((aff4_info =
             (IMG_AFF4_INFO*) tsk_img_malloc(sizeof(IMG_AFF4_INFO))) ==
@@ -166,7 +176,6 @@ aff4_open(int a_num_img,
     img_info->images = NULL;
     img_info->num_img = 0;
 
-    // a_num_img should be 1; libaff4 handles image assembly
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
        goto on_error;
     }
