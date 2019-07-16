@@ -278,6 +278,7 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
         NULL) {
         goto on_error;
     }
+    aff_info->af_file = NULL;
 
     img_info = (TSK_IMG_INFO *) aff_info;
     img_info->read = aff_read;
@@ -359,6 +360,9 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
 
 on_error:
     free(image);
+    if (af_file) {
+        af_close(aff_info->af_file);
+    }
     tsk_img_free(aff_info);
     return NULL;
 }
