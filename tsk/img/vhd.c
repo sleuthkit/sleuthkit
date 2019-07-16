@@ -133,6 +133,16 @@ TSK_IMG_INFO *
 vhdi_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
+    if (a_num_img != 1) {
+        tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
+            ": expected one image filename, was given %d", a_images[0], a_num_img);
+
+        if (tsk_verbose != 0) {
+            tsk_fprintf(stderr, "vhd requires exactly 1 image filename for opening\n");
+        }
+        return NULL;
+    }
+
     char error_string[TSK_VHDI_ERROR_STRING_SIZE];
     libvhdi_error_t *vhdi_error = NULL;
     int i;
@@ -153,7 +163,6 @@ vhdi_open(int a_num_img,
     vhdi_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vhdi_info;
 
-    // a_num_img should be 1
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
         goto on_error;
     }

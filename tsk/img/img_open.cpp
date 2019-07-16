@@ -92,6 +92,13 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
+    if (num_img < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("number of images is negative (%d)", num_img);
+        return NULL;
+    }
+
     if ((a_ssize > 0) && (a_ssize < 512)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
@@ -131,7 +138,7 @@ tsk_img_open(int num_img,
 
         /* Try the non-raw formats first */
 #if HAVE_LIBAFFLIB
-        if ((img_info = aff_open(images, a_ssize)) != NULL) {
+        if ((img_info = aff_open(num_img, images, a_ssize)) != NULL) {
             /* we don't allow the "ANY" when autodetect is used because
              * we only want to detect the tested formats. */
             if (img_info->itype == TSK_IMG_TYPE_AFF_ANY) {
@@ -244,7 +251,7 @@ tsk_img_open(int num_img,
     case TSK_IMG_TYPE_AFF_AFD:
     case TSK_IMG_TYPE_AFF_AFM:
     case TSK_IMG_TYPE_AFF_ANY:
-        img_info = aff_open(images, a_ssize);
+        img_info = aff_open(num_img, images, a_ssize);
         break;
 #endif
 

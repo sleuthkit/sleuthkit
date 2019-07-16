@@ -135,6 +135,16 @@ TSK_IMG_INFO *
 vmdk_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
+    if (a_num_img != 1) {
+        tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
+            ": expected one image filename, was given %d", a_images[0], a_num_img);
+
+        if (tsk_verbose != 0) {
+            tsk_fprintf(stderr, "vmdk requires exactly 1 image filename for opening\n");
+        }
+        return NULL;
+    }
+
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
     libvmdk_error_t *vmdk_error = NULL;
     int i;
@@ -155,7 +165,6 @@ vmdk_open(int a_num_img,
     vmdk_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vmdk_info;
 
-    // a_num_img should be 1
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
         goto on_error;
     }
