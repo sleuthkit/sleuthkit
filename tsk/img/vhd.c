@@ -155,8 +155,7 @@ vhdi_open(int a_num_img,
 
     // a_num_img should be 1
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-        tsk_img_free(vhdi_info);
-        return NULL;
+        goto on_error;
     }
 
     if (libvhdi_file_initialize(&(vhdi_info->handle), &vhdi_error) != 1) {
@@ -167,12 +166,10 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
 
-        tsk_img_free(vhdi_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Unable to create vhdi handle\n");
         }
-        return NULL;
+        goto on_error;
     }
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
@@ -189,13 +186,10 @@ vhdi_open(int a_num_img,
             ": Error checking file signature for image (%s)", a_images[0],
             error_string);
 
-        libvhdi_file_free(&(vhdi_info->handle), NULL);
-        tsk_img_free(vhdi_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error checking file signature for vhd file\n");
         }
-        return NULL;
+        goto on_error;
     }
 #if defined( TSK_WIN32 )
     if (libvhdi_file_open_wide(vhdi_info->handle,
@@ -214,13 +208,10 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
-        libvhdi_file_free(&(vhdi_info->handle), NULL);
-        tsk_img_free(vhdi_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening vhdi file\n");
         }
-        return NULL;
+        goto on_error;
     }
     if (libvhdi_file_get_media_size(vhdi_info->handle,
             (size64_t *) & (img_info->size), &vhdi_error) != 1) {
@@ -232,13 +223,10 @@ vhdi_open(int a_num_img,
             ": Error getting size of image (%s)", a_images[0],
             error_string);
 
-        libvhdi_file_free(&(vhdi_info->handle), NULL);
-        tsk_img_free(vhdi_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting size of vhdi file\n");
         }
-        return NULL;
+        goto on_error;
     }
 
     if (a_ssize != 0) {
@@ -256,6 +244,14 @@ vhdi_open(int a_num_img,
     tsk_init_lock(&(vhdi_info->read_lock));
 
     return img_info;
+
+on_error:
+    if (vhdi_info->handle) {
+        libvhdi_file_close(vhdi_info->handle, NULL);
+    }
+    libvhdi_file_free(&(vhdi_info->handle), NULL);
+    tsk_img_free(vhdi_info);
+    return NULL;
 }
 
 #endif /* HAVE_LIBVHDI */

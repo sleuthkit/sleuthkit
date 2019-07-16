@@ -227,7 +227,7 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
     IMG_AFF_INFO *aff_info;
     TSK_IMG_INFO *img_info;
     int type;
-    char *image;
+    char *image = NULL;
 
 #ifdef TSK_WIN32
     // convert wchar_t* image path to char* to conform to
@@ -235,11 +235,13 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
     UTF16 *utf16 = (UTF16 *) images[0];
     size_t ilen = wcslen(utf16);
     size_t olen = ilen * 4 + 1;
+
     UTF8 *utf8 = (UTF8 *) tsk_malloc(olen);
+    if (utf8 == NULL) {
+        return NULL;
+    }
 
     image = (char *) utf8;
-    if (image == NULL)
-        return NULL;
     TSKConversionResult retval =
         tsk_UTF16toUTF8_lclorder((const UTF16 **) &utf16,
         &utf16[ilen], &utf8,
@@ -250,8 +252,7 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
         tsk_error_set_errstr("aff_open file: %" PRIttocTSK
             ": Error converting path to UTF-8 %d\n", images[0], retval);
-        free(image);
-        return NULL;
+        goto on_error;
     }
     utf8 = (UTF8 *) image;
     while (*utf8) {
@@ -261,8 +262,7 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
             tsk_error_set_errstr("aff_open file: %" PRIttocTSK
                 ": Non-Latin paths are not supported for AFF images\n",
                 images[0]);
-            free(image);
-            return NULL;
+            goto on_error;
         }
         utf8++;
     }
@@ -276,8 +276,7 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
     if ((aff_info =
             (IMG_AFF_INFO *) tsk_img_malloc(sizeof(IMG_AFF_INFO))) ==
         NULL) {
-        free(image);
-        return NULL;
+        goto on_error;
     }
 
     img_info = (TSK_IMG_INFO *) aff_info;
@@ -290,9 +289,7 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
 
     // a_num_img should be 1
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-        tsk_img_free(aff_info);
-        free(image);
-        return NULL;
+        goto on_error;
     }
 
     img_info->sector_size = 512;
@@ -311,9 +308,7 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff_open file: %" PRIttocTSK
             ": Error checking type", images[0]);
-        tsk_img_free(aff_info);
-        free(image);
-        return NULL;
+        goto on_error;
     }
     else if (type == AF_IDENTIFY_AFF) {
         img_info->itype = TSK_IMG_TYPE_AFF_AFF;
@@ -335,26 +330,22 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff_open file: %" PRIttocTSK
             ": Error opening - %s", images[0], strerror(errno));
-        tsk_img_free(aff_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening AFF/AFD/AFM file\n");
             perror("aff_open");
         }
-        free(image);
-        return NULL;
+        goto on_error;
     }
     // verify that a password was given and we can read encrypted data. 
     if (af_cannot_decrypt(aff_info->af_file)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_PASSWD);
         tsk_error_set_errstr("aff_open file: %" PRIttocTSK, images[0]);
-        tsk_img_free(aff_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr,
                 "Error opening AFF/AFD/AFM file (incorrect password)\n");
         }
-        free(image);
-        return NULL;
+        goto on_error;
     }
 
     aff_info->type = type;
@@ -365,5 +356,10 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
     aff_info->seek_pos = 0;
     free(image);
     return img_info;
+
+on_error:
+    free(image);
+    tsk_img_free(aff_info);
+    return NULL;
 }
 #endif
