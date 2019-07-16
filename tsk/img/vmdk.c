@@ -157,8 +157,7 @@ vmdk_open(int a_num_img,
 
     // a_num_img should be 1
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-        tsk_img_free(vmdk_info);
-        return NULL;
+        goto on_error;
     }
 
     if (libvmdk_handle_initialize(&(vmdk_info->handle), &vmdk_error) != 1) {
@@ -169,12 +168,10 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
 
-        tsk_img_free(vmdk_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Unable to create vmdk handle\n");
         }
-        return NULL;
+        goto on_error;
     }
 #if defined( TSK_WIN32 )
     if (libvmdk_handle_open_wide(vmdk_info->handle,
@@ -193,13 +190,10 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
-        libvmdk_handle_free(&(vmdk_info->handle), NULL);
-        tsk_img_free(vmdk_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening vmdk file\n");
         }
-        return NULL;
+        goto on_error;
     }
 
     if (libvmdk_handle_open_extent_data_files(vmdk_info->handle, &vmdk_error) != 1) {
@@ -211,13 +205,10 @@ vmdk_open(int a_num_img,
             ": Error opening extent data files for image (%s)", a_images[0],
             error_string);
 
-        libvmdk_handle_free(&(vmdk_info->handle), NULL);
-        tsk_img_free(vmdk_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening vmdk extent data files\n");
         }
-        return NULL;
+        goto on_error;
     }
     if (libvmdk_handle_get_media_size(vmdk_info->handle,
             (size64_t *) & (img_info->size), &vmdk_error) != 1) {
@@ -229,13 +220,10 @@ vmdk_open(int a_num_img,
             ": Error getting size of image (%s)", a_images[0],
             error_string);
 
-        libvmdk_handle_free(&(vmdk_info->handle), NULL);
-        tsk_img_free(vmdk_info);
-
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting size of vmdk file\n");
         }
-        return NULL;
+        goto on_error;
     }
 
     if (a_ssize != 0) {
@@ -253,6 +241,14 @@ vmdk_open(int a_num_img,
     tsk_init_lock(&(vmdk_info->read_lock));
 
     return img_info;
+
+on_error:
+    if (vmdk_info->handle) {
+        libvmdk_handle_close(vmdk_info->handle, NULL);
+    }
+    libvmdk_handle_free(&(vmdk_info->handle), NULL);
+    tsk_img_free(vmdk_info);
+    return NULL;
 }
 
 #endif /* HAVE_LIBVMDK */
