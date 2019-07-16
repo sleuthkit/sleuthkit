@@ -98,6 +98,8 @@ public final class TimelineEvent {
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
+		// This isn't the best design, but it was the most expediant way to reduce 
+		// the public API (by keeping parseDescription()) out of the public API.  
 		if (type instanceof TimelineEventTypeImpl) {
 			this.descriptions = ((TimelineEventTypeImpl)type).parseDescription(fullDescription, medDescription, shortDescription);
 		}

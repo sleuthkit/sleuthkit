@@ -587,20 +587,18 @@ public final class TimelineManager {
 		 * description.
 		 */
 		if (artifact.getArtifactTypeID() == TSK_TL_EVENT.getTypeID()) {
-			TimelineEventArtifactTypeImpl eventType;//the type of the event to add.
+			TimelineEventType eventType;//the type of the event to add.
 			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_TL_EVENT_TYPE));
 			if (attribute == null) {
-				eventType = (TimelineEventArtifactTypeImpl)TimelineEventType.OTHER;
+				eventType = TimelineEventType.OTHER;
 			} else {
 				long eventTypeID = attribute.getValueLong();
-				// @@@ SHOULD CHECK TYPE FIRST...
-				eventType = (TimelineEventArtifactTypeImpl)eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
+				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
 			}
 
-			// @@@ BAD CAST
+			// @@@ This casting is risky if we change class hierarchy, but was expediant.  Should move parsing to another class
 			addArtifactEvent(((TimelineEventArtifactTypeImpl)TimelineEventType.OTHER)::makeEventDescription, eventType, artifact)
 					.ifPresent(newEvents::add);
-
 		} else {
 			/*
 			 * If there are any event types configured to make descriptions
