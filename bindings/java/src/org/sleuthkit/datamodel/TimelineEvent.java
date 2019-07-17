@@ -86,7 +86,7 @@ public final class TimelineEvent {
 	 */
 	// @@@ This should be package scope, but it is currently being used in DetailsViewModel.
 	// Need to investigate why that class is doing a direct DB query
-	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
+	TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
 			long time, EventType type,
 			String fullDescription,
 			String medDescription,
