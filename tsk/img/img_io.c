@@ -215,7 +215,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
             a_img_info->cache[cache_next], read_size);
 
         if (read_count == -2) {
-            return -1;
+            return -2;
         }
 
         // if no error, then set the variables and copy the data

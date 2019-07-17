@@ -50,9 +50,14 @@ static void pressAnyKeyToExit(int code) {
 }
 
 static void checkForAbort() {
-    if (tsk_abort) {
-        fprintf(stderr, "Logical Imager aborted\n");
-        pressAnyKeyToExit(1);
+    TSK_ERROR_INFO *errorInfo = tsk_error_get_info();
+    uint32_t t_errno = errorInfo->t_errno;
+    if (t_errno & TSK_ERR_IMG) {
+        int error = TSK_ERR_MASK & t_errno;
+        if (error == (TSK_ERR_IMG_WRITE ^ TSK_ERR_IMG)) {
+            fprintf(stderr, "Logical Imager aborted\n");
+            pressAnyKeyToExit(1);
+        }
     }
 }
 

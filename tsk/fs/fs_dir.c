@@ -554,6 +554,14 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
     // get the list of entries in the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs, a_addr)) == NULL) {
+        TSK_ERROR_INFO *errorInfo = tsk_error_get_info();
+        uint32_t t_errno = errorInfo->t_errno;
+        if (t_errno & TSK_ERR_IMG) {
+            int error = TSK_ERR_MASK & t_errno;
+            if (error == (TSK_ERR_IMG_WRITE ^ TSK_ERR_IMG)) {
+                return TSK_WALK_STOP;
+            }
+        }
         return TSK_WALK_ERROR;
     }
 
@@ -583,6 +591,15 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     fs_file->name->meta_addr)) {
                 if (tsk_verbose)
                     tsk_error_print(stderr);
+                TSK_ERROR_INFO *errorInfo = tsk_error_get_info();
+                uint32_t t_errno = errorInfo->t_errno;
+                if (t_errno & TSK_ERR_IMG) {
+                    int error = TSK_ERR_MASK & t_errno;
+                    if (error == (TSK_ERR_IMG_WRITE ^ TSK_ERR_IMG)) {
+                        tsk_error_reset();
+                        return TSK_WALK_STOP;
+                    }
+                }
                 tsk_error_reset();
             }
         }

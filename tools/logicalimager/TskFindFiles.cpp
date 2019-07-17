@@ -39,9 +39,18 @@ TskFindFiles::~TskFindFiles() {
  * Print errors as they are encountered
  */
 uint8_t TskFindFiles::handleError() {
-     tsk_error_print(stderr);
-    if (tsk_abort == 1) {
-        return 1;
+    tsk_error_print(stderr);
+    std::vector<TskAuto::error_record> errors = this->getErrorList();
+    for (std::vector<TskAuto::error_record>::iterator it = errors.begin(); it != errors.end(); ++it) {
+        TskAuto::error_record error = *it;
+        int t_errno = error.code;
+        if (t_errno & TSK_ERR_IMG) {
+            int error = TSK_ERR_MASK & t_errno;
+            if (error == (TSK_ERR_IMG_WRITE ^ TSK_ERR_IMG)) {
+                this->setStopProcessing();
+                return 1;
+            }
+        }
     }
     return 0;
 }
