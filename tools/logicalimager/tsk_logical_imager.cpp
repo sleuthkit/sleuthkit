@@ -45,7 +45,7 @@ static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
 static void pressAnyKeyToExit(int code) {
     std::cout << std::endl << "Press any key to exit";
-    (void) _getch(); 
+    (void) _getch();
     exit(code);
 }
 
@@ -282,10 +282,10 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
         -1,                          // COM authentication
         NULL,                        // Authentication services
         NULL,                        // Reserved
-        RPC_C_AUTHN_LEVEL_DEFAULT,   // Default authentication 
-        RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation  
+        RPC_C_AUTHN_LEVEL_DEFAULT,   // Default authentication
+        RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation
         NULL,                        // Authentication info
-        EOAC_NONE,                   // Additional capabilities 
+        EOAC_NONE,                   // Additional capabilities
         NULL                         // Reserved
     );
 
@@ -320,7 +320,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
         0,                       // Locale. NULL indicates current
         NULL,                    // Security flags.
         0,                       // Authority (e.g. Kerberos)
-        0,                       // Context object 
+        0,                       // Context object
         ppWbemServices                    // pointer to IWbemServices proxy
     );
 
@@ -341,11 +341,11 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
         *ppWbemServices,                        // Indicates the proxy to set
         RPC_C_AUTHN_WINNT,           // RPC_C_AUTHN_xxx
         RPC_C_AUTHZ_NONE,            // RPC_C_AUTHZ_xxx
-        NULL,                        // Server principal name 
-        RPC_C_AUTHN_LEVEL_CALL,      // RPC_C_AUTHN_LEVEL_xxx 
+        NULL,                        // Server principal name
+        RPC_C_AUTHN_LEVEL_CALL,      // RPC_C_AUTHN_LEVEL_xxx
         RPC_C_IMP_LEVEL_IMPERSONATE, // RPC_C_IMP_LEVEL_xxx
         NULL,                        // client identity
-        EOAC_NONE                    // proxy capabilities 
+        EOAC_NONE                    // proxy capabilities
     );
 
     if (FAILED(hres)) {
@@ -399,7 +399,7 @@ static int checkDriveForLDM(const string& driveLetter) {
     }
 
 
-    // Use the IWbemServices pointer to make requests of WMI. 
+    // Use the IWbemServices pointer to make requests of WMI.
     // Make requests here:
     HRESULT hres;
     IEnumWbemClassObject* pEnumerator = NULL;
@@ -498,7 +498,7 @@ static int checkDriveForBitlocker(const string& driveLetter) {
         }
     }
 
-    // Use the IWbemServices pointer to make requests of WMI. 
+    // Use the IWbemServices pointer to make requests of WMI.
     // Make requests here:
     HRESULT hres;
     IEnumWbemClassObject* pEnumerator = NULL;
@@ -632,7 +632,7 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
             fprintf(stderr, "Error in checking BitLocker protection status\n");
         }
 
-        // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker 
+        // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker
         return TRUE;
     }
 }
@@ -646,7 +646,7 @@ static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
     else {
         checkForAbort();
 
-        // check if it is bitlocker - POC effort 
+        // check if it is bitlocker - POC effort
         char buffer[32];
         tsk_img_read(img, byteOffset, buffer, 32);
         if ((buffer[3] == '-') && (buffer[4] == 'F') &&
@@ -835,7 +835,7 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
 * matchCallback - The function is passed into the LogicalImagerConfiguration.
 *                 It is called when a file matches a rule. Depending on the matchResult setting,
 *                 this function may extract the matched file and alert the user.
-* 
+*
 * @param matchResult The RuleMatchResult
 * @param fs_file TSK_FS_FILE that matches the rule
 * @param path Path of the file
@@ -877,9 +877,10 @@ main(int argc, char **argv1)
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerConfiguration *config = NULL;
+    bool promptBeforeExit = true;
 
     // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
-    // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to 
+    // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to
     // display most non-ASCII characters (tested with European, Japanese, Chinese, Korean, Greek,
     // Arabic, Hebrew and Cyrillic strings).
     SetConsoleOutputCP(65001); // Set the CMD Console to Unicode codepage
@@ -956,6 +957,7 @@ main(int argc, char **argv1)
 
     try {
         config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename), (LogicalImagerRuleSet::matchCallback)matchCallback);
+        promptBeforeExit = config->getPromptBeforeExit();
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -966,7 +968,7 @@ main(int argc, char **argv1)
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        pressAnyKeyToExit(1);
+        handleExit(1, promptBeforeExit);
     }
     fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
@@ -993,14 +995,14 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            pressAnyKeyToExit(1);
+            handleExit(1, promptBeforeExit);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
                 fprintf(stderr, "Failed to initialize VHD writer\n");
-                pressAnyKeyToExit(1);
+                handleExit(1, promptBeforeExit);
             }
             tsk_img_writer_set_exit_on_error(img, 1);
         }
@@ -1077,7 +1079,7 @@ main(int argc, char **argv1)
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
             fprintf(stderr, "Failed to open image\n");
-            pressAnyKeyToExit(1);
+            handleExit(1, promptBeforeExit);
         }
 
         fprintf(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
@@ -1089,7 +1091,7 @@ main(int argc, char **argv1)
         checkForAbort();
     }
 
-    // close alert file before tsk_img_writer_finish, which may take a long time. 
+    // close alert file before tsk_img_writer_finish, which may take a long time.
     closeAlert();
 
     // Delayed finialize image write
@@ -1113,5 +1115,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    pressAnyKeyToExit(0);
+    handleExit(0, promptBeforeExit);
 }
