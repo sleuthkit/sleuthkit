@@ -49,6 +49,14 @@ static void pressAnyKeyToExit(int code) {
     exit(code);
 }
 
+static void handleExit(int code, bool promptBeforeExit) {
+    if (promptBeforeExit) {
+        std::cout << std::endl << "Press any key to exit";
+        (void)_getch();
+    }
+    exit(code);
+}
+
 static void checkForAbort() {
     TSK_ERROR_INFO *errorInfo = tsk_error_get_info();
     uint32_t t_errno = errorInfo->t_errno;
