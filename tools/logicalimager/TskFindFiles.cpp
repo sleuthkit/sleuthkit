@@ -24,12 +24,15 @@
 #include "tsk/tsk_tools_i.h"
 #include "TskFindFiles.h"
 
+extern bool imgWriteError;
+
 /**
  * Create the Find Files object given the Logical Imager Configuration
  * @param config LogicalImagerRuleSet to use for finding files
  */
 TskFindFiles::TskFindFiles(const LogicalImagerConfiguration *config) {
     m_logicialImagerConfiguration = config;
+    imgWriteError = false;
 }
 
 TskFindFiles::~TskFindFiles() {
@@ -39,17 +42,17 @@ TskFindFiles::~TskFindFiles() {
  * Print errors as they are encountered
  */
 uint8_t TskFindFiles::handleError() {
-    tsk_error_print(stderr);
+    if (tsk_verbose) {
+        tsk_error_print(stderr);
+    }
     std::vector<TskAuto::error_record> errors = this->getErrorList();
     for (std::vector<TskAuto::error_record>::iterator it = errors.begin(); it != errors.end(); ++it) {
         TskAuto::error_record error = *it;
         int t_errno = error.code;
-        if (t_errno & TSK_ERR_IMG) {
-            int error = TSK_ERR_MASK & t_errno;
-            if (error == (TSK_ERR_IMG_WRITE ^ TSK_ERR_IMG)) {
-                this->setStopProcessing();
-                return 1;
-            }
+        if ((t_errno & TSK_ERR_IMG) && (t_errno == TSK_ERR_IMG_WRITE)) {
+            imgWriteError = true;
+            this->setStopProcessing();
+            return 1;
         }
     }
     return 0;

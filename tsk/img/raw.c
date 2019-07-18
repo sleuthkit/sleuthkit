@@ -184,7 +184,6 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                     "\" offset: %" PRIuOFF " tsk_img_writer_add cnt: %" PRIuSIZE " - %d",
                     raw_info->img_info.images[idx], rel_offset, cnt
                     );
-                tsk_abort = 1;
                 return -2;
             }
         }

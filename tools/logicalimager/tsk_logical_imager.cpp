@@ -40,6 +40,7 @@ std::string GetErrorStdStr(DWORD err);
 std::wstring GetErrorStdStrW(DWORD err);
 
 static TSK_TCHAR *progname;
+bool imgWriteError = false;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
@@ -58,14 +59,14 @@ static void handleExit(int code, bool promptBeforeExit) {
 }
 
 static void checkForAbort() {
-    TSK_ERROR_INFO *errorInfo = tsk_error_get_info();
-    uint32_t t_errno = errorInfo->t_errno;
-    if (t_errno & TSK_ERR_IMG) {
-        int error = TSK_ERR_MASK & t_errno;
-        if (error == (TSK_ERR_IMG_WRITE ^ TSK_ERR_IMG)) {
-            fprintf(stderr, "Logical Imager aborted\n");
-            pressAnyKeyToExit(1);
-        }
+    if (tsk_error_is_img_write()) {
+        fprintf(stderr, "Logical Imager terminated because of VHD write error\n");
+        pressAnyKeyToExit(1);
+    }
+
+    if (imgWriteError) {
+        fprintf(stderr, "Logical Imager terminated because of VHD write error\n");
+        pressAnyKeyToExit(1);
     }
 }
 

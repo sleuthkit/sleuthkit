@@ -32,7 +32,6 @@
  * the file system -specific opening routines.
  */
 
-
 /**
  * \ingroup fslib
  * Tries to process data in a volume as a file system.
@@ -136,6 +135,9 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                     // cannot autodetect the fs type and must give up
                     fs_first->close(fs_first);
                     fs_info->close(fs_info);
+                    if (tsk_error_is_img_write()) {
+                        return NULL;
+                    }
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
                     tsk_error_set_errstr(
@@ -144,12 +146,18 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 }
             }
             else {
+                if (tsk_error_is_img_write()) {
+                    return NULL;
+                }
                 // fs does not open as type i
                 tsk_error_reset();
             }
         }
 
         if (fs_first == NULL) {
+            if (tsk_error_is_img_write()) {
+                return NULL;
+            }
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
         }
@@ -182,6 +190,9 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (TSK_FS_TYPE_ISYAFFS2(a_ftype)) {
         return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
+    }
+    if (tsk_error_is_img_write()) {
+        return NULL;
     }
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);

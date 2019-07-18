@@ -19,8 +19,6 @@
 /* Global variables that fit here as well as anywhere */
 char *progname = "unknown";
 int tsk_verbose = 0;
-int tsk_abort = 0; // If 1, indicates the program should abort ASAP. 
-                   // Typically indicates a disk write error (out of disk space).
 
 /* Error messages */
 static const char *tsk_err_aux_str[TSK_ERR_IMG_MAX] = {
@@ -429,4 +427,19 @@ tsk_error_reset()
        info->errstr2[0] = 0;
        info->errstr_print[0] = 0;
     }
+}
+
+/**
+* \ingroup baselib
+* Test if current tsk_error is TSK_ERR_IMG_WRITE.
+*
+* @returns 1 if current tsk_error is TSK_ERR_IMG_WRITE, 0 otherwise
+*/
+int tsk_error_is_img_write() {
+    TSK_ERROR_INFO *errorInfo = tsk_error_get_info();
+    uint32_t t_errno = errorInfo->t_errno;
+    if ((t_errno & TSK_ERR_IMG) && (t_errno == TSK_ERR_IMG_WRITE)) {
+        return 1;
+    }
+    return 0;
 }

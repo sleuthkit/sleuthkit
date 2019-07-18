@@ -98,6 +98,7 @@ extern "C" {
 
     extern void tsk_error_print(FILE *);
     extern void tsk_error_reset();
+    extern int tsk_error_is_img_write();
 
 
 #ifdef TSK_MULTITHREAD_LIB
@@ -288,14 +289,14 @@ extern "C" {
     typedef enum {
         TSK_WALK_CONT = 0x0,    ///< Walk function should continue to next object
         TSK_WALK_STOP = 0x1,    ///< Walk function should stop processing units and return OK
-        TSK_WALK_ERROR = 0x2   ///< Walk function should stop processing units and return error
+        TSK_WALK_ERROR = 0x2,   ///< Walk function should continue processing units and return error
+        TSK_WALK_ABORT = 0x3    ///< Walk function should stop processing units and return error
     } TSK_WALK_RET_ENUM;
 
 
 /************ ERROR HANDLING *************/
     //TODO: make this per-thread?
     extern int tsk_verbose;     ///< Set to 1 to have verbose debug messages printed to stderr
-    extern int tsk_abort;
 
 #define TSK_ERR_AUX	0x01000000
 #define TSK_ERR_IMG	0x02000000

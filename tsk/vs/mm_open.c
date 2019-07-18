@@ -16,7 +16,6 @@
 
 #include "tsk_vs_i.h"
 
-
 /**
  * \ingroup vslib
  *
@@ -58,6 +57,9 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             vs_set = vs;
         }
         else {
+            if (tsk_error_is_img_write()) {
+                return NULL;
+            }
             tsk_error_reset();
         }
         if ((vs = tsk_vs_bsd_open(img_info, offset)) != NULL) {
@@ -81,6 +83,9 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
              */
         }
         else {
+            if (tsk_error_is_img_write()) {
+                return NULL;
+            }
             tsk_error_reset();
         }
         if ((vs = tsk_vs_gpt_open(img_info, offset)) != NULL) {
@@ -120,6 +125,9 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                     if (set != NULL) {
                         vs_set->close(vs_set);
                         vs->close(vs);
+                        if (tsk_error_is_img_write()) {
+                            return NULL;
+                        }
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
                         tsk_error_set_errstr("GPT or %s at %" PRIuDADDR, set,
@@ -143,6 +151,9 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             else {
                 vs_set->close(vs_set);
                 vs->close(vs);
+                if (tsk_error_is_img_write()) {
+                    return NULL;
+                }
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
                 tsk_error_set_errstr("Sun or %s at %" PRIuDADDR, set,
@@ -151,6 +162,9 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             }
         }
         else {
+            if (tsk_error_is_img_write()) {
+                return NULL;
+            }
             tsk_error_reset();
         }
 
@@ -162,6 +176,9 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             else {
                 vs_set->close(vs_set);
                 vs->close(vs);
+                if (tsk_error_is_img_write()) {
+                    return NULL;
+                }
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
                 tsk_error_set_errstr("Mac or %s at %" PRIuDADDR, set,
@@ -170,10 +187,16 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             }
         }
         else {
+            if (tsk_error_is_img_write()) {
+                return NULL;
+            }
             tsk_error_reset();
         }
 
         if (vs_set == NULL) {
+            if (tsk_error_is_img_write()) {
+                return NULL;
+            }
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
             return NULL;
