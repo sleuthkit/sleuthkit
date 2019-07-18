@@ -95,7 +95,8 @@ public class SleuthkitCase {
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
 			= new CaseDbSchemaVersionNumber(8, 3);
-
+    private static CaseDbSchemaVersionNumber caseDbCreationSchemaVersionNumber;
+	
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -343,6 +344,8 @@ public class SleuthkitCase {
 		initEncodingTypes(connection);
 		populateHasChildrenMap(connection);
 
+		updateDBCreationSchemaVersion(connection);
+		
 		updateExaminers(connection);
 		connection.close();
 	}
@@ -1755,6 +1758,36 @@ public class SleuthkitCase {
 	public VersionNumber getDBSchemaVersion() {
 		return CURRENT_DB_SCHEMA_VERSION;
 	}
+
+	/**
+	 * Gets the database creation schema version in use
+	 * 
+	 * @return the database creation version in use.
+	 */
+	public VersionNumber getDBCreationSchemaVersion() {
+		return caseDbCreationSchemaVersionNumber;
+	}
+	 
+	/**
+	 *  Gets the creation database schema version.
+	 * 
+	 * @return the creation database schema in use.
+	 */
+	public void updateDBCreationSchemaVersion(CaseDbConnection connection) {
+		String sqlStatement = "SELECT a.value AS creationMajorVersion, b.value AS creationMinorVersion FROM tsk_db_info_extended a, tsk_db_info_extended b " +
+                              " WHERE a.name = 'CREATION_SCHEMA_MAJOR_VERSION' and b.name = 'CREATION_SCHEMA_MINOR_VERSION';";
+        try {
+			Statement statement = connection.createStatement();
+		    ResultSet result = statement.executeQuery(sqlStatement); 
+            while (result.next()) {
+                caseDbCreationSchemaVersionNumber = new CaseDbSchemaVersionNumber(result.getInt("creationMajorVersion"), result.getInt("creationMinorVersion"));
+                }
+        } catch (SQLException ex) {
+            logger.log(Level.SEVERE, "Failed to get the Create Major and Minor Schema Versions", ex);
+            caseDbCreationSchemaVersionNumber = new CaseDbSchemaVersionNumber(0,0);
+			
+        }
+    }
 
 	/**
 	 * Returns the type of database in use.
