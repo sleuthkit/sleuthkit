@@ -792,7 +792,7 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         fullPath += "name is null";
     }
 
-    fprintf(stdout, "Alert for %s:%s\n",
+    fprintf(stdout, "Alert for %s: %s\n",
         ruleMatchResult->getRuleSetName().c_str(),
         fullPath.c_str());
 }
