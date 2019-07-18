@@ -59,7 +59,7 @@ namespace Rejistry {
         }
 
         uint32_t nameLength = getWord(NAME_LENGTH_OFFSET);
-		uint32_t numOfChars = hasAsciiName() ? nameLength : (nameLength / 2); // CT-2984
+        uint32_t numOfChars = hasAsciiName() ? nameLength : (nameLength / 2); // CT-2984
 
         if (numOfChars > MAX_NAME_LENGTH) {
             throw RegistryParseException("Value name length exceeds maximum length.");

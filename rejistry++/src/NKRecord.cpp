@@ -58,8 +58,8 @@ namespace Rejistry {
         int32_t offset = (int32_t)getDWord(CLASSNAME_OFFSET_OFFSET);
         uint16_t length = getWord(CLASSNAME_LENGTH_OFFSET);
 
-		// Not sure why we are performing this check. I haven't found any documentation on
-		// a max length for class name or its purpose. 
+        // Not sure why we are performing this check. I haven't found any documentation on
+        // a max length for class name or its purpose. 
         if (length > MAX_NAME_LENGTH) {
             throw RegistryParseException("Class name exceeds maximum length.");
         }
@@ -91,7 +91,7 @@ namespace Rejistry {
 
     std::wstring NKRecord::getName() const {
         uint32_t nameLength = getWord(NAME_LENGTH_OFFSET);
-		uint32_t numOfChars = hasAsciiName() ? nameLength : (nameLength / 2); // CT-2984
+        uint32_t numOfChars = hasAsciiName() ? nameLength : (nameLength / 2); // CT-2984
 
         if (numOfChars > MAX_NAME_LENGTH) {
             throw RegistryParseException("Key name exceeds maximum length.");
