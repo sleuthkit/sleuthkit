@@ -1027,8 +1027,7 @@ public final class TimelineManager {
 	/**
 	 * Returns a list of TimelineEvents for the given filter and time range.
 	 * 
-	 * @param startTime start time in Epoch seconds
-	 * @param endTime end time in Epoch seconds
+	 * @param timeRange 
 	 * @param filter TimelineFilter.RootFilter for filtering data
 	 * 
 	 * @return	A list of TimelineEvents for given parameters, if filter is null 
@@ -1036,8 +1035,15 @@ public final class TimelineManager {
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public List<TimelineEvent> getEventsForFilter(long startTime, long endTime, TimelineFilter.RootFilter filter) throws TskCoreException{
+	public List<TimelineEvent> getEvents(Interval timeRange, TimelineFilter.RootFilter filter) throws TskCoreException{
 		List<TimelineEvent> events = new ArrayList<>();
+		
+		Long startTime = timeRange.getStartMillis() / 1000;
+		Long endTime = timeRange.getEndMillis() / 1000;
+
+		if (Objects.equals(startTime, endTime)) {
+			endTime++; //make sure end is at least 1 millisecond after start
+		}
 		
 		if (filter == null) {
 			return events;
@@ -1085,7 +1091,7 @@ public final class TimelineManager {
             }
 			
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting count of events from db: " + querySql, ex); // NON-NLS
+			throw new TskCoreException("Error getting events from db: " + querySql, ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}

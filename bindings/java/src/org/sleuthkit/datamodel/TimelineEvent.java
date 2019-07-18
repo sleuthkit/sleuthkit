@@ -84,8 +84,6 @@ public final class TimelineEvent {
 	 * @param hashHit
 	 * @param tagged
 	 */
-	// @@@ This should be package scope, but it is currently being used in DetailsViewModel.
-	// Need to investigate why that class is doing a direct DB query
 	TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
 			long time, EventType type,
 			String fullDescription,
