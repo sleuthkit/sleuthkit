@@ -216,7 +216,11 @@ void RegistryLoader::loadSystemHives() {
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     for (auto itr = fsList.begin(); itr != fsList.end(); itr++) {
         TSK_FS_INFO *fs_info = (*itr);
-        findSystemRegFiles(fs_info);
+        if (findSystemRegFiles(fs_info) == -1) {
+            if (tsk_error_is_img_write()) {
+                break;
+            }
+        }
     }
 
     // Could put a log entry here if nothing was found...
