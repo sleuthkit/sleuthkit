@@ -1060,6 +1060,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         }
     }
 
+	// sanity check
+	if (size < 0) {
+		size = 0;
+	}
+
     // combine name and attribute name
     size_t len = strlen(fs_file->name->name);
     char *name;
@@ -1164,7 +1169,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%d,%d,%s,"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
+        "%" PRIdOFF ","
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%s,%d,"
         "%s,%s)",
@@ -1248,7 +1253,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             "%d,%d,%s,"
             "%" PRIuINUM ",%d,"
             "%d,%d,%d,%d,"
-            "%" PRIuOFF ","
+            "%" PRIdOFF ","
             "%llu,%llu,%llu,%llu,"
             "%d,%d,%d,NULL,%d,"
             "%s, %s)",
