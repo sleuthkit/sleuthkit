@@ -168,10 +168,10 @@ img_file_header_signature_ncmp(const char *filename,
     int fd;
 
     if ((filename == NULL) || (file_header_signature == NULL)) {
-        return (0);
+        return 0;
     }
     if (size_of_signature <= 0) {
-        return (0);
+        return 0;
     }
 
     if ((fd = open(filename, O_RDONLY | O_BINARY)) < 0) {
@@ -192,7 +192,7 @@ img_file_header_signature_ncmp(const char *filename,
 
     match = strncmp(file_header_signature, header, size_of_signature) == 0;
 
-    return (match);
+    return match;
 }
 #endif
 
@@ -427,7 +427,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting SHA1 of EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
     ewf_info->sha1hash_isset = result;
 
