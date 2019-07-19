@@ -24,15 +24,14 @@ import java.net.URISyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.TimelineEvent.EventDescription;
 
 /**
  * Container class for various types of timeline events
  *
  */
-class EventTypes {
+class TimelineEventTypes {
 
-	private EventTypes() {
+	private TimelineEventTypes() {
 	}
 
 	/**
@@ -40,7 +39,7 @@ class EventTypes {
 	 * applied to.
 	 *
 	 */
-	final static class EmptyExtractor implements ArtifactEventTypeImpl.TSKCoreCheckedFunction<BlackboardArtifact, String> {
+	final static class EmptyExtractor implements TimelineEventArtifactTypeImpl.TSKCoreCheckedFunction<BlackboardArtifact, String> {
 
 		@Override
 		public String apply(BlackboardArtifact ignored) throws TskCoreException {
@@ -48,14 +47,13 @@ class EventTypes {
 		}
 	}
 
-	static class URLArtifactEventType extends SingleDescriptionArtifactEventType {
+	static class URLArtifactEventType extends TimelineEventArtifactTypeSingleDescription {
 
-		URLArtifactEventType(int typeID, String displayName, EventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
+		URLArtifactEventType(int typeID, String displayName, TimelineEventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
 			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
 		}
 
-		@Override
-		public EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+		TimelineEventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 			/**
 			 * Parses the full description from db, which is the full URL, to a
 			 * EventDescription object with three levels of detail. Just ignores
@@ -83,35 +81,33 @@ class EventTypes {
 
 				String mediumDescription = new URI(uri.getScheme(), uri.getUserInfo(), host, uri.getPort(), uri.getPath(), null, null).toString();
 
-				return TimelineEvent.EventDescription.create(fullDescription, mediumDescription, shortDescription);
+				return new TimelineEventDescription(fullDescription, mediumDescription, shortDescription);
 			} catch (URISyntaxException ex) {
 				//There was an error parsing the description as a URL, just ignore the description levels.
-				return TimelineEvent.EventDescription.create(fullDescription);
+				return new TimelineEventDescription(fullDescription);
 			}
 		}
 	}
 
-	static class FilePathEventType extends EventTypeImpl {
+	static class FilePathEventType extends TimelineEventTypeImpl {
 
-		FilePathEventType(long typeID, String displayName, EventType.TypeLevel eventTypeZoomLevel, EventType superType) {
+		FilePathEventType(long typeID, String displayName, TimelineEventType.TypeLevel eventTypeZoomLevel, TimelineEventType superType) {
 			super(typeID, displayName, eventTypeZoomLevel, superType);
 		}
 
-		@Override
-		public EventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
+		TimelineEventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
 			return parseFilePathDescription(fullDescription);
 		}
 
 	}
 
-	static class FilePathArtifactEventType extends SingleDescriptionArtifactEventType {
+	static class FilePathArtifactEventType extends TimelineEventArtifactTypeSingleDescription {
 
-		FilePathArtifactEventType(int typeID, String displayName, EventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
+		FilePathArtifactEventType(int typeID, String displayName, TimelineEventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
 			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
 		}
 
-		@Override
-		public EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+		TimelineEventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 			return parseFilePathDescription(fullDescriptionRaw);
 		}
 	}
@@ -122,9 +118,9 @@ class EventTypes {
 	 *
 	 * @param fullDescription
 	 *
-	 * @return An EventDescription with three levels of detail.
+	 * @return An TimelineEventDescription with three levels of detail.
 	 */
-	static TimelineEvent.EventDescription parseFilePathDescription(String fullDescription) {
+	static TimelineEventDescription parseFilePathDescription(String fullDescription) {
 
 		String[] split = fullDescription.split("/");
 		String mediumDescription = Stream.of(split)
@@ -138,7 +134,7 @@ class EventTypes {
 				.limit(1)
 				.collect(Collectors.joining("/", "/", ""))
 				.replaceAll("//", "/");
-		return TimelineEvent.EventDescription.create(fullDescription, mediumDescription, shortDescription);
+		return new TimelineEventDescription(fullDescription, mediumDescription, shortDescription);
 
 	}
 
