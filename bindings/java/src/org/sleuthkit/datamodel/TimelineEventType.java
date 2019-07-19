@@ -29,21 +29,21 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
 import static org.sleuthkit.datamodel.BundleProvider.getBundle;
-import org.sleuthkit.datamodel.EventTypes.EmptyExtractor;
-import org.sleuthkit.datamodel.EventTypes.FilePathArtifactEventType;
-import org.sleuthkit.datamodel.EventTypes.FilePathEventType;
-import org.sleuthkit.datamodel.EventTypes.URLArtifactEventType;
-import org.sleuthkit.datamodel.ArtifactEventTypeImpl.AttributeExtractor;
-import static org.sleuthkit.datamodel.ArtifactEventTypeImpl.getAttributeSafe;
-import org.sleuthkit.datamodel.TimelineEvent.EventDescription;
+import org.sleuthkit.datamodel.TimelineEventTypes.EmptyExtractor;
+import org.sleuthkit.datamodel.TimelineEventTypes.FilePathArtifactEventType;
+import org.sleuthkit.datamodel.TimelineEventTypes.FilePathEventType;
+import org.sleuthkit.datamodel.TimelineEventTypes.URLArtifactEventType;
+import org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.AttributeExtractor;
+import static org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.getAttributeSafe;
 
 /**
  * Interface for distinct kinds of events (ie file system or web
- * activity) in a hierarchy. An EventType may have an optional 
- * super-type and 0 or more subtypes.  NOTE: this is not currently
- * extensible by modules. The structure is hard coded.
+ * activity) in a hierarchy. An TimelineEventType may have an optional 
+ super-type and 0 or more subtypes.   NOTE: this is not currently
+ extensible by modules. The structure is hard coded to a certain
+ number of levels and types. 
  */
-public interface EventType extends Comparable<EventType> {
+public interface TimelineEventType extends Comparable<TimelineEventType> {
 
 	String getDisplayName();
 
@@ -57,35 +57,24 @@ public interface EventType extends Comparable<EventType> {
 	 * 
 	 * @return The level that this event is in the type hierarchy.
 	 */
-	EventType.TypeLevel getTypeLevel();
+	TimelineEventType.TypeLevel getTypeLevel();
 
 	/**
-	 * @return A list of EventTypes, one for each subtype of this EventTYpe, or
-	 *         an empty set if this EventType has no subtypes.
+	 * @return A list of TimelineEventTypes, one for each subtype of this EventTYpe, or
+         an empty set if this TimelineEventType has no subtypes.
 	 */
-	SortedSet<? extends EventType> getSubTypes();
+	SortedSet<? extends TimelineEventType> getSubTypes();
 
-	Optional<? extends EventType> getSubType(String string);
+	Optional<? extends TimelineEventType> getSubType(String string);
 
-	/**
-	 * Parse the three raw descriptions from the DB into a EventDescription
-	 * object.
-	 *
-	 * @param fullDescriptionRaw
-	 * @param medDescriptionRaw
-	 * @param shortDescriptionRaw
-	 *
-	 * @return
-	 */
-	EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw);
 
 	/**
 	 * @return the super type of this event
 	 */
-	EventType getSuperType();
+	TimelineEventType getSuperType();
 
-	default EventType getBaseType() {
-		EventType superType = getSuperType();
+	default TimelineEventType getBaseType() {
+		TimelineEventType superType = getSuperType();
 
 		return superType.equals(ROOT_EVENT_TYPE)
 				? this
@@ -93,7 +82,7 @@ public interface EventType extends Comparable<EventType> {
 
 	}
 
-	default SortedSet<? extends EventType> getSiblingTypes() {
+	default SortedSet<? extends TimelineEventType> getSiblingTypes() {
 		return this.equals(ROOT_EVENT_TYPE)
 				? ImmutableSortedSet.of(ROOT_EVENT_TYPE)
 				: this.getSuperType().getSubTypes();
@@ -101,8 +90,8 @@ public interface EventType extends Comparable<EventType> {
 	}
 
 	@Override
-	default int compareTo(EventType otherType) {
-		return Comparator.comparing(EventType::getTypeID).compare(this, otherType);
+	default int compareTo(TimelineEventType otherType) {
+		return Comparator.comparing(TimelineEventType::getTypeID).compare(this, otherType);
 	}
 	
 	/**
@@ -140,94 +129,94 @@ public interface EventType extends Comparable<EventType> {
 	 * The root type of all event types. No event should actually have this
 	 * type.
 	 */
-	EventType ROOT_EVENT_TYPE = new EventTypeImpl(0,
+	TimelineEventType ROOT_EVENT_TYPE = new TimelineEventTypeImpl(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
 			TypeLevel.ROOT_TYPE, null) {
 		@Override
-		public SortedSet< EventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getSubTypes() {
 			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
 		}
 	};
 
-	EventType FILE_SYSTEM = new EventTypeImpl(1,
+	TimelineEventType FILE_SYSTEM = new TimelineEventTypeImpl(1,
 			getBundle().getString("BaseTypes.fileSystem.name"),// NON-NLS
 			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet< EventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getSubTypes() {
 			return ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED,
 					FILE_CREATED, FILE_CHANGED);
 		}
 	};
-	EventType WEB_ACTIVITY = new EventTypeImpl(2,
+	TimelineEventType WEB_ACTIVITY = new TimelineEventTypeImpl(2,
 			getBundle().getString("BaseTypes.webActivity.name"), // NON-NLS
 			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet< ArtifactEventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getSubTypes() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL, WEB_FORM_ADDRESSES);
 		}
 	};
-	EventType MISC_TYPES = new EventTypeImpl(3,
+	TimelineEventType MISC_TYPES = new TimelineEventTypeImpl(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
 			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet<EventType> getSubTypes() {
+		public SortedSet<TimelineEventType> getSubTypes() {
 			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
 					EXIF, GPS_ROUTE, GPS_TRACKPOINT, INSTALLED_PROGRAM, MESSAGE,
 					RECENT_DOCUMENTS, REGISTRY, LOG_ENTRY);
 		}
 	};
 
-	EventType FILE_MODIFIED = new FilePathEventType(4,
+	TimelineEventType FILE_MODIFIED = new FilePathEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
 			TypeLevel.SUB_TYPE, FILE_SYSTEM);
-	EventType FILE_ACCESSED = new FilePathEventType(5,
+	TimelineEventType FILE_ACCESSED = new FilePathEventType(5,
 			getBundle().getString("FileSystemTypes.fileAccessed.name"), // NON-NLS
 			TypeLevel.SUB_TYPE, FILE_SYSTEM);
-	EventType FILE_CREATED = new FilePathEventType(6,
+	TimelineEventType FILE_CREATED = new FilePathEventType(6,
 			getBundle().getString("FileSystemTypes.fileCreated.name"), // NON-NLS
 			TypeLevel.SUB_TYPE, FILE_SYSTEM);
-	EventType FILE_CHANGED = new FilePathEventType(7,
+	TimelineEventType FILE_CHANGED = new FilePathEventType(7,
 			getBundle().getString("FileSystemTypes.fileChanged.name"), // NON-NLS
 			TypeLevel.SUB_TYPE, FILE_SYSTEM);
 
-	ArtifactEventType WEB_DOWNLOADS = new URLArtifactEventType(8,
+	TimelineEventType WEB_DOWNLOADS = new URLArtifactEventType(8,
 			getBundle().getString("WebTypes.webDownloads.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_DOWNLOAD),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-	ArtifactEventType WEB_COOKIE = new URLArtifactEventType(9,
+	TimelineEventType WEB_COOKIE = new URLArtifactEventType(9,
 			getBundle().getString("WebTypes.webCookies.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME),
 			new Type(TSK_URL));
-	ArtifactEventType WEB_BOOKMARK = new URLArtifactEventType(10,
+	TimelineEventType WEB_BOOKMARK = new URLArtifactEventType(10,
 			getBundle().getString("WebTypes.webBookmarks.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_BOOKMARK),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
-	ArtifactEventType WEB_HISTORY = new URLArtifactEventType(11,
+	TimelineEventType WEB_HISTORY = new URLArtifactEventType(11,
 			getBundle().getString("WebTypes.webHistory.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-	ArtifactEventType WEB_SEARCH = new URLArtifactEventType(12,
+	TimelineEventType WEB_SEARCH = new URLArtifactEventType(12,
 			getBundle().getString("WebTypes.webSearch.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_SEARCH_QUERY),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_DOMAIN));
 
-	ArtifactEventType MESSAGE = new ArtifactEventTypeImpl(13,
+	TimelineEventType MESSAGE = new TimelineEventArtifactTypeImpl(13,
 			getBundle().getString("MiscTypes.message.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_MESSAGE),
 			new Type(TSK_DATETIME),
-			new ArtifactEventTypeImpl.AttributeExtractor(new Type(TSK_MESSAGE_TYPE)),
+			new TimelineEventArtifactTypeImpl.AttributeExtractor(new Type(TSK_MESSAGE_TYPE)),
 			artf -> {
 				final BlackboardAttribute dir = getAttributeSafe(artf, new Type(TSK_DIRECTION));
 				final BlackboardAttribute readStatus = getAttributeSafe(artf, new Type(TSK_READ_STATUS));
@@ -238,14 +227,14 @@ public interface EventType extends Comparable<EventType> {
 						stringValueOf(dir),
 						stringValueOf(readStatus),
 						name == null && phoneNumber == null ? "" : toFrom(dir),
-						stringValueOf(MoreObjects.firstNonNull(name, phoneNumber)),
+						name != null || phoneNumber != null ? stringValueOf(MoreObjects.firstNonNull(name, phoneNumber)) : "",
 						stringValueOf(subject)
 				);
 				return String.join(" ", asList);
 			},
 			new AttributeExtractor(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT)));
 
-	ArtifactEventType GPS_ROUTE = new ArtifactEventTypeImpl(14,
+	TimelineEventType GPS_ROUTE = new TimelineEventArtifactTypeImpl(14,
 			getBundle().getString("MiscTypes.GPSRoutes.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_ROUTE),
@@ -260,7 +249,7 @@ public interface EventType extends Comparable<EventType> {
 				return String.format("from %1$s %2$s to %3$s %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
 			});
 
-	ArtifactEventType GPS_TRACKPOINT = new ArtifactEventTypeImpl(15,
+	TimelineEventType GPS_TRACKPOINT = new TimelineEventArtifactTypeImpl(15,
 			getBundle().getString("MiscTypes.GPSTrackpoint.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_TRACKPOINT),
@@ -273,7 +262,7 @@ public interface EventType extends Comparable<EventType> {
 			},
 			new EmptyExtractor());
 
-	ArtifactEventType CALL_LOG = new ArtifactEventTypeImpl(16,
+	TimelineEventType CALL_LOG = new TimelineEventArtifactTypeImpl(16,
 			getBundle().getString("MiscTypes.Calls.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_CALLLOG),
@@ -282,7 +271,7 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_PHONE_NUMBER)),
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
 
-	ArtifactEventType EMAIL = new ArtifactEventTypeImpl(17,
+	TimelineEventType EMAIL = new TimelineEventArtifactTypeImpl(17,
 			getBundle().getString("MiscTypes.Email.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_EMAIL_MSG),
@@ -295,14 +284,14 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_SUBJECT)),
 			new AttributeExtractor(new Type(TSK_EMAIL_CONTENT_PLAIN)));
 
-	ArtifactEventType RECENT_DOCUMENTS = new FilePathArtifactEventType(18,
+	TimelineEventType RECENT_DOCUMENTS = new FilePathArtifactEventType(18,
 			getBundle().getString("MiscTypes.recentDocuments.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_RECENT_OBJECT),
 			new Type(TSK_DATETIME),
 			new Type(TSK_PATH));
 
-	ArtifactEventType INSTALLED_PROGRAM = new ArtifactEventTypeImpl(19,
+	TimelineEventType INSTALLED_PROGRAM = new TimelineEventArtifactTypeImpl(19,
 			getBundle().getString("MiscTypes.installedPrograms.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
@@ -311,7 +300,7 @@ public interface EventType extends Comparable<EventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 
-	ArtifactEventType EXIF = new ArtifactEventTypeImpl(20,
+	TimelineEventType EXIF = new TimelineEventArtifactTypeImpl(20,
 			getBundle().getString("MiscTypes.exif.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA_EXIF),
@@ -321,7 +310,7 @@ public interface EventType extends Comparable<EventType> {
 			artf -> artf.getSleuthkitCase().getAbstractFileById(artf.getObjectID()).getName()
 	);
 
-	ArtifactEventType DEVICES_ATTACHED = new ArtifactEventTypeImpl(21,
+	TimelineEventType DEVICES_ATTACHED = new TimelineEventArtifactTypeImpl(21,
 			getBundle().getString("MiscTypes.devicesAttached.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_DEVICE_ATTACHED),
@@ -331,17 +320,17 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
 
 	//custom event type base type
-	EventType CUSTOM_TYPES = new EventTypeImpl(22,
+	TimelineEventType CUSTOM_TYPES = new TimelineEventTypeImpl(22,
 			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
 			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet< EventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getSubTypes() {
 			return ImmutableSortedSet.of(OTHER, USER_CREATED);
 		}
 	};
 
 	//generic catch all other event
-	ArtifactEventType OTHER = new SingleDescriptionArtifactEventType(23,
+	TimelineEventType OTHER = new TimelineEventArtifactTypeSingleDescription(23,
 			getBundle().getString("CustomTypes.other.name"), //NON-NLS
 			CUSTOM_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
@@ -349,14 +338,14 @@ public interface EventType extends Comparable<EventType> {
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	//new misc types
-	ArtifactEventType LOG_ENTRY = new SingleDescriptionArtifactEventType(24,
+	TimelineEventType LOG_ENTRY = new TimelineEventArtifactTypeSingleDescription(24,
 			getBundle().getString("MiscTypes.LogEntry.name"), //NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
-	ArtifactEventType REGISTRY = new SingleDescriptionArtifactEventType(25,
+	TimelineEventType REGISTRY = new TimelineEventArtifactTypeSingleDescription(25,
 			getBundle().getString("MiscTypes.Registry.name"), //NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
@@ -364,14 +353,14 @@ public interface EventType extends Comparable<EventType> {
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	//generic catch all other event
-	ArtifactEventType USER_CREATED = new SingleDescriptionArtifactEventType(26,
+	TimelineEventType USER_CREATED = new TimelineEventArtifactTypeSingleDescription(26,
 			getBundle().getString("CustomTypes.userCreated.name"),//NON-NLS
 			CUSTOM_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 	
-	ArtifactEventType WEB_FORM_AUTOFILL = new ArtifactEventTypeImpl(27,
+	TimelineEventType WEB_FORM_AUTOFILL = new TimelineEventArtifactTypeImpl(27,
 			getBundle().getString("WebTypes.webFormAutoFill.name"),//NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_FORM_AUTOFILL),
@@ -383,26 +372,26 @@ public interface EventType extends Comparable<EventType> {
 				return stringValueOf(name) + ":" + stringValueOf(value) + " count: " + stringValueOf(count); // NON-NLS
 			}, new EmptyExtractor(), new EmptyExtractor());
 	
-	ArtifactEventType WEB_FORM_ADDRESSES = new URLArtifactEventType(28,
+	TimelineEventType WEB_FORM_ADDRESSES = new URLArtifactEventType(28,
 			getBundle().getString("WebTypes.webFormAddress.name"),//NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_FORM_ADDRESS),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_EMAIL));
 
-	static SortedSet<? extends EventType> getBaseTypes() {
+	static SortedSet<? extends TimelineEventType> getBaseTypes() {
 		return ROOT_EVENT_TYPE.getSubTypes();
 	}
 
-	static SortedSet<? extends EventType> getFileSystemTypes() {
+	static SortedSet<? extends TimelineEventType> getFileSystemTypes() {
 		return FILE_SYSTEM.getSubTypes();
 	}
 
-	static SortedSet<? extends EventType> getWebActivityTypes() {
+	static SortedSet<? extends TimelineEventType> getWebActivityTypes() {
 		return WEB_ACTIVITY.getSubTypes();
 	}
 
-	static SortedSet<? extends EventType> getMiscTypes() {
+	static SortedSet<? extends TimelineEventType> getMiscTypes() {
 		return MISC_TYPES.getSubTypes();
 	}
 

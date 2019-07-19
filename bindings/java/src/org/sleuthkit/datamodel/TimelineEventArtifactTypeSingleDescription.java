@@ -22,16 +22,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Package level extension of ArtifactEventTypeImpl for event types 
+ * Package level extension of TimelineEventArtifactTypeImpl for event types 
  that have only one description (because we don't know how to break it 
  up further). 
  */
-class SingleDescriptionArtifactEventType extends ArtifactEventTypeImpl {
+class TimelineEventArtifactTypeSingleDescription extends TimelineEventArtifactTypeImpl {
 
-	private static final Logger logger = Logger.getLogger(SingleDescriptionArtifactEventType.class.getName());
+	private static final Logger logger = Logger.getLogger(TimelineEventArtifactTypeSingleDescription.class.getName());
 
 	@Override
-	public EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
+	public TimelineEventDescriptionWithTime makeEventDescription(BlackboardArtifact artifact) throws TskCoreException {
 		String description = extractFullDescription(artifact);
 		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
 
@@ -41,18 +41,17 @@ class SingleDescriptionArtifactEventType extends ArtifactEventTypeImpl {
 		}
 
 		long time = timeAttribute.getValueLong();
-		return new EventDescriptionWithTime(time, null, null, description);
+		return new TimelineEventDescriptionWithTime(time, null, null, description);
 	}
 
-	SingleDescriptionArtifactEventType(int typeID, String displayName,
-			EventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
+	TimelineEventArtifactTypeSingleDescription(int typeID, String displayName,
+			TimelineEventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
 		super(typeID, displayName, superType, artifactType, timeAttribute,
 				new NullExtractor(), new NullExtractor(), new AttributeExtractor(descriptionAttribute));
 	}
 
-	@Override
-	public TimelineEvent.EventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
-		return TimelineEvent.EventDescription.create(fullDescription);
+	TimelineEventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
+		return new TimelineEventDescription(fullDescription);
 	}
 
 	/**
