@@ -18,17 +18,23 @@
  */
 package org.sleuthkit.datamodel;
 
-class SingeLevelEventDiscription implements TimelineEvent.EventDescription {
+/**
+ * Bundles a description of an event along with the timestamp for the event.
+ * Used as an intermediate object when parsing data before it is entered into
+ * the DB.
+ */
+final class TimelineEventDescriptionWithTime extends TimelineEventDescription {
 
-	private final String fullDescr;
+	final private long time;
 
-	 SingeLevelEventDiscription(String fullDescr) {
-		this.fullDescr = fullDescr;
-
+	long getTime() {
+		return time;
 	}
 
-	@Override
-	public String getDescription(TimelineEvent.DescriptionLevel lod) {
-		return fullDescr;
+	TimelineEventDescriptionWithTime(long time, String shortDescription,
+			String medDescription,
+			String fullDescription) {
+		super(fullDescription, medDescription, shortDescription);
+		this.time = time;
 	}
 }
