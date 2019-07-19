@@ -1023,7 +1023,7 @@ int
 		"%d,%d,'%q',"
 		"%" PRIuINUM ",%d,"
 		"%d,%d,%d,%d,"
-		"%" PRIuOFF ","
+		"%" PRId64 ","
 		"%llu,%llu,%llu,%llu,"
 		"%d,%d,%d,%Q,%d,"
 		"'%q','%q')",
@@ -1085,7 +1085,7 @@ int
 			"%d,%d,'%q',"
 			"%" PRIuINUM ",%d,"
 			"%d,%d,%d,%d,"
-			"%" PRIuOFF ","
+			"%" PRId64 ","
 			"%llu,%llu,%llu,%llu,"
 			"%d,%d,%d,NULL,%d,"
 			"'%q','%q')",
@@ -1096,7 +1096,7 @@ int
 			fs_file->name->meta_addr, fs_file->name->meta_seq,
 			TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
 			slackSize,
-        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+			(unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
 			meta_mode, gid, uid, known,
 			escaped_path,extension);
 

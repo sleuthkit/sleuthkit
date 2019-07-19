@@ -859,7 +859,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         free(stmt);
         return 1;
     }
-    snprintf(stmt, 10242048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s, %s, %s);",
+    snprintf(stmt, 10242048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIdOFF ", %s, %" PRIdOFF ", %s, %s, %s);",
         objId, type, ssize, timezone_sql, size, md5_sql, sha1_sql, sha256_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -958,7 +958,7 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
         "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
         "root_inum, first_inum, last_inum) "
         "VALUES ("
-        "%" PRId64 ",%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
+        "%" PRId64 ",%" PRIdOFF ",%d,%u,%" PRIuDADDR ","
         "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
         objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
@@ -1156,6 +1156,10 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         zSQL = zSQL_dynamic;
     }
 
+	if (objId > 5340 && objId < 5390) {
+		size = 18446742999967695103;
+	}
+
     if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
@@ -1164,7 +1168,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%d,%d,%s,"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
+        "%" PRIdOFF ","
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%s,%d,"
         "%s,%s)",
@@ -1192,11 +1196,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
     if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-		    free(name);
+		free(name);
         free(escaped_path);
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
-		    PQfreemem(extension_sql);
+		PQfreemem(extension_sql);
         free(zSQL_dynamic);
         return 1;
     }
@@ -1248,7 +1252,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             "%d,%d,%s,"
             "%" PRIuINUM ",%d,"
             "%d,%d,%d,%d,"
-            "%" PRIuOFF ","
+            "%" PRIdOFF ","
             "%llu,%llu,%llu,%llu,"
             "%d,%d,%d,NULL,%d,"
             "%s, %s)",
@@ -1903,7 +1907,7 @@ int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
     }
 
     snprintf(zSQL, 1024, "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
-        "VALUES (%" PRId64 ", %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",%s,%d)",
+        "VALUES (%" PRId64 ", %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",%s,%d)",
         objId, (int) vs_part->addr, vs_part->start, vs_part->len,
         descr_sql, vs_part->flags);
 
