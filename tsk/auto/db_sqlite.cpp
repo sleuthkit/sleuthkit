@@ -963,6 +963,11 @@ int
 		}
 	}
 
+	// sanity check
+	if (size < 0) {
+		size = 0;
+	}
+
 	// combine name and attribute name
 	size_t len = strlen(fs_file->name->name);
 	char * name;
@@ -1023,7 +1028,7 @@ int
 		"%d,%d,'%q',"
 		"%" PRIuINUM ",%d,"
 		"%d,%d,%d,%d,"
-		"%" PRIuOFF ","
+		"%" PRIdOFF ","
 		"%llu,%llu,%llu,%llu,"
 		"%d,%d,%d,%Q,%d,"
 		"'%q','%q')",
@@ -1085,7 +1090,7 @@ int
 			"%d,%d,'%q',"
 			"%" PRIuINUM ",%d,"
 			"%d,%d,%d,%d,"
-			"%" PRIuOFF ","
+			"%" PRIdOFF ","
 			"%llu,%llu,%llu,%llu,"
 			"%d,%d,%d,NULL,%d,"
 			"'%q','%q')",
