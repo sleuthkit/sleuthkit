@@ -443,9 +443,7 @@ TskDbSqlite::initialize()
 	        " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
 	        " time INTEGER NOT NULL) "
 	        , "Error creating tsk_events table: %s\n")
-	    ||
-	    attempt_exec("CREATE TABLE db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))", //TODO: drop this table
-	                 "Error creating db_info table: %s\n")
+
 	    ||
         attempt_exec
         ("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
