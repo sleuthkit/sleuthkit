@@ -977,6 +977,81 @@ public final class TimelineManager {
 	private static boolean intToBoolean(int value) {
 		return value != 0;
 	}
+	
+	/**
+	 * Returns a list of TimelineEvents for the given filter and time range.
+	 * 
+	 * @param timeRange 
+	 * @param filter TimelineFilter.RootFilter for filtering data
+	 * 
+	 * @return	A list of TimelineEvents for given parameters, if filter is null 
+	 *			or times are invalid an empty list will be returned.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public List<TimelineEvent> getEvents(Interval timeRange, TimelineFilter.RootFilter filter) throws TskCoreException{
+		List<TimelineEvent> events = new ArrayList<>();
+		
+		Long startTime = timeRange.getStartMillis() / 1000;
+		Long endTime = timeRange.getEndMillis() / 1000;
+
+		if (Objects.equals(startTime, endTime)) {
+			endTime++; //make sure end is at least 1 millisecond after start
+		}
+		
+		if (filter == null) {
+			return events;
+		}
+		
+		if (endTime < startTime) {
+			return events;
+		}
+
+		//build dynamic parts of query
+        String querySql = "SELECT time, file_obj_id, data_source_obj_id, artifact_id, " // NON-NLS
+                          + "  event_id, " //NON-NLS
+                          + " hash_hit, " //NON-NLS
+                          + " tagged, " //NON-NLS
+                          + " event_type_id, super_type_id, "
+                          + " full_description, med_description, short_description " // NON-NLS
+                          + " FROM " + getAugmentedEventsTablesSQL(filter) // NON-NLS
+                          + " WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
+                          + " ORDER BY time"; // NON-NLS
+		
+		sleuthkitCase.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement stmt = con.createStatement();
+				ResultSet resultSet = stmt.executeQuery(querySql);) {
+			
+			 while (resultSet.next()) {
+                int eventTypeID = resultSet.getInt("event_type_id");
+				TimelineEventType eventType = getEventType(eventTypeID).orElseThrow(()
+						-> new TskCoreException("Error mapping event type id " + eventTypeID + "to EventType."));//NON-NLS
+
+				TimelineEvent event =  new TimelineEvent(
+						resultSet.getLong("event_id"), // NON-NLS
+						resultSet.getLong("data_source_obj_id"), // NON-NLS
+						resultSet.getLong("file_obj_id"), // NON-NLS
+						resultSet.getLong("artifact_id"), // NON-NLS
+						resultSet.getLong("time"), // NON-NLS
+						eventType,
+						resultSet.getString("full_description"), // NON-NLS
+						resultSet.getString("med_description"), // NON-NLS
+						resultSet.getString("short_description"), // NON-NLS
+						resultSet.getInt("hash_hit") != 0, //NON-NLS
+						resultSet.getInt("tagged") != 0);
+				
+				events.add(event);
+            }
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting events from db: " + querySql, ex); // NON-NLS
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseReadLock();
+		}
+		
+		return events;
+	}
 
 	/**
 	 * Get the column name to use depending on if we want base types or subtypes

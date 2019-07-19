@@ -227,7 +227,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 						stringValueOf(dir),
 						stringValueOf(readStatus),
 						name == null && phoneNumber == null ? "" : toFrom(dir),
-						stringValueOf(MoreObjects.firstNonNull(name, phoneNumber)),
+						name != null || phoneNumber != null ? stringValueOf(MoreObjects.firstNonNull(name, phoneNumber)) : "",
 						stringValueOf(subject)
 				);
 				return String.join(" ", asList);
