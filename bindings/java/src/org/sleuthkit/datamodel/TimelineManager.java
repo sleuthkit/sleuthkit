@@ -944,7 +944,7 @@ public final class TimelineManager {
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static public String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
+	static private String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
 		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
 
@@ -1118,7 +1118,7 @@ public final class TimelineManager {
 	 * @return An SQL where clause (without the "where") corresponding to the
 	 *         filter.
 	 */
-	public String getSQLWhere(TimelineFilter.RootFilter filter) {
+	String getSQLWhere(TimelineFilter.RootFilter filter) {
 
 		String result;
 		if (filter == null) {
