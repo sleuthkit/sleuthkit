@@ -233,8 +233,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				if( phoneNumber == null) {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
 				}
-				
-				final BlackboardAttribute phoneNumberFrom = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_TO));
+
 				List<String> asList = Arrays.asList(
 						stringValueOf(dir),
 						stringValueOf(readStatus),
