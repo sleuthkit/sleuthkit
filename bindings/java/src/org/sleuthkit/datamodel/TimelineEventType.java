@@ -44,6 +44,8 @@ import static org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.getAttribute
  number of levels and types. 
  */
 public interface TimelineEventType extends Comparable<TimelineEventType> {
+	
+	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
 
 	String getDisplayName();
 
@@ -221,8 +223,18 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				final BlackboardAttribute dir = getAttributeSafe(artf, new Type(TSK_DIRECTION));
 				final BlackboardAttribute readStatus = getAttributeSafe(artf, new Type(TSK_READ_STATUS));
 				final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
-				final BlackboardAttribute phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER));
 				final BlackboardAttribute subject = getAttributeSafe(artf, new Type(TSK_SUBJECT));
+				BlackboardAttribute phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER));
+				// Make our best effort to find a valid phoneNumber for the description
+				if( phoneNumber == null) {
+					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_TO));
+				}
+				
+				if( phoneNumber == null) {
+					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
+				}
+				
+				final BlackboardAttribute phoneNumberFrom = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_TO));
 				List<String> asList = Arrays.asList(
 						stringValueOf(dir),
 						stringValueOf(readStatus),
@@ -268,7 +280,17 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_CALLLOG),
 			new Type(TSK_DATETIME_START),
 			new AttributeExtractor(new Type(TSK_NAME)),
-			new AttributeExtractor(new Type(TSK_PHONE_NUMBER)),
+			artf -> {
+				BlackboardAttribute phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER));
+				if( phoneNumber == null) {
+					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_TO));
+				}
+				if( phoneNumber == null) {
+					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
+				}
+				
+				return stringValueOf(phoneNumber);
+			},
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
 
 	TimelineEventType EMAIL = new TimelineEventArtifactTypeImpl(17,
@@ -282,7 +304,14 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				return stringValueOf(emailFrom) + " to " + stringValueOf(emailTo); // NON-NLS
 			},
 			new AttributeExtractor(new Type(TSK_SUBJECT)),
-			new AttributeExtractor(new Type(TSK_EMAIL_CONTENT_PLAIN)));
+			artf -> {
+				final BlackboardAttribute msgAttribute = getAttributeSafe(artf, new Type(TSK_EMAIL_CONTENT_PLAIN));
+				String msg = stringValueOf(msgAttribute);
+				if (msg.length() > EMAIL_FULL_DESCRIPTION_LENGTH_MAX) {
+					msg = msg.substring(0, EMAIL_FULL_DESCRIPTION_LENGTH_MAX);
+				}
+				return msg;
+			});
 
 	TimelineEventType RECENT_DOCUMENTS = new FilePathArtifactEventType(18,
 			getBundle().getString("MiscTypes.recentDocuments.name"), // NON-NLS
