@@ -187,6 +187,7 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
+	private VersionNumber caseDBSchemaCreationVersion;
 
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
@@ -370,6 +371,7 @@ public class SleuthkitCase {
 			initEncodingTypes(connection);
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
+			initDBSchemaCreationVersion(connection);
 		}
 	}
 
@@ -925,6 +927,41 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
 		}
+	}
+	
+	/**
+	 * Get the database schema creation version from database. This must be 
+	 * called after the database upgrades or the tsk_db_info_extended table 
+	 * may not exist.
+	 *
+	 * @throws SQLException
+	 */
+	private void initDBSchemaCreationVersion(CaseDbConnection connection) throws SQLException{
+		
+		Statement statement = null;
+		ResultSet resultSet = null;
+		String createdSchemaMajorVersion = "0";
+		String createdSchemaMinorVersion = "0";
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT name, value FROM tsk_db_info_extended");
+			while(resultSet.next()) {
+				String name = resultSet.getString("name");
+				if (name.equals(CREATION_SCHEMA_MAJOR_VERSION_KEY) || name.equals("CREATED_SCHEMA_MAJOR_VERSION")){
+					createdSchemaMajorVersion = resultSet.getString("value");
+				} else if (name.equals(CREATION_SCHEMA_MINOR_VERSION_KEY) || name.equals("CREATED_SCHEMA_MINOR_VERSION")) {
+					createdSchemaMinorVersion = resultSet.getString("value");
+				}
+			}
+			
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+		
+		caseDBSchemaCreationVersion = new VersionNumber(Integer.parseInt(createdSchemaMajorVersion), Integer.parseInt(createdSchemaMinorVersion), 0);
 	}
 
 	/**
@@ -1946,6 +1983,16 @@ public class SleuthkitCase {
 	 */
 	public VersionNumber getDBSchemaVersion() {
 		return CURRENT_DB_SCHEMA_VERSION;
+	}
+	
+	/**
+	 * Gets the creation version of the database schema. 
+	 *
+	 * @return the creation version for the database schema, the creation version
+	 * will be 0.0 for databases created prior to 8.2
+	 */
+	public VersionNumber getDBSchemaCreationVersion() {
+		return caseDBSchemaCreationVersion;
 	}
 
 	/**
