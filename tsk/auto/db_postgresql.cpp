@@ -1161,10 +1161,6 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         zSQL = zSQL_dynamic;
     }
 
-	if (objId > 5340 && objId < 5390) {
-		size = 18446742999967695103;
-	}
-
     if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
