@@ -1773,7 +1773,7 @@ public class SleuthkitCase {
 	 * 
 	 * @return the creation database schema in use.
 	 */
-	public void updateDBCreationSchemaVersion(CaseDbConnection connection) {
+	private void updateDBCreationSchemaVersion(CaseDbConnection connection) {
 		String sqlStatement = "SELECT a.value AS creationMajorVersion, b.value AS creationMinorVersion FROM tsk_db_info_extended a, tsk_db_info_extended b " +
                               " WHERE a.name = 'CREATION_SCHEMA_MAJOR_VERSION' and b.name = 'CREATION_SCHEMA_MINOR_VERSION';";
         try {
