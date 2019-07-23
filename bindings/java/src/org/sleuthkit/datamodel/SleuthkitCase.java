@@ -187,7 +187,7 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
-	private VersionNumber caseDBSchemaCreationVersion;
+	private CaseDbSchemaVersionNumber caseDBSchemaCreationVersion;
 
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
@@ -942,7 +942,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		String createdSchemaMajorVersion = "0";
 		String createdSchemaMinorVersion = "0";
-		acquireSingleUserCaseWriteLock();
+		acquireSingleUserCaseReadLock();
 		try {
 			statement = connection.createStatement();
 			resultSet = connection.executeQuery(statement, "SELECT name, value FROM tsk_db_info_extended");
@@ -958,10 +958,10 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
+			releaseSingleUserCaseReadLock();
 		}
 		
-		caseDBSchemaCreationVersion = new VersionNumber(Integer.parseInt(createdSchemaMajorVersion), Integer.parseInt(createdSchemaMinorVersion), 0);
+		caseDBSchemaCreationVersion = new CaseDbSchemaVersionNumber(Integer.parseInt(createdSchemaMajorVersion), Integer.parseInt(createdSchemaMinorVersion));
 	}
 
 	/**
@@ -1838,7 +1838,7 @@ public class SleuthkitCase {
 		
 		acquireSingleUserCaseWriteLock();
 		
-		ResultSet oldData = null;
+		ResultSet resultSet = null;
 		
 		try (Statement statement = connection.createStatement();) {
 			
@@ -1928,9 +1928,13 @@ public class SleuthkitCase {
 					+ " UNIQUE (event_type_id, event_description_id, time))"
 			);
 			
+			// Fix mistakenly set names in tsk_db_info_extended 
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
+			
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
-			closeResultSet(oldData);
+			closeResultSet(resultSet);
 			releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -1991,7 +1995,7 @@ public class SleuthkitCase {
 	 * @return the creation version for the database schema, the creation version
 	 * will be 0.0 for databases created prior to 8.2
 	 */
-	public VersionNumber getDBSchemaCreationVersion() {
+	public CaseDbSchemaVersionNumber getDBSchemaCreationVersion() {
 		return caseDBSchemaCreationVersion;
 	}
 
