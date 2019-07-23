@@ -208,7 +208,7 @@ uint8_t
 
     if (tsk_verbose)
         fprintf(stderr,
-        "encase_getentry: Lookup up hash %s at offset %" PRIuOFF
+        "encase_getentry: Lookup up hash %s at offset %" PRIdOFF
         "\n", hash, offset);
 
     if (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN) {

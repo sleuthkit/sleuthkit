@@ -175,7 +175,7 @@ main(int argc, char **argv1)
             if (cnt >= 0) {
                 tsk_fprintf(stderr,
                     "img_cat: Error reading image file at offset: %"
-					PRIdOFF ", len: %" PRIuOFF ", return: %" PRIdOFF "\n",
+					PRIdOFF ", len: %" PRIu64 ", return: %" PRId64 "\n",
                     done, len, cnt);
             }
             else {

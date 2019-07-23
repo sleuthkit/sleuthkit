@@ -292,8 +292,8 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     if (alloc_size < size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("tsk_fs_attr_set_run: alloc_size (%" PRIuOFF
-            ") is less than size (%" PRIuOFF ")", alloc_size, size);
+        tsk_error_set_errstr("tsk_fs_attr_set_run: alloc_size (%" PRIdOFF
+            ") is less than size (%" PRIdOFF ")", alloc_size, size);
         return 1;
     }
 
@@ -528,7 +528,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "tsk_fs_attr_add: %" PRIuOFF "@%" PRIuOFF
+                "tsk_fs_attr_add: %" PRIuDADDR "@%" PRIuDADDR
                 " (Filler: %s)\n", data_run_cur->offset, data_run_cur->len,
                 (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ? "Yes"
                 : "No");
@@ -543,7 +543,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                 tsk_error_set_errno(TSK_ERR_FS_GENFS);
                 tsk_error_set_errstr
                     ("tsk_fs_attr_add_run: could not add data_run b.c. offset (%"
-                    PRIuOFF ") is larger than FILLER (%" PRIuOFF ") (%"
+						PRIuDADDR ") is larger than FILLER (%" PRIuDADDR ") (%"
                     PRIuINUM ")", a_data_run_new->offset,
                     data_run_cur->offset, a_fs_attr->fs_file->meta->addr);
                 if (tsk_verbose)
@@ -1128,7 +1128,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
-            tsk_error_set_errstr("tsk_fs_attr_read - %" PRIuOFF, a_offset);
+            tsk_error_set_errstr("tsk_fs_attr_read - %" PRIdOFF, a_offset);
             return -1;
         }
 
@@ -1157,7 +1157,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 && (a_offset >= a_fs_attr->size))) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
-            tsk_error_set_errstr("tsk_fs_attr_read - %" PRIuOFF, a_offset);
+            tsk_error_set_errstr("tsk_fs_attr_read - %" PRIdOFF, a_offset);
             return -1;
         }
 
@@ -1267,7 +1267,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                         tsk_error_set_errno(TSK_ERR_FS_READ);
                     }
                     tsk_error_set_errstr2
-                        ("tsk_fs_attr_read_type: offset: %" PRIuOFF
+                        ("tsk_fs_attr_read_type: offset: %" PRIdOFF
                         "  Len: %" PRIuSIZE "", fs_offset_b, len_inrun);
                     return cnt;
                 }

@@ -83,7 +83,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     if (a_off < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: a_off: %" PRIuOFF, a_off);
+        tsk_error_set_errstr("tsk_img_read: a_off: %" PRIdOFF, a_off);
         return -1;
     }
 
@@ -117,7 +117,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         tsk_release_lock(&(a_img_info->cache_lock));
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("tsk_img_read - %" PRIuOFF, a_off);
+        tsk_error_set_errstr("tsk_img_read - %" PRIdOFF, a_off);
         return -1;
     }
 
@@ -189,7 +189,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         /*
            if (tsk_verbose)
            fprintf(stderr,
-           "tsk_img_read: Loading data into cache %d (%" PRIuOFF
+           "tsk_img_read: Loading data into cache %d (%" PRIdOFF
            ")\n", cache_next, a_img_info->cache_off[cache_next]);
          */
 

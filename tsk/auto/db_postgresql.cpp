@@ -749,7 +749,7 @@ int TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, in
         return 1;
 
     snprintf(stmt, 1024, "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d, %"
-        PRIuOFF ",%u)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
+		PRIuDADDR ",%u)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt, "Error adding data to tsk_vs_info table: %s\n");
 }
@@ -1863,7 +1863,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "NULL,NULL,%s,"
         "NULL,NULL,"
         "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
+        "%" PRIu64 ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,

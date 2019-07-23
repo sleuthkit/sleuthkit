@@ -351,7 +351,7 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
 {
     // make a volume directory if we analyzing a volume system
     if (m_writeVolumeDir) {
-        snprintf(m_vsName, FILENAME_MAX, "vol_%" PRIuOFF "/",
+        snprintf(m_vsName, FILENAME_MAX, "vol_%" PRIdOFF "/",
             fs_info->offset / m_img_info->sector_size);
     }
 
