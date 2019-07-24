@@ -49,6 +49,14 @@ static void pressAnyKeyToExit(int code) {
     exit(code);
 }
 
+static void handleExit(int code, bool promptBeforeExit) {
+    if (promptBeforeExit) {
+        std::cout << std::endl << "Press any key to exit";
+        (void)_getch();
+    }
+    exit(code);
+}
+
 void printDebug(char *msg, const char *fmt...) {
     if (tsk_verbose) {
         string prefix("tsk_logical_imager: ");
@@ -863,6 +871,7 @@ main(int argc, char **argv1)
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerConfiguration *config = NULL;
+    bool promptBeforeExit = true;
 
     // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
     // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to 
@@ -942,6 +951,7 @@ main(int argc, char **argv1)
 
     try {
         config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename), (LogicalImagerRuleSet::matchCallback)matchCallback);
+        promptBeforeExit = config->getPromptBeforeExit();
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -952,7 +962,7 @@ main(int argc, char **argv1)
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        pressAnyKeyToExit(1);
+        handleExit(1, promptBeforeExit);
     }
     fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
 
@@ -979,18 +989,18 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            pressAnyKeyToExit(1);
+            handleExit(1, promptBeforeExit);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
-                fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
-                pressAnyKeyToExit(1);
+                fprintf(stderr, "Failed to initialize VHD writer\n");
+                handleExit(1, promptBeforeExit);
             }
         }
         else {
-            fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
+            fprintf(stderr, "Image is not a RAW image, VHD will not be created\n");
         }
 
 
@@ -1057,8 +1067,8 @@ main(int argc, char **argv1)
 
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
-            fprintf(stderr, "openImageHandle failed\n");
-            pressAnyKeyToExit(1);
+            fprintf(stderr, "Failed to open image\n");
+            handleExit(1, promptBeforeExit);
         }
 
         fprintf(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
@@ -1066,7 +1076,6 @@ main(int argc, char **argv1)
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
             // Don't exit, just let it continue
-            fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
         }
     }
 
@@ -1082,7 +1091,7 @@ main(int argc, char **argv1)
                 fprintf(stdout, "Copying remainder of %s\n", it->second.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
-                    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+                    fprintf(stderr, "Error finishing VHD for %s\n", it->second.c_str());
                 }
             }
         }
@@ -1093,5 +1102,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    pressAnyKeyToExit(0);
+    handleExit(0, promptBeforeExit);
 }

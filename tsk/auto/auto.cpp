@@ -357,13 +357,13 @@ TSK_RETVAL_ENUM
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         if (isCurVsValid() == false) {
-            tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF, a_start/512);
+            tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();
             return TSK_ERR;
         }
         else if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
             tsk_error_set_errstr2 (
-                "Sector offset: %" PRIuOFF ", Partition Type: %s",
+                "Sector offset: %" PRIdOFF ", Partition Type: %s",
                 a_start/512, getCurVsPartDescr().c_str()
             );
             registerError();
@@ -444,13 +444,13 @@ uint8_t
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         if (isCurVsValid() == false) {
-            tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF, a_start/512);
+            tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();
             return TSK_ERR;
         }
         else if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
             tsk_error_set_errstr2(
-                "Sector offset: %" PRIuOFF ", Partition Type: %s",
+                "Sector offset: %" PRIdOFF ", Partition Type: %s",
                 a_start / 512, getCurVsPartDescr().c_str());
             registerError();
             return 1;
@@ -553,7 +553,7 @@ TSK_RETVAL_ENUM
                 m_fileFilterFlags), dirWalkCb, this)) {
 
         tsk_error_set_errstr2(
-            "Error walking directory in file system at offset %" PRIuOFF, a_fs_info->offset);
+            "Error walking directory in file system at offset %" PRIdOFF, a_fs_info->offset);
         registerError();
         return TSK_ERR;
     }

@@ -592,7 +592,7 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
 
     // Add the data source to the tsk_image_info table.
     char *sql;
-    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%lld, %d, %lld, '%q', %" PRIuOFF ", '%q', '%q', '%q');",
+    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%lld, %d, %lld, '%q', %" PRIdOFF ", '%q', '%q', '%q');",
         objId, type, ssize, timezone.c_str(), size, md5.c_str(), sha1.c_str(), sha256.c_str());
     int ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
@@ -653,7 +653,7 @@ int
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuOFF ",%d)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");
@@ -679,7 +679,7 @@ int
 
     zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
-        "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",'%q',%d)",
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
         objId, (int) vs_part->addr, vs_part->start, vs_part->len,
         vs_part->desc, vs_part->flags);
 
@@ -706,7 +706,7 @@ int
         "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
         "root_inum, first_inum, last_inum) "
         "VALUES ("
-        "%" PRId64 ",%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
+        "%" PRId64 ",%" PRIdOFF ",%d,%u,%" PRIuDADDR ","
         "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
         objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
@@ -963,6 +963,11 @@ int
 		}
 	}
 
+	// sanity check
+	if (size < 0) {
+		size = 0;
+	}
+
 	// combine name and attribute name
 	size_t len = strlen(fs_file->name->name);
 	char * name;
@@ -1023,7 +1028,7 @@ int
 		"%d,%d,'%q',"
 		"%" PRIuINUM ",%d,"
 		"%d,%d,%d,%d,"
-		"%" PRIuOFF ","
+		"%" PRId64 ","
 		"%llu,%llu,%llu,%llu,"
 		"%d,%d,%d,%Q,%d,"
 		"'%q','%q')",
@@ -1085,7 +1090,7 @@ int
 			"%d,%d,'%q',"
 			"%" PRIuINUM ",%d,"
 			"%d,%d,%d,%d,"
-			"%" PRIuOFF ","
+			"%" PRId64 ","
 			"%llu,%llu,%llu,%llu,"
 			"%d,%d,%d,NULL,%d,"
 			"'%q','%q')",
@@ -1096,7 +1101,7 @@ int
 			fs_file->name->meta_addr, fs_file->name->meta_seq,
 			TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
 			slackSize,
-        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+			(unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
 			meta_mode, gid, uid, known,
 			escaped_path,extension);
 
@@ -1245,7 +1250,7 @@ TSK_RETVAL_ENUM
         "NULL,NULL,'%q',"
         "NULL,NULL,"
         "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
+        "%" PRIu64 ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
