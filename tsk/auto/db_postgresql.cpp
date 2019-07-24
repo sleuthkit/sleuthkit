@@ -669,7 +669,8 @@ int TskDbPostgreSQL::initialize() {
             " tagged INTEGER NOT NULL, " //boolean 
             " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
             " FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
-            " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
+            " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ,"
+			" UNIQUE (full_description, file_obj_id, artifact_id))",
             "Error creating tsk_event_descriptions table: %s\n")
         ||
         attempt_exec(
@@ -677,7 +678,8 @@ int TskDbPostgreSQL::initialize() {
             " event_id BIGSERIAL PRIMARY KEY, "
             " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
             " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
-            " time INTEGER NOT NULL) "
+            " time INTEGER NOT NULL , "
+			" UNIQUE (event_type_id, event_description_id, time))"
             , "Error creating tsk_events table: %s\n")
         ||
         attempt_exec
