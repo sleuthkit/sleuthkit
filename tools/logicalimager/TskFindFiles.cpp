@@ -39,7 +39,7 @@ TskFindFiles::~TskFindFiles() {
  * Print errors as they are encountered
  */
 uint8_t TskFindFiles::handleError() {
-    fprintf(stderr, "%s\n", tsk_error_get());
+    tsk_error_print(stderr);
     return 0;
 }
 
