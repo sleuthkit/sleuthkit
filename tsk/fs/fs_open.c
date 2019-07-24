@@ -119,7 +119,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "fsopen: Auto detection mode at offset %" PRIuOFF "\n",
+                "fsopen: Auto detection mode at offset %" PRIdOFF "\n",
                 a_offset);
 
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {

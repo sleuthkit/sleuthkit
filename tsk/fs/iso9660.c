@@ -419,7 +419,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "iso9660_load_inodes_dir: offs: %" PRIuOFF
+            "iso9660_load_inodes_dir: offs: %" PRIdOFF
             " count: %d ctype: %d fn: %s\n", a_offs, count, ctype, a_fn);
 
     // cycle through each sector -- entries will not cross them
