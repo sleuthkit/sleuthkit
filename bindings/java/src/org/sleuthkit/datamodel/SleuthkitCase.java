@@ -911,8 +911,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
-				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = 'SCHEMA_MAJOR_VERSION'"); //NON-NLS
-				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMinor() + " WHERE name = 'SCHEMA_MINOR_VERSION'"); //NON-NLS
+				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
+				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMinor() + " WHERE name = '" + SCHEMA_MINOR_VERSION_KEY + "'"); //NON-NLS
 				statement.close();
 				statement = null;
 			}
@@ -1858,14 +1858,19 @@ public class SleuthkitCase {
 				default:
 					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
 			}
+		
+			//create and initialize tsk_event_types tables which may or may not exist
+			statement.execute("CREATE TABLE IF NOT EXISTS tsk_event_types ("
+					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
+					+ " display_name TEXT UNIQUE NOT NULL, "
+					+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
 			
+			resultSet = statement.executeQuery("SELECT * from tsk_event_types");
 			
-			try{
-				//create and initialize tsk_event_types tables
-				statement.execute("CREATE TABLE tsk_event_types ("
-						+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
-						+ " display_name TEXT UNIQUE NOT NULL, "
-						+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
+			// If there is something in resultSet then the table must have previously 
+			// existing therefore there is not need to populate
+			if(!resultSet.next()) {
+			
 				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 						+ " values( 0, 'Event Types', null)");
 				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
@@ -1882,25 +1887,15 @@ public class SleuthkitCase {
 						+ " values(6, 'Created', 1)");
 				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 						+ " values(7, 'Changed', 1)");
-			} catch (SQLException ex ){
-				// If this fails, tsk_event_types probably already existed.
 			}
 			
 			// Delete the old table that may have been created with the upgrade
-			// from 8.1 to 8.2
-			try{
-				statement.execute("DROP TABLE tsk_event_descriptions");
-			} catch (SQLException ex) {
-				// The table didn't exist.
-			}
+			// from 8.1 to 8.2.
+			statement.execute("DROP TABLE IF EXISTS tsk_events");
 			
 			// Delete the old table that may have been created with the upgrade
 			// from 8.1 to 8.2
-			try {
-				statement.execute("DROP TABLE tsk_events");
-			} catch (SQLException ex) {
-				// The table didn't exist.
-			}
+			statement.execute("DROP TABLE IF EXISTS tsk_event_descriptions");
 				
 			//create new tsk_event_description table
 			statement.execute("CREATE TABLE tsk_event_descriptions ("
