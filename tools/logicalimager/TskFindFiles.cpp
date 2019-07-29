@@ -24,6 +24,8 @@
 #include "tsk/tsk_tools_i.h"
 #include "TskFindFiles.h"
 
+extern void consoleError(const char *msg, ...);
+
 /**
  * Create the Find Files object given the Logical Imager Configuration
  * @param config LogicalImagerRuleSet to use for finding files
@@ -39,7 +41,7 @@ TskFindFiles::~TskFindFiles() {
  * Print errors as they are encountered
  */
 uint8_t TskFindFiles::handleError() {
-    fprintf(stderr, "%s\n", tsk_error_get());
+    consoleError("%s\n", tsk_error_get());
     return 0;
 }
 
