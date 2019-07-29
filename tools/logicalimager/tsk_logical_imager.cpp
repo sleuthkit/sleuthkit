@@ -716,8 +716,6 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
     checkLDMStatus = checkDriveForLDM(systemDriveLetter);
     if (1 == checkLDMStatus) {
         consoleError("System drive %s is an LDM disk\n", systemDriveLetter.c_str());
-        drivesToProcess.clear();
-        drivesToProcess.push_back((TSK_TCHAR *) systemDriveLetter.c_str());
         return TRUE;
     }
 
@@ -725,8 +723,6 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
     checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
     if (1 == checkBitlockerStatus) {
         consoleError("System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
-        drivesToProcess.clear();
-        drivesToProcess.push_back((TSK_TCHAR *)systemDriveLetter.c_str());
         return TRUE;
     }
 
