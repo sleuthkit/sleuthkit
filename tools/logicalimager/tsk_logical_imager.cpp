@@ -63,7 +63,7 @@ static void handleExit(int code, bool promptBeforeExit) {
     exit(code);
 }
 
-void openConsoleOutput(const std::string consoleFileName) {
+void openConsoleOutput(const std::string &consoleFileName) {
     consoleFile = fopen(consoleFileName.c_str(), "w");
     if (!consoleFile) {
         fprintf(stderr, "ERROR: Failed to open console file %s\n", consoleFileName.c_str());
