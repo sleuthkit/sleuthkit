@@ -53,12 +53,8 @@ static void pressAnyKeyToExit(int code) {
 }
 
 static void handleExit(int code, bool promptBeforeExit) {
-    if (consoleFile) {
-        fclose(consoleFile);
-    }
     if (promptBeforeExit) {
-        std::cout << std::endl << "Press any key to exit";
-        (void)_getch();
+        pressAnyKeyToExit(code);
     }
     exit(code);
 }
@@ -71,38 +67,19 @@ void openConsoleOutput(const std::string &consoleFileName) {
     }
 }
 
-void consoleOutput(const char *msg, ...) {
-    char buf[2048];
-    va_list args;
-
-    va_start(args, msg);
-    vsnprintf(buf, sizeof(buf), msg, args);
-    fprintf(stdout, buf);
-    // output to console file
+void logOutputToFile(const char *buf) {
     fprintf(consoleFile, buf);
-    va_end(args);
 }
 
-void consoleError(const char *msg, ...) {
+void consoleOutput(FILE *fd, const char *msg, ...) {
     char buf[2048];
     va_list args;
 
     va_start(args, msg);
     vsnprintf(buf, sizeof(buf), msg, args);
-    fprintf(stderr, buf);
+    fprintf(fd, buf);
     // output to console file
-    fprintf(consoleFile, buf);
-    va_end(args);
-}
-
-void logError(const char *msg, ...) {
-    char buf[2048];
-    va_list args;
-
-    va_start(args, msg);
-    vsnprintf(buf, sizeof(buf), msg, args);
-    // output to console file
-    fprintf(consoleFile, buf);
+    logOutputToFile(buf);
     va_end(args);
 }
 
@@ -247,13 +224,13 @@ static int getLocalHost(string &a_hostName) {
     WSADATA wsaData;
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
-        consoleError("WSAStartup failed with error = %d\n", iResult);
+        consoleOutput(stderr, "WSAStartup failed with error = %d\n", iResult);
         return -1;
     }
 
     char buf[MAX_PATH];
     if (gethostname(buf, sizeof(buf)) == SOCKET_ERROR) {
-        consoleError("Error getting host name. Error =  %d\n", WSAGetLastError());
+        consoleOutput(stderr, "Error getting host name. Error =  %d\n", WSAGetLastError());
         return -1;
     }
     a_hostName = string(buf);
@@ -290,7 +267,7 @@ static int createDirectory(string &directoryPathname) {
     if (stat(outDirName.c_str(), &st) != 0) {
         int rc = _mkdir(outDirName.c_str());
         if (rc != 0) {
-            consoleError("Failed to create output folder = %s Error: %d\n", outDirName.c_str(), rc);
+            consoleOutput(stderr, "Failed to create output folder = %s Error: %d\n", outDirName.c_str(), rc);
             return -1;
         }
     }
@@ -317,7 +294,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
 
     hres = CoInitializeEx(0, COINIT_MULTITHREADED);
     if (FAILED(hres)) {
-        consoleError("wmi_init: Failed to initialize COM library. Error code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Failed to initialize COM library. Error code = %#X\n", hres);
         return -1;                  // Program has failed.
     }
 
@@ -335,7 +312,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
     );
 
     if (FAILED(hres)) {
-        consoleError("wmi_init: Failed to initialize security. Error code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Failed to initialize security. Error code = %#X\n", hres);
         CoUninitialize();
         return -1;                    // Program has failed.
     }
@@ -349,7 +326,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
 
     if (FAILED(hres))
     {
-        consoleError("wmi_init: Failed to create IWbemLocator object. Err code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Failed to create IWbemLocator object. Err code = %#X\n", hres);
         CoUninitialize();
         return -1;                 // Program has failed.
     }
@@ -371,7 +348,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
 
     if (FAILED(hres)) {
         if (WBEM_E_INVALID_NAMESPACE != hres) {
-            consoleError("wmi_init: Could not connect to namespace %s, Error = %s\n",
+            consoleOutput(stderr, "wmi_init: Could not connect to namespace %s, Error = %s\n",
                 TskHelper::toNarrow(wmiNamespace).c_str(), GetErrorStdStr(hres).c_str());
         }
 
@@ -394,7 +371,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
     );
 
     if (FAILED(hres)) {
-        consoleError("wmi_init: Could not set proxy blanket. Error code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Could not set proxy blanket. Error code = %#X\n", hres);
         (*ppWbemServices)->Release();
         (*ppWbemLocator)->Release();
         CoUninitialize();
@@ -693,7 +670,7 @@ static BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
             }
         }
     } else {
-        consoleError("QueryDosDevice() return error: %d\n", GetLastError());
+        consoleOutput(stderr, "QueryDosDevice() return error: %d\n", GetLastError());
         return false;
     }
     return true;
@@ -726,14 +703,14 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
 
     checkLDMStatus = checkDriveForLDM(systemDriveLetter);
     if (1 == checkLDMStatus) {
-        consoleError("System drive %s is an LDM disk\n", systemDriveLetter.c_str());
+        consoleOutput(stderr, "System drive %s is an LDM disk\n", systemDriveLetter.c_str());
         return TRUE;
     }
 
     // If bitlocker protection is enabled, then analyze it
     checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
     if (1 == checkBitlockerStatus) {
-        consoleError("System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
+        consoleOutput(stderr, "System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
         return TRUE;
     }
 
@@ -742,10 +719,10 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
     }
     else { // an error happened  in determining LDM or ProtectionStatus
         if (-1 == checkLDMStatus) {
-            consoleError("Error in checking LDM disk\n");
+            consoleOutput(stderr, "Error in checking LDM disk\n");
         }
         if (-1 == checkBitlockerStatus) {
-            consoleError("Error in checking BitLocker protection status\n");
+            consoleOutput(stderr, "Error in checking BitLocker protection status\n");
         }
 
         // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker
@@ -911,7 +888,7 @@ std::string driveToProcess;
 static void openAlert(const std::string &alertFilename) {
     m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
-        consoleError("ERROR: Failed to open alert file %s\n", alertFilename.c_str());
+        consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         pressAnyKeyToExit(1);
     }
     fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
@@ -957,7 +934,7 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         fullPath += "name is null";
     }
 
-    consoleOutput( "Alert for %s: %s\n",
+    consoleOutput(stdout, "Alert for %s: %s\n",
         ruleMatchResult->getRuleSetName().c_str(),
         fullPath.c_str());
 }
@@ -1148,7 +1125,7 @@ main(int argc, char **argv1)
     std::string consoleFileName = directoryPath + "/console.txt";
     openConsoleOutput(consoleFileName);
 
-    consoleOutput("Created directory %s\n", directoryPath.c_str());
+    consoleOutput(stdout, "Created directory %s\n", directoryPath.c_str());
 
     std::string alertFileName = directoryPath + "/alert.txt";
     openAlert(alertFileName);
@@ -1160,7 +1137,7 @@ main(int argc, char **argv1)
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
-        consoleOutput("Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
+        consoleOutput(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
 
         if (isDriveLocked(driveToProcess) == 1) {
             fprintf(stdout, "Skipping drive %s because it is bitlocked.\n", driveToProcess.c_str());
@@ -1174,7 +1151,7 @@ main(int argc, char **argv1)
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            consoleOutput( "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
+            consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
@@ -1187,12 +1164,12 @@ main(int argc, char **argv1)
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
-                consoleError("Failed to initialize VHD writer\n");
+                consoleOutput(stderr, "Failed to initialize VHD writer\n");
                 handleExit(1, promptBeforeExit);
             }
         }
         else {
-            consoleError("Image is not a RAW image, VHD will not be created\n");
+            consoleOutput(stderr, "Image is not a RAW image, VHD will not be created\n");
         }
 
 
@@ -1222,7 +1199,7 @@ main(int argc, char **argv1)
             tsk_vs_close(vs_info);
         }
 
-        consoleOutput( "%s - Searching for full path files\n", driveToProcess.c_str());
+        consoleOutput(stdout, "%s - Searching for full path files\n", driveToProcess.c_str());
 
         const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
         TSKFileNameInfo filenameInfo;
@@ -1247,7 +1224,7 @@ main(int argc, char **argv1)
             }
         }
 
-        consoleOutput( "%s - Searching for registry\n", driveToProcess.c_str());
+        consoleOutput(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
 
         string usersFileName = directoryPath + "/users.txt";
 
@@ -1259,11 +1236,11 @@ main(int argc, char **argv1)
 
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
-            consoleError("Failed to open image\n");
+            consoleOutput(stderr, "Failed to open image\n");
             handleExit(1, promptBeforeExit);
         }
 
-        consoleOutput( "%s - Searching for files by attribute\n", driveToProcess.c_str());
+        consoleOutput(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
 
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
@@ -1280,10 +1257,10 @@ main(int argc, char **argv1)
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (config->getFinalizeImagerWriter()) {
                 printDebug("finalize image writer for %s", it->second.c_str());
-                consoleOutput( "Copying remainder of %s\n", it->second.c_str());
+                consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
-                    consoleError("Error finishing VHD for %s\n", it->second.c_str());
+                    consoleOutput(stderr, "Error finishing VHD for %s\n", it->second.c_str());
                 }
             }
         }
