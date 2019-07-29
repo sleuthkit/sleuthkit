@@ -102,7 +102,7 @@ count_slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "count_slack_file_act: Remaining File:  %" PRIuOFF
+            "count_slack_file_act: Remaining File:  %" PRIdOFF
             "  Buffer: %" PRIuSIZE "\n", data->flen, size);
 
     /* This is not the last data unit, or the file has no slack */

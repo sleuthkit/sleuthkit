@@ -70,7 +70,7 @@ static TSK_RETVAL_ENUM seekToOffset(TSK_IMG_WRITER * writer, TSK_OFF_T offset) {
         int lastError = (int)GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-        tsk_error_set_errstr("img_writer::seekToOffset: offset %" PRIuOFF " seek - %d",
+        tsk_error_set_errstr("img_writer::seekToOffset: offset %" PRIdOFF " seek - %d",
             offset,
             lastError);
         return TSK_ERR;
@@ -93,7 +93,7 @@ static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
         int lastError = (int)GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-        tsk_error_set_errstr("img_writer::seekAhead: offset %" PRIuOFF " seek - %d",
+        tsk_error_set_errstr("img_writer::seekAhead: offset %" PRIdOFF " seek - %d",
             dist,
             lastError);
         return TSK_ERR;
@@ -525,7 +525,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_add: Adding data at offset: %"
-            PRIuOFF " len: %" PRIuOFF "\n", addr,
+			PRIdOFF " len: %" PRIdOFF "\n", addr,
             (TSK_OFF_T)len);
     }
 

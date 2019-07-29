@@ -1720,7 +1720,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     tsk_fs_meta_make_ls(fs_meta, ls, sizeof(ls));
     tsk_fprintf(hFile, "mode: %s\n", ls);
 
-    tsk_fprintf(hFile, "size: %" PRIuOFF "\n", fs_meta->size);
+    tsk_fprintf(hFile, "size: %" PRIdOFF "\n", fs_meta->size);
     tsk_fprintf(hFile, "num of links: %u\n", fs_meta->nlink);
 
 

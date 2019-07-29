@@ -237,7 +237,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
                     tsk_fprintf(stderr,
                         "ntfs_dinode_lookup: Found in offset: %"
                         PRIuDADDR "  size: %" PRIuDADDR " at offset: %"
-                        PRIuOFF "\n", data_run->addr, data_run->len,
+						PRIdOFF "\n", data_run->addr, data_run->len,
                         offset);
 
                 /* special case where the MFT entry crosses
@@ -269,7 +269,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "ntfs_dinode_lookup: Entry address at: %"
-                        PRIuOFF "\n", mftaddr_b);
+						PRIdOFF "\n", mftaddr_b);
                 break;
             }
 
@@ -300,7 +300,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             }
             tsk_error_set_errstr2
                 ("ntfs_dinode_lookup: Error reading MFT Entry (part 1) at %"
-                PRIuOFF, mftaddr_b);
+					PRIdOFF, mftaddr_b);
             return TSK_ERR;
         }
 
@@ -316,7 +316,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             }
             tsk_error_set_errstr2
                 ("ntfs_dinode_lookup: Error reading MFT Entry (part 2) at %"
-                PRIuOFF, mftaddr2_b);
+					PRIdOFF, mftaddr2_b);
             return TSK_ERR;
         }
     }
@@ -333,7 +333,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             }
             tsk_error_set_errstr2
                 ("ntfs_dinode_lookup: Error reading MFT Entry at %"
-                PRIuOFF, mftaddr_b);
+					PRIdOFF, mftaddr_b);
             return TSK_ERR;
         }
     }
@@ -674,8 +674,8 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_make_data_run: Signed addr_offset: %"
-                PRIdDADDR " Previous address: %"
-                PRIdDADDR "\n", addr_offset, prev_addr);
+				PRId64 " Previous address: %"
+				PRIuDADDR "\n", addr_offset, prev_addr);
 
         /* The NT 4.0 version of NTFS uses an offset of -1 to represent
          * a hole, so add the sparse flag and make it look like the 2K
@@ -1520,7 +1520,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
-            tsk_error_set_errstr("ntfs_file_read_special - %" PRIuOFF
+            tsk_error_set_errstr("ntfs_file_read_special - %" PRIdOFF
                 " Meta: %" PRIuINUM, a_offset,
                 a_fs_attr->fs_file->meta->addr);
             return -1;
@@ -4773,7 +4773,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                 tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Non-Resident%s%s%s   size: %"
-                    PRIuOFF "  init_size: %" PRIuOFF "\n", type,
+					PRIdOFF "  init_size: %" PRIdOFF "\n", type,
                     fs_attr->type, fs_attr->id,
                     (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted" :
@@ -4810,7 +4810,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                 tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Resident%s%s%s   size: %"
-                    PRIuOFF "\n", type, fs_attr->type,
+					PRIdOFF "\n", type, fs_attr->type,
                     fs_attr->id,
                     (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted"
