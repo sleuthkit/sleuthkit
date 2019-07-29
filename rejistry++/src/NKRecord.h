@@ -163,7 +163,7 @@ namespace Rejistry {
         static const uint16_t CLASSNAME_LENGTH_OFFSET = 0x4A;
         static const uint16_t NAME_OFFSET = 0x4C;
 
-        static const uint8_t MAX_NAME_LENGTH = 255;
+        static const uint8_t MAX_NAME_LENGTH = 255; //# of characters
 
         NKRecord() {};
         NKRecord& operator=(const NKRecord &);

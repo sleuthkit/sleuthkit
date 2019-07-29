@@ -534,9 +534,9 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
 
         /* use the stream size if one was given */
         if (fs_attr)
-            tsk_fprintf(hFile, "\t%" PRIuOFF, fs_attr->size);
+            tsk_fprintf(hFile, "\t%" PRIdOFF, fs_attr->size);
         else
-            tsk_fprintf(hFile, "\t%" PRIuOFF, fs_file->meta->size);
+            tsk_fprintf(hFile, "\t%" PRIdOFF, fs_file->meta->size);
 
         tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID,
             fs_file->meta->gid, fs_file->meta->uid);
@@ -693,9 +693,9 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
 
         /* size - use data stream if we have it */
         if (fs_attr)
-            tsk_fprintf(hFile, "%" PRIuOFF "|", fs_attr->size);
+            tsk_fprintf(hFile, "%" PRIdOFF "|", fs_attr->size);
         else
-            tsk_fprintf(hFile, "%" PRIuOFF "|", fs_file->meta->size);
+            tsk_fprintf(hFile, "%" PRIdOFF "|", fs_file->meta->size);
     }
 
     if (!fs_file->meta) {

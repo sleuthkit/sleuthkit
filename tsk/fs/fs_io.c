@@ -59,7 +59,7 @@ fs_prepost_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf,
             a_fs->block_post_size) + a_fs->block_pre_size;
         if (tsk_verbose)
             fprintf(stderr,
-                "fs_prepost_read: Mapped %" PRIuOFF " to %" PRIuOFF "\n",
+                "fs_prepost_read: Mapped %" PRIdOFF " to %" PRIdOFF "\n",
                 cur_off, read_off);
 
         retval2 =
