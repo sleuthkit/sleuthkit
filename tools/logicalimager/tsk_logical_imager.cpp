@@ -95,6 +95,17 @@ void consoleError(const char *msg, ...) {
     va_end(args);
 }
 
+void logError(const char *msg, ...) {
+    char buf[2048];
+    va_list args;
+
+    va_start(args, msg);
+    vsnprintf(buf, sizeof(buf), msg, args);
+    // output to console file
+    fprintf(consoleFile, buf);
+    va_end(args);
+}
+
 void printDebug(char *msg, const char *fmt...) {
     if (tsk_verbose) {
         string prefix("tsk_logical_imager: ");
