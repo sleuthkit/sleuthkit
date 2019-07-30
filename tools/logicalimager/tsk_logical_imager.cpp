@@ -41,18 +41,20 @@ std::wstring GetErrorStdStrW(DWORD err);
 
 static TSK_TCHAR *progname;
 FILE *consoleFile = NULL;
+bool promptBeforeExit = true;
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
 static void pressAnyKeyToExit(int code) {
-    if (consoleFile) {
-        fclose(consoleFile);
-    }
     std::cout << std::endl << "Press any key to exit";
     (void) _getch();
     exit(code);
 }
 
 static void handleExit(int code, bool promptBeforeExit) {
+    if (consoleFile) {
+        fclose(consoleFile);
+        consoleFile = NULL;
+    }
     if (promptBeforeExit) {
         pressAnyKeyToExit(code);
     }
@@ -63,7 +65,7 @@ void openConsoleOutput(const std::string &consoleFileName) {
     consoleFile = fopen(consoleFileName.c_str(), "w");
     if (!consoleFile) {
         fprintf(stderr, "ERROR: Failed to open console file %s\n", consoleFileName.c_str());
-        pressAnyKeyToExit(1);
+        handleExit(1, promptBeforeExit);
     }
 }
 
@@ -889,7 +891,7 @@ static void openAlert(const std::string &alertFilename) {
     m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
-        pressAnyKeyToExit(1);
+        handleExit(1, promptBeforeExit);
     }
     fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
 }
@@ -1028,7 +1030,6 @@ main(int argc, char **argv1)
     BOOL iFlagUsed = FALSE;
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerConfiguration *config = NULL;
-    bool promptBeforeExit = true;
 
     // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
     // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to
