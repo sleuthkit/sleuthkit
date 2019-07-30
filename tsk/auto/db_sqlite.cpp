@@ -273,12 +273,12 @@ TskDbSqlite::initialize()
 		return 1;
 	}
 
-	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATED_SCHEMA_MAJOR_VERSION', '%d');", TSK_SCHEMA_VER);
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATION_SCHEMA_MAJOR_VERSION', '%d');", TSK_SCHEMA_VER);
 	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
 		return 1;
 	}
 
-	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATED_SCHEMA_MINOR_VERSION', '%d');", TSK_SCHEMA_MINOR_VER);
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATION_SCHEMA_MINOR_VERSION', '%d');", TSK_SCHEMA_MINOR_VER);
 	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
 		return 1;
 	}

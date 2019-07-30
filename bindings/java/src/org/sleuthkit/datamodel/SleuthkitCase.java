@@ -96,7 +96,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 2);
+			= new CaseDbSchemaVersionNumber(8, 3);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -187,6 +187,7 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
+	private CaseDbSchemaVersionNumber caseDBSchemaCreationVersion;
 
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
@@ -370,6 +371,7 @@ public class SleuthkitCase {
 			initEncodingTypes(connection);
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
+			initDBSchemaCreationVersion(connection);
 		}
 	}
 
@@ -906,8 +908,11 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
+				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
+				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMinor() + " WHERE name = '" + SCHEMA_MINOR_VERSION_KEY + "'"); //NON-NLS
 				statement.close();
 				statement = null;
 			}
@@ -922,6 +927,41 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
 		}
+	}
+	
+	/**
+	 * Get the database schema creation version from database. This must be 
+	 * called after the database upgrades or the tsk_db_info_extended table 
+	 * may not exist.
+	 *
+	 * @throws SQLException
+	 */
+	private void initDBSchemaCreationVersion(CaseDbConnection connection) throws SQLException{
+		
+		Statement statement = null;
+		ResultSet resultSet = null;
+		String createdSchemaMajorVersion = "0";
+		String createdSchemaMinorVersion = "0";
+		acquireSingleUserCaseReadLock();
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT name, value FROM tsk_db_info_extended");
+			while(resultSet.next()) {
+				String name = resultSet.getString("name");
+				if (name.equals(CREATION_SCHEMA_MAJOR_VERSION_KEY) || name.equals("CREATED_SCHEMA_MAJOR_VERSION")){
+					createdSchemaMajorVersion = resultSet.getString("value");
+				} else if (name.equals(CREATION_SCHEMA_MINOR_VERSION_KEY) || name.equals("CREATED_SCHEMA_MINOR_VERSION")) {
+					createdSchemaMinorVersion = resultSet.getString("value");
+				}
+			}
+			
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseSingleUserCaseReadLock();
+		}
+		
+		caseDBSchemaCreationVersion = new CaseDbSchemaVersionNumber(Integer.parseInt(createdSchemaMajorVersion), Integer.parseInt(createdSchemaMinorVersion));
 	}
 
 	/**
@@ -1773,6 +1813,126 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Updates a schema version 8.2 database to a schema version 8.3 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot2toSchema8dot3(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 2) {
+			return schemaVersion;
+		}
+		
+		acquireSingleUserCaseWriteLock();
+		
+		ResultSet resultSet = null;
+		
+		try (Statement statement = connection.createStatement();) {
+			
+			// Add the uniqueness constraint to the tsk_event and tsk_event_description tables.
+			
+			// Unfortunately, SQLite doesn't support adding a constraint
+			// to an existing table so we have to rename the old...
+			
+			String primaryKeyType;
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					primaryKeyType = "BIGSERIAL";
+					break;
+				case SQLITE:
+					primaryKeyType = "INTEGER";
+					break;
+				default:
+					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}
+		
+			//create and initialize tsk_event_types tables which may or may not exist
+			statement.execute("CREATE TABLE IF NOT EXISTS tsk_event_types ("
+					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
+					+ " display_name TEXT UNIQUE NOT NULL, "
+					+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
+			
+			resultSet = statement.executeQuery("SELECT * from tsk_event_types");
+			
+			// If there is something in resultSet then the table must have previously 
+			// existing therefore there is not need to populate
+			if(!resultSet.next()) {
+			
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values( 0, 'Event Types', null)");
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values(1, 'File System', 0)");
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values(2, 'Web Activity', 0)");
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values(3, 'Misc Types', 0)");
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values(4, 'Modified', 1)");
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values(5, 'Accessed', 1)");
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values(6, 'Created', 1)");
+				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
+						+ " values(7, 'Changed', 1)");
+			}
+			
+			// Delete the old table that may have been created with the upgrade
+			// from 8.1 to 8.2.
+			statement.execute("DROP TABLE IF EXISTS tsk_events");
+			
+			// Delete the old table that may have been created with the upgrade
+			// from 8.1 to 8.2
+			statement.execute("DROP TABLE IF EXISTS tsk_event_descriptions");
+				
+			//create new tsk_event_description table
+			statement.execute("CREATE TABLE tsk_event_descriptions ("
+					+ " event_description_id " + primaryKeyType + " PRIMARY KEY, "
+					+ " full_description TEXT NOT NULL, "
+					+ " med_description TEXT, "
+					+ " short_description TEXT,"
+					+ " data_source_obj_id BIGINT NOT NULL, "
+					+ " file_obj_id BIGINT NOT NULL, "
+					+ " artifact_id BIGINT, "
+					+ " hash_hit INTEGER NOT NULL, " //boolean 
+					+ " tagged INTEGER NOT NULL, " //boolean 
+					+ " UNIQUE(full_description, file_obj_id, artifact_id), "
+					+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+					+ " FOREIGN KEY(file_obj_id) REFERENCES tsk_files(obj_id), "
+					+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
+			);
+			
+			// create a new table
+			statement.execute("CREATE TABLE tsk_events ( "
+					+ " event_id " + primaryKeyType + " PRIMARY KEY, "
+					+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+					+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
+					+ " time INTEGER NOT NULL, "
+					+ " UNIQUE (event_type_id, event_description_id, time))"
+			);
+			
+			// Fix mistakenly set names in tsk_db_info_extended 
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
+			
+			return new CaseDbSchemaVersionNumber(8, 3);
+		} finally {
+			closeResultSet(resultSet);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
 
 	/**
 	 * Extract the extension from a file name.
@@ -1822,6 +1982,16 @@ public class SleuthkitCase {
 	 */
 	public VersionNumber getDBSchemaVersion() {
 		return CURRENT_DB_SCHEMA_VERSION;
+	}
+	
+	/**
+	 * Gets the creation version of the database schema. 
+	 *
+	 * @return the creation version for the database schema, the creation version
+	 * will be 0.0 for databases created prior to 8.2
+	 */
+	public CaseDbSchemaVersionNumber getDBSchemaCreationVersion() {
+		return caseDBSchemaCreationVersion;
 	}
 
 	/**
