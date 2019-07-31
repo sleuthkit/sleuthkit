@@ -870,7 +870,7 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
                     fileSystemType == TSK_FS_TYPE_FAT16 ||
                     fileSystemType == TSK_FS_TYPE_FAT32 ||
                     fileSystemType == TSK_FS_TYPE_FAT_DETECT) {
-                    consoleOutput(stderr, "Writing to FAT device is not supported.");
+                    consoleOutput(stderr, "Error: Writing to FAT device is not supported.");
                     pressAnyKeyToExit(1);
                 }
                 tsk_fs_file_close(fs_file);
