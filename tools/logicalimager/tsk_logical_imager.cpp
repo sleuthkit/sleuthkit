@@ -864,15 +864,13 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
             if (retval == 0 && fs_file != NULL && fs_file->meta != NULL) {
                 // found it
                 result = true;
-                bool hasFAT = false;
                 TSK_FS_INFO *fsInfo = *fsListIter;
                 TSK_FS_TYPE_ENUM fileSystemType = fsInfo->ftype;
                 if (fileSystemType == TSK_FS_TYPE_FAT12 ||
                     fileSystemType == TSK_FS_TYPE_FAT16 ||
                     fileSystemType == TSK_FS_TYPE_FAT32 ||
                     fileSystemType == TSK_FS_TYPE_FAT_DETECT) {
-                    hasFAT = true;
-                    consoleOutput(stderr, "Cannot write to FAT device");
+                    consoleOutput(stderr, "Writing to FAT device is not supported.");
                     pressAnyKeyToExit(1);
                 }
                 tsk_fs_file_close(fs_file);
