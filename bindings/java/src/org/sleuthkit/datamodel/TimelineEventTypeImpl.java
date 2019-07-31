@@ -111,6 +111,6 @@ class TimelineEventTypeImpl implements TimelineEventType {
 
 	@Override
 	public String toString() {
-		return "StandardEventType{" + "id=" + getTypeID() + ", displayName=" + getDisplayName() + '}';
+		return getDisplayName();
 	}
 }
