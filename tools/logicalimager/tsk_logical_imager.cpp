@@ -672,7 +672,7 @@ static BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
             }
         }
     } else {
-        consoleOutput(stderr, "QueryDosDevice() return error: %d\n", GetLastError());
+        fprintf(stderr, "QueryDosDevice() return error: %d\n", GetLastError());
         return false;
     }
     return true;
@@ -705,26 +705,26 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
 
     checkLDMStatus = checkDriveForLDM(systemDriveLetter);
     if (1 == checkLDMStatus) {
-        consoleOutput(stderr, "System drive %s is an LDM disk\n", systemDriveLetter.c_str());
+        printDebug("System drive %s is an LDM disk\n", systemDriveLetter.c_str());
         return TRUE;
     }
 
     // If bitlocker protection is enabled, then analyze it
     checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
     if (1 == checkBitlockerStatus) {
-        consoleOutput(stderr, "System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
+        printDebug("System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
         return TRUE;
     }
 
     if (0 == checkLDMStatus && 0 == checkBitlockerStatus) {
         return false;        // neither LDM nor BitLocker detected
     }
-    else { // an error happened  in determining LDM or ProtectionStatus
+    else { // an error happened in determining LDM or ProtectionStatus
         if (-1 == checkLDMStatus) {
-            consoleOutput(stderr, "Error in checking LDM disk\n");
+            fprintf(stderr, "Error in checking LDM disk\n");
         }
         if (-1 == checkBitlockerStatus) {
-            consoleOutput(stderr, "Error in checking BitLocker protection status\n");
+            fprintf(stderr, "Error in checking BitLocker protection status\n");
         }
 
         // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker
@@ -864,6 +864,17 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
             if (retval == 0 && fs_file != NULL && fs_file->meta != NULL) {
                 // found it
                 result = true;
+                bool hasFAT = false;
+                TSK_FS_INFO *fsInfo = *fsListIter;
+                TSK_FS_TYPE_ENUM fileSystemType = fsInfo->ftype;
+                if (fileSystemType == TSK_FS_TYPE_FAT12 ||
+                    fileSystemType == TSK_FS_TYPE_FAT16 ||
+                    fileSystemType == TSK_FS_TYPE_FAT32 ||
+                    fileSystemType == TSK_FS_TYPE_FAT_DETECT) {
+                    hasFAT = true;
+                    consoleOutput(stderr, "Cannot write to FAT device");
+                    pressAnyKeyToExit(1);
+                }
                 tsk_fs_file_close(fs_file);
                 break;
             }
