@@ -382,7 +382,7 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "hfs_extents_to_attr: Converting extents from offset %" PRIuOFF
+            "hfs_extents_to_attr: Converting extents from offset %" PRIdOFF
             " to runlist\n", a_start_off);
 
     for (i = 0; i < 8; ++i) {
@@ -545,7 +545,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "hfs_ext_find_extent_record: reading node %" PRIu32
-                " at offset %" PRIuOFF "\n", cur_node, cur_off);
+                " at offset %" PRIdOFF "\n", cur_node, cur_off);
 
         cnt = tsk_fs_attr_read(hfs->extents_attr, cur_off,
             node, nodesize, 0);
@@ -556,7 +556,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             }
             tsk_error_set_errstr2
                 ("hfs_ext_find_extent_record_attr: Error reading node %d at offset %"
-                PRIuOFF, cur_node, cur_off);
+                PRIdOFF, cur_node, cur_off);
             free(node);
             return 1;
         }
@@ -785,7 +785,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         else {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("hfs_ext_find_extent_record: btree node %"
-                PRIu32 " (%" PRIuOFF ") is neither index nor leaf (%" PRIu8
+                PRIu32 " (%" PRIdOFF ") is neither index nor leaf (%" PRIu8
                 ")", cur_node, cur_off, node_desc->type);
             free(node);
             return 1;
@@ -898,7 +898,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
             }
             tsk_error_set_errstr2
                 ("hfs_cat_traverse: Error reading node %d at offset %"
-                PRIuOFF, cur_node, cur_off);
+                PRIdOFF, cur_node, cur_off);
             free(node);
             return 1;
         }
@@ -1212,7 +1212,7 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
         }
         tsk_error_set_errstr2
             ("hfs_cat_read_thread_record: Error reading catalog offset %"
-            PRIuOFF " (header)", off);
+            PRIdOFF " (header)", off);
         return 1;
     }
 
@@ -1245,7 +1245,7 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
         }
         tsk_error_set_errstr2
             ("hfs_cat_read_thread_record: Error reading catalog offset %"
-            PRIuOFF " (name)", off + 10);
+            PRIdOFF " (name)", off + 10);
         return 1;
     }
 
@@ -1278,7 +1278,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
         }
         tsk_error_set_errstr2
             ("hfs_cat_read_file_folder_record: Error reading record type from catalog offset %"
-            PRIuOFF " (header)", off);
+            PRIdOFF " (header)", off);
         return 1;
     }
 
@@ -1293,7 +1293,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
             }
             tsk_error_set_errstr2
                 ("hfs_cat_read_file_folder_record: Error reading catalog offset %"
-                PRIuOFF " (folder)", off);
+                PRIdOFF " (folder)", off);
             return 1;
         }
     }
@@ -1308,7 +1308,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
             }
             tsk_error_set_errstr2
                 ("hfs_cat_read_file_folder_record: Error reading catalog offset %"
-                PRIuOFF " (file)", off);
+                PRIdOFF " (file)", off);
             return 1;
         }
     }
@@ -3348,8 +3348,8 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "%s: reading compression units: %" PRIuOFF
-            " to %" PRIuOFF "\n", __func__, startUnit, endUnit);
+            "%s: reading compression units: %" PRIdOFF
+            " to %" PRIdOFF "\n", __func__, startUnit, endUnit);
     bytesCopied = 0;
 
     // Allocate buffers for the raw and uncompressed data
@@ -5164,7 +5164,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
     if (b > hfs->blockmap_file->meta->size) {
         tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
         tsk_error_set_errstr("hfs_block_is_alloc: block %" PRIuDADDR
-            " is too large for bitmap (%" PRIuOFF ")", a_addr,
+            " is too large for bitmap (%" PRIdOFF ")", a_addr,
             hfs->blockmap_file->meta->size);
         return -1;
     }
@@ -5179,7 +5179,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
         if (cnt < 1) {
             tsk_error_set_errstr2
                 ("hfs_block_is_alloc: Error reading block bitmap at offset %"
-                PRIuOFF, b);
+					PRIdOFF, b);
             return -1;
         }
         hfs->blockmap_cache_start = b;
@@ -5556,7 +5556,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     if (hfs->hfs_wrapper_offset > 0) {
         tsk_fprintf(hFile,
-            "File system is embedded in an HFS wrapper at offset %" PRIuOFF
+            "File system is embedded in an HFS wrapper at offset %" PRIdOFF
             "\n", hfs->hfs_wrapper_offset);
     }
 
@@ -5917,7 +5917,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
     tsk_fs_meta_make_ls(fs_file->meta, hfs_mode, sizeof(hfs_mode));
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
-    tsk_fprintf(hFile, "Size:\t%" PRIuOFF "\n", fs_file->meta->size);
+    tsk_fprintf(hFile, "Size:\t%" PRIdOFF "\n", fs_file->meta->size);
 
     if (fs_file->meta->link)
         tsk_fprintf(hFile, "Symbolic link to:\t%s\n", fs_file->meta->link);
@@ -6212,7 +6212,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Non-Resident%s%s%s   size: %"
-                    PRIuOFF "  init_size: %" PRIuOFF "\n", type,
+					PRIdOFF "  init_size: %" PRIdOFF "\n", type,
                     fs_attr->type, fs_attr->id,
                     (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted" :
@@ -6234,7 +6234,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Resident%s%s%s   size: %"
-                    PRIuOFF "\n",
+					PRIdOFF "\n",
                     type,
                     fs_attr->type,
                     fs_attr->id,
@@ -6562,7 +6562,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "hfs_open: HFS+/HFSX within HFS wrapper at byte offset %"
-                    PRIuOFF "\n", hfsplus_offset);
+					PRIdOFF "\n", hfsplus_offset);
 
             fs->tag = 0;
             free(hfs->fs);

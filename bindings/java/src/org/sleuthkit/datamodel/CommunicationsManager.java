@@ -1341,6 +1341,10 @@ public final class CommunicationsManager {
 		if (phoneNum.startsWith("+")) {
 			normailzedPhoneNum = "+" + normailzedPhoneNum;
 		}
+		
+		if(normailzedPhoneNum.isEmpty()) {
+			normailzedPhoneNum = phoneNum;
+		}
 
 		return normailzedPhoneNum;
 	}

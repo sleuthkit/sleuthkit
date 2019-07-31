@@ -463,14 +463,10 @@ TskDbSqlite::initialize()
         return 1;
     }
 
-    if (m_blkMapFlag)
-    {
-        if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-             "Error creating tsk_fs_blocks table: %s\n"))
-        {
+    if (attempt_exec
+        ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        "Error creating tsk_fs_blocks table: %s\n")) {
             return 1;
-        }
     }
 
     if (createIndexes())
@@ -666,8 +662,8 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
     objId = sqlite3_last_insert_rowid(m_db);
 
     // Add the data source to the tsk_image_info table.
-    char* sql;
-    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%lld, %d, %lld, '%q', %" PRIuOFF ", '%q', '%q', '%q');",
+    char *sql;
+    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%lld, %d, %lld, '%q', %" PRIdOFF ", '%q', '%q', '%q');",
         objId, type, ssize, timezone.c_str(), size, md5.c_str(), sha1.c_str(), sha256.c_str());
 
     int ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
@@ -733,7 +729,7 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuOFF ",%d)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt,
                         "Error adding data to tsk_vs_info table: %s\n");
@@ -756,8 +752,8 @@ TskDbSqlite::addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
 
     zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
-        "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",'%q',%d)",
-        objId, (int)vs_part->addr, vs_part->start, vs_part->len,
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
+        objId, (int) vs_part->addr, vs_part->start, vs_part->len,
         vs_part->desc, vs_part->flags);
 
     ret = attempt_exec(zSQL,
@@ -780,14 +776,14 @@ TskDbSqlite::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
         return 1;
 
     snprintf(stmt, 1024,
-             "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
-             "root_inum, first_inum, last_inum) "
-             "VALUES ("
-        "%" PRId64 ",%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
-             "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
-             objId, fs_info->offset, (int)fs_info->ftype, fs_info->block_size,
-             fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
-             fs_info->last_inum);
+        "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
+        "root_inum, first_inum, last_inum) "
+        "VALUES ("
+        "%" PRId64 ",%" PRIdOFF ",%d,%u,%" PRIuDADDR ","
+        "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
+        objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
+        fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
+        fs_info->last_inum);
 
     return attempt_exec(stmt,
                         "Error adding data to tsk_fs_info table: %s\n");
@@ -1132,16 +1128,20 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         }
     }
 
-    // combine name and attribute name
-    size_t len = strlen(fs_file->name->name);
-    char* name;
-    size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
-    if ((name = (char *)tsk_malloc(nlen)) == NULL)
-    {
-        return 1;
-    }
+	// sanity check
+	if (size < 0) {
+		size = 0;
+	}
 
-    strncpy(name, fs_file->name->name, nlen);
+	// combine name and attribute name
+	size_t len = strlen(fs_file->name->name);
+	char * name;
+	size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
+	if ((name = (char *)tsk_malloc(nlen)) == NULL) {
+		return 1;
+	}
+
+	strncpy(name, fs_file->name->name, nlen);
 
     char extension[24] = "";
     extractExtension(name, extension);
@@ -1189,38 +1189,36 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         return 1;
     }
 
-    zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
-        "VALUES ("
-        "%" PRId64 ",%" PRId64 ","
-        "%" PRId64 ","
-        "%d,"
-        "%d,%d,'%q',"
-        "%" PRIuINUM ",%d,"
-        "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
-        "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,%Q,%d,"
-        "'%q','%q')",
-        fsObjId, objId,
-        dataSourceObjId,
-        TSK_DB_FILES_TYPE_FS,
-        type, idx, name,
-        fs_file->name->meta_addr, fs_file->name->meta_seq,
-        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size,
-        (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long)atime, (unsigned long long)mtime,
-        meta_mode, gid, uid, md5TextPtr, known,
-        escaped_path, extension);
+	zSQL = sqlite3_mprintf(
+		"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+		"VALUES ("
+		"%" PRId64 ",%" PRId64 ","
+		"%" PRId64 ","
+		"%d,"
+		"%d,%d,'%q',"
+		"%" PRIuINUM ",%d,"
+		"%d,%d,%d,%d,"
+		"%" PRId64 ","
+		"%llu,%llu,%llu,%llu,"
+		"%d,%d,%d,%Q,%d,"
+		"'%q','%q')",
+		fsObjId, objId,
+		dataSourceObjId,
+		TSK_DB_FILES_TYPE_FS,
+		type, idx, name,
+		fs_file->name->meta_addr, fs_file->name->meta_seq,
+		fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+		size,
+		(unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
+		meta_mode, gid, uid, md5TextPtr, known,
+		escaped_path, extension);
 
-    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n"))
-    {
-        free(name);
-        free(escaped_path);
-        sqlite3_free(zSQL);
-        return 1;
-    }
-
+	if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+		free(name);
+		free(escaped_path);
+		sqlite3_free(zSQL);
+		return 1;
+	}
 
     if (!TSK_FS_ISDOT(name))
     {
@@ -1251,57 +1249,61 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
-    // Add entry for the slack space.
-    // Current conditions for creating a slack file:
-    //   - File name is not empty, "." or ".."
-    //   - Data is non-resident
-    //   - The allocated size is greater than the initialized file size
-    //     See github issue #756 on why initsize and not size.
-    //   - The data is not compressed
-    if ((fs_attr != NULL)
-        && ((strlen(name) > 0) && (! TSK_FS_ISDOT(name)))
-        && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
-        && (fs_attr->flags & TSK_FS_ATTR_NONRES)
-        && (fs_attr->nrd.allocsize > fs_attr->nrd.initsize))
-    {
-        strncat(name, "-slack", 6);
-        if (strlen(extension) > 0)
-        {
-            strncat(extension, "-slack", 6);
-        }
-        TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
+	// Add entry for the slack space.
+	// Current conditions for creating a slack file:
+	//   - File name is not empty, "." or ".."
+	//   - Data is non-resident
+	//   - The allocated size is greater than the initialized file size
+	//     See github issue #756 on why initsize and not size.
+	//   - The data is not compressed
+    if((fs_attr != NULL)
+           && ((strlen(name) > 0 ) && (! TSK_FS_ISDOT(name)))
+		&& (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
+		&& (fs_attr->flags & TSK_FS_ATTR_NONRES)
+           && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
+		strncat(name, "-slack", 6);
+		if (strlen(extension) > 0) {
+			strncat(extension, "-slack", 6);
+		}
+		TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
-        if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
-        {
-            free(name);
-            free(escaped_path);
-            return 1;
-        }
+		if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+			free(name);
+			free(escaped_path);
+			return 1;
+		}
 
-        // Run the same insert with the new name, size, and type
-        zSQL = sqlite3_mprintf(
-            "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
-            "VALUES ("
-            "%" PRId64 ",%" PRId64 ","
-            "%" PRId64 ","
-            "%d,"
-            "%d,%d,'%q',"
-            "%" PRIuINUM ",%d,"
-            "%d,%d,%d,%d,"
-            "%" PRIuOFF ","
-            "%llu,%llu,%llu,%llu,"
-            "%d,%d,%d,NULL,%d,"
-            "'%q','%q')",
-            fsObjId, objId,
-            dataSourceObjId,
-            TSK_DB_FILES_TYPE_SLACK,
-            type, idx, name,
-            fs_file->name->meta_addr, fs_file->name->meta_seq,
-            TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
-            slackSize,
-            (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long)atime, (unsigned long long)mtime,
-            meta_mode, gid, uid, known,
-            escaped_path, extension);
+		// Run the same insert with the new name, size, and type
+		zSQL = sqlite3_mprintf(
+			"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
+			"VALUES ("
+			"%" PRId64 ",%" PRId64 ","
+			"%" PRId64 ","
+			"%d,"
+			"%d,%d,'%q',"
+			"%" PRIuINUM ",%d,"
+			"%d,%d,%d,%d,"
+			"%" PRId64 ","
+			"%llu,%llu,%llu,%llu,"
+			"%d,%d,%d,NULL,%d,"
+			"'%q','%q')",
+			fsObjId, objId,
+			dataSourceObjId,
+			TSK_DB_FILES_TYPE_SLACK,
+			type, idx, name,
+			fs_file->name->meta_addr, fs_file->name->meta_seq,
+			TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
+			slackSize,
+			(unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+			meta_mode, gid, uid, known,
+			escaped_path,extension);
+
+		if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+			free(name);
+			free(escaped_path);
+			sqlite3_free(zSQL);
+			return 1;
+		}
 
         if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n"))
         {
@@ -1450,7 +1452,7 @@ TskDbSqlite::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, co
         "NULL,NULL,'%q',"
         "NULL,NULL,"
         "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
+        "%" PRIu64 ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
