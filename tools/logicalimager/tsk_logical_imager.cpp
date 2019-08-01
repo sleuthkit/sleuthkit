@@ -963,7 +963,7 @@ static void closeAlert() {
 * @param fs_file File details
 * @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
 */
-static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
+static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     TSK_OFF_T offset = 0;
     size_t bufferLen = 16 * 1024;
     char buffer[16 * 1024];
@@ -976,7 +976,8 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
                 return TSK_OK;
             }
             else {
-                printDebug("processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
+                printDebug("extractFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, offset);
+                consoleOutput(stderr, "extractFile: tsk_fs_file_read returns -1 filename=%s\tpath=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, path, offset);
                 return TSK_ERR;
             }
         }
@@ -1005,7 +1006,7 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
 static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM extractStatus = TSK_ERR;
     if (matchResult->isShouldSave()) {
-        extractStatus = extractFile(fs_file);
+        extractStatus = extractFile(fs_file, path);
     }
     alert(driveToProcess, extractStatus, matchResult, fs_file, path);
     return TSK_OK;
