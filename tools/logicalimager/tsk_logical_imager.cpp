@@ -44,19 +44,14 @@ FILE *consoleFile = NULL;
 bool promptBeforeExit = true;
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
-static void pressAnyKeyToExit(int code) {
-    std::cout << std::endl << "Press any key to exit";
-    (void) _getch();
-    exit(code);
-}
-
-static void handleExit(int code, bool promptBeforeExit) {
+static void handleExit(int code) {
     if (consoleFile) {
         fclose(consoleFile);
         consoleFile = NULL;
     }
     if (promptBeforeExit) {
-        pressAnyKeyToExit(code);
+        std::cout << std::endl << "Press any key to exit";
+        (void)_getch();
     }
     exit(code);
 }
@@ -65,12 +60,14 @@ void openConsoleOutput(const std::string &consoleFileName) {
     consoleFile = fopen(consoleFileName.c_str(), "w");
     if (!consoleFile) {
         fprintf(stderr, "ERROR: Failed to open console file %s\n", consoleFileName.c_str());
-        handleExit(1, promptBeforeExit);
+        handleExit(1);
     }
 }
 
 void logOutputToFile(const char *buf) {
-    fprintf(consoleFile, buf);
+    if (consoleFile) {
+        fprintf(consoleFile, buf);
+    }
 }
 
 void consoleOutput(FILE *fd, const char *msg, ...) {
@@ -871,7 +868,7 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
                     fileSystemType == TSK_FS_TYPE_FAT32 ||
                     fileSystemType == TSK_FS_TYPE_FAT_DETECT) {
                     consoleOutput(stderr, "Error: Writing to FAT device is not supported.");
-                    pressAnyKeyToExit(1);
+                    handleExit(1);
                 }
                 tsk_fs_file_close(fs_file);
                 break;
@@ -900,7 +897,7 @@ static void openAlert(const std::string &alertFilename) {
     m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
-        handleExit(1, promptBeforeExit);
+        handleExit(1);
     }
     fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
 }
@@ -1023,7 +1020,7 @@ static void usage() {
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-    pressAnyKeyToExit(1);
+    handleExit(1);
 }
 
 int
@@ -1052,7 +1049,7 @@ main(int argc, char **argv1)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
-        pressAnyKeyToExit(1);
+        handleExit(1);
     }
 #else
     argv = (TSK_TCHAR **)argv1;
@@ -1112,7 +1109,7 @@ main(int argc, char **argv1)
         }
         else {
             fprintf(stderr, "Process is not running in elevated mode\n");
-            pressAnyKeyToExit(1);
+            handleExit(1);
         }
     }
 
@@ -1122,14 +1119,14 @@ main(int argc, char **argv1)
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
-        pressAnyKeyToExit(1);
+        handleExit(1);
     }
 
     // create a directory with hostname_timestamp
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        handleExit(1, promptBeforeExit);
+        handleExit(1);
     }
 
     std::string consoleFileName = directoryPath + "/console.txt";
@@ -1168,14 +1165,14 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            handleExit(1, promptBeforeExit);
+            handleExit(1);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
                 consoleOutput(stderr, "Failed to initialize VHD writer\n");
-                handleExit(1, promptBeforeExit);
+                handleExit(1);
             }
         }
         else {
@@ -1247,7 +1244,7 @@ main(int argc, char **argv1)
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
             consoleOutput(stderr, "Failed to open image\n");
-            handleExit(1, promptBeforeExit);
+            handleExit(1);
         }
 
         consoleOutput(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
@@ -1281,5 +1278,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    handleExit(0, promptBeforeExit);
+    handleExit(0);
 }
