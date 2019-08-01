@@ -21,6 +21,7 @@
 #include <locale.h>
 #include <Wbemidl.h>
 #include <shlwapi.h>
+#include <fstream>
 
 #pragma comment(lib, "wbemuuid.lib")
 
@@ -70,7 +71,9 @@ void openConsoleOutput(const std::string &consoleFileName) {
 }
 
 void logOutputToFile(const char *buf) {
-    fprintf(consoleFile, buf);
+    if (consoleFile) {
+        fprintf(consoleFile, buf);
+    }
 }
 
 void consoleOutput(FILE *fd, const char *msg, ...) {
@@ -721,10 +724,10 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
     }
     else { // an error happened  in determining LDM or ProtectionStatus
         if (-1 == checkLDMStatus) {
-            consoleOutput(stderr, "Error in checking LDM disk\n");
+            printDebug("Error in checking LDM disk\n");
         }
         if (-1 == checkBitlockerStatus) {
-            consoleOutput(stderr, "Error in checking BitLocker protection status\n");
+            printDebug("Error in checking BitLocker protection status\n");
         }
 
         // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker
@@ -893,7 +896,7 @@ static void openAlert(const std::string &alertFilename) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         handleExit(1, promptBeforeExit);
     }
-    fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
+    fprintf(m_alertFile, "Drive\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\n");
 }
 
 /*
@@ -918,9 +921,11 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         // Don't alert . and ..
         return;
     }
-    // alert file format is "drive<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
-    fprintf(m_alertFile, "%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+    // alert file format is "drive<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%s\t0x%" PRIxOFF "\t0x%" PRIxINUM "\t%d\t%s\t%s\t%s\t%s\t%s\n",
         driveName.c_str(),
+        fs_file->fs_info->offset,
+        (fs_file->meta ? fs_file->meta->addr : 0),
         extractStatus,
         ruleMatchResult->getRuleSetName().c_str(),
         ruleMatchResult->getName().c_str(),
@@ -936,9 +941,11 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         fullPath += "name is null";
     }
 
-    consoleOutput(stdout, "Alert for %s: %s\n",
-        ruleMatchResult->getRuleSetName().c_str(),
-        fullPath.c_str());
+    if (ruleMatchResult->isShouldAlert()) {
+        consoleOutput(stdout, "Alert for %s: %s\n",
+            ruleMatchResult->getRuleSetName().c_str(),
+            fullPath.c_str());
+    }
 }
 
 /*
@@ -1000,9 +1007,7 @@ static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_
     if (matchResult->isShouldSave()) {
         extractStatus = extractFile(fs_file);
     }
-    if (matchResult->isShouldAlert()) {
-        alert(driveToProcess, extractStatus, matchResult, fs_file, path);
-    }
+    alert(driveToProcess, extractStatus, matchResult, fs_file, path);
     return TSK_OK;
 }
 
@@ -1128,7 +1133,14 @@ main(int argc, char **argv1)
 
     consoleOutput(stdout, "Created directory %s\n", directoryPath.c_str());
 
-    std::string alertFileName = directoryPath + "/alert.txt";
+    // copy the config file into the output directoryPath
+    std::ifstream src(TskHelper::toNarrow(configFilename), std::ios::binary);
+    std::ofstream dst(directoryPath + "/config.json", std::ios::binary);
+    dst << src.rdbuf();
+    dst.close();
+    src.close();
+
+    std::string alertFileName = directoryPath + "/SearchResults.txt";
     openAlert(alertFileName);
 
     std::list<std::pair<TSK_IMG_INFO *, std::string>> imgFinalizePending;
@@ -1172,7 +1184,6 @@ main(int argc, char **argv1)
         else {
             consoleOutput(stderr, "Image is not a RAW image, VHD will not be created\n");
         }
-
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
 
