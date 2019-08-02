@@ -881,11 +881,19 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
         size_t blk_size;        // size of the current block
         uint8_t iscomp;         // set to 1 if block is compressed
         size_t blk_st_uncomp;   // index into uncompressed buffer where block started
+        uint16_t sb_header;     // subblock header
 
-        /* The first two bytes of each block contain the size
-         * information.*/
-        blk_size = ((((unsigned char) comp->comp_buf[cl_index + 1] << 8) |
-                ((unsigned char) comp->comp_buf[cl_index])) & 0x0FFF) + 3;
+        sb_header = tsk_getu16(TSK_LIT_ENDIAN, comp->comp_buf + cl_index);
+
+        // If the sb_header isn't set, we just fill the rest of the buffer with zeros.
+        // This seems to be what several different NTFS implementations do.
+        if (sb_header == 0) {
+            memset(comp->uncomp_buf + comp->uncomp_idx, 0, comp->buf_size_b - comp->uncomp_idx);
+            comp->uncomp_idx = comp->buf_size_b;
+            break;
+        }
+
+        blk_size = (sb_header & 0x0FFF) + 3;
 
         // this seems to indicate end of block
         if (blk_size == 3)
@@ -906,17 +914,14 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                 blk_size);
 
         /* The MSB identifies if the block is compressed */
-        if ((comp->comp_buf[cl_index + 1] & 0x8000) == 0)
-            iscomp = 0;
-        else
-            iscomp = 1;
+        iscomp = ((sb_header & 0x8000) != 0);
 
         // keep track of where this block started in the buffer
         blk_st_uncomp = comp->uncomp_idx;
         cl_index += 2;
 
         // the 4096 size seems to occur at the same times as no compression
-        if ((iscomp) || (blk_size - 2 != 4096)) {
+        if ((iscomp) && (blk_size - 2 != 4096)) {
 
             // cycle through the block
             while (cl_index < blk_end) {

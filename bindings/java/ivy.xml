@@ -3,9 +3,11 @@
 	<dependencies>
 		<dependency org="junit" name="junit" rev="4.8.2"/>
 		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
-		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.8.11">
-			<artifact name="sqlite-jdbc" type="jar" />
-		</dependency>
+
+        <!-- NOTE: When SQLITE version is changed, also change the version number in
+          debian/sleuthkit-java.install so that it gets packaged correctly on Linux -->
+		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.25.2"/>
+
 		<dependency org="org.postgresql" name="postgresql" rev="9.4.1211.jre7" >
 			<artifact name="postgresql" type="jar" />
 		</dependency>

@@ -1,0 +1,20 @@
+{
+    "finalize-image-writer": false,
+    "rule-sets": [
+        {
+            "name": "rule-1",
+            "description": "a description",
+            "extensions": [ "txt", ]
+        },
+        {
+            "name": "rule-2",
+            "extensions": [ "jpg" ],
+        },
+        {
+            "name": "rule-2",
+            "folder-name": [
+                "foo",
+                "extensions: [ "jpg" ]
+        }
+    ]
+}

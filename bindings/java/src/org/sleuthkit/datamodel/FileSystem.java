@@ -93,7 +93,7 @@ public class FileSystem extends AbstractContent {
 					Content dataSource = getDataSource();
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						Image image = (Image) dataSource;
-						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset);
+						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, getSleuthkitCase());
 					} else {
 						throw new TskCoreException("Data Source of File System is not an image");
 					}

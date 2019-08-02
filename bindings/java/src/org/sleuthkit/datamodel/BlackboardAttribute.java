@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,7 @@ public class BlackboardAttribute {
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 	private static final Logger LOGGER = Logger.getLogger(BlackboardAttribute.class.getName());
-	
+
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private BlackboardAttribute.Type attributeType;
 	private final int valueInt;
@@ -523,16 +523,16 @@ public class BlackboardAttribute {
 				return Double.toString(getValueDouble());
 			case BYTE:
 				return bytesToHexString(getValueBytes());
-				
+
 			case DATETIME: {
 				try {
 					final Content dataSource = getParentArtifact().getDataSource();
-					if ((dataSource != null) && (dataSource instanceof Image )) {
+					if ((dataSource != null) && (dataSource instanceof Image)) {
 						// return the date/time string in the timezone associated with the datasource,
-						Image  image = (Image) dataSource;
+						Image image = (Image) dataSource;
 						TimeZone tzone = TimeZone.getTimeZone(image.getTimeZone());
 						return TimeUtilities.epochToTime(getValueLong(), tzone);
-					} 
+					}
 				} catch (TskException ex) {
 					LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
 					// return time string in default timezone
@@ -1297,22 +1297,25 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_SSID(125, "TSK_SSID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskSsid.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_BSSID(126, "TSK_BSSID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskBssid.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_MAC_ADDRESS(127, "TSK_MAC_ADDRESS", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskMacAddress.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_IMEI(128, "TSK_IMEI", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskImei.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_IMSI(129, "TSK_IMSI", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskImsi.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_ICCID(130, "TSK_ICCID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskIccid.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_THREAD_ID(131, "TSK_THREAD_ID",
+				bundle.getString("BlackboardAttribute.tskthreadid.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
 		private final String typeName;

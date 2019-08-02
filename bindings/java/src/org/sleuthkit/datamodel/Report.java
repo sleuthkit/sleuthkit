@@ -129,7 +129,9 @@ public class Report implements Content {
 		int totalBytesRead = 0;
 		ByteBuffer data = ByteBuffer.wrap(buf);
 		try {
-			fileChannel = FileChannel.open(pathAsPath, READ);
+			if (fileChannel == null) {
+				fileChannel = FileChannel.open(pathAsPath, READ);
+			}
 			fileChannel.position(offset);
 			int bytesRead = 0;
 			do {
