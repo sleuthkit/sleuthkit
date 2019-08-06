@@ -884,6 +884,7 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
 
 FILE *m_alertFile = NULL;
 std::string driveToProcess;
+std::string outputVHDFilename;
 
 /*
 * Create the alert file and print the header.
@@ -896,13 +897,15 @@ static void openAlert(const std::string &alertFilename) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         handleExit(1, promptBeforeExit);
     }
-    fprintf(m_alertFile, "Drive\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\n");
+    fprintf(m_alertFile, "VHD file\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\n");
 }
 
 /*
 * Write an file match alert record to the alert file. Also send same record to stdout.
 * An alert file record contains tab-separated fields:
-*   - drive
+*   - VHD file
+*   - File system offset
+*   - Metadata address
 *   - extractStatus
 *   - ruleSetName
 *   - ruleName
@@ -916,14 +919,14 @@ static void openAlert(const std::string &alertFilename) {
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
 */
-static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
+static void alert(const std::string outputVHDFilename, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..
         return;
     }
-    // alert file format is "drive<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
-    fprintf(m_alertFile, "%s\t0x%" PRIxOFF "\t0x%" PRIxINUM "\t%d\t%s\t%s\t%s\t%s\t%s\n",
-        driveName.c_str(),
+    // alert file format is "VHD file<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%s\t%" PRIdOFF "\t%" PRIuINUM "\t%d\t%s\t%s\t%s\t%s\t%s\n",
+        outputVHDFilename.c_str(),
         fs_file->fs_info->offset,
         (fs_file->meta ? fs_file->meta->addr : 0),
         extractStatus,
@@ -1008,7 +1011,7 @@ static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_
     if (matchResult->isShouldSave()) {
         extractStatus = extractFile(fs_file, path);
     }
-    alert(driveToProcess, extractStatus, matchResult, fs_file, path);
+    alert(outputVHDFilename, extractStatus, matchResult, fs_file, path);
     return TSK_OK;
 }
 
@@ -1161,7 +1164,8 @@ main(int argc, char **argv1)
         if (driveToProcess.back() == ':') {
             driveToProcess = driveToProcess.substr(0, driveToProcess.size() - 1);
         }
-        std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
+        outputVHDFilename = (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
+        std::string outputFileName = directoryPath + "/" + outputVHDFilename;
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
