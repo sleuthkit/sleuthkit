@@ -919,7 +919,7 @@ static void openAlert(const std::string &alertFilename) {
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
 */
-static void alert(const std::string outputVHDFilename, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
+static void alert(const std::string &outputVHDFilename, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..
         return;
