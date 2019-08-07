@@ -1,14 +1,14 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,25 +18,19 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.ResourceBundle;
 
 /**
- * Static utilities for dealing with Collections. At some point this could be
- * replaced with apache commons or guava...
+ * Provides easy access to the ResourceBundle in this package.
  */
-final class CollectionUtils {
+final class BundleProvider {
 
-	@SuppressWarnings("unchecked")
-	static <T> HashSet<T> hashSetOf(T... values) {
-		return new HashSet<>(Arrays.asList(values));
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+
+	static ResourceBundle getBundle() {
+		return BUNDLE;
 	}
 
-	static <T> boolean isNotEmpty(Collection<T> collection) {
-		return collection.isEmpty() == false;
-	}
-
-	private CollectionUtils() {
+	private BundleProvider() {
 	}
 }

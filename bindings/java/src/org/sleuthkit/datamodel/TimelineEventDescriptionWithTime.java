@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,25 +18,23 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-
 /**
- * Static utilities for dealing with Collections. At some point this could be
- * replaced with apache commons or guava...
+ * Bundles a description of an event along with the timestamp for the event.
+ * Used as an intermediate object when parsing data before it is entered into
+ * the DB.
  */
-final class CollectionUtils {
+final class TimelineEventDescriptionWithTime extends TimelineEventDescription {
 
-	@SuppressWarnings("unchecked")
-	static <T> HashSet<T> hashSetOf(T... values) {
-		return new HashSet<>(Arrays.asList(values));
+	final private long time;
+
+	long getTime() {
+		return time;
 	}
 
-	static <T> boolean isNotEmpty(Collection<T> collection) {
-		return collection.isEmpty() == false;
-	}
-
-	private CollectionUtils() {
+	TimelineEventDescriptionWithTime(long time, String shortDescription,
+			String medDescription,
+			String fullDescription) {
+		super(fullDescription, medDescription, shortDescription);
+		this.time = time;
 	}
 }
