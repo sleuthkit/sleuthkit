@@ -1015,6 +1015,40 @@ static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_
     return TSK_OK;
 }
 
+/*
+* getFilename - return the filename portion of the fullPath
+*               The path separator is '/'
+*
+* @param fullPath The full path to a file
+*
+* @return filename portion of the fullPath
+*/
+string getFilename(const string &fullPath) {
+    char sep = '/';
+    size_t i = fullPath.rfind(sep, fullPath.length());
+    if (i != string::npos) {
+        return fullPath.substr(i + 1, string::npos);
+    }
+    return fullPath;
+}
+
+/*
+* getPathName - return the path name portion of the fullPath
+*               The path separator is '/'
+*
+* @param fullPath The full path to a file
+*
+* @return path name portion of the fullPath, or empty string there is no path name
+*/
+string getPathName(const string &fullPath) {
+    char sep = '/';
+    size_t i = fullPath.rfind(sep, fullPath.length());
+    if (i != string::npos) {
+        return fullPath.substr(0, i);
+    }
+    return "";
+}
+
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
@@ -1229,11 +1263,13 @@ main(int argc, char **argv1)
                 for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
                     int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
                     if (retval == 0 && fs_file != NULL) {
+                        std::string filename = getFilename(*iter);
+                        std::string parent = getPathName(*iter);
                         // create a TSK_FS_NAME for alert purpose
                         fs_file->name = new TSK_FS_NAME();
-                        fs_file->name->name = (char *)tsk_malloc(strlen(iter->c_str()) + 1);
-                        strcpy(fs_file->name->name, iter->c_str());
-                        matchCallback(matchResult, fs_file, "");
+                        fs_file->name->name = (char *)tsk_malloc(strlen(filename.c_str()) + 1);
+                        strcpy(fs_file->name->name, filename.c_str());
+                        matchCallback(matchResult, fs_file, parent.c_str());
 
                         tsk_fs_file_close(fs_file);
                     }
