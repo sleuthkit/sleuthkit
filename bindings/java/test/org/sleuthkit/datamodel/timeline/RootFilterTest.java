@@ -24,8 +24,10 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.sleuthkit.datamodel.PublicTagName;
 import org.sleuthkit.datamodel.TagName;
+import org.sleuthkit.datamodel.TimelineFilter;
+import org.sleuthkit.datamodel.TimelineFilter.EventTypeFilter;
+import org.sleuthkit.datamodel.TimelineEventType;
 import org.sleuthkit.datamodel.TskData;
-import org.sleuthkit.datamodel.timeline.TimelineFilter.EventTypeFilter;
 
 /**
  * Test class for RootFilter
@@ -47,7 +49,7 @@ public class RootFilterTest {
 		tagsFilter.addSubFilter(new TimelineFilter.TagNameFilter(new PublicTagName(0, "test tagName", "test tag name description", TagName.HTML_COLOR.NONE, TskData.FileKnown.KNOWN)));
 		TimelineFilter.HashHitsFilter hashHitsFilter = new TimelineFilter.HashHitsFilter();
 		TimelineFilter.TextFilter textFilter = new TimelineFilter.TextFilter();
-		EventTypeFilter eventTypeFilter = new EventTypeFilter(EventType.ROOT_EVENT_TYPE);
+		EventTypeFilter eventTypeFilter = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
 		TimelineFilter.DataSourcesFilter dataSourcesFilter = new TimelineFilter.DataSourcesFilter();
 		TimelineFilter.HideKnownFilter hideKnownFilter = new TimelineFilter.HideKnownFilter();
 		TimelineFilter.FileTypesFilter fileTypesFilter = new TimelineFilter.FileTypesFilter();
