@@ -99,7 +99,6 @@ TskFindFiles::filterFs(TSK_FS_INFO * fs_info)
 * @returns TSK_OK or TSK_ERR. All error must have been registered.
 */
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
-    static unsigned short lastReportedPctComplete = 0;
 
     /* Update progress
      * We can calculate progress for NTFS file systems because we have
@@ -114,6 +113,7 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
     if (0 == m_fileCounter % 100) {
         if (m_totalNumberOfFiles > 0 && m_fileCounter <= m_totalNumberOfFiles) {
             m_percentComplete = (unsigned short)(((float)m_fileCounter / (float)m_totalNumberOfFiles) * 100);
+            static unsigned short lastReportedPctComplete = 0;
             if ((m_percentComplete != lastReportedPctComplete)) {
                 std::string title = "tsk_logical_imager.exe - Processing " + m_driveToProcess + " " + TskHelper::intToStr((long)m_percentComplete) + std::string("% complete");
                 SetConsoleTitleA(title.c_str());
