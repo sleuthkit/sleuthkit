@@ -202,14 +202,10 @@ public class SleuthkitCase {
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
-	private CommunicationsManager communicationsMgrInstance;
-	private TimelineManager timelineMgrInstance;
-	private Blackboard blackboardInstance;
-	private CaseDbAccessManager dbAccessManagerInstance;
-
-	private final Object communicationsMgrInstanceLock = new Object();
-	private final Object blackboardInstanceLock = new Object();
-	private final Object timelineMgrInstanceLock = new Object();
+	private CommunicationsManager communicationsMgr;
+	private TimelineManager timelineMgr;
+	private Blackboard blackboard;
+	private CaseDbAccessManager dbAccessManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -373,6 +369,11 @@ public class SleuthkitCase {
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
 		}
+
+		blackboard = new Blackboard(this);
+		communicationsMgr = new CommunicationsManager(this);
+		timelineMgr = new TimelineManager(this);
+		dbAccessManager = new CaseDbAccessManager(this);
 	}
 
 	/**
@@ -435,65 +436,45 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Returns an instance of CommunicationsManager for this case.
+	 * Gets the communications manager for this case.
 	 *
-	 * @return CommunicationsManager
+	 * @return The per case CommunicationsManager object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public CommunicationsManager getCommunicationsManager() throws TskCoreException {
-		synchronized (communicationsMgrInstanceLock) {
-			if (null == communicationsMgrInstance) {
-				communicationsMgrInstance = new CommunicationsManager(this);
-			}
-			return communicationsMgrInstance;
-		}
+		return communicationsMgr;
 	}
 
 	/**
-	 * Returns an instance of Blackboard for this case.
+	 * Gets the artifacts blackboard for this case.
 	 *
-	 * @return Blackboard
-	 *
+	 * @return The per case Blackboard object.
 	 */
 	public Blackboard getBlackboard() {
-		synchronized (blackboardInstanceLock) {
-			if (null == blackboardInstance) {
-				blackboardInstance = new Blackboard(this);
-			}
-			return blackboardInstance;
-		}
+		return blackboard;
 	}
 
 	/**
+	 * Gets the communications manager for this case.
 	 *
-	 *
-	 * @return a TimelineManager
+	 * @return The per case TimelineManager object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public TimelineManager getTimelineManager() throws TskCoreException {
-		synchronized (timelineMgrInstanceLock) {
-			if (null == timelineMgrInstance) {
-				timelineMgrInstance = new TimelineManager(this);
-			}
-			return timelineMgrInstance;
-		}
+		return timelineMgr;
 	}
 
 	/*
-	 * Returns an instance of CaseDbAccessManager
+	 * Gets the case database access manager for this case.
 	 *
-	 * @return CaseDbAccessManager
+	 * @return The per case CaseDbAccessManager object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 *
 	 */
 	public synchronized CaseDbAccessManager getCaseDbAccessManager() throws TskCoreException {
-		if (null == dbAccessManagerInstance) {
-			dbAccessManagerInstance = new CaseDbAccessManager(this);
-		}
-		return dbAccessManagerInstance;
+		return dbAccessManager;
 	}
 
 	/**
@@ -928,16 +909,16 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
-	 * Get the database schema creation version from database. This must be 
-	 * called after the database upgrades or the tsk_db_info_extended table 
-	 * may not exist.
+	 * Get the database schema creation version from database. This must be
+	 * called after the database upgrades or the tsk_db_info_extended table may
+	 * not exist.
 	 *
 	 * @throws SQLException
 	 */
-	private void initDBSchemaCreationVersion(CaseDbConnection connection) throws SQLException{
-		
+	private void initDBSchemaCreationVersion(CaseDbConnection connection) throws SQLException {
+
 		Statement statement = null;
 		ResultSet resultSet = null;
 		String createdSchemaMajorVersion = "0";
@@ -946,21 +927,21 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			resultSet = connection.executeQuery(statement, "SELECT name, value FROM tsk_db_info_extended");
-			while(resultSet.next()) {
+			while (resultSet.next()) {
 				String name = resultSet.getString("name");
-				if (name.equals(CREATION_SCHEMA_MAJOR_VERSION_KEY) || name.equals("CREATED_SCHEMA_MAJOR_VERSION")){
+				if (name.equals(CREATION_SCHEMA_MAJOR_VERSION_KEY) || name.equals("CREATED_SCHEMA_MAJOR_VERSION")) {
 					createdSchemaMajorVersion = resultSet.getString("value");
 				} else if (name.equals(CREATION_SCHEMA_MINOR_VERSION_KEY) || name.equals("CREATED_SCHEMA_MINOR_VERSION")) {
 					createdSchemaMinorVersion = resultSet.getString("value");
 				}
 			}
-			
+
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			releaseSingleUserCaseReadLock();
 		}
-		
+
 		caseDBSchemaCreationVersion = new CaseDbSchemaVersionNumber(Integer.parseInt(createdSchemaMajorVersion), Integer.parseInt(createdSchemaMinorVersion));
 	}
 
@@ -1813,7 +1794,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Updates a schema version 8.2 database to a schema version 8.3 database.
 	 *
@@ -1835,18 +1816,16 @@ public class SleuthkitCase {
 		if (schemaVersion.getMinor() != 2) {
 			return schemaVersion;
 		}
-		
+
 		acquireSingleUserCaseWriteLock();
-		
+
 		ResultSet resultSet = null;
-		
+
 		try (Statement statement = connection.createStatement();) {
-			
+
 			// Add the uniqueness constraint to the tsk_event and tsk_event_description tables.
-			
 			// Unfortunately, SQLite doesn't support adding a constraint
 			// to an existing table so we have to rename the old...
-			
 			String primaryKeyType;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -1858,19 +1837,19 @@ public class SleuthkitCase {
 				default:
 					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
 			}
-		
+
 			//create and initialize tsk_event_types tables which may or may not exist
 			statement.execute("CREATE TABLE IF NOT EXISTS tsk_event_types ("
 					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " display_name TEXT UNIQUE NOT NULL, "
 					+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
-			
+
 			resultSet = statement.executeQuery("SELECT * from tsk_event_types");
-			
+
 			// If there is something in resultSet then the table must have previously 
 			// existing therefore there is not need to populate
-			if(!resultSet.next()) {
-			
+			if (!resultSet.next()) {
+
 				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 						+ " values( 0, 'Event Types', null)");
 				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
@@ -1888,15 +1867,15 @@ public class SleuthkitCase {
 				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 						+ " values(7, 'Changed', 1)");
 			}
-			
+
 			// Delete the old table that may have been created with the upgrade
 			// from 8.1 to 8.2.
 			statement.execute("DROP TABLE IF EXISTS tsk_events");
-			
+
 			// Delete the old table that may have been created with the upgrade
 			// from 8.1 to 8.2
 			statement.execute("DROP TABLE IF EXISTS tsk_event_descriptions");
-				
+
 			//create new tsk_event_description table
 			statement.execute("CREATE TABLE tsk_event_descriptions ("
 					+ " event_description_id " + primaryKeyType + " PRIMARY KEY, "
@@ -1913,7 +1892,7 @@ public class SleuthkitCase {
 					+ " FOREIGN KEY(file_obj_id) REFERENCES tsk_files(obj_id), "
 					+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
 			);
-			
+
 			// create a new table
 			statement.execute("CREATE TABLE tsk_events ( "
 					+ " event_id " + primaryKeyType + " PRIMARY KEY, "
@@ -1922,11 +1901,11 @@ public class SleuthkitCase {
 					+ " time INTEGER NOT NULL, "
 					+ " UNIQUE (event_type_id, event_description_id, time))"
 			);
-			
+
 			// Fix mistakenly set names in tsk_db_info_extended 
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
-			
+
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
 			closeResultSet(resultSet);
@@ -1983,12 +1962,12 @@ public class SleuthkitCase {
 	public VersionNumber getDBSchemaVersion() {
 		return CURRENT_DB_SCHEMA_VERSION;
 	}
-	
+
 	/**
-	 * Gets the creation version of the database schema. 
+	 * Gets the creation version of the database schema.
 	 *
-	 * @return the creation version for the database schema, the creation version
-	 * will be 0.0 for databases created prior to 8.2
+	 * @return the creation version for the database schema, the creation
+	 *         version will be 0.0 for databases created prior to 8.2
 	 */
 	public CaseDbSchemaVersionNumber getDBSchemaCreationVersion() {
 		return caseDBSchemaCreationVersion;
@@ -4631,7 +4610,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		long parentId;
 		TskData.ObjectType type;
-		
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_objects WHERE obj_id = " + id + " LIMIT  1"); //NON-NLS
@@ -4648,7 +4627,7 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
-		
+
 		// Construct the object
 		switch (type) {
 			case IMG:
@@ -4673,8 +4652,8 @@ public class SleuthkitCase {
 				// Calling isRoot() on local directories goes up the entire directory structure
 				// and they can only be the root of portable cases, so skip trying to add
 				// them to the cache.
-				if (((AbstractFile) content).isVirtual() || 
-						(( ! (content instanceof LocalDirectory)) && ((AbstractFile) content).isRoot())) {
+				if (((AbstractFile) content).isVirtual()
+						|| ((!(content instanceof LocalDirectory)) && ((AbstractFile) content).isRoot())) {
 					frequentlyUsedContentMap.put(id, content);
 				}
 				break;
@@ -5229,10 +5208,10 @@ public class SleuthkitCase {
 			String parentPath;
 			Content parent = this.getAbstractFileById(parentId, connection);
 			if (parent instanceof AbstractFile) {
-				if (isRootDirectory((AbstractFile)parent, transaction)) {
+				if (isRootDirectory((AbstractFile) parent, transaction)) {
 					parentPath = "/";
 				} else {
-					parentPath = ((AbstractFile)parent).getParentPath() + parent.getName() + "/"; //NON-NLS
+					parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + "/"; //NON-NLS
 				}
 			} else {
 				// The parent was either null or not an abstract file
@@ -5290,7 +5269,7 @@ public class SleuthkitCase {
 			statement.setNull(12, java.sql.Types.BIGINT);
 			statement.setNull(13, java.sql.Types.BIGINT);
 			statement.setNull(14, java.sql.Types.BIGINT);
-			
+
 			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
 			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
@@ -5434,7 +5413,7 @@ public class SleuthkitCase {
 			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
 			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type			
-			
+
 			// parent path
 			statement.setString(18, parentPath);
 
@@ -5843,9 +5822,9 @@ public class SleuthkitCase {
 				 * Insert a row for the Tsk file range into the tsk_files table:
 				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
 				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
-				 * ctime, crtime, atime, mtime, md5, known, mime_type, parent_path,
-				 * data_source_obj_id,extension) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
-				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+				 * ctime, crtime, atime, mtime, md5, known, mime_type,
+				 * parent_path, data_source_obj_id,extension) VALUES (?, ?, ?,
+				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
@@ -6025,9 +6004,9 @@ public class SleuthkitCase {
 				 * Insert a row for the carved file into the tsk_files table:
 				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
 				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
-				 * ctime, crtime, atime, mtime, md5, known, mime_type, parent_path,
-				 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
-				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+				 * ctime, crtime, atime, mtime, md5, known, mime_type,
+				 * parent_path, data_source_obj_id,extenion) VALUES (?, ?, ?, ?,
+				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
@@ -6216,7 +6195,7 @@ public class SleuthkitCase {
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
-			
+
 			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
 			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
@@ -6265,7 +6244,7 @@ public class SleuthkitCase {
 	 * @param atime           The accessed time of the file
 	 * @param mtime           The modified time of the file.
 	 * @param isFile          whether a file or directory, true if a file
-	 * @param mimeType		  The MIME type the updated file should have, null
+	 * @param mimeType		      The MIME type the updated file should have, null
 	 *                        to unset it
 	 * @param rederiveDetails details needed to re-derive file (will be specific
 	 *                        to the derivation method), currently unused
@@ -6426,14 +6405,14 @@ public class SleuthkitCase {
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, TskData.EncodingType encodingType,
 			Content parent, CaseDbTransaction transaction) throws TskCoreException {
-		
+
 		return addLocalFile(fileName, localPath,
-			size, ctime, crtime, atime, mtime,
-			null, null, null,
-			isFile, encodingType,
-			parent, transaction);
+				size, ctime, crtime, atime, mtime,
+				null, null, null,
+				isFile, encodingType,
+				parent, transaction);
 	}
-	
+
 	/**
 	 * Adds a local/logical file to the case database. The database operations
 	 * are done within a caller-managed transaction; the caller is responsible
@@ -6508,8 +6487,8 @@ public class SleuthkitCase {
 			}
 			statement.setString(17, mimeType);
 			String parentPath;
-			long dataSourceObjId; 
-			
+			long dataSourceObjId;
+
 			if (parent instanceof AbstractFile) {
 				AbstractFile parentFile = (AbstractFile) parent;
 				if (isRootDirectory(parentFile, transaction)) {
@@ -6554,29 +6533,29 @@ public class SleuthkitCase {
 			// NOTE: write lock will be released by transaction
 		}
 	}
-	
+
 	/**
-	 * Check whether a given AbstractFile is the "root" directory.
-	 * True if the AbstractFile either has no parent or its parent is
-	 * an image, volume, volume system, or file system.
-	 * 
-	 * @param file         the file to test
-	 * @param transaction  the current transaction
-	 * 
-	 * @return             true if the file is a root directory, false otherwise
-	 * 
-	 * @throws TskCoreException 
+	 * Check whether a given AbstractFile is the "root" directory. True if the
+	 * AbstractFile either has no parent or its parent is an image, volume,
+	 * volume system, or file system.
+	 *
+	 * @param file        the file to test
+	 * @param transaction the current transaction
+	 *
+	 * @return true if the file is a root directory, false otherwise
+	 *
+	 * @throws TskCoreException
 	 */
 	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
 		transaction.acquireSingleUserCaseWriteLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
-		
+
 		try {
-			String query = String.format("SELECT ParentRow.type AS parent_type, ParentRow.obj_id AS parent_object_id " + 
-				"FROM tsk_objects ParentRow JOIN tsk_objects ChildRow ON ChildRow.par_obj_id = ParentRow.obj_id " + 	
-				"WHERE ChildRow.obj_id = %s;", file.getId());
+			String query = String.format("SELECT ParentRow.type AS parent_type, ParentRow.obj_id AS parent_object_id "
+					+ "FROM tsk_objects ParentRow JOIN tsk_objects ChildRow ON ChildRow.par_obj_id = ParentRow.obj_id "
+					+ "WHERE ChildRow.obj_id = %s;", file.getId());
 
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery(query);
@@ -6590,7 +6569,7 @@ public class SleuthkitCase {
 						|| type == TskData.ObjectType.VS.getObjectType()
 						|| type == TskData.ObjectType.VOL.getObjectType()
 						|| type == TskData.ObjectType.FS.getObjectType());
-						
+
 			} else {
 				return true; // The file has no parent
 			}
@@ -6602,27 +6581,28 @@ public class SleuthkitCase {
 			// NOTE: write lock will be released by transaction
 		}
 	}
-	
+
 	/**
 	 * Add a new layout file to the database.
-	 * 
-	 * @param fileName     The name of the file.
-	 * @param size         The size of the file in bytes.
-	 * @param dirFlag      The allocated status from the name structure
-	 * @param metaFlag     The allocated status from the metadata structure
-	 * @param ctime        The changed time of the file.
-	 * @param crtime       The creation time of the file.
-	 * @param atime        The accessed time of the file
-	 * @param mtime        The modified time of the file.
-	 * @param fileRanges   The byte ranges that belong to this file (relative to start of image)
-	 * @param parent       The parent of the file
-	 * 
+	 *
+	 * @param fileName   The name of the file.
+	 * @param size       The size of the file in bytes.
+	 * @param dirFlag    The allocated status from the name structure
+	 * @param metaFlag   The allocated status from the metadata structure
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The creation time of the file.
+	 * @param atime      The accessed time of the file
+	 * @param mtime      The modified time of the file.
+	 * @param fileRanges The byte ranges that belong to this file (relative to
+	 *                   start of image)
+	 * @param parent     The parent of the file
+	 *
 	 * @return The new LayoutFile
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public LayoutFile addLayoutFile(String fileName,
-			long size, 
+			long size,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, TSK_FS_META_FLAG_ENUM metaFlag,
 			long ctime, long crtime, long atime, long mtime,
 			List<TskFileRange> fileRanges,
@@ -6631,14 +6611,14 @@ public class SleuthkitCase {
 		if (null == parent) {
 			throw new TskCoreException("Parent can not be null");
 		}
-		
+
 		String parentPath;
 		if (parent instanceof AbstractFile) {
 			parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + '/'; //NON-NLS
 		} else {
 			parentPath = "/";
 		}
-		
+
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -6654,17 +6634,17 @@ public class SleuthkitCase {
 			long newFileId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 
 			/*
-			 * Insert a row for the file into the tsk_files table:
-			 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
-			 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
-			 * ctime, crtime, atime, mtime, md5, known, mime_type, parent_path,
-			 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
-			 * ?, ?, ?, ?, ?, ?, ?, ?,?)
+			 * Insert a row for the file into the tsk_files table: INSERT INTO
+			 * tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type,
+			 * meta_type, dir_flags, meta_flags, size, ctime, crtime, atime,
+			 * mtime, md5, known, mime_type, parent_path,
+			 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
+			 * ?, ?, ?, ?, ?, ?, ?,?)
 			 */
 			PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			prepStmt.clearParameters();
 			prepStmt.setLong(1, newFileId); // obj_id
-			
+
 			// If the parent is part of a file system, grab its file system ID
 			if (0 != parent.getId()) {
 				long parentFs = this.getFileSystemId(parent.getId(), connection);
@@ -6698,9 +6678,9 @@ public class SleuthkitCase {
 			connection.executeUpdate(prepStmt);
 
 			/*
-			 * Insert a row in the tsk_layout_file table for each chunk of
-			 * the carved file. INSERT INTO tsk_file_layout (obj_id,
-			 * byte_start, byte_len, sequence) VALUES (?, ?, ?, ?)
+			 * Insert a row in the tsk_layout_file table for each chunk of the
+			 * carved file. INSERT INTO tsk_file_layout (obj_id, byte_start,
+			 * byte_len, sequence) VALUES (?, ?, ?, ?)
 			 */
 			prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
 			for (TskFileRange tskFileRange : fileRanges) {
@@ -8214,7 +8194,7 @@ public class SleuthkitCase {
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 								TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
 								TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-								rs.getLong("size"), 
+								rs.getLong("size"),
 								rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
 								rs.getString("md5"),
 								FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"));
@@ -8338,7 +8318,7 @@ public class SleuthkitCase {
 	CaseDbConnection getConnection() throws TskCoreException {
 		return connections.getConnection();
 	}
-	
+
 	SleuthkitJNI.CaseDbHandle getCaseHandle() {
 		return this.caseHandle;
 	}
@@ -8365,11 +8345,6 @@ public class SleuthkitCase {
 		}
 
 		fileSystemIdMap.clear();
-		synchronized (blackboardInstanceLock) {
-			if (blackboardInstance != null) {
-				blackboardInstance = null;
-			}
-		}
 
 		try {
 			if (this.caseHandle != null) {
@@ -10061,7 +10036,7 @@ public class SleuthkitCase {
 					// make path absolute
 					localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
 				}
-				
+
 				// get the report parent
 				Content parent = null;
 				long reportId = resultSet.getLong("obj_id"); // NON-NLS
@@ -10072,13 +10047,13 @@ public class SleuthkitCase {
 					parent = this.getContentById(parentId);
 				}
 				parentResultSet.close();
-				
-				reports.add(new Report(this, 
-						reportId, 
+
+				reports.add(new Report(this,
+						reportId,
 						localpath,
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
-						resultSet.getString("report_name"), 
+						resultSet.getString("report_name"),
 						parent));  //NON-NLS
 			}
 			return reports;
@@ -10089,7 +10064,7 @@ public class SleuthkitCase {
 			closeResultSet(parentResultSet);
 			closeStatement(statement);
 			closeStatement(parentStatement);
-				
+
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
@@ -10107,7 +10082,7 @@ public class SleuthkitCase {
 	public Report getReportById(long id) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
-		PreparedStatement statement  = null;
+		PreparedStatement statement = null;
 		Statement parentStatement = null;
 		ResultSet resultSet = null;
 		ResultSet parentResultSet = null;
@@ -10129,12 +10104,12 @@ public class SleuthkitCase {
 					long parentId = parentResultSet.getLong("par_obj_id"); // NON-NLS
 					parent = this.getContentById(parentId);
 				}
-					
+
 				report = new Report(this, resultSet.getLong("obj_id"), //NON-NLS
 						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
-						resultSet.getString("report_name"), 
+						resultSet.getString("report_name"),
 						parent);  //NON-NLS
 			} else {
 				throw new TskCoreException("No report found for id: " + id);
