@@ -1233,7 +1233,7 @@ main(int argc, char **argv1)
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
 
-        TskFindFiles findFiles(config);
+        TskFindFiles findFiles(config, driveToProcess);
 
         TskHelper::getInstance().reset();
         TskHelper::getInstance().setImgInfo(img);
