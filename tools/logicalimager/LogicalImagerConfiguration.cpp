@@ -212,6 +212,9 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
                 m_ruleSets.push_back(ruleSet);
             }
         }
+        else if (it.key() == "create-VHD") {
+            it.value().get_to(m_createVHD);
+        }
         else if (it.key() == "finalize-image-writer") {
             it.value().get_to(m_finalizeImageWriter);
         }

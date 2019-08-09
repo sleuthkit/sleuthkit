@@ -43,6 +43,12 @@ TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image);
 static TSK_TCHAR *progname;
 FILE *consoleFile = NULL;
 bool promptBeforeExit = true;
+bool createVHD = false;
+int fileCounter = 1;
+std::string extractedFilename;
+std::string directoryPath;
+std::string subDirForFiles;
+
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
 static void handleExit(int code) {
@@ -865,7 +871,7 @@ static void openAlert(const std::string &alertFilename) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         handleExit(1);
     }
-    fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
+    fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tExtracted filename\tPath\n");
 }
 
 /*
@@ -877,6 +883,7 @@ static void openAlert(const std::string &alertFilename) {
 *   - ruleName
 *   - description
 *   - name
+*   - extracted filename
 *   - path
 *
 * @param driveName Drive name
@@ -890,14 +897,15 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         // Don't alert . and ..
         return;
     }
-    // alert file format is "drive<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
-    fprintf(m_alertFile, "%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+    // alert file format is "drive<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>extracted filename<tab>path"
+    fprintf(m_alertFile, "%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
         driveName.c_str(),
         extractStatus,
         ruleMatchResult->getRuleSetName().c_str(),
         ruleMatchResult->getName().c_str(),
         ruleMatchResult->getDescription().c_str(),
         (fs_file->name ? fs_file->name->name : "name is null"),
+        extractedFilename.c_str(),
         path);
     fflush(m_alertFile);
 
@@ -932,28 +940,53 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
     TSK_OFF_T offset = 0;
     size_t bufferLen = 16 * 1024;
     char buffer[16 * 1024];
+    FILE *file = NULL;
+    std::string filename;
+    TSK_RETVAL_ENUM result = TSK_OK;
+
+    if (!createVHD) {
+        extractedFilename = "f-" + std::to_string(fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
+        filename = directoryPath + "/" + subDirForFiles + "/" + extractedFilename;
+        file = fopen(filename.c_str(), "wb");
+    }
 
     while (true) {
         ssize_t bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
         if (bytesRead == -1) {
             if (fs_file->meta && fs_file->meta->size == 0) {
                 // ts_fs_file_read returns -1 with empty files, don't report it.
-                return TSK_OK;
+                result = TSK_OK;
+                break;
             }
             else {
                 printDebug("processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
-                return TSK_ERR;
+                result = TSK_ERR;
+                break;
             }
         }
         else if (bytesRead == 0) {
-            return TSK_ERR;
+            result = TSK_ERR;
+            break;
+        }
+        if (!createVHD && file) {
+            size_t bytesWritten = fwrite((const void *)buffer, sizeof(char), bytesRead, file);
+            if (bytesWritten != bytesRead) {
+                fprintf(stderr, "ERROR: extractFile failed: %s\n", filename.c_str());
+                result = TSK_ERR;
+                break;
+            }
         }
         offset += bytesRead;
         if (offset >= fs_file->meta->size) {
             break;
         }
     }
-    return TSK_OK;
+
+    if (file) {
+        fclose(file);
+    }
+
+    return result;
 }
 
 /*
@@ -975,6 +1008,7 @@ static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_
     if (matchResult->isShouldAlert()) {
         alert(driveToProcess, extractStatus, matchResult, fs_file, path);
     }
+    fileCounter++;
     return TSK_OK;
 }
 
@@ -1167,6 +1201,7 @@ main(int argc, char **argv1)
     try {
         config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename), (LogicalImagerRuleSet::matchCallback)matchCallback);
         promptBeforeExit = config->getPromptBeforeExit();
+        createVHD = config->getCreateVHD();
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -1174,7 +1209,7 @@ main(int argc, char **argv1)
     }
 
     // create a directory with hostname_timestamp
-    std::string directoryPath;
+    //std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         consoleOutput(stderr, "Failed to create directory %s\n", directoryPath.c_str());
         handleExit(1);
@@ -1205,7 +1240,8 @@ main(int argc, char **argv1)
         if (driveToProcess.back() == ':') {
             driveToProcess = driveToProcess.substr(0, driveToProcess.size() - 1);
         }
-        std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
+        subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
+        std::string outputFileName = directoryPath + "/" + subDirForFiles + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
@@ -1219,17 +1255,26 @@ main(int argc, char **argv1)
             handleExit(1);
         }
 
-        if (img->itype == TSK_IMG_TYPE_RAW) {
-            if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
-                tsk_error_print(stderr);
-                consoleOutput(stderr, "Failed to initialize VHD writer\n");
-                handleExit(1);
+        if (createVHD) {
+            if (img->itype == TSK_IMG_TYPE_RAW) {
+                if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
+                    tsk_error_print(stderr);
+                    consoleOutput(stderr, "Failed to initialize VHD writer\n");
+                    handleExit(1);
+                }
+            }
+            else {
+                consoleOutput(stderr, "Image is not a RAW image, VHD will not be created\n");
             }
         }
         else {
-            consoleOutput(stderr, "Image is not a RAW image, VHD will not be created\n");
+            // create directory to store extracted files
+            std::string dir = directoryPath + std::string("/") + subDirForFiles;
+            if (_mkdir(dir.c_str()) != 0) {
+                consoleOutput(stderr, (std::string("Failed to create directory ") + dir).c_str());
+                handleExit(1);
+            }
         }
-
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
 
@@ -1313,7 +1358,7 @@ main(int argc, char **argv1)
     for (auto it = std::begin(imgFinalizePending); it != std::end(imgFinalizePending); ++it) {
         TSK_IMG_INFO *img = it->first;
         if (img->itype == TSK_IMG_TYPE_RAW) {
-            if (config->getFinalizeImagerWriter()) {
+            if (createVHD && config->getFinalizeImagerWriter()) {
                 printDebug("finalize image writer for %s", it->second.c_str());
                 consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
