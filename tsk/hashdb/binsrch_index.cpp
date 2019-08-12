@@ -1261,7 +1261,7 @@ int8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READIDX);
             tsk_error_set_errstr(
-                "hdb_lookup: Error seeking in search: %" PRIuOFF,
+                "hdb_lookup: Error seeking in search: %" PRIdOFF,
                 offset);
             return -1;
         }
@@ -1358,7 +1358,7 @@ int8_t
                         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
                         tsk_error_set_errstr(
                             "hdb_lookup: Error seeking for prev entries: %"
-                            PRIuOFF, tmpoff);
+							PRIdOFF, tmpoff);
                         return -1;
                     }
 
@@ -1420,7 +1420,7 @@ int8_t
                         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
                         tsk_error_set_errstr(
                             "hdb_lookup: Error seeking for next entries: %"
-                            PRIuOFF, tmpoff);
+							PRIdOFF, tmpoff);
                         return -1;
                     }
 

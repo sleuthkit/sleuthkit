@@ -138,7 +138,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_SEEK);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                    "\" offset %" PRIuOFF " seek - %d",
+                    "\" offset %" PRIdOFF " seek - %d",
                     raw_info->img_info.images[idx], rel_offset,
                     lastError);
                 return -1;
@@ -157,7 +157,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                "\" offset: %" PRIuOFF " read len: %" PRIuSIZE " - %d",
+                "\" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
                 raw_info->img_info.images[idx], rel_offset, len,
                 lastError);
             return -1;
@@ -174,11 +174,12 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         if (raw_info->img_writer != NULL) {
             /* img_writer is not used with split images, so rel_offset is just the normal offset*/
             TSK_RETVAL_ENUM result = raw_info->img_writer->add(raw_info->img_writer, rel_offset, buf, cnt);
-            if (raw_info->img_writer->inFinalizeImageWriter == 1 && result != TSK_OK) {
+            // If WriteFile returns error in the addNewBlock, hadErrorExtending is 1
+            if (raw_info->img_writer->inFinalizeImageWriter && raw_info->img_writer->hadErrorExtending) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                    "\" offset: %" PRIuOFF " tsk_img_writer_add cnt: %" PRIuSIZE " - %d",
+                    "\" offset: %" PRIdOFF " tsk_img_writer_add cnt: %" PRIuSIZE " - %d",
                     raw_info->img_info.images[idx], rel_offset, cnt
                     );
                 return -1;
@@ -191,7 +192,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                "\" offset %" PRIuOFF " seek - %s", raw_info->img_info.images[idx],
+                "\" offset %" PRIdOFF " seek - %s", raw_info->img_info.images[idx],
                 rel_offset, strerror(errno));
             return -1;
         }
@@ -203,7 +204,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
         tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset: %"
-            PRIuOFF " read len: %" PRIuSIZE " - %s", raw_info->img_info.images[idx],
+			PRIdOFF " read len: %" PRIuSIZE " - %s", raw_info->img_info.images[idx],
             rel_offset, len, strerror(errno));
         return -1;
     }
@@ -236,14 +237,14 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "raw_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE "\n",
+            "raw_read: byte offset: %" PRIdOFF " len: %" PRIuSIZE "\n",
             offset, len);
     }
 
     if (offset > img_info->size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("raw_read: offset %" PRIuOFF " too large",
+        tsk_error_set_errstr("raw_read: offset %" PRIdOFF " too large",
             offset);
         return -1;
     }
@@ -276,7 +277,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
             if (tsk_verbose) {
                 tsk_fprintf(stderr,
                     "raw_read: found in image %d relative offset: %"
-                    PRIuOFF " len: %" PRIuOFF "\n", i, rel_offset,
+					PRIdOFF " len: %" PRIdOFF "\n", i, rel_offset,
                     (TSK_OFF_T) read_len);
             }
 
@@ -307,7 +308,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                     if (tsk_verbose) {
                         tsk_fprintf(stderr,
                             "raw_read: additional image reads: image %d len: %"
-                            PRIuOFF "\n", i, read_len);
+							PRIuSIZE "\n", i, read_len);
                     }
 
                     cnt2 = raw_read_segment(raw_info, i, &buf[cnt],
@@ -330,7 +331,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-    tsk_error_set_errstr("raw_read: offset %" PRIuOFF
+    tsk_error_set_errstr("raw_read: offset %" PRIdOFF
         " not found in any segments", offset);
 
     return -1;
@@ -352,7 +353,7 @@ raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type: raw\n");
-    tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
+    tsk_fprintf(hFile, "\nSize in bytes: %" PRIdOFF "\n", img_info->size);
     tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
 
     if (raw_info->img_info.num_img > 1) {
@@ -364,7 +365,7 @@ raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 
         for (i = 0; i < raw_info->img_info.num_img; i++) {
             tsk_fprintf(hFile,
-                "%" PRIttocTSK "  (%" PRIuOFF " to %" PRIuOFF ")\n",
+                "%" PRIttocTSK "  (%" PRIdOFF " to %" PRIdOFF ")\n",
                 raw_info->img_info.images[i],
                 (TSK_OFF_T) (i == 0) ? 0 : raw_info->max_off[i - 1],
                 (TSK_OFF_T) (raw_info->max_off[i] - 1));
@@ -723,8 +724,8 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     raw_info->cptr[0] = -1;
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "raw_open: segment: 0  size: %" PRIuOFF "  max offset: %"
-            PRIuOFF "  path: %" PRIttocTSK "\n", first_seg_size,
+            "raw_open: segment: 0  size: %" PRIdOFF "  max offset: %"
+			PRIdOFF "  path: %" PRIttocTSK "\n", first_seg_size,
             raw_info->max_off[0], raw_info->img_info.images[0]);
     }
 
@@ -757,8 +758,8 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
 
         if (tsk_verbose) {
             tsk_fprintf(stderr,
-                "raw_open: segment: %d  size: %" PRIuOFF "  max offset: %"
-                PRIuOFF "  path: %" PRIttocTSK "\n", i, size,
+                "raw_open: segment: %d  size: %" PRIdOFF "  max offset: %"
+				PRIdOFF "  path: %" PRIttocTSK "\n", i, size,
                 raw_info->max_off[i], raw_info->img_info.images[i]);
         }
     }

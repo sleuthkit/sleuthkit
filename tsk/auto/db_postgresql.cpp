@@ -526,141 +526,182 @@ int TskDbPostgreSQL::initialize() {
 
     // ELTODO: change INTEGER (4 bytes) fields to SMALLINT (2 bytes) to use less memory for enum fields
 
-    if (attempt_exec("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);","Error creating tsk_objects table: %s\n")
+	if (attempt_exec("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);", "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_image_info (obj_id BIGSERIAL PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size BIGINT, md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-        "Error creating tsk_image_info table: %s\n")
+            "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec("CREATE TABLE tsk_image_names (obj_id BIGINT NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-        "Error creating tsk_image_names table: %s\n")
+            "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_vs_info (obj_id BIGSERIAL PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset BIGINT NOT NULL, block_size BIGINT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-        "Error creating tsk_vs_info table: %s\n")
+            "Error creating tsk_vs_info table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE data_source_info (obj_id BIGINT PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-        "Error creating data_source_info table: %s\n")
+            "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_fs_info (obj_id BIGSERIAL PRIMARY KEY, img_offset BIGINT NOT NULL, fs_type INTEGER NOT NULL, block_size BIGINT NOT NULL, block_count BIGINT NOT NULL, root_inum BIGINT NOT NULL, first_inum BIGINT NOT NULL, last_inum BIGINT NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-        "Error creating tsk_fs_info table: %s\n")
+            "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_files (obj_id BIGSERIAL PRIMARY KEY, fs_obj_id BIGINT, data_source_obj_id BIGINT NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, extension TEXT, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
-        "Error creating tsk_files table: %s\n")
+            "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
+            "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);",
-        "Error creating file_encoding_types table: %s\n")
+            "Error creating file_encoding_types table: %s\n")
         ||
         attempt_exec("CREATE TABLE tsk_files_path (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, encoding_type INTEGER, FOREIGN KEY(encoding_type) references file_encoding_types(encoding_type), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
-        "Error creating tsk_files_path table: %s\n")
+            "Error creating tsk_files_path table: %s\n")
         ||
-        attempt_exec("CREATE TABLE tsk_files_derived (obj_id BIGSERIAL PRIMARY KEY, derived_id BIGINT NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))","Error creating tsk_files_derived table: %s\n")
+        attempt_exec("CREATE TABLE tsk_files_derived (obj_id BIGSERIAL PRIMARY KEY, derived_id BIGINT NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))", "Error creating tsk_files_derived table: %s\n")
         ||
-        attempt_exec("CREATE TABLE tsk_files_derived_method (derived_id BIGSERIAL PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)","Error creating tsk_files_derived_method table: %s\n")
+        attempt_exec("CREATE TABLE tsk_files_derived_method (derived_id BIGSERIAL PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)", "Error creating tsk_files_derived_method table: %s\n")
         ||
-        attempt_exec("CREATE TABLE tag_names (tag_name_id BIGSERIAL PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)","Error creating tag_names table: %s\n")
+        attempt_exec("CREATE TABLE tag_names (tag_name_id BIGSERIAL PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)", "Error creating tag_names table: %s\n")
         ||
-        attempt_exec("CREATE TABLE blackboard_artifact_types (artifact_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)","Error creating blackboard_artifact_types table: %s\n")
+        attempt_exec("CREATE TABLE blackboard_artifact_types (artifact_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)", "Error creating blackboard_artifact_types table: %s\n")
         ||
-        attempt_exec("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)","Error creating blackboard_attribute_types table: %s\n")
+        attempt_exec("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)", "Error creating blackboard_attribute_types table: %s\n")
         ||
-		attempt_exec("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
-		"review_status_name TEXT NOT NULL, "
-		"display_name TEXT NOT NULL)",
-		"Error creating review_statuses table: %s\n")
+        attempt_exec("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
+            "review_status_name TEXT NOT NULL, "
+            "display_name TEXT NOT NULL)",
+            "Error creating review_statuses table: %s\n")
         ||
         attempt_exec("CREATE TABLE blackboard_artifacts (artifact_id BIGSERIAL PRIMARY KEY, "
-		"obj_id BIGINT NOT NULL, "
-		"artifact_obj_id BIGINT NOT NULL, "
-		"data_source_obj_id BIGINT NOT NULL, "
-		"artifact_type_id BIGINT NOT NULL, "
-		"review_status_id INTEGER NOT NULL, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
-		"FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id), "
-		"FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
-		"FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
-		"FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))",
-		"Error creating blackboard_artifact table: %s\n")
-	||
-	attempt_exec("ALTER SEQUENCE blackboard_artifacts_artifact_id_seq minvalue -9223372036854775808 restart with -9223372036854775808", "Error setting starting value for artifact_id: %s\n")
-	||
-	/* Binary representation of BYTEA is a bunch of bytes, which could
-	* include embedded nulls so we have to pay attention to field length.
-	* http://www.postgresql.org/docs/9.4/static/libpq-example.html
-	*/
-	attempt_exec
-	("CREATE TABLE blackboard_attributes (artifact_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, source TEXT, context TEXT, attribute_type_id BIGINT NOT NULL, value_type INTEGER NOT NULL, "
-		"value_byte BYTEA, value_text TEXT, value_int32 INTEGER, value_int64 BIGINT, value_double NUMERIC(20, 10), "
-		"FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
-		"Error creating blackboard_attribute table: %s\n")
-	||
-	/* In PostgreSQL "desc" indicates "descending order" so I had to rename "desc TEXT" to "descr TEXT". Should I also make this change for SQLite?*/
-	attempt_exec
-	("CREATE TABLE tsk_vs_parts (obj_id BIGSERIAL PRIMARY KEY, addr BIGINT NOT NULL, start BIGINT NOT NULL, length BIGINT NOT NULL, descr TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-		"Error creating tsk_vol_info table: %s\n")
-	||
-	attempt_exec
-	("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)",
-		"Error creating ingest_module_types table: %s\n")
-	||
-	attempt_exec
-	("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)",
-		"Error creating ingest_job_status_types table: %s\n")
-	||
-	attempt_exec
-	("CREATE TABLE ingest_modules (ingest_module_id BIGSERIAL PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));",
-		"Error creating ingest_modules table: %s\n")
-	||
-	attempt_exec
-	("CREATE TABLE ingest_jobs (ingest_job_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));",
-		"Error creating ingest_jobs table: %s\n")
-	||
-	attempt_exec
-	("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));",
-		"Error creating ingest_job_modules table: %s\n")
-	||
-	attempt_exec
-	("CREATE TABLE reports (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));", "Error creating reports table: %s\n")
-		||
-		attempt_exec
-		("CREATE TABLE account_types (account_type_id BIGSERIAL PRIMARY KEY, type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)",
-		"Error creating account_types table: %s\n")
-		||
-		attempt_exec
-		("CREATE TABLE accounts (account_id BIGSERIAL PRIMARY KEY, account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL,  UNIQUE(account_type_id, account_unique_identifier) , FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))",
-		"Error creating accounts table: %s\n") 
-		||
-		attempt_exec
-		("CREATE TABLE account_relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id BIGINT NOT NULL, date_time BIGINT, relationship_type INTEGER NOT NULL, data_source_obj_id BIGINT NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
-		"Error creating relationships table: %s\n")	 
-		||
-		attempt_exec
-		("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
-			"Error creating tsk_examiners table: %s\n") 
-		||
-		attempt_exec
-		("CREATE TABLE content_tags (tag_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, examiner_id BIGINT, "
-			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
-			"Error creating content_tags table: %s\n")
-		||
-		attempt_exec
-		("CREATE TABLE blackboard_artifact_tags (tag_id BIGSERIAL PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL,  examiner_id BIGINT, "
-			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
-			"Error creating blackboard_artifact_tags table: %s\n")){
-			return 1;
-    }
+            "obj_id BIGINT NOT NULL, "
+            "artifact_obj_id BIGINT NOT NULL, "
+            "data_source_obj_id BIGINT NOT NULL, "
+            "artifact_type_id BIGINT NOT NULL, "
+            "review_status_id INTEGER NOT NULL, "
+            "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
+            "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id), "
+            "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
+            "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
+            "FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))",
+            "Error creating blackboard_artifact table: %s\n")
+        ||
+        attempt_exec("ALTER SEQUENCE blackboard_artifacts_artifact_id_seq minvalue -9223372036854775808 restart with -9223372036854775808", "Error setting starting value for artifact_id: %s\n")
+        ||
+        /* Binary representation of BYTEA is a bunch of bytes, which could
+        * include embedded nulls so we have to pay attention to field length.
+        * http://www.postgresql.org/docs/9.4/static/libpq-example.html
+        */
+        attempt_exec
+        ("CREATE TABLE blackboard_attributes (artifact_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, source TEXT, context TEXT, attribute_type_id BIGINT NOT NULL, value_type INTEGER NOT NULL, "
+            "value_byte BYTEA, value_text TEXT, value_int32 INTEGER, value_int64 BIGINT, value_double NUMERIC(20, 10), "
+            "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
+            "Error creating blackboard_attribute table: %s\n")
+        ||
+        /* In PostgreSQL "desc" indicates "descending order" so I had to rename "desc TEXT" to "descr TEXT". Should I also make this change for SQLite?*/
+        attempt_exec
+        ("CREATE TABLE tsk_vs_parts (obj_id BIGSERIAL PRIMARY KEY, addr BIGINT NOT NULL, start BIGINT NOT NULL, length BIGINT NOT NULL, descr TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+            "Error creating tsk_vol_info table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)",
+            "Error creating ingest_module_types table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)",
+            "Error creating ingest_job_status_types table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE ingest_modules (ingest_module_id BIGSERIAL PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));",
+            "Error creating ingest_modules table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE ingest_jobs (ingest_job_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));",
+            "Error creating ingest_jobs table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));",
+            "Error creating ingest_job_modules table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE reports (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));", "Error creating reports table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE account_types (account_type_id BIGSERIAL PRIMARY KEY, type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)",
+            "Error creating account_types table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE accounts (account_id BIGSERIAL PRIMARY KEY, account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL,  UNIQUE(account_type_id, account_unique_identifier) , FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))",
+            "Error creating accounts table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE account_relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id BIGINT NOT NULL, date_time BIGINT, relationship_type INTEGER NOT NULL, data_source_obj_id BIGINT NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
+            "Error creating relationships table: %s\n")
+        ||
+        attempt_exec(
+            "CREATE TABLE tsk_event_types ("
+            " event_type_id BIGSERIAL PRIMARY KEY,"
+            " display_name TEXT UNIQUE NOT NULL , "
+            " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )"
+            , "Error creating tsk_event_types table: %s\n")
+        ||
+        attempt_exec(
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(0, 'Event Types', null);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(1, 'File System', 0);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(2, 'Web Activity', 0);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(3, 'Misc Types', 0);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(4, 'Modified', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
+            , "Error initializing tsk_event_types table rows: %s\n") ||
+        attempt_exec(
+            "CREATE TABLE tsk_event_descriptions ( "
+            " event_description_id BIGSERIAL PRIMARY KEY, "
+            " full_description TEXT NOT NULL, "
+            " med_description TEXT, "
+            " short_description TEXT,"
+            " data_source_obj_id BIGINT NOT NULL, "
+            " file_obj_id BIGINT NOT NULL, "
+            " artifact_id BIGINT, "
+            " hash_hit INTEGER NOT NULL, " //boolean 
+            " tagged INTEGER NOT NULL, " //boolean 
+            " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+            " FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
+            " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ,"
+			" UNIQUE (full_description, file_obj_id, artifact_id))",
+            "Error creating tsk_event_descriptions table: %s\n")
+        ||
+        attempt_exec(
+            "CREATE TABLE tsk_events ("
+            " event_id BIGSERIAL PRIMARY KEY, "
+            " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+            " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
+            " time INTEGER NOT NULL , "
+			" UNIQUE (event_type_id, event_description_id, time))"
+            , "Error creating tsk_events table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
+            "Error creating tsk_examiners table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE content_tags (tag_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, examiner_id BIGINT, "
+            "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
+            "Error creating content_tags table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_artifact_tags (tag_id BIGSERIAL PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL,  examiner_id BIGINT, "
+            "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
+            "Error creating blackboard_artifact_tags table: %s\n")){
+		return 1;
+	}
 
-    if (m_blkMapFlag) {
-        if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (obj_id BIGINT NOT NULL, byte_start BIGINT NOT NULL, byte_len BIGINT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-            "Error creating tsk_fs_blocks table: %s\n")) {
-                return 1;
-        }
+    if (attempt_exec
+        ("CREATE TABLE tsk_file_layout (obj_id BIGINT NOT NULL, byte_start BIGINT NOT NULL, byte_len BIGINT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        "Error creating tsk_fs_blocks table: %s\n")) {
+            return 1;
     }
 
     if (createIndexes())
@@ -674,39 +715,51 @@ int TskDbPostgreSQL::initialize() {
 * @returns 1 on error, 0 on success
 */
 int TskDbPostgreSQL::createIndexes() {
-	return
-		// tsk_objects index
-		attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
-			"Error creating tsk_objects index on par_obj_id: %s\n") ||
-		// file layout index
-		attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
-			"Error creating layout_objID index on tsk_file_layout: %s\n") ||
-		// blackboard indexes
-		attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
-			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-		attempt_exec("CREATE INDEX artifact_artifact_objID ON blackboard_artifacts(artifact_obj_id);",
-			"Error creating artifact_artifact_objID index on blackboard_artifacts: %s\n") ||
-		attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
-			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-		attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-			"Error creating artifact_id index on blackboard_attributes: %s\n") ||
-		//file type indexes
-		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
-			"Error creating mime_type index on tsk_files: %s\n") ||
-		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
-			"Error creating file_extension index on tsk_files: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_account1  ON account_relationships(account1_id);",
-			"Error creating relationships_account1 index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_account2  ON account_relationships(account2_id);",
-			"Error creating relationships_account2 index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_relationship_source_obj_id  ON account_relationships(relationship_source_obj_id);",
-			"Error creating relationships_relationship_source_obj_id index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_date_time  ON account_relationships(date_time);",
-			"Error creating relationships_date_time index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_relationship_type ON account_relationships(relationship_type);",
-			"Error creating relationships_relationship_type index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
-			"Error creating relationships_data_source_obj_id index on account_relationships: %s\n");
+    return
+        // tsk_objects index
+        attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
+            "Error creating tsk_objects index on par_obj_id: %s\n") ||
+        // file layout index
+        attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
+            "Error creating layout_objID index on tsk_file_layout: %s\n") ||
+        // blackboard indexes
+        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+            "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+        attempt_exec("CREATE INDEX artifact_artifact_objID ON blackboard_artifacts(artifact_obj_id);",
+            "Error creating artifact_artifact_objID index on blackboard_artifacts: %s\n") ||
+        attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
+            "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+        attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
+            "Error creating artifact_id index on blackboard_attributes: %s\n") ||
+        //file type indexes
+        attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
+            "Error creating mime_type index on tsk_files: %s\n") ||
+        attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
+            "Error creating file_extension index on tsk_files: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_account1  ON account_relationships(account1_id);",
+            "Error creating relationships_account1 index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_account2  ON account_relationships(account2_id);",
+            "Error creating relationships_account2 index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_relationship_source_obj_id  ON account_relationships(relationship_source_obj_id);",
+            "Error creating relationships_relationship_source_obj_id index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_date_time  ON account_relationships(date_time);",
+            "Error creating relationships_date_time index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_relationship_type ON account_relationships(relationship_type);",
+            "Error creating relationships_relationship_type index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
+            "Error creating relationships_data_source_obj_id index on account_relationships: %s\n") ||
+        //tsk_events indices
+        attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id);",
+            "Error creating events_data_source_obj_id index on tsk_event_descriptions: %s\n") ||
+        attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id);",
+            "Error creating events_file_obj_id index on tsk_event_descriptions: %s\n") ||
+        attempt_exec("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id);",
+            "Error creating events_artifact_id index on tsk_event_descriptions: %s\n") ||
+        attempt_exec(
+            "CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time);",
+            "Error creating events_sub_type_time index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
+            "Error creating events_time index on tsk_events: %s\n");
 }
 
 
@@ -749,7 +802,7 @@ int TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, in
         return 1;
 
     snprintf(stmt, 1024, "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d, %"
-        PRIuOFF ",%u)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
+		PRIuDADDR ",%u)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt, "Error adding data to tsk_vs_info table: %s\n");
 }
@@ -859,7 +912,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         free(stmt);
         return 1;
     }
-    snprintf(stmt, 10242048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s, %s, %s);",
+    snprintf(stmt, 10242048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIdOFF ", %s, %" PRIdOFF ", %s, %s, %s);",
         objId, type, ssize, timezone_sql, size, md5_sql, sha1_sql, sha256_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -958,7 +1011,7 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
         "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
         "root_inum, first_inum, last_inum) "
         "VALUES ("
-        "%" PRId64 ",%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
+        "%" PRId64 ",%" PRIdOFF ",%d,%u,%" PRIuDADDR ","
         "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
         objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
@@ -1007,6 +1060,77 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
     }
 
     return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId, dataSourceObjId);
+}
+
+
+int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj_id, const int64_t file_obj_id,
+                                      std::map<int64_t, time_t> timeMap, const char* full_description)
+{
+    int64_t event_description_id = -1;
+
+    //for each  entry (type ->time)
+    for (const auto entry : timeMap)
+    {
+        const long long time = entry.second;
+
+
+        if (time == 0)
+        {
+            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull 
+            continue;
+        }
+        if (event_description_id == -1)
+        {
+            if (0 > snprintf(zSQL, 2048 - 1,
+                             "INSERT INTO tsk_event_descriptions ( data_source_obj_id, file_obj_id , artifact_id, full_description, hash_hit, tagged) "
+                             " VALUES ("
+                             "%" PRId64 "," // data_source_obj_id
+                             "%" PRId64 "," // file_obj_id
+                             "NULL," // fixed artifact_id
+                             "%s," // full_description
+                             "0," // fixed hash_hit
+                             "0" // fixed tagged
+                             ") RETURNING event_description_id",
+                             data_source_obj_id,
+                             file_obj_id,
+                             full_description))
+            {
+                return 1;
+            }
+
+            PGresult* res = get_query_result_set(
+                zSQL, "TskDbPostgreSQL::addMACTimeEvents: Error adding object to row: %s (result code %d)\n");
+            // check if a valid result set was returned
+            if (verifyNonEmptyResultSetSize(zSQL, res, 1,
+                                            "TskDbPostgreSQL::addMACTimeEvents: Unexpected number of columns in result set: Expected %d, Received %d\n")
+            )
+            {
+                return 1;
+            }
+            event_description_id = atoll(PQgetvalue(res, 0, 0));
+
+            PQclear(res);
+        }
+        //insert events time event
+        if (0 > snprintf(zSQL, 2048 - 1,
+                         "INSERT INTO tsk_events ( event_type_id, event_description_id , time) "
+                         " VALUES ("
+                         "%" PRId64 "," // event_type_id
+                         "%" PRId64 "," // event_description_id
+                         "%" PRIu64 ")", // time
+                         entry.first,
+                         event_description_id,
+                         time))
+        {
+            return 1;
+        };
+
+        if (attempt_exec(                zSQL, "TskDbPostgreSQL::addMACTimeEvents: Error adding filesystem event to tsk_events table: %s\n")        )
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /**
@@ -1059,6 +1183,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             }
         }
     }
+
+	// sanity check
+	if (size < 0) {
+		size = 0;
+	}
 
     // combine name and attribute name
     size_t len = strlen(fs_file->name->name);
@@ -1164,7 +1293,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%d,%d,%s,"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
+        "%" PRIdOFF ","
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%s,%d,"
         "%s,%s)",
@@ -1192,17 +1321,49 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
     if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-		    free(name);
+		free(name);
         free(escaped_path);
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
-		    PQfreemem(extension_sql);
+		PQfreemem(extension_sql);
         free(zSQL_dynamic);
         return 1;
     }
 
+
+    if (!TSK_FS_ISDOT(name))
+    {
+        std::string full_description = std::string(escaped_path).append(name);
+
+        // map from time to event type ids
+        const std::map<int64_t, time_t> timeMap = {
+            {4, mtime},
+            {5, atime},
+            {6, crtime},
+            {7, ctime}
+        };
+        char* full_desc_sql = PQescapeLiteral(conn, full_description.c_str(), strlen(full_description.c_str()));
+
+        if (addMACTimeEvents(zSQL, dataSourceObjId, objId, timeMap, full_desc_sql))
+        {
+            free(name);
+            free(escaped_path);
+            PQfreemem(name_sql);
+            PQfreemem(escaped_path_sql);
+            PQfreemem(extension_sql);
+            free(zSQL_dynamic);
+            PQfreemem(full_desc_sql);
+
+            return 1;
+        }
+
+        PQfreemem(full_desc_sql);
+    }
+
+
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
-    if (TSK_FS_IS_DIR_META(meta_type)){
+    if (TSK_FS_IS_DIR_META(meta_type))
+    {
         std::string fullPath = std::string(path) + fs_file->name->name;
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
@@ -1248,7 +1409,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             "%d,%d,%s,"
             "%" PRIuINUM ",%d,"
             "%d,%d,%d,%d,"
-            "%" PRIuOFF ","
+            "%" PRIdOFF ","
             "%llu,%llu,%llu,%llu,"
             "%d,%d,%d,NULL,%d,"
             "%s, %s)",
@@ -1859,7 +2020,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "NULL,NULL,%s,"
         "NULL,NULL,"
         "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
+        "%" PRIu64 ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,%d)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
@@ -1903,7 +2064,7 @@ int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
     }
 
     snprintf(zSQL, 1024, "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
-        "VALUES (%" PRId64 ", %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",%s,%d)",
+        "VALUES (%" PRId64 ", %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",%s,%d)",
         objId, (int) vs_part->addr, vs_part->start, vs_part->len,
         descr_sql, vs_part->flags);
 

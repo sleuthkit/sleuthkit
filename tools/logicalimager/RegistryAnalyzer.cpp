@@ -24,6 +24,8 @@
 #include "RegistryLoader.h"
 #include "UserAccount.h"
 
+extern void consoleOutput(FILE *fd, const char *msg, ...);
+
 const std::string LOCAL_DOMAIN = "local";
 
 /**
@@ -36,7 +38,7 @@ RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
 {
     m_outputFile = fopen(m_outputFilePath.c_str(), "w");
     if (!m_outputFile) {
-        fprintf(stderr, "ERROR: Failed to open alert file %s\n", m_outputFilePath.c_str());
+        consoleOutput(stdout, "ERROR: Failed to open file %s\n", m_outputFilePath.c_str());
         exit(1);
     }
 
@@ -193,7 +195,6 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
     if (aRegFile == NULL) {
         fprintf(m_outputFile, "SAM HIVE not found\n");
         fclose(m_outputFile);
-        std::cerr << "SAM HIVE not found" << std::endl;
         return -1;
     }
     RegParser &aRegParser = aRegFile->getRegParser();

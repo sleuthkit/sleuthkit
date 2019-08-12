@@ -70,7 +70,7 @@ static TSK_RETVAL_ENUM seekToOffset(TSK_IMG_WRITER * writer, TSK_OFF_T offset) {
         int lastError = (int)GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-        tsk_error_set_errstr("img_writer::seekToOffset: offset %" PRIuOFF " seek - %d",
+        tsk_error_set_errstr("img_writer::seekToOffset: offset %" PRIdOFF " seek - %d",
             offset,
             lastError);
         return TSK_ERR;
@@ -93,7 +93,7 @@ static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
         int lastError = (int)GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-        tsk_error_set_errstr("img_writer::seekAhead: offset %" PRIuOFF " seek - %d",
+        tsk_error_set_errstr("img_writer::seekAhead: offset %" PRIdOFF " seek - %d",
             dist,
             lastError);
         return TSK_ERR;
@@ -190,10 +190,32 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     return TSK_OK;
 }
 
+/*
+ * Write the footer at the position.
+ * Call this method when WriteFile failed and you want to output the footer at position for a valid VHD.
+ */
+static TSK_RETVAL_ENUM writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T position) {
+    if (TSK_OK == seekToOffset(writer, position)) {
+        return writeFooter(writer); // write footer at lastPosition prior to WriteFile error
+    }
+    else {
+        int lastError = GetLastError();
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
+        tsk_error_set_errstr("addNewBlock: error seekToOffset",
+            lastError);
+        return TSK_ERR;
+    }
+}
+
 /* 
  * Add a new block to the VHD and copy in the buffer
  */
 static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len, TSK_OFF_T blockNum) {
+
+    if (writer->hadErrorExtending) {
+        return TSK_OK; // pretend we are OK, NOOP
+    }
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "addNewBlock: Adding new block 0x%x\n", blockNum);
@@ -270,6 +292,9 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         free(sectorBitmap);
         return TSK_ERR;
     }
+
+    TSK_OFF_T lastFooterPosition = writer->nextDataOffset;
+
     if (FALSE == WriteFile(writer->outputFileHandle, sectorBitmap, writer->sectorBitmapLength, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
@@ -278,8 +303,12 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
             lastError);
         free(fullBuffer);
         free(sectorBitmap);
+
+        writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
+        writer->hadErrorExtending = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
+
     if (FALSE == WriteFile(writer->outputFileHandle, fullBuffer, writer->blockSize, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
@@ -288,6 +317,9 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
             lastError);
         free(fullBuffer);
         free(sectorBitmap);
+
+        writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
+        writer->hadErrorExtending = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
 
@@ -486,14 +518,14 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
  */
 static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
 
-    if (writer->is_finished) {
+    if (writer->is_finished || writer->hadErrorExtending) {
         return TSK_OK;
     }
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_add: Adding data at offset: %"
-            PRIuOFF " len: %" PRIuOFF "\n", addr,
+			PRIdOFF " len: %" PRIdOFF "\n", addr,
             (TSK_OFF_T)len);
     }
 
@@ -679,6 +711,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
     writer->finishProgress = 0;
     writer->cancelFinish = 0;
     writer->inFinalizeImageWriter = 0;
+    writer->hadErrorExtending = 0;
     writer->footer = NULL;
     writer->img_info = img_info;
     writer->add = tsk_img_writer_add;

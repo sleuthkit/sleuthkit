@@ -1597,7 +1597,7 @@ static uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS);
         tsk_error_set_errstr(
-            "yaffsfs_parse_image_load_cache: Maximum inum %" PRIuOFF " is not greater than the root inum", yfs->fs_info.last_inum);
+            "yaffsfs_parse_image_load_cache: Maximum inum %" PRIuINUM " is not greater than the root inum", yfs->fs_info.last_inum);
         return TSK_ERR;
     }
 
@@ -2464,7 +2464,7 @@ static uint8_t
     tsk_fs_meta_make_ls(fs_meta, ls, sizeof(ls));
     tsk_fprintf(hFile, "mode: %s\n", ls);
 
-    tsk_fprintf(hFile, "size: %" PRIuOFF "\n", fs_meta->size);
+    tsk_fprintf(hFile, "size: %" PRIdOFF "\n", fs_meta->size);
     tsk_fprintf(hFile, "num of links: %d\n", fs_meta->nlink);
 
     if(version != NULL){
