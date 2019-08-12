@@ -673,16 +673,16 @@ public final class CommunicationsManager {
 
 			String uniqueAccountQueryTemplate
 					= " SELECT %1$1s as account_id,"
-					+ "		  data_source_obj_id"
-					+ " FROM ( " + relTblfilterQuery + ")";
+					+ " data_source_obj_id"
+					+ " FROM ( " + relTblfilterQuery + ")AS %2$s";
 
-			String relationshipTableFilterQuery1 = String.format(uniqueAccountQueryTemplate, "account1_id");
-			String relationshipTableFilterQuery2 = String.format(uniqueAccountQueryTemplate, "account2_id");
+			String relationshipTableFilterQuery1 = String.format(uniqueAccountQueryTemplate, "account1_id", "union_query_1");
+			String relationshipTableFilterQuery2 = String.format(uniqueAccountQueryTemplate, "account2_id", "union_query_2");
 
 			//this query groups by account_id and data_source_obj_id across both innerQueries
 			String uniqueAccountQuery
 					= "SELECT DISTINCT account_id, data_source_obj_id"
-					+ " FROM ( " + relationshipTableFilterQuery1 + " UNION " + relationshipTableFilterQuery2 + " ) AS  inner_union"
+					+ " FROM ( " + relationshipTableFilterQuery1 + " UNION " + relationshipTableFilterQuery2 + " ) AS inner_union"
 					+ " GROUP BY account_id, data_source_obj_id";
 
 			// set up applicable filters
