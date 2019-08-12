@@ -38,15 +38,49 @@
 std::wstring GetLastErrorStdStrW();
 std::string GetErrorStdStr(DWORD err);
 std::wstring GetErrorStdStrW(DWORD err);
+TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image);
 
 static TSK_TCHAR *progname;
-
+FILE *consoleFile = NULL;
+bool promptBeforeExit = true;
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
-static void pressAnyKeyToExit(int code) {
-    std::cout << std::endl << "Press any key to exit";
-    (void) _getch(); 
+static void handleExit(int code) {
+    if (consoleFile) {
+        fclose(consoleFile);
+        consoleFile = NULL;
+    }
+    if (promptBeforeExit) {
+        std::cout << std::endl << "Press any key to exit";
+        (void)_getch();
+    }
     exit(code);
+}
+
+void openConsoleOutput(const std::string &consoleFileName) {
+    consoleFile = fopen(consoleFileName.c_str(), "w");
+    if (!consoleFile) {
+        fprintf(stderr, "ERROR: Failed to open console file %s\n", consoleFileName.c_str());
+        handleExit(1);
+    }
+}
+
+void logOutputToFile(const char *buf) {
+    if (consoleFile) {
+        fprintf(consoleFile, buf);
+    }
+}
+
+void consoleOutput(FILE *fd, const char *msg, ...) {
+    char buf[2048];
+    va_list args;
+
+    va_start(args, msg);
+    vsnprintf(buf, sizeof(buf), msg, args);
+    fprintf(fd, buf);
+    // output to console file
+    logOutputToFile(buf);
+    va_end(args);
 }
 
 void printDebug(char *msg, const char *fmt...) {
@@ -190,13 +224,13 @@ static int getLocalHost(string &a_hostName) {
     WSADATA wsaData;
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
-        fprintf(stderr, "WSAStartup failed with error = %d\n", iResult);
+        consoleOutput(stderr, "WSAStartup failed with error = %d\n", iResult);
         return -1;
     }
 
     char buf[MAX_PATH];
     if (gethostname(buf, sizeof(buf)) == SOCKET_ERROR) {
-        fprintf(stderr, "Error getting host name. Error =  %d\n", WSAGetLastError());
+        consoleOutput(stderr, "Error getting host name. Error =  %d\n", WSAGetLastError());
         return -1;
     }
     a_hostName = string(buf);
@@ -233,7 +267,7 @@ static int createDirectory(string &directoryPathname) {
     if (stat(outDirName.c_str(), &st) != 0) {
         int rc = _mkdir(outDirName.c_str());
         if (rc != 0) {
-            fprintf(stderr, "Failed to create output folder = %s Error: %d\n", outDirName.c_str(), rc);
+            consoleOutput(stderr, "Failed to create output folder = %s Error: %d\n", outDirName.c_str(), rc);
             return -1;
         }
     }
@@ -260,7 +294,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
 
     hres = CoInitializeEx(0, COINIT_MULTITHREADED);
     if (FAILED(hres)) {
-        fprintf(stderr, "wmi_init: Failed to initialize COM library. Error code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Failed to initialize COM library. Error code = %#X\n", hres);
         return -1;                  // Program has failed.
     }
 
@@ -270,15 +304,15 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
         -1,                          // COM authentication
         NULL,                        // Authentication services
         NULL,                        // Reserved
-        RPC_C_AUTHN_LEVEL_DEFAULT,   // Default authentication 
-        RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation  
+        RPC_C_AUTHN_LEVEL_DEFAULT,   // Default authentication
+        RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation
         NULL,                        // Authentication info
-        EOAC_NONE,                   // Additional capabilities 
+        EOAC_NONE,                   // Additional capabilities
         NULL                         // Reserved
     );
 
     if (FAILED(hres)) {
-        fprintf(stderr, "wmi_init: Failed to initialize security. Error code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Failed to initialize security. Error code = %#X\n", hres);
         CoUninitialize();
         return -1;                    // Program has failed.
     }
@@ -292,7 +326,7 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
 
     if (FAILED(hres))
     {
-        fprintf(stderr, "wmi_init: Failed to create IWbemLocator object. Err code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Failed to create IWbemLocator object. Err code = %#X\n", hres);
         CoUninitialize();
         return -1;                 // Program has failed.
     }
@@ -308,13 +342,13 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
         0,                       // Locale. NULL indicates current
         NULL,                    // Security flags.
         0,                       // Authority (e.g. Kerberos)
-        0,                       // Context object 
+        0,                       // Context object
         ppWbemServices                    // pointer to IWbemServices proxy
     );
 
     if (FAILED(hres)) {
         if (WBEM_E_INVALID_NAMESPACE != hres) {
-            fprintf(stderr, "wmi_init: Could not connect to namespace %s, Error = %s\n",
+            consoleOutput(stderr, "wmi_init: Could not connect to namespace %s, Error = %s\n",
                 TskHelper::toNarrow(wmiNamespace).c_str(), GetErrorStdStr(hres).c_str());
         }
 
@@ -329,15 +363,15 @@ static long wmi_init(const std::wstring& wmiNamespace, IWbemLocator **ppWbemLoca
         *ppWbemServices,                        // Indicates the proxy to set
         RPC_C_AUTHN_WINNT,           // RPC_C_AUTHN_xxx
         RPC_C_AUTHZ_NONE,            // RPC_C_AUTHZ_xxx
-        NULL,                        // Server principal name 
-        RPC_C_AUTHN_LEVEL_CALL,      // RPC_C_AUTHN_LEVEL_xxx 
+        NULL,                        // Server principal name
+        RPC_C_AUTHN_LEVEL_CALL,      // RPC_C_AUTHN_LEVEL_xxx
         RPC_C_IMP_LEVEL_IMPERSONATE, // RPC_C_IMP_LEVEL_xxx
         NULL,                        // client identity
-        EOAC_NONE                    // proxy capabilities 
+        EOAC_NONE                    // proxy capabilities
     );
 
     if (FAILED(hres)) {
-        fprintf(stderr, "wmi_init: Could not set proxy blanket. Error code = %#X\n", hres);
+        consoleOutput(stderr, "wmi_init: Could not set proxy blanket. Error code = %#X\n", hres);
         (*ppWbemServices)->Release();
         (*ppWbemLocator)->Release();
         CoUninitialize();
@@ -370,7 +404,7 @@ static int wmi_close(IWbemLocator **ppWbemLocator, IWbemServices **ppWbemService
 /**
 * checkDriveForLDM: checks if the given drive is an LDM disk
 *
-* @param input driveLetter drive to check
+* @param input driveLetter drive to check, for example C:
 *
 * @returns  0 if the drive is NOT an LDM disk
 *           1 if the drive IS an LDM disk
@@ -386,8 +420,7 @@ static int checkDriveForLDM(const string& driveLetter) {
         return -1;
     }
 
-
-    // Use the IWbemServices pointer to make requests of WMI. 
+    // Use the IWbemServices pointer to make requests of WMI.
     // Make requests here:
     HRESULT hres;
     IEnumWbemClassObject* pEnumerator = NULL;
@@ -412,9 +445,7 @@ static int checkDriveForLDM(const string& driveLetter) {
             << std::hex << hres << std::endl;
         wmi_close(&pWbemLocator, &pWbemServices);
         return -1;
-
     } else {
-
         IWbemClassObject *pclsObj;
         ULONG uReturn = 0;
         while (pEnumerator) {
@@ -434,10 +465,9 @@ static int checkDriveForLDM(const string& driveLetter) {
 
             bDriveFound = true;
 
-            //wcout << L"Drive: " << toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << endl;
+            //std::wcout << L"Drive: " << TskHelper::toWide(driveLetter) << ", DeviceID:  " << deviceID << ", Type: " << partitionType << std::endl;
             if (string::npos != TskHelper::toLower(TskHelper::toNarrow(partitionType)).find("logical disk manager")) {
-                std::cerr << "Found Logical Disk Manager disk for drive =   " << driveLetter << std::endl;
-
+                //std::cerr << "Found Logical Disk Manager disk for drive = " << driveLetter << std::endl;
                 isLDM = 1;
             }
         }
@@ -446,17 +476,13 @@ static int checkDriveForLDM(const string& driveLetter) {
 
     wmi_close(&pWbemLocator, &pWbemServices);
 
-    if (!bDriveFound) {
-        std::cerr << "Drive =  " << driveLetter << " not found in Win32_LogicalDiskToPartition" << std::endl;
-    }
-
     return bDriveFound ? isLDM : -1;
 }
 
 /**
 * checkDriveForBitlocker: checks if the given drive has BitLocker encrypted
 *
-* @param input driveLetter drive to check
+* @param input driveLetter drive to check, for example C:
 *
 * @returns  0  if the drive is not encrypted
 *           1  if the drive is Bitlocker encrypted
@@ -470,13 +496,11 @@ static int checkDriveForBitlocker(const string& driveLetter) {
 
     long rc = 0;
 
-    std::wstring wsBitLockerNamespace = L"ROOT\\CIMV2\\security\\MicrosoftVolumeEncryption";
-
+    std::wstring wsBitLockerNamespace = L"ROOT\\CIMV2\\Security\\MicrosoftVolumeEncryption";
 
     // Init WMI with the requisite namespace. This may fail on some versions of Windows, if Bitlocker in not installed.
     rc = wmi_init(wsBitLockerNamespace, &pWbemLocator, &pWbemServices);
     if (0 != rc) {
-
         if ((WBEM_E_INVALID_NAMESPACE == rc)) {
             std::cerr << " Bitlocker is not installed." << std::endl;
             return 0;
@@ -486,13 +510,13 @@ static int checkDriveForBitlocker(const string& driveLetter) {
         }
     }
 
-    // Use the IWbemServices pointer to make requests of WMI. 
+    // Use the IWbemServices pointer to make requests of WMI.
     // Make requests here:
     HRESULT hres;
     IEnumWbemClassObject* pEnumerator = NULL;
 
     unsigned int bitLockerStatus = 0; // assume no Bitlocker
-
+    int returnStatus = 0;
                                                                       // WMI query
     std::wstring wstrQuery = L"SELECT * FROM Win32_EncryptableVolume where driveletter = '";
     wstrQuery += TskHelper::toWide(driveLetter);
@@ -527,6 +551,9 @@ static int checkDriveForBitlocker(const string& driveLetter) {
             } else {
                 unsigned int encryptionMethod = vtProp.uintVal;
                 bitLockerStatus = (0 == encryptionMethod) ? 0 : 1;
+                if (bitLockerStatus == 1) {
+                    returnStatus = 1;
+                }
             }
             VariantClear(&vtProp);
         }
@@ -535,7 +562,91 @@ static int checkDriveForBitlocker(const string& driveLetter) {
 
     wmi_close(&pWbemLocator, &pWbemServices);
 
-    return bitLockerStatus;
+    return returnStatus;
+}
+
+/**
+* isDriveLocked: checks if the given drive is BitLocker locked
+*
+* @param input driveLetter drive to check, for example C:
+*
+* @returns  0  if the drive is not locked
+*           1  if the drive is Bitlocker locked
+*           -1 if error
+*
+*/
+static int isDriveLocked(const string& driveLetter) {
+
+    IWbemLocator *pWbemLocator = NULL;
+    IWbemServices *pWbemServices = NULL;
+
+    long rc = 0;
+
+    std::wstring wsBitLockerNamespace = L"ROOT\\CIMV2\\Security\\MicrosoftVolumeEncryption";
+
+    // Init WMI with the requisite namespace. This may fail on some versions of Windows, if Bitlocker in not installed.
+    rc = wmi_init(wsBitLockerNamespace, &pWbemLocator, &pWbemServices);
+    if (0 != rc) {
+        if ((WBEM_E_INVALID_NAMESPACE == rc)) {
+            std::cerr << " Bitlocker is not installed." << std::endl;
+            return 0;
+        }
+        else {
+            std::cerr << "Failed to connect to WMI namespace = " << TskHelper::toNarrow(wsBitLockerNamespace) << std::endl;
+            return -1;
+        }
+    }
+
+    // Use the IWbemServices pointer to make requests of WMI.
+    // Make requests here:
+    HRESULT hres;
+    IEnumWbemClassObject* pEnumerator = NULL;
+
+    int returnStatus = 0;
+    // WMI query
+    std::wstring wstrQuery = L"SELECT * FROM Win32_EncryptableVolume where driveletter = '";
+    wstrQuery += TskHelper::toWide(driveLetter);
+    wstrQuery += L"'";
+
+    // Run WMI query
+    hres = pWbemServices->ExecQuery(
+        bstr_t("WQL"),
+        bstr_t(wstrQuery.c_str()),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        NULL,
+        &pEnumerator);
+
+    if (FAILED(hres)) {
+        std::cerr << "WMI Query for Win32_EncryptableVolume failed. "
+            << "Error code = 0x"
+            << std::hex << hres << std::endl;
+        wmi_close(&pWbemLocator, &pWbemServices);
+        return -1;
+    }
+    else {
+        IWbemClassObject *pclsObj;
+        ULONG uReturn = 0;
+        while (pEnumerator) {
+            hres = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+            if (0 == uReturn) break;
+
+            VARIANT vtProp;
+            hres = pclsObj->Get(_bstr_t(L"ProtectionStatus"), 0, &vtProp, 0, 0);
+
+            if (WBEM_E_NOT_FOUND != hres) {
+                unsigned int protectionStatus = vtProp.uintVal;
+                if (2 == protectionStatus) {
+                    returnStatus = 1;
+                }
+            }
+            VariantClear(&vtProp);
+        }
+    }
+    pEnumerator->Release();
+
+    wmi_close(&pWbemLocator, &pWbemServices);
+
+    return returnStatus;
 }
 
 /**
@@ -559,16 +670,71 @@ static BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives) {
             }
         }
     } else {
-        fprintf(stderr, "QueryDosDevice() return error: %d\n", GetLastError());
+        consoleOutput(stderr, "QueryDosDevice() return error: %d\n", GetLastError());
         return false;
     }
     return true;
 }
 
+static char *driveTypeToString(UINT type) {
+    switch (type) {
+        case DRIVE_UNKNOWN:
+            return "DRIVE_UNKNOWN";
+        case DRIVE_NO_ROOT_DIR:
+            return "DRIVE_NO_ROOT_DIR";
+        case DRIVE_REMOVABLE:
+            return "DRIVE_REMOVABLE";
+        case DRIVE_FIXED:
+            return "DRIVE_FIXED";
+        case DRIVE_REMOTE:
+            return "DRIVE_REMOTE";
+        case DRIVE_CDROM:
+            return "DRIVE_CDROM";
+        case DRIVE_RAMDISK:
+            return "DRIVE_RAMDISK";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
+    int checkLDMStatus = 0;
+    int checkBitlockerStatus = 0;
+
+    checkLDMStatus = checkDriveForLDM(systemDriveLetter);
+    if (1 == checkLDMStatus) {
+        printDebug("System drive %s is an LDM disk\n", systemDriveLetter.c_str());
+        return TRUE;
+    }
+
+    // If bitlocker protection is enabled, then analyze it
+    checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
+    if (1 == checkBitlockerStatus) {
+        printDebug("System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
+        return TRUE;
+    }
+
+    if (0 == checkLDMStatus && 0 == checkBitlockerStatus) {
+        return false;        // neither LDM nor BitLocker detected
+    }
+    else { // an error happened in determining LDM or ProtectionStatus
+        if (-1 == checkLDMStatus) {
+            consoleOutput(stderr, "Error in checking LDM disk\n");
+        }
+        if (-1 == checkBitlockerStatus) {
+            consoleOutput(stderr, "Error in checking BitLocker protection status\n");
+        }
+
+        // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker
+        return false;
+    }
+}
+
 /**
 * getDrivesToProcess() - returns the drive to process
 *          By default we process all available PhysicalDrives, unless
-*          C: is paritioned with LDM or has Bitlocker enabled, in which case we process 'C:'
+*          a drive is paritioned with LDM or has Bitlocker enabled, in which case we
+*          enumerate all drive letters.
 *
 * @param output a set of drivesToProcess
 *
@@ -582,47 +748,46 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
         return FALSE;
     }
 
-    int checkLDMStatus = 0;
-    int checkBitlockerStatus = 0;
+    string systemDriveLetter;
+    bool status = false;
 
-    // By default, cast a wide net
-    if (!getPhysicalDrives(drivesToProcess)) {
-        return FALSE;
-    }
-
-    const string systemDriveLetter = "C:";
-
-    // if C: is part of LDM, then we'll just analyze C:
-    checkLDMStatus = checkDriveForLDM(systemDriveLetter);
-    if (1 == checkLDMStatus) {
-        fprintf(stderr, "System drive %s is an LDM disk\n", systemDriveLetter.c_str());
-        drivesToProcess.clear();
-        drivesToProcess.push_back((TSK_TCHAR *) systemDriveLetter.c_str());
-        return TRUE;
-    }
-
-    // If bitlocker protection is enabled, then analyze C: and not full drive
-    checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
-    if (1 == checkBitlockerStatus) {
-        fprintf(stderr, "System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
-        drivesToProcess.clear();
-        drivesToProcess.push_back((TSK_TCHAR *)systemDriveLetter.c_str());
-        return TRUE;
-    }
-
-    if (0 == checkLDMStatus && 0 == checkBitlockerStatus) {
-        return TRUE;        // neither LDM nor BitLocker detected on C:
-    } else { // an error happened  in determining LDM or ProtectionStatus
-        if (-1 == checkLDMStatus) {
-            fprintf(stderr, "Error in checking LDM disk\n");
+    // Detect if we have a BitLocker or LDM drive amount all drives
+    for (int iDrive = 0; iDrive < 26; iDrive++) {
+        char szDrive[_MAX_DRIVE + 1];
+        sprintf(szDrive, "%c:\\", iDrive + 'A');
+        UINT uDriveType = GetDriveTypeA(szDrive);
+        //printf("Drive %s Type %s\n", szDrive, driveTypeToString(uDriveType));
+        if (uDriveType == DRIVE_FIXED || uDriveType == DRIVE_REMOVABLE) {
+            sprintf(szDrive, "%c:", iDrive + 'A');
+            systemDriveLetter = szDrive;
+            status |= hasBitLockerOrLDM(systemDriveLetter);
+            if (status) {
+                break;
+            }
         }
-        if (-1 == checkBitlockerStatus) {
-            fprintf(stderr, "Error in checking BitLocker protection status\n");
-        }
-
-        // Take a chance and go after PhysicalDrives, few systems have LDM or Bitlocker 
-        return TRUE;
     }
+    if (status) {
+        // Some of the drives has BitLocker or LDM, enumerate all driver letters
+        for (int iDrive = 0; iDrive < 26; iDrive++) {
+            char szDrive[_MAX_DRIVE + 1];
+            sprintf(szDrive, "%c:\\", iDrive + 'A');
+            UINT uDriveType = GetDriveTypeA(szDrive);
+            if (uDriveType == DRIVE_FIXED || uDriveType == DRIVE_REMOVABLE) {
+                //printf("Drive %s Type %s\n", szDrive, driveTypeToString(uDriveType));
+                sprintf(szDrive, "%c:", iDrive + 'A');
+                systemDriveLetter = szDrive;
+                drivesToProcess.push_back(TskHelper::toWide(systemDriveLetter));
+            }
+        }
+        return TRUE;
+    } else {
+        // None of the drives has BitLocker or LDM, try all physical drives
+        drivesToProcess.clear();
+        if (getPhysicalDrives(drivesToProcess)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
@@ -632,7 +797,7 @@ static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
         TskHelper::getInstance().addFSInfo(fs_info);
     }
     else {
-        // check if it is bitlocker - POC effort 
+        // check if it is bitlocker - POC effort
         char buffer[32];
         tsk_img_read(img, byteOffset, buffer, 32);
         if ((buffer[3] == '-') && (buffer[4] == 'F') &&
@@ -656,34 +821,9 @@ static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
 * @return true if found, false otherwise
 */
 static bool hasTskLogicalImager(const TSK_TCHAR *image) {
-    TSK_IMG_INFO *img;
-    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    unsigned int ssize = 0;
     bool result = false;
 
-    if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
-        tsk_error_print(stderr);
-        return result;
-    }
-
-    TskHelper::getInstance().reset();
-    TskHelper::getInstance().setImgInfo(img);
-
-    TSK_VS_INFO *vs_info;
-    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-        openFs(img, 0);
-    }
-    else {
-        // process the volume system
-        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
-            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
-                continue;
-            }
-            openFs(img, vs_part->start * vs_part->vs->block_size);
-        }
-        tsk_vs_close(vs_info);
-    }
+    TSK_IMG_INFO *img = addFSFromImage(image);
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
@@ -706,7 +846,6 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
         }
     }
     img->close(img);
-
     TskHelper::getInstance().reset();
     return result;
 }
@@ -723,8 +862,8 @@ std::string driveToProcess;
 static void openAlert(const std::string &alertFilename) {
     m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
-        fprintf(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
-        pressAnyKeyToExit(1);
+        consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
+        handleExit(1);
     }
     fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
 }
@@ -769,7 +908,7 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         fullPath += "name is null";
     }
 
-    fprintf(stdout, "Alert for %s:%s\n",
+    consoleOutput(stdout, "Alert for %s: %s\n",
         ruleMatchResult->getRuleSetName().c_str(),
         fullPath.c_str());
 }
@@ -802,7 +941,7 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
                 return TSK_OK;
             }
             else {
-                // fprintf(stderr, "processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
+                printDebug("processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
                 return TSK_ERR;
             }
         }
@@ -821,7 +960,7 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
 * matchCallback - The function is passed into the LogicalImagerConfiguration.
 *                 It is called when a file matches a rule. Depending on the matchResult setting,
 *                 this function may extract the matched file and alert the user.
-* 
+*
 * @param matchResult The RuleMatchResult
 * @param fs_file TSK_FS_FILE that matches the rule
 * @param path Path of the file
@@ -847,7 +986,86 @@ static void usage() {
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-    pressAnyKeyToExit(1);
+    handleExit(1);
+}
+
+/*
+ * Add all FS found in the given image to TskHelp::getInstance()
+ * Returns TSK_IMG_INFO *, caller should call img->close(img) when done.
+ * The FS can be obtained by calling TskHelper::getInstance().getFSInfoList()
+ * Caller must call TskHelper::getInstance().reset() when done with the FS
+ */
+TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image) {
+    TSK_IMG_INFO *img;
+    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+    unsigned int ssize = 0;
+
+    if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
+        consoleOutput(stderr, tsk_error_get());
+        handleExit(1);
+    }
+
+    TskHelper::getInstance().reset();
+    TskHelper::getInstance().setImgInfo(img);
+
+    TSK_VS_INFO *vs_info;
+    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+        openFs(img, 0);
+    }
+    else {
+        // process the volume system
+        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                continue;
+            }
+            openFs(img, vs_part->start * vs_part->vs->block_size);
+        }
+        tsk_vs_close(vs_info);
+    }
+    return img;
+}
+
+bool driveIsFAT(char *drive) {
+    std::wstring imageStr = std::wstring(_TSK_T("\\\\.\\")) + TskHelper::toWide(std::string(drive));
+    const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
+    bool result = false;
+
+    TSK_IMG_INFO *img = addFSFromImage(image);
+
+    const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
+    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+        TSK_FS_INFO *fsInfo = *fsListIter;
+        TSK_FS_TYPE_ENUM fileSystemType = fsInfo->ftype;
+        if (fileSystemType == TSK_FS_TYPE_FAT12 ||
+            fileSystemType == TSK_FS_TYPE_FAT16 ||
+            fileSystemType == TSK_FS_TYPE_FAT32 ||
+            fileSystemType == TSK_FS_TYPE_FAT_DETECT) {
+            result = true;
+            break;
+        }
+    }
+    img->close(img);
+    TskHelper::getInstance().reset();
+    return result;
+}
+
+/*
+ * Result true if Current Working Directory file system is FAT.
+ */
+bool cwdIsFAT() {
+    char *buffer;
+
+    if ((buffer = _getcwd(NULL, 0)) == NULL) {
+        consoleOutput(stderr, "Error: _getcwd failed");
+        handleExit(1);
+    }
+
+    char drive[3];
+    strncpy(drive, buffer, 2);
+    drive[2] = 0;
+    free(buffer);
+    return driveIsFAT(drive);
 }
 
 int
@@ -865,7 +1083,7 @@ main(int argc, char **argv1)
     LogicalImagerConfiguration *config = NULL;
 
     // NOTE: The following 2 calls are required to print non-ASCII UTF-8 strings to the Console.
-    // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to 
+    // fprintf works, std::cout does not. Also change the font in the Console to SimSun-ExtB to
     // display most non-ASCII characters (tested with European, Japanese, Chinese, Korean, Greek,
     // Arabic, Hebrew and Cyrillic strings).
     SetConsoleOutputCP(65001); // Set the CMD Console to Unicode codepage
@@ -875,8 +1093,8 @@ main(int argc, char **argv1)
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
-        pressAnyKeyToExit(1);
+        consoleOutput(stderr, "Error getting wide arguments\n");
+        handleExit(1);
     }
 #else
     argv = (TSK_TCHAR **)argv1;
@@ -916,9 +1134,15 @@ main(int argc, char **argv1)
         usage();
     }
 
+    // If CWD is FAT, exit with error because it cannot create files greater 4 GB
+    if (cwdIsFAT()) {
+        consoleOutput(stderr, "Error: Writing to FAT device is not supported.");
+        handleExit(1);
+    }
+
     if (configFilename == NULL) {
         configFilename = _TSK_T("logical-imager-config.json");
-        fprintf(stdout, "Using default configuration file logical-imager-config.json\n");
+        consoleOutput(stdout, "Using default configuration file logical-imager-config.json\n");
     }
     printDebug("Using config file %s", TskHelper::toNarrow(configFilename).c_str());
 
@@ -935,26 +1159,31 @@ main(int argc, char **argv1)
             }
         }
         else {
-            fprintf(stderr, "Process is not running in elevated mode\n");
-            pressAnyKeyToExit(1);
+            consoleOutput(stderr, "Process is not running in elevated mode\n");
+            handleExit(1);
         }
     }
 
     try {
         config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename), (LogicalImagerRuleSet::matchCallback)matchCallback);
+        promptBeforeExit = config->getPromptBeforeExit();
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
-        pressAnyKeyToExit(1);
+        handleExit(1);
     }
 
     // create a directory with hostname_timestamp
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
-        fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        pressAnyKeyToExit(1);
+        consoleOutput(stderr, "Failed to create directory %s\n", directoryPath.c_str());
+        handleExit(1);
     }
-    fprintf(stdout, "Created directory %s\n", directoryPath.c_str());
+
+    std::string consoleFileName = directoryPath + "/console.txt";
+    openConsoleOutput(consoleFileName);
+
+    consoleOutput(stdout, "Created directory %s\n", directoryPath.c_str());
 
     std::string alertFileName = directoryPath + "/alert.txt";
     openAlert(alertFileName);
@@ -966,31 +1195,39 @@ main(int argc, char **argv1)
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
-        fprintf(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
+        consoleOutput(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
 
+        if (isDriveLocked(driveToProcess) == 1) {
+            consoleOutput(stdout, "Skipping drive %s because it is bitlocked.\n", driveToProcess.c_str());
+            continue;
+        }
+
+        if (driveToProcess.back() == ':') {
+            driveToProcess = driveToProcess.substr(0, driveToProcess.size() - 1);
+        }
         std::string outputFileName = directoryPath + "/" + (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
-            fprintf(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
+            consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            pressAnyKeyToExit(1);
+            handleExit(1);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
-                fprintf(stderr, "tsk_img_writer_create returns TSK_ERR\n");
-                pressAnyKeyToExit(1);
+                consoleOutput(stderr, "Failed to initialize VHD writer\n");
+                handleExit(1);
             }
         }
         else {
-            fprintf(stderr, "Image is not a RAW image, sparse_image.vhd will not be created\n");
+            consoleOutput(stderr, "Image is not a RAW image, VHD will not be created\n");
         }
 
 
@@ -1020,7 +1257,7 @@ main(int argc, char **argv1)
             tsk_vs_close(vs_info);
         }
 
-        fprintf(stdout, "%s - Searching for full path files\n", driveToProcess.c_str());
+        consoleOutput(stdout, "%s - Searching for full path files\n", driveToProcess.c_str());
 
         const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
         TSKFileNameInfo filenameInfo;
@@ -1045,7 +1282,7 @@ main(int argc, char **argv1)
             }
         }
 
-        fprintf(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
+        consoleOutput(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
 
         string usersFileName = directoryPath + "/users.txt";
 
@@ -1057,20 +1294,19 @@ main(int argc, char **argv1)
 
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
-            fprintf(stderr, "openImageHandle failed\n");
-            pressAnyKeyToExit(1);
+            consoleOutput(stderr, "Failed to open image\n");
+            handleExit(1);
         }
 
-        fprintf(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
+        consoleOutput(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
 
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
             // Don't exit, just let it continue
-            fprintf(stderr, "findFilesInImg returns TSK_ERR\n");
         }
     }
 
-    // close alert file before tsk_img_writer_finish, which may take a long time. 
+    // close alert file before tsk_img_writer_finish, which may take a long time.
     closeAlert();
 
     // Delayed finialize image write
@@ -1079,10 +1315,10 @@ main(int argc, char **argv1)
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (config->getFinalizeImagerWriter()) {
                 printDebug("finalize image writer for %s", it->second.c_str());
-                fprintf(stdout, "Copying remainder of %s\n", it->second.c_str());
+                consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
-                    fprintf(stderr, "tsk_img_writer_finish returns TSK_ERR\n");
+                    consoleOutput(stderr, "Error finishing VHD for %s\n", it->second.c_str());
                 }
             }
         }
@@ -1093,5 +1329,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    pressAnyKeyToExit(0);
+    handleExit(0);
 }

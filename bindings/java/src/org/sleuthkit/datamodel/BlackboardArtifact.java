@@ -297,7 +297,7 @@ public class BlackboardArtifact implements Content {
 		getSleuthkitCase().setReviewStatus(this, newStatus);
 		reviewStatus = newStatus;
 	}
-	
+
 	/**
 	 * Adds an attribute to this artifact.
 	 *
@@ -587,7 +587,7 @@ public class BlackboardArtifact implements Content {
 	@Override
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException {
 		// Currently we don't have any artifacts derived from an artifact.
-		return new ArrayList<BlackboardAttribute>();
+		return new ArrayList<>();
 	}
 
 	/**
@@ -643,8 +643,8 @@ public class BlackboardArtifact implements Content {
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(ContentVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
@@ -1140,40 +1140,40 @@ public class BlackboardArtifact implements Content {
 		 */
 		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text")),
-		/**
+		/*
 		 * A classifier detected an object in a media file.
 		 */
-		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED",  //NON-NLS
+		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskObjectDetected.text")),
 		/**
 		 * A wireless network.
 		 */
-		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK",  //NON-NLS
+		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWIFINetwork.text")),
 		/**
 		 * Information related to a device.
 		 */
-		TSK_DEVICE_INFO(43, "TSK_DEVICE_INFO",  //NON-NLS
+		TSK_DEVICE_INFO(43, "TSK_DEVICE_INFO", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskDeviceInfo.text")),
 		/**
 		 * A SIM card.
 		 */
-		TSK_SIM_ATTACHED(44, "TSK_SIM_ATTACHED",  //NON-NLS
+		TSK_SIM_ATTACHED(44, "TSK_SIM_ATTACHED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskSimAttached.text")),
 		/**
 		 * A bluetooth adapter.
 		 */
-		TSK_BLUETOOTH_ADAPTER(45, "TSK_BLUETOOTH_ADAPTER",  //NON-NLS
+		TSK_BLUETOOTH_ADAPTER(45, "TSK_BLUETOOTH_ADAPTER", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskBluetoothAdapter.text")),
 		/**
 		 * A wireless network adapter.
 		 */
-		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER",  //NON-NLS
+		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text")),
 		/**
 		 * Indicates a verification failure
 		 */
-		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED",  //NON-NLS
+		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskVerificationFailed.text")),
 		/**
 		 * Categorization information for a data source.
@@ -1183,19 +1183,18 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Indicates auto fill data from a Web form
 		 */
-		TSK_WEB_FORM_AUTOFILL(49, "TSK_WEB_FORM_AUTOFILL",  //NON-NLS
+		TSK_WEB_FORM_AUTOFILL(49, "TSK_WEB_FORM_AUTOFILL", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebFormAutofill.text")),
 		/**
 		 * Indicates an person's address filled in a web form
 		 */
-		TSK_WEB_FORM_ADDRESS (50, "TSK_WEB_FORM_ADDRESSES ",  //NON-NLS
+		TSK_WEB_FORM_ADDRESS(50, "TSK_WEB_FORM_ADDRESSES ", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
 		/**
 		 * Indicates source of a file/object
 		 */
-		TSK_DOWNLOAD_SOURCE (51, "TSK_DOWNLOAD_SOURCE",  //NON-NLS
+		TSK_DOWNLOAD_SOURCE(51, "TSK_DOWNLOAD_SOURCE", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskDownloadSource.text")),
-		
 		/**
 		 * Indicates web cache data
 		 */
@@ -1206,8 +1205,14 @@ public class BlackboardArtifact implements Content {
 		 * Indicates clipboard content
 		 */
 		TSK_CLIPBOARD_CONTENT (53, "TSK_CLIPBOARD_CONTENT",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskClipboardContent.text"));
-		
+				bundle.getString("BlackboardArtifact.tskClipboardContent.text")),
+
+		/**
+		 * A generic (timeline) event.
+		 */
+		TSK_TL_EVENT(53, "TSK_TL_EVENT", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
+
 		private final String label;
 		private final int typeId;
 		private final String displayName;
@@ -1262,9 +1267,9 @@ public class BlackboardArtifact implements Content {
 
 		/**
 		 * Gets the artifact type enum value that corresponds to a given type
-		 * id.
-		 * This method should only be used when the id is known to be one of the
-		 * built-in types - otherwise use getArtifactType() in SleuthkitCase.
+		 * id. This method should only be used when the id is known to be one of
+		 * the built-in types - otherwise use getArtifactType() in
+		 * SleuthkitCase.
 		 *
 		 * @param id The type id.
 		 *
@@ -1496,7 +1501,7 @@ public class BlackboardArtifact implements Content {
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		List<Content> children = new ArrayList<Content>();
+		List<Content> children = new ArrayList<>();
 		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
 		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
 
