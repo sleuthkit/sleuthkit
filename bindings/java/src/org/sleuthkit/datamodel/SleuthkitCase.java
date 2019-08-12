@@ -7802,7 +7802,7 @@ public class SleuthkitCase {
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 				connection.rollbackTransaction();
-			    throw new TskCoreException("Error deleting data source.", ex);	
+			    throw new TskCoreException(String.format("Error deleting data source with obj_id = %d", dataSourceObjectId), ex);	
 		} finally {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
