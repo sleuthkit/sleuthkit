@@ -7789,10 +7789,12 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			connection.beginTransaction();
 			// The following delete(s) uses a foreign key delete with cascade in the DB so that it will delete
-			// all associated rows from tsk_object and its children.  For large data sources this may take some time.
+			// all associated rows from tsk_object and its children.  This is based on the datasource id.
+			// For large data sources this may take some time.
 			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
 			// The following delete uses a foreign key delete with cascade in the DB so that it will delete all
-			// associated rows from accounts table and its children.
+			// associated rows from accounts table and its children.  This is based on account id's that no longer
+			// reside in the account relationship table
 			String accountSql = "DELETE FROM accounts where account_id in (SELECT account_id FROM accounts " +
                                 "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) " +
                                 "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
