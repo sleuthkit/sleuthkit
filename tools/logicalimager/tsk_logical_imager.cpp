@@ -44,8 +44,6 @@ static TSK_TCHAR *progname;
 FILE *consoleFile = NULL;
 bool promptBeforeExit = true;
 bool createVHD = false;
-int fileCounter = 1;
-std::string extractedFilename;
 std::string directoryPath;
 std::string subDirForFiles;
 
@@ -871,7 +869,7 @@ static void openAlert(const std::string &alertFilename) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         handleExit(1);
     }
-    fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tExtracted filename\tPath\n");
+    fprintf(m_alertFile, "Drive\tExtraction Status\tRule Set Name\tRule Name\tDescription\tFilename\tPath\n");
 }
 
 /*
@@ -883,7 +881,6 @@ static void openAlert(const std::string &alertFilename) {
 *   - ruleName
 *   - description
 *   - name
-*   - extracted filename
 *   - path
 *
 * @param driveName Drive name
@@ -897,15 +894,14 @@ static void alert(const std::string driveName, TSK_RETVAL_ENUM extractStatus, co
         // Don't alert . and ..
         return;
     }
-    // alert file format is "drive<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>extracted filename<tab>path"
-    fprintf(m_alertFile, "%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
+    // alert file format is "drive<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
+    fprintf(m_alertFile, "%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
         driveName.c_str(),
         extractStatus,
         ruleMatchResult->getRuleSetName().c_str(),
         ruleMatchResult->getName().c_str(),
         ruleMatchResult->getDescription().c_str(),
         (fs_file->name ? fs_file->name->name : "name is null"),
-        extractedFilename.c_str(),
         path);
     fflush(m_alertFile);
 
@@ -930,13 +926,23 @@ static void closeAlert() {
     }
 }
 
+void createDirectoryRecursively(std::wstring path)
+{
+    size_t pos = 0;
+    do
+    {
+        pos = path.find_first_of(L"\\/", pos + 1);
+        CreateDirectory(path.substr(0, pos).c_str(), NULL);
+    } while (pos != std::string::npos);
+}
+
 /**
 * Extract a file. tsk_img_writer_create must have been called prior to this method.
 *
 * @param fs_file File details
 * @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
 */
-static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
+static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     TSK_OFF_T offset = 0;
     size_t bufferLen = 16 * 1024;
     char buffer[16 * 1024];
@@ -945,9 +951,9 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
     TSK_RETVAL_ENUM result = TSK_OK;
 
     if (!createVHD) {
-        extractedFilename = "f-" + std::to_string(fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
-        filename = directoryPath + "/" + subDirForFiles + "/" + extractedFilename;
-        file = fopen(filename.c_str(), "wb");
+        createDirectoryRecursively(TskHelper::toWide(directoryPath + "/" + subDirForFiles + "/" + path));
+        filename = directoryPath + "/" + subDirForFiles + "/" + path + "/" + fs_file->name->name;
+        file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
     }
 
     while (true) {
@@ -1003,12 +1009,11 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file) {
 static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM extractStatus = TSK_ERR;
     if (matchResult->isShouldSave()) {
-        extractStatus = extractFile(fs_file);
+        extractStatus = extractFile(fs_file, path);
     }
     if (matchResult->isShouldAlert()) {
         alert(driveToProcess, extractStatus, matchResult, fs_file, path);
     }
-    fileCounter++;
     return TSK_OK;
 }
 
