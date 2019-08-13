@@ -1,20 +1,11 @@
 language: cpp
 matrix:
   include:
-  - compiler: clang
-    os: linux
-    dist: bionic
-    sudo: required
-    group: edge
   - compiler: gcc
     os: linux
     dist: bionic
     sudo: required
     group: edge
-  - compiler: clang
-    os: osx
-  - compiler: gcc
-    os: osx
 
 python:
   - "2.7"
