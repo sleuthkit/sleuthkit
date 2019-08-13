@@ -932,7 +932,7 @@ void createDirectoryRecursively(std::wstring path)
     do
     {
         pos = path.find_first_of(L"\\/", pos + 1);
-        CreateDirectory(path.substr(0, pos).c_str(), NULL);
+        CreateDirectoryW(path.substr(0, pos).c_str(), NULL);
     } while (pos != std::string::npos);
 }
 
