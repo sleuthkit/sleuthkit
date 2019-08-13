@@ -42,7 +42,7 @@ TskFindFiles::TskFindFiles(const LogicalImagerConfiguration *config, const std::
 }
 
 TskFindFiles::~TskFindFiles() {
-    std::string title = "tsk_logical_imager.exe - Processing " + m_driveToProcess + std::string(" 100% complete");
+    std::string title = "Analyzing drive " + m_driveToProcess + " - Searching for files by attribute, 100% complete";
     SetConsoleTitleA(title.c_str());
 }
 
@@ -77,6 +77,7 @@ TskFindFiles::filterFs(TSK_FS_INFO * fs_info)
 
     setFileFilterFlags(filterFlags);
 
+    std::string title = "Analyzing drive " + m_driveToProcess + " - Searching for files by attribute";
     if (TSK_FS_TYPE_ISNTFS(fs_info->ftype)) {
         NTFS_INFO *ntfs_info = (NTFS_INFO *)fs_info;
         if (ntfs_info->alloc_file_count == 0) {
@@ -84,8 +85,8 @@ TskFindFiles::filterFs(TSK_FS_INFO * fs_info)
             tsk_fs_dir_open_meta(fs_info, fs_info->root_inum);
             m_totalNumberOfFiles = ((NTFS_INFO*)fs_info)->alloc_file_count;
         }
+        title += ", 0% complete";
     }
-    std::string title = "tsk_logical_imager.exe - Processing " + m_driveToProcess + std::string(" 0% complete");
     SetConsoleTitleA(title.c_str());
 
     return TSK_FILTER_CONT;
@@ -100,24 +101,25 @@ TskFindFiles::filterFs(TSK_FS_INFO * fs_info)
 */
 TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path) {
 
-    /* Update progress
+    /* Update progress - only apply to NTFS.
      * We can calculate progress for NTFS file systems because we have
      * modified TSK to keep track of the number of allocated files.
      * For NTFS, we increment the file counter for allocated files. 
      */
     if (fs_file->fs_info && fs_file->fs_info->ftype == TSK_FS_TYPE_NTFS) {
-        if (fs_file->meta && fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) {
+        if (fs_file->meta && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC && fs_file->meta->type == TSK_FS_META_TYPE_REG)) {
             m_fileCounter++;
         }
-    }
-    if (0 == m_fileCounter % 100) {
-        if (m_totalNumberOfFiles > 0 && m_fileCounter <= m_totalNumberOfFiles) {
-            m_percentComplete = (unsigned short)(((float)m_fileCounter / (float)m_totalNumberOfFiles) * 100);
-            static unsigned short lastReportedPctComplete = 0;
-            if ((m_percentComplete != lastReportedPctComplete)) {
-                std::string title = "tsk_logical_imager.exe - Processing " + m_driveToProcess + " " + TskHelper::intToStr((long)m_percentComplete) + std::string("% complete");
-                SetConsoleTitleA(title.c_str());
-                lastReportedPctComplete = m_percentComplete;
+        if (0 == m_fileCounter % 5000) {
+            if (m_totalNumberOfFiles > 0 && m_fileCounter <= m_totalNumberOfFiles) {
+                m_percentComplete = (unsigned short)(((float)m_fileCounter / (float)m_totalNumberOfFiles) * 100);
+                static unsigned short lastReportedPctComplete = 0;
+                if ((m_percentComplete != lastReportedPctComplete)) {
+                    std::string title = "Analyzing drive " + m_driveToProcess + " - Searching for files by attribute, "
+                        + TskHelper::intToStr((long)m_percentComplete) + std::string("% complete");
+                    SetConsoleTitleA(title.c_str());
+                    lastReportedPctComplete = m_percentComplete;
+                }
             }
         }
     }
