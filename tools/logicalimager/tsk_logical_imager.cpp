@@ -926,7 +926,7 @@ static void closeAlert() {
     }
 }
 
-void createDirectoryRecursively(std::wstring path)
+void createDirectoryRecursively(const std::wstring &path)
 {
     size_t pos = 0;
     do
