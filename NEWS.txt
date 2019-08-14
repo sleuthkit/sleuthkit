@@ -1,6 +1,17 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.7 --------------
+C/C++ Code:
+- First release of new logical imager tool
+- VHD image writer fixes for out of space scenarios
+
+Java:
+- Expand Communications Manager API
+- Performance improvement for SleuthkitCase.addLocalFile()
+
+
+
 ---------------- VERSION 4.6.6 --------------
 
 C/C++ Code:

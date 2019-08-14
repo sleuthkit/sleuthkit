@@ -23,7 +23,7 @@
 
 class TskFindFiles : public TskAuto {
 public:
-    TskFindFiles(const LogicalImagerConfiguration *config);
+    TskFindFiles(const LogicalImagerConfiguration *config, const std::string &driveToProcess);
     ~TskFindFiles();
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);
@@ -31,4 +31,8 @@ public:
 
 private:
     const LogicalImagerConfiguration *m_logicialImagerConfiguration;
+    size_t m_fileCounter;
+    int m_totalNumberOfFiles;
+    unsigned short m_percentComplete;
+    const std::string m_driveToProcess;
 };

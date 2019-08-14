@@ -101,6 +101,13 @@ std::string TskHelper::intToStr(long l)
     return ss.str();
 }
 
+std::string TskHelper::intToStr(size_t l)
+{
+    std::stringstream ss;
+    ss << l;
+    return ss.str();
+}
+
 std::string TskHelper::stripExt(const char *a_name) {
     std::string nameNoExt;
     std::string nameStr = std::string(a_name);

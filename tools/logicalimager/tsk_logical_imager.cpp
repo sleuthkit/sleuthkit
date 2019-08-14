@@ -39,25 +39,21 @@
 std::wstring GetLastErrorStdStrW();
 std::string GetErrorStdStr(DWORD err);
 std::wstring GetErrorStdStrW(DWORD err);
+TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image);
 
 static TSK_TCHAR *progname;
 FILE *consoleFile = NULL;
 bool promptBeforeExit = true;
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
-static void pressAnyKeyToExit(int code) {
-    std::cout << std::endl << "Press any key to exit";
-    (void) _getch();
-    exit(code);
-}
-
-static void handleExit(int code, bool promptBeforeExit) {
+static void handleExit(int code) {
     if (consoleFile) {
         fclose(consoleFile);
         consoleFile = NULL;
     }
     if (promptBeforeExit) {
-        pressAnyKeyToExit(code);
+        std::cout << std::endl << "Press any key to exit";
+        (void)_getch();
     }
     exit(code);
 }
@@ -66,7 +62,7 @@ void openConsoleOutput(const std::string &consoleFileName) {
     consoleFile = fopen(consoleFileName.c_str(), "w");
     if (!consoleFile) {
         fprintf(stderr, "ERROR: Failed to open console file %s\n", consoleFileName.c_str());
-        handleExit(1, promptBeforeExit);
+        handleExit(1);
     }
 }
 
@@ -708,21 +704,21 @@ static bool hasBitLockerOrLDM(const std::string &systemDriveLetter) {
 
     checkLDMStatus = checkDriveForLDM(systemDriveLetter);
     if (1 == checkLDMStatus) {
-        consoleOutput(stderr, "System drive %s is an LDM disk\n", systemDriveLetter.c_str());
+        printDebug("System drive %s is an LDM disk\n", systemDriveLetter.c_str());
         return TRUE;
     }
 
     // If bitlocker protection is enabled, then analyze it
     checkBitlockerStatus = checkDriveForBitlocker(systemDriveLetter);
     if (1 == checkBitlockerStatus) {
-        consoleOutput(stderr, "System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
+        printDebug("System drive %s is BitLocker encrypted\n", systemDriveLetter.c_str());
         return TRUE;
     }
 
     if (0 == checkLDMStatus && 0 == checkBitlockerStatus) {
         return false;        // neither LDM nor BitLocker detected
     }
-    else { // an error happened  in determining LDM or ProtectionStatus
+    else { // an error happened in determining LDM or ProtectionStatus
         if (-1 == checkLDMStatus) {
             printDebug("Error in checking LDM disk\n");
         }
@@ -826,34 +822,9 @@ static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
 * @return true if found, false otherwise
 */
 static bool hasTskLogicalImager(const TSK_TCHAR *image) {
-    TSK_IMG_INFO *img;
-    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    unsigned int ssize = 0;
     bool result = false;
 
-    if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
-        tsk_error_print(stderr);
-        return result;
-    }
-
-    TskHelper::getInstance().reset();
-    TskHelper::getInstance().setImgInfo(img);
-
-    TSK_VS_INFO *vs_info;
-    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-        openFs(img, 0);
-    }
-    else {
-        // process the volume system
-        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
-            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
-                continue;
-            }
-            openFs(img, vs_part->start * vs_part->vs->block_size);
-        }
-        tsk_vs_close(vs_info);
-    }
+    TSK_IMG_INFO *img = addFSFromImage(image);
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
@@ -876,7 +847,6 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
         }
     }
     img->close(img);
-
     TskHelper::getInstance().reset();
     return result;
 }
@@ -895,7 +865,7 @@ static void openAlert(const std::string &alertFilename) {
     m_alertFile = fopen(alertFilename.c_str(), "w");
     if (!m_alertFile) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
-        handleExit(1, promptBeforeExit);
+        handleExit(1);
     }
     fprintf(m_alertFile, "VHD file\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\n");
 }
@@ -1070,7 +1040,86 @@ static void usage() {
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-    pressAnyKeyToExit(1);
+    handleExit(1);
+}
+
+/*
+ * Add all FS found in the given image to TskHelp::getInstance()
+ * Returns TSK_IMG_INFO *, caller should call img->close(img) when done.
+ * The FS can be obtained by calling TskHelper::getInstance().getFSInfoList()
+ * Caller must call TskHelper::getInstance().reset() when done with the FS
+ */
+TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image) {
+    TSK_IMG_INFO *img;
+    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+    unsigned int ssize = 0;
+
+    if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
+        consoleOutput(stderr, tsk_error_get());
+        handleExit(1);
+    }
+
+    TskHelper::getInstance().reset();
+    TskHelper::getInstance().setImgInfo(img);
+
+    TSK_VS_INFO *vs_info;
+    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+        openFs(img, 0);
+    }
+    else {
+        // process the volume system
+        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                continue;
+            }
+            openFs(img, vs_part->start * vs_part->vs->block_size);
+        }
+        tsk_vs_close(vs_info);
+    }
+    return img;
+}
+
+bool driveIsFAT(char *drive) {
+    std::wstring imageStr = std::wstring(_TSK_T("\\\\.\\")) + TskHelper::toWide(std::string(drive));
+    const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
+    bool result = false;
+
+    TSK_IMG_INFO *img = addFSFromImage(image);
+
+    const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
+    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+        TSK_FS_INFO *fsInfo = *fsListIter;
+        TSK_FS_TYPE_ENUM fileSystemType = fsInfo->ftype;
+        if (fileSystemType == TSK_FS_TYPE_FAT12 ||
+            fileSystemType == TSK_FS_TYPE_FAT16 ||
+            fileSystemType == TSK_FS_TYPE_FAT32 ||
+            fileSystemType == TSK_FS_TYPE_FAT_DETECT) {
+            result = true;
+            break;
+        }
+    }
+    img->close(img);
+    TskHelper::getInstance().reset();
+    return result;
+}
+
+/*
+ * Result true if Current Working Directory file system is FAT.
+ */
+bool cwdIsFAT() {
+    char *buffer;
+
+    if ((buffer = _getcwd(NULL, 0)) == NULL) {
+        consoleOutput(stderr, "Error: _getcwd failed");
+        handleExit(1);
+    }
+
+    char drive[3];
+    strncpy(drive, buffer, 2);
+    drive[2] = 0;
+    free(buffer);
+    return driveIsFAT(drive);
 }
 
 int
@@ -1098,8 +1147,8 @@ main(int argc, char **argv1)
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
-        pressAnyKeyToExit(1);
+        consoleOutput(stderr, "Error getting wide arguments\n");
+        handleExit(1);
     }
 #else
     argv = (TSK_TCHAR **)argv1;
@@ -1139,9 +1188,15 @@ main(int argc, char **argv1)
         usage();
     }
 
+    // If CWD is FAT, exit with error because it cannot create files greater 4 GB
+    if (cwdIsFAT()) {
+        consoleOutput(stderr, "Error: Writing to FAT device is not supported.");
+        handleExit(1);
+    }
+
     if (configFilename == NULL) {
         configFilename = _TSK_T("logical-imager-config.json");
-        fprintf(stdout, "Using default configuration file logical-imager-config.json\n");
+        consoleOutput(stdout, "Using default configuration file logical-imager-config.json\n");
     }
     printDebug("Using config file %s", TskHelper::toNarrow(configFilename).c_str());
 
@@ -1158,8 +1213,8 @@ main(int argc, char **argv1)
             }
         }
         else {
-            fprintf(stderr, "Process is not running in elevated mode\n");
-            pressAnyKeyToExit(1);
+            consoleOutput(stderr, "Process is not running in elevated mode\n");
+            handleExit(1);
         }
     }
 
@@ -1169,14 +1224,14 @@ main(int argc, char **argv1)
     }
     catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
-        pressAnyKeyToExit(1);
+        handleExit(1);
     }
 
     // create a directory with hostname_timestamp
     std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
-        fprintf(stderr, "Failed to create directory %s\n", directoryPath.c_str());
-        handleExit(1, promptBeforeExit);
+        consoleOutput(stderr, "Failed to create directory %s\n", directoryPath.c_str());
+        handleExit(1);
     }
 
     std::string consoleFileName = directoryPath + "/console.txt";
@@ -1202,9 +1257,10 @@ main(int argc, char **argv1)
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
         consoleOutput(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + TskHelper::intToStr((long)i+1) + " of " + TskHelper::intToStr(imgPaths.size()) + " (" + driveToProcess + ")").c_str());
 
         if (isDriveLocked(driveToProcess) == 1) {
-            fprintf(stdout, "Skipping drive %s because it is bitlocked.\n", driveToProcess.c_str());
+            consoleOutput(stdout, "Skipping drive %s because it is bitlocked.\n", driveToProcess.c_str());
             continue;
         }
 
@@ -1223,14 +1279,14 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
-            handleExit(1, promptBeforeExit);
+            handleExit(1);
         }
 
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
                 tsk_error_print(stderr);
                 consoleOutput(stderr, "Failed to initialize VHD writer\n");
-                handleExit(1, promptBeforeExit);
+                handleExit(1);
             }
         }
         else {
@@ -1239,7 +1295,7 @@ main(int argc, char **argv1)
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
 
-        TskFindFiles findFiles(config);
+        TskFindFiles findFiles(config, driveToProcess);
 
         TskHelper::getInstance().reset();
         TskHelper::getInstance().setImgInfo(img);
@@ -1264,6 +1320,7 @@ main(int argc, char **argv1)
         }
 
         consoleOutput(stdout, "%s - Searching for full path files\n", driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for full path files").c_str());
 
         const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
         TSKFileNameInfo filenameInfo;
@@ -1291,6 +1348,7 @@ main(int argc, char **argv1)
         }
 
         consoleOutput(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for registry").c_str());
 
         string usersFileName = directoryPath + "/users.txt";
 
@@ -1303,10 +1361,11 @@ main(int argc, char **argv1)
         if (findFiles.openImageHandle(img)) {
             tsk_error_print(stderr);
             consoleOutput(stderr, "Failed to open image\n");
-            handleExit(1, promptBeforeExit);
+            handleExit(1);
         }
 
         consoleOutput(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for files by attribute").c_str());
 
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
@@ -1324,6 +1383,7 @@ main(int argc, char **argv1)
             if (config->getFinalizeImagerWriter()) {
                 printDebug("finalize image writer for %s", it->second.c_str());
                 consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
+                SetConsoleTitleA(std::string("Copying remainder of " + it->second).c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
                     consoleOutput(stderr, "Error finishing VHD for %s\n", it->second.c_str());
@@ -1337,5 +1397,5 @@ main(int argc, char **argv1)
         delete config;
     }
     printDebug("Exiting");
-    handleExit(0, promptBeforeExit);
+    handleExit(0);
 }
