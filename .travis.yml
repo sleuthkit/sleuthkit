@@ -3,7 +3,7 @@ matrix:
   include:
   - compiler: gcc
     os: linux
-    dist: bionic
+    dist: xenial
     sudo: required
     group: edge
 
