@@ -11,10 +11,6 @@ matrix:
     dist: bionic
     sudo: required
     group: edge
-  - compiler: clang
-    os: osx
-  - compiler: gcc
-    os: osx
 
 python:
   - "2.7"
