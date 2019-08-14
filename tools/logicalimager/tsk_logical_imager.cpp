@@ -1236,6 +1236,7 @@ main(int argc, char **argv1)
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
         consoleOutput(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + TskHelper::intToStr((long)i+1) + " of " + TskHelper::intToStr(imgPaths.size()) + " (" + driveToProcess + ")").c_str());
 
         if (isDriveLocked(driveToProcess) == 1) {
             consoleOutput(stdout, "Skipping drive %s because it is bitlocked.\n", driveToProcess.c_str());
@@ -1283,7 +1284,7 @@ main(int argc, char **argv1)
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
 
-        TskFindFiles findFiles(config);
+        TskFindFiles findFiles(config, driveToProcess);
 
         TskHelper::getInstance().reset();
         TskHelper::getInstance().setImgInfo(img);
@@ -1308,6 +1309,7 @@ main(int argc, char **argv1)
         }
 
         consoleOutput(stdout, "%s - Searching for full path files\n", driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for full path files").c_str());
 
         const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
         TSKFileNameInfo filenameInfo;
@@ -1333,6 +1335,7 @@ main(int argc, char **argv1)
         }
 
         consoleOutput(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for registry").c_str());
 
         string usersFileName = directoryPath + "/users.txt";
 
@@ -1349,6 +1352,7 @@ main(int argc, char **argv1)
         }
 
         consoleOutput(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for files by attribute").c_str());
 
         if (findFiles.findFilesInImg()) {
             // we already logged the errors in findFiles.handleError()
@@ -1366,6 +1370,7 @@ main(int argc, char **argv1)
             if (createVHD && config->getFinalizeImagerWriter()) {
                 printDebug("finalize image writer for %s", it->second.c_str());
                 consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
+                SetConsoleTitleA(std::string("Copying remainder of " + it->second).c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
                     tsk_error_print(stderr);
                     consoleOutput(stderr, "Error finishing VHD for %s\n", it->second.c_str());

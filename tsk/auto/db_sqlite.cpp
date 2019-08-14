@@ -1304,14 +1304,6 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 			sqlite3_free(zSQL);
 			return 1;
 		}
-
-        if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n"))
-        {
-            free(name);
-            free(escaped_path);
-            sqlite3_free(zSQL);
-            return 1;
-        }
     }
 
     sqlite3_free(zSQL);
