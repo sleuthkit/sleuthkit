@@ -30,5 +30,5 @@ elif test ${TRAVIS_OS_NAME} = "osx"; then
 fi
 installLib libvhdi 20181227
 installLib libvmdk 20181227
-./bootstrap && ./configure --prefix=/usr && make > /dev/null
+./bootstrap && ./configure --prefix=/usr && make
 cd bindings/java/ && ant -q dist-PostgreSQL
