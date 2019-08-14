@@ -16,7 +16,7 @@ installLib() {
 if test ${TRAVIS_OS_NAME} = "linux"; then
 	sudo apt-get -qq update
 	sudo apt-get -y install libafflib-dev libewf-dev libpq-dev autopoint libsqlite3-dev ant libcppunit-dev wget
-        sudo apt-get remove default-jdk
+        sudo apt-get -y remove openjdk-11-jdk
 	sudo apt-get -y install openjdk-8-jdk openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2
 	sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 	sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
