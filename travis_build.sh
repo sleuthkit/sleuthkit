@@ -17,10 +17,8 @@ if test ${TRAVIS_OS_NAME} = "linux"; then
 	sudo apt-get -qq update
 	sudo apt-get -y install libafflib-dev libewf-dev libpq-dev autopoint libsqlite3-dev ant libcppunit-dev wget
 	sudo apt-get -y install openjdk-8-jdk openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2
-	sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java 9999
-	sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac 9999
-	sudo apt-get -yq install java-common
-	sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
+	sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+	sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
 	java -version
 	javac -version
 elif test ${TRAVIS_OS_NAME} = "osx"; then
