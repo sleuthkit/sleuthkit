@@ -61,7 +61,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
     xfs_agino_t dino_aginum = 0;
     ssize_t len = 0;
     uint32_t cur_key = 0;
-    bool found_key = false;
+    int found_key = 0;
     ssize_t cnt;
     uint16_t bb_depth = 0;
 
@@ -169,7 +169,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
 
         // iterate over the keys (in linear time for now, todo binary search)
         // XFS should guarantee that keys/ptrs are sorted from lo to hi
-        found_key = false;
+        found_key = 0;
         for(cur_key = 0; cur_key < cur_inobt_block->bb_numrecs; cur_key++)
         {
             ikeys[cur_key].ir_startino = 
@@ -178,7 +178,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
             if(dino_aginum == ikeys[cur_key].ir_startino)
             {
                 // exact match found, increment the cur_key, terminate the loop
-                found_key = true;
+                found_key = 1;
                 cur_key++;
                 break;
             }
@@ -186,7 +186,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
             {
                 // inode can be in the range, but we aren't sure
                 // just take note, continue search
-                found_key = true;
+                found_key = 1;
             }
             else
             {
@@ -520,11 +520,11 @@ get_inode_file_type(XFSFS_INFO *xfs, TSK_INUM_T meta_addr, uint16_t *xfs_ftype)
     xfs_dinode_t *dino_buf = NULL;
     xfs_sb_t *sb = xfs->fs;
 
-    ssize_t dinodesize = sb->sb_inodesize > sizeof(xfs_dinode)
+    ssize_t dinodesize = sb->sb_inodesize > sizeof(xfs_dinode_t)
         ? sb->sb_inodesize
-        : sizeof(xfs_dinode);
+        : sizeof(xfs_dinode_t);
 
-    if ((dino_buf = static_cast<xfs_dinode_t *>(tsk_malloc(dinodesize))) == NULL)
+    if ((dino_buf = tsk_malloc(dinodesize)) == NULL)
         return TSK_ERR;
 
     if (xfs_dinode_load(xfs, meta_addr, dino_buf)) {
@@ -850,8 +850,8 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     size =
         xfsfs->inode_size >
-        sizeof(xfs_dinode) ? xfsfs->fs->sb_inodesize : sizeof(xfs_dinode);
-    if ((dino_buf = static_cast<xfs_dinode_t *>(tsk_malloc(size))) == NULL) {
+        sizeof(xfs_dinode_t) ? xfsfs->fs->sb_inodesize : sizeof(xfs_dinode_t);
+    if ((dino_buf = tsk_malloc(size)) == NULL) {
         return 1;
     }
 
@@ -940,8 +940,8 @@ xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      */
     size =
         xfsfs->fs->sb_inodesize >
-        sizeof(xfs_dinode) ? xfsfs->fs->sb_inodesize : sizeof(xfs_dinode);
-    if ((dino_buf = static_cast<xfs_dinode_t *>(tsk_malloc(size))) == NULL) {
+        sizeof(xfs_dinode_t) ? xfsfs->fs->sb_inodesize : sizeof(xfs_dinode_t);
+    if ((dino_buf = tsk_malloc(size)) == NULL) {
         tsk_fs_file_close(fs_file);
         tsk_fs_meta_close(fs_file->meta);
         return 1;
@@ -1032,7 +1032,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     TSK_OFF_T ag_start_off = 0;
     TSK_OFF_T offset = 0;
     uint32_t len = 0;
-    xfs_agf *agf = NULL;
+    xfs_agf_t *agf = NULL;
     xfs_agblock_t *agfl = NULL;
     unsigned int agfl_cur_len = 0;
     TSK_FS_META_FLAG_ENUM inode_flag = (TSK_FS_META_FLAG_ENUM) 0;
@@ -1040,7 +1040,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     xfs_btree_sblock_t *cur_btree_sblock = NULL;
     uint32_t cur_key = 0;
     ssize_t cnt;
-    bool found;
+    int found = 0;
 
     // Actually, determining the status of a block in a general case,
     // without the reverse-mapping B+tree is difficult, or at least nonoptimal
@@ -1078,8 +1078,8 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 
     // Check agfl
 
-    len = sizeof(xfs_agf);
-    if ((agf = static_cast<xfs_agf *>(tsk_malloc(len))) == NULL)
+    len = sizeof(xfs_agf_t);
+    if ((agf = tsk_malloc(len)) == NULL)
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
 
     if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs AG Free Space Block, ag_start_off = %" PRId64 ", sect_size = %" PRId64 ", len = %" PRId64 " \n", ag_start_off, sb->sb_sectsize, len); }
@@ -1117,7 +1117,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 
     // agfl is one sector and 4 blocks
     len = (sb->sb_blocksize * 4 + sb->sb_sectsize) * sizeof(xfs_agblock_t);
-    if ((agfl = static_cast<xfs_agblock_t *>(tsk_malloc(len))) == NULL)
+    if ((agfl = tsk_malloc(len)) == NULL)
     {
         free(agf);
         return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
@@ -1209,7 +1209,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     memset(recs, 0, sizeof(recs));
     memset(ptrs, 0, sizeof(ptrs));
 
-    if ((cur_btree_sblock = static_cast<xfs_btree_sblock_t *>(tsk_malloc(sizeof(xfs_btree_sblock_t)))) == NULL)
+    if ((cur_btree_sblock = tsk_malloc(sizeof(xfs_btree_sblock_t))) == NULL)
     {
         free(agf);
         free(agfl);
@@ -1290,7 +1290,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         }
 
         // iterate over the keys
-        found = false;
+        found = 0;
         for(cur_key = 0; !found && cur_key < cur_btree_sblock->bb_numrecs; cur_key++)
         {
             recs[cur_key].ar_startblock =
@@ -1302,7 +1302,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
                 && rel_blk - recs[cur_key].ar_startblock < recs[cur_key].ar_blockcount)
             {
                 // go one level down in b+tree
-                found = true;
+                found = 1;
                 cur_sblock_num = tsk_getu32(TSK_BIG_ENDIAN, &ptrs[cur_key]);
 
                 if (tsk_verbose) { tsk_fprintf(stderr, "go one level down in b+tree, cur_sblock_num = %" PRId64 " \n", cur_sblock_num); }
@@ -1353,7 +1353,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         len);
 
     // iterate over the keys
-    found = false;
+    found = 0;
     for(cur_key = 0; cur_key < cur_btree_sblock->bb_numrecs; cur_key++)
     {
         recs[cur_key].ar_startblock = 
@@ -1794,7 +1794,7 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
     {
         uint16_t attr_fork_size = XFS_DFORK_ASIZE(&a_dino_buf->di_core, a_xfsfs);
 
-        xfs_attr_sf_hdr *attr_hdr = (xfs_attr_sf_hdr*) (in_base + in_offset);
+        xfs_attr_sf_hdr_t *attr_hdr = (xfs_attr_sf_hdr_t*) (in_base + in_offset);
         uint16_t totsize = tsk_getu16(TSK_BIG_ENDIAN, &attr_hdr->totsize);
 
         if (attr_fork_size < ATTR_SF_HDR_SIZE ||
@@ -1804,13 +1804,11 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
             return 1;
         }
 
-        in_offset = roundup(in_offset + ATTR_SF_HDR_SIZE, sizeof(uint64_t));
-        xfs_attr_sf_entry *sf_entry = (xfs_attr_sf_entry*) (in_base + in_offset);
+        in_offset = in_offset + ATTR_SF_HDR_SIZE;
+        xfs_attr_sf_entry_t *sf_entry = (xfs_attr_sf_entry_t*) (in_base + in_offset);
         uint64_t limit = a_xfsfs->inode_size;
 
-        // we intentionally attempt to go beyond entry_num and not
-        // beyond inode end if more (hidden) attributes are allocated
-        for (uint8_t entry_num = 0; in_offset < limit; entry_num++)
+        for (uint8_t entry_num = 0; entry_num < attr_hdr->count && in_offset < limit; entry_num++)
         {
             uint64_t sf_entry_size = ATTR_SF_ENTRY_SIZE + sf_entry->namelen
                 + sf_entry->valuelen;
@@ -1851,8 +1849,8 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
 
             tsk_fprintf(a_hFile, ".%s=%s\n", &name, &val);
 
-            in_offset = roundup(in_offset + sf_entry_size, sizeof(uint64_t));
-            sf_entry = (xfs_attr_sf_entry*) (in_base + in_offset);
+            in_offset = in_offset + sf_entry_size;
+            sf_entry = (xfs_attr_sf_entry_t*) (in_base + in_offset);
         }
     }
     else
@@ -1900,8 +1898,8 @@ xfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
     size =
         xfsfs->fs->sb_inodesize >
-        sizeof(xfs_dinode) ? xfsfs->fs->sb_inodesize : sizeof(xfs_dinode);
-    if ((dino_buf = static_cast<xfs_dinode_t *>(tsk_malloc(size))) == NULL) {
+        sizeof(xfs_dinode_t) ? xfsfs->fs->sb_inodesize : sizeof(xfs_dinode_t);
+    if ((dino_buf = tsk_malloc(size)) == NULL) {
         return 1;
     }
 
@@ -2070,7 +2068,7 @@ xfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
  * Calculate number of records in a bmap btree inode root.
  */
 uint32_t
-xfs_bmdr_maxrecs(uint32_t blocklen, bool leaf)
+xfs_bmdr_maxrecs(uint32_t blocklen, int leaf)
 {
 	blocklen -= sizeof(xfs_bmdr_block_t);
 
@@ -2142,7 +2140,7 @@ parse_dir_block(
         TSK_OFF_T limit = 
             (TSK_OFF_T) (block_num + 1) * (TSK_OFF_T) a_fs->block_size;
 
-        xfs_dir2_data_hdr data_hdr;
+        xfs_dir2_data_hdr_t data_hdr;
         memcpy(&data_hdr, dirbuf + offset_in_block, sizeof(data_hdr));
 
         offset_in_block += XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ?
@@ -2159,8 +2157,8 @@ parse_dir_block(
 
             if (*xfs_dir2_data_unused_freetag == 0xffff)
             {
-                xfs_dir2_data_unused *data_unused = 
-                    static_cast<xfs_dir2_data_unused *>((void*) (dirbuf + offset_in_block));
+                xfs_dir2_data_unused_t *data_unused = 
+                    (void*) (dirbuf + offset_in_block);
 
                 if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
                 offset_in_block += tsk_getu16(TSK_BIG_ENDIAN, &data_unused->length);
@@ -2245,7 +2243,7 @@ visit_btree_node(
         xfs_off_t cur_node_offset,
         xfs_dinode_t *dino_buf,
         TSK_FS_NAME *fs_name,
-        bool is_root)
+        int is_root)
 {
     XFSFS_INFO *xfs = (XFSFS_INFO *) a_fs;
 
@@ -2259,15 +2257,15 @@ visit_btree_node(
 
     if(is_root)
     {
-        xfs_bmdr_block *cur_bmdr_block = NULL;
+        xfs_bmdr_block_t *cur_bmdr_block = NULL;
 
         if ((cur_bmdr_block =
-            static_cast<xfs_bmdr_block *>(tsk_malloc(sizeof(xfs_bmdr_block)))) == NULL)
+            tsk_malloc(sizeof(xfs_bmdr_block_t))) == NULL)
         {
             return TSK_ERR;
         }
 
-        len = header_offset = sizeof(xfs_bmdr_block);
+        len = header_offset = sizeof(xfs_bmdr_block_t);
         cnt = tsk_fs_read(&xfs->fs_info, cur_node_offset, (char *) cur_bmdr_block, len);
         if (cnt != len) {
             if (cnt >= 0) {
@@ -2289,7 +2287,7 @@ visit_btree_node(
         xfs_bmbt_block_t *cur_bmbt_block;
 
         if ((cur_bmbt_block =
-            static_cast<xfs_bmbt_block_t *>(tsk_malloc(sizeof(xfs_bmbt_block_t)))) == NULL)
+            tsk_malloc(sizeof(xfs_bmbt_block_t))) == NULL)
         {
             return TSK_ERR;
         }
@@ -2325,7 +2323,7 @@ visit_btree_node(
         xfs_bmbt_rec_t *node_recs = NULL;
         size_t len = (size_t) bb_numrecs * sizeof(xfs_bmbt_rec_t);
 
-        if ((node_recs = static_cast<xfs_bmbt_rec_t *>(tsk_malloc(len))) == NULL)
+        if ((node_recs = tsk_malloc(len)) == NULL)
         {
             return TSK_ERR;
         }
@@ -2347,7 +2345,7 @@ visit_btree_node(
 
         xfs_bmbt_ptr_t *node_ptrs = NULL;
         len = bb_numrecs * sizeof(xfs_bmbt_ptr_t);
-        if ((node_ptrs = static_cast<xfs_bmbt_ptr_t *>(tsk_malloc(len))) == NULL)
+        if ((node_ptrs = tsk_malloc(len)) == NULL)
         {
             free(node_recs);
             return TSK_ERR;
@@ -2356,7 +2354,7 @@ visit_btree_node(
         // read all the node pointers
         cnt = tsk_fs_read(&xfs->fs_info,
             cur_node_offset + (TSK_OFF_T) header_offset + 
-                (TSK_OFF_T) maxrecs * (TSK_OFF_T) sizeof(xfs_bmbt_key),
+                (TSK_OFF_T) maxrecs * (TSK_OFF_T) sizeof(xfs_bmbt_key_t),
             (char *) node_ptrs,
             len);
         if (cnt != len) {
@@ -2403,7 +2401,7 @@ visit_btree_node(
 
         size_t len = bb_numrecs * sizeof(xfs_bmbt_rec_t);
 
-        if ((node_recs = static_cast<xfs_bmbt_rec_t *>(tsk_malloc(len))) == NULL)
+        if ((node_recs = tsk_malloc(len)) == NULL)
         {
             return TSK_ERR;
         }
@@ -2528,7 +2526,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         if (tsk_verbose) { tsk_fprintf(stderr, "dir_sf = 0x %" PRIx64  " \n", dir_sf); }
 
-        bool i8 = dir_sf->hdr.i8count != 0;
+        int i8 = dir_sf->hdr.i8count != 0;
         uint8_t count = i8 ? dir_sf->hdr.i8count : dir_sf->hdr.count;
 
         /*
@@ -2541,8 +2539,8 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         *    } xfs_dir2_sf_hdr_t;
         */
 
-        xfs_dir2_sf_entry *sf_entry = 0;
-        sf_entry = (xfs_dir2_sf_entry*) ((char *) dir_sf + sizeof(uint8_t)
+        xfs_dir2_sf_entry_t *sf_entry = 0;
+        sf_entry = (xfs_dir2_sf_entry_t*) ((char *) dir_sf + sizeof(uint8_t)
             + sizeof(uint8_t) + (i8 ? sizeof(uint64_t) : sizeof(uint32_t)));
 
         if (tsk_verbose) { tsk_fprintf(stderr, "sf_entry = 0x %" PRIx64  " \n", sf_entry); }
@@ -2590,7 +2588,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             fs_name->flags = (TSK_FS_NAME_FLAG_ENUM) 0;
 
             /* Do we have a deleted entry? */
-            bool is_del = fs_dir->fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC;
+            int is_del = fs_dir->fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC;
             if ((fs_name->meta_addr == 0) || (is_del)) {
                 fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
             }
@@ -2606,7 +2604,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 return TSK_ERR;
             }
 
-            sf_entry = (xfs_dir2_sf_entry*) ((char *) sf_entry + sizeof(uint8_t)
+            sf_entry = (xfs_dir2_sf_entry_t*) ((char *) sf_entry + sizeof(uint8_t)
                 + sizeof(xfs_dir2_sf_off_t) + namelen + ftype_size
                 + (i8 ? sizeof(uint64_t) : sizeof(uint32_t)));
         }
@@ -2673,12 +2671,12 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             offset_in_block += XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ?
                 XFS_DIR3_HDR_LEN : XFS_DIR2_HDR_LEN;
 
-            xfs_dir2_block_tail block_tail;
-            memcpy(&block_tail, dirbuf + size - sizeof(xfs_dir2_block_tail),
-                sizeof(xfs_dir2_block_tail));
+            xfs_dir2_block_tail_t block_tail;
+            memcpy(&block_tail, dirbuf + size - sizeof(xfs_dir2_block_tail_t),
+                sizeof(xfs_dir2_block_tail_t));
             block_tail.count = tsk_getu32(TSK_BIG_ENDIAN, &block_tail.count);
             block_tail.stale = tsk_getu32(TSK_BIG_ENDIAN, &block_tail.stale);
-            uint32_t leaf_offset = size - sizeof(xfs_dir2_block_tail)
+            uint32_t leaf_offset = size - sizeof(xfs_dir2_block_tail_t)
                 - block_tail.count * sizeof(xfs_dir2_leaf_entry_t);
 
             if (leaf_offset >= len) {
@@ -2708,7 +2706,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
                 if (*xfs_dir2_data_unused_freetag == 0xffff)
                 {
-                    xfs_dir2_data_unused *data_unused = static_cast<xfs_dir2_data_unused *>((void *)(dirbuf + offset_in_block));
+                    xfs_dir2_data_unused_t *data_unused = (void *)(dirbuf + offset_in_block);
 
                     if (tsk_verbose) { tsk_fprintf(stderr, "offset_in_block = % is a free space, shifting forward by tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)) = %d \n", offset_in_block, tsk_getu32(TSK_BIG_ENDIAN, &data_unused->length)); }
                     offset_in_block +=
@@ -2810,9 +2808,9 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         xfs_dinode_t *dino_buf = NULL;
         ssize_t dinode_size =
             sb->sb_inodesize >
-            sizeof(xfs_dinode) ? sb->sb_inodesize : sizeof(xfs_dinode);
+            sizeof(xfs_dinode_t) ? sb->sb_inodesize : sizeof(xfs_dinode_t);
         if ((dino_buf =
-            static_cast<xfs_dinode_t *>(tsk_malloc(dinode_size))) == NULL) {
+            tsk_malloc(dinode_size)) == NULL) {
             return TSK_ERR;
         }
 
@@ -2862,7 +2860,7 @@ TSK_FS_INFO *
     XFSFS_INFO *xfsfs = NULL;
     TSK_FS_INFO *fs = NULL;
     xfs_sb_t *sb = NULL;
-    xfs_agi *agi = NULL;
+    xfs_agi_t *agi = NULL;
     unsigned int len = 0;
     ssize_t cnt;
 
@@ -2908,7 +2906,7 @@ TSK_FS_INFO *
     */
 
     len = sizeof(xfs_sb_t);
-    if ((xfsfs->fs = static_cast<xfs_sb_t *>(tsk_malloc(len))) == NULL) {
+    if ((xfsfs->fs = tsk_malloc(len)) == NULL) {
         tsk_fs_free(&xfsfs->fs_info);
         return NULL;
     }
@@ -2985,8 +2983,8 @@ TSK_FS_INFO *
         tsk_fprintf(stderr, "Version 5 and newer are not fully supported yet, be careful (current version: %d) \n", XFS_SB_VERSION_NUM(sb));
     }
 
-    len = sizeof(xfs_agi) * xfsfs->fs->sb_agcount;
-    if ((agi = static_cast<xfs_agi *>(tsk_malloc(len))) == NULL)
+    len = sizeof(xfs_agi_t) * xfsfs->fs->sb_agcount;
+    if ((agi = tsk_malloc(len)) == NULL)
         return NULL;
 
     for (xfs_agnumber_t current_ag = 0; current_ag < sb->sb_agcount; current_ag++)
@@ -2994,9 +2992,9 @@ TSK_FS_INFO *
         TSK_OFF_T agi_offset =  (TSK_OFF_T) current_ag 
             * (TSK_OFF_T) sb->sb_agblocks * (TSK_OFF_T) sb->sb_blocksize
             + (TSK_OFF_T) (sb->sb_sectsize * 2);
-        len = sizeof(xfs_agi);
+        len = sizeof(xfs_agi_t);
 
-        xfs_agi *cur_agi = &agi[current_ag];
+        xfs_agi_t *cur_agi = &agi[current_ag];
         if (tsk_verbose) { tsk_fprintf(stderr, "reading xfs AGI[%d/%d] from agi_offset = %" PRId64 " \n", current_ag, sb->sb_agcount, agi_offset); }
         cnt = tsk_fs_read(&xfsfs->fs_info, agi_offset, (char *) cur_agi, len);
         if (cnt != len) {
@@ -3032,7 +3030,7 @@ TSK_FS_INFO *
      * size if it is larger */
     xfsfs->inode_size = sb->sb_inodesize;
 
-    if (xfsfs->inode_size < sizeof(xfs_dinode_core)) {
+    if (xfsfs->inode_size < sizeof(xfs_dinode_core_t)) {
         if (tsk_verbose)
             tsk_fprintf(stderr, "SB inode size is small");
     }

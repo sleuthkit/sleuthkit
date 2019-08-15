@@ -326,23 +326,24 @@ typedef struct xfs_dir2_sf {
 #define XFS_ATTR_SECURE             (1 << XFS_ATTR_SECURE_BIT)
 #define XFS_ATTR_INCOMPLETE         (1 << XFS_ATTR_INCOMPLETE_BIT)
 
-#define ATTR_SF_HDR_SIZE 3
-struct xfs_attr_sf_hdr {
+#define ATTR_SF_HDR_SIZE 4
+typedef struct xfs_attr_sf_hdr {
     uint16_t totsize;
     uint8_t count;
-};
+    uint8_t	padding;
+} xfs_attr_sf_hdr_t;
 /* size of attribute entry without name+value */
 #define ATTR_SF_ENTRY_SIZE 3
-struct xfs_attr_sf_entry {
+typedef struct xfs_attr_sf_entry {
     uint8_t namelen;
     uint8_t valuelen;
     uint8_t flags;
     uint8_t nameval[1];
-};
+} xfs_attr_sf_entry_t;
 
 typedef struct xfs_attr_shortform {
-    xfs_attr_sf_hdr hdr;
-    xfs_attr_sf_entry list[1];
+    xfs_attr_sf_hdr_t hdr;
+    xfs_attr_sf_entry_t list[1];
 } xfs_attr_shortform_t;
 
 typedef struct xfs_dinode
@@ -717,30 +718,30 @@ typedef struct xfs_sb
     xfs_ino_t             sb_rrmapino;
 } xfs_sb_t;
 
-static inline bool xfs_sb_has_incompat_feature(xfs_sb *sb, uint32_t feature)
+static inline int xfs_sb_has_incompat_feature(xfs_sb_t *sb, uint32_t feature)
 {
     return (sb->sb_features_incompat & feature) != 0;
 }
-static inline bool xfs_sb_version_hasattr(xfs_sb *sb)
+static inline int xfs_sb_version_hasattr(xfs_sb_t *sb)
 {
     return (sb->sb_versionnum & XFS_SB_VERSION_ATTRBIT);
 }
-static inline int xfs_sb_version_hasnlink(xfs_sb *sb)
+static inline int xfs_sb_version_hasnlink(xfs_sb_t *sb)
 {
     return sb->sb_versionnum == XFS_SB_VERSION_3 ||
          (XFS_SB_VERSION_NUM(sb) >= XFS_SB_VERSION_4 &&
           (sb->sb_versionnum & XFS_SB_VERSION_NLINKBIT));
 }
-static inline bool xfs_sb_version_hasquota(xfs_sb *sb)
+static inline int xfs_sb_version_hasquota(xfs_sb_t *sb)
 {
     return (sb->sb_versionnum & XFS_SB_VERSION_QUOTABIT);
 }
-static inline bool xfs_sb_version_hasalign(xfs_sb *sb)
+static inline int xfs_sb_version_hasalign(xfs_sb_t *sb)
 {
     return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ||
         (sb->sb_versionnum & XFS_SB_VERSION_ALIGNBIT));
 }
-static inline bool xfs_sb_version_hasdalign(xfs_sb *sb)
+static inline int xfs_sb_version_hasdalign(xfs_sb_t *sb)
 {
     return (sb->sb_versionnum & XFS_SB_VERSION_DALIGNBIT);
 }
@@ -755,7 +756,7 @@ static inline int xfs_sb_version_hasdirv2(xfs_sb_t *sb)
            (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_4 &&
         (sb->sb_versionnum & XFS_SB_VERSION_DIRV2BIT));
 }
-static inline bool xfs_sb_version_haslogv2(xfs_sb *sb)
+static inline int xfs_sb_version_haslogv2(xfs_sb_t *sb)
 {
     return XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ||
            (sb->sb_versionnum & XFS_SB_VERSION_LOGV2BIT);
@@ -766,32 +767,32 @@ static inline int xfs_sb_version_hasextflgbit(xfs_sb_t *sb)
            (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_4 &&
         (sb->sb_versionnum & XFS_SB_VERSION_EXTFLGBIT));
 }
-static inline bool xfs_sb_version_hassector(xfs_sb *sb)
+static inline int xfs_sb_version_hassector(xfs_sb_t *sb)
 {
     return (sb->sb_versionnum & XFS_SB_VERSION_SECTORBIT);
 }
-static inline bool xfs_sb_version_hasasciici(xfs_sb *sb)
+static inline int xfs_sb_version_hasasciici(xfs_sb_t *sb)
 {
     return (sb->sb_versionnum & XFS_SB_VERSION_BORGBIT);
 }
-static inline bool xfs_sb_version_hasmorebits(xfs_sb *sb)
+static inline int xfs_sb_version_hasmorebits(xfs_sb_t *sb)
 {
     return XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 ||
            (sb->sb_versionnum & XFS_SB_VERSION_MOREBITSBIT);
 }
-static inline bool xfs_sb_version_hasattr2(xfs_sb *sb)
+static inline int xfs_sb_version_hasattr2(xfs_sb_t *sb)
 {
     return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
            (xfs_sb_version_hasmorebits(sb) &&
         (sb->sb_features2 & XFS_SB_VERSION2_ATTR2BIT));
 }
-static inline bool xfs_sb_version_haslazysbcount(xfs_sb *sb)
+static inline int xfs_sb_version_haslazysbcount(xfs_sb_t *sb)
 {
     return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
            (xfs_sb_version_hasmorebits(sb) &&
         (sb->sb_features2 & XFS_SB_VERSION2_LAZYSBCOUNTBIT));
 }
-static inline bool xfs_sb_version_hasprojid32bit(xfs_sb *sb)
+static inline int xfs_sb_version_hasprojid32bit(xfs_sb_t *sb)
 {
     return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5) ||
            (xfs_sb_version_hasmorebits(sb) &&
@@ -801,11 +802,11 @@ static inline bool xfs_sb_version_hasprojid32bit(xfs_sb *sb)
 /*
  * V5 superblock specific feature checks
  */
-static inline bool xfs_sb_version_hascrc(xfs_sb *sb)
+static inline int xfs_sb_version_hascrc(xfs_sb_t *sb)
 {
     return XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5;
 }
-static inline int xfs_sb_version_hasftype(xfs_sb *sb)
+static inline int xfs_sb_version_hasftype(xfs_sb_t *sb)
 {
     return (XFS_SB_VERSION_NUM(sb) == XFS_SB_VERSION_5 &&
         xfs_sb_has_incompat_feature(sb, XFS_SB_FEAT_INCOMPAT_FTYPE)) ||

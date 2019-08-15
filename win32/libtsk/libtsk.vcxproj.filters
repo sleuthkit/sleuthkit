@@ -327,7 +327,7 @@
     <ClCompile Include="..\..\tsk\img\img_open.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\xfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\xfs.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
