@@ -1293,6 +1293,7 @@ main(int argc, char **argv1)
         if (driveToProcess.back() == ':') {
             driveToProcess = driveToProcess.substr(0, driveToProcess.size() - 1);
         }
+        subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
         outputVHDFilename = (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
         std::string outputFileName = directoryPath + "/" + outputVHDFilename;
         std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
