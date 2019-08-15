@@ -1322,7 +1322,11 @@ public class BlackboardAttribute {
 		 */
 		TSK_TL_EVENT_TYPE(132, "TSK_TL_EVENT_TYPE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskTLEventType.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+		
+		TSK_DATETIME_DELETED(133, "TSK_DATETIME_DELETED", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskdatetimedeleted.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
 
 		private final int typeID;
 		private final String typeName;
