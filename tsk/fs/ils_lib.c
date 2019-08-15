@@ -153,7 +153,7 @@ ils_act(TSK_FS_FILE * fs_file, void *ptr)
         fs_file->meta->crtime += data->sec_skew;
     }
 
-    tsk_printf("|%lo|%d|%" PRIuOFF "\n",
+    tsk_printf("|%lo|%d|%" PRIdOFF "\n",
         (unsigned long) fs_file->meta->mode, fs_file->meta->nlink,
         fs_file->meta->size);
 
@@ -198,7 +198,7 @@ ils_mac_act(TSK_FS_FILE * fs_file, void *ptr)
         fs_file->meta->crtime -= data->sec_skew;
     }
 
-    tsk_printf("-/%s|%" PRIuUID "|%" PRIuGID "|%" PRIuOFF "|%" PRIu32
+    tsk_printf("-/%s|%" PRIuUID "|%" PRIuGID "|%" PRIdOFF "|%" PRIu32
         "|%" PRIu32 "|%" PRIu32 "|%" PRIu32 "\n",
         ls,
         fs_file->meta->uid, fs_file->meta->gid, fs_file->meta->size,

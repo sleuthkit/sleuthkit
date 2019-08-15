@@ -172,7 +172,7 @@ static uint8_t
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
                 tsk_error_set_errstr2("ext2fs_group_load: Group descriptor %"
-                    PRI_EXT2GRP " at %" PRIuOFF, grp_num, offs);
+                    PRI_EXT2GRP " at %" PRIdOFF, grp_num, offs);
                 return 1;
             }
 
@@ -214,7 +214,7 @@ static uint8_t
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
             tsk_error_set_errstr2("ext2fs_group_load: Group descriptor %"
-                PRI_EXT2GRP " at %" PRIuOFF, grp_num, offs);
+                PRI_EXT2GRP " at %" PRIdOFF, grp_num, offs);
             return 1;
         }
 
@@ -545,7 +545,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
         tsk_error_set_errstr2("ext2fs_dinode_load: Inode %" PRIuINUM
-            " from %" PRIuOFF, dino_inum, addr);
+            " from %" PRIdOFF, dino_inum, addr);
         return 1;
     }
 //DEBUG    printf("Inode Size: %d, %d, %d, %d\n", sizeof(ext2fs_inode), *ext2fs->fs->s_inode_size, ext2fs->inode_size, *ext2fs->fs->s_want_extra_isize);
@@ -553,7 +553,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "%" PRIuINUM " m/l/s=%o/%d/%" PRIuOFF
+            "%" PRIuINUM " m/l/s=%o/%d/%" PRIu32
             " u/g=%d/%d macd=%" PRIu32 "/%" PRIu32 "/%" PRIu32 "/%" PRIu32
             "\n", dino_inum, tsk_getu16(fs->endian, dino_buf->i_mode),
             tsk_getu16(fs->endian, dino_buf->i_nlink),
@@ -2715,7 +2715,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         tsk_fprintf(hFile, "\n");
     }
 
-    tsk_fprintf(hFile, "size: %" PRIuOFF "\n", fs_meta->size);
+    tsk_fprintf(hFile, "size: %" PRIdOFF "\n", fs_meta->size);
     tsk_fprintf(hFile, "num of links: %d\n", fs_meta->nlink);
 
     /* Ext attribute are stored in a block with a header and a list

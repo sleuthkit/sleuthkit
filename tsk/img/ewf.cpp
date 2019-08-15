@@ -55,13 +55,13 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "ewf_image_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE
+            "ewf_image_read: byte offset: %" PRIdOFF " len: %" PRIuSIZE
             "\n", offset, len);
 
     if (offset > img_info->size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("ewf_image_read - %" PRIuOFF, offset);
+        tsk_error_set_errstr("ewf_image_read - %" PRIdOFF, offset);
         return -1;
     }
 
@@ -78,7 +78,7 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
         else
             errmsg = error_string;
 
-        tsk_error_set_errstr("ewf_image_read - offset: %" PRIuOFF
+        tsk_error_set_errstr("ewf_image_read - offset: %" PRIdOFF
             " - len: %" PRIuSIZE " - %s", offset, len, errmsg);
         tsk_release_lock(&(ewf_info->read_lock));
         return -1;
@@ -88,7 +88,7 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     if (cnt < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr("ewf_image_read - offset: %" PRIuOFF
+        tsk_error_set_errstr("ewf_image_read - offset: %" PRIdOFF
             " - len: %" PRIuSIZE " - %s", offset, len, strerror(errno));
         tsk_release_lock(&(ewf_info->read_lock));
         return -1;
@@ -107,7 +107,7 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type:\t\tewf\n");
-    tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuOFF "\n",
+    tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIdOFF "\n",
         img_info->size);
     tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
 

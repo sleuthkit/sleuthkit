@@ -40,8 +40,8 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
     // verify teh offset passed is what we expected
     if (a_off != s_off) {
         fprintf(stderr,
-            "offset passed in callback (%" PRIuOFF
-            ") diff from internal off (%" PRIuOFF ")\n", a_off, s_off);
+            "offset passed in callback (%" PRIdOFF
+            ") diff from internal off (%" PRIdOFF ")\n", a_off, s_off);
     }
 
     /* The first set of tests is for the file_read API.  We seek
@@ -61,8 +61,8 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
         (TSK_FS_FILE_READ_FLAG_ENUM) 0);
     if (cnt != (ssize_t) tmp_len) {
         fprintf(stderr,
-            "Error reading random offset %" PRIuOFF " in file sized %"
-            PRIuOFF " (%zd vs %zd)\n", tmp_off, s_file2->meta->size, cnt,
+            "Error reading random offset %" PRIdOFF " in file sized %"
+            PRIdOFF " (%zd vs %zd)\n", tmp_off, s_file2->meta->size, cnt,
             tmp_len);
         tsk_error_print(stderr);
         return TSK_WALK_ERROR;
@@ -79,15 +79,15 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
         (TSK_FS_FILE_READ_FLAG_ENUM) 0);
     if (cnt != (ssize_t) tmp_len) {
         fprintf(stderr,
-            "Error reading file offset %" PRIuOFF " in file sized %"
-            PRIuOFF "\n", s_off, s_file2->meta->size);
+            "Error reading file offset %" PRIdOFF " in file sized %"
+            PRIdOFF "\n", s_off, s_file2->meta->size);
         tsk_error_print(stderr);
         return TSK_WALK_ERROR;
     }
 
     if (memcmp(s_buf, a_buf, a_size)) {
         fprintf(stderr,
-            "Buffers at offset %" PRIuOFF " in file %" PRIuINUM
+            "Buffers at offset %" PRIdOFF " in file %" PRIuINUM
             " are different\n", s_off, s_file2->meta->addr);
         return TSK_WALK_ERROR;
     }
@@ -102,7 +102,7 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
         cnt = tsk_fs_read_block(fs, tmp_off, s_buf, fs->block_size);
         if (cnt != (ssize_t) fs->block_size) {
             fprintf(stderr,
-                "Error reading random block %" PRIuOFF " in file system\n",
+                "Error reading random block %" PRIdOFF " in file system\n",
                 tmp_off);
             tsk_error_print(stderr);
             return TSK_WALK_ERROR;
@@ -110,7 +110,7 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
 
         cnt = tsk_fs_read_block(fs, a_addr, s_buf, fs->block_size);
         if (cnt != (ssize_t) fs->block_size) {
-            fprintf(stderr, "Error reading block %" PRIuOFF "\n", a_addr);
+            fprintf(stderr, "Error reading block %" PRIuDADDR "\n", a_addr);
             tsk_error_print(stderr);
             return TSK_WALK_ERROR;
         }
@@ -118,7 +118,7 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
         // compare
         if (memcmp(s_buf, a_buf, a_size)) {
             fprintf(stderr,
-                "Buffers at block addr %" PRIuOFF " in file %" PRIuINUM
+                "Buffers at block addr %" PRIuDADDR " in file %" PRIuINUM
                 " are different\n", a_addr, s_file2->meta->addr);
             return TSK_WALK_ERROR;
         }
@@ -127,7 +127,7 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
         cnt = tsk_fs_read_block(fs, tmp_off, s_buf, fs->block_size);
         if (cnt != (ssize_t) fs->block_size) {
             fprintf(stderr,
-                "Error reading random block %" PRIuOFF " in file system\n",
+                "Error reading random block %" PRIdOFF " in file system\n",
                 tmp_off);
             tsk_error_print(stderr);
             return TSK_WALK_ERROR;
@@ -138,7 +138,7 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
         cnt = tsk_img_read(fs->img_info, tmp_off, s_buf, fs->block_size);
         if (cnt != (ssize_t) fs->block_size) {
             fprintf(stderr,
-                "Error reading image offset %" PRIuOFF " in image\n",
+                "Error reading image offset %" PRIdOFF " in image\n",
                 tmp_off);
             tsk_error_print(stderr);
             return TSK_WALK_ERROR;
@@ -147,7 +147,7 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
         // compare
         if (memcmp(s_buf, a_buf, a_size)) {
             fprintf(stderr,
-                "Buffers at image offset  %" PRIuOFF " in file %" PRIuINUM
+                "Buffers at image offset  %" PRIdOFF " in file %" PRIuINUM
                 " are different\n", tmp_off, s_file2->meta->addr);
             return TSK_WALK_ERROR;
         }
@@ -271,7 +271,7 @@ test_fat_slack()
     // verify expected size
     if (file1->meta->size != 631) {
         fprintf(stderr,
-            "Error: file4.dat not expected size (%" PRIuOFF ") (%s)\n",
+            "Error: file4.dat not expected size (%" PRIdOFF ") (%s)\n",
             file1->meta->size, tname);
         return 1;
     }
@@ -370,7 +370,7 @@ test_fat_recover()
     // verify expected size
     if (file1->meta->size != 5905) {
         fprintf(stderr,
-            "Error: %s not expected size (%" PRIuOFF ") (%s)\n", fname2,
+            "Error: %s not expected size (%" PRIdOFF ") (%s)\n", fname2,
             file1->meta->size, tname);
         return 1;
     }
@@ -505,7 +505,7 @@ test_ntfs_slack_ads()
     // verify expected size
     if (file1->meta->size != 2000) {
         fprintf(stderr,
-            "Error: file-n-4.dat not expected size (%" PRIuOFF ") (%s)\n",
+            "Error: file-n-4.dat not expected size (%" PRIdOFF ") (%s)\n",
             file1->meta->size, tname);
         return 1;
     }
@@ -586,7 +586,7 @@ test_ntfs_slack_ads()
     // check the default size to make sure it is the default $Data
     if (file1->meta->size != 1300) {
         fprintf(stderr,
-            "file-n-5.dat size is not 1300 (%" PRIuOFF ") (%s)",
+            "file-n-5.dat size is not 1300 (%" PRIdOFF ") (%s)",
             file1->meta->size, tname);
         return 1;
     }
@@ -603,7 +603,7 @@ test_ntfs_slack_ads()
     }
     if (fs_attr->size != 1300) {
         fprintf(stderr,
-            "file-n-5.dat size (via getsize) is not 1300 (%" PRIuOFF
+            "file-n-5.dat size (via getsize) is not 1300 (%" PRIdOFF
             ") (%s)", fs_attr->size, tname);
         return 1;
     }
@@ -620,7 +620,7 @@ test_ntfs_slack_ads()
     }
     if (fs_attr->size != 2000) {
         fprintf(stderr,
-            "file-n-5.dat:here size (via getsize) is not 2000 (%" PRIuOFF
+            "file-n-5.dat:here size (via getsize) is not 2000 (%" PRIdOFF
             ") (%s)", fs_attr->size, tname);
         return 1;
     }

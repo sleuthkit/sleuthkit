@@ -159,7 +159,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "fsopen: Auto detection mode at offset %" PRIuOFF "\n",
+                "fsopen: Auto detection mode at offset %" PRIdOFF "\n",
                 a_offset);
 
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
@@ -288,7 +288,7 @@ tsk_fs_open_pool_decrypt(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_bl
     if (a_ftype == TSK_FS_TYPE_DETECT) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "fsopen: Auto detection mode at block %" PRIuOFF "\n",
+                "fsopen: Auto detection mode at block %" PRIdOFF "\n",
                 a_vol_block);
 
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {

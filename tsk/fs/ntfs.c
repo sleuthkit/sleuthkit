@@ -237,7 +237,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
                     tsk_fprintf(stderr,
                         "ntfs_dinode_lookup: Found in offset: %"
                         PRIuDADDR "  size: %" PRIuDADDR " at offset: %"
-                        PRIuOFF "\n", data_run->addr, data_run->len,
+						PRIdOFF "\n", data_run->addr, data_run->len,
                         offset);
 
                 /* special case where the MFT entry crosses
@@ -269,7 +269,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "ntfs_dinode_lookup: Entry address at: %"
-                        PRIuOFF "\n", mftaddr_b);
+						PRIdOFF "\n", mftaddr_b);
                 break;
             }
 
@@ -300,7 +300,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             }
             tsk_error_set_errstr2
                 ("ntfs_dinode_lookup: Error reading MFT Entry (part 1) at %"
-                PRIuOFF, mftaddr_b);
+					PRIdOFF, mftaddr_b);
             return TSK_ERR;
         }
 
@@ -316,7 +316,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             }
             tsk_error_set_errstr2
                 ("ntfs_dinode_lookup: Error reading MFT Entry (part 2) at %"
-                PRIuOFF, mftaddr2_b);
+					PRIdOFF, mftaddr2_b);
             return TSK_ERR;
         }
     }
@@ -333,7 +333,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             }
             tsk_error_set_errstr2
                 ("ntfs_dinode_lookup: Error reading MFT Entry at %"
-                PRIuOFF, mftaddr_b);
+					PRIdOFF, mftaddr_b);
             return TSK_ERR;
         }
     }
@@ -674,8 +674,8 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_make_data_run: Signed addr_offset: %"
-                PRIdDADDR " Previous address: %"
-                PRIdDADDR "\n", addr_offset, prev_addr);
+				PRId64 " Previous address: %"
+				PRIuDADDR "\n", addr_offset, prev_addr);
 
         /* The NT 4.0 version of NTFS uses an offset of -1 to represent
          * a hole, so add the sparse flag and make it look like the 2K
@@ -881,11 +881,19 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
         size_t blk_size;        // size of the current block
         uint8_t iscomp;         // set to 1 if block is compressed
         size_t blk_st_uncomp;   // index into uncompressed buffer where block started
+        uint16_t sb_header;     // subblock header
 
-        /* The first two bytes of each block contain the size
-         * information.*/
-        blk_size = ((((unsigned char) comp->comp_buf[cl_index + 1] << 8) |
-                ((unsigned char) comp->comp_buf[cl_index])) & 0x0FFF) + 3;
+        sb_header = tsk_getu16(TSK_LIT_ENDIAN, comp->comp_buf + cl_index);
+
+        // If the sb_header isn't set, we just fill the rest of the buffer with zeros.
+        // This seems to be what several different NTFS implementations do.
+        if (sb_header == 0) {
+            memset(comp->uncomp_buf + comp->uncomp_idx, 0, comp->buf_size_b - comp->uncomp_idx);
+            comp->uncomp_idx = comp->buf_size_b;
+            break;
+        }
+
+        blk_size = (sb_header & 0x0FFF) + 3;
 
         // this seems to indicate end of block
         if (blk_size == 3)
@@ -906,17 +914,14 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                 blk_size);
 
         /* The MSB identifies if the block is compressed */
-        if ((comp->comp_buf[cl_index + 1] & 0x8000) == 0)
-            iscomp = 0;
-        else
-            iscomp = 1;
+        iscomp = ((sb_header & 0x8000) != 0);
 
         // keep track of where this block started in the buffer
         blk_st_uncomp = comp->uncomp_idx;
         cl_index += 2;
 
         // the 4096 size seems to occur at the same times as no compression
-        if ((iscomp) || (blk_size - 2 != 4096)) {
+        if ((iscomp) && (blk_size - 2 != 4096)) {
 
             // cycle through the block
             while (cl_index < blk_end) {
@@ -1515,7 +1520,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
-            tsk_error_set_errstr("ntfs_file_read_special - %" PRIuOFF
+            tsk_error_set_errstr("ntfs_file_read_special - %" PRIdOFF
                 " Meta: %" PRIuINUM, a_offset,
                 a_fs_attr->fs_file->meta->addr);
             return -1;
@@ -4768,7 +4773,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                 tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Non-Resident%s%s%s   size: %"
-                    PRIuOFF "  init_size: %" PRIuOFF "\n", type,
+					PRIdOFF "  init_size: %" PRIdOFF "\n", type,
                     fs_attr->type, fs_attr->id,
                     (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted" :
@@ -4805,7 +4810,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                 tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Resident%s%s%s   size: %"
-                    PRIuOFF "\n", type, fs_attr->type,
+					PRIdOFF "\n", type, fs_attr->type,
                     fs_attr->id,
                     (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted"

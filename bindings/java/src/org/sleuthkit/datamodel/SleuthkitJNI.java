@@ -259,10 +259,12 @@ public class SleuthkitJNI {
 				 * Close any cached file system handles.
 				 */
 				for (Map<Long, Long> imageToFsMap : getCaseHandles(caseDbPointer).fsHandleCache.values()) {
-					for (Long fsHandle : imageToFsMap.values()) {
+					for (Long fsHandle : imageToFsMap.values()) {						
 						// First close all open file handles for the file system.
-						for (Long fileHandle : getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle)) {
-							closeFile(fileHandle);
+						if (getCaseHandles(caseDbPointer).fileSystemToFileHandles.containsKey(fsHandle)) {
+							for (Long fileHandle : getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle)) {
+								closeFile(fileHandle);
+							}
 						}
 						// Then close the file system handle.
 						closeFsNat(fsHandle);
@@ -808,6 +810,7 @@ public class SleuthkitJNI {
 	 *
 	 * @param imgHandle pointer to imgHandle in sleuthkit
 	 * @param fsOffset  byte offset to the file system
+	 * @param skCase    the case containing the file system
 	 *
 	 * @return pointer to a fsHandle structure in the sleuthkit
 	 *
@@ -1144,6 +1147,7 @@ public class SleuthkitJNI {
 	 * frees the fileHandle pointer
 	 *
 	 * @param fileHandle pointer to file structure in sleuthkit
+	 * @param skCase     the case containing the file
 	 */
 	public static void closeFile(long fileHandle, SleuthkitCase skCase) {		
 		getTSKReadLock();

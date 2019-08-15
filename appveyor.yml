@@ -8,9 +8,6 @@ cache:
   - C:\libvmdk_64bit
   - C:\libewf_64bit
   - C:\zlib
-branches:
-    only:
-      - develop
 
 image: Visual Studio 2015
 

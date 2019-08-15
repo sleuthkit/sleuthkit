@@ -1020,7 +1020,7 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
   tsk_fs_meta_make_ls(fs_file->meta, buffer, sizeof(buffer));
   tsk_fprintf(hFile, "Mode:\t%s\n", buffer);
 
-  tsk_fprintf(hFile, "Size:\t%" PRIuOFF "\n", fs_file->meta->size);
+  tsk_fprintf(hFile, "Size:\t%" PRIdOFF "\n", fs_file->meta->size);
 
   if (fs_file->meta->link) {
     tsk_fprintf(hFile, "Symbolic link to:\t%s\n", fs_file->meta->link);
@@ -1177,8 +1177,8 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
 
         tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
-                    ")   Name: %s   Non-Resident%s%s%s   size: %" PRIuOFF
-                    "  init_size: %" PRIuOFF "\n",
+                    ")   Name: %s   Non-Resident%s%s%s   size: %" PRIdOFF
+                    "  init_size: %" PRIdOFF "\n",
                     type, fs_attr->type, fs_attr->id,
                     (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted" : "",
@@ -1197,7 +1197,7 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
         // Resident attributes
         tsk_fprintf(hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
-                    ")   Name: %s   Resident%s%s%s   size: %" PRIuOFF "\n",
+                    ")   Name: %s   Resident%s%s%s   size: %" PRIdOFF "\n",
                     type, fs_attr->type, fs_attr->id,
                     (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted" : "",

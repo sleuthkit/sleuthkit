@@ -57,7 +57,7 @@ final public class CommunicationsFilter {
 	 *
 	 * @return An unmodifiable list of the filter.
 	 */
-	List<SubFilter> getAndFilters() {
+	public List<SubFilter> getAndFilters() {
 		return Collections.unmodifiableList(andFilters);
 	}
 
@@ -74,7 +74,7 @@ final public class CommunicationsFilter {
 	/**
 	 * Unit level filter.
 	 */
-	 static abstract class SubFilter {
+	 public static abstract class SubFilter {
 
 		/**
 		 * Returns a string description of the filter.
@@ -161,6 +161,23 @@ final public class CommunicationsFilter {
 				this.endDate = endDate;
 			}
 		}
+		
+		/**
+		 * Get the start date.
+		 * 
+		 * @return Seconds from java epoch or zero if no value was set
+		 */
+		public long getStartDate() {
+			return startDate;
+		}
+		
+		/**
+		 * Get the end date.
+		 * @return Seconds from java epoch or zero if no value was set
+		 */
+		public long getEndDate() {
+			return endDate;
+		}
 
 		@Override
 		public String getDescription() {
@@ -209,6 +226,15 @@ final public class CommunicationsFilter {
 		public AccountTypeFilter(Collection<Account.Type> accountTypes) {
 			super();
 			this.accountTypes = new HashSet<Account.Type>(accountTypes);
+		}
+		
+		/**
+		 * Get the selected Account Types.
+		 * 
+		 * @return A Set of Type values
+		 */
+		public Set<Account.Type> getAccountTypes() {
+			return accountTypes;
 		}
 
 		@Override
@@ -260,6 +286,15 @@ final public class CommunicationsFilter {
 		public String getDescription() {
 			return "Filters accounts and relationships by device id.";
 		}
+		
+		/**
+		 *  Gets a set of device ids
+		 * 
+		 * @return Collection of device ids
+		 */
+		public Collection<String> getDevices() {
+			return deviceIds;
+		}
 
 		/**
 		 * Get the SQL string for the filter.
@@ -287,6 +322,47 @@ final public class CommunicationsFilter {
 				sql = " relationships.data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
 			}
 			return sql;
+		}
+	}
+	
+	/**
+	 * Filters by the most recent given relationships.
+	 */
+	final public static class MostRecentFilter extends SubFilter {
+		private final int limit;
+		
+		/**
+		 * Constructs a MostRecentFilter.
+		 * 
+		 * @param limit An integer limit value or -1 for no limit.
+		 *				
+		 */
+		public MostRecentFilter(int limit) {
+			super();
+			this.limit = limit;
+		}
+		
+		/**
+		 * Returns the filter limit.
+		 * 
+		 * @return Integer filter limit
+		 */
+		public int getLimit() {
+			return limit;
+		}
+
+		@Override
+		public String getDescription() {
+			return "Filters accounts and relationships by the most recent given relationships.";
+		}
+
+		@Override
+		String getSQL(CommunicationsManager commsManager) {
+			if(limit > 0) {
+				return "ORDER BY relationships.date_time LIMIT " + limit;
+			} else {
+				return "";
+			}
 		}
 	}
 }

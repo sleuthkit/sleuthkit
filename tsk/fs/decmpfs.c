@@ -872,8 +872,8 @@ decmpfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "%s: reading compression units: %" PRIuOFF
-            " to %" PRIuOFF "\n", __func__, startUnit, endUnit);
+            "%s: reading compression units: %" PRIdOFF
+            " to %" PRIdOFF "\n", __func__, startUnit, endUnit);
    bytesCopied = 0;
 
     // Allocate buffers for the raw and uncompressed data
