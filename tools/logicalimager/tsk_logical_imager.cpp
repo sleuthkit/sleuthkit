@@ -47,6 +47,7 @@ bool promptBeforeExit = true;
 bool createVHD = false;
 std::string directoryPath;
 std::string subDirForFiles;
+static char *rootStr = "root";
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
@@ -858,7 +859,7 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
 
 FILE *m_alertFile = NULL;
 std::string driveToProcess;
-std::string outputVHDFilename;
+std::string outputLocation;
 
 /*
 * Create the alert file and print the header.
@@ -871,13 +872,13 @@ static void openAlert(const std::string &alertFilename) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         handleExit(1);
     }
-    fprintf(m_alertFile, "VHD file\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\n");
+    fprintf(m_alertFile, "VHD file/directory\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\n");
 }
 
 /*
 * Write an file match alert record to the alert file. Also send same record to stdout.
 * An alert file record contains tab-separated fields:
-*   - VHD file
+*   - output VHD file/directory
 *   - File system offset
 *   - Metadata address
 *   - extractStatus
@@ -893,14 +894,14 @@ static void openAlert(const std::string &alertFilename) {
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
 */
-static void alert(const std::string &outputVHDFilename, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
+static void alert(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..
         return;
     }
-    // alert file format is "VHD file<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
+    // alert file format is "VHD file/directory<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
     fprintf(m_alertFile, "%s\t%" PRIdOFF "\t%" PRIuINUM "\t%d\t%s\t%s\t%s\t%s\t%s\n",
-        outputVHDFilename.c_str(),
+        outputLocation.c_str(),
         fs_file->fs_info->offset,
         (fs_file->meta ? fs_file->meta->addr : 0),
         extractStatus,
@@ -934,13 +935,24 @@ static void closeAlert() {
     }
 }
 
+/**
+* Recursively create directory given by path.
+* Does not exit if the directory already exists.
+*
+* @param path directory
+*/
 void createDirectoryRecursively(const std::wstring &path)
 {
     size_t pos = 0;
     do
     {
         pos = path.find_first_of(L"\\/", pos + 1);
-        CreateDirectoryW(path.substr(0, pos).c_str(), NULL);
+        if (CreateDirectoryW(path.substr(0, pos).c_str(), NULL) == 0) {
+            if (GetLastError() != ERROR_ALREADY_EXISTS) {
+                consoleOutput(stderr, TskHelper::toNarrow(std::wstring(L"ERROR: Fail to create directory " + path + L" Reason: " + GetLastErrorStdStrW())).c_str());
+                handleExit(1);
+            }
+        }
     } while (pos != std::string::npos);
 }
 
@@ -959,8 +971,9 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM result = TSK_OK;
 
     if (!createVHD) {
-        createDirectoryRecursively(TskHelper::toWide(directoryPath + "/root/" + subDirForFiles + "/" + path));
-        filename = directoryPath + "/root/" + subDirForFiles + "/" + path + "/" + fs_file->name->name;
+        std::string parentPath = directoryPath + "/" + rootStr + "/" + subDirForFiles + "/" + path;
+        createDirectoryRecursively(TskHelper::toWide(parentPath));
+        filename = parentPath + "/" + fs_file->name->name;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
     }
 
@@ -1019,7 +1032,7 @@ static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_
     if (matchResult->isShouldSave()) {
         extractStatus = extractFile(fs_file, path);
     }
-    alert(outputVHDFilename, extractStatus, matchResult, fs_file, path);
+    alert(outputLocation, extractStatus, matchResult, fs_file, path);
     return TSK_OK;
 }
 
@@ -1293,10 +1306,6 @@ main(int argc, char **argv1)
         if (driveToProcess.back() == ':') {
             driveToProcess = driveToProcess.substr(0, driveToProcess.size() - 1);
         }
-        subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
-        outputVHDFilename = (iFlagUsed ? "sparse_image" : driveToProcess) + ".vhd";
-        std::string outputFileName = directoryPath + "/" + outputVHDFilename;
-        std::wstring outputFileNameW = TskHelper::toWide(outputFileName);
 
         if (hasTskLogicalImager(image)) {
             consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
@@ -1309,9 +1318,14 @@ main(int argc, char **argv1)
             handleExit(1);
         }
 
+        subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
+        outputLocation = (iFlagUsed ? "sparse_image" : driveToProcess) + (createVHD ? ".vhd" : "");
+
         if (createVHD) {
             if (img->itype == TSK_IMG_TYPE_RAW) {
-                if (tsk_img_writer_create(img, (TSK_TCHAR *)outputFileNameW.c_str()) == TSK_ERR) {
+                std::string outputFileName = directoryPath + "/" + outputLocation;
+
+                if (tsk_img_writer_create(img, (TSK_TCHAR *)TskHelper::toWide(outputFileName).c_str()) == TSK_ERR) {
                     tsk_error_print(stderr);
                     consoleOutput(stderr, "Failed to initialize VHD writer\n");
                     handleExit(1);
@@ -1323,8 +1337,7 @@ main(int argc, char **argv1)
         }
         else {
             // create directory to store extracted files
-            std::string dir = directoryPath + "/root/" + subDirForFiles;
-            createDirectoryRecursively(TskHelper::toWide(dir));
+            createDirectoryRecursively(TskHelper::toWide(directoryPath + "/" + rootStr + "/" + subDirForFiles));
         }
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
