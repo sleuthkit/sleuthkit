@@ -936,6 +936,24 @@ static void closeAlert() {
 }
 
 /**
+* Test if directory exists.
+* 
+* @param dirName directory name
+* @return bool true if directory exist, false otherwise.
+*/
+bool dirExists(const std::wstring &dirName)
+{
+    DWORD ftyp = GetFileAttributesW(dirName.c_str());
+    if (ftyp == INVALID_FILE_ATTRIBUTES)
+        return false;  //something is wrong with your path!
+
+    if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
+        return true;   // this is a directory!
+
+    return false;    // this is not a directory!
+}
+
+/**
 * Recursively create directory given by path.
 * Does not exit if the directory already exists.
 *
@@ -943,6 +961,10 @@ static void closeAlert() {
 */
 void createDirectoryRecursively(const std::wstring &path)
 {
+    if (dirExists(path)) {
+        return;
+    }
+
     size_t pos = 0;
     do
     {
