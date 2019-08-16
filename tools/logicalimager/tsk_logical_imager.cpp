@@ -959,8 +959,8 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM result = TSK_OK;
 
     if (!createVHD) {
-        createDirectoryRecursively(TskHelper::toWide(directoryPath + "/" + subDirForFiles + "/" + path));
-        filename = directoryPath + "/" + subDirForFiles + "/" + path + "/" + fs_file->name->name;
+        createDirectoryRecursively(TskHelper::toWide(directoryPath + "/root/" + subDirForFiles + "/" + path));
+        filename = directoryPath + "/root/" + subDirForFiles + "/" + path + "/" + fs_file->name->name;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
     }
 
@@ -1323,11 +1323,8 @@ main(int argc, char **argv1)
         }
         else {
             // create directory to store extracted files
-            std::string dir = directoryPath + std::string("/") + subDirForFiles;
-            if (_mkdir(dir.c_str()) != 0) {
-                consoleOutput(stderr, (std::string("Failed to create directory ") + dir).c_str());
-                handleExit(1);
-            }
+            std::string dir = directoryPath + "/root/" + subDirForFiles;
+            createDirectoryRecursively(TskHelper::toWide(dir));
         }
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
