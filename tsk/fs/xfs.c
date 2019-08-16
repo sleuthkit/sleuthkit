@@ -101,7 +101,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
         tsk_error_set_errstr2("xfs_inode_getallocflag: Inode %" PRIuINUM
-            ", AGI from block %" PRIuOFF, dino_inum, cur_block_num);
+            ", AGI from block %" PRIu64, dino_inum, cur_block_num);
         free(cur_inobt_block);
         return (TSK_FS_META_FLAG_ENUM) NULL;
     }
@@ -199,7 +199,7 @@ TSK_FS_META_FLAG_ENUM xfs_inode_getallocflag(
         if(found_key)
         {
             // if exact match was found, cur_key is artificially incremented
-            // otherwise cur_key also one value more than the valid one
+            // otherwise cur_key is also +1 from the valid number
             cur_key--;
 
             cur_block_num = (TSK_DADDR_T) ag_num * (TSK_DADDR_T) sb->sb_agblocks
@@ -381,7 +381,7 @@ xfs_dinode_load(XFSFS_INFO * xfsfs, TSK_INUM_T dino_inum,
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
         tsk_error_set_errstr2("%s: Inode %" PRIuINUM
-            " from %" PRIuOFF, myname, dino_inum, addr);
+            " from %" PRIu64, myname, dino_inum, addr);
         return 1;
     }
 
@@ -546,7 +546,7 @@ static inline uint64_t xfs_mask64lo(int n)
 void
 xfs_bmbt_disk_get_all(
     xfs_bmbt_rec_t    *rec,
-    xfs_bmbt_irec_t    *irec)
+    xfs_bmbt_irec_t   *irec)
 {
     uint64_t l0 = tsk_getu64(TSK_BIG_ENDIAN, &rec->l0);
     uint64_t l1 = tsk_getu64(TSK_BIG_ENDIAN, &rec->l1);
@@ -1536,7 +1536,8 @@ xfs_load_attrs(TSK_FS_FILE * fs_file)
     {
         xfs_bmbt_rec_t* addr_ptr = (xfs_bmbt_rec_t *) fs_meta->content_ptr;
         uint16_t extent_count = fs_meta->content_len / sizeof(xfs_bmbt_rec_t);
-        for (uint16_t extent_num = 0; extent_num < extent_count; extent_num++)
+        uint16_t extent_num;
+        for (extent_num = 0; extent_num < extent_count; extent_num++)
         {
             if (tsk_verbose) { tsk_fprintf(stderr, "extent_num = %d, sizeof(xfs_bmbt_rec_t) = %d, fs_meta->content_len = %d \n", extent_num, sizeof(xfs_bmbt_rec_t), fs_meta->content_len); }
 
@@ -1962,7 +1963,7 @@ xfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
     tsk_fprintf(hFile, "\n");
 
-    tsk_fprintf(hFile, "size: %" PRIuOFF "\n", fs_meta->size);
+    tsk_fprintf(hFile, "size: %" PRIu64 "\n", fs_meta->size);
     tsk_fprintf(hFile, "num of links: %d\n", fs_meta->nlink);
 
     parse_extended_attrs(xfsfs, dino_buf, hFile);
@@ -2133,7 +2134,8 @@ parse_dir_block(
         return TSK_COR;
     }
 
-    for (uint16_t block_num = 0; block_num < irec->br_blockcount; block_num++)
+    uint16_t block_num;
+    for (block_num = 0; block_num < irec->br_blockcount; block_num++)
     {
         TSK_OFF_T offset_in_block =
             (TSK_OFF_T) block_num * (TSK_OFF_T) a_fs->block_size;
@@ -2369,7 +2371,8 @@ visit_btree_node(
         }
 
         // traverse all the pointers
-        for(uint32_t cur_key = 0; cur_key < bb_numrecs; cur_key++)
+        uint32_t cur_key;
+        for(cur_key = 0; cur_key < bb_numrecs; cur_key++)
         {
             xfs_fsblock_t next_node_block =
                 tsk_getu64(TSK_BIG_ENDIAN, &node_ptrs[cur_key]);
@@ -2545,7 +2548,8 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         if (tsk_verbose) { tsk_fprintf(stderr, "sf_entry = 0x %" PRIx64  " \n", sf_entry); }
 
-        for(uint8_t dir_ent_num = 0; dir_ent_num < count; dir_ent_num++)
+        uint8_t dir_ent_num;
+        for(dir_ent_num = 0; dir_ent_num < count; dir_ent_num++)
         {
             /*
             *    typedef struct   {
@@ -2625,8 +2629,7 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             tsk_error_set_errstr
                 ("xfs_dir_open_meta: fs_meta->nextents is 0 for TSK_FS_META_CONTENT_TYPE_XFS_EXTENTS type");
             return TSK_ERR;
-        } else if (nextents == 1)
-        {
+        } else if (nextents == 1) {
             // parsing "block directory" format
 
             // unpack extent
@@ -2785,7 +2788,8 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         {
             // parsing "leaf direcory" and "node directory" formats
 
-            for(uint32_t extent_num = 0; extent_num < nextents; extent_num++)
+            uint32_t extent_num;
+            for(extent_num = 0; extent_num < nextents; extent_num++)
             {
                 // unpack extent
                 xfs_bmbt_irec_t irec;
@@ -2987,7 +2991,8 @@ TSK_FS_INFO *
     if ((agi = tsk_malloc(len)) == NULL)
         return NULL;
 
-    for (xfs_agnumber_t current_ag = 0; current_ag < sb->sb_agcount; current_ag++)
+    xfs_agnumber_t current_ag;
+    for (current_ag = 0; current_ag < sb->sb_agcount; current_ag++)
     {
         TSK_OFF_T agi_offset =  (TSK_OFF_T) current_ag 
             * (TSK_OFF_T) sb->sb_agblocks * (TSK_OFF_T) sb->sb_blocksize
