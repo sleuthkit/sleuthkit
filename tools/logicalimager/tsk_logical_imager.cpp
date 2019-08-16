@@ -992,6 +992,11 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     std::string filename;
     TSK_RETVAL_ENUM result = TSK_OK;
 
+    if (fs_file->meta == NULL) {
+        // Prevent creating an empty file, tsk_fs_file_read will fail when meta is null.
+        return TSK_ERR;
+    }
+
     if (!createVHD) {
         std::string parentPath = directoryPath + "/" + rootStr + "/" + subDirForFiles + "/" + path;
         createDirectoryRecursively(TskHelper::toWide(parentPath));
