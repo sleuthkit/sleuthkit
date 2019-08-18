@@ -94,14 +94,14 @@ class APFSJObjTree {
   using jit = APFSJObjBtreeNode::iterator;
 
  protected:
-#ifdef HAVE_LIBOPENSSL
   struct crypto {
+#ifdef HAVE_LIBOPENSSL
     std::unique_ptr<aes_xts_decryptor> decryptor{};
+#endif
     std::unique_ptr<uint8_t[]> key{};
     std::string password{};
     crypto(const APFSFileSystem::crypto_info_t &crypto);
   } _crypto;
-#endif
   APFSObjectBtreeNode _obj_root;
   APFSJObjBtreeNode _jobj_root;
   uint64_t _root_tree_oid;

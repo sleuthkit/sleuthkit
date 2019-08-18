@@ -2,7 +2,6 @@
 
 #include "apfs_fs.hpp"
 
-#ifdef HAVE_LIBOPENSSL
 APFSJObjTree::APFSJObjTree(const APFSPool& pool, apfs_block_num obj_omap,
                            uint64_t root_tree_oid,
                            const APFSFileSystem::crypto_info_t& crypto)
@@ -11,7 +10,6 @@ APFSJObjTree::APFSJObjTree(const APFSPool& pool, apfs_block_num obj_omap,
       _jobj_root{&_obj_root, _obj_root.find(root_tree_oid)->value->paddr,
                  _crypto.key.get()},
       _root_tree_oid{root_tree_oid} {}
-#endif
 
 APFSJObjTree::APFSJObjTree(const APFSFileSystem& vol)
     : APFSJObjTree{vol.pool(),
@@ -34,18 +32,18 @@ void APFSJObjTree::set_snapshot(uint64_t snap_xid) {
 #endif
 }
 
-#ifdef HAVE_LIBOPENSSL
 APFSJObjTree::crypto::crypto(const APFSFileSystem::crypto_info_t& crypto) {
   if (crypto.unlocked) {
     key = std::make_unique<uint8_t[]>(0x20);
     std::memcpy(key.get(), crypto.vek, 0x20);
     password = crypto.password;
 
+#ifdef HAVE_LIBOPENSSL
     decryptor = std::make_unique<aes_xts_decryptor>(
         aes_xts_decryptor::AES_128, key.get(), nullptr, APFS_CRYPTO_SW_BLKSIZE);
+#endif
   }
 }
-#endif
 
 APFSJObject::APFSJObject(const std::pair<jit, jit>& jobjs)
     : APFSJObject(jobjs.first, jobjs.second) {}

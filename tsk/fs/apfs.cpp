@@ -383,7 +383,6 @@ static const auto unsupported_recovery_keys = {
 };
 
 void APFSFileSystem::init_crypto_info() {
-#ifdef HAVE_LIBOPENSSL
     try {
 
         // Get container keybag
@@ -469,11 +468,6 @@ void APFSFileSystem::init_crypto_info() {
             tsk_fprintf(stderr, "APFSFileSystem::init_crypto_info: %s", e.what());
         }
     }
-#else
-    if (tsk_verbose) {
-        tsk_fprintf(stderr, "APFSFileSystem::init_crypto_info: crypto library not loaded");
-    }
-#endif
 }
 
 bool APFSFileSystem::unlock(const std::string& password) noexcept {
