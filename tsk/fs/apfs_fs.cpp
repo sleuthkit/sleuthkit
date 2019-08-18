@@ -2,6 +2,7 @@
 
 #include "apfs_fs.hpp"
 
+#ifdef HAVE_LIBOPENSSL
 APFSJObjTree::APFSJObjTree(const APFSPool& pool, apfs_block_num obj_omap,
                            uint64_t root_tree_oid,
                            const APFSFileSystem::crypto_info_t& crypto)
@@ -10,6 +11,7 @@ APFSJObjTree::APFSJObjTree(const APFSPool& pool, apfs_block_num obj_omap,
       _jobj_root{&_obj_root, _obj_root.find(root_tree_oid)->value->paddr,
                  _crypto.key.get()},
       _root_tree_oid{root_tree_oid} {}
+#endif
 
 APFSJObjTree::APFSJObjTree(const APFSFileSystem& vol)
     : APFSJObjTree{vol.pool(),
@@ -22,11 +24,17 @@ void APFSJObjTree::set_snapshot(uint64_t snap_xid) {
   // This type isn't copyable or moveable, so we have to use in-place allocation
   // TODO(JTS): Refactor APFSObjects so that they can be move assigned
   _jobj_root.~APFSJObjBtreeNode();
+#ifdef HAVE_LIBOPENSSL
   new (&_jobj_root) APFSJObjBtreeNode(
       &_obj_root, _obj_root.find(_root_tree_oid)->value->paddr,
       _crypto.key.get());
+#else
+  new (&_jobj_root) APFSJObjBtreeNode(
+      &_obj_root, _obj_root.find(_root_tree_oid)->value->paddr, nullptr);
+#endif
 }
 
+#ifdef HAVE_LIBOPENSSL
 APFSJObjTree::crypto::crypto(const APFSFileSystem::crypto_info_t& crypto) {
   if (crypto.unlocked) {
     key = std::make_unique<uint8_t[]>(0x20);
@@ -37,6 +45,7 @@ APFSJObjTree::crypto::crypto(const APFSFileSystem::crypto_info_t& crypto) {
         aes_xts_decryptor::AES_128, key.get(), nullptr, APFS_CRYPTO_SW_BLKSIZE);
   }
 }
+#endif
 
 APFSJObject::APFSJObject(const std::pair<jit, jit>& jobjs)
     : APFSJObject(jobjs.first, jobjs.second) {}
