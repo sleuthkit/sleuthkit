@@ -1351,6 +1351,17 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         (TSK_OFF_T) sb->sb_blocksize * cur_sblock_num + sizeof(xfs_btree_sblock_t),
         (char *) recs,
         len);
+    if (cnt != len) {
+        if (cnt >= 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_READ);
+        }
+        tsk_error_set_errstr2("xfs_block_getflags: xfs_agf, cnt = %" PRId64 ", len = %" PRId64 "", cnt, len);
+        free(agf);
+        free(agfl);
+        free(cur_btree_sblock);
+        return (TSK_FS_BLOCK_FLAG_ENUM) NULL;
+    }
 
     // iterate over the keys
     found = 0;
@@ -1809,7 +1820,8 @@ parse_extended_attrs(XFSFS_INFO *a_xfsfs, xfs_dinode_t *a_dino_buf, FILE *a_hFil
         xfs_attr_sf_entry_t *sf_entry = (xfs_attr_sf_entry_t*) (in_base + in_offset);
         uint64_t limit = a_xfsfs->inode_size;
 
-        for (uint8_t entry_num = 0; entry_num < attr_hdr->count && in_offset < limit; entry_num++)
+        uint8_t entry_num;
+        for (entry_num = 0; entry_num < attr_hdr->count && in_offset < limit; entry_num++)
         {
             uint64_t sf_entry_size = ATTR_SF_ENTRY_SIZE + sf_entry->namelen
                 + sf_entry->valuelen;
@@ -2423,7 +2435,8 @@ visit_btree_node(
         }
 
         // iterate over the keys
-        for(uint32_t cur_key = 0; cur_key < bb_numrecs; cur_key++)
+        uint32_t cur_key;
+        for(cur_key = 0; cur_key < bb_numrecs; cur_key++)
         {
             // unpack extent
             xfs_bmbt_irec_t irec;
