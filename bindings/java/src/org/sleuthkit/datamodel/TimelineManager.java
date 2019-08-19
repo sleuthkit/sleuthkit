@@ -517,25 +517,17 @@ public final class TimelineManager {
 		}
 	}
 
-	Collection<TimelineEvent> addAbstractFileEvents(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
+	Collection<TimelineEvent> addEventsForNewFile(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
 		//gather time stamps into map
 		Map<TimelineEventType, Long> timeMap = ImmutableMap.of(TimelineEventType.FILE_CREATED, file.getCrtime(),
 				TimelineEventType.FILE_ACCESSED, file.getAtime(),
 				TimelineEventType.FILE_CHANGED, file.getCtime(),
 				TimelineEventType.FILE_MODIFIED, file.getMtime());
 
-		/*
-		 * If there are no legitimate ( greater than zero ) time stamps ( eg,
-		 * logical/local files) skip the rest of the event generation: this
-		 * should result in dropping logical files, since they do not have
-		 * legitimate time stamps.
-		 */
 		if (Collections.max(timeMap.values()) <= 0) {
 			return Collections.emptySet();
 		}
 
-		boolean hashHashHits = CollectionUtils.isNotEmpty(file.getHashSetNames());
-		boolean hasTags = CollectionUtils.isNotEmpty(sleuthkitCase.getContentTagsByContent(file));
 		String description = file.getParentPath() + file.getName();
 		long fileObjId = file.getId();
 		Set<TimelineEvent> events = new HashSet<>();
@@ -550,8 +542,11 @@ public final class TimelineManager {
 					TimelineEventType type = timeEntry.getKey();
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
+					//Last two flags indicating isTagged and hasHashSetHits are both set to 
+					//false with the assumption that this is not possible for a new file. See
+					//JIRA-5407
 					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
-							description, null, null, hashHashHits, hasTags));
+							description, null, null, false, false));
 				}
 			}
 
