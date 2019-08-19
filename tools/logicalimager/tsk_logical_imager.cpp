@@ -891,7 +891,7 @@ static void openAlert(const std::string &alertFilename) {
 *   - path
 *
 * @param driveName Drive name
-* @param extractStatus Extract status: 0 if file was extracted, 1 otherwise
+* @param extractStatus Extract status: TSK_OK if file was extracted, TSK_ERR otherwise
 * @param ruleMatchResult The rule match result
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
@@ -901,7 +901,11 @@ static void alert(const std::string &outputLocation, TSK_RETVAL_ENUM extractStat
         // Don't alert . and ..
         return;
     }
-    // alert file format is "VHD file/directory<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
+    if (extractStatus == TSK_ERR && (fs_file->meta == NULL || fs_file->meta->flags & TSK_FS_NAME_FLAG_UNALLOC)) {
+        // Don't alert unallocated files that failed extraction
+        return;
+    }
+    // alert file format is "VHD file<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
     fprintf(m_alertFile, "%s\t%" PRIdOFF "\t%" PRIuINUM "\t%d\t%s\t%s\t%s\t%s\t%s\n",
         outputLocation.c_str(),
         fs_file->fs_info->offset,
@@ -939,7 +943,7 @@ static void closeAlert() {
 
 /**
 * Test if directory exists.
-* 
+*
 * @param dirName directory name
 * @return bool true if directory exist, false otherwise.
 */
@@ -1012,15 +1016,23 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     while (true) {
         ssize_t bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
         if (bytesRead == -1) {
-            if (fs_file->meta && fs_file->meta->size == 0) {
-                // ts_fs_file_read returns -1 with empty files, don't report it.
-                result = TSK_OK;
-                break;
+            if (fs_file->meta) {
+                if (fs_file->meta->size == 0) {
+                    // ts_fs_file_read returns -1 with empty files, don't report it.
+                    return TSK_OK;
+                }
+                else if (fs_file->meta->flags & TSK_FS_NAME_FLAG_UNALLOC) {
+                    // don't report it
+                    return TSK_ERR;
+                } else {
+                    printDebug("extractFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, offset);
+                    consoleOutput(stderr, "extractFile: tsk_fs_file_read returns -1 filename=%s\tpath=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, path, offset);
+                    return TSK_ERR;
+                }
             }
             else {
-                printDebug("processFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRId64 "\n", fs_file->name->name, offset);
-                result = TSK_ERR;
-                break;
+                // don't report it
+                return TSK_ERR;
             }
         }
         else if (bytesRead == 0) {
