@@ -542,9 +542,11 @@ public final class TimelineManager {
 					TimelineEventType type = timeEntry.getKey();
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
-					//Last two flags indicating isTagged and hasHashSetHits are both set to 
-					//false with the assumption that this is not possible for a new file. See
-					//JIRA-5407
+					/*
+					 * Last two flags indicating hasTags and hasHashHits are
+					 * both set to false with the assumption that this is not
+					 * possible for a new file. See JIRA-5407
+					 */
 					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
 							description, null, null, false, false));
 				}
