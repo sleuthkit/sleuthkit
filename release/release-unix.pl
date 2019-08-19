@@ -569,7 +569,7 @@ sub verify_tar {
     die "Missing configure in tar file" unless (-e "./configure");
 
     print "Running configure\n";
-    system ("./configure > /dev/null");
+    system ("./configure");
     die "Error running configure in tar file" unless (-e "./Makefile");
 
     print "Running make\n";
