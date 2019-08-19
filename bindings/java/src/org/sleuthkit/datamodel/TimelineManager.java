@@ -524,6 +524,10 @@ public final class TimelineManager {
 				TimelineEventType.FILE_CHANGED, file.getCtime(),
 				TimelineEventType.FILE_MODIFIED, file.getMtime());
 
+		/*
+		 * If there are no legitimate ( greater than zero ) time stamps skip the
+		 * rest of the event generation.
+		 */
 		if (Collections.max(timeMap.values()) <= 0) {
 			return Collections.emptySet();
 		}
