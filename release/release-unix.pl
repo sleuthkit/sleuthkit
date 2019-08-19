@@ -573,12 +573,12 @@ sub verify_tar {
     die "Error running configure in tar file" unless (-e "./Makefile");
 
     print "Running make\n";
-    system ("make > /dev/null");
+    system ("make");
     die "Error compiling tar file (tools/fstools/fls not found)" unless (-x "tools/fstools/fls");
 
     print "Testing Test\n";
     chdir "tests" or die "Error changing directories to test";
-    system ("make check > /dev/null");
+    system ("make check");
     die "Error compiling tests (tests/read_apis not found)" unless (-x "read_apis");
     chdir "..";
 
