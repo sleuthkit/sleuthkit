@@ -189,6 +189,7 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
     }
     std::stringstream buffer;
     buffer << file.rdbuf();
+    file.close();
     std::string str = buffer.str();
 
     nlohmann::json configJson;
