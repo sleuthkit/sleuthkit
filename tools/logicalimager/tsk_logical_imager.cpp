@@ -22,6 +22,7 @@
 #include <Wbemidl.h>
 #include <shlwapi.h>
 #include <fstream>
+#include <winbase.h>
 
 #pragma comment(lib, "wbemuuid.lib")
 
@@ -48,6 +49,7 @@ bool createVHD = false;
 std::string directoryPath;
 std::string subDirForFiles;
 static char *rootStr = "root";
+std::wstring cwd;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
@@ -965,13 +967,16 @@ void createDirectoryRecursively(const std::wstring &path)
         return;
     }
 
+    std::wstring path2 = path;
+    TskHelper::replaceAll(path2, L"/", L"\\");
+
     size_t pos = 0;
     do
     {
-        pos = path.find_first_of(L"\\/", pos + 1);
-        if (CreateDirectoryW(path.substr(0, pos).c_str(), NULL) == 0) {
+        pos = path2.find_first_of(L"\\", pos + 1);
+        if (CreateDirectoryW(std::wstring(std::wstring(L"\\\\?\\") + cwd + L"\\" + path2.substr(0, pos)).c_str(), NULL) == 0) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                consoleOutput(stderr, TskHelper::toNarrow(std::wstring(L"ERROR: Fail to create directory " + path + L" Reason: " + GetLastErrorStdStrW())).c_str());
+                consoleOutput(stderr, std::string("ERROR: Fail to create directory " + TskHelper::toNarrow(path) + " Reason: " + GetErrorStdStr(GetLastError())).c_str());
                 handleExit(1);
             }
         }
@@ -1145,8 +1150,8 @@ TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image) {
     return img;
 }
 
-bool driveIsFAT(char *drive) {
-    std::wstring imageStr = std::wstring(_TSK_T("\\\\.\\")) + TskHelper::toWide(std::string(drive));
+bool driveIsFAT(TCHAR *drive) {
+    std::wstring imageStr = std::wstring(_TSK_T("\\\\.\\")) + drive;
     const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
     bool result = false;
 
@@ -1173,15 +1178,17 @@ bool driveIsFAT(char *drive) {
  * Result true if Current Working Directory file system is FAT.
  */
 bool cwdIsFAT() {
-    char *buffer;
+    TCHAR *buffer;
 
-    if ((buffer = _getcwd(NULL, 0)) == NULL) {
-        consoleOutput(stderr, "Error: _getcwd failed");
+    if ((buffer = _wgetcwd(NULL, 0)) == NULL) {
+        consoleOutput(stderr, "Error: _wgetcwd failed");
         handleExit(1);
     }
 
-    char drive[3];
-    strncpy(drive, buffer, 2);
+    cwd = buffer;
+
+    TCHAR drive[3];
+    wcsncpy_s(drive, 3, buffer, 2);
     drive[2] = 0;
     free(buffer);
     return driveIsFAT(drive);
@@ -1294,7 +1301,6 @@ main(int argc, char **argv1)
     }
 
     // create a directory with hostname_timestamp
-    //std::string directoryPath;
     if (createDirectory(directoryPath) == -1) {
         consoleOutput(stderr, "Failed to create directory %s\n", directoryPath.c_str());
         handleExit(1);

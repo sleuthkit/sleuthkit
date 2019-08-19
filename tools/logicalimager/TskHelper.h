@@ -85,6 +85,7 @@ public:
     static std::string intToStr(size_t l);
     static void replaceAll(std::string& str, const std::string& from, const std::string& to);
     static void replaceAll(std::string& str, const std::string& from, const std::string& to, size_t pos);
+    static void replaceAll(std::wstring &str, const std::wstring &from, const std::wstring &to);
 
 private:
     std::string stripExt(const char *a_path);    // strip the extension from the given name, if any

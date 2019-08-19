@@ -686,6 +686,16 @@ void TskHelper::replaceAll(std::string &str, const std::string &from, const std:
     }
 }
 
+void TskHelper::replaceAll(std::wstring &str, const std::wstring &from, const std::wstring &to) {
+    if (from.empty())
+        return;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::wstring::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
 /**
 * replaceAll - replaces all occurences of 'from' string with the 'to' string, in the given input string, starting the search from specified position
 *
