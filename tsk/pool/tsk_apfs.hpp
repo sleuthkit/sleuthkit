@@ -71,7 +71,7 @@ class APFSPool : public TSKPool {
   apfs_block_num _nx_block_num;
   std::vector<apfs_block_num> _vol_blocks;
 
-  // TODO(JTS): make thread safe if needed.
+  // TODO(JTS): make thread safe if needed. The locking in the higher-level APIs should prevent issues.
   mutable std::unordered_map<apfs_block_num, lw_shared_ptr<APFSBlock>>
       _block_cache{};
 
@@ -99,7 +99,7 @@ class APFSPool : public TSKPool {
   ssize_t read(uint64_t address, char *buf, size_t buf_size) const
       noexcept final;
 
-  // XXX: THIS IS NOT THREAD SAFE!
+  // This is not thread safe, but locking in the higher level APIs appears to prevent any issues.
   template <typename T, typename... Args>
   inline lw_shared_ptr<T> get_block(apfs_block_num block,
                                     Args &&... args) const {
