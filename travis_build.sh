@@ -44,5 +44,5 @@ cd bindings/java/ && ant -q dist-PostgreSQL
 
 # Step 5: Test the release script on Linux.
 if test ${TRAVIS_OS_NAME} = "linux"; then
-	cd release; ./release-unix.pl ci;
+	cd ../../release; ./release-unix.pl ci;
 fi
