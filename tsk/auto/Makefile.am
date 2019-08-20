@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
+AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -std=c++0x
 AM_CFLAGS += -Wmultichar -Wsign-promo -Wno-overloaded-virtual
 AM_CXXFLAGS += -Wmultichar -Wsign-promo -Wno-overloaded-virtual
 EXTRA_DIST = .indent.pro
