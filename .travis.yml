@@ -1,16 +1,14 @@
 language: cpp
 
-os:
-  - linux
-  - osx
-
-compiler:
-  - gcc
-  - clang
-
 matrix:
   include:
-  - os: linux
+  - compiler: clang
+    os: linux
+    dist: bionic
+    sudo: required
+    group: edge
+  - compiler: gcc
+    os: linux
     dist: bionic
     sudo: required
     group: edge
