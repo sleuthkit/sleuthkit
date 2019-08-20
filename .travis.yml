@@ -2,16 +2,6 @@ language: cpp
 
 matrix:
   include:
-  - compiler: clang
-    os: linux
-    dist: bionic
-    sudo: required
-    group: edge
-  - compiler: gcc
-    os: linux
-    dist: bionic
-    sudo: required
-    group: edge
   - compiler: gcc
     os: osx
 
@@ -32,6 +22,7 @@ addons:
     - libopenjfx-java=8u161-b12-1ubuntu2
     - libopenjfx-jni=8u161-b12-1ubuntu2
   homebrew:
+    update: true
     packages:
     - ant
     - libewf
@@ -52,7 +43,7 @@ before_script:
         export PATH=/usr/bin:$PATH; 
         unset JAVA_HOME;
     fi
-  - if test ${TRAVIS_OS_NAME} = "osx"; then
+  - if [ ${TRAVIS_OS_NAME = "osx" ]; then
         export PATH=${PATH}:/usr/local/opt/gettext/bin;
     fi
 
