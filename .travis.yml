@@ -24,6 +24,10 @@ addons:
     - ant
     - libcppunit-dev
     - wget
+    - openjdk-8-jdk
+    - openjfx=8u161-b12-1ubuntu2
+    - libopenjfx-java=8u161-b12-1ubuntu2
+    - libopenjfx-jni=8u161-b12-1ubuntu2
 
 python:
   - "2.7"
