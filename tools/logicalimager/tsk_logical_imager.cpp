@@ -978,7 +978,7 @@ void createDirectoryRecursively(const std::wstring &path)
     do
     {
         pos = path2.find_first_of(L"\\", pos + 1);
-        if (CreateDirectoryW(std::wstring(std::wstring(L"\\\\?\\") + cwd + L"\\" + path2.substr(0, pos)).c_str(), NULL) == 0) {
+        if (CreateDirectoryW(std::wstring(L"\\\\?\\" + cwd + L"\\" + path2.substr(0, pos)).c_str(), NULL) == 0) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
                 consoleOutput(stderr, std::string("ERROR: Fail to create directory " + TskHelper::toNarrow(path) + " Reason: " + GetErrorStdStr(GetLastError())).c_str());
                 handleExit(1);
@@ -997,7 +997,7 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     TSK_OFF_T offset = 0;
     size_t bufferLen = 16 * 1024;
     char buffer[16 * 1024];
-    FILE *file = NULL;
+    HANDLE handle = NULL;
     std::string filename;
     TSK_RETVAL_ENUM result = TSK_OK;
 
@@ -1009,8 +1009,14 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     if (!createVHD) {
         std::string parentPath = directoryPath + "/" + rootStr + "/" + subDirForFiles + "/" + path;
         createDirectoryRecursively(TskHelper::toWide(parentPath));
-        filename = parentPath + "/" + fs_file->name->name;
-        file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
+        filename = parentPath + fs_file->name->name;
+        TskHelper::replaceAll(filename, "/", "\\");
+        std::wstring filePath = std::wstring(L"\\\\?\\" + cwd + L"\\" + TskHelper::toWide(filename));
+        handle = CreateFileW(filePath.c_str(), FILE_WRITE_DATA, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
+        if (handle == INVALID_HANDLE_VALUE) {
+            consoleOutput(stderr, "ERROR: extractFile CreateFileW failed: %s, reason: %s\n", TskHelper::toNarrow(filePath).c_str(), GetErrorStdStr(GetLastError()).c_str());
+            return TSK_ERR;
+        }
     }
 
     while (true) {
@@ -1027,22 +1033,29 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
                 } else {
                     printDebug("extractFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, offset);
                     consoleOutput(stderr, "extractFile: tsk_fs_file_read returns -1 filename=%s\tpath=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, path, offset);
-                    return TSK_ERR;
+                    result = TSK_ERR;
+                    break;
                 }
             }
             else {
                 // don't report it
-                return TSK_ERR;
+                result = TSK_ERR;
+                break;
             }
         }
         else if (bytesRead == 0) {
             result = TSK_ERR;
             break;
         }
-        if (!createVHD && file) {
-            size_t bytesWritten = fwrite((const void *)buffer, sizeof(char), bytesRead, file);
+        if (!createVHD && handle) {
+            DWORD bytesWritten;
+            if (FALSE == WriteFile(handle, (const void *)buffer, (DWORD) bytesRead, &bytesWritten, NULL)) {
+                consoleOutput(stderr, "ERROR: extractFile failed: %s, reason: %s\n", filename.c_str(), GetErrorStdStr(GetLastError()).c_str());
+                result = TSK_ERR;
+                break;
+            }
             if (bytesWritten != bytesRead) {
-                fprintf(stderr, "ERROR: extractFile failed: %s\n", filename.c_str());
+                consoleOutput(stderr, "ERROR: extractFile failed: %s\n", filename.c_str());
                 result = TSK_ERR;
                 break;
             }
@@ -1053,8 +1066,8 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
         }
     }
 
-    if (file) {
-        fclose(file);
+    if (handle) {
+        CloseHandle(handle);
     }
 
     return result;
