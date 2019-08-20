@@ -12,8 +12,6 @@ matrix:
     dist: bionic
     sudo: required
     group: edge
-  - compiler: gcc
-    os: osx
 
 addons:
   apt:
