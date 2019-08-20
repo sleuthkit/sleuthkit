@@ -1176,7 +1176,7 @@ TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image) {
 }
 
 bool driveIsFAT(TCHAR *drive) {
-    std::wstring imageStr = std::wstring(_TSK_T("\\\\.\\")) + drive;
+    std::wstring imageStr = std::wstring(L"\\\\.\\") + drive;
     const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
     bool result = false;
 
@@ -1203,7 +1203,7 @@ bool driveIsFAT(TCHAR *drive) {
  * Result true if Current Working Directory file system is FAT.
  */
 bool cwdIsFAT() {
-    TCHAR *buffer;
+    wchar_t *buffer;
 
     if ((buffer = _wgetcwd(NULL, 0)) == NULL) {
         consoleOutput(stderr, "Error: _wgetcwd failed");
