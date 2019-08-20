@@ -1175,7 +1175,7 @@ TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image) {
     return img;
 }
 
-bool driveIsFAT(TCHAR *drive) {
+bool driveIsFAT(wchar_t *drive) {
     std::wstring imageStr = std::wstring(L"\\\\.\\") + drive;
     const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
     bool result = false;
@@ -1212,7 +1212,7 @@ bool cwdIsFAT() {
 
     cwd = buffer;
 
-    TCHAR drive[3];
+    wchar_t drive[3];
     wcsncpy_s(drive, 3, buffer, 2);
     drive[2] = 0;
     free(buffer);
