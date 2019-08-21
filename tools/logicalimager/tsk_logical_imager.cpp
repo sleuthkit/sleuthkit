@@ -50,6 +50,9 @@ std::string directoryPath;
 std::string subDirForFiles;
 static char *rootStr = "root";
 std::wstring cwd;
+int fileCounter = 1;
+int dirCounter = 1;
+int maxFilesInDir = 1000 + 1; // +1 because fileCounter is not zero-based
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
@@ -874,7 +877,7 @@ static void openAlert(const std::string &alertFilename) {
         consoleOutput(stderr, "ERROR: Failed to open alert file %s\n", alertFilename.c_str());
         handleExit(1);
     }
-    fprintf(m_alertFile, "VHD file/directory\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\n");
+    fprintf(m_alertFile, "VHD file/directory\tFile system offset\tFile metadata adddress\tExtraction status\tRule set name\tRule name\tDescription\tFilename\tPath\tExtractFilePath\tcrtime\tmtime\tatime\tctime\n");
 }
 
 /*
@@ -896,7 +899,7 @@ static void openAlert(const std::string &alertFilename) {
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
 */
-static void alert(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path) {
+static void alert(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, std::string extractedFilePath) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't alert . and ..
         return;
@@ -905,8 +908,12 @@ static void alert(const std::string &outputLocation, TSK_RETVAL_ENUM extractStat
         // Don't alert unallocated files that failed extraction
         return;
     }
-    // alert file format is "VHD file<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path"
-    fprintf(m_alertFile, "%s\t%" PRIdOFF "\t%" PRIuINUM "\t%d\t%s\t%s\t%s\t%s\t%s\n",
+    // alert file format is "VHD file<tab>File system offset<tab>file metadata address<tab>extractStatus<tab>ruleSetName<tab>ruleName<tab>description<tab>name<tab>path<tab>extracedFilePath<tab>crtime<tab>mtime<tab>atime<tab>ctime"
+    std::string crtimeStr = (fs_file->meta ? std::to_string(fs_file->meta->crtime) : "0");
+    std::string mtimeStr = (fs_file->meta ? std::to_string(fs_file->meta->mtime) : "0");
+    std::string atimeStr = (fs_file->meta ? std::to_string(fs_file->meta->atime) : "0");
+    std::string ctimeStr = (fs_file->meta ? std::to_string(fs_file->meta->ctime) : "0");
+    fprintf(m_alertFile, "%s\t%" PRIdOFF "\t%" PRIuINUM "\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         outputLocation.c_str(),
         fs_file->fs_info->offset,
         (fs_file->meta ? fs_file->meta->addr : 0),
@@ -915,7 +922,13 @@ static void alert(const std::string &outputLocation, TSK_RETVAL_ENUM extractStat
         ruleMatchResult->getName().c_str(),
         ruleMatchResult->getDescription().c_str(),
         (fs_file->name ? fs_file->name->name : "name is null"),
-        path);
+        path,
+        extractedFilePath.c_str(),
+        crtimeStr.c_str(),
+        mtimeStr.c_str(),
+        atimeStr.c_str(),
+        ctimeStr.c_str()
+        );
     fflush(m_alertFile);
 
     std::string fullPath(path);
@@ -987,17 +1000,32 @@ void createDirectoryRecursively(const std::wstring &path)
     } while (pos != std::string::npos);
 }
 
+std::string generateDirForFiles() {
+    if (fileCounter % maxFilesInDir == 0) {
+        dirCounter++;
+        fileCounter = 1; // reset
+        std::string newDir = std::string(directoryPath + "/" + rootStr + "/" + subDirForFiles + "/d-" + std::to_string(dirCounter));
+        if (_mkdir(newDir.c_str()) != 0) {
+            if (errno != EEXIST) {
+                consoleOutput(stderr, "ERROR: mkdir failed for %s", newDir.c_str());
+                handleExit(1);
+            }
+        }
+    }
+    return std::string("d-" + std::to_string(dirCounter));
+}
+
 /**
 * Extract a file. tsk_img_writer_create must have been called prior to this method.
 *
 * @param fs_file File details
 * @returns TSK_RETVAL_ENUM TSK_OK if file is extracted, TSK_ERR otherwise.
 */
-static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
+static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path, std::string &extractedFilePath) {
     TSK_OFF_T offset = 0;
     size_t bufferLen = 16 * 1024;
     char buffer[16 * 1024];
-    HANDLE handle = NULL;
+    FILE *file = (FILE *) NULL;
     std::string filename;
     TSK_RETVAL_ENUM result = TSK_OK;
 
@@ -1007,17 +1035,16 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
     }
 
     if (!createVHD) {
-        std::string parentPath = directoryPath + "/" + rootStr + "/" + subDirForFiles + "/" + path;
-        createDirectoryRecursively(TskHelper::toWide(parentPath));
-        filename = parentPath + fs_file->name->name;
-        TskHelper::replaceAll(filename, "/", "\\");
-        std::wstring filePath = std::wstring(L"\\\\?\\" + cwd + L"\\" + TskHelper::toWide(filename));
-        handle = CreateFileW(filePath.c_str(), FILE_WRITE_DATA, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
-        if (handle == INVALID_HANDLE_VALUE) {
-            consoleOutput(stderr, "ERROR: extractFile CreateFileW failed: %s, reason: %s\n", TskHelper::toNarrow(filePath).c_str(), GetErrorStdStr(GetLastError()).c_str());
+        extractedFilePath = std::string(rootStr) + "/" + subDirForFiles + "/" + generateDirForFiles() + "/f-" + std::to_string(fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
+        filename = directoryPath + "/" + extractedFilePath;
+        fileCounter++;
+        file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
+        if (file == NULL) {
+            consoleOutput(stderr, "ERROR: extractFile _wfopen failed for %s", filename.c_str());
             return TSK_ERR;
         }
-    }
+        TskHelper::replaceAll(extractedFilePath, "/", "\\");
+   }
 
     while (true) {
         ssize_t bytesRead = tsk_fs_file_read(fs_file, offset, buffer, bufferLen, TSK_FS_FILE_READ_FLAG_NONE);
@@ -1047,17 +1074,10 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
             result = TSK_ERR;
             break;
         }
-        if (!createVHD && handle) {
-            DWORD bytesWritten;
-            if (FALSE == WriteFile(handle, (const void *)buffer, (DWORD) bytesRead, &bytesWritten, NULL)) {
-                consoleOutput(stderr, "ERROR: extractFile failed: %s, reason: %s\n", filename.c_str(), GetErrorStdStr(GetLastError()).c_str());
-                result = TSK_ERR;
-                break;
-            }
+        if (!createVHD && file) {
+            size_t bytesWritten = fwrite((const void *)buffer, sizeof(char), bytesRead, file);
             if (bytesWritten != bytesRead) {
                 consoleOutput(stderr, "ERROR: extractFile failed: %s\n", filename.c_str());
-                result = TSK_ERR;
-                break;
             }
         }
         offset += bytesRead;
@@ -1066,8 +1086,8 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
         }
     }
 
-    if (handle) {
-        CloseHandle(handle);
+    if (!createVHD && file) {
+        fclose(file);
     }
 
     return result;
@@ -1086,10 +1106,12 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path) {
 */
 static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM extractStatus = TSK_ERR;
+    std::string extractedFilePath;
+
     if (matchResult->isShouldSave()) {
-        extractStatus = extractFile(fs_file, path);
+        extractStatus = extractFile(fs_file, path, extractedFilePath);
     }
-    alert(outputLocation, extractStatus, matchResult, fs_file, path);
+    alert(outputLocation, extractStatus, matchResult, fs_file, path, extractedFilePath);
     return TSK_OK;
 }
 
@@ -1350,6 +1372,8 @@ main(int argc, char **argv1)
 
     // Loop through all images
     for (size_t i = 0; i < imgPaths.size(); ++i) {
+        dirCounter = 1; // reset for each image
+        fileCounter = 1;
         const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
         driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
         printDebug("Processing drive %s", driveToProcess.c_str());
@@ -1395,7 +1419,7 @@ main(int argc, char **argv1)
         }
         else {
             // create directory to store extracted files
-            createDirectoryRecursively(TskHelper::toWide(directoryPath + "/" + rootStr + "/" + subDirForFiles));
+            createDirectoryRecursively(TskHelper::toWide(std::string(directoryPath + "/" + rootStr + "/" + subDirForFiles + "/d-" + std::to_string(dirCounter))));
         }
 
         imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
