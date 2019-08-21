@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <project name="TSKTestTargets">
 
-    <property name="dlls" value="../../win32/x64/Release_PostgreSQL"/>
-    <property environment="env"/>
+	<property name="dlls" value="../../win32/x64/Release_PostgreSQL"/>
+	<property environment="env"/>
 
 	<target name="test"
 			description="Runs the regression tests."
@@ -14,6 +14,7 @@
 			<sysproperty key="inpt" value="${test-input}"/>
 			<classpath refid="libraries" />
 			<formatter type="plain" usefile="false" />
+			<test name="org.sleuthkit.datamodel.timeline.TimelineTestSuite" />
 			<test name="org.sleuthkit.datamodel.DataModelTestSuite" />
 		</junit>
 	</target>
@@ -33,12 +34,12 @@
 
 	<target name="check-build-32" if="win32.TskLib.exists">
 		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/Release/libtsk_jni.dll"
-		targetfile="${x86}/win/libtsk_jni.dll"/>
+				  targetfile="${x86}/win/libtsk_jni.dll"/>
 	</target>
 
 	<target name="check-build-64" if="win64.TskLib.exists">
 		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/x64/Release/libtsk_jni.dll"
-		targetfile="${amd64}/win/libtsk_jni.dll"/>
+				  targetfile="${amd64}/win/libtsk_jni.dll"/>
 	</target>
 
 	<target name="copyLibs-SQLite" description="Copy native libs to the correct folder">

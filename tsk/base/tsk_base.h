@@ -247,32 +247,26 @@ extern "C" {
     typedef uint64_t TSK_INUM_T;        ///< Data type used to internally store metadata / inode addresses
 #define PRIuINUM	PRIu64
 #define PRIxINUM	PRIx64
-#define PRIdINUM	PRId64
 
     typedef uint32_t TSK_UID_T; ///< Data type used to internally store User IDs
 #define PRIuUID	    PRIu32
 #define PRIxUID	    PRIx32
-#define PRIdUID	    PRId32
 
     typedef uint32_t TSK_GID_T; ///< Data type used to internally store Group IDs
 #define PRIuGID	    PRIu32
 #define PRIxGID	    PRIx32
-#define PRIdGID	    PRId32
 
     typedef uint64_t TSK_DADDR_T;       ///< Data type used to internally store sector and block addresses
 #define PRIuDADDR   PRIu64
 #define PRIxDADDR   PRIx64
-#define PRIdDADDR   PRId64
 
     typedef int64_t TSK_OFF_T;  ///< Data type used to internally store volume, file, etc. sizes and offsets
-#define PRIuOFF		PRIu64
 #define PRIxOFF		PRIx64
 #define PRIdOFF		PRId64
 
     typedef uint32_t TSK_PNUM_T;        ///< Data type used to internally store partition addresses
 #define PRIuPNUM	PRIu32
 #define PRIxPNUM	PRIx32
-#define PRIdPNUM	PRId32
 //@}
 
 
