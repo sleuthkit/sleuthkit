@@ -13,6 +13,7 @@ m4_include([m4/ac_prog_javac_works.m4])
 m4_include([m4/ac_prog_javac.m4])
 m4_include([m4/ac_prog_java_works.m4])
 m4_include([m4/ac_prog_java.m4])
+m4_include([m4/ax_cxx_compile_stdcxx.m4])
 
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
@@ -75,6 +76,8 @@ AC_FUNC_VPRINTF
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
 AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
 AC_CHECK_FUNCS([strlcpy strlcat])
+
+AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])
 
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
