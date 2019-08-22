@@ -993,7 +993,7 @@ void createDirectoryRecursively(const std::wstring &path)
         pos = path2.find_first_of(L"\\", pos + 1);
         if (CreateDirectoryW(std::wstring(L"\\\\?\\" + cwd + L"\\" + path2.substr(0, pos)).c_str(), NULL) == 0) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                consoleOutput(stderr, std::string("ERROR: Fail to create directory " + TskHelper::toNarrow(path) + " Reason: " + GetErrorStdStr(GetLastError())).c_str());
+                consoleOutput(stderr, "ERROR: Fail to create directory %s Reason: %s\n", TskHelper::toNarrow(path).c_str(), GetErrorStdStr(GetLastError()).c_str());
                 handleExit(1);
             }
         }
@@ -1005,7 +1005,7 @@ std::string generateDirForFiles() {
     std::string newDir = std::string(directoryPath + "/" + rootStr + "/" + subDirForFiles + "/d-" + std::to_string(dirCounter));
     if (_mkdir(newDir.c_str()) != 0) {
         if (errno != EEXIST) {
-            consoleOutput(stderr, "ERROR: mkdir failed for %s", newDir.c_str());
+            consoleOutput(stderr, "ERROR: mkdir failed for %s\n", newDir.c_str());
             handleExit(1);
         }
     }
@@ -1042,8 +1042,8 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path, std::
         filename = directoryPath + "/" + extractedFilePath;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
         if (file == NULL) {
-            consoleOutput(stderr, "ERROR: extractFile _wfopen failed for %s", filename.c_str());
-            return TSK_ERR;
+            consoleOutput(stderr, "ERROR: extractFile _wfopen failed for %s, reason: %s\n", filename.c_str(), _strerror(NULL));
+            handleExit(1);
         }
         TskHelper::replaceAll(extractedFilePath, "/", "\\");
    }
@@ -1230,7 +1230,7 @@ bool cwdIsFAT() {
     wchar_t *buffer;
 
     if ((buffer = _wgetcwd(NULL, 0)) == NULL) {
-        consoleOutput(stderr, "Error: _wgetcwd failed");
+        consoleOutput(stderr, "Error: _wgetcwd failed\n");
         handleExit(1);
     }
 
@@ -1311,7 +1311,7 @@ main(int argc, char **argv1)
 
     // If CWD is FAT, exit with error because it cannot create files greater 4 GB
     if (cwdIsFAT()) {
-        consoleOutput(stderr, "Error: Writing to FAT device is not supported.");
+        consoleOutput(stderr, "Error: Writing to FAT device is not supported.\n");
         handleExit(1);
     }
 
