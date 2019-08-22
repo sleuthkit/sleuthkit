@@ -1012,6 +1012,9 @@ std::string generateDirForFiles() {
             }
         }
     }
+    else {
+        fileCounter++;
+    }
     return std::string("d-" + std::to_string(dirCounter));
 }
 
@@ -1037,7 +1040,6 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path, std::
     if (!createVHD) {
         extractedFilePath = std::string(rootStr) + "/" + subDirForFiles + "/" + generateDirForFiles() + "/f-" + std::to_string(fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
         filename = directoryPath + "/" + extractedFilePath;
-        fileCounter++;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
         if (file == NULL) {
             consoleOutput(stderr, "ERROR: extractFile _wfopen failed for %s", filename.c_str());
