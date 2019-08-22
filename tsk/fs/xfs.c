@@ -2268,6 +2268,7 @@ visit_btree_node(
 {
     char *myname = "xfs_dir_open_meta";
     XFSFS_INFO *xfs = (XFSFS_INFO *) a_fs;
+    xfs_sb_t *sb = xfs->fs;
 
     // xfs_bmdr_block and xfs_bmbt_block_t share those two fields
     uint16_t bb_numrecs = 0;
@@ -2314,7 +2315,7 @@ visit_btree_node(
             return TSK_ERR;
         }
 
-        len = header_offset = sizeof(xfs_bmbt_block_t);
+        len = header_offset = XFS_LBLOCK_LEN(sb);
         cnt = tsk_fs_read(&xfs->fs_info,
             cur_node_offset,
             (char *) cur_bmbt_block,

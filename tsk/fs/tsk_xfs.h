@@ -265,7 +265,52 @@ typedef struct xfs_btree_lblock {
     uint16_t   bb_numrecs;
     uint64_t   bb_leftsib;
     uint64_t   bb_rightsib;
+    /* version 5 filesystem fields start here */
+    uint64_t   bb_blkno;
+    uint64_t   bb_lsn;
+    xfs_uuid_t bb_uuid;
+    uint64_t   bb_owner;
+    uint32_t   bb_crc;
+    uint32_t   bb_pad;
 } xfs_btree_lblock_t;
+
+/* size of a long form block:
+*    uint32_t    bb_magic;
+*    uint16_t    bb_level;
+*    uint16_t    bb_numrecs;
+*    uint64_t    bb_leftsib;
+*    uint64_t    bb_rightsib;
+*/
+#define XFS_BTREE_LBLOCK_LEN \
+    (sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
+     sizeof(uint64_t) + sizeof(uint64_t))
+
+/* sizes of CRC enabled long form blocks:
+*    uint32_t    bb_magic;
+*    uint16_t    bb_level;
+*    uint16_t    bb_numrecs;
+*    uint64_t    bb_leftsib;
+*    uint64_t    bb_rightsib;
++
+*    uint64_t    bb_blkno;
+*    uint64_t    bb_lsn;
+*    xfs_uuid_t  bb_uuid;
+*    uint64_t    bb_owner;
+*    uint32_t    bb_crc;
+*    uint32_t    bb_pad;
+*/
+#define XFS_BTREE_LBLOCK_CRC_LEN \
+    (sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + \
+     sizeof(uint64_t) + sizeof(uint64_t) + \
+     sizeof(uint64_t) + sizeof(uint64_t) + sizeof(xfs_uuid_t) + \
+     sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint32_t))
+
+/*
+ * Long form block header size depends on a superblock flag
+ */
+#define XFS_LBLOCK_LEN(sb) \
+    (xfs_sb_version_hascrc(sb) ? \
+         XFS_BTREE_LBLOCK_CRC_LEN : XFS_BTREE_LBLOCK_LEN)
 
 typedef struct xfs_bmbt_key {
     xfs_dfiloff_t    br_startoff;
