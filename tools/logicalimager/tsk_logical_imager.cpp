@@ -50,9 +50,9 @@ std::string directoryPath;
 std::string subDirForFiles;
 static char *rootStr = "root";
 std::wstring cwd;
-int fileCounter = 1;
-int dirCounter = 1;
-int maxFilesInDir = 1000 + 1; // +1 because fileCounter is not zero-based
+int fileCounter;
+int dirCounter;
+int maxFilesInDir = 1000;
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
@@ -1001,19 +1001,13 @@ void createDirectoryRecursively(const std::wstring &path)
 }
 
 std::string generateDirForFiles() {
-    if (fileCounter % maxFilesInDir == 0) {
-        dirCounter++;
-        fileCounter = 1; // reset
-        std::string newDir = std::string(directoryPath + "/" + rootStr + "/" + subDirForFiles + "/d-" + std::to_string(dirCounter));
-        if (_mkdir(newDir.c_str()) != 0) {
-            if (errno != EEXIST) {
-                consoleOutput(stderr, "ERROR: mkdir failed for %s", newDir.c_str());
-                handleExit(1);
-            }
+    dirCounter++;
+    std::string newDir = std::string(directoryPath + "/" + rootStr + "/" + subDirForFiles + "/d-" + std::to_string(dirCounter));
+    if (_mkdir(newDir.c_str()) != 0) {
+        if (errno != EEXIST) {
+            consoleOutput(stderr, "ERROR: mkdir failed for %s", newDir.c_str());
+            handleExit(1);
         }
-    }
-    else {
-        fileCounter++;
     }
     return std::string("d-" + std::to_string(dirCounter));
 }
@@ -1038,7 +1032,13 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path, std::
     }
 
     if (!createVHD) {
-        extractedFilePath = std::string(rootStr) + "/" + subDirForFiles + "/" + generateDirForFiles() + "/f-" + std::to_string(fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
+        std::string dirNum = std::string("d-" + std::to_string(dirCounter));;
+        if (fileCounter > maxFilesInDir) {
+            dirNum = generateDirForFiles();
+            fileCounter = 1;
+        }
+        extractedFilePath = std::string(rootStr) + "/" + subDirForFiles + "/" + dirNum + "/f-" + std::to_string(fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
+        fileCounter++;
         filename = directoryPath + "/" + extractedFilePath;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
         if (file == NULL) {
