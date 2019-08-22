@@ -75,6 +75,7 @@ import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.ObjectType;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -5744,6 +5745,115 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Add a file system file.
+	 * 
+	 * @param fsObjId		The file system object id.
+	 * @param dataSourceObjId	The object id of the root data source of this
+	 *							file.
+	 * @param attrType		The attributed type of the file.
+	 * @param attrId		The attribute id 
+	 * @param fileName		The name of the file.
+	 * @param dirFlag		The allocated status from the name structure
+	 * @param size			The size of the file in bytes.
+	 * @param ctime			The changed time of the file.
+	 * @param crtime		The creation time of the file.
+	 * @param atime			The accessed time of the file
+	 * @param mtime			The modified time of the file.
+	 * @param metaAddr		The meta address of the file.
+	 * @param metaSeq		The meta address sequence of the file.
+	 ** @param isFile		True, unless the file is a directory.
+	 * @param parent		The parent of the file (e.g., a virtual directory)
+	 * 
+	 * @return Newly created file
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public FsContent addFileSystemFile(long fsObjId, long dataSourceObjId,
+										TSK_FS_ATTR_TYPE_ENUM attrType, int attrId, String fileName,
+										TSK_FS_NAME_FLAG_ENUM dirFlag, long size, 
+										long ctime, long crtime, long atime, long mtime,
+										long metaAddr, int metaSeq, boolean isFile, Content parent) throws TskCoreException {
+		
+		CaseDbTransaction transaction = beginTransaction();
+		Statement queryStatement = null;
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			transaction.acquireSingleUserCaseWriteLock();
+
+			// Insert a row for the local/logical file into the tsk_objects table.
+			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+			long objectId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
+			
+			String parentPath;
+			
+			if (parent instanceof AbstractFile) {
+				AbstractFile parentFile = (AbstractFile) parent;
+				if (isRootDirectory(parentFile, transaction)) {
+					parentPath = "/";
+				} else {
+					parentPath = parentFile.getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
+			} else {
+				parentPath = "/";
+			}
+	
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE);
+			statement.clearParameters();
+			statement.setLong(1, objectId);											// obj_is
+			statement.setLong(2, fsObjId);											// fs_obj_id 
+			statement.setLong(3, dataSourceObjId);									// data_source_obj_id 
+			statement.setShort(4, (short)attrType.getValue());						// attr_type
+			statement.setInt(5, attrId);											// attr_id
+			statement.setString(6, fileName);										// name
+			statement.setLong(7, metaAddr);											// meta_addr
+			statement.setInt(8, metaSeq);											// meta_addr
+			statement.setShort(9, TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType());	//type
+			statement.setShort(10, (short) 1);										// has_path
+			TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			statement.setShort(11, dirType.getValue());								// dir_type
+			TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			statement.setShort(12, metaType.getValue());							// meta_type
+			statement.setShort(13, dirFlag.getValue());								// dir_flags
+			short metaFlags = (short) (dirFlag.getValue() | TSK_FS_META_FLAG_ENUM.USED.getValue());
+			statement.setShort(14, metaFlags);										// meta_flags
+			statement.setLong(15, size);
+			statement.setLong(16, ctime);
+			statement.setLong(17, crtime);
+			statement.setLong(18, atime);
+			statement.setLong(19, mtime);
+			statement.setString(20, parentPath);
+			final String extension = extractExtension(fileName);
+			statement.setString(21, extension);
+
+			connection.executeUpdate(statement);
+			
+			transaction.commit();
+			transaction = null;
+			
+			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
+			attrType, attrId, fileName, metaAddr, metaSeq,
+			dirType, metaType, dirFlag, metaFlags,
+			size, ctime, crtime, atime, mtime,
+			(short)0, 0, 0, null, null, parentPath, null,
+			extension);
+			
+		} catch(SQLException ex) {
+			logger.log(Level.WARNING, "Failed to add file system file", ex);
+		} 
+		finally {
+			closeStatement(queryStatement);
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Get IDs of the virtual folder roots (at the same level as image), used
 	 * for containers such as for local files.
 	 *
@@ -10487,6 +10597,8 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id,extension) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, extension)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
