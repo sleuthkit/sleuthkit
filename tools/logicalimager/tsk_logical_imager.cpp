@@ -1042,7 +1042,7 @@ static TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path, std::
         filename = directoryPath + "/" + extractedFilePath;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
         if (file == NULL) {
-            consoleOutput(stderr, "ERROR: extractFile _wfopen failed for %s, reason: %s\n", filename.c_str(), _strerror(NULL));
+            consoleOutput(stderr, "ERROR: extractFile failed for %s, reason: %s\n", filename.c_str(), _strerror(NULL));
             handleExit(1);
         }
         TskHelper::replaceAll(extractedFilePath, "/", "\\");
