@@ -5747,20 +5747,21 @@ public class SleuthkitCase {
 	/**
 	 * Add a file system file.
 	 * 
-	 * @param fsObjId		The file system object id.
 	 * @param dataSourceObjId	The object id of the root data source of this
 	 *							file.
+	 * @param fsObjId		The file system object id.
+	 * @param fileName		The name of the file.
+	 * @param metaAddr		The meta address of the file.
+	 * @param metaSeq		The meta address sequence of the file.
 	 * @param attrType		The attributed type of the file.
 	 * @param attrId		The attribute id 
-	 * @param fileName		The name of the file.
 	 * @param dirFlag		The allocated status from the name structure
+	 * @param metaFlags
 	 * @param size			The size of the file in bytes.
 	 * @param ctime			The changed time of the file.
 	 * @param crtime		The creation time of the file.
 	 * @param atime			The accessed time of the file
 	 * @param mtime			The modified time of the file.
-	 * @param metaAddr		The meta address of the file.
-	 * @param metaSeq		The meta address sequence of the file.
 	 ** @param isFile		True, unless the file is a directory.
 	 * @param parent		The parent of the file (e.g., a virtual directory)
 	 * 
@@ -5768,11 +5769,13 @@ public class SleuthkitCase {
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public FsContent addFileSystemFile(long fsObjId, long dataSourceObjId,
-										TSK_FS_ATTR_TYPE_ENUM attrType, int attrId, String fileName,
-										TSK_FS_NAME_FLAG_ENUM dirFlag, long size, 
+	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId, 
+										String fileName,
+										long metaAddr, int metaSeq,
+										TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+										TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, 
 										long ctime, long crtime, long atime, long mtime,
-										long metaAddr, int metaSeq, boolean isFile, Content parent) throws TskCoreException {
+										boolean isFile, Content parent) throws TskCoreException {
 		
 		CaseDbTransaction transaction = beginTransaction();
 		Statement queryStatement = null;
@@ -5814,9 +5817,8 @@ public class SleuthkitCase {
 			TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 			statement.setShort(12, metaType.getValue());							// meta_type
 			statement.setShort(13, dirFlag.getValue());								// dir_flags
-			short metaFlags = (short) (dirFlag.getValue() | TSK_FS_META_FLAG_ENUM.USED.getValue());
 			statement.setShort(14, metaFlags);										// meta_flags
-			statement.setLong(15, size);
+			statement.setLong(15,  size < 0 ? 0 : size);
 			statement.setLong(16, ctime);
 			statement.setLong(17, crtime);
 			statement.setLong(18, atime);
