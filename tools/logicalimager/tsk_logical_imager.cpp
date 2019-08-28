@@ -66,9 +66,9 @@ void openConsoleOutput(const std::string &consoleFileName) {
     }
 }
 
-void logOutputToFile(const char *buf) {
+void logOutputToFile(const char *buf) { 
     if (consoleFile) {
-        fprintf(consoleFile, buf);
+        fprintf(consoleFile, "%s", buf);
     }
 }
 
@@ -78,13 +78,13 @@ void consoleOutput(FILE *fd, const char *msg, ...) {
 
     va_start(args, msg);
     vsnprintf(buf, sizeof(buf), msg, args);
-    fprintf(fd, buf);
+    fprintf(fd, "%s", buf);
     // output to console file
     logOutputToFile(buf);
     va_end(args);
 }
 
-void printDebug(char *msg, const char *fmt...) {
+void printDebug(char *msg, const char *fmt, ...) {
     if (tsk_verbose) {
         string prefix("tsk_logical_imager: ");
         string message = prefix + msg + "\n";
