@@ -395,6 +395,8 @@ AX_CHECK_OPENSSL(
   [ax_openssl=no]
   [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])]
 )
+AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
+
 
 dnl Enable compliation warnings
 WARNINGS='-Wall -Wextra -Wno-unused-parameter'
