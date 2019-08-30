@@ -30,6 +30,7 @@
 #include "tsk/img/tsk_img.h"
 #include "tsk/vs/tsk_vs.h"
 #include "tsk/fs/tsk_fs.h"
+#include "tsk/pool/tsk_pool.h"
 
 #include <string>
 #include <vector>
@@ -84,6 +85,9 @@ class TskAuto {
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
     uint8_t findFilesInVs(TSK_OFF_T start, TSK_VS_TYPE_ENUM vtype);
+    bool hasPool(TSK_OFF_T a_start);
+    uint8_t findFilesInPool(TSK_OFF_T start);
+    uint8_t findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype);
     uint8_t findFilesInFs(TSK_OFF_T start);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);

@@ -215,6 +215,8 @@ main(int argc, char **argv1)
         usage();
     }
 
+    printf("Opening image\n");
+    fflush(stdout);
     TskGetTimes tskGetTimes(sec_skew, do_hash);
     if (tskGetTimes.openImage(argc - OPTIND, &argv[OPTIND], imgtype,
             ssize)) {
@@ -222,6 +224,8 @@ main(int argc, char **argv1)
         exit(1);
     }
     
+    printf("Finding files in image\n");
+    fflush(stdout);
     if (tskGetTimes.findFilesInImg()) {
         // we already logged the errors
         exit(1);
