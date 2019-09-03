@@ -121,6 +121,16 @@ class TskAuto {
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
 
     /**
+    * TskAuto calls this method before it processes each pool volume that is found in a
+    * pool. You can use this to learn about each volume before it is processed
+    * and you can force TskAuto to skip this volume. 
+    *
+    * @param pool_vol Pool volume details
+    * @returns Value to show if pool volume should be processed, skipped, or process should stop.
+    */
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
+
+    /**
      * TskAuto calls this method before it processes each file system that is found in a 
      * volume. You can use this to learn about each file system before it is processed
      * and you can force TskAuto to skip this file system. 

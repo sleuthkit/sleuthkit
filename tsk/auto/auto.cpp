@@ -202,6 +202,15 @@ TskAuto::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)
     return TSK_FILTER_CONT;
 }
 
+TSK_FILTER_ENUM
+TskAuto::filterPoolVol(const TSK_POOL_VOLUME_INFO * /*pool_vol*/)
+{
+    /* Most of our tools can't handle pool volumes yet */
+    if (tsk_verbose)
+        fprintf(stderr, "filterPoolVol: Pool handling is not yet implemented for this tool\n");
+    return TSK_FILTER_SKIP;
+}
+
 TSK_FILTER_ENUM 
 TskAuto::filterFs(TSK_FS_INFO * /*fs_info*/)
 {
@@ -412,28 +421,33 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         return TSK_ERR;
     }
 
+    /* Only APFS pools are currently supported */
     if (pool->ctype == TSK_POOL_TYPE_APFS) {
-        printf("  Have APFS pool with %d volumes\n", pool->num_vols);
 
         TSK_POOL_VOLUME_INFO *vol_info = pool->vol_list;
         while (vol_info != NULL) {
 
-            printf("  Loading volume at block %lld\n", vol_info->block);
-            TSK_FS_INFO *fs_info = apfs_open(pool, vol_info->block, TSK_FS_TYPE_APFS, "");
-            if (fs_info) {
+            TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
+            if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing))
+                return TSK_STOP;
 
-                TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
-                tsk_fs_close(fs_info);
+            if (filterRetval != TSK_FILTER_SKIP) {
+                TSK_FS_INFO *fs_info = apfs_open(pool, vol_info->block, TSK_FS_TYPE_APFS, "");
+                if (fs_info) {
 
-                if (retval == TSK_STOP) {
-                    return TSK_STOP;
+                    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+                    tsk_fs_close(fs_info);
+
+                    if (retval == TSK_STOP) {
+                        return TSK_STOP;
+                    }
                 }
-            }
-            else {
-                tsk_error_set_errstr2(
-                    "findFilesInPool: Error opening APFS file system");
-                registerError();
-                return TSK_ERR;
+                else {
+                    tsk_error_set_errstr2(
+                        "findFilesInPool: Error opening APFS file system");
+                    registerError();
+                    return TSK_ERR;
+                }
             }
 
             vol_info = vol_info->next;
