@@ -258,10 +258,18 @@ TSK_WALK_RET_ENUM
         return TSK_WALK_STOP;    
 
     // process it
-    TSK_RETVAL_ENUM retval2 = tsk->findFilesInFsRet(
-        a_vs_part->start * a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
-    if ((retval2 == TSK_STOP) || (tsk->getStopProcessing())) {
-        return TSK_WALK_STOP;
+    if (tsk->hasPool(a_vs_part->start * a_vs_part->vs->block_size)) {
+        if (TSK_STOP == tsk->findFilesInPool(a_vs_part->start * a_vs_part->vs->block_size)
+            || tsk->getStopProcessing()) {
+            return TSK_WALK_STOP;
+        }
+    }
+    else {
+        TSK_RETVAL_ENUM retval2 = tsk->findFilesInFsRet(
+            a_vs_part->start * a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
+        if ((retval2 == TSK_STOP) || (tsk->getStopProcessing())) {
+            return TSK_WALK_STOP;
+        }
     }
 
     //all errors would have been registered
@@ -301,8 +309,6 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 
         /* There was no volume system, but there could be a file system 
          * Errors will have been registered */
-        printf("findFilesInVs - first part, calling findFilesInFs\n");
-        fflush(stdout);
         if (hasPool(a_start)) {
             findFilesInPool(a_start);
         }
@@ -316,8 +322,6 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
         if ((retval == TSK_FILTER_STOP) || (retval == TSK_FILTER_SKIP)|| (m_stopAllProcessing))
             return m_errors.empty() ? 0 : 1;
 
-        printf("findFilesInVs - second part, calling tsk_vs_part_walk\n");
-        fflush(stdout);
         /* Walk the allocated volumes (skip metadata and unallocated volumes) */
         if (tsk_vs_part_walk(vs_info, 0, vs_info->part_count - 1,
                 m_volFilterFlags, vsWalkCb, this)) {
@@ -344,13 +348,13 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start)
 }
 
 /**
- * TODO TODO
+ * Checks whether a volume contains a pool.
+ * @param a_start Byte offset to start analyzing from.
+ * @return true if a pool is found, false if not or on error 
  */
 bool 
 TskAuto::hasPool(TSK_OFF_T a_start) 
 {
-    printf("Checking if there's a pool\n");
-    fflush(stdout);
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
@@ -361,16 +365,19 @@ TskAuto::hasPool(TSK_OFF_T a_start)
 
     const auto pool = tsk_pool_open_img_sing(m_img_info, a_start, TSK_POOL_TYPE_DETECT);
     if (pool == nullptr) {
-        printf("  No pools\n");
-        fflush(stdout);
         return false;
     }
-    printf("  POOL!!!\n");
-    fflush(stdout);
     pool->close(pool);
     return true;
 }
 
+/**
+* Starts in a specified byte offset of the opened disk images and opens a pool
+* to search though any file systems in the pool. Will call processFile() on each file
+* that is found.
+* @param start Byte offset to start analyzing from.
+* @return 1 if an error occurred (message will have been registered), 0 on success
+*/
 uint8_t
 TskAuto::findFilesInPool(TSK_OFF_T start)
 {
@@ -378,11 +385,17 @@ TskAuto::findFilesInPool(TSK_OFF_T start)
 }
 
 
+/**
+* Starts in a specified byte offset of the opened disk images and opens a pool
+* to search though any file systems in the pool. Will call processFile() on each file
+* that is found.
+* @param start Byte offset to start analyzing from.
+* @param ptype The type of pool
+* @return 1 if an error occurred (message will have been registered), 0 on success
+*/
 uint8_t 
 TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
 {
-    printf("findFilesInPool\n");
-    fflush(stdout);
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
@@ -391,11 +404,10 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         return TSK_ERR;
     }
 
-    const auto pool = tsk_pool_open_img_sing(m_img_info, start, TSK_POOL_TYPE_DETECT);
+    const auto pool = tsk_pool_open_img_sing(m_img_info, start, ptype);
     if (pool == nullptr) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_POOL_UNKTYPE);
-        tsk_error_set_errstr("findFilesInPool -- img_info");
+        tsk_error_set_errstr2(
+            "findFilesInPool: Error opening pool");
         registerError();
         return TSK_ERR;
     }
@@ -409,20 +421,30 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
             printf("  Loading volume at block %lld\n", vol_info->block);
             TSK_FS_INFO *fs_info = apfs_open(pool, vol_info->block, TSK_FS_TYPE_APFS, "");
             if (fs_info) {
-                printf("    It opened!\n");
-                fflush(stdout);
 
                 TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
                 tsk_fs_close(fs_info);
-                // TODO ERROR  HANDLILNG
+
+                if (retval == TSK_STOP) {
+                    return TSK_STOP;
+                }
             }
             else {
-                printf("    Oh no\n");
-                fflush(stdout);
+                tsk_error_set_errstr2(
+                    "findFilesInPool: Error opening APFS file system");
+                registerError();
+                return TSK_ERR;
             }
 
             vol_info = vol_info->next;
         }
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_POOL_UNSUPTYPE);
+        tsk_error_set_errstr("%d", pool->ctype);
+        registerError();
+        return TSK_ERR;
     }
     return TSK_OK;
 }
