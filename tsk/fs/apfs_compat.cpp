@@ -232,7 +232,11 @@ APFSFSCompat::APFSFSCompat(const TSK_POOL_INFO* pool_info,
 
 uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
   const auto& pool = to_pool(_fsinfo.pool_info);
+#ifdef HAVE_LIBOPENSSL
   APFSFileSystem vol{pool, _fsinfo.vol_block, _crypto.password};
+#else
+  APFSFileSystem vol{ pool, _fsinfo.vol_block};
+#endif
 
   tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
   tsk_fprintf(hFile, "--------------------------------------------\n");
@@ -923,9 +927,9 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
                         "APFS load_attrs: No zlib compression library, so "
                         "setting a zero-length default DATA attribute.\n");
 
-          if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "DECOMP",
+          if (tsk_fs_attr_set_run(file, fs_attr, NULL, "DECOMP",
                                   TSK_FS_ATTR_TYPE_HFS_DATA,
-                                  HFS_FS_ATTR_ID_DATA, 0, 0, 0, 0, 0)) {
+                                  TSK_FS_ATTR_ID_DEFAULT, 0, 0, 0, TSK_FS_ATTR_FLAG_NONE, 0)) {
             error_returned(" - APFS load_attrs (non-file)");
             return 1;
           }
@@ -1283,26 +1287,39 @@ uint8_t tsk_apfs_istat(TSK_FS_FILE* fs_file, apfs_istat_info* info) try {
   return 1;
 }
 
-uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num,
-                                    void* data) noexcept try {
-  if (_crypto.decryptor) {
-    _crypto.decryptor->decrypt_buffer(data, APFS_BLOCK_SIZE,
-                                      block_num * APFS_BLOCK_SIZE);
+uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept {
+#ifdef HAVE_LIBOPENSSL
+    try {
+        if (_crypto.decryptor) {
+            _crypto.decryptor->decrypt_buffer(data, APFS_BLOCK_SIZE,
+                block_num * APFS_BLOCK_SIZE);
 
-    return 0;
-  }
+            return 0;
+        }
 
-  return 1;
-} catch (const std::exception& e) {
-  tsk_error_reset();
-  tsk_error_set_errno(TSK_ERR_FS_GENFS);
-  tsk_error_set_errstr("%s", e.what());
-  return 1;
+        return 1;
+    }
+    catch (const std::exception& e) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_GENFS);
+        tsk_error_set_errstr("%s", e.what());
+        return 1;
+    }
+#else
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+    tsk_error_set_errstr("decrypt_block: crypto library not loaded");
+    return 1;
+#endif
 }
 
 int APFSFSCompat::name_cmp(const char* s1, const char* s2) const noexcept try {
-  const APFSFileSystem vol{to_pool(_fsinfo.pool_info), _fsinfo.vol_block,
+#ifdef HAVE_LIBOPENSSL
+    const APFSFileSystem vol{to_pool(_fsinfo.pool_info), _fsinfo.vol_block,
                            _crypto.password};
+#else
+    const APFSFileSystem vol{ to_pool(_fsinfo.pool_info), _fsinfo.vol_block};
+#endif
 
   if (vol.case_sensitive()) {
     return strcmp(s1, s2);

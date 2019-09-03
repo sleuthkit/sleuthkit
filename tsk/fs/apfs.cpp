@@ -127,18 +127,22 @@ APFSBlock::APFSBlock(const APFSPool& pool, const apfs_block_num block_num)
 }
 
 void APFSBlock::decrypt(const uint8_t* key, const uint8_t* key2) noexcept {
-  // If the data is encrypted via the T2 chip, we can't decrypt it.  This means
-  // that if the data wasn't decrypted at acquisition time, then processing will
-  // likely fail.  Either way, there is no need to decrypt.
-  if (_pool.hardware_crypto()) {
+#ifdef HAVE_LIBOPENSSL
+    // If the data is encrypted via the T2 chip, we can't decrypt it.  This means
+    // that if the data wasn't decrypted at acquisition time, then processing will
+    // likely fail.  Either way, there is no need to decrypt.
+    if (_pool.hardware_crypto()) {
+        return;
+    }
+
+    aes_xts_decryptor dec{ aes_xts_decryptor::AES_128, key, key2,
+                          APFS_CRYPTO_SW_BLKSIZE };
+
+    dec.decrypt_buffer(_storage.data(), _storage.size(),
+        _block_num * APFS_BLOCK_SIZE);
+#else
     return;
-  }
-
-  aes_xts_decryptor dec{aes_xts_decryptor::AES_128, key, key2,
-                        APFS_CRYPTO_SW_BLKSIZE};
-
-  dec.decrypt_buffer(_storage.data(), _storage.size(),
-                     _block_num * APFS_BLOCK_SIZE);
+#endif
 }
 
 void APFSBlock::dump() const noexcept {
@@ -378,91 +382,96 @@ static const auto unsupported_recovery_keys = {
     Guid{"ec1c2ad9-b618-4ed6-bd8d-50f361c27507"},  // iCloud User
 };
 
-void APFSFileSystem::init_crypto_info() try {
-  // Get container keybag
-  const auto container_kb = _pool.nx()->keybag();
+void APFSFileSystem::init_crypto_info() {
+    try {
 
-  auto data = container_kb.get_key(uuid(), APFS_KB_TYPE_VOLUME_KEY);
-  if (data == nullptr) {
-    throw std::runtime_error(
-        "APFSFileSystem: can not find volume encryption key");
-  }
+        // Get container keybag
+        const auto container_kb = _pool.nx()->keybag();
 
-  wrapped_key_parser wp{data.get()};
+        auto data = container_kb.get_key(uuid(), APFS_KB_TYPE_VOLUME_KEY);
+        if (data == nullptr) {
+            throw std::runtime_error(
+                "APFSFileSystem: can not find volume encryption key");
+        }
 
-  // Get Wrapped VEK
-  auto kek_data = wp.get_data(0x30, 0xA3, 0x83);
-  if (kek_data.count() != sizeof(_crypto.wrapped_vek)) {
-    throw std::runtime_error("invalid VEK size");
-  }
-  std::memcpy(_crypto.wrapped_vek, kek_data.data(),
-              sizeof(_crypto.wrapped_vek));
+        wrapped_key_parser wp{ data.get() };
 
-  // Get VEK Flags
-  _crypto.vek_flags = wp.get_number(0x30, 0xA3, 0x82);
+        // Get Wrapped VEK
+        auto kek_data = wp.get_data(0x30, 0xA3, 0x83);
+        if (kek_data.count() != sizeof(_crypto.wrapped_vek)) {
+            throw std::runtime_error("invalid VEK size");
+        }
+        std::memcpy(_crypto.wrapped_vek, kek_data.data(),
+            sizeof(_crypto.wrapped_vek));
 
-  // Get VEK UUID
-  kek_data = wp.get_data(0x30, 0xA3, 0x81);
-  if (kek_data.count() != sizeof(_crypto.vek_uuid)) {
-    throw std::runtime_error("invalid UUID size");
-  }
-  std::memcpy(_crypto.vek_uuid, kek_data.data(), sizeof(_crypto.vek_uuid));
+        // Get VEK Flags
+        _crypto.vek_flags = wp.get_number(0x30, 0xA3, 0x82);
 
-  data = container_kb.get_key(uuid(), APFS_KB_TYPE_UNLOCK_RECORDS);
-  if (data == nullptr) {
-    throw std::runtime_error(
-        "APFSFileSystem: can not find volume recovery key");
-  }
+        // Get VEK UUID
+        kek_data = wp.get_data(0x30, 0xA3, 0x81);
+        if (kek_data.count() != sizeof(_crypto.vek_uuid)) {
+            throw std::runtime_error("invalid UUID size");
+        }
+        std::memcpy(_crypto.vek_uuid, kek_data.data(), sizeof(_crypto.vek_uuid));
 
-  const auto rec =
-      reinterpret_cast<const apfs_volrec_keybag_value*>(data.get());
+        data = container_kb.get_key(uuid(), APFS_KB_TYPE_UNLOCK_RECORDS);
+        if (data == nullptr) {
+            throw std::runtime_error(
+                "APFSFileSystem: can not find volume recovery key");
+        }
 
-  if (rec->num_blocks != 1) {
-    throw std::runtime_error(
-        "only single block keybags are currently supported");
-  }
+        const auto rec =
+            reinterpret_cast<const apfs_volrec_keybag_value*>(data.get());
 
-  _crypto.recs_block_num = rec->start_block;
+        if (rec->num_blocks != 1) {
+            throw std::runtime_error(
+                "only single block keybags are currently supported");
+        }
 
-  Keybag recs{(*this), _crypto.recs_block_num};
+        _crypto.recs_block_num = rec->start_block;
 
-  data = recs.get_key(uuid(), APFS_KB_TYPE_PASSPHRASE_HINT);
+        Keybag recs{ (*this), _crypto.recs_block_num };
 
-  if (data != nullptr) {
-    _crypto.password_hint = std::string((const char*)data.get());
-  }
+        data = recs.get_key(uuid(), APFS_KB_TYPE_PASSPHRASE_HINT);
 
-  // Get KEKs
-  auto keks = recs.get_keys();
-  if (keks.empty()) {
-    throw std::runtime_error("could not find any KEKs");
-  }
+        if (data != nullptr) {
+            _crypto.password_hint = std::string((const char*)data.get());
+        }
 
-  for (auto& k : keks) {
-    if (k.type != APFS_KB_TYPE_UNLOCK_RECORDS) {
-      continue;
+        // Get KEKs
+        auto keks = recs.get_keys();
+        if (keks.empty()) {
+            throw std::runtime_error("could not find any KEKs");
+        }
+
+        for (auto& k : keks) {
+            if (k.type != APFS_KB_TYPE_UNLOCK_RECORDS) {
+                continue;
+            }
+
+            if (std::find(unsupported_recovery_keys.begin(),
+                unsupported_recovery_keys.end(),
+                k.uuid) != unsupported_recovery_keys.end()) {
+                // Skip unparsable recovery KEKs
+                if (tsk_verbose) {
+                    tsk_fprintf(stderr, "apfs: skipping unsupported KEK type: %s\n",
+                        k.uuid.str().c_str());
+                }
+                continue;
+            }
+
+            _crypto.wrapped_keks.emplace_back(wrapped_kek{ std::move(k.uuid), k.data });
+        }
     }
-
-    if (std::find(unsupported_recovery_keys.begin(),
-                  unsupported_recovery_keys.end(),
-                  k.uuid) != unsupported_recovery_keys.end()) {
-      // Skip unparsable recovery KEKs
-      if (tsk_verbose) {
-        tsk_fprintf(stderr, "apfs: skipping unsupported KEK type: %s\n",
-                    k.uuid.str().c_str());
-      }
-      continue;
+    catch (std::exception& e) {
+        if (tsk_verbose) {
+            tsk_fprintf(stderr, "APFSFileSystem::init_crypto_info: %s", e.what());
+        }
     }
-
-    _crypto.wrapped_keks.emplace_back(wrapped_kek{std::move(k.uuid), k.data});
-  }
-} catch (std::exception& e) {
-  if (tsk_verbose) {
-    tsk_fprintf(stderr, "APFSFileSystem::init_crypto_info: %s", e.what());
-  }
 }
 
 bool APFSFileSystem::unlock(const std::string& password) noexcept {
+#ifdef HAVE_LIBOPENSSL
   if (_crypto.unlocked) {
     // Already unlocked
     return true;
@@ -549,6 +558,12 @@ bool APFSFileSystem::unlock(const std::string& password) noexcept {
   }
 
   return false;
+#else
+    if (tsk_verbose) {
+        tsk_fprintf(stderr, "apfs: crypto library not loaded\n");
+    }
+    return false;
+#endif
 }
 
 const std::vector<APFSFileSystem::unmount_log_t> APFSFileSystem::unmount_log()
@@ -619,11 +634,16 @@ apfs_block_num APFSFileSystem::omap_root() const {
 APFSJObjBtreeNode::APFSJObjBtreeNode(const APFSObjectBtreeNode* obj_root,
                                      apfs_block_num block_num,
                                      const uint8_t* key)
+#ifdef HAVE_LIBOPENSSL
     : APFSBtreeNode(obj_root->pool(), block_num, key), _obj_root{obj_root} {
+#else
+    : APFSBtreeNode(obj_root->pool(), block_num, nullptr), _obj_root{ obj_root } {
+#endif
   if (subtype() != APFS_OBJ_TYPE_FSTREE) {
     throw std::runtime_error("APFSJObjBtreeNode: invalid subtype");
   }
 }
+
 
 APFSObjectBtreeNode::iterator APFSObjectBtreeNode::find(uint64_t oid) const {
   return APFSBtreeNode::find(

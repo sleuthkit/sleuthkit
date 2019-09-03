@@ -1,5 +1,6 @@
 #include "crypto.hpp"
 
+#ifdef HAVE_LIBOPENSSL
 #include <openssl/aes.h>
 #include <openssl/md5.h>
 #include <openssl/opensslv.h>
@@ -194,3 +195,4 @@ std::unique_ptr<uint8_t[]> hash_buffer_sha256(const void *input,
 
   return hash;
 }
+#endif

@@ -95,7 +95,9 @@ class APFSJObjTree {
 
  protected:
   struct crypto {
+#ifdef HAVE_LIBOPENSSL
     std::unique_ptr<aes_xts_decryptor> decryptor{};
+#endif
     std::unique_ptr<uint8_t[]> key{};
     std::string password{};
     crypto(const APFSFileSystem::crypto_info_t &crypto);

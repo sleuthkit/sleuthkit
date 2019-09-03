@@ -2,7 +2,9 @@
 
 #include "../base/tsk_base.h"
 
+#ifdef HAVE_LIBOPENSSL
 #include <openssl/evp.h>
+
 
 #include <memory>
 #include <mutex>
@@ -45,3 +47,5 @@ std::unique_ptr<uint8_t[]> hash_buffer_md5(const void *input,
 
 std::unique_ptr<uint8_t[]> hash_buffer_sha256(const void *input,
                                               size_t len) noexcept;
+
+#endif
