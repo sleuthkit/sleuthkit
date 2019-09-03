@@ -1354,7 +1354,11 @@ public class BlackboardAttribute {
 		
 		TSK_PASSWORD_HINT(140, "TSK_PASSWORD_HINT", 
 			bundle.getString("BlackboardAttribute.tskpasswordhint.text"), 
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_GROUPS (141, "TSK_GROUPS", 
+				bundle.getString("BlackboardAttribute.tskgroups.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
 		private final String typeName;
