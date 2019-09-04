@@ -1348,15 +1348,11 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskaccountsettings.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		
-		TSK_FLAGS(139, "TSK_FLAGS", 
-			bundle.getString("BlackboardAttribute.tskflags.text"), 
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
-		TSK_PASSWORD_HINT(140, "TSK_PASSWORD_HINT", 
+		TSK_PASSWORD_HINT(139, "TSK_PASSWORD_HINT", 
 			bundle.getString("BlackboardAttribute.tskpasswordhint.text"), 
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		
-		TSK_GROUPS (141, "TSK_GROUPS", 
+		TSK_GROUPS (140, "TSK_GROUPS", 
 				bundle.getString("BlackboardAttribute.tskgroups.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
