@@ -1903,8 +1903,8 @@ public class SleuthkitCase {
 			);
 
 			// Fix mistakenly set names in tsk_db_info_extended 
-			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
-			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
 
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
@@ -7771,6 +7771,42 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
 		}
+	}
+    /**
+	 * Deletes a datasource from the open case, the database has foreign keys with a delete cascade
+	 * so that all the tables that have a datasource object id will have their data deleted.
+	 * 
+	 * @param dataSourceObjectid id of Datasource to be Deleted
+	 * 
+	 * @throws TskCoreException exception thrown when critical error occurs
+	 *                          within tsk core and the update fails
+	 */
+	public void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
+        CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			connection.beginTransaction();
+			// The following delete(s) uses a foreign key delete with cascade in the DB so that it will delete
+			// all associated rows from tsk_object and its children.  This is based on the datasource id.
+			// For large data sources this may take some time.
+			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
+			// The following delete uses a foreign key delete with cascade in the DB so that it will delete all
+			// associated rows from accounts table and its children.  This is based on account id's that no longer
+			// reside in the account relationship table
+			String accountSql = "DELETE FROM accounts where account_id in (SELECT account_id FROM accounts " +
+                                "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) " +
+                                "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
+            statement.execute(accountSql);
+			connection.commitTransaction();
+		} catch (SQLException ex) {
+				connection.rollbackTransaction();
+			    throw new TskCoreException(String.format("Error deleting data source with obj_id = %d", dataSourceObjectId), ex);	
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}	
 	}
 
 	/**
