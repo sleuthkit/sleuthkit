@@ -8,6 +8,11 @@
 **
 */
 
+/**
+* \file DriveUtil.cpp
+* Contains C++ code that implement the Drive Util class.
+*/
+
 #include <iostream>
 #include <string>
 #include <list>

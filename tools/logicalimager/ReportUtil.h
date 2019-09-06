@@ -11,9 +11,14 @@
 #pragma once
 
 #include <string>
+
 #include "RuleMatchResult.h"
 #include "tsk/libtsk.h"
 
+/**
+* Defines the Report Utilities
+*
+*/
 class ReportUtil {
 public:
     static void openReport(const std::string &alertFilename);

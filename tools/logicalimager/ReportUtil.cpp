@@ -8,6 +8,11 @@
 **
 */
 
+/**
+* \file ReportUtil.cpp
+* Contains C++ code that implement the Report Util class.
+*/
+
 #include <iostream>
 #include <conio.h>
 #include <string>

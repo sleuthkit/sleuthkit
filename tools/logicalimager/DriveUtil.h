@@ -14,6 +14,10 @@
 
 #include "tsk/libtsk.h"
 
+/**
+* Defines the Drive Utilities
+*
+*/
 class DriveUtil {
 public:
     static bool cwdIsFAT(std::wstring &cwd);
