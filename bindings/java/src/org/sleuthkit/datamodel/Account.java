@@ -41,6 +41,42 @@ public final class Account {
 	 */
 	private final String typeSpecificID;
 
+	/**
+	 * Class to abstract an account address.
+	 * An account address comprises of a unique id and a display name.
+	 */
+	public static final class Address {
+		
+		// account type specific unique id
+		private final String uniqueID;
+		
+		// Display name for account
+		private final String displayName;
+		
+		public Address(String uniqueID, String displayName  ) {
+			this.uniqueID = uniqueID;
+			this.displayName = displayName;
+		}
+		
+		/**
+		 * Account type specific unique ID 
+		 *
+		 * @return The type name.
+		 */
+		public String getUniqueID() {
+			return this.uniqueID;
+		}
+
+		/**
+		 * Gets the display name
+		 *
+		 * @return The display name.
+		 */
+		public String getDisplayName() {
+			return displayName;
+		}	
+	}
+	
 	public static final class Type {
 
 		//JIRA-900:Should the display names of predefined types be internationalized?
