@@ -444,7 +444,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tools\logicalimager\DriveUtil.h" />
+    <ClInclude Include="..\..\tools\logicalimager\FileExtractor.h" />
     <ClInclude Include="..\..\tools\logicalimager\LogicalImagerConfiguration.h" />
+    <ClInclude Include="..\..\tools\logicalimager\ReportUtil.h" />
     <ClInclude Include="..\..\tools\logicalimager\UserAccount.h" />
     <ClInclude Include="..\..\tools\logicalimager\json.h" />
     <ClInclude Include="..\..\tools\logicalimager\LogicalImagerDateRule.h" />
@@ -467,7 +470,10 @@
     <ClInclude Include="..\..\tools\logicalimager\Version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tools\logicalimager\DriveUtil.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\FileExtractor.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerConfiguration.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\ReportUtil.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\UserAccount.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerDateRule.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\LogicalImagerExtensionRule.cpp" />
