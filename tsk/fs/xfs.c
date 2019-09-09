@@ -1223,7 +1223,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     // take b+tree sorted by block offset
     cur_sblock_num = agf->agf_roots[0];
     if (tsk_verbose) { tsk_fprintf(stderr, "cur_sblock_num = %" PRId64 " \n", cur_sblock_num); }
-    len = sizeof(xfs_btree_sblock_t);
+    len = XFS_INOBT_BLOCK_LEN(sb);
     cnt = tsk_fs_read(&xfs->fs_info,
         (TSK_OFF_T) sb->sb_blocksize * cur_sblock_num,
         (char *) cur_btree_sblock,
@@ -1258,7 +1258,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         len = cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_key_t);
         cnt = tsk_fs_read(&xfs->fs_info,
             (TSK_OFF_T) sb->sb_blocksize * (TSK_OFF_T) cur_sblock_num
-                + (TSK_OFF_T) sizeof(xfs_btree_sblock_t),
+                + (TSK_OFF_T) XFS_SBLOCK_LEN(sb),
             (char *) recs, 
             len);
         if (cnt != len) {
@@ -1277,7 +1277,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
         len = cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_ptr_t);
         cnt = tsk_fs_read(&xfs->fs_info,
             (TSK_OFF_T) sb->sb_blocksize * (TSK_OFF_T) cur_sblock_num
-                + (TSK_OFF_T) sizeof(xfs_btree_sblock_t)
+                + (TSK_OFF_T) XFS_SBLOCK_LEN(sb)
                 + (TSK_OFF_T) (cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_key_t)),
             (char *) ptrs,
             len);
@@ -1352,7 +1352,7 @@ xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     // read all the records
     len = cur_btree_sblock->bb_numrecs * sizeof(xfs_alloc_rec_t);
     cnt = tsk_fs_read(&xfs->fs_info,
-        (TSK_OFF_T) sb->sb_blocksize * cur_sblock_num + sizeof(xfs_btree_sblock_t),
+        (TSK_OFF_T) sb->sb_blocksize * cur_sblock_num + XFS_SBLOCK_LEN(sb),
         (char *) recs,
         len);
     if (cnt != len) {

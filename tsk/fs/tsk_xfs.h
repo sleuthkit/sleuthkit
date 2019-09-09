@@ -199,6 +199,8 @@ typedef uint32_t xfs_alloc_ptr_t;
 
 typedef struct xfs_btree_sblock xfs_inobt_block_t;
 
+#define XFS_SBLOCK_LEN XFS_INOBT_BLOCK_LEN
+
 typedef struct xfs_inobt_rec {
     uint32_t    ir_startino;
     uint32_t    ir_freecount;
