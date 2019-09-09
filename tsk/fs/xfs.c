@@ -3006,11 +3006,6 @@ TSK_FS_INFO *
         return NULL;
     }
 
-    if(XFS_SB_VERSION_NUM(sb) > 4)
-    {
-        tsk_fprintf(stderr, "Version 5 and newer are not fully supported yet, be careful (current version: %d) \n", XFS_SB_VERSION_NUM(sb));
-    }
-
     len = sizeof(xfs_agi_t) * xfs->fs->sb_agcount;
     if ((agi = tsk_malloc(len)) == NULL)
         return NULL;
