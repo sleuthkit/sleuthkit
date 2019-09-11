@@ -5556,7 +5556,9 @@ public class SleuthkitCase {
 			preparedStatement.setShort(2, (short) type.getValue());
 			preparedStatement.setLong(3, sectorSize);
 			preparedStatement.setString(4, timezone);
-			preparedStatement.setLong(5, size);
+			//prevent negative size
+			long savedSize = size < 0 ? 0 : size;
+			preparedStatement.setLong(5, savedSize);
 			preparedStatement.setString(6, md5);
 			preparedStatement.setString(7, sha1);
 			preparedStatement.setString(8, sha256);
@@ -5583,7 +5585,7 @@ public class SleuthkitCase {
 
 			// Create the new Image object
 			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, displayName,
-					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, size);
+					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, savedSize);
 		} catch (SQLException ex) {
 			if (!imagePaths.isEmpty()) {
 				throw new TskCoreException(String.format("Error adding image with path %s to database", imagePaths.get(0)), ex);
@@ -6187,7 +6189,9 @@ public class SleuthkitCase {
 			statement.setShort(9, metaFlags);
 
 			//size
-			statement.setLong(10, size);
+			//prevent negative size
+			long savedSize = size < 0 ? 0 : size;
+			statement.setLong(10, savedSize);
 
 			//mactimes
 			//long ctime, long crtime, long atime, long mtime,
@@ -6216,7 +6220,7 @@ public class SleuthkitCase {
 			addFilePath(connection, newObjId, localPath, encodingType);
 
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+					savedSize, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
 
 			timelineManager.addAbstractFileEvents(derivedFile, connection);
 			transaction.commit();
@@ -6305,7 +6309,9 @@ public class SleuthkitCase {
 			statement.setShort(5, metaFlags);
 
 			//size
-			statement.setLong(6, size);
+			//prevent negative size
+			long savedSize = size < 0 ? 0 : size;
+			statement.setLong(6, savedSize);
 
 			//mactimes
 			//long ctime, long crtime, long atime, long mtime,
@@ -6325,7 +6331,7 @@ public class SleuthkitCase {
 			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
 			final String extension = extractExtension(derivedFile.getName());
 			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+					savedSize, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -6474,7 +6480,9 @@ public class SleuthkitCase {
 			statement.setShort(8, dirFlag.getValue());
 			short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() | TSK_FS_META_FLAG_ENUM.USED.getValue());
 			statement.setShort(9, metaFlags);
-			statement.setLong(10, size);
+			//prevent negative size
+			long savedSize = size < 0 ? 0 : size;
+			statement.setLong(10, savedSize);
 			statement.setLong(11, ctime);
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
@@ -6516,7 +6524,7 @@ public class SleuthkitCase {
 					metaType,
 					dirFlag,
 					metaFlags,
-					size,
+					savedSize,
 					ctime, crtime, atime, mtime,
 					mimeType, md5, known,
 					parent.getId(), parentPath,
@@ -6663,7 +6671,9 @@ public class SleuthkitCase {
 			prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
 			prepStmt.setShort(8, dirFlag.getValue()); // dir_flags
 			prepStmt.setShort(9, metaFlag.getValue()); // meta_flags
-			prepStmt.setLong(10, size);   // size
+			//prevent negative size
+			long savedSize = size < 0 ? 0 : size;
+			prepStmt.setLong(10, savedSize);   // size
 			prepStmt.setLong(11, ctime);  // ctime
 			prepStmt.setLong(12, crtime); // crtime
 			prepStmt.setLong(13, atime);  // atime
@@ -6704,7 +6714,7 @@ public class SleuthkitCase {
 					TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
 					dirFlag,
 					metaFlag.getValue(),
-					size,
+					savedSize,
 					ctime, crtime, atime, mtime,
 					null,
 					FileKnown.UNKNOWN,
