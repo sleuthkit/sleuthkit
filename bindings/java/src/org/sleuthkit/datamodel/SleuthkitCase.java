@@ -6222,7 +6222,7 @@ public class SleuthkitCase {
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					savedSize, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
 
-			timelineManager.addAbstractFileEvents(derivedFile, connection);
+			timelineManager.addEventsForNewFile(derivedFile, connection);
 			transaction.commit();
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
 			return derivedFile;
@@ -6531,7 +6531,7 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension);
-			getTimelineManager().addAbstractFileEvents(localFile, connection);
+			getTimelineManager().addEventsForNewFile(localFile, connection);
 			return localFile;
 
 		} catch (SQLException ex) {
