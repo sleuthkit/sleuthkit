@@ -10,7 +10,7 @@
 
 /**
 * \file RuleMatchResult.cpp
-* Contains C++ code that implement the Rule Match Resultt class.
+* Contains C++ code that implement the Rule Match Result class.
 */
 
 #include "RuleMatchResult.h"
