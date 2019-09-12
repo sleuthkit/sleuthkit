@@ -3,7 +3,7 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2019 Basis Technology.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -43,11 +43,11 @@
 
 static TSK_TCHAR *progname;
 bool createVHD = false;
-std::string directoryPath;
-std::wstring cwd;
-std::string driveToProcess;
-std::string outputLocation;
-FileExtractor *fileExtractor = NULL;
+
+static std::wstring cwd;
+
+static std::string outputLocation;
+static FileExtractor *fileExtractor = NULL;
 
 /**
 * isWinXPOrOlder: Determine if we are on Windows XP or older OS
@@ -130,14 +130,14 @@ static int getLocalHost(string &a_hostName) {
 }
 
 /**
-* createDirectory: Create a directory to store sparse_image.vhd
+* createDirectory: Create a directory relative to current working directory for host. 
 *
 * @param directoryPathname - the directory pathname created
 * @returns  0 on success
 *           -1 if error
 *
 */
-static int createDirectory(string &directoryPathname) {
+static int createSessionDirectory(string &directoryPathname) {
     time_t now;
     struct tm localTime;
 
@@ -166,7 +166,7 @@ static int createDirectory(string &directoryPathname) {
 }
 
 /**
-* getDrivesToProcess() - returns the drive to process
+* getDrivesToProcess() - returns the drives to process
 *          By default we process all available PhysicalDrives, unless
 *          a drive is paritioned with LDM or has Bitlocker enabled, in which case we
 *          enumerate all drive letters.
@@ -224,7 +224,7 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 }
 
 /**
-* hasTskLogicalImage - test if /tsk_logical_image.exe is in the image
+* hasTskLogicalImage - test if /tsk_logical_image.exe is in the image/drive
 *
 * @param image - path to image
 * @return true if found, false otherwise
@@ -315,6 +315,100 @@ string getPathName(const string &fullPath) {
     return "";
 }
 
+
+
+
+
+
+
+/**
+* Search for files that were specified by full path.
+* @param config Configuration that contains rules and other settings
+* @param driveName Name of drive being processed (for display only)
+*/
+
+static void searchFilesByFullPath(LogicalImagerConfiguration *config, std::string driveName) {
+    ReportUtil::consoleOutput(stdout, "%s - Searching for full path files\n", driveName.c_str());
+    SetConsoleTitleA(std::string("Analyzing drive " + driveName + " - Searching for full path files").c_str());
+
+    const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
+
+
+    // cycle over the rule sets
+    const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
+    for (std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>>::const_iterator ruleSetIter = fullFilePathsRules.begin(); ruleSetIter != fullFilePathsRules.end(); ++ruleSetIter) {
+        const RuleMatchResult *matchResult = ruleSetIter->first;
+        const std::list<std::string> filePathsInSet = ruleSetIter->second;
+
+        // cycle over each FS in the image
+        // @@@ THis seems a bit awkward that we have this in between the two iterators about rules. Should be either up or down a level
+        for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+
+            // cycle over each path in the set
+            for (std::list<std::string>::const_iterator filePathIter = filePathsInSet.begin(); filePathIter != filePathsInSet.end(); ++filePathIter) {
+                TSK_FS_FILE *fs_file;
+                TSKFileNameInfo filenameInfo;
+                int retval = TskHelper::getInstance().path2Inum(*fsListIter, filePathIter->c_str(), false, filenameInfo, NULL, &fs_file);
+                if (retval == 0 && fs_file != NULL) {
+                    std::string filename = getFilename(*filePathIter);
+                    std::string parent = getPathName(*filePathIter);
+                    // create a TSK_FS_NAME for report purpose
+                    // @@@ Can we ust pass in a FS_NAME to path2Inum?
+                    fs_file->name = new TSK_FS_NAME();
+                    fs_file->name->name = (char *)tsk_malloc(strlen(filename.c_str()) + 1);
+                    strcpy(fs_file->name->name, filename.c_str());
+                    matchCallback(matchResult, fs_file, parent.c_str());
+
+                    tsk_fs_file_close(fs_file);
+                }
+            }
+        }
+    }
+}
+
+/**
+* Search for the files that were specified by attributes (extensions, etc.)
+* @param config COnfiguration with rules
+* @param driveName Display name of drive being processed
+* @param img_info Handle to open TSK image
+*/
+static void searchFilesByAttribute(LogicalImagerConfiguration *config, std::string driveName, TSK_IMG_INFO *img_info) {
+    TskFindFiles findFiles(config, driveName);
+    if (findFiles.openImageHandle(img_info)) {
+        tsk_error_print(stderr);
+        ReportUtil::consoleOutput(stderr, "Failed to open imagePath\n");
+        ReportUtil::handleExit(1);
+    }
+
+    ReportUtil::consoleOutput(stdout, "%s - Searching for files by attribute\n", driveName.c_str());
+    SetConsoleTitleA(std::string("Analyzing drive " + driveName + " - Searching for files by attribute").c_str());
+
+    if (findFiles.findFilesInImg()) {
+        // we already logged the errors in findFiles.handleError()
+        // Don't exit, just let it continue
+    }
+
+}
+
+/**
+* Searches for hives and reports on users
+* @param sessionDir Directory to create user file in
+* @param driveName Display name of drive being processed.
+*/
+static void reportUsers(std::string sessionDir, std::string driveName) {
+    ReportUtil::consoleOutput(stdout, "%s - Searching for registry\n", driveName.c_str());
+    SetConsoleTitleA(std::string("Analyzing drive " + driveName + " - Searching for registry").c_str());
+
+    string usersFileName = sessionDir + "/users.txt";
+
+    // Enumerate Users with RegistryAnalyzer
+    RegistryAnalyzer registryAnalyzer(usersFileName);
+    registryAnalyzer.analyzeSAMUsers();
+}
+
+
+
+
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
@@ -334,9 +428,7 @@ main(int argc, char **argv1)
     int ch;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
-    std::vector<std::wstring> imgPaths;
-    const TSK_TCHAR *imgPath;
-    BOOL iFlagUsed = FALSE;
+    const TSK_TCHAR *imgPathArg = NULL; // set to image path if user specified on command line
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerConfiguration *config = NULL;
 
@@ -379,11 +471,10 @@ main(int argc, char **argv1)
             tsk_version_print(stdout);
             exit(0);
 
+        // undocumented.  Used for testing only.
         case _TSK_T('i'):
-            imgPath = OPTARG;
-            iFlagUsed = TRUE;
+            imgPathArg = OPTARG;
             break;
-
         }
     }
 
@@ -392,35 +483,14 @@ main(int argc, char **argv1)
         usage();
     }
 
-    // If CWD is FAT, exit with error because it cannot create files greater 4 GB
-    if (DriveUtil::cwdIsFAT(cwd)) {
-        ReportUtil::consoleOutput(stderr, "Error: Writing to FAT device is not supported.\n");
-        ReportUtil::handleExit(1);
-    }
 
+    ////////////////////////////////////////////////////////
+    // Load the configuration file
     if (configFilename == NULL) {
         configFilename = _TSK_T("logical-imager-config.json");
         ReportUtil::consoleOutput(stdout, "Using default configuration file logical-imager-config.json\n");
     }
     ReportUtil::printDebug("Using config file %s", TskHelper::toNarrow(configFilename).c_str());
-
-    std::wstring wImgPathName;
-    std::vector<std::wstring> drivesToProcess;
-
-    if (iFlagUsed) {
-        imgPaths.push_back(imgPath);
-    } else {
-        if (getDrivesToProcess(drivesToProcess)) {
-            ReportUtil::printDebug("Process is running in elevated mode");
-            for (auto it = std::begin(drivesToProcess); it != std::end(drivesToProcess); ++it) {
-                imgPaths.push_back(std::wstring(_TSK_T("\\\\.\\")) + *it);
-            }
-        }
-        else {
-            ReportUtil::consoleOutput(stderr, "Process is not running in elevated mode\n");
-            ReportUtil::handleExit(1);
-        }
-    }
 
     try {
         config = new LogicalImagerConfiguration(TskHelper::toNarrow(configFilename), (LogicalImagerRuleSet::matchCallback)matchCallback);
@@ -432,83 +502,136 @@ main(int argc, char **argv1)
         ReportUtil::handleExit(1);
     }
 
-    // create a directory with hostname_timestamp
-    if (createDirectory(directoryPath) == -1) {
-        ReportUtil::consoleOutput(stderr, "Failed to create directory %s\n", directoryPath.c_str());
+    // If CWD is FAT, exit with error because it cannot create files greater 4 GB
+    if (createVHD && DriveUtil::cwdIsFAT(cwd)) {
+        ReportUtil::consoleOutput(stderr, "Error: Writing to FAT device is not supported.\n");
         ReportUtil::handleExit(1);
     }
 
-    std::string consoleFileName = directoryPath + "/console.txt";
+
+    //////////////////////////////////////////////////////
+    // Enumerate what we are going to analyze
+
+    // these two vectors should be kept in sync and each entry should correspond to an entry in the other at the same offset
+    std::vector<std::wstring> imgShortNames; // short name of data
+    std::vector<std::wstring> imgPaths; // full path for data to analyze
+
+    if (imgPathArg != NULL) {
+        // @@@ Ideally, we'd just store the name of the image here and strip out parent folder
+        imgShortNames.push_back(imgPathArg);
+        imgPaths.push_back(imgPathArg);
+    } else {
+        if (getDrivesToProcess(imgShortNames)) {
+            ReportUtil::printDebug("Process is running in elevated mode");
+            for (auto it = std::begin(imgShortNames); it != std::end(imgShortNames); ++it) {
+                imgPaths.push_back(std::wstring(L"\\\\.\\") + *it);
+            }
+        }
+        else {
+            ReportUtil::consoleOutput(stderr, "Process is not running in elevated mode\n");
+            ReportUtil::handleExit(1);
+        }
+    }
+
+
+    /////////////////////////////////////////////////////////////////////
+    // Now that we've verified everything, let's make an output folder
+    // create a directory with hostname_timestamp
+    std::string sessionDir;
+    if (createSessionDirectory(sessionDir) == -1) {
+        ReportUtil::consoleOutput(stderr, "Failed to create directory %s\n", sessionDir.c_str());
+        ReportUtil::handleExit(1);
+    }
+
+    // @@@ Seems like we could consolodate much of this into ReportUtil with a method that takes
+    // in sessionDir and it makes all of the needed files
+
+    std::string consoleFileName = sessionDir + "/console.txt";
     ReportUtil::openConsoleOutput(consoleFileName);
 
-    ReportUtil::consoleOutput(stdout, "Created directory %s\n", directoryPath.c_str());
+    ReportUtil::consoleOutput(stdout, "Created directory %s\n", sessionDir.c_str());
 
     // copy the config file into the output directoryPath
     std::ifstream src(TskHelper::toNarrow(configFilename), std::ios::binary);
-    std::ofstream dst(directoryPath + "/config.json", std::ios::binary);
+    std::ofstream dst(sessionDir + "/config.json", std::ios::binary);
     dst << src.rdbuf();
     dst.close();
     src.close();
 
-    std::string reportFilename = directoryPath + "/SearchResults.txt";
+    std::string reportFilename = sessionDir + "/SearchResults.txt";
     ReportUtil::openReport(reportFilename);
 
+
     std::list<std::pair<TSK_IMG_INFO *, std::string>> imgFinalizePending;
-    fileExtractor = new FileExtractor(createVHD, cwd, directoryPath);
+    fileExtractor = new FileExtractor(createVHD, cwd, sessionDir);
 
     // Loop through all images
     for (size_t i = 0; i < imgPaths.size(); ++i) {
-        const TSK_TCHAR *image = (TSK_TCHAR *)imgPaths[i].c_str();
-        driveToProcess = iFlagUsed ? TskHelper::toNarrow(imgPaths[i]) : TskHelper::toNarrow(drivesToProcess[i]);
-        ReportUtil::printDebug("Processing drive %s", driveToProcess.c_str());
-        ReportUtil::consoleOutput(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), driveToProcess.c_str());
-        SetConsoleTitleA(std::string("Analyzing drive " + TskHelper::intToStr((long)i+1) + " of " + TskHelper::intToStr(imgPaths.size()) + " (" + driveToProcess + ")").c_str());
+        const TSK_TCHAR *imagePath = (TSK_TCHAR *)imgPaths[i].c_str();
+        std::string imageShortName = TskHelper::toNarrow(imgShortNames[i]);
 
-        if (DriveUtil::isDriveLocked(driveToProcess) == 1) {
-            ReportUtil::consoleOutput(stdout, "Skipping drive %s because it is bitlocked.\n", driveToProcess.c_str());
+        ReportUtil::printDebug("Processing drive %s", imageShortName.c_str());
+        ReportUtil::consoleOutput(stdout, "Analyzing drive %zi of %zu (%s)\n", (size_t) i+1, imgPaths.size(), imageShortName.c_str());
+        SetConsoleTitleA(std::string("Analyzing drive " + TskHelper::intToStr((long)i+1) + " of " + TskHelper::intToStr(imgPaths.size()) + " (" + imageShortName + ")").c_str());
+
+        if (DriveUtil::isDriveLocked(imageShortName) == 1) {
+            ReportUtil::consoleOutput(stdout, "Skipping drive %s because it is bitlocked.\n", imageShortName.c_str());
             continue;
         }
 
-        if (driveToProcess.back() == ':') {
-            driveToProcess = driveToProcess.substr(0, driveToProcess.size() - 1);
-        }
-
-        if (hasTskLogicalImager(image)) {
-            ReportUtil::consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", driveToProcess.c_str());
+        if (hasTskLogicalImager(imagePath)) {
+            ReportUtil::consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", imageShortName.c_str());
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
         TSK_IMG_INFO *img;
-        if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
+        if ((img = tsk_img_open(1, &imagePath, imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             ReportUtil::handleExit(1);
         }
 
-        std::string subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
-        outputLocation = (iFlagUsed ? "sparse_image" : driveToProcess) + (createVHD ? ".vhd" : "");
-        fileExtractor->initializePerImage(subDirForFiles);
 
+        std::string subDirForFiles;
+        if (imgPathArg != NULL) {
+            subDirForFiles = "sparse_image";
+        }
+        else {
+            subDirForFiles = imageShortName;
+            // strip final ":"
+            if (subDirForFiles.back() == ':') {
+                subDirForFiles = subDirForFiles.substr(0, subDirForFiles.size() - 1);
+            }
+        }
+        fileExtractor->initializePerImage(subDirForFiles);
+        
+        // @@@ SHould probably rename outputLocation for non-VHD files
+        outputLocation = subDirForFiles + (createVHD ? ".vhd" : "");
+
+        // Setup the VHD for this drive (if we are making one)
         if (createVHD) {
             if (img->itype == TSK_IMG_TYPE_RAW) {
-                std::string outputFileName = directoryPath + "/" + outputLocation;
+                std::string outputFileName = sessionDir + "/" + outputLocation;
 
                 if (tsk_img_writer_create(img, (TSK_TCHAR *)TskHelper::toWide(outputFileName).c_str()) == TSK_ERR) {
                     tsk_error_print(stderr);
                     ReportUtil::consoleOutput(stderr, "Failed to initialize VHD writer\n");
                     ReportUtil::handleExit(1);
                 }
+                imgFinalizePending.push_back(std::make_pair(img, imageShortName));
             }
             else {
-                ReportUtil::consoleOutput(stderr, "Image is not a RAW image, VHD will not be created\n");
+                ReportUtil::consoleOutput(stderr, "Input is not a live device or raw imagePath, VHD will not be created\n");
             }
         }
+    
 
-        imgFinalizePending.push_back(std::make_pair(img, driveToProcess));
 
-        TskFindFiles findFiles(config, driveToProcess);
-
+        ////////////////////////////////////////////////
+        // Enumerate the file and volume systems that we'll need for the various searches
         TskHelper::getInstance().reset();
         TskHelper::getInstance().setImgInfo(img);
+
+        // THIS SECTION and the DriveUtil methods should GO INTO TSKHELPER... @@@@
         TSK_VS_INFO *vs_info;
         if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
             ReportUtil::printDebug("No volume system found. Looking for file system");
@@ -529,58 +652,30 @@ main(int argc, char **argv1)
             tsk_vs_close(vs_info);
         }
 
-        ReportUtil::consoleOutput(stdout, "%s - Searching for full path files\n", driveToProcess.c_str());
-        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for full path files").c_str());
 
-        const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
-        TSKFileNameInfo filenameInfo;
-        const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
-        for (std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>>::const_iterator iter = fullFilePathsRules.begin(); iter != fullFilePathsRules.end(); ++iter) {
-            const RuleMatchResult *matchResult = iter->first;
-            const std::list<std::string> filePaths = iter->second;
-            TSK_FS_FILE *fs_file;
-            for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-                for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
-                    int retval = TskHelper::getInstance().path2Inum(*fsListIter, iter->c_str(), false, filenameInfo, NULL, &fs_file);
-                    if (retval == 0 && fs_file != NULL) {
-                        std::string filename = getFilename(*iter);
-                        std::string parent = getPathName(*iter);
-                        // create a TSK_FS_NAME for report purpose
-                        fs_file->name = new TSK_FS_NAME();
-                        fs_file->name->name = (char *)tsk_malloc(strlen(filename.c_str()) + 1);
-                        strcpy(fs_file->name->name, filename.c_str());
-                        matchCallback(matchResult, fs_file, parent.c_str());
 
-                        tsk_fs_file_close(fs_file);
-                    }
-                }
-            }
-        }
 
-        ReportUtil::consoleOutput(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
-        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for registry").c_str());
+        ////////////////////////////////////////////////////////
+        // do the work 
 
-        string usersFileName = directoryPath + "/users.txt";
 
-        // Enumerate Users with RegistryAnalyzer
-        RegistryAnalyzer registryAnalyzer(usersFileName);
-        registryAnalyzer.analyzeSAMUsers();
+        // search for files based on full path
+        searchFilesByFullPath(config, imageShortName);
 
+
+        // Get users
+        reportUsers(sessionDir, imageShortName);
+
+
+        // We no longer need the cached files
         TskHelper::getInstance().reset();
 
-        if (findFiles.openImageHandle(img)) {
-            tsk_error_print(stderr);
-            ReportUtil::consoleOutput(stderr, "Failed to open image\n");
-            ReportUtil::handleExit(1);
-        }
 
-        ReportUtil::consoleOutput(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
-        SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for files by attribute").c_str());
-
-        if (findFiles.findFilesInImg()) {
-            // we already logged the errors in findFiles.handleError()
-            // Don't exit, just let it continue
-        }
+        // Full scan of drive for files based on extension, etc.
+        searchFilesByAttribute(config, imageShortName, img);
+        
+        // @@@ shoudl free file systems at some point. All we've done is reset pointers in TskHelper. Maybe it should free them in reset()
+        // @@@@ Should either close image and file systems here or add them to pending queue
     }
 
     // close report file before tsk_img_writer_finish, which may take a long time.
@@ -591,7 +686,7 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img = it->first;
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (createVHD && config->getFinalizeImagerWriter()) {
-                ReportUtil::printDebug("finalize image writer for %s", it->second.c_str());
+                ReportUtil::printDebug("finalize imagePath writer for %s", it->second.c_str());
                 ReportUtil::consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
                 SetConsoleTitleA(std::string("Copying remainder of " + it->second).c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {

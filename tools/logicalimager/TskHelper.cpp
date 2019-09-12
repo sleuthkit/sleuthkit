@@ -37,6 +37,7 @@ TskHelper::~TskHelper()
 
 void TskHelper::reset() {
     releasePath2InumCache();
+    // @@@ NEed to review if these shoudl close instead of just free
     m_img_info = NULL;
     m_FSInfoList.clear();
     m_path2InumCache.clear();

@@ -34,5 +34,5 @@ private:
     size_t m_fileCounter;
     int m_totalNumberOfFiles;
     unsigned short m_percentComplete;
-    const std::string m_driveToProcess;
+    const std::string m_driveDisplayName;
 };
