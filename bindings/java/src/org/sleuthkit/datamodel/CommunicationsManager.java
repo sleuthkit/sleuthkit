@@ -565,7 +565,7 @@ public final class CommunicationsManager {
 
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT account_type_id, type_name, display_name, value_type FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT account_type_id, type_name, display_name FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
 			Account.Type accountType = null;
 			if (rs.next()) {
 				accountType = new Account.Type(accountTypeName, rs.getString("display_name"));
