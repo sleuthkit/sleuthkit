@@ -26,8 +26,7 @@
 #include "tsk/fs/tsk_ntfs.h"
 #include "TskFindFiles.h"
 #include "TskHelper.h"
-
-extern void logOutputToFile(const char *buf);
+#include "ReportUtil.h"
 
 /**
  * Create the Find Files object given the Logical Imager Configuration
@@ -52,7 +51,7 @@ TskFindFiles::~TskFindFiles() {
 uint8_t TskFindFiles::handleError() {
     std::string str = tsk_error_get();
     str += "\n";
-    logOutputToFile(str.c_str());
+    ReportUtil::logOutputToFile(str.c_str());
     return 0;
 }
 

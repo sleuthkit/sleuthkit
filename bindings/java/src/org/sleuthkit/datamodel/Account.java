@@ -41,6 +41,42 @@ public final class Account {
 	 */
 	private final String typeSpecificID;
 
+	/**
+	 * Class to abstract an account address.
+	 * An account address comprises of a unique id and a display name.
+	 */
+	public static final class Address {
+		
+		// account type specific unique id
+		private final String uniqueID;
+		
+		// Display name for account
+		private final String displayName;
+		
+		public Address(String uniqueID, String displayName  ) {
+			this.uniqueID = uniqueID;
+			this.displayName = displayName;
+		}
+		
+		/**
+		 * Account type specific unique ID 
+		 *
+		 * @return The type name.
+		 */
+		public String getUniqueID() {
+			return this.uniqueID;
+		}
+
+		/**
+		 * Gets the display name
+		 *
+		 * @return The display name.
+		 */
+		public String getDisplayName() {
+			return displayName;
+		}	
+	}
+	
 	public static final class Type {
 
 		//JIRA-900:Should the display names of predefined types be internationalized?
@@ -54,6 +90,18 @@ public final class Account {
 		public static final Account.Type WHATSAPP = new Type("WHATSAPP", "WhatsApp");
 		public static final Account.Type MESSAGING_APP = new Type("MESSAGING_APP", "MessagingApp");
 		public static final Account.Type WEBSITE = new Type("WEBSITE", "Website");
+		
+		public static final Account.Type IMO = new Type("IMO", "IMO");
+		public static final Account.Type LINE = new Type("LINE", "LINE");
+		public static final Account.Type SKYPE = new Type("SKYPE", "Skype");
+		public static final Account.Type TANGO = new Type("TANGO", "Tango");
+		public static final Account.Type TEXTNOW = new Type("TEXTNOW", "TextNow");
+		public static final Account.Type THREEMA = new Type("THREEMA", "ThreeMa");
+		public static final Account.Type VIBER = new Type("VIBER", "Viber");
+		
+		public static final Account.Type XENDER = new Type("XENDER", "Xender");
+		public static final Account.Type ZAPYA = new Type("ZAPYA", "Zapya");
+		public static final Account.Type SHAREIT = new Type("SHAREIT", "ShareIt");
 
 		public static final List<Account.Type> PREDEFINED_ACCOUNT_TYPES = Arrays.asList(
 				CREDIT_CARD,
@@ -65,7 +113,17 @@ public final class Account {
 				INSTAGRAM,
 				WHATSAPP,
 				MESSAGING_APP,
-				WEBSITE
+				WEBSITE,
+				IMO,
+				LINE,
+				SKYPE,
+				TANGO,
+				TEXTNOW,
+				THREEMA,
+				VIBER,
+				XENDER,
+				ZAPYA,
+				SHAREIT
 		);
 
 		private final String typeName;

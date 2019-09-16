@@ -24,7 +24,7 @@
 #include "RegistryLoader.h"
 #include "UserAccount.h"
 
-extern void consoleOutput(FILE *fd, const char *msg, ...);
+#include "ReportUtil.h"
 
 const std::string LOCAL_DOMAIN = "local";
 
@@ -38,7 +38,7 @@ RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
 {
     m_outputFile = fopen(m_outputFilePath.c_str(), "w");
     if (!m_outputFile) {
-        consoleOutput(stdout, "ERROR: Failed to open file %s\n", m_outputFilePath.c_str());
+        ReportUtil::consoleOutput(stdout, "ERROR: Failed to open file %s\n", m_outputFilePath.c_str());
         exit(1);
     }
 
