@@ -1,7 +1,20 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Autopsy Forensic Browser
+ *
+ * Copyright 2019 Basis Technology Corp.
+ * Contact: carrier <at> sleuthkit <dot> org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
@@ -9,53 +22,54 @@ import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
- * An abstract base class for classes that helps ingest modules create artifacts.
- * 
+ * An abstract base class for classes that helps ingest modules create
+ * artifacts.
+ *
  */
 public abstract class AbstractArtifactHelper {
-	
+
 	private final SleuthkitCase caseDb;
 	private final AbstractFile srcAbstractFile;	// artifact source
-    private final String moduleName;			// module creating the artifacts
-	
+	private final String moduleName;			// module creating the artifacts
+
 	/**
 	 * Creates an artifact helper.
-	 * 
-	 * @param caseDb Sleuthkit case db
-     * @param moduleName name module using the helper
-     * @param srcFile source file
+	 *
+	 * @param caseDb     Sleuthkit case db
+	 * @param moduleName name module using the helper
+	 * @param srcFile    source file
 	 */
 	public AbstractArtifactHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
-        this.moduleName = moduleName;
-        this.srcAbstractFile = srcFile;
-        this.caseDb = caseDb;
+		this.moduleName = moduleName;
+		this.srcAbstractFile = srcFile;
+		this.caseDb = caseDb;
 	}
-	
+
 	/**
 	 * Returns the source abstract file.
-	 * 
+	 *
 	 * @return source abstract file
 	 */
 	AbstractFile getAbstractFile() {
 		return this.srcAbstractFile;
 	}
-	
+
 	/**
 	 * Returns the sleuthkit case.
-	 * 
+	 *
 	 * @return sleuthkit case
 	 */
 	SleuthkitCase getSleuthkitCase() {
 		return this.caseDb;
 	}
-	
+
 	/**
 	 * Returns module name.
-	 * 
-	 * @return module name 
+	 *
+	 * @return module name
 	 */
 	String getModuleName() {
 		return this.moduleName;
 	}
-	
+
 }
