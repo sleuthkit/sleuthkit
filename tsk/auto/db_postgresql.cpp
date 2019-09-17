@@ -678,7 +678,7 @@ int TskDbPostgreSQL::initialize() {
             " event_id BIGSERIAL PRIMARY KEY, "
             " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
             " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
-            " time INTEGER NOT NULL , "
+            " time BIGINT NOT NULL , "
 			" UNIQUE (event_type_id, event_description_id, time))"
             , "Error creating tsk_events table: %s\n")
         ||
@@ -1117,7 +1117,7 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
                          " VALUES ("
                          "%" PRId64 "," // event_type_id
                          "%" PRId64 "," // event_description_id
-                         "%" PRIu64 ")", // time
+                         "%" PRId64 ")", // time
                          entry.first,
                          event_description_id,
                          time))
