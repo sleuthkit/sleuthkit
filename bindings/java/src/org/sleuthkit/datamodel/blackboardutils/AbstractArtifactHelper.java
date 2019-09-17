@@ -18,7 +18,10 @@
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
+import java.util.Collection;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
@@ -72,4 +75,31 @@ public abstract class AbstractArtifactHelper {
 		return this.moduleName;
 	}
 
+	/**
+	 * Adds a string attribute to the list, is the attribute value is not null
+	 * or empty
+	 *
+	 * @param attrValue     attribute value
+	 * @param attributeType attribute type
+	 * @param attributes    attributes list
+	 */
+	void addAttributeIfNotNull(String attrValue, BlackboardAttribute.ATTRIBUTE_TYPE attributeType, Collection<BlackboardAttribute> attributes) {
+		if (!StringUtils.isEmpty(attrValue)) {
+			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
+		}
+	}
+
+	/**
+	 * Adds a string attribute to the list, is the attribute value is not null
+	 * or empty
+	 *
+	 * @param attrValue     attribute value
+	 * @param attributeType attribute type
+	 * @param attributes    attributes list
+	 */
+	void addAttributeIfNotZero(long attrValue, BlackboardAttribute.ATTRIBUTE_TYPE attributeType, Collection<BlackboardAttribute> attributes) {
+		if (attrValue > 0) {
+			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
+		}
+	}
 }

@@ -419,39 +419,23 @@ public final class CommunicationArtifactsHelper extends AbstractArtifactHelper {
 
 			// Create TSK_MESSAGE artifact
 			msgArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_MESSAGE);
-			if (dateTime > 0) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DATETIME, getModuleName(), dateTime));
-			}
-			if (readStatus != MessageReadStatus.UNKNOWN) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_READ_STATUS, getModuleName(), (readStatus == MessageReadStatus.READ) ? 1 : 0));
-			}
-
-			// Add basic attribute, if the correspond value is specified
-			if (!StringUtils.isEmpty(messageType)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, getModuleName(), messageType));
-			}
-			if (direction != CommunicationDirection.UNKNOWN) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DIRECTION, getModuleName(), direction.getString()));
-			}
+			
+			addAttributeIfNotZero(dateTime, ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
+			addMessageReadStatusIfKnown(readStatus, attributes);
+			addAttributeIfNotNull(messageType, ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, attributes);
+			addCommuncationDirectionIfKnown(direction, attributes);
+			
 			if (fromAddress != null && !StringUtils.isEmpty(fromAddress.getDisplayName())) {
 				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, getModuleName(), fromAddress.getDisplayName()));
 			}
 			// Create a comma separated string of recipients
 			String toAddresses = addressListToString(recipientsList);
-			if (toAddresses != null && !StringUtils.isEmpty(toAddresses)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, getModuleName(), toAddresses));
-			}
-
-			if (!StringUtils.isEmpty(subject)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_SUBJECT, getModuleName(), subject));
-			}
-			if (!StringUtils.isEmpty(messageText)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_TEXT, getModuleName(), messageText));
-			}
-			if (!StringUtils.isEmpty(threadId)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_THREAD_ID, getModuleName(), threadId));
-			}
-
+			addAttributeIfNotNull(toAddresses, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, attributes);
+			
+			addAttributeIfNotNull(subject, ATTRIBUTE_TYPE.TSK_SUBJECT, attributes);
+			addAttributeIfNotNull(messageText, ATTRIBUTE_TYPE.TSK_TEXT, attributes);
+			addAttributeIfNotNull(threadId, ATTRIBUTE_TYPE.TSK_THREAD_ID, attributes);
+			
 			// Add other specified attributes
 			msgArtifact.addAttributes(attributes);
 			msgArtifact.addAttributes(otherAttributesList);
@@ -723,4 +707,17 @@ public final class CommunicationArtifactsHelper extends AbstractArtifactHelper {
 
 		return toAddresses;
 	}
+	
+	void addCommuncationDirectionIfKnown(CommunicationDirection direction, Collection<BlackboardAttribute> attributes) {
+		if (direction != CommunicationDirection.UNKNOWN) {
+			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DIRECTION, getModuleName(), direction.getString()));
+		}
+	}
+
+	void addMessageReadStatusIfKnown(MessageReadStatus readStatus, Collection<BlackboardAttribute> attributes) {
+		if (readStatus != MessageReadStatus.UNKNOWN) {
+			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_READ_STATUS, getModuleName(), (readStatus == MessageReadStatus.READ) ? 1 : 0));
+		}
+	}
+
 }
