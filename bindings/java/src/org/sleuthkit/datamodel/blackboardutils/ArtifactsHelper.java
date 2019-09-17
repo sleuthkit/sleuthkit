@@ -35,7 +35,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  * This class helps ingest modules create miscellaneous artifacts.
  *
  */
-public final class ArtifactsHelper extends AbstractArtifactHelper {
+public final class ArtifactsHelper extends ArtifactHelper {
 
 	private static final Logger logger = Logger.getLogger(ArtifactsHelper.class.getName());
 
@@ -100,17 +100,11 @@ public final class ArtifactsHelper extends AbstractArtifactHelper {
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE, getModuleName(), latitude));
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LONGITUDE, getModuleName(), longitude));
-			if (timeStamp > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, getModuleName(), timeStamp));
-			}
 
-			if (!StringUtils.isEmpty(name)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), name));
-			}
+			addAttributeIfNotZero(timeStamp, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
 
-			if (!StringUtils.isEmpty(programName)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
-			}
+			addAttributeIfNotNull(name, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, attributes);
+			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
 
 			// add the attributes 
 			gpsTrackpointArtifact.addAttributes(attributes);
@@ -164,9 +158,8 @@ public final class ArtifactsHelper extends AbstractArtifactHelper {
 
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
-			if (dateInstalled > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, getModuleName(), dateInstalled));
-			}
+
+			addAttributeIfNotZero(dateInstalled, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
 
 			// Add attributes to artifact
 			installedProgramArtifact.addAttributes(attributes);

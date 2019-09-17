@@ -38,7 +38,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  * Class to help ingest modules create Web Browser artifacts.
  *
  */
-public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
+public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 
 	private static final Logger logger = Logger.getLogger(ArtifactsHelper.class.getName());
 
@@ -94,19 +94,11 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
-			if (creationTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, getModuleName(), creationTime));
-			}
 
-			if (!StringUtils.isEmpty(title)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, getModuleName(), title));
-			}
-			if (!StringUtils.isEmpty(url)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, getModuleName(), extractDomain(url)));
-			}
-			if (!StringUtils.isEmpty(progName)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), progName));
-			}
+			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, attributes);
+			addAttributeIfNotNull(title, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, attributes);
+			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
+			addAttributeIfNotNull(progName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
 
 			// Add  attributes to artifact
 			bookMarkArtifact.addAttributes(attributes);
@@ -173,22 +165,12 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
-			if (creationTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, getModuleName(), creationTime));
-			}
 
-			if (!StringUtils.isEmpty(name)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), name));
-			}
-			if (!StringUtils.isEmpty(value)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE, getModuleName(), value));
-			}
-			if (!StringUtils.isEmpty(url)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, getModuleName(), extractDomain(url)));
-			}
-			if (!StringUtils.isEmpty(programName)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
-			}
+			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
+			addAttributeIfNotNull(name, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, attributes);
+			addAttributeIfNotNull(value, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE, attributes);
+			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
+			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
 
 			cookieArtifact.addAttributes(attributes);
 			cookieArtifact.addAttributes(otherAttributesList);
@@ -247,16 +229,10 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH, getModuleName(), path));
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
-			if (startTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, getModuleName(), startTime));
-			}
 
-			if (!StringUtils.isEmpty(programName)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
-			}
-			if (!StringUtils.isEmpty(url)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, getModuleName(), extractDomain(url)));
-			}
+			addAttributeIfNotZero(startTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
+			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
+			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
 
 			webDownloadArtifact.addAttributes(attributes);
 			webDownloadArtifact.addAttributes(otherAttributesList);
@@ -324,25 +300,13 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), personName));
 
-			if (!StringUtils.isEmpty(email)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL, getModuleName(), email));
-			}
-			if (!StringUtils.isEmpty(phoneNumber)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, getModuleName(), phoneNumber));
-			}
-			if (!StringUtils.isEmpty(mailingAddress)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCATION, getModuleName(), mailingAddress));
-			}
+			addAttributeIfNotNull(email, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL, attributes);
+			addAttributeIfNotNull(phoneNumber, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, attributes);
+			addAttributeIfNotNull(mailingAddress, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCATION, attributes);
 
-			if (creationTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, getModuleName(), creationTime));
-			}
-			if (accessTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, getModuleName(), accessTime));
-			}
-			if (count > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, getModuleName(), count));
-			}
+			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, attributes);
+			addAttributeIfNotZero(accessTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
+			addAttributeIfNotZero(count, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, attributes);
 
 			webFormAddressArtifact.addAttributes(attributes);
 			webFormAddressArtifact.addAttributes(otherAttributesList);
@@ -403,15 +367,10 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), name));
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE, getModuleName(), value));
-			if (creationTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, getModuleName(), creationTime));
-			}
-			if (accessTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, getModuleName(), accessTime));
-			}
-			if (count > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, getModuleName(), count));
-			}
+
+			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, attributes);
+			addAttributeIfNotZero(accessTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
+			addAttributeIfNotZero(count, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, attributes);
 
 			webFormAutofillArtifact.addAttributes(attributes);
 			webFormAutofillArtifact.addAttributes(otherAttributesList);
@@ -472,23 +431,13 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 
 			// Add basic attributes 
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
-			if (accessTime > 0) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, getModuleName(), accessTime));
-			}
 
-			if (!StringUtils.isEmpty(title)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, getModuleName(), title));
-			}
-			if (!StringUtils.isEmpty(referrer)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_REFERRER, getModuleName(), referrer));
-			}
+			addAttributeIfNotZero(accessTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
+			addAttributeIfNotNull(title, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, attributes);
+			addAttributeIfNotNull(referrer, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_REFERRER, attributes);
 
-			if (!StringUtils.isEmpty(programName)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
-			}
-			if (!StringUtils.isEmpty(url)) {
-				attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, getModuleName(), extractDomain(url)));
-			}
+			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
+			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
 
 			webHistoryArtifact.addAttributes(attributes);
 			webHistoryArtifact.addAttributes(otherAttributesList);
@@ -519,17 +468,18 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 		if (urlString == null) {
 			return "";
 		}
-		String result = "";
+		String result;
 
 		try {
 			URL url = new URL(urlString);
 			result = url.getHost();
 		} catch (MalformedURLException ex) {
-			//do not log if not a valid URL - we will try to extract it ourselves
+			// not a valid URL - we will try to extract it ourselves
+			result = null;
 		}
 
 		//was not a valid URL, try a less picky method
-		if (result == null || result.trim().isEmpty()) {
+		if (result == null || StringUtils.isBlank(result)) {
 			return getBaseDomain(urlString);
 		}
 		return result;
@@ -543,7 +493,7 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 	 * @return empty string if no domain could be found
 	 */
 	private static String getBaseDomain(String url) {
-		String host = null;
+		String host;
 
 		//strip protocol
 		String cleanUrl = url.replaceFirst(".*:\\/\\/", "");
@@ -568,7 +518,7 @@ public final class WebBrowserArtifactsHelper extends AbstractArtifactHelper {
 				hostB.append(part);
 			}
 			if (diff == 2) {
-				hostB.append(".");
+				hostB.append('.');
 			}
 		}
 

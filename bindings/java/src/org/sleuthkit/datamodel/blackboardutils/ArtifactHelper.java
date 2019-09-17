@@ -18,7 +18,10 @@
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
+import java.util.Collection;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
@@ -26,7 +29,7 @@ import org.sleuthkit.datamodel.SleuthkitCase;
  * artifacts.
  *
  */
-public abstract class AbstractArtifactHelper {
+class ArtifactHelper {
 
 	private final SleuthkitCase caseDb;
 	private final AbstractFile srcAbstractFile;	// artifact source
@@ -39,7 +42,7 @@ public abstract class AbstractArtifactHelper {
 	 * @param moduleName name module using the helper
 	 * @param srcFile    source file
 	 */
-	public AbstractArtifactHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
+	protected ArtifactHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
 		this.moduleName = moduleName;
 		this.srcAbstractFile = srcFile;
 		this.caseDb = caseDb;
@@ -72,4 +75,30 @@ public abstract class AbstractArtifactHelper {
 		return this.moduleName;
 	}
 
+	/**
+	 * Creates and adds an attribute to the list, if the attribute value is not empty or null.
+	 *
+	 * @param attrValue attribute value 
+	 * @param attributeType attribute type
+	 * @param attributes list of attributes to add to.
+	 * 
+	 */
+	protected void addAttributeIfNotNull(String attrValue, BlackboardAttribute.ATTRIBUTE_TYPE attributeType, Collection<BlackboardAttribute> attributes) {
+		if (!StringUtils.isEmpty(attrValue)) {
+			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
+		}
+	}
+
+	/**
+	 * Creates and adds an attribute to the list, if the attribute value is not 0.
+	 *
+	 * @param attrValue attribute value 
+	 * @param attributeType attribute type
+	 * @param attributes list of attributes to add to.
+	 */
+	protected void addAttributeIfNotZero(long attrValue, BlackboardAttribute.ATTRIBUTE_TYPE attributeType, Collection<BlackboardAttribute> attributes) {
+		if (attrValue > 0) {
+			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
+		}
+	}
 }

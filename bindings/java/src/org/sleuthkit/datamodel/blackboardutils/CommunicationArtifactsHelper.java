@@ -44,7 +44,7 @@ import org.sleuthkit.datamodel.TskDataException;
  * A helper class to support modules that parse SQLite databases from mobile
  * apps and create artifacts.
  */
-public final class CommunicationArtifactsHelper extends AbstractArtifactHelper {
+public final class CommunicationArtifactsHelper extends ArtifactHelper {
 
 	private static final Logger logger = Logger.getLogger(CommunicationArtifactsHelper.class.getName());
 
@@ -212,18 +212,10 @@ public final class CommunicationArtifactsHelper extends AbstractArtifactHelper {
 			// Add basic attributes for name phonenumber email, if specified
 			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), contactName));
 
-			if (!StringUtils.isEmpty(phoneNumber)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, getModuleName(), phoneNumber));
-			}
-			if (!StringUtils.isEmpty(homePhoneNumber)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME, getModuleName(), homePhoneNumber));
-			}
-			if (!StringUtils.isEmpty(mobilePhoneNumber)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE, getModuleName(), mobilePhoneNumber));
-			}
-			if (!StringUtils.isEmpty(emailAddr)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_EMAIL, getModuleName(), emailAddr));
-			}
+			addAttributeIfNotNull(phoneNumber, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, attributes);
+			addAttributeIfNotNull(homePhoneNumber, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME, attributes);
+			addAttributeIfNotNull(mobilePhoneNumber, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE, attributes);
+			addAttributeIfNotNull(emailAddr, ATTRIBUTE_TYPE.TSK_EMAIL, attributes);
 
 			contactArtifact.addAttributes(attributes);
 			contactArtifact.addAttributes(additionalAttributes);
@@ -419,38 +411,22 @@ public final class CommunicationArtifactsHelper extends AbstractArtifactHelper {
 
 			// Create TSK_MESSAGE artifact
 			msgArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_MESSAGE);
-			if (dateTime > 0) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DATETIME, getModuleName(), dateTime));
-			}
-			if (readStatus != MessageReadStatus.UNKNOWN) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_READ_STATUS, getModuleName(), (readStatus == MessageReadStatus.READ) ? 1 : 0));
-			}
 
-			// Add basic attribute, if the correspond value is specified
-			if (!StringUtils.isEmpty(messageType)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, getModuleName(), messageType));
-			}
-			if (direction != CommunicationDirection.UNKNOWN) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DIRECTION, getModuleName(), direction.getString()));
-			}
+			addAttributeIfNotZero(dateTime, ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
+			addMessageReadStatusIfKnown(readStatus, attributes);
+			addAttributeIfNotNull(messageType, ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, attributes);
+			addCommDirectionIfKnown(direction, attributes);
+
 			if (fromAddress != null && !StringUtils.isEmpty(fromAddress.getDisplayName())) {
 				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, getModuleName(), fromAddress.getDisplayName()));
 			}
 			// Create a comma separated string of recipients
 			String toAddresses = addressListToString(recipientsList);
-			if (toAddresses != null && !StringUtils.isEmpty(toAddresses)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, getModuleName(), toAddresses));
-			}
+			addAttributeIfNotNull(toAddresses, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, attributes);
 
-			if (!StringUtils.isEmpty(subject)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_SUBJECT, getModuleName(), subject));
-			}
-			if (!StringUtils.isEmpty(messageText)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_TEXT, getModuleName(), messageText));
-			}
-			if (!StringUtils.isEmpty(threadId)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_THREAD_ID, getModuleName(), threadId));
-			}
+			addAttributeIfNotNull(subject, ATTRIBUTE_TYPE.TSK_SUBJECT, attributes);
+			addAttributeIfNotNull(messageText, ATTRIBUTE_TYPE.TSK_TEXT, attributes);
+			addAttributeIfNotNull(threadId, ATTRIBUTE_TYPE.TSK_THREAD_ID, attributes);
 
 			// Add other specified attributes
 			msgArtifact.addAttributes(attributes);
@@ -647,28 +623,18 @@ public final class CommunicationArtifactsHelper extends AbstractArtifactHelper {
 			callLogArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CALLLOG);
 
 			// Add basic attributes 
-			if (startDateTime > 0) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DATETIME_START, getModuleName(), startDateTime));
-			}
-			if (endDateTime > 0) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DATETIME_END, getModuleName(), endDateTime));
-			}
+			addAttributeIfNotZero(startDateTime, ATTRIBUTE_TYPE.TSK_DATETIME_START, attributes);
+			addAttributeIfNotZero(endDateTime, ATTRIBUTE_TYPE.TSK_DATETIME_END, attributes);
+			addCommDirectionIfKnown(direction, attributes);
 
-			if (direction != CommunicationDirection.UNKNOWN) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DIRECTION, getModuleName(), direction.getString()));
-			}
 			if (fromAddress != null) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, getModuleName(), fromAddress.getUniqueID()));
-				if (!StringUtils.isEmpty(fromAddress.getDisplayName())) {
-					attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), fromAddress.getDisplayName()));
-				}
+				addAttributeIfNotNull(fromAddress.getUniqueID(), ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, attributes);
+				addAttributeIfNotNull(fromAddress.getDisplayName(), ATTRIBUTE_TYPE.TSK_NAME, attributes);
 			}
 
 			// Create a comma separated string of recipients
 			String toAddresses = addressListToString(toAddressList);
-			if (!StringUtils.isEmpty(toAddresses)) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, getModuleName(), toAddresses));
-			}
+			addAttributeIfNotNull(toAddresses, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, attributes);
 
 			// Add attributes to artifact
 			callLogArtifact.addAttributes(attributes);
@@ -723,4 +689,23 @@ public final class CommunicationArtifactsHelper extends AbstractArtifactHelper {
 
 		return toAddresses;
 	}
+
+	/**
+	 * Adds communication direction attribute to the list, if it is not unknown.
+	 */
+	private void addCommDirectionIfKnown(CommunicationDirection direction, Collection<BlackboardAttribute> attributes) {
+		if (direction != CommunicationDirection.UNKNOWN) {
+			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DIRECTION, getModuleName(), direction.getString()));
+		}
+	}
+
+	/**
+	 * Adds message read status attribute to the list, if it is not unknown.
+	 */
+	private void addMessageReadStatusIfKnown(MessageReadStatus readStatus, Collection<BlackboardAttribute> attributes) {
+		if (readStatus != MessageReadStatus.UNKNOWN) {
+			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_READ_STATUS, getModuleName(), (readStatus == MessageReadStatus.READ) ? 1 : 0));
+		}
+	}
+
 }
