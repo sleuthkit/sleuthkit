@@ -138,39 +138,6 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Get a count of tagnames applied to the given event ids as a map from
-	 * tagname displayname to count of tag applications
-	 *
-	 * @param eventIDsWithTags the event ids to get the tag counts map for
-	 *
-	 * @return a map from tagname displayname to count of applications
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-//	public Map<String, Long> getTagCountsByTagName(Set<Long> eventIDsWithTags) throws TskCoreException {
-//		sleuthkitCase.acquireSingleUserCaseReadLock();
-//		String query
-//				= "SELECT tag_names.display_name AS display_name, COUNT(distinct tag_id) AS count FROM "
-//				+ getAugmentedEventsTablesSQL(false)
-//				+ " JOIN tag_names ON (tsk_events.tag_name_id = tag_names.tag_name_id ) "
-//				+ " WHERE event_id IN (" + buildCSVString(eventIDsWithTags) + ") "
-//				+ " GROUP BY tag_names.tag_name_id";//NON-NLS
-//		try (CaseDbConnection con = sleuthkitCase.getConnection();
-//				Statement statement = con.createStatement();
-//				ResultSet resultSet = statement.executeQuery(query);) {
-//			HashMap<String, Long> counts = new HashMap<>();
-//			while (resultSet.next()) {
-//				counts.put(resultSet.getString("display_name"), resultSet.getLong("count")); //NON-NLS
-//			}
-//			return counts;
-//		} catch (SQLException ex) {
-//			throw new TskCoreException("Failed to get tag counts by tag name with query: " + query, ex); //NON-NLS
-//		} finally {
-//			sleuthkitCase.releaseSingleUserCaseReadLock();
-//		}
-//	}
-
-	/**
 	 * Get the minimal interval that bounds all the vents that pass the given
 	 * filter.
 	 *
@@ -283,38 +250,6 @@ public final class TimelineManager {
 
 		return resultIDs;
 	}
-
-	
-	/**
-	 * Get a the hashset names for hash sets with hits.
-	 *
-	 * @return A set of hashset names which have hits.
-	 *
-	 * @throws TskCoreException
-	 */
-//	public Set< String> getHashSetNames() throws TskCoreException {
-//		Set< String> hashSets = new HashSet<>();
-//		sleuthkitCase.acquireSingleUserCaseReadLock();
-//
-//		String query = "SELECT DISTINCT value_text AS hash_set_name FROM blackboard_artifacts "
-//				+ " JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id) "
-//				+ " JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id) "
-//				+ " WHERE blackboard_artifact_types.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()
-//				+ " AND blackboard_attributes.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID(); //NON-NLS
-//		try (CaseDbConnection con = sleuthkitCase.getConnection();
-//				Statement stms = con.createStatement();
-//				ResultSet results = stms.executeQuery(query);) {
-//			while (results.next()) {
-//				String hashSetName = results.getString("hash_set_name"); //NON-NLS
-//				hashSets.add(hashSetName);
-//			}
-//		} catch (SQLException ex) {
-//			throw new TskCoreException("Failed to get hash sets.", ex); // NON-NLS
-//		} finally {
-//			sleuthkitCase.releaseSingleUserCaseReadLock();
-//		}
-//		return Collections.unmodifiableSet(hashSets);
-//	}
 
 	/**
 	 * @return maximum time in seconds from unix epoch

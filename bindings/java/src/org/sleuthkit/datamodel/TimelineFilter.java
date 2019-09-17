@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
 import static java.util.Arrays.asList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
