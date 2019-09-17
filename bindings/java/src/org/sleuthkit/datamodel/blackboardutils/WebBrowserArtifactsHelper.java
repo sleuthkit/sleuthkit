@@ -118,7 +118,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	}
 
 	/**
-	 * Adds a TSK_WEB_COOKIE artifact
+	 * Adds a TSK_WEB_COOKIE artifact.
 	 *
 	 * @param url          url of the site that created the cookie, required
 	 * @param creationTime create time of cookie, may be 0 if not available
@@ -137,7 +137,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	}
 
 	/**
-	 * Adds a TSK_WEB_COOKIE artifact
+	 * Adds a TSK_WEB_COOKIE artifact.
 	 *
 	 * @param url                 url of the site that created the cookie,
 	 *                            required
@@ -189,7 +189,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	}
 
 	/**
-	 * Created a TSK_WEB_DOWNNLOAD artifact
+	 * Adds a TSK_WEB_DOWNNLOAD artifact.
 	 *
 	 * @param path        path of downloaded file, required
 	 * @param startTime   date/time downloaded, 0 if not available
@@ -204,7 +204,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	}
 
 	/**
-	 * Created a TSK_WEB_DOWNNLOAD artifact
+	 * Adds a TSK_WEB_DOWNNLOAD artifact.
 	 *
 	 * @param path                path of downloaded file, required
 	 * @param startTime           date/time downloaded, 0 if not available
