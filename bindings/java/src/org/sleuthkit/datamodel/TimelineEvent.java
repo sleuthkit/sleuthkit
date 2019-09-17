@@ -28,6 +28,7 @@ import static org.sleuthkit.datamodel.TimelineEventType.TypeLevel.SUB_TYPE;
 public final class TimelineEvent {
 
 	private final long eventID;
+
 	/**
 	 * The TSK object ID of the file this event is derived from.
 	 */
@@ -48,6 +49,7 @@ public final class TimelineEvent {
 	 * The time of this event in second from the Unix epoch.
 	 */
 	private final long time;
+
 	/**
 	 * The type of this event.
 	 */
@@ -55,7 +57,7 @@ public final class TimelineEvent {
 
 	/**
 	 * The three descriptions (full, med, short) stored in a map, keyed by
- DescriptionLOD (TypeLevel of Detail)
+	 * DescriptionLOD (TypeLevel of Detail)
 	 */
 	private final TimelineEventDescription descriptions;
 
@@ -99,9 +101,8 @@ public final class TimelineEvent {
 		// This isn't the best design, but it was the most expediant way to reduce 
 		// the public API (by keeping parseDescription()) out of the public API.  
 		if (type instanceof TimelineEventTypeImpl) {
-			this.descriptions = ((TimelineEventTypeImpl)type).parseDescription(fullDescription, medDescription, shortDescription);
-		}
-		else {
+			this.descriptions = ((TimelineEventTypeImpl) type).parseDescription(fullDescription, medDescription, shortDescription);
+		} else {
 			throw new IllegalArgumentException();
 		}
 		this.hashHit = hashHit;
