@@ -433,23 +433,10 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			msgArtifact.addAttributes(otherAttributesList);
 
 			// Find/create an account instance for sender
-			if (fromAddress != null) {
-				AccountFileInstance senderAccountInstance = createAccountInstance(accountsType, fromAddress.getUniqueID());
-
-				// Create a relationship between selfAccount and sender account
-				addRelationship(selfAccountInstance, senderAccountInstance, msgArtifact, Relationship.Type.MESSAGE, dateTime);
-			}
+			createSenderAccountAndRelationship(fromAddress, msgArtifact, Relationship.Type.MESSAGE, dateTime);
 
 			// Find/create an account instance for each recipient  
-			if (recipientsList != null) {
-				for (Account.Address recipient : recipientsList) {
-
-					AccountFileInstance recipientAccountInstance = createAccountInstance(accountsType, recipient.getUniqueID());
-
-					// Create a relationship between selfAccount and recipient account
-					addRelationship(selfAccountInstance, recipientAccountInstance, msgArtifact, Relationship.Type.MESSAGE, dateTime);
-				}
-			}
+			createRecipientAccountsAndRelationships(recipientsList, msgArtifact, Relationship.Type.MESSAGE, dateTime);
 
 			// post artifact 
 			getSleuthkitCase().getBlackboard().postArtifact(msgArtifact, getModuleName());
@@ -641,18 +628,10 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			callLogArtifact.addAttributes(otherAttributesList);
 
 			// Create a relationship between selfAccount and caller
-			if (fromAddress != null) {
-				AccountFileInstance callerAccountInstance = createAccountInstance(accountsType, fromAddress.getUniqueID());
-				addRelationship(selfAccountInstance, callerAccountInstance, callLogArtifact, Relationship.Type.CALL_LOG, (startDateTime > 0) ? startDateTime : 0);
-			}
+			createSenderAccountAndRelationship(fromAddress, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
 
 			// Create a relationship between selfAccount and each callee
-			if (toAddressList != null) {
-				for (Account.Address callee : toAddressList) {
-					AccountFileInstance calleeAccountInstance = createAccountInstance(accountsType, callee.getUniqueID());
-					addRelationship(selfAccountInstance, calleeAccountInstance, callLogArtifact, Relationship.Type.CALL_LOG, (startDateTime > 0) ? startDateTime : 0);
-				}
-			}
+			createRecipientAccountsAndRelationships(toAddressList, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
 
 			// post artifact 
 			getSleuthkitCase().getBlackboard().postArtifact(callLogArtifact, getModuleName());
@@ -705,6 +684,35 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	private void addMessageReadStatusIfKnown(MessageReadStatus readStatus, Collection<BlackboardAttribute> attributes) {
 		if (readStatus != MessageReadStatus.UNKNOWN) {
 			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_READ_STATUS, getModuleName(), (readStatus == MessageReadStatus.READ) ? 1 : 0));
+		}
+	}
+	
+	/**
+	 * Creates an account & relationship for sender, if the sender address is
+	 * not null/empty.
+	 */
+	private void createSenderAccountAndRelationship(Account.Address fromAddress,
+			BlackboardArtifact artifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException {
+		if (fromAddress != null) {
+			AccountFileInstance senderAccountInstance = createAccountInstance(accountsType, fromAddress.getUniqueID());
+
+			// Create a relationship between selfAccount and sender account
+			addRelationship(selfAccountInstance, senderAccountInstance, artifact, relationshipType, dateTime);
+		}
+	}
+
+	/**
+	 * Creates accounts & relationship with each recipient, if the recipient
+	 * list is not null/empty.
+	 */
+	private void createRecipientAccountsAndRelationships(Collection<Account.Address> toAddressList,
+			BlackboardArtifact artifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException {
+		// Create a relationship between selfAccount and each recipient
+		if (toAddressList != null) {
+			for (Account.Address recipient : toAddressList) {
+				AccountFileInstance calleeAccountInstance = createAccountInstance(accountsType, recipient.getUniqueID());
+				addRelationship(selfAccountInstance, calleeAccountInstance, artifact, relationshipType, (dateTime > 0) ? dateTime : 0);
+			}
 		}
 	}
 
