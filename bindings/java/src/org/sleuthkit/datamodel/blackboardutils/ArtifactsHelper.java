@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -21,10 +21,8 @@ package org.sleuthkit.datamodel.blackboardutils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.Blackboard;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase;
@@ -34,16 +32,14 @@ import org.sleuthkit.datamodel.TskCoreException;
  * This class helps ingest modules create miscellaneous artifacts.
  *
  */
-public final class ArtifactsHelper extends ArtifactHelper {
-
-	private static final Logger logger = Logger.getLogger(ArtifactsHelper.class.getName());
+public final class ArtifactsHelper extends ArtifactHelperBase {
 
 	/**
-	 * Creates an artifact helper for artifacts.
+	 * Creates an artifact helper for modules to create artifacts.
 	 *
-	 * @param caseDb     Sleuthkit case db
-	 * @param moduleName name module using the helper
-	 * @param srcFile    source file
+	 * @param caseDb     Sleuthkit case database.
+	 * @param moduleName Name of module using the helper.
+	 * @param srcFile    Source file for the artifacts.
 	 *
 	 */
 	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
@@ -53,125 +49,123 @@ public final class ArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Adds a TSK_GPS_TRACKPOINT artifact.
 	 *
-	 * @param latitude    location latitude, required
-	 * @param longitude   location longitude, required
-	 * @param timeStamp   date/time trackpoint recorded, can be 0 if not
-	 *                    available
-	 * @param name        trackpoint name, can be empty/null if not available
-	 * @param programName name of program that recorded trackpoint , can be
-	 *                    empty or null if not available
+	 * @param latitude    Location latitude, required.
+	 * @param longitude   Location longitude, required.
+	 * @param timeStamp   Date/time trackpoint was recorded, can be 0 if not
+	 *                    available.
+	 * @param name        Trackpoint name, can be empty/null if not available.
+	 * @param programName Name of program that recorded the trackpoint, can be
+	 *                    empty or null if not available.
 	 *
-	 * @return artifact added
+	 * @return GPS trackpoint artifact added
+	 *
+	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addGPSLocation(double latitude, double longitude,
-			long timeStamp, String name, String programName) {
+			long timeStamp, String name, String programName) throws TskCoreException, BlackboardException {
 
 		return addGPSLocation(latitude, longitude, timeStamp, name, programName,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_GPS_TRACKPOINT artifact.
 	 *
-	 * @param latitude            location latitude, required
-	 * @param longitude           location longitude, required
-	 * @param timeStamp           date/time trackpoint recorded, can be 0 if not
-	 *                            available
-	 * @param name                trackpoint name, can be empty/null if not
-	 *                            available
-	 * @param programName         name of program that recorded trackpoint , can
-	 *                            be empty or null if not available
-	 * @param otherAttributesList other attributes, can be empty list of no
-	 *                            additional attributes
+	 * @param latitude            Location latitude, required.
+	 * @param longitude           Location longitude, required.
+	 * @param timeStamp           Date/time the trackpoint was recorded, can be
+	 *                            0 if not available.
+	 * @param name                Trackpoint name, can be empty/null if not
+	 *                            available.
+	 * @param programName         Name of program that recorded the trackpoint,
+	 *                            can be empty or null if not available.
+	 * @param otherAttributesList Other attributes, can be an empty list of no
+	 *                            additional attributes.
 	 *
-	 * @return artifact added
+	 * @return GPS trackpoint artifact added
+	 *
+	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addGPSLocation(double latitude, double longitude, long timeStamp, String name, String programName,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact gpsTrackpointArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact gpsTrackpointArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create artifact
-			gpsTrackpointArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT);
+		// create artifact
+		gpsTrackpointArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT);
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE, getModuleName(), latitude));
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LONGITUDE, getModuleName(), longitude));
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE, getModuleName(), latitude));
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LONGITUDE, getModuleName(), longitude));
 
-			addAttributeIfNotZero(timeStamp, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, timeStamp, attributes);
 
-			addAttributeIfNotNull(name, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, attributes);
-			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, name, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, programName, attributes);
 
-			// add the attributes 
-			gpsTrackpointArtifact.addAttributes(attributes);
-			gpsTrackpointArtifact.addAttributes(otherAttributesList);
+		// add the attributes 
+		attributes.addAll(otherAttributesList);
+		gpsTrackpointArtifact.addAttributes(attributes);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(gpsTrackpointArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add GPS trackpoint artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((gpsTrackpointArtifact != null) ? gpsTrackpointArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(gpsTrackpointArtifact, getModuleName());
 
 		// return the artifact
 		return gpsTrackpointArtifact;
 	}
 
 	/**
-	 * Adds a TSK_INSTALLED_PROGRAM artifact
+	 * Adds a TSK_INSTALLED_PROGRAM artifact.
 	 *
-	 * @param programName   name of program
-	 * @param dateInstalled date of install
+	 * @param programName   Name of program, required.
+	 * @param dateInstalled Date/time of install, can be 0 if not available.
 	 *
-	 * @return artifact added
+	 * @return Installed program artifact added.
+	 *
+	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
-	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled) {
+	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled) throws TskCoreException, BlackboardException {
 		return addInstalledProgram(programName, dateInstalled,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
-	 * Adds a TSK_INSTALLED_PROGRAM artifact
+	 * Adds a TSK_INSTALLED_PROGRAM artifact.
 	 *
-	 * @param programName         name of program , required
-	 * @param dateInstalled       date of install, can be 0 if not available
-	 * @param otherAttributesList additional attributes, can be an empty list if
-	 *                            no additional attributes
+	 * @param programName         Name of program, required.
+	 * @param dateInstalled       Date/time of install, can be 0 if not
+	 *                            available.
+	 * @param otherAttributesList Additional attributes, can be an empty list if
+	 *                            no additional attributes.
 	 *
-	 * @return artifact added
+	 * @return Installed program artifact added.
+	 *
+	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact installedProgramArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact installedProgramArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create artifact
-			installedProgramArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG);
+		// create artifact
+		installedProgramArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG);
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, dateInstalled, attributes);
 
-			addAttributeIfNotZero(dateInstalled, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
+		// add the attributes 
+		attributes.addAll(otherAttributesList);
+		installedProgramArtifact.addAttributes(attributes);
 
-			// Add attributes to artifact
-			installedProgramArtifact.addAttributes(attributes);
-			installedProgramArtifact.addAttributes(otherAttributesList);
-
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add installed program artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((installedProgramArtifact != null) ? installedProgramArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName());
 
 		// return the artifact
 		return installedProgramArtifact;

@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -23,15 +23,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Account;
 import org.sleuthkit.datamodel.AccountFileInstance;
-import org.sleuthkit.datamodel.Blackboard;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.DataSource;
@@ -41,25 +39,49 @@ import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskDataException;
 
 /**
- * A helper class to support modules that parse SQLite databases from mobile
- * apps and create artifacts.
+ * Class to help ingest modules create communication artifacts. Communication
+ * artifacts includes contacts, messages, call logs.
+ *
+ * It creates a 'self' account {@link Account} - an account for the owner/user
+ * of the application being processed by the module. As an example, for a module
+ * analyzing Facebook application, this would be account associated with the
+ * unique Facebook user id of the device owner.
+ *
+ * In the absence of a 'self' account, a 'device' account may be used in it's
+ * place. A 'device' account is an account meant to represent the owner of the
+ * device and uses the unique device id as the unique account identifier.
+ *
+ * It also creates accounts for contacts, and sender/receivers of the messages,
+ * and calls.
+ *
+ * And it also creates relationships between the self account - and the contacts
+ * and sender/receiver accounts.
+ *
  */
-public final class CommunicationArtifactsHelper extends ArtifactHelper {
-
-	private static final Logger logger = Logger.getLogger(CommunicationArtifactsHelper.class.getName());
+public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 	/**
 	 * Enum for message read status
 	 */
 	public enum MessageReadStatus {
 
-		UNKNOWN, /// read status is unknown
-		UNREAD, /// message has not been read
-		READ        /// message has been read
+		UNKNOWN("Unknown"), /// read status is unknown
+		UNREAD("Unread"), /// message has not been read
+		READ("Read");     /// message has been read
+
+		private final String msgReadStr;
+
+		MessageReadStatus(String readStatus) {
+			this.msgReadStr = readStatus;
+		}
+
+		public String getDisplayName() {
+			return msgReadStr;
+		}
 	}
 
 	/**
-	 * Enum for call/message direction
+	 * Enum for call/message direction.
 	 */
 	public enum CommunicationDirection {
 		UNKNOWN("Unknown"),
@@ -72,18 +94,18 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			this.dirStr = dir;
 		}
 
-		public String getString() {
+		public String getDisplayName() {
 			return dirStr;
 		}
 	}
 
 	/**
-	 * Enum for call media type
+	 * Enum for call media type.
 	 */
 	public enum CallMediaType {
 		UNKNOWN("Unknown"),
-		AUDIO("Audio"),
-		VIDEO("Video");
+		AUDIO("Audio"), // Audio only call
+		VIDEO("Video");	// Video/multimedia call
 
 		private final String typeStr;
 
@@ -91,34 +113,36 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			this.typeStr = type;
 		}
 
-		public String getString() {
+		public String getDisplayName() {
 			return typeStr;
 		}
 	}
 
-	// 'self' account for the application. 
+	// 'self' account for the application being processed by the module. 
 	private final AccountFileInstance selfAccountInstance;
 
-	// type of accounts to be created for the Application using this helper
+	// Type of accounts to be created for the module using this helper.
 	private final Account.Type accountsType;
 
 	/**
-	 * Constructs a AppDB parser helper for the given DB file.
+	 * Constructs a communications artifacts helper for the given source file.
 	 *
-	 * This is a constructor for Apps that that do not have any app specific
-	 * account information for device owner and will use a 'Device' account in
-	 * lieu.
+	 * This is a constructor for modules that do not have a 'self' account, and
+	 * will use a 'Device' account in lieu.
 	 *
 	 * It creates a DeviceAccount instance to use as a self account.
 	 *
-	 * @param caseDb       Sleuthkit case db
-	 * @param moduleName   name module using the helper
-	 * @param srcFile      source file being processed by the module
-	 * @param accountsType account types created by this module
+	 * @param caseDb       Sleuthkit case db.
+	 * @param moduleName   Name of module using the helper.
+	 * @param srcFile      Source file being processed by the module.
+	 * @param accountsType Account type {@link Account.Type} created by this
+	 *                     module.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is an error creating the device
+	 *                          account.
 	 */
-	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile, Account.Type accountsType) throws TskCoreException {
+	public CommunicationArtifactsHelper(SleuthkitCase caseDb,
+			String moduleName, AbstractFile srcFile, Account.Type accountsType) throws TskCoreException {
 
 		super(caseDb, moduleName, srcFile);
 
@@ -129,20 +153,22 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Constructs a AppDB parser helper for the given DB file.
 	 *
-	 * This constructor is for Apps that do have app specific account
-	 * information for the device owner to create a 'self' account.
+	 * This constructor is for modules that have the application specific
+	 * account information for the device owner to create a 'self' account.
 	 *
-	 * It creates a an account instance with specified type & id and uses it as
-	 * a self account.
+	 * It creates an account instance with specified type & id, and uses it as
+	 * the self account.
 	 *
-	 * @param caseDb             Sleuthkit case db
-	 * @param moduleName         name module using the helper
-	 * @param srcFile            source file being processed by the module
-	 * @param accountsType       account types created by this module
-	 * @param selfAccountType    self account type to be created for this module
-	 * @param selfAccountAddress account unique id for the self account
+	 * @param caseDb             Sleuthkit case db.
+	 * @param moduleName         Name of module using the helper.
+	 * @param srcFile            Source file being processed by the module.
+	 * @param accountsType		 Account type {@link Account.Type} created by
+	 *                           this module.
+	 * @param selfAccountType    Self account type to be created for this
+	 *                           module.
+	 * @param selfAccountAddress Account unique id for the self account.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException	If there is an error creating the self account
 	 */
 	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile, Account.Type accountsType, Account.Type selfAccountType, Account.Address selfAccountAddress) throws TskCoreException {
 
@@ -157,24 +183,27 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 * attributes. Also creates an account instance of specified type for the
 	 * contact with the specified ID.
 	 *
-	 * @param contactAccountUniqueID unique id for contact account
-	 * @param contactName            Name of contact, required
-	 * @param phoneNumber            primary phone number for contact, may be
-	 *                               empty or null
-	 * @param homePhoneNumber        home phone number, may be empty or null
-	 * @param mobilePhoneNumber      mobile phone number, may be empty or null
-	 * @param emailAddr              Email address for contact, may be empty or
-	 *                               null
+	 * @param contactAccountUniqueID Unique id for contact account, required.
+	 * @param contactName            Name of contact, required.
+	 * @param phoneNumber            Primary phone number for contact, may be
+	 *                               empty or null.
+	 * @param homePhoneNumber        Home phone number, may be empty or null.
+	 * @param mobilePhoneNumber      Mobile phone number, may be empty or null.
+	 * @param emailAddr              Email address for the contact, may be empty
+	 *                               or null.
 	 *
-	 * @return artifact created
+	 * @return Contact artifact created.
+	 *
+	 * @throws TskCoreException		  If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 *
 	 */
 	public BlackboardArtifact addContact(String contactAccountUniqueID, String contactName,
 			String phoneNumber, String homePhoneNumber,
-			String mobilePhoneNumber, String emailAddr) {
+			String mobilePhoneNumber, String emailAddr) throws TskCoreException, BlackboardException {
 		return addContact(contactAccountUniqueID, contactName, phoneNumber,
 				homePhoneNumber, mobilePhoneNumber, emailAddr,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
@@ -182,70 +211,69 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 * attributes. Also creates an account instance for the contact with the
 	 * specified ID.
 	 *
-	 * @param contactAccountUniqueID unique id for contact account
-	 * @param contactName            Name of contact, required
-	 * @param phoneNumber            primary phone number for contact, may be
-	 *                               empty or null
-	 * @param homePhoneNumber        home phone number, may be empty or null
-	 * @param mobilePhoneNumber      mobile phone number, may be empty or null
-	 * @param emailAddr              Email address for contact, may be empty or
-	 *                               null
+	 * @param contactAccountUniqueID Unique id for contact account, required.
+	 * @param contactName            Name of contact, required.
+	 * @param phoneNumber            Primary phone number for contact, may be
+	 *                               empty or null.
+	 * @param homePhoneNumber        Home phone number, may be empty or null.
+	 * @param mobilePhoneNumber      Mobile phone number, may be empty or null.
+	 * @param emailAddr              Email address for the contact, may be empty
+	 *                               or null.
 	 *
-	 * @param additionalAttributes   additional attributes for contact, may be
-	 *                               an empty list
+	 * @param additionalAttributes   Additional attributes for contact, may be
+	 *                               an empty list.
 	 *
-	 * @return contact artifact created
+	 * @return contact artifact created.
+	 *
+	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 *
 	 */
 	public BlackboardArtifact addContact(String contactAccountUniqueID, String contactName,
 			String phoneNumber, String homePhoneNumber,
 			String mobilePhoneNumber, String emailAddr,
-			Collection<BlackboardAttribute> additionalAttributes) {
+			Collection<BlackboardAttribute> additionalAttributes) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact contactArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact contactArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create TSK_CONTACT artifact
-			contactArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CONTACT);
+		// create TSK_CONTACT artifact
+		contactArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CONTACT);
 
-			// Add basic attributes for name phonenumber email, if specified
-			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), contactName));
+		// construct attributes
+		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), contactName));
 
-			addAttributeIfNotNull(phoneNumber, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, attributes);
-			addAttributeIfNotNull(homePhoneNumber, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME, attributes);
-			addAttributeIfNotNull(mobilePhoneNumber, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE, attributes);
-			addAttributeIfNotNull(emailAddr, ATTRIBUTE_TYPE.TSK_EMAIL, attributes);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, phoneNumber, attributes);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME, homePhoneNumber, attributes);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE, mobilePhoneNumber, attributes);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_EMAIL, emailAddr, attributes);
 
-			contactArtifact.addAttributes(attributes);
-			contactArtifact.addAttributes(additionalAttributes);
+		// add attributes
+		attributes.addAll(additionalAttributes);
+		contactArtifact.addAttributes(attributes);
 
-			// Find/Create an account instance for the contact
-			// Create a relationship between selfAccount and contactAccount
-			AccountFileInstance contactAccountInstance = createAccountInstance(accountsType, contactAccountUniqueID);
-			addRelationship(selfAccountInstance, contactAccountInstance, contactArtifact, Relationship.Type.CONTACT, 0);
+		// Find/Create an account instance for the contact
+		// Create a relationship between selfAccount and contactAccount
+		AccountFileInstance contactAccountInstance = createAccountInstance(accountsType, contactAccountUniqueID);
+		addRelationship(selfAccountInstance, contactAccountInstance, contactArtifact, Relationship.Type.CONTACT, 0);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(contactArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add contact artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((contactArtifact != null) ? contactArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(contactArtifact, getModuleName());
 
 		return contactArtifact;
 	}
 
 	/**
-	 * Creates an account file instance associated with the DB file.
+	 * Creates an account file instance{@link AccountFileInstance} associated
+	 * with the DB file.
 	 *
-	 * @param accountType     type of account to create
-	 * @param accountUniqueID unique id for the account
+	 * @param accountType     Type of account to create.
+	 * @param accountUniqueID Unique id for the account.
 	 *
-	 * @return account instance created
+	 * @return Account instance created.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is an error creating the account
+	 *                          instance.
 	 */
 	private AccountFileInstance createAccountInstance(Account.Type accountType, String accountUniqueID) throws TskCoreException {
 		return getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(accountType, accountUniqueID, getModuleName(), getAbstractFile());
@@ -254,21 +282,25 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Adds a relations between the two specified account instances.
 	 *
-	 * @param selfAccount      device owner account
-	 * @param otherAccount     other account
-	 * @param sourceArtifact   artifact from which relationship is derived.
-	 * @param relationshipType type of relationship
-	 * @param dateTime         date/time of relationship
+	 * @param selfAccount      'Self' account.
+	 * @param otherAccount     Other account.
+	 * @param sourceArtifact   Artifact from which the relationship is derived.
+	 * @param relationshipType Type of relationship.
+	 * @param dateTime         Date/time of relationship.
+	 *
+	 * @throws TskCoreException If there is an error creating relationship.
 	 */
 	private void addRelationship(AccountFileInstance selfAccountInstance, AccountFileInstance otherAccountInstance,
-			BlackboardArtifact sourceArtifact, Relationship.Type relationshipType, long dateTime) {
-		try {
-			if (selfAccountInstance.getAccount() != otherAccountInstance.getAccount()) {
+			BlackboardArtifact sourceArtifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException {
+
+		if (selfAccountInstance.getAccount() != otherAccountInstance.getAccount()) {
+			try {
 				getSleuthkitCase().getCommunicationsManager().addRelationships(selfAccountInstance,
 						Collections.singletonList(otherAccountInstance), sourceArtifact, relationshipType, dateTime);
+			} catch (TskDataException ex) {
+				throw new TskCoreException(String.format("Failed to create relationship between account = %s and account = %s.",
+						selfAccountInstance.getAccount(), otherAccountInstance.getAccount()), ex);
 			}
-		} catch (TskCoreException | TskDataException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to add relationship between account %s and account %s", selfAccountInstance.toString(), otherAccountInstance.toString()), ex); //NON-NLS
 		}
 	}
 
@@ -278,17 +310,20 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 * Also creates an account instance for the sender/receiver, and creates a
 	 * relationship between the self account and the sender/receiver account.
 	 *
-	 * @param messageType message type, may be empty or null
-	 * @param direction   message direction, UNKNOWN if not available
-	 * @param fromAddress sender address, may be null
-	 * @param toAddress   recipient address, may be null
-	 * @param dateTime    date/time of message, 0 if not available
-	 * @param readStatus  message read or not, UNKNOWN if not available
-	 * @param subject     message subject, may be empty or null
-	 * @param messageText message body, may be empty or null
-	 * @param threadId,   message thread id, may be empty or null
+	 * @param messageType Message type, required.
+	 * @param direction   Message direction, UNKNOWN if not available.
+	 * @param fromAddress Sender address, may be null.
+	 * @param toAddress	  Recipient address, may be null.
+	 * @param dateTime    Date/time of message, 0 if not available.
+	 * @param readStatus  Message read status, UNKNOWN if not available.
+	 * @param subject     Message subject, may be empty or null.
+	 * @param messageText Message body, may be empty or null.
+	 * @param threadId,   Message thread id, may be empty or null.
 	 *
-	 * @return message artifact
+	 * @return Message artifact.
+	 *
+	 * @throws TskCoreException		  If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addMessage(
 			String messageType,
@@ -296,11 +331,11 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			Account.Address fromAddress,
 			Account.Address toAddress,
 			long dateTime, MessageReadStatus readStatus,
-			String subject, String messageText, String threadId) {
+			String subject, String messageText, String threadId) throws TskCoreException, BlackboardException {
 		return addMessage(messageType, direction,
 				fromAddress, toAddress, dateTime, readStatus,
 				subject, messageText, threadId,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
@@ -309,18 +344,21 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 * Also creates an account instance for the sender/receiver, and creates a
 	 * relationship between the self account and the sender/receiver account.
 	 *
-	 * @param messageType         message type, may be empty or null
-	 * @param direction           message direction, UNKNOWN if not available
-	 * @param fromAddress         sender address, may be null
-	 * @param toAddress           recipient address, may be null
-	 * @param dateTime            date/time of message, 0 if not available
-	 * @param readStatus          message read or not, UNKNOWN if not available
-	 * @param subject             message subject, may be empty or null
-	 * @param messageText         message body, may be empty or null
-	 * @param threadId,           message thread id, may be empty or null
-	 * @param otherAttributesList additional attributes, may be an empty list
+	 * @param messageType         Message type, required.
+	 * @param direction           Message direction, UNKNOWN if not available.
+	 * @param fromAddress         Sender address, may be null.
+	 * @param toAddress	          Recipient address, may be null.
+	 * @param dateTime            Date/time of message, 0 if not available.
+	 * @param readStatus          Message read status, UNKNOWN if not available.
+	 * @param subject             Message subject, may be empty or null.
+	 * @param messageText         Message body, may be empty or null.
+	 * @param threadId,           Message thread id, may be empty or null.
+	 * @param otherAttributesList Additional attributes, may be an empty list.
 	 *
-	 * @return message artifact
+	 * @return Message artifact.
+	 *
+	 * @throws TskCoreException		  If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addMessage(String messageType,
 			CommunicationDirection direction,
@@ -328,7 +366,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			Account.Address toAddress,
 			long dateTime, MessageReadStatus readStatus, String subject,
 			String messageText, String threadId,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		return addMessage(messageType, direction,
 				fromAddress,
@@ -342,58 +380,60 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 * Adds a TSK_MESSAGE artifact.
 	 *
 	 * Also creates an account instance for the sender/receiver, and creates a
-	 * relationship between the self account and the sender/receiver account.
-	 *
-	 * This method is for messages with a multiple recipients.
-	 *
-	 * @param messageType    message type, may be empty or null
-	 * @param direction      message direction, UNKNOWN if not available
-	 * @param fromAddress    sender address, may be null
-	 * @param recipientsList recipient address list, may be null or empty list
-	 * @param dateTime       date/time of message, 0 if not available
-	 * @param readStatus     message read or not, UNKNOWN if not available
-	 * @param subject        message subject, may be empty or null
-	 * @param messageText    message body, may be empty or null
-	 * @param threadId,      message thread id, may be empty or null
+	 * relationship between the self account and the sender/receiver accounts.
 	 *
 	 *
-	 * @return message artifact
+	 * @param messageType    Message type, required.
+	 * @param direction      Message direction, UNKNOWN if not available.
+	 * @param fromAddress    Sender address, may be null.
+	 * @param recipientsList Recipient address list, may be null or empty an
+	 *                       list.
+	 * @param dateTime       Date/time of message, 0 if not available.
+	 * @param readStatus     Message read status, UNKNOWN if not available.
+	 * @param subject        Message subject, may be empty or null.
+	 * @param messageText    Message body, may be empty or null.
+	 * @param threadId,      Message thread id, may be empty or null.
+	 *
+	 * @return Message artifact.
+	 *
+	 * @throws TskCoreException		  If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addMessage(String messageType,
 			CommunicationDirection direction,
 			Account.Address fromAddress,
 			List<Account.Address> recipientsList,
 			long dateTime, MessageReadStatus readStatus,
-			String subject, String messageText, String threadId) {
+			String subject, String messageText, String threadId) throws TskCoreException, BlackboardException {
 		return addMessage(messageType, direction,
 				fromAddress, recipientsList,
 				dateTime, readStatus,
 				subject, messageText, threadId,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_MESSAGE artifact.
 	 *
-	 * Also creates an account instance for the sender/receiver, and creates a
-	 * relationship between the self account and the sender/receiver account.
+	 * Also creates an account instance for the sender/receivers, and creates a
+	 * relationship between the self account and the sender/receivers account.
 	 *
-	 * This method is for messages with a multiple recipients.
+	 * @param messageType         Message type, required.
+	 * @param direction           Message direction, UNKNOWN if not available.
+	 * @param fromAddress         Sender address, may be null.
+	 * @param recipientsList      Recipient address list, may be null or empty
+	 *                            an list.
+	 * @param dateTime            Date/time of message, 0 if not available.
+	 * @param readStatus          Message read status, UNKNOWN if not available.
+	 * @param subject             Message subject, may be empty or null.
+	 * @param messageText         Message body, may be empty or null.
+	 * @param threadId,           Message thread id, may be empty or null.
+	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
-	 * @param messageType         message type, may be empty or null
-	 * @param direction           message direction, UNKNOWN if not available
-	 * @param fromAddress         sender address, may be null
-	 * @param recipientsList      recipient address list, may be null or empty
-	 *                            list
-	 * @param dateTime            date/time of message, 0 if not available
-	 * @param readStatus          message read or not, UNKNOWN if not available
-	 * @param subject             message subject, may be empty or null
-	 * @param messageText         message body, may be empty or null
-	 * @param threadId,           message thread id, may be empty or null
-	 * @param otherAttributesList other attributes, may be an empty list
+	 * @return Message artifact.
 	 *
-	 *
-	 * @return message artifact
+	 * @throws TskCoreException    If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addMessage(String messageType,
 			CommunicationDirection direction,
@@ -402,50 +442,45 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			long dateTime, MessageReadStatus readStatus,
 			String subject, String messageText,
 			String threadId,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		// Created message artifact.  
-		BlackboardArtifact msgArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact msgArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create TSK_MESSAGE artifact
-			msgArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_MESSAGE);
+		// create TSK_MESSAGE artifact
+		msgArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_MESSAGE);
 
-			addAttributeIfNotZero(dateTime, ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
-			addMessageReadStatusIfKnown(readStatus, attributes);
-			addAttributeIfNotNull(messageType, ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, attributes);
-			addCommDirectionIfKnown(direction, attributes);
+		// construct attributes
+		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, getModuleName(), messageType));
+		addAttributeIfNotZero(ATTRIBUTE_TYPE.TSK_DATETIME, dateTime, attributes);
 
-			if (fromAddress != null && !StringUtils.isEmpty(fromAddress.getDisplayName())) {
-				attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, getModuleName(), fromAddress.getDisplayName()));
-			}
-			// Create a comma separated string of recipients
-			String toAddresses = addressListToString(recipientsList);
-			addAttributeIfNotNull(toAddresses, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, attributes);
+		addMessageReadStatusIfKnown(readStatus, attributes);
+		addCommDirectionIfKnown(direction, attributes);
 
-			addAttributeIfNotNull(subject, ATTRIBUTE_TYPE.TSK_SUBJECT, attributes);
-			addAttributeIfNotNull(messageText, ATTRIBUTE_TYPE.TSK_TEXT, attributes);
-			addAttributeIfNotNull(threadId, ATTRIBUTE_TYPE.TSK_THREAD_ID, attributes);
-
-			// Add other specified attributes
-			msgArtifact.addAttributes(attributes);
-			msgArtifact.addAttributes(otherAttributesList);
-
-			// Find/create an account instance for sender
-			createSenderAccountAndRelationship(fromAddress, msgArtifact, Relationship.Type.MESSAGE, dateTime);
-
-			// Find/create an account instance for each recipient  
-			createRecipientAccountsAndRelationships(recipientsList, msgArtifact, Relationship.Type.MESSAGE, dateTime);
-
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(msgArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add message artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((msgArtifact != null) ? msgArtifact.getArtifactID() : "")), ex);  //NON-NLS
+		if (fromAddress != null && !StringUtils.isEmpty(fromAddress.getDisplayName())) {
+			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, getModuleName(), fromAddress.getDisplayName()));
 		}
+		// Create a comma separated string of recipients
+		String toAddresses = addressListToString(recipientsList);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, toAddresses, attributes);
+
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_SUBJECT, subject, attributes);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_TEXT, messageText, attributes);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_THREAD_ID, threadId, attributes);
+
+		// add attributes to artifact
+		attributes.addAll(otherAttributesList);
+		msgArtifact.addAttributes(attributes);
+
+		// create account and relationship with sender
+		createSenderAccountAndRelationship(fromAddress, msgArtifact, Relationship.Type.MESSAGE, dateTime);
+
+		// create account and relationship with each recipient  
+		createRecipientAccountsAndRelationships(recipientsList, msgArtifact, Relationship.Type.MESSAGE, dateTime);
+
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(msgArtifact, getModuleName());
 
 		// return the artifact
 		return msgArtifact;
@@ -455,69 +490,55 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 * Adds a TSK_CALLLOG artifact.
 	 *
 	 * Also creates an account instance for the caller/callee, and creates a
-	 * relationship between the self account and the caller/callee account.
+	 * relationship between the self account and the caller account as well
+	 * between the self account and the callee account.
 	 *
-	 * @param direction     call direction
-	 * @param fromAddress   caller address, may be empty
-	 * @param toAddress     callee address, may be empty
-	 * @param startDateTime start date/time
-	 * @param endDateTime   end date/time
+	 * @param direction     Call direction, UNKNOWN if not available.
+	 * @param fromAddress   Caller address, may be null.
+	 * @param toAddress			  Callee address, may be null.
+	 * @param startDateTime Start date/time, 0 if not available.
+	 * @param endDateTime   End date/time, 0 if not available.
+	 * @param mediaType     Media type.
 	 *
-	 * @return call log artifact
+	 * @return Call log artifact.
+	 *
+	 * @throws TskCoreException    If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addCalllog(CommunicationDirection direction,
 			Account.Address fromAddress, Account.Address toAddress,
-			long startDateTime, long endDateTime) {
+			long startDateTime, long endDateTime, CallMediaType mediaType) throws TskCoreException, BlackboardException {
 		return addCalllog(direction, fromAddress, toAddress,
-				startDateTime, endDateTime,
-				CallMediaType.UNKNOWN);
+				startDateTime, endDateTime, mediaType,
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_CALLLOG artifact.
 	 *
 	 * Also creates an account instance for the caller/callee, and creates a
-	 * relationship between the self account and the caller/callee account.
+	 * relationship between the self account and the caller account as well
+	 * between the self account and the callee account.
 	 *
-	 * @param direction     call direction
-	 * @param fromAddress   caller address, may be empty
-	 * @param toAddress     callee address, may be empty
-	 * @param startDateTime start date/time
-	 * @param endDateTime   end date/time
-	 * @param mediaType     media type
+	 * @param direction           Call direction, UNKNOWN if not available.
+	 * @param fromAddress         Caller address, may be null.
+	 * @param toAddress			        Callee address, may be null.
+	 * @param startDateTime       Start date/time, 0 if not available.
+	 * @param endDateTime         End date/time, 0 if not available.
+	 * @param mediaType           Media type.
+	 * @param otherAttributesList Other attributes.
 	 *
-	 * @return call log artifact
-	 */
-	public BlackboardArtifact addCalllog(CommunicationDirection direction,
-			Account.Address fromAddress, Account.Address toAddress,
-			long startDateTime, long endDateTime, CallMediaType mediaType) {
-		return addCalllog(direction, fromAddress, toAddress,
-				startDateTime, endDateTime, mediaType,
-				Collections.<BlackboardAttribute>emptyList());
-	}
-
-	/**
-	 * Adds a TSK_CALLLOG artifact.
+	 * @return Call log artifact.
 	 *
-	 * Also creates an account instance for the caller/receiver, and creates a
-	 * relationship between the self account and the caller/receiver account.
-	 *
-	 * @param direction           call direction
-	 * @param fromAddress         caller address, may be empty
-	 * @param toAddress           callee address, may be empty
-	 * @param startDateTime       start date/time
-	 * @param endDateTime         end date/time
-	 * @param mediaType           media type
-	 * @param otherAttributesList other attributes
-	 *
-	 * @return call log artifact
+	 * @throws TskCoreException    If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addCalllog(CommunicationDirection direction,
 			Account.Address fromAddress,
 			Account.Address toAddress,
 			long startDateTime, long endDateTime,
 			CallMediaType mediaType,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 		return addCalllog(direction,
 				fromAddress,
 				Arrays.asList(toAddress),
@@ -530,117 +551,91 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 * Adds a TSK_CALLLOG artifact.
 	 *
 	 * Also creates an account instance for the caller/callees, and creates a
-	 * relationship between the device owner account and the caller account as
-	 * well between the device owner account and each callee account
+	 * relationship between the self account and the caller account as well
+	 * between the self account and each callee account.
 	 *
-	 * @param direction     call direction, UNKNOWN if not available
-	 * @param fromAddress   caller address, may be empty
-	 * @param toAddressList callee address list, may be empty
-	 * @param startDateTime start date/time, 0 if not available
-	 * @param endDateTime   end date/time, 0 if not available
+	 * @param direction     Call direction, UNKNOWN if not available.
+	 * @param fromAddress   Caller address, may be null.
+	 * @param toAddressList callee address list, may be an empty list.
+	 * @param startDateTime Start date/time, 0 if not available.
+	 * @param endDateTime   End date/time, 0 if not available.
+	 * @param mediaType     Call media type, UNKNOWN if not available.
 	 *
-	 * @return call log artifact
-	 */
-	public BlackboardArtifact addCalllog(CommunicationDirection direction,
-			Account.Address fromAddress,
-			Collection<Account.Address> toAddressList,
-			long startDateTime, long endDateTime) {
-
-		return addCalllog(direction, fromAddress, toAddressList,
-				startDateTime, endDateTime,
-				CallMediaType.UNKNOWN);
-	}
-
-	/**
-	 * Adds a TSK_CALLLOG artifact.
+	 * @return Call log artifact.
 	 *
-	 * Also creates an account instance for the caller/callees, and creates a
-	 * relationship between the device owner account and the caller account as
-	 * well between the device owner account and each callee account
-	 *
-	 * @param direction     call direction, UNKNOWN if not available
-	 * @param fromAddress   caller address, may be empty
-	 * @param toAddressList callee address list, may be empty
-	 * @param startDateTime start date/time, 0 if not available
-	 * @param endDateTime   end date/time, 0 if not available
-	 * @param mediaType     called media type, UNKNOWN if not available
-	 *
-	 * @return call log artifact
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addCalllog(CommunicationDirection direction,
 			Account.Address fromAddress,
 			Collection<Account.Address> toAddressList,
 			long startDateTime, long endDateTime,
-			CallMediaType mediaType) {
+			CallMediaType mediaType) throws TskCoreException, BlackboardException {
 
 		return addCalllog(direction, fromAddress, toAddressList,
 				startDateTime, endDateTime,
 				mediaType,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_CALLLOG artifact.
 	 *
 	 * Also creates an account instance for the caller/callees, and creates a
-	 * relationship between the device owner account and the caller account as
-	 * well between the device owner account and each callee account
+	 * relationship between the self account and the caller account as well
+	 * between the self account and each callee account.
 	 *
-	 * @param direction           call direction, UNKNOWN if not available
-	 * @param fromAddress         caller address, may be empty
-	 * @param toAddressList       callee address list, may be empty
-	 * @param startDateTime       start date/time, 0 if not available
-	 * @param endDateTime         end date/time, 0 if not available
-	 * @param mediaType           called media type, UNKNOWN if not available
+	 * @param direction           Call direction, UNKNOWN if not available.
+	 * @param fromAddress         Caller address, may be null.
+	 * @param toAddressList       callee address list, may be an empty list.
+	 * @param startDateTime       Start date/time, 0 if not available.
+	 * @param endDateTime         End date/time, 0 if not available.
+	 * @param mediaType           Call media type, UNKNOWN if not available.
 	 * @param otherAttributesList other attributes, can be an empty list
 	 *
-	 * @return call log artifact
+	 * @return Call log artifact.
+	 *
+	 * @throws TskCoreException    If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addCalllog(CommunicationDirection direction,
 			Account.Address fromAddress,
 			Collection<Account.Address> toAddressList,
 			long startDateTime, long endDateTime,
 			CallMediaType mediaType,
-			Collection<BlackboardAttribute> otherAttributesList) {
-		BlackboardArtifact callLogArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
+		BlackboardArtifact callLogArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create TSK_CALLLOG artifact
-			callLogArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CALLLOG);
+		// Create TSK_CALLLOG artifact
+		callLogArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CALLLOG);
 
-			// Add basic attributes 
-			addAttributeIfNotZero(startDateTime, ATTRIBUTE_TYPE.TSK_DATETIME_START, attributes);
-			addAttributeIfNotZero(endDateTime, ATTRIBUTE_TYPE.TSK_DATETIME_END, attributes);
-			addCommDirectionIfKnown(direction, attributes);
+		// Add basic attributes 
+		addAttributeIfNotZero(ATTRIBUTE_TYPE.TSK_DATETIME_START, startDateTime, attributes);
+		addAttributeIfNotZero(ATTRIBUTE_TYPE.TSK_DATETIME_END, endDateTime, attributes);
+		addCommDirectionIfKnown(direction, attributes);
 
-			if (fromAddress != null) {
-				addAttributeIfNotNull(fromAddress.getUniqueID(), ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, attributes);
-				addAttributeIfNotNull(fromAddress.getDisplayName(), ATTRIBUTE_TYPE.TSK_NAME, attributes);
-			}
-
-			// Create a comma separated string of recipients
-			String toAddresses = addressListToString(toAddressList);
-			addAttributeIfNotNull(toAddresses, ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, attributes);
-
-			// Add attributes to artifact
-			callLogArtifact.addAttributes(attributes);
-			callLogArtifact.addAttributes(otherAttributesList);
-
-			// Create a relationship between selfAccount and caller
-			createSenderAccountAndRelationship(fromAddress, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
-
-			// Create a relationship between selfAccount and each callee
-			createRecipientAccountsAndRelationships(toAddressList, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
-
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(callLogArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add calllog artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((callLogArtifact != null) ? callLogArtifact.getArtifactID() : "")), ex);  //NON-NLS
+		if (fromAddress != null) {
+			addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, fromAddress.getUniqueID(), attributes);
+			addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_NAME, fromAddress.getDisplayName(), attributes);
 		}
+
+		// Create a comma separated string of recipients
+		String toAddresses = addressListToString(toAddressList);
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, toAddresses, attributes);
+
+		// add attributes to artifact
+		attributes.addAll(otherAttributesList);
+		callLogArtifact.addAttributes(attributes);
+
+		// Create a relationship between selfAccount and caller
+		createSenderAccountAndRelationship(fromAddress, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
+
+		// Create a relationship between selfAccount and each callee
+		createRecipientAccountsAndRelationships(toAddressList, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
+
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(callLogArtifact, getModuleName());
 
 		// return the artifact
 		return callLogArtifact;
@@ -649,10 +644,6 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Converts a list of addresses into a single comma separated string of
 	 * addresses.
-	 *
-	 * @param addressList
-	 *
-	 * @return comma separated string of addresses
 	 */
 	private String addressListToString(Collection<Account.Address> addressList) {
 
@@ -674,7 +665,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 	 */
 	private void addCommDirectionIfKnown(CommunicationDirection direction, Collection<BlackboardAttribute> attributes) {
 		if (direction != CommunicationDirection.UNKNOWN) {
-			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DIRECTION, getModuleName(), direction.getString()));
+			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DIRECTION, getModuleName(), direction.getDisplayName()));
 		}
 	}
 
@@ -686,7 +677,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelper {
 			attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_READ_STATUS, getModuleName(), (readStatus == MessageReadStatus.READ) ? 1 : 0));
 		}
 	}
-	
+
 	/**
 	 * Creates an account & relationship for sender, if the sender address is
 	 * not null/empty.

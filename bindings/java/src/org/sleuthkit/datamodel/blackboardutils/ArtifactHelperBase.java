@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -25,11 +25,10 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
- * An abstract base class for classes that helps ingest modules create
- * artifacts.
+ * A base class for classes that help ingest modules create artifacts.
  *
  */
-class ArtifactHelper {
+class ArtifactHelperBase {
 
 	private final SleuthkitCase caseDb;
 	private final AbstractFile srcAbstractFile;	// artifact source
@@ -42,7 +41,7 @@ class ArtifactHelper {
 	 * @param moduleName name module using the helper
 	 * @param srcFile    source file
 	 */
-	protected ArtifactHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
+	ArtifactHelperBase(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
 		this.moduleName = moduleName;
 		this.srcAbstractFile = srcFile;
 		this.caseDb = caseDb;
@@ -51,7 +50,7 @@ class ArtifactHelper {
 	/**
 	 * Returns the source abstract file.
 	 *
-	 * @return source abstract file
+	 * @return Source abstract file.
 	 */
 	AbstractFile getAbstractFile() {
 		return this.srcAbstractFile;
@@ -60,7 +59,7 @@ class ArtifactHelper {
 	/**
 	 * Returns the sleuthkit case.
 	 *
-	 * @return sleuthkit case
+	 * @return Sleuthkit case database.
 	 */
 	SleuthkitCase getSleuthkitCase() {
 		return this.caseDb;
@@ -69,34 +68,36 @@ class ArtifactHelper {
 	/**
 	 * Returns module name.
 	 *
-	 * @return module name
+	 * @return Module name.
 	 */
 	String getModuleName() {
 		return this.moduleName;
 	}
 
 	/**
-	 * Creates and adds an attribute to the list, if the attribute value is not empty or null.
+	 * Creates and adds an attribute of specified type to the given list, if the
+	 * attribute value is not empty or null.
 	 *
-	 * @param attrValue attribute value 
-	 * @param attributeType attribute type
-	 * @param attributes list of attributes to add to.
-	 * 
+	 * @param attributeType Attribute type.
+	 * @param attrValue     Attribute value.
+	 * @param attributes    List of attributes to add to.
+	 *
 	 */
-	protected void addAttributeIfNotNull(String attrValue, BlackboardAttribute.ATTRIBUTE_TYPE attributeType, Collection<BlackboardAttribute> attributes) {
+	void addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, String attrValue, Collection<BlackboardAttribute> attributes) {
 		if (!StringUtils.isEmpty(attrValue)) {
 			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
 		}
 	}
 
 	/**
-	 * Creates and adds an attribute to the list, if the attribute value is not 0.
+	 * Creates and adds an attribute of specified type to the given list, if the
+	 * attribute value is not 0.
 	 *
-	 * @param attrValue attribute value 
-	 * @param attributeType attribute type
-	 * @param attributes list of attributes to add to.
+	 * @param attributeType Attribute type.
+	 * @param attrValue     Attribute value.
+	 * @param attributes    List of attributes to add to.
 	 */
-	protected void addAttributeIfNotZero(long attrValue, BlackboardAttribute.ATTRIBUTE_TYPE attributeType, Collection<BlackboardAttribute> attributes) {
+	void addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, long attrValue, Collection<BlackboardAttribute> attributes) {
 		if (attrValue > 0) {
 			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
 		}

@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -24,11 +24,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.Blackboard;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase;
@@ -37,17 +35,18 @@ import org.sleuthkit.datamodel.TskCoreException;
 /**
  * Class to help ingest modules create Web Browser artifacts.
  *
+ * These include bookmarks, cookies, downloads, history, and web form
+ * autofill data.
+ *
  */
-public final class WebBrowserArtifactsHelper extends ArtifactHelper {
-
-	private static final Logger logger = Logger.getLogger(ArtifactsHelper.class.getName());
+public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 	/**
-	 * Creates an WebBrowserArtifactsHelper.
+	 * Creates a WebBrowserArtifactsHelper.
 	 *
-	 * @param caseDb     Sleuthkit case db
-	 * @param moduleName name module using the helper
-	 * @param srcFile    source file
+	 * @param caseDb     Sleuthkit case db.
+	 * @param moduleName Name of module using the helper.
+	 * @param srcFile    Source file being processed by the module.
 	 *
 	 */
 	public WebBrowserArtifactsHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
@@ -57,61 +56,60 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Adds a TSK_WEB_BOOKMARK artifact.
 	 *
-	 * @param url          bookmark URL, required
-	 * @param title        bookmark title, may be empty/null
-	 * @param creationTime date/time created, may be 0 if not available
-	 * @param progName     application/program that created bookmark, may be
-	 *                     empty/null
+	 * @param url          Bookmark URL, required.
+	 * @param title        Bookmark title, may be empty/null.
+	 * @param creationTime Date/time created, may be 0 if not available.
+	 * @param progName     Application/program that created bookmark, may be
+	 *                     empty/null.
 	 *
-	 * @return bookmark artifact
+	 * @return Bookmark artifact.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
-	public BlackboardArtifact addWebBookmark(String url, String title, long creationTime, String progName) {
+	public BlackboardArtifact addWebBookmark(String url, String title, long creationTime, String progName) throws TskCoreException, BlackboardException {
 		return addWebBookmark(url, title, creationTime, progName,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_WEB_BOOKMARK artifact.
 	 *
-	 * @param url                 bookmark URL, required
-	 * @param title               bookmark title, may be empty/null
-	 * @param creationTime        date/time created, may be 0 if not available
-	 * @param progName            application/program that created bookmark, may
-	 *                            be empty/null
-	 * @param otherAttributesList other attributes, may be an empty list
+	 * @param url                 Bookmark URL, required.
+	 * @param title               Bookmark title, may be empty/null.
+	 * @param creationTime        Date/time created, may be 0 if not available.
+	 * @param progName            Application/program that created bookmark, may
+	 *                            be empty/null.
+	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
-	 * @return bookmark artifact
+	 * @return Bookmark artifact.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebBookmark(String url, String title, long creationTime, String progName,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact bookMarkArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact bookMarkArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create artifact
-			bookMarkArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK);
+		// create artifact
+		bookMarkArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK);
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
 
-			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, attributes);
-			addAttributeIfNotNull(title, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, attributes);
-			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
-			addAttributeIfNotNull(progName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, creationTime, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, title, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, extractDomain(url), attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, progName, attributes);
 
-			// Add  attributes to artifact
-			bookMarkArtifact.addAttributes(attributes);
-			bookMarkArtifact.addAttributes(otherAttributesList);
+		// add attributes to artifact
+		attributes.addAll(otherAttributesList);
+		bookMarkArtifact.addAttributes(attributes);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(bookMarkArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add bookmark artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((bookMarkArtifact != null) ? bookMarkArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(bookMarkArtifact, getModuleName());
 
 		// return the artifact
 		return bookMarkArtifact;
@@ -120,69 +118,69 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Adds a TSK_WEB_COOKIE artifact.
 	 *
-	 * @param url          url of the site that created the cookie, required
-	 * @param creationTime create time of cookie, may be 0 if not available
-	 * @param name         cookie name, may be empty or null
-	 * @param value        cookie value, may be empty or null
-	 * @param programName  name of the application that created the cookie, may
-	 *                     be empty or null
+	 * @param url          Url of the site that created the cookie, required.
+	 * @param creationTime Create time of cookie, may be 0 if not available.
+	 * @param name         Cookie name, may be empty or null.
+	 * @param value        Cookie value, may be empty or null.
+	 * @param programName  Name of the application/program that created the
+	 *                     cookie, may be empty or null.
 	 *
 	 * @return WebCookie artifact
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebCookie(String url, long creationTime,
-			String name, String value, String programName) {
+			String name, String value, String programName) throws TskCoreException, BlackboardException {
 
 		return addWebCookie(url, creationTime, name, value, programName,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_WEB_COOKIE artifact.
 	 *
-	 * @param url                 url of the site that created the cookie,
-	 *                            required
-	 * @param creationTime        create time of cookie, may be 0 if not
-	 *                            available
-	 * @param name                cookie name, may be empty or null
-	 * @param value               cookie value, may be empty or null
-	 * @param programName         name of the application that created the
-	 *                            cookie, may be empty or null
+	 * @param url                 Url of the site that created the cookie,
+	 *                            required.
+	 * @param creationTime        Create time of cookie, may be 0 if not
+	 *                            available.
+	 * @param name                Cookie name, may be empty or null.
+	 * @param value               Cookie value, may be empty or null.
+	 * @param programName         Name of the application/program that created
+	 *                            the cookie, may be empty or null.
 	 *
-	 * @param otherAttributesList other attributes, may be an empty list
+	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
 	 * @return WebCookie artifact
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebCookie(String url,
 			long creationTime, String name, String value, String programName,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact cookieArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact cookieArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create artifact
-			cookieArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE);
+		// create artifact
+		cookieArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE);
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
 
-			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributes);
-			addAttributeIfNotNull(name, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, attributes);
-			addAttributeIfNotNull(value, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE, attributes);
-			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
-			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, creationTime, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, name, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE, value, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, extractDomain(url), attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, programName, attributes);
 
-			cookieArtifact.addAttributes(attributes);
-			cookieArtifact.addAttributes(otherAttributesList);
+		// add attributes to artifact
+		attributes.addAll(otherAttributesList);
+		cookieArtifact.addAttributes(attributes);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(cookieArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add bookmark artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((cookieArtifact != null) ? cookieArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(cookieArtifact, getModuleName());
 
 		// return the artifact
 		return cookieArtifact;
@@ -191,60 +189,59 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Adds a TSK_WEB_DOWNNLOAD artifact.
 	 *
-	 * @param path        path of downloaded file, required
-	 * @param startTime   date/time downloaded, 0 if not available
-	 * @param url         URL downloaded from, required
-	 * @param programName program that initiated download, may be empty or null
+	 * @param path        Path of downloaded file, required.
+	 * @param startTime   Date/time downloaded, 0 if not available.
+	 * @param url         URL downloaded from, required.
+	 * @param programName Program that initiated the download, may be empty or
+	 *                    null.
 	 *
+	 * @return Web download artifact created.
 	 *
-	 * @return artifact created
+	 * @throws TskCoreException    If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
-	public BlackboardArtifact addWebDownload(String path, long startTime, String url, String programName) {
-		return addWebDownload(path, startTime, url, programName, Collections.<BlackboardAttribute>emptyList());
+	public BlackboardArtifact addWebDownload(String path, long startTime, String url, String programName) throws TskCoreException, BlackboardException {
+		return addWebDownload(path, startTime, url, programName, Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_WEB_DOWNNLOAD artifact.
 	 *
-	 * @param path                path of downloaded file, required
-	 * @param startTime           date/time downloaded, 0 if not available
-	 * @param url                 URL downloaded from, required
-	 * @param programName         program that initiated download, may be empty
-	 *                            or null
-	 * @param otherAttributesList other attributes, may be an empty list
+	 * @param path                Path of downloaded file, required.
+	 * @param startTime           Date/time downloaded, 0 if not available.
+	 * @param url                 URL downloaded from, required.
+	 * @param programName         Program that initiated the download, may be
+	 *                            empty or null.
+	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
+	 * @return Web download artifact created.
 	 *
-	 * @return artifact created
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebDownload(String path, long startTime, String url, String programName,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact webDownloadArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact webDownloadArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create artifact
-			webDownloadArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD);
+		// reate artifact
+		webDownloadArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD);
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH, getModuleName(), path));
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH, getModuleName(), path));
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
 
-			addAttributeIfNotZero(startTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
-			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
-			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, startTime, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, programName, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, extractDomain(url), attributes);
 
-			webDownloadArtifact.addAttributes(attributes);
-			webDownloadArtifact.addAttributes(otherAttributesList);
+		// add attributes to artifact
+		attributes.addAll(otherAttributesList);
+		webDownloadArtifact.addAttributes(attributes);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(webDownloadArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add web download artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((webDownloadArtifact != null) ? webDownloadArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(webDownloadArtifact, getModuleName());
 
 		// return the artifact
 		return webDownloadArtifact;
@@ -253,209 +250,212 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelper {
 	/**
 	 * Adds a TSK_WEB_FORM_AUTOFILL artifact.
 	 *
-	 * @param personName     person name, required
-	 * @param email          email address, may be empty or null
-	 * @param phoneNumber    phone number, may be empty or null
-	 * @param mailingAddress mailing address, may be empty or null
-	 * @param creationTime   creation time, may be 0 if not available
-	 * @param accessTime     last access time, may be 0 if not available
-	 * @param count          use count, may be 0 if not available
+	 * @param personName     Person name, required.
+	 * @param email          Email address, may be empty or null.
+	 * @param phoneNumber    Phone number, may be empty or null.
+	 * @param mailingAddress Mailing address, may be empty or null.
+	 * @param creationTime   Creation time, may be 0 if not available.
+	 * @param accessTime     Last access time, may be 0 if not available.
+	 * @param count          Use count, may be 0 if not available.
 	 *
-	 * @return artifact created
+	 * @return Web form address artifact created.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebFormAddress(String personName, String email,
 			String phoneNumber, String mailingAddress,
-			long creationTime, long accessTime, int count) {
+			long creationTime, long accessTime, int count) throws TskCoreException, BlackboardException {
 		return addWebFormAddress(personName, email, phoneNumber,
 				mailingAddress, creationTime, accessTime, count,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_WEB_FORM_ADDRESS artifact.
 	 *
-	 * @param personName          person name, required
-	 * @param email               email address, may be empty or null
-	 * @param phoneNumber         phone number, may be empty or null
-	 * @param mailingAddress      mailing address, may be empty or null
-	 * @param creationTime        creation time, may be 0 if not available
-	 * @param accessTime          last access time, may be 0 if not available
-	 * @param count               use count, may be 0 if not available
-	 * @param otherAttributesList other attributes, may be an empty list
+	 * @param personName          Person name, required.
+	 * @param email               Email address, may be empty or null.
+	 * @param phoneNumber         Phone number, may be empty or null.
+	 * @param mailingAddress      Mailing address, may be empty or null.
+	 * @param creationTime        Creation time, may be 0 if not available.
+	 * @param accessTime          Last access time, may be 0 if not available.
+	 * @param count               Use count, may be 0 if not available.
+	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
-	 * @return artifact created
+	 * @return Web form address artifact created.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebFormAddress(String personName, String email,
 			String phoneNumber, String mailingAddress,
 			long creationTime, long accessTime, int count,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact webFormAddressArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		BlackboardArtifact webFormAddressArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create artifact
-			webFormAddressArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS);
+		// create artifact
+		webFormAddressArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS);
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), personName));
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), personName));
 
-			addAttributeIfNotNull(email, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL, attributes);
-			addAttributeIfNotNull(phoneNumber, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, attributes);
-			addAttributeIfNotNull(mailingAddress, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCATION, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL, email, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, phoneNumber, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCATION, mailingAddress, attributes);
 
-			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, attributes);
-			addAttributeIfNotZero(accessTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
-			addAttributeIfNotZero(count, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, creationTime, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, accessTime, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, count, attributes);
 
-			webFormAddressArtifact.addAttributes(attributes);
-			webFormAddressArtifact.addAttributes(otherAttributesList);
+		// add artifact
+		attributes.addAll(otherAttributesList);
+		webFormAddressArtifact.addAttributes(attributes);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(webFormAddressArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add web form address artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((webFormAddressArtifact != null) ? webFormAddressArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(webFormAddressArtifact, getModuleName());
 
 		// return the artifact
 		return webFormAddressArtifact;
 	}
 
 	/**
-	 * Adds a TSK_WEB_FORM_AUTOFILL artifact
+	 * Adds a TSK_WEB_FORM_AUTOFILL artifact.
 	 *
-	 * @param name         name of autofill field, required
-	 * @param value        value of autofill field, required
-	 * @param creationTime create date/time, may be 0 if not available
-	 * @param accessTime   last access date/time, may be 0 if not available
-	 * @param count        count of times used, may be 0 if not available
+	 * @param name         Name of autofill field, required.
+	 * @param value        Value of autofill field, required.
+	 * @param creationTime Create date/time, may be 0 if not available.
+	 * @param accessTime   Last access date/time, may be 0 if not available.
+	 * @param count        Count of times used, may be 0 if not available.
 	 *
-	 * @return artifact created
+	 * @return Web form autofill artifact created.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebFormAutofill(String name, String value,
-			long creationTime, long accessTime, int count) {
+			long creationTime, long accessTime, int count) throws TskCoreException, BlackboardException {
 		return addWebFormAutofill(name, value, creationTime, accessTime, count,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_WEB_FORM_AUTOFILL artifact.
 	 *
-	 * @param name                name of autofill field, required
-	 * @param value               value of autofill field, required
-	 * @param creationTime        create date/time, may be 0 if not available
-	 * @param accessTime          last access date/time, may be 0 if not
-	 *                            available
-	 * @param count               count of times used, may be 0 if not available
-	 * @param otherAttributesList additional attributes, may be an empty list
+	 * @param name                Name of autofill field, required.
+	 * @param value               Value of autofill field, required.
+	 * @param creationTime        Create date/time, may be 0 if not available.
+	 * @param accessTime          Last access date/time, may be 0 if not
+	 *                            available.
+	 * @param count               Count of times used, may be 0 if not
+	 *                            available.
+	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
-	 * @return artifact created
+	 * @return Web form autofill artifact created.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebFormAutofill(String name, String value,
 			long creationTime, long accessTime, int count,
-			Collection<BlackboardAttribute> otherAttributesList) {
-		BlackboardArtifact webFormAutofillArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
+		BlackboardArtifact webFormAutofillArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Create artifact
-			webFormAutofillArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL);
+		// create artifact
+		webFormAutofillArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL);
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), name));
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE, getModuleName(), value));
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), name));
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE, getModuleName(), value));
 
-			addAttributeIfNotZero(creationTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, attributes);
-			addAttributeIfNotZero(accessTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
-			addAttributeIfNotZero(count, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, creationTime, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, accessTime, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, count, attributes);
 
-			webFormAutofillArtifact.addAttributes(attributes);
-			webFormAutofillArtifact.addAttributes(otherAttributesList);
+		// add attributes to artifact
+		attributes.addAll(otherAttributesList);
+		webFormAutofillArtifact.addAttributes(attributes);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(webFormAutofillArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add web form autofill artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((webFormAutofillArtifact != null) ? webFormAutofillArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(webFormAutofillArtifact, getModuleName());
 
 		// return the artifact
 		return webFormAutofillArtifact;
 	}
 
 	/**
-	 * Adds a Web History artifact
+	 * Adds a Web History artifact.
 	 *
-	 * @param url          url visited, required
-	 * @param accessTime   last access time, may be 0 if not available
-	 * @param referrer     referrer, may be empty or null
-	 * @param title        website title, may be empty or null
-	 * @param programName, application recording the history, may be empty or
-	 *                     null
+	 * @param url          Url visited, required.
+	 * @param accessTime   Last access time, may be 0 if not available.
+	 * @param referrer     Referrer, may be empty or null.
+	 * @param title        Website title, may be empty or null.
+	 * @param programName, Application/program recording the history, may be
+	 *                     empty or null.
 	 *
-	 * @return artifact created
+	 * @return Web history artifact created.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebHistory(String url, long accessTime,
-			String referrer, String title, String programName) {
+			String referrer, String title, String programName) throws TskCoreException, BlackboardException {
 		return addWebHistory(url, accessTime, referrer, title, programName,
-				Collections.<BlackboardAttribute>emptyList());
+				Collections.emptyList());
 	}
 
 	/**
-	 * Adds a Web History artifact
+	 * Adds a Web History artifact.
 	 *
-	 * @param url                 url visited, required
-	 * @param accessTime          last access time, may be 0 if not available
-	 * @param referrer            referrer, may be empty or null
-	 * @param title               website title, may be empty or null
-	 * @param programName,        application recording the history, may be
-	 *                            empty or null
-	 * @param otherAttributesList other attributes, may be an empty list
+	 * @param url                 Url visited, required.
+	 * @param accessTime          Last access time, may be 0 if not available.
+	 * @param referrer            Referrer, may be empty or null.
+	 * @param title               Website title, may be empty or null.
+	 * @param programName,        Application/program recording the history, may
+	 *                            be empty or null.
+	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
-	 * @return artifact created
+	 * @return Web history artifact created.
+	 *
+	 * @throws TskCoreException	   If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addWebHistory(String url, long accessTime,
 			String referrer, String title, String programName,
-			Collection<BlackboardAttribute> otherAttributesList) {
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact webHistoryArtifact = null;
-		try {
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
-			// Create artifact
-			webHistoryArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
+		BlackboardArtifact webHistoryArtifact;
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-			// Add basic attributes 
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
+		// create artifact
+		webHistoryArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
 
-			addAttributeIfNotZero(accessTime, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, attributes);
-			addAttributeIfNotNull(title, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, attributes);
-			addAttributeIfNotNull(referrer, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_REFERRER, attributes);
+		// construct attributes 
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
 
-			addAttributeIfNotNull(programName, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, attributes);
-			addAttributeIfNotNull(extractDomain(url), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, attributes);
+		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, accessTime, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE, title, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_REFERRER, referrer, attributes);
 
-			webHistoryArtifact.addAttributes(attributes);
-			webHistoryArtifact.addAttributes(otherAttributesList);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, programName, attributes);
+		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, extractDomain(url), attributes);
 
-			// post artifact 
-			getSleuthkitCase().getBlackboard().postArtifact(webHistoryArtifact, getModuleName());
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Unable to add bookmark artifact", ex); //NON-NLS
-			return null;
-		} catch (Blackboard.BlackboardException ex) {
-			logger.log(Level.SEVERE, String.format("Unable to post artifact %s", ((webHistoryArtifact != null) ? webHistoryArtifact.getArtifactID() : "")), ex);  //NON-NLS
-		}
+		// add attributes to artifact
+		attributes.addAll(otherAttributesList);
+		webHistoryArtifact.addAttributes(attributes);
+
+		// post artifact 
+		getSleuthkitCase().getBlackboard().postArtifact(webHistoryArtifact, getModuleName());
 
 		// return the artifact
 		return webHistoryArtifact;
 	}
 
-	// TBD: this is duplicated in Autopsy/NetworkUtils
+	// TBD: this is duplicated in Autopsy. 
+	// We should move this to new Util class in TSK, and have Autopsy delegate to it.
 	/**
 	 * Attempt to extract the domain from a URL. Will start by using the
 	 * built-in URL class, and if that fails will try to extract it manually.
