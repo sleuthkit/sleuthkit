@@ -39,9 +39,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import static org.sleuthkit.datamodel.CollectionUtils.isNotEmpty;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -140,43 +138,10 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Get a count of tagnames applied to the given event ids as a map from
-	 * tagname displayname to count of tag applications
-	 *
-	 * @param eventIDsWithTags the event ids to get the tag counts map for
-	 *
-	 * @return a map from tagname displayname to count of applications
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public Map<String, Long> getTagCountsByTagName(Set<Long> eventIDsWithTags) throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseReadLock();
-		String query
-				= "SELECT tag_names.display_name AS display_name, COUNT(distinct tag_id) AS count FROM "
-				+ getAugmentedEventsTablesSQL(true, false, false)
-				+ " JOIN tag_names ON (tsk_events.tag_name_id = tag_names.tag_name_id ) "
-				+ " WHERE event_id IN (" + buildCSVString(eventIDsWithTags) + ") "
-				+ " GROUP BY tag_names.tag_name_id";//NON-NLS
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement statement = con.createStatement();
-				ResultSet resultSet = statement.executeQuery(query);) {
-			HashMap<String, Long> counts = new HashMap<>();
-			while (resultSet.next()) {
-				counts.put(resultSet.getString("display_name"), resultSet.getLong("count")); //NON-NLS
-			}
-			return counts;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to get tag counts by tag name with query: " + query, ex); //NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
 	 * Get the minimal interval that bounds all the vents that pass the given
 	 * filter.
 	 *
-	 * @param timeRange The timerange that the events must be within.
+	 * @param timeRange The time range that the events must be within.
 	 * @param filter    The filter that the events must pass.
 	 * @param timeZone  The timeZone to return the interval in.
 	 *
@@ -216,7 +181,7 @@ public final class TimelineManager {
 	}
 
 	public TimelineEvent getEventById(long eventID) throws TskCoreException {
-		String sql = "SELECT * FROM  " + getAugmentedEventsTablesSQL(false, false, false) + " WHERE event_id = " + eventID;
+		String sql = "SELECT * FROM  " + getAugmentedEventsTablesSQL(false) + " WHERE event_id = " + eventID;
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -284,38 +249,6 @@ public final class TimelineManager {
 		}
 
 		return resultIDs;
-	}
-
-	
-	/**
-	 * Get a the hashset names for hash sets with hits.
-	 *
-	 * @return A set of hashset names which have hits.
-	 *
-	 * @throws TskCoreException
-	 */
-	public Set< String> getHashSetNames() throws TskCoreException {
-		Set< String> hashSets = new HashSet<>();
-		sleuthkitCase.acquireSingleUserCaseReadLock();
-
-		String query = "SELECT DISTINCT value_text AS hash_set_name FROM blackboard_artifacts "
-				+ " JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id) "
-				+ " JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id) "
-				+ " WHERE blackboard_artifact_types.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()
-				+ " AND blackboard_attributes.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID(); //NON-NLS
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stms = con.createStatement();
-				ResultSet results = stms.executeQuery(query);) {
-			while (results.next()) {
-				String hashSetName = results.getString("hash_set_name"); //NON-NLS
-				hashSets.add(hashSetName);
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to get hash sets.", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseReadLock();
-		}
-		return Collections.unmodifiableSet(hashSets);
 	}
 
 	/**
@@ -898,16 +831,10 @@ public final class TimelineManager {
 	 *         columns required by the filters.
 	 */
 	static private String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
-		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
-		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
-
-		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
-		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
-
 		TimelineFilter.FileTypesFilter fileTypesFitler = filter.getFileTypesFilter();
 		boolean needsMimeTypes = fileTypesFitler != null && fileTypesFitler.hasSubFilters();
 
-		return getAugmentedEventsTablesSQL(needsTags, needsHashSets, needsMimeTypes);
+		return getAugmentedEventsTablesSQL(needsMimeTypes);
 	}
 
 	/**
@@ -918,44 +845,20 @@ public final class TimelineManager {
 	 * to the tsk_files table for mime_types if necessary. If all flags are
 	 * false, just return "events".
 	 *
-	 * @param needTags      True if the Sfilters require joining to the tags
-	 *                      tables.
-	 * @param needHashSets  True if the filters require joining to the hash set
-	 *                      sub query.
 	 * @param needMimeTypes True if the filters require joining to the tsk_files
 	 *                      table for the mime_type.
 	 *
-	 * @return An SQL expresion that produces an events table augmented with the
+	 * @return An SQL expression that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets, boolean needMimeTypes) {
+	static private String getAugmentedEventsTablesSQL(boolean needMimeTypes) {
 		return "( select event_id, time, tsk_event_descriptions.data_source_obj_id, file_obj_id, artifact_id, "
 				+ " full_description, med_description, short_description, tsk_events.event_type_id, super_type_id,"
 				+ " hash_hit, tagged "
-				+ (needTags ? ", tag_name_id, tag_id" : "")
-				+ (needHashSets ? ", hash_set_name" : "")
 				+ (needMimeTypes ? ", mime_type" : "")
 				+ " FROM tsk_events "
 				+ " JOIN tsk_event_descriptions ON ( tsk_event_descriptions.event_description_id = tsk_events.event_description_id)"
 				+ " JOIN tsk_event_types ON (tsk_events.event_type_id = tsk_event_types.event_type_id )  "
-				+ (needTags
-						? ("LEFT OUTER JOIN ("
-						+ "		SELECT  event_description_id, tag_name_id, tag_id "
-						+ "			FROM tsk_event_descriptions LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_event_descriptions.file_obj_id) "
-						+ "	UNION ALL "
-						+ "		SELECT  event_description_id,  tag_name_id, tag_id "
-						+ "			FROM tsk_event_descriptions LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_event_descriptions.artifact_id)"
-						+ " ) AS tsk_event_tags ON (tsk_event_tags.event_description_id = tsk_events.event_description_id)")
-						: "")
-				+ (needHashSets ? " LEFT OUTER JOIN ( "
-						+ "		SELECT DISTINCT value_text AS hash_set_name, obj_id  "
-						+ "		FROM blackboard_artifacts"
-						+ "		JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id)"
-						+ "		JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id)"
-						+ "		WHERE  blackboard_artifact_types.artifact_type_id = " + TSK_HASHSET_HIT.getTypeID()
-						+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
-						+ "	ON ( tsk_event_descriptions.file_obj_id = hash_set_hits.obj_id)"
-						: "")
 				+ (needMimeTypes ? " LEFT OUTER JOIN tsk_files "
 						+ "	ON (tsk_event_descriptions.file_obj_id = tsk_files.obj_id)"
 						: "")
@@ -965,7 +868,7 @@ public final class TimelineManager {
 	/**
 	 * Convert a boolean to int with the mappings true => 1, false =>0
 	 *
-	 * @param value the bollean value to convert to an int.
+	 * @param value the boolean value to convert to an int.
 	 *
 	 * @return 1 if value is true, 0 if value is false.
 	 */

@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
 import static java.util.Arrays.asList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +30,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.joining;
 import java.util.stream.Stream;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.Property;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -212,10 +213,44 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * Filter to show only events tag with the tagNames of the selected
-	 * subfilters.
+	 * Filter to show only events that are associated with objects that have 
+	 * file or result tags.
 	 */
-	public static final class TagsFilter extends UnionFilter<TagNameFilter> {
+	public static final class TagsFilter extends TimelineFilter {
+		private final BooleanProperty booleanProperty = new SimpleBooleanProperty();
+
+		/**
+		 * Filter constructor.
+		 */
+		public TagsFilter() {}
+
+		/**
+		 * Filter constructor and set initial state.
+		 * 
+		 * @param isTagged Boolean initial state for the filter.
+		 */
+		public TagsFilter(boolean isTagged) {
+			booleanProperty.set(isTagged);
+		}
+
+		/**
+		 * Set the state of the filter.
+		 * 
+		 * @param isTagged True to filter events that are associated tagged items
+		 * or results
+		 */
+		public synchronized void setTagged(boolean isTagged) {
+			booleanProperty.set(isTagged);
+		}
+
+		/**
+		 * Returns the current state of this filter.
+		 * 
+		 * @return True to filter by objects that are tagged.
+		 */
+		public synchronized boolean isTagged() {
+			return booleanProperty.get();
+		}
 
 		@Override
 		public String getDisplayName() {
@@ -224,12 +259,35 @@ public abstract class TimelineFilter {
 
 		@Override
 		public TagsFilter copyOf() {
-			return copySubFilters(this, new TagsFilter());
+			return new TagsFilter(booleanProperty.get());
 		}
 
-		public void removeFilterForTag(TagName tagName) {
-			getSubFilters().removeIf(subfilter -> subfilter.getTagName().equals(tagName));
-			getSubFilters().sort(Comparator.comparing(TagNameFilter::getDisplayName));
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || !(obj instanceof TagsFilter)) {
+				return false;
+			}
+
+			return ((TagsFilter)obj).isTagged() == booleanProperty.get();
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 7;
+			hash = 67 * hash + Objects.hashCode(this.booleanProperty);
+			return hash;
+		}
+		
+		@Override
+		String getSQLWhere(TimelineManager manager) {
+			String whereStr = "";
+			if	(booleanProperty.get()) {
+				whereStr = "tagged = 1";
+			} else {
+				whereStr = "tagged = 0";
+			}
+			
+			return whereStr;
 		}
 	}
 
@@ -589,59 +647,7 @@ public abstract class TimelineFilter {
 		}
 
 	}
-
-	/**
-	 * Filter for an individual hash set
-	 */
-	static public final class HashSetFilter extends TimelineFilter {
-
-		private final String hashSetName;
-
-		public String getHashSetName() {
-			return hashSetName;
-		}
-
-		public HashSetFilter(String hashSetName) {
-			super();
-			this.hashSetName = hashSetName;
-		}
-
-		@Override
-		public synchronized HashSetFilter copyOf() {
-			return new HashSetFilter(getHashSetName());
-		}
-
-		@Override
-		public String getDisplayName() {
-			return hashSetName;
-		}
-
-		@Override
-		public int hashCode() {
-			int hash = 7;
-			hash = 79 * hash + Objects.hashCode(this.hashSetName);
-			return hash;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			final HashSetFilter other = (HashSetFilter) obj;
-			return Objects.equals(this.hashSetName, other.hashSetName);
-		}
-
-		@Override
-		String getSQLWhere(TimelineManager manager) {
-			return "(hash_set_name = '" + escapeSingleQuotes(getHashSetName()) + "' )"; //NON-NLS
-		}
-
-	}
-
+	
 	/**
 	 * Filter for an individual datasource
 	 */
@@ -708,69 +714,42 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * Filter for an individual TagName
+	 * TimelineFilter for events that are associated with objects have Hash Hits.
 	 */
-	static public final class TagNameFilter extends TimelineFilter {
+	public static final class HashHitsFilter extends TimelineFilter {
+		private final BooleanProperty booleanProperty = new SimpleBooleanProperty();
 
-		private final TagName tagName;
+		/**
+		 * Default constructor.
+		 */
+		public HashHitsFilter() {}
 
-		public TagNameFilter(TagName tagName) {
-			super();
-			this.tagName = tagName;
+		/**
+		 * Construct the hash hit filter and set state based given argument.
+		 * 
+		 * @param hasHashHit True to filter items that have hash hits.
+		 */
+		public HashHitsFilter(boolean hasHashHit) {
+			booleanProperty.set(hasHashHit);
 		}
 
-		public TagName getTagName() {
-			return tagName;
+		/**
+		 * Set the state of the filter.
+		 * 
+		 * @param hasHashHit True to filter by items that have hash hits.
+		 */
+		public synchronized void setTagged(boolean hasHashHit) {
+			booleanProperty.set(hasHashHit);
 		}
 
-		@Override
-		public synchronized TagNameFilter copyOf() {
-			return new TagNameFilter(getTagName());
+		/**
+		 * Returns the current state of the filter.
+		 * 
+		 * @return True to filter by hash hits
+		 */
+		public synchronized boolean hasHashHits() {
+			return booleanProperty.get();
 		}
-
-		@Override
-		public String getDisplayName() {
-			return tagName.getDisplayName();
-		}
-
-		@Override
-		public int hashCode() {
-			int hash = 3;
-			hash = 73 * hash + Objects.hashCode(this.tagName);
-			return hash;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			final TagNameFilter other = (TagNameFilter) obj;
-			return Objects.equals(this.tagName, other.tagName);
-		}
-
-		@Override
-		String getSQLWhere(TimelineManager manager) {
-			return " (tsk_events.tag_name_id = " + getTagName().getId() + " ) "; //NON-NLS
-		}
-
-		@Override
-		public String toString() {
-			return "TagNameFilter{" + "tagName=" + tagName + '}';
-		}
-
-	}
-
-	/**
-	 *
-	 */
-	static public final class HashHitsFilter extends UnionFilter<HashSetFilter> {
 
 		@Override
 		public String getDisplayName() {
@@ -779,7 +758,35 @@ public abstract class TimelineFilter {
 
 		@Override
 		public HashHitsFilter copyOf() {
-			return copySubFilters(this, new HashHitsFilter());
+			return new HashHitsFilter(booleanProperty.get());
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || !(obj instanceof HashHitsFilter)) {
+				return false;
+			}
+
+			return ((HashHitsFilter)obj).hasHashHits() == booleanProperty.get();
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 7;
+			hash = 67 * hash + Objects.hashCode(this.booleanProperty);
+			return hash;
+		}
+		
+		@Override
+		String getSQLWhere(TimelineManager manager) {
+			String whereStr = "";
+			if	(booleanProperty.get()) {
+				whereStr = "hash_hit = 1";
+			} else {
+				whereStr = "hash_hit = 0";
+			}
+			
+			return whereStr;
 		}
 	}
 
