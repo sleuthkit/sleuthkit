@@ -1071,12 +1071,12 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
     //for each  entry (type ->time)
     for (const auto entry : timeMap)
     {
-        const long long time = entry.second;
+        const time_t time = entry.second;
 
 
-        if (time == 0)
+        if (time <= 0)
         {
-            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull 
+            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull. time can't be negative either.
             continue;
         }
         if (event_description_id == -1)
@@ -1117,10 +1117,10 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
                          " VALUES ("
                          "%" PRId64 "," // event_type_id
                          "%" PRId64 "," // event_description_id
-                         "%" PRId64 ")", // time
+                         "%" PRIu64 ")", // time
                          entry.first,
                          event_description_id,
-                         time))
+						(unsigned long long) time))
         {
             return 1;
         };
