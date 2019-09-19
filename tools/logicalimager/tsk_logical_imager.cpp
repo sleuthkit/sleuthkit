@@ -486,7 +486,9 @@ main(int argc, char **argv1)
 
         std::string subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
         outputLocation = (iFlagUsed ? "sparse_image" : driveToProcess) + (createVHD ? ".vhd" : "");
-        fileExtractor->initializePerImage(subDirForFiles);
+        if (!createVHD) {
+            fileExtractor->initializePerImage(subDirForFiles);
+        }
 
         if (createVHD) {
             if (img->itype == TSK_IMG_TYPE_RAW) {
