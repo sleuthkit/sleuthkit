@@ -32,9 +32,40 @@
 #include "ReportUtil.h"
 #include "TskHelper.h"
 
+static std::string sessionDirCopy;
 static FILE *reportFile;
 static FILE *consoleFile;
+static FILE *usersFile; // used by RegistryAnalyzer
 static bool promptBeforeExit = true;
+
+void ReportUtil::initialize(const std::string &sessionDir) {
+    sessionDirCopy = sessionDir;
+    std::string consoleFileName = sessionDir + "/console.txt";
+    ReportUtil::openConsoleOutput(consoleFileName);
+
+    std::string reportFilename = sessionDir + "/SearchResults.txt";
+    ReportUtil::openReport(reportFilename);
+
+    std::string usersFilename = sessionDir + "/users.txt";
+    usersFile = fopen(usersFilename.c_str(), "w");
+    if (!usersFile) {
+        ReportUtil::consoleOutput(stderr, "ERROR: Failed to open file %s\n", usersFilename.c_str());
+        handleExit(1);
+    }
+}
+
+FILE *ReportUtil::getUsersFile() {
+    return usersFile;
+}
+
+void ReportUtil::copyConfigFile(const std::wstring &configFilename) {
+    // copy the config file into the output session directory
+    std::ifstream src(TskHelper::toNarrow(configFilename), std::ios::binary);
+    std::ofstream dst(sessionDirCopy + "/config.json", std::ios::binary);
+    dst << src.rdbuf();
+    dst.close();
+    src.close();
+}
 
 /*
 * Create the report file and print the header.
@@ -113,7 +144,7 @@ void ReportUtil::printDebug(char *msg) {
 * @param path Parent path of fs_file
 * @param extractedFilePath Extracted file path
 */
-void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath) {
+void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const MatchedRuleInfo *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't report . and ..
         return;
@@ -164,17 +195,23 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
 * Close the report file.
 */
 void ReportUtil::closeReport() {
-    if (reportFile) {
-        fclose(reportFile);
-        reportFile = NULL;
+    closeFile(reportFile);
+}
+
+/*
+* Close a file.
+*/
+void ReportUtil::closeFile(FILE *file) {
+    if (file) {
+        fclose(file);
+        file = NULL;
     }
 }
 
 void ReportUtil::handleExit(int code) {
-    if (consoleFile) {
-        fclose(consoleFile);
-        consoleFile = NULL;
-    }
+    closeFile(reportFile);
+    closeFile(consoleFile);
+    closeFile(usersFile);
     if (promptBeforeExit) {
         std::cout << std::endl << "Press any key to exit";
         (void)_getch();

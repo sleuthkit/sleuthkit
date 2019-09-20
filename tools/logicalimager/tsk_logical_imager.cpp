@@ -132,7 +132,7 @@ static int getLocalHost(string &a_hostName) {
 /**
 * createDirectory: Create a directory relative to current working directory for host. 
 *
-* @param directoryPathname - the directory pathname created
+* @param [out] directoryPathname - the directory pathname created
 * @returns  0 on success
 *           -1 if error
 *
@@ -261,23 +261,23 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
 
 /*
 * matchCallback - The function is passed into the LogicalImagerConfiguration.
-*                 It is called when a file matches a rule. Depending on the matchResult setting,
+*                 It is called when a file matches a rule. Depending on the matchedRuleInfo setting,
 *                 this function may extract the matched file and alert the user.
 *
-* @param matchResult The RuleMatchResult
+* @param matchedRuleInfo The MatchedRuleInfo
 * @param fs_file TSK_FS_FILE that matches the rule
 * @param path Path of the file
 *
 * @returns TSK_IMG_TYPE_ENUM TSK_OK if callback has no error
 */
-static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
+static TSK_RETVAL_ENUM matchCallback(const MatchedRuleInfo *matchedRuleInfo, TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM extractStatus = TSK_ERR;
     std::string extractedFilePath;
 
-    if (matchResult->isShouldSave()) {
+    if (matchedRuleInfo->isShouldSave()) {
         extractStatus = fileExtractor->extractFile(fs_file, path, extractedFilePath);
     }
-    ReportUtil::reportResult(outputLocation, extractStatus, matchResult, fs_file, path, extractedFilePath);
+    ReportUtil::reportResult(outputLocation, extractStatus, matchedRuleInfo, fs_file, path, extractedFilePath);
     return TSK_OK;
 }
 
@@ -335,9 +335,9 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, std::strin
 
 
     // cycle over the rule sets
-    const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
-    for (std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>>::const_iterator ruleSetIter = fullFilePathsRules.begin(); ruleSetIter != fullFilePathsRules.end(); ++ruleSetIter) {
-        const RuleMatchResult *matchResult = ruleSetIter->first;
+    const std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
+    for (std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>>::const_iterator ruleSetIter = fullFilePathsRules.begin(); ruleSetIter != fullFilePathsRules.end(); ++ruleSetIter) {
+        const MatchedRuleInfo *matchedRuleInfo = ruleSetIter->first;
         const std::list<std::string> filePathsInSet = ruleSetIter->second;
 
         // cycle over each FS in the image
@@ -357,7 +357,7 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, std::strin
                     fs_file->name = new TSK_FS_NAME();
                     fs_file->name->name = (char *)tsk_malloc(strlen(filename.c_str()) + 1);
                     strcpy(fs_file->name->name, filename.c_str());
-                    matchCallback(matchResult, fs_file, parent.c_str());
+                    matchCallback(matchedRuleInfo, fs_file, parent.c_str());
 
                     tsk_fs_file_close(fs_file);
                 }
@@ -399,10 +399,8 @@ static void reportUsers(std::string sessionDir, std::string driveName) {
     ReportUtil::consoleOutput(stdout, "%s - Searching for registry\n", driveName.c_str());
     SetConsoleTitleA(std::string("Analyzing drive " + driveName + " - Searching for registry").c_str());
 
-    string usersFileName = sessionDir + "/users.txt";
-
     // Enumerate Users with RegistryAnalyzer
-    RegistryAnalyzer registryAnalyzer(usersFileName);
+    RegistryAnalyzer registryAnalyzer(ReportUtil::getUsersFile());
     registryAnalyzer.analyzeSAMUsers();
 }
 
@@ -545,22 +543,10 @@ main(int argc, char **argv1)
 
     // @@@ Seems like we could consolodate much of this into ReportUtil with a method that takes
     // in sessionDir and it makes all of the needed files
-
-    std::string consoleFileName = sessionDir + "/console.txt";
-    ReportUtil::openConsoleOutput(consoleFileName);
+    ReportUtil::initialize(sessionDir);
 
     ReportUtil::consoleOutput(stdout, "Created directory %s\n", sessionDir.c_str());
-
-    // copy the config file into the output directoryPath
-    std::ifstream src(TskHelper::toNarrow(configFilename), std::ios::binary);
-    std::ofstream dst(sessionDir + "/config.json", std::ios::binary);
-    dst << src.rdbuf();
-    dst.close();
-    src.close();
-
-    std::string reportFilename = sessionDir + "/SearchResults.txt";
-    ReportUtil::openReport(reportFilename);
-
+    ReportUtil::copyConfigFile(configFilename);
 
     std::list<std::pair<TSK_IMG_INFO *, std::string>> imgFinalizePending;
     fileExtractor = new FileExtractor(createVHD, cwd, sessionDir);

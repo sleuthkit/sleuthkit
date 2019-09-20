@@ -23,9 +23,8 @@
 
 class RegistryAnalyzer {
 public:
-    RegistryAnalyzer(const std::string &outputFilePath);
+    RegistryAnalyzer(FILE *outputFile);
     ~RegistryAnalyzer();
-
     int analyzeSAMUsers() const;
 
 private:
@@ -38,6 +37,5 @@ private:
 
     RegistryAnalyzer(const RegistryAnalyzer&) = delete;
 
-    std::string m_outputFilePath;
     FILE *m_outputFile;
 };

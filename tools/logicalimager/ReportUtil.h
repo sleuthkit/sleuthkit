@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include "RuleMatchResult.h"
+#include "MatchedRuleInfo.h"
 #include "tsk/libtsk.h"
 
 /**
@@ -21,6 +21,8 @@
 */
 class ReportUtil {
 public:
+    static void initialize(const std::string &sessionDir);
+    static void copyConfigFile(const std::wstring &configFilename);
     static void openReport(const std::string &alertFilename);
     static void openConsoleOutput(const std::string &consoleFileName);
     static void logOutputToFile(const char *buf);
@@ -28,9 +30,11 @@ public:
     static void printDebug(char *msg, const char *fmt, ...);
     static void printDebug(char *msg);
     static void closeReport();
+    static void closeFile(FILE *file);
+    static FILE *getUsersFile();
 
     static void reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, 
-        const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath);
+        const MatchedRuleInfo *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath);
 
     static void SetPromptBeforeExit(bool flag);
     static void handleExit(int code);
