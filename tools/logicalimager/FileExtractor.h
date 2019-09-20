@@ -25,9 +25,10 @@ public:
 private:
     FileExtractor(const FileExtractor &) = delete;
 
-    std::string generateDirForFiles();
+    void generateDirForFiles();
     void createDirectoryRecursively(const std::wstring &path);
     bool dirExists(const std::wstring &dirName);
+    std::string getRootImageDirPrefix() const;
     ~FileExtractor() {};
 
     bool m_createVHD;
