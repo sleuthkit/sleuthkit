@@ -315,19 +315,13 @@ string getPathName(const string &fullPath) {
     return "";
 }
 
-
-
-
-
-
-
 /**
 * Search for files that were specified by full path.
 * @param config Configuration that contains rules and other settings
 * @param driveName Name of drive being processed (for display only)
 */
 
-static void searchFilesByFullPath(LogicalImagerConfiguration *config, std::string driveName) {
+static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std::string &driveName) {
     ReportUtil::consoleOutput(stdout, "%s - Searching for full path files\n", driveName.c_str());
     SetConsoleTitleA(std::string("Analyzing drive " + driveName + " - Searching for full path files").c_str());
 
@@ -372,7 +366,7 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, std::strin
 * @param driveName Display name of drive being processed
 * @param img_info Handle to open TSK image
 */
-static void searchFilesByAttribute(LogicalImagerConfiguration *config, std::string driveName, TSK_IMG_INFO *img_info) {
+static void searchFilesByAttribute(LogicalImagerConfiguration *config, const std::string &driveName, TSK_IMG_INFO *img_info) {
     TskFindFiles findFiles(config, driveName);
     if (findFiles.openImageHandle(img_info)) {
         tsk_error_print(stderr);
@@ -395,7 +389,7 @@ static void searchFilesByAttribute(LogicalImagerConfiguration *config, std::stri
 * @param sessionDir Directory to create user file in
 * @param driveName Display name of drive being processed.
 */
-static void reportUsers(std::string sessionDir, std::string driveName) {
+static void reportUsers(const std::string &sessionDir, const std::string &driveName) {
     ReportUtil::consoleOutput(stdout, "%s - Searching for registry\n", driveName.c_str());
     SetConsoleTitleA(std::string("Analyzing drive " + driveName + " - Searching for registry").c_str());
 
@@ -541,8 +535,6 @@ main(int argc, char **argv1)
         ReportUtil::handleExit(1);
     }
 
-    // @@@ Seems like we could consolodate much of this into ReportUtil with a method that takes
-    // in sessionDir and it makes all of the needed files
     ReportUtil::initialize(sessionDir);
 
     ReportUtil::consoleOutput(stdout, "Created directory %s\n", sessionDir.c_str());
@@ -637,24 +629,17 @@ main(int argc, char **argv1)
             tsk_vs_close(vs_info);
         }
 
-
-
-
         ////////////////////////////////////////////////////////
         // do the work 
-
 
         // search for files based on full path
         searchFilesByFullPath(config, imageShortName);
 
-
         // Get users
         reportUsers(sessionDir, imageShortName);
 
-
         // We no longer need the cached files
         TskHelper::getInstance().reset();
-
 
         // Full scan of drive for files based on extension, etc.
         searchFilesByAttribute(config, imageShortName, img);

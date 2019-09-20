@@ -192,26 +192,26 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
 }
 
 /*
-* Close the report file.
-*/
-void ReportUtil::closeReport() {
-    closeFile(reportFile);
-}
-
-/*
 * Close a file.
 */
-void ReportUtil::closeFile(FILE *file) {
-    if (file) {
-        fclose(file);
-        file = NULL;
+void closeFile(FILE **file) {
+    if (*file) {
+        fclose(*file);
+        *file = NULL;
     }
 }
 
+/*
+* Close the report file.
+*/
+void ReportUtil::closeReport() {
+    closeFile(&reportFile);
+}
+
 void ReportUtil::handleExit(int code) {
-    closeFile(reportFile);
-    closeFile(consoleFile);
-    closeFile(usersFile);
+    closeFile(&reportFile);
+    closeFile(&consoleFile);
+    closeFile(&usersFile);
     if (promptBeforeExit) {
         std::cout << std::endl << "Press any key to exit";
         (void)_getch();

@@ -30,7 +30,6 @@ public:
     static void printDebug(char *msg, const char *fmt, ...);
     static void printDebug(char *msg);
     static void closeReport();
-    static void closeFile(FILE *file);
     static FILE *getUsersFile();
 
     static void reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, 

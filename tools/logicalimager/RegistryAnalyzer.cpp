@@ -36,7 +36,6 @@ const std::string LOCAL_DOMAIN = "local";
 RegistryAnalyzer::RegistryAnalyzer(FILE *outputFile) :
     m_outputFile(outputFile)
 {
- //   m_outputFile = fopen(m_outputFilePath.c_str(), "w");
     if (!m_outputFile) {
         exit(1);
     }
