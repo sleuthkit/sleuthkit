@@ -562,7 +562,18 @@ main(int argc, char **argv1)
         ReportUtil::consoleOutput(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
         SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for registry").c_str());
 
-        string usersFileName = directoryPath + "/users.txt";
+        std::string prefix;
+        std::string userFilename = "users.txt";
+        if (iFlagUsed) {
+            prefix = "sparse_image";
+        }
+        else {
+            if (TskHelper::endsWith(driveToProcess, ":")) {
+                prefix = driveToProcess.c_str()
+            }
+            prefix = 
+        }
+        string usersFileName = directoryPath + "/" + prefix + "users.txt";
 
         // Enumerate Users with RegistryAnalyzer
         RegistryAnalyzer registryAnalyzer(usersFileName);
