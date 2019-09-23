@@ -40,7 +40,7 @@ void FileExtractor::initializePerImage(const std::string &imageDirName) {
     m_dirCounter = 1; // reset for each image
     m_fileCounter = 1;
     m_imageDirName = imageDirName;
-    createDirectoryRecursively(TskHelper::toWide((std::string(m_rootDirectoryPath + "/root/" + m_imageDirName + "/d-" + std::to_string(m_dirCounter)))));
+    createDirectoryRecursively(TskHelper::toWide((std::string(m_rootDirectoryPath + getRootImageDirPrefix() + std::to_string(m_dirCounter)))));
 }
 
 /**
@@ -66,12 +66,11 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
     }
 
     if (!m_createVHD) {
-        std::string dirNum = std::string("d-" + std::to_string(m_dirCounter));;
         if (m_fileCounter > maxFilesInDir) {
-            dirNum = FileExtractor::generateDirForFiles();
+            FileExtractor::generateDirForFiles();
             m_fileCounter = 1;
         }
-        extractedFilePath = "root/" + m_imageDirName + "/" + dirNum + "/f-" + std::to_string(m_fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
+        extractedFilePath = getRootImageDirPrefix() + std::to_string(m_dirCounter) + "/f-" + std::to_string(m_fileCounter) + (char *)PathFindExtensionA(fs_file->name->name);
         m_fileCounter++;
         filename = m_rootDirectoryPath + "/" + extractedFilePath;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
@@ -131,22 +130,28 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
 }
 
 /*
+* Return a string for the /root/<m_imageDirName>/d- prefix
+* @return The prefix string
+*/
+std::string FileExtractor::getRootImageDirPrefix() const {
+    return std::string("/root/" + m_imageDirName + "/d-");
+}
+
+/*
 * Create a directory to store extracted files, using an incremented directory counter.
 * The directory name has a "d-<nnn>" format where <nnn> is the directory counter.
 * Exit the program if directory creation failed.
 *
-* @returns New directory name that was created
 */
-std::string FileExtractor::generateDirForFiles() {
+void FileExtractor::generateDirForFiles() {
     m_dirCounter++;
-    std::string newDir = std::string(m_rootDirectoryPath + "/root/" + m_imageDirName + "/d-" + std::to_string(m_dirCounter));
+    std::string newDir = std::string(m_rootDirectoryPath + getRootImageDirPrefix() + std::to_string(m_dirCounter));
     if (_mkdir(newDir.c_str()) != 0) {
         if (errno != EEXIST) {
             ReportUtil::consoleOutput(stderr, "ERROR: mkdir failed for %s\n", newDir.c_str());
             ReportUtil::handleExit(1);
         }
     }
-    return std::string("d-" + std::to_string(m_dirCounter));
 }
 
 /**
