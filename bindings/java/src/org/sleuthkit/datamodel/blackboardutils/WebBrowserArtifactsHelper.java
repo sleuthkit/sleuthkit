@@ -393,7 +393,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 * @param accessTime   Last access time, may be 0 if not available.
 	 * @param referrer     Referrer, may be empty or null.
 	 * @param title        Website title, may be empty or null.
-	 * @param programName, Application/program recording the history, may be
+	 * @param programName  Application/program recording the history, may be
 	 *                     empty or null.
 	 *
 	 * @return Web history artifact created.
@@ -414,7 +414,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 * @param accessTime          Last access time, may be 0 if not available.
 	 * @param referrer            Referrer, may be empty or null.
 	 * @param title               Website title, may be empty or null.
-	 * @param programName,        Application/program recording the history, may
+	 * @param programName         Application/program recording the history, may
 	 *                            be empty or null.
 	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
