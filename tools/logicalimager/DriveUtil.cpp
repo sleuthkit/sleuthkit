@@ -58,7 +58,7 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
     const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
     bool result = false;
 
-    TSK_IMG_INFO *img = addFSFromImage(image);
+    TSK_IMG_INFO *img = TskHelper::addFSFromImage(image);
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
@@ -77,46 +77,6 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
     return result;
 }
 
-/*
-* Add all FS found in the given image to TskHelp::getInstance()
-* Returns TSK_IMG_INFO *, caller should call img->close(img) when done.
-* The FS can be obtained by calling TskHelper::getInstance().getFSInfoList()
-* Caller must call TskHelper::getInstance().reset() when done with the FS.
-* May exit the program if image failed to open.
-*
-* @param image Path to image
-* @return TSK_IMG_INFO of the opened image if success, 
-*/
-TSK_IMG_INFO *DriveUtil::addFSFromImage(const TSK_TCHAR *image) {
-    TSK_IMG_INFO *img;
-    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    unsigned int ssize = 0;
-
-    if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
-        ReportUtil::consoleOutput(stderr, tsk_error_get());
-        ReportUtil::handleExit(1);
-    }
-
-    TskHelper::getInstance().reset();
-    TskHelper::getInstance().setImgInfo(img);
-
-    TSK_VS_INFO *vs_info;
-    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-        TskHelper::getInstance().openFs(img, 0);
-    }
-    else {
-        // process the volume system
-        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
-            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
-                continue;
-            }
-            TskHelper::getInstance().openFs(img, vs_part->start * vs_part->vs->block_size);
-        }
-        tsk_vs_close(vs_info);
-    }
-    return img;
-}
 
 /**
 * checkDriveForBitlocker: checks if the given drive has BitLocker encrypted

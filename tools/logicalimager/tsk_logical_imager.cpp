@@ -226,13 +226,10 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 /**
 * hasTskLogicalImage - test if /tsk_logical_image.exe is in the image/drive
 *
-* @param image - path to image
 * @return true if found, false otherwise
 */
-static bool hasTskLogicalImager(const TSK_TCHAR *image) {
+static bool hasTskLogicalImager() {
     bool result = false;
-
-    TSK_IMG_INFO *img = DriveUtil::addFSFromImage(image);
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
@@ -254,7 +251,6 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
             break;
         }
     }
-    img->close(img);
     TskHelper::getInstance().reset();
     return result;
 }
@@ -327,16 +323,14 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
 
-
-    // cycle over the rule sets
-    const std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
-    for (std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>>::const_iterator ruleSetIter = fullFilePathsRules.begin(); ruleSetIter != fullFilePathsRules.end(); ++ruleSetIter) {
-        const MatchedRuleInfo *matchedRuleInfo = ruleSetIter->first;
-        const std::list<std::string> filePathsInSet = ruleSetIter->second;
-
-        // cycle over each FS in the image
-        // @@@ THis seems a bit awkward that we have this in between the two iterators about rules. Should be either up or down a level
-        for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+    // cycle over each FS in the image
+    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
+        
+        // cycle over the rule sets
+        const std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
+        for (std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>>::const_iterator ruleSetIter = fullFilePathsRules.begin(); ruleSetIter != fullFilePathsRules.end(); ++ruleSetIter) {
+            const MatchedRuleInfo *matchedRuleInfo = ruleSetIter->first;
+            const std::list<std::string> filePathsInSet = ruleSetIter->second;
 
             // cycle over each path in the set
             for (std::list<std::string>::const_iterator filePathIter = filePathsInSet.begin(); filePathIter != filePathsInSet.end(); ++filePathIter) {
@@ -423,7 +417,6 @@ main(int argc, char **argv1)
 
     int ch;
     TSK_TCHAR **argv;
-    unsigned int ssize = 0;
     const TSK_TCHAR *imgPathArg = NULL; // set to image path if user specified on command line
     TSK_TCHAR *configFilename = (TSK_TCHAR *) NULL;
     LogicalImagerConfiguration *config = NULL;
@@ -561,22 +554,20 @@ main(int argc, char **argv1)
             continue;
         }
 
-        if (hasTskLogicalImager(imagePath)) {
-            ReportUtil::consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", imageShortName.c_str());
-            continue; // Don't process a drive with /tsk_logicial_image.exe at the root
-        }
-
         TSK_IMG_INFO *img;
-        if ((img = tsk_img_open(1, &imagePath, imgtype, ssize)) == NULL) {
-            tsk_error_print(stderr);
-            ReportUtil::handleExit(1);
+        img = TskHelper::addFSFromImage(imagePath);
+
+        if (hasTskLogicalImager()) {
+            ReportUtil::consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", imageShortName.c_str());
+            img->close(img);
+            TskHelper::getInstance().reset();
+            continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
 
         std::string subDirForFiles;
         if (imgPathArg != NULL) {
             subDirForFiles = "sparse_image";
-        }
-        else {
+        } else {
             subDirForFiles = imageShortName;
             // strip final ":"
             if (subDirForFiles.back() == ':') {
@@ -587,6 +578,8 @@ main(int argc, char **argv1)
         
         // @@@ SHould probably rename outputLocation for non-VHD files
         outputLocation = subDirForFiles + (createVHD ? ".vhd" : "");
+
+        bool closeImgNow = true;
 
         // Setup the VHD for this drive (if we are making one)
         if (createVHD) {
@@ -599,20 +592,15 @@ main(int argc, char **argv1)
                     ReportUtil::handleExit(1);
                 }
                 imgFinalizePending.push_back(std::make_pair(img, imageShortName));
+                closeImgNow = false;
             }
             else {
                 ReportUtil::consoleOutput(stderr, "Input is not a live device or raw imagePath, VHD will not be created\n");
             }
         }
-    
-
 
         ////////////////////////////////////////////////
         // Enumerate the file and volume systems that we'll need for the various searches
-        TskHelper::getInstance().reset();
-        TskHelper::getInstance().setImgInfo(img);
-
-        // THIS SECTION and the DriveUtil methods should GO INTO TSKHELPER... @@@@
         TskHelper::getInstance().enumerateFileAndVolumeSystems(img);
 
         ////////////////////////////////////////////////////////
@@ -636,8 +624,10 @@ main(int argc, char **argv1)
         // Full scan of drive for files based on extension, etc.
         searchFilesByAttribute(config, imageShortName, img);
         
-        // @@@ shoudl free file systems at some point. All we've done is reset pointers in TskHelper. Maybe it should free them in reset()
-        // @@@@ Should either close image and file systems here or add them to pending queue
+        if (closeImgNow) {
+            // close the image, if not creating VHD. 
+            img->close(img);
+        }
     }
 
     // close report file before tsk_img_writer_finish, which may take a long time.

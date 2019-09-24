@@ -76,6 +76,7 @@ public:
     void enumerateFileAndVolumeSystems(TSK_IMG_INFO *img);
     void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset);
     int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
+    static TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image);
 
     static std::string toLower(const std::string &srcStr);
     static std::string toUpper(const std::string &srcStr);
