@@ -69,11 +69,12 @@ public:
     void reset(void);
 
     void addFSInfo(TSK_FS_INFO * fs_info);
-    TSK_FS_INFO * getFSInfo(TSK_OFF_T offset);
+    TSK_FS_INFO *getFSInfo(TSK_OFF_T offset);
     const std::list<TSK_FS_INFO *> getFSInfoList();
 
-    void setImgInfo(TSK_IMG_INFO *a_img_info) { m_img_info = a_img_info; }
-
+    void setImgInfo(TSK_IMG_INFO *a_img_info) { m_img_info = a_img_info; }; 
+    void enumerateFileAndVolumeSystems(TSK_IMG_INFO *img);
+    void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset);
     int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
 
     static std::string toLower(const std::string &srcStr);
@@ -81,6 +82,7 @@ public:
     static std::string toNarrow(const std::wstring& a_utf16Str);
     static std::wstring toWide(const std::string& a_utf8Str);
     static bool startsWith(const std::string &bigStr, const std::string &lilStr);
+    static bool endsWith(const std::string &str, const std::string &suffix);
     static std::string intToStr(long l);
     static std::string intToStr(size_t l);
     static void replaceAll(std::string& str, const std::string& from, const std::string& to);

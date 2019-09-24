@@ -35,7 +35,6 @@
 static std::string sessionDirCopy;
 static FILE *reportFile;
 static FILE *consoleFile;
-static FILE *usersFile; // used by RegistryAnalyzer
 static bool promptBeforeExit = true;
 
 void ReportUtil::initialize(const std::string &sessionDir) {
@@ -45,17 +44,6 @@ void ReportUtil::initialize(const std::string &sessionDir) {
 
     std::string reportFilename = sessionDir + "/SearchResults.txt";
     ReportUtil::openReport(reportFilename);
-
-    std::string usersFilename = sessionDir + "/users.txt";
-    usersFile = fopen(usersFilename.c_str(), "w");
-    if (!usersFile) {
-        ReportUtil::consoleOutput(stderr, "ERROR: Failed to open file %s\n", usersFilename.c_str());
-        handleExit(1);
-    }
-}
-
-FILE *ReportUtil::getUsersFile() {
-    return usersFile;
 }
 
 void ReportUtil::copyConfigFile(const std::wstring &configFilename) {
@@ -211,7 +199,6 @@ void ReportUtil::closeReport() {
 void ReportUtil::handleExit(int code) {
     closeFile(&reportFile);
     closeFile(&consoleFile);
-    closeFile(&usersFile);
     if (promptBeforeExit) {
         std::cout << std::endl << "Press any key to exit";
         (void)_getch();

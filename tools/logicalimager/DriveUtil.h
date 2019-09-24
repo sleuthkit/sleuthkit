@@ -22,7 +22,6 @@ class DriveUtil {
 public:
     static bool cwdIsFAT(std::wstring &cwd);
     static TSK_IMG_INFO *addFSFromImage(const TSK_TCHAR *image);
-    static void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset);
     static int isDriveLocked(const std::string &driveLetter);
     static bool hasBitLockerOrLDM(const std::string &systemDriveLetter);
     static BOOL getPhysicalDrives(std::vector<std::wstring> &phyiscalDrives);

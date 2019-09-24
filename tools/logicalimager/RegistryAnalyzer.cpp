@@ -31,12 +31,14 @@ const std::string LOCAL_DOMAIN = "local";
 /**
 * Create a RegistryAnalyzer, create a file for SAM user information
 *
-* @param outputFile output file to print SAM user information
+* @param outputFilePath output file to print SAM user information
 */
-RegistryAnalyzer::RegistryAnalyzer(FILE *outputFile) :
-    m_outputFile(outputFile)
+RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
+    m_outputFilePath(outputFilePath)
 {
+    m_outputFile = fopen(m_outputFilePath.c_str(), "w");
     if (!m_outputFile) {
+        ReportUtil::consoleOutput(stdout, "ERROR: Failed to open file %s\n", m_outputFilePath.c_str());
         exit(1);
     }
 
@@ -52,6 +54,10 @@ RegistryAnalyzer::RegistryAnalyzer(FILE *outputFile) :
 }
 
 RegistryAnalyzer::~RegistryAnalyzer() {
+    if (m_outputFile) {
+        fclose(m_outputFile);
+        m_outputFile = NULL;
+    }
 }
 
 /**

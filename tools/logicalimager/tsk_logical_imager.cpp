@@ -381,7 +381,6 @@ static void searchFilesByAttribute(LogicalImagerConfiguration *config, const std
         // we already logged the errors in findFiles.handleError()
         // Don't exit, just let it continue
     }
-
 }
 
 /**
@@ -394,7 +393,12 @@ static void reportUsers(const std::string &sessionDir, const std::string &driveN
     SetConsoleTitleA(std::string("Analyzing drive " + driveName + " - Searching for registry").c_str());
 
     // Enumerate Users with RegistryAnalyzer
-    RegistryAnalyzer registryAnalyzer(ReportUtil::getUsersFile());
+    std::string driveLetter = driveName;
+    if (TskHelper::endsWith(driveName, ":")) {
+        driveLetter = driveName.substr(0, driveName.length() - 1);
+    }
+    std::string userFilename = sessionDir + "/" + driveLetter + "_users.txt";
+    RegistryAnalyzer registryAnalyzer(userFilename);
     registryAnalyzer.analyzeSAMUsers();
 }
 
@@ -609,25 +613,7 @@ main(int argc, char **argv1)
         TskHelper::getInstance().setImgInfo(img);
 
         // THIS SECTION and the DriveUtil methods should GO INTO TSKHELPER... @@@@
-        TSK_VS_INFO *vs_info;
-        if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
-            ReportUtil::printDebug("No volume system found. Looking for file system");
-            DriveUtil::openFs(img, 0);
-        }
-        else {
-            // process the volume system
-            //fprintf(stdout, "Partition:\n");
-            for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
-                const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
-                //fprintf(stdout, "#%i: %s Start: %s Length: %s\n",
-                //    i, vs_part->desc, std::to_string(vs_part->start).c_str(), std::to_string(vs_part->len).c_str());
-                if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
-                    continue;
-                }
-                DriveUtil::openFs(img, vs_part->start * vs_part->vs->block_size);
-            }
-            tsk_vs_close(vs_info);
-        }
+        TskHelper::getInstance().enumerateFileAndVolumeSystems(img);
 
         ////////////////////////////////////////////////////////
         // do the work 
@@ -636,7 +622,13 @@ main(int argc, char **argv1)
         searchFilesByFullPath(config, imageShortName);
 
         // Get users
-        reportUsers(sessionDir, imageShortName);
+        std::string prefix;
+        if (imgPathArg != NULL) {
+            prefix = "sparse_image";
+        } else {
+            prefix = imageShortName;
+        }
+        reportUsers(sessionDir, prefix);
 
         // We no longer need the cached files
         TskHelper::getInstance().reset();

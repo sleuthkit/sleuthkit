@@ -17,6 +17,7 @@
 #include "tsk/base/tsk_base_i.h"
 #include "tsk/fs/tsk_fs_i.h"
 #include "TskHelper.h"
+#include "ReportUtil.h"
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
@@ -715,4 +716,61 @@ void TskHelper::replaceAll(std::string &str, const std::string &from, const std:
         str.replace(start_pos, from.length(), to);
         start_pos += to.length();
     }
+}
+
+/*
+* Open the file system in the disk image and add it to the TskHelper.getInstance()
+*
+* @param img Disk image to open
+* @param byteOffset Byte offset to start analyzing from
+*/
+void TskHelper::openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
+    TSK_FS_INFO *fs_info;
+    if ((fs_info = tsk_fs_open_img(img, byteOffset, TSK_FS_TYPE_DETECT)) != NULL) {
+        // Tell TSKHelper about this FS
+        TskHelper::getInstance().addFSInfo(fs_info);
+    }
+    else {
+        // check if it is bitlocker - POC effort
+        char buffer[32];
+        tsk_img_read(img, byteOffset, buffer, 32);
+        if ((buffer[3] == '-') && (buffer[4] == 'F') &&
+            (buffer[5] == 'V') && (buffer[6] == 'E') &&
+            (buffer[7] == '-') && (buffer[8] == 'F') &&
+            (buffer[9] == 'S') && (buffer[10] == '-'))
+        {
+            std::cerr << "Volume is encrypted with BitLocker." << std::endl
+                << "Volume did not have a file system and has a BitLocker signature" << std::endl;
+        }
+
+        ReportUtil::printDebug("Volume does not contain a file system");
+        tsk_error_reset();
+    }
+}
+
+void TskHelper::enumerateFileAndVolumeSystems(TSK_IMG_INFO *img) {
+    TSK_VS_INFO *vs_info;
+    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+        ReportUtil::printDebug("No volume system found. Looking for file system");
+        TskHelper::getInstance().openFs(img, 0);
+    }
+    else {
+        // process the volume system
+        //fprintf(stdout, "Partition:\n");
+        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+            //fprintf(stdout, "#%i: %s Start: %s Length: %s\n",
+            //    i, vs_part->desc, std::to_string(vs_part->start).c_str(), std::to_string(vs_part->len).c_str());
+            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                continue;
+            }
+            TskHelper::getInstance().openFs(img, vs_part->start * vs_part->vs->block_size);
+        }
+        tsk_vs_close(vs_info);
+    }
+}
+
+bool TskHelper::endsWith(const std::string &str, const std::string &suffix) {
+    return str.size() >= suffix.size() &&
+        str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
