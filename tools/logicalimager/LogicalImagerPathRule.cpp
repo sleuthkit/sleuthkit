@@ -19,11 +19,6 @@
 static char *userFolderRegex = "/?(documents and settings|users|home)/[^/]+";
 static std::string lowerCaseUserFolder;
 
-bool endsWith(const std::string &str, const std::string &suffix) {
-    return str.size() >= suffix.size() &&
-        str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
 /*
 * Construct a path rule.
 *
@@ -47,7 +42,7 @@ LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths)
             // special case, add to regex
             std::string newPattern(lowerCasePath);
             newPattern.replace(newPattern.find(lowerCaseUserFolder), lowerCaseUserFolder.length(), userFolderRegex);
-            if (endsWith(lowerCasePath, "/")) {
+            if (TskHelper::endsWith(lowerCasePath, "/")) {
                 newPattern.append(".*");
             } else {
                 newPattern.append("/.*");
