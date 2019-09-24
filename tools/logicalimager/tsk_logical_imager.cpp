@@ -335,16 +335,13 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
             // cycle over each path in the set
             for (std::list<std::string>::const_iterator filePathIter = filePathsInSet.begin(); filePathIter != filePathsInSet.end(); ++filePathIter) {
                 TSK_FS_FILE *fs_file;
+                TSK_FS_NAME *fs_name = tsk_fs_name_alloc(1024, 16);
                 TSKFileNameInfo filenameInfo;
-                int retval = TskHelper::getInstance().path2Inum(*fsListIter, filePathIter->c_str(), false, filenameInfo, NULL, &fs_file);
+                int retval = TskHelper::getInstance().path2Inum(*fsListIter, filePathIter->c_str(), false, filenameInfo, fs_name, &fs_file);
                 if (retval == 0 && fs_file != NULL) {
-                    std::string filename = getFilename(*filePathIter);
                     std::string parent = getPathName(*filePathIter);
-                    // create a TSK_FS_NAME for report purpose
-                    // @@@ Can we ust pass in a FS_NAME to path2Inum?
                     fs_file->name = new TSK_FS_NAME();
-                    fs_file->name->name = (char *)tsk_malloc(strlen(filename.c_str()) + 1);
-                    strcpy(fs_file->name->name, filename.c_str());
+                    fs_file->name->name = fs_name->name;
                     matchCallback(matchedRuleInfo, fs_file, parent.c_str());
 
                     tsk_fs_file_close(fs_file);

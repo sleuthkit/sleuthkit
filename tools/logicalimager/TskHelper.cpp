@@ -195,7 +195,9 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
     // std::cout << "TskHlprPath2Inum: Looking for " << a_path << " in FS " << a_fs->offset << std::endl;
 
     a_result.setINUM(0);
-    *a_fs_file = NULL;
+    if (a_fs_file) {
+        *a_fs_file = NULL;
+    }
 
     std::string path_matched;
     bool ignoreExt = false;
@@ -271,7 +273,9 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
             if (targetPathSubString.length() == targetPathAsString.length()) {
                 a_result.setINUM(inum);
                 a_result.setFSNameFlags(pInumCacheData->getFSNameFlag());
-                *a_fs_file = NULL;
+                if (a_fs_file) {
+                    *a_fs_file = NULL;
+                }
                 free(cpath);
                 return 0;
             }
@@ -295,7 +299,9 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                 * specify a trailing / at the end. */
                 if (cur_name_to_match == NULL) {
                     a_result.setINUM(inum);
-                    *a_fs_file = NULL;
+                    if (a_fs_file) {
+                        *a_fs_file = NULL;
+                    }
                     free(cpath);
                     return 0;
                 }
@@ -564,8 +570,10 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                         tsk_fs_name_copy(a_fs_name, fs_name_best);
                     }
 
-                    // return the TSK_FS_FILE if one was requested
-                    *a_fs_file = tsk_fs_file_open_meta(a_fs, NULL, fs_name_best->meta_addr);
+                    if (a_fs_file) {
+                        // return the TSK_FS_FILE if one was requested
+                        *a_fs_file = tsk_fs_file_open_meta(a_fs, NULL, fs_name_best->meta_addr);
+                    }
                 }
 
                 //cerr << getNowTimeStr() << "TSKHlprPath2inum(): Found = " << std::string(a_path) << endl;
