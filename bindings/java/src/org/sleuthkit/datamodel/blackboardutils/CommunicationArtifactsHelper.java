@@ -318,7 +318,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param readStatus  Message read status, UNKNOWN if not available.
 	 * @param subject     Message subject, may be empty or null.
 	 * @param messageText Message body, may be empty or null.
-	 * @param threadId,   Message thread id, may be empty or null.
+	 * @param threadId    Message thread id, may be empty or null.
 	 *
 	 * @return Message artifact.
 	 *
@@ -352,7 +352,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param readStatus          Message read status, UNKNOWN if not available.
 	 * @param subject             Message subject, may be empty or null.
 	 * @param messageText         Message body, may be empty or null.
-	 * @param threadId,           Message thread id, may be empty or null.
+	 * @param threadId            Message thread id, may be empty or null.
 	 * @param otherAttributesList Additional attributes, may be an empty list.
 	 *
 	 * @return Message artifact.
@@ -392,7 +392,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param readStatus     Message read status, UNKNOWN if not available.
 	 * @param subject        Message subject, may be empty or null.
 	 * @param messageText    Message body, may be empty or null.
-	 * @param threadId,      Message thread id, may be empty or null.
+	 * @param threadId       Message thread id, may be empty or null.
 	 *
 	 * @return Message artifact.
 	 *
@@ -427,7 +427,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param readStatus          Message read status, UNKNOWN if not available.
 	 * @param subject             Message subject, may be empty or null.
 	 * @param messageText         Message body, may be empty or null.
-	 * @param threadId,           Message thread id, may be empty or null.
+	 * @param threadId            Message thread id, may be empty or null.
 	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
 	 * @return Message artifact.
