@@ -158,6 +158,14 @@ bool TskHelper::startsWith(const std::string &bigStr, const std::string &lilStr)
         && equal(lilStr.begin(), lilStr.end(), bigStr.begin());
 }
 
+/*
+* Check if the string str ends with suffix
+*/
+bool TskHelper::endsWith(const std::string &str, const std::string &suffix) {
+    return str.size() >= suffix.size() &&
+        str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 /**
  * \ingroup fslib
  *
@@ -768,9 +776,4 @@ void TskHelper::enumerateFileAndVolumeSystems(TSK_IMG_INFO *img) {
         }
         tsk_vs_close(vs_info);
     }
-}
-
-bool TskHelper::endsWith(const std::string &str, const std::string &suffix) {
-    return str.size() >= suffix.size() &&
-        str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
