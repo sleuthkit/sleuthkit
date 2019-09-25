@@ -293,7 +293,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	private void addRelationship(AccountFileInstance selfAccountInstance, AccountFileInstance otherAccountInstance,
 			BlackboardArtifact sourceArtifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException {
 
-		if (selfAccountInstance.getAccount() != otherAccountInstance.getAccount()) {
+		// create a relationship only if the selfAccount and otherAccount are not one and the same
+		if (selfAccountInstance.getAccount().equals(otherAccountInstance.getAccount()) == false) {
 			try {
 				getSleuthkitCase().getCommunicationsManager().addRelationships(selfAccountInstance,
 						Collections.singletonList(otherAccountInstance), sourceArtifact, relationshipType, dateTime);
