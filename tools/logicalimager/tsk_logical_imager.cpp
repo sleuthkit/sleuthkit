@@ -344,8 +344,7 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
                 int retval = TskHelper::getInstance().path2Inum(*fsListIter, filePathIter->c_str(), false, filenameInfo, fs_name, &fs_file);
                 if (retval == 0 && fs_file != NULL) {
                     std::string parent = getPathName(*filePathIter);
-                    fs_file->name = new TSK_FS_NAME();
-                    fs_file->name->name = fs_name->name;
+                    fs_file->name = fs_name;
                     matchCallback(matchedRuleInfo, fs_file, parent.c_str());
 
                     tsk_fs_file_close(fs_file);

@@ -269,6 +269,10 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet() {
                 delete *ruleBaseIter;
             }
     }
+    if (m_fullFilePaths.first) {
+        delete m_fullFilePaths.first;
+        m_fullFilePaths.second.clear();
+    }
 }
 
 /**
