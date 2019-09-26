@@ -9,6 +9,10 @@
  **
  */
 
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>  
+#include <crtdbg.h> 
+
 #include <iostream>
 #include <conio.h>
 #include <string>
@@ -425,6 +429,8 @@ main(int argc, char **argv1)
     SetConsoleOutputCP(65001); // Set the CMD Console to Unicode codepage
     setlocale(LC_ALL, "en_US.UTF-8"); // Set locale to English and UTF-8 encoding.
 
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -649,6 +655,9 @@ main(int argc, char **argv1)
 
     if (config) {
         delete config;
+    }
+    if (fileExtractor) {
+        delete fileExtractor;
     }
     ReportUtil::printDebug("Exiting");
     ReportUtil::handleExit(0);
