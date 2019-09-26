@@ -110,12 +110,6 @@ RegVal::RegVal(const Rejistry::RegistryValue *value) {
     initialize(value);
 }
 
-RegVal::~RegVal() {
-    if (m_registryValue) {
-        delete m_registryValue;
-    }
-}
-
 /*
 * Initialize a RegVal object
 * 
