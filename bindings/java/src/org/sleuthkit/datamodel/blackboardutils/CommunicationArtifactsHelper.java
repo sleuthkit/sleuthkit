@@ -183,14 +183,13 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * attributes. Also creates an account instance of specified type for the
 	 * contact with the specified ID.
 	 *
-	 * @param contactAccountUniqueID Unique id for contact account, required.
-	 * @param contactName            Name of contact, required.
-	 * @param phoneNumber            Primary phone number for contact, may be
-	 *                               empty or null.
-	 * @param homePhoneNumber        Home phone number, may be empty or null.
-	 * @param mobilePhoneNumber      Mobile phone number, may be empty or null.
-	 * @param emailAddr              Email address for the contact, may be empty
-	 *                               or null.
+	 * @param contactAddress    Address for contact account, required.
+	 * @param phoneNumber       Primary phone number for contact, may be empty
+	 *                          or null.
+	 * @param homePhoneNumber   Home phone number, may be empty or null.
+	 * @param mobilePhoneNumber Mobile phone number, may be empty or null.
+	 * @param emailAddr         Email address for the contact, may be empty or
+	 *                          null.
 	 *
 	 * @return Contact artifact created.
 	 *
@@ -198,10 +197,10 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 *
 	 */
-	public BlackboardArtifact addContact(String contactAccountUniqueID, String contactName,
+	public BlackboardArtifact addContact(Account.Address contactAddress,
 			String phoneNumber, String homePhoneNumber,
 			String mobilePhoneNumber, String emailAddr) throws TskCoreException, BlackboardException {
-		return addContact(contactAccountUniqueID, contactName, phoneNumber,
+		return addContact(contactAddress, phoneNumber,
 				homePhoneNumber, mobilePhoneNumber, emailAddr,
 				Collections.emptyList());
 	}
@@ -211,17 +210,16 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * attributes. Also creates an account instance for the contact with the
 	 * specified ID.
 	 *
-	 * @param contactAccountUniqueID Unique id for contact account, required.
-	 * @param contactName            Name of contact, required.
-	 * @param phoneNumber            Primary phone number for contact, may be
-	 *                               empty or null.
-	 * @param homePhoneNumber        Home phone number, may be empty or null.
-	 * @param mobilePhoneNumber      Mobile phone number, may be empty or null.
-	 * @param emailAddr              Email address for the contact, may be empty
-	 *                               or null.
+	 * @param contactAddress       Address for contact account, required.
+	 * @param phoneNumber          Primary phone number for contact, may be
+	 *                             empty or null.
+	 * @param homePhoneNumber      Home phone number, may be empty or null.
+	 * @param mobilePhoneNumber    Mobile phone number, may be empty or null.
+	 * @param emailAddr            Email address for the contact, may be empty
+	 *                             or null.
 	 *
-	 * @param additionalAttributes   Additional attributes for contact, may be
-	 *                               an empty list.
+	 * @param additionalAttributes Additional attributes for contact, may be an
+	 *                             empty list.
 	 *
 	 * @return contact artifact created.
 	 *
@@ -229,7 +227,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 *
 	 */
-	public BlackboardArtifact addContact(String contactAccountUniqueID, String contactName,
+	public BlackboardArtifact addContact(Account.Address contactAddress,
 			String phoneNumber, String homePhoneNumber,
 			String mobilePhoneNumber, String emailAddr,
 			Collection<BlackboardAttribute> additionalAttributes) throws TskCoreException, BlackboardException {
@@ -241,8 +239,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		contactArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CONTACT);
 
 		// construct attributes
-		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), contactName));
+		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), contactAddress.getDisplayName()));
 
+		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_ID, contactAddress.getUniqueID(), attributes);
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, phoneNumber, attributes);
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME, homePhoneNumber, attributes);
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE, mobilePhoneNumber, attributes);
@@ -254,7 +253,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// Find/Create an account instance for the contact
 		// Create a relationship between selfAccount and contactAccount
-		AccountFileInstance contactAccountInstance = createAccountInstance(accountsType, contactAccountUniqueID);
+		AccountFileInstance contactAccountInstance = createAccountInstance(accountsType, contactAddress.getUniqueID());
 		addRelationship(selfAccountInstance, contactAccountInstance, contactArtifact, Relationship.Type.CONTACT, 0);
 
 		// post artifact 
