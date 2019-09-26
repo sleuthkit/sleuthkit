@@ -29,7 +29,6 @@ LogicalImagerExtensionRule::LogicalImagerExtensionRule(const std::set<std::strin
 }
 
 LogicalImagerExtensionRule::~LogicalImagerExtensionRule() {
-    m_extensions.clear();
 }
 
 /**

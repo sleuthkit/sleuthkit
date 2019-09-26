@@ -265,9 +265,6 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet() {
     for (auto it = m_rules.begin(); it != m_rules.end(); ++it) {
         if (it->first)
             delete it->first;
-            for (auto ruleBaseIter = it->second.begin(); ruleBaseIter != it->second.end(); ++ruleBaseIter) {
-                delete *ruleBaseIter;
-            }
     }
 }
 
