@@ -37,6 +37,46 @@ static FILE *reportFile;
 static FILE *consoleFile;
 static bool promptBeforeExit = true;
 
+void findOpenFiles() {
+    DWORD type_char = 0,
+        type_disk = 0,
+        type_pipe = 0,
+        type_remote = 0,
+        type_unknown = 0,
+        handles_count = 0;
+
+    GetProcessHandleCount(GetCurrentProcess(), &handles_count);
+    handles_count *= 4;
+    DWORD dwRet;
+    for (DWORD handle = 0x4; handle < handles_count; handle += 4) {
+        switch (GetFileType((HANDLE)handle)) {
+        case FILE_TYPE_CHAR:
+            type_char++;
+            break;
+        case FILE_TYPE_DISK:
+            type_disk++;
+
+            char path[MAX_PATH];
+            dwRet = GetFinalPathNameByHandleA((HANDLE)handle, path, MAX_PATH, VOLUME_NAME_NT);
+            if (dwRet < MAX_PATH)
+            {
+                fprintf(stdout, "The final path is: %s\n", path);
+            }
+            break;
+        case FILE_TYPE_PIPE:
+            type_pipe++;
+            break;
+        case FILE_TYPE_REMOTE:
+            type_remote++;
+            break;
+        case FILE_TYPE_UNKNOWN:
+            if (GetLastError() == NO_ERROR) type_unknown++;
+            break;
+        }
+    }
+    fprintf(stdout, "Open files = %d\n", type_disk);
+}
+
 void ReportUtil::initialize(const std::string &sessionDir) {
     sessionDirCopy = sessionDir;
     std::string consoleFileName = sessionDir + "/console.txt";

@@ -76,6 +76,12 @@ namespace Rejistry {
         return subkeys;
     }
 
+    size_t RegistryKey::getSubkeyListSize() const {
+        std::vector<RegistryKey *> subkeys;
+        NKRecord::NKRecordPtrList nkRecordList = _nk->getSubkeyList()->getSubkeys();
+        return nkRecordList.size();
+    }
+
     RegistryKey::RegistryKeyPtr RegistryKey::getSubkey(const std::wstring& name) const {
         return new RegistryKey(_nk->getSubkeyList()->getSubkey(name));
     }
@@ -88,6 +94,12 @@ namespace Rejistry {
             values.push_back(new RegistryValue(*it));
         }
         return values;
+    }
+
+    size_t RegistryKey::getValueListSize() const {
+        RegistryValue::RegistryValuePtrList values;
+        VKRecord::VKRecordPtrList vkRecordList = _nk->getValueList()->getValues();
+        return vkRecordList.size();
     }
 
     RegistryValue::RegistryValuePtr RegistryKey::getValue(const std::wstring& name) const {
