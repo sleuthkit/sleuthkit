@@ -46,6 +46,7 @@ import static org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.getAttribute
 public interface TimelineEventType extends Comparable<TimelineEventType> {
 	
 	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
+	static final int EMAIL_TO_FROM_LENGTH_MAX = 75;
 
 	String getDisplayName();
 
@@ -298,9 +299,15 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_EMAIL_MSG),
 			new Type(TSK_DATETIME_SENT),
 			artf -> {
-				final BlackboardAttribute emailFrom = getAttributeSafe(artf, new Type(TSK_EMAIL_FROM));
-				final BlackboardAttribute emailTo = getAttributeSafe(artf, new Type(TSK_EMAIL_TO));
-				return stringValueOf(emailFrom) + " to " + stringValueOf(emailTo); // NON-NLS
+				String emailFrom = stringValueOf(getAttributeSafe(artf, new Type(TSK_EMAIL_FROM)));
+				if (emailFrom.length() > EMAIL_TO_FROM_LENGTH_MAX) {
+					emailFrom = emailFrom.substring(0, EMAIL_TO_FROM_LENGTH_MAX);
+				}
+				String emailTo = stringValueOf(getAttributeSafe(artf, new Type(TSK_EMAIL_TO)));
+				if (emailTo.length() > EMAIL_TO_FROM_LENGTH_MAX) {
+					emailTo = emailTo.substring(0, EMAIL_TO_FROM_LENGTH_MAX);
+				}
+				return emailFrom + " to " + emailTo; // NON-NLS
 			},
 			new AttributeExtractor(new Type(TSK_SUBJECT)),
 			artf -> {

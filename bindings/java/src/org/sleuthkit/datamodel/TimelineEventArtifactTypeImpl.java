@@ -39,6 +39,10 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> artifactParsingFunction;
+	
+	private static final int MAX_SHORT_DESCRIPTION_LENGTH = 500;
+	private static final int MAX_MED_DESCRIPTION_LENGTH = 500;
+	private static final int MAX_FULL_DESCRIPTION_LENGTH = 1024;
 
 	TimelineEventArtifactTypeImpl(int typeID, String displayName,
 			TimelineEventType superType,
@@ -130,8 +134,20 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 
 		//combine descriptions in standard way
 		String shortDescription = extractShortDescription(artifact);
+		if (shortDescription.length() > MAX_SHORT_DESCRIPTION_LENGTH) {
+			shortDescription = shortDescription.substring(0, MAX_SHORT_DESCRIPTION_LENGTH);
+		}
+
 		String medDescription = shortDescription + " : " + extractMedDescription(artifact);
+		if (medDescription.length() > MAX_MED_DESCRIPTION_LENGTH) {
+			medDescription = medDescription.substring(0, MAX_MED_DESCRIPTION_LENGTH);
+		}
+
 		String fullDescription = medDescription + " : " + extractFullDescription(artifact);
+		if (fullDescription.length() > MAX_FULL_DESCRIPTION_LENGTH) {
+			fullDescription = fullDescription.substring(0, MAX_FULL_DESCRIPTION_LENGTH);
+		}
+		
 		return new TimelineEventDescriptionWithTime(timeAttribute.getValueLong(), shortDescription, medDescription, fullDescription);
 	}
 
