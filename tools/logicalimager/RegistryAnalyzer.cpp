@@ -247,12 +247,12 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     USER_ADMIN_PRIV::Enum acctAdminPriv;
 
                     // Get V Record
-                    RegVal vRecord;
+                    RegVal *vRecord = new RegVal();
                     std::wstring wsVRecordValname = L"V";
-                    vRecord.setValName(wsVRecordValname);
-                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsVRecordValname, vRecord)) {
+                    vRecord->setValName(wsVRecordValname);
+                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsVRecordValname, *vRecord)) {
                         uint32_t samAcctType = 0;
-                        if (parseSAMVRecord(vRecord.getBinary(), vRecord.getValLen(), wsUserName, wsFullName, wsComment, samAcctType)) {
+                        if (parseSAMVRecord(vRecord->getBinary(), vRecord->getValLen(), wsUserName, wsFullName, wsComment, samAcctType)) {
                             bError = true;
                         }
                         else {
@@ -264,6 +264,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     else {
                         bError = true;
                     }
+                    
+                    delete vRecord;
 
                     FILETIME lastLoginDate = { 0,0 };
                     FILETIME lastPWResetDate = { 0,0 };

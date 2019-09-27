@@ -68,22 +68,29 @@ namespace Rejistry {
 
     RegistryKey::RegistryKeyPtrList RegistryKey::getSubkeyList() const {
         std::vector<RegistryKey *> subkeys;
-        NKRecord::NKRecordPtrList nkRecordList = _nk->getSubkeyList()->getSubkeys();
+        SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
+        NKRecord::NKRecordPtrList nkRecordList = subkeyListRecordPtr->getSubkeys();
         NKRecord::NKRecordPtrList::iterator it;
         for (it = nkRecordList.begin(); it != nkRecordList.end(); ++it) {
             subkeys.push_back(new RegistryKey(*it));
         }
+        delete subkeyListRecordPtr;
         return subkeys;
     }
 
     size_t RegistryKey::getSubkeyListSize() const {
         std::vector<RegistryKey *> subkeys;
-        NKRecord::NKRecordPtrList nkRecordList = _nk->getSubkeyList()->getSubkeys();
+        SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
+        NKRecord::NKRecordPtrList nkRecordList = subkeyListRecordPtr->getSubkeys();
+        delete subkeyListRecordPtr;
         return nkRecordList.size();
     }
 
     RegistryKey::RegistryKeyPtr RegistryKey::getSubkey(const std::wstring& name) const {
-        return new RegistryKey(_nk->getSubkeyList()->getSubkey(name));
+        SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
+        Rejistry::NKRecord *nkRecord = subkeyListRecordPtr->getSubkey(name);
+        delete subkeyListRecordPtr;
+        return new RegistryKey(nkRecord);
     }
 
     RegistryValue::RegistryValuePtrList RegistryKey::getValueList() const {
@@ -98,8 +105,10 @@ namespace Rejistry {
 
     size_t RegistryKey::getValueListSize() const {
         RegistryValue::RegistryValuePtrList values;
-        VKRecord::VKRecordPtrList vkRecordList = _nk->getValueList()->getValues();
-        return vkRecordList.size();
+        Rejistry::ValueListRecord *valueListRecord = _nk->getValueList();
+        size_t size = valueListRecord->getValuesSize();
+        delete valueListRecord;
+        return size;
     }
 
     RegistryValue::RegistryValuePtr RegistryKey::getValue(const std::wstring& name) const {
