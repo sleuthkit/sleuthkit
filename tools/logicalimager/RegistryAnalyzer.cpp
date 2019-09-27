@@ -281,14 +281,14 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     bool accountDisabled = false;
 
                     // GET F Record
-                    RegVal fRecord;
+                    RegVal *fRecord = new RegVal();
                     std::wstring wsFRecordValname = L"F";
-                    fRecord.setValName(wsFRecordValname);
+                    fRecord->setValName(wsFRecordValname);
 
-                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsFRecordValname, fRecord)) {
+                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsFRecordValname, *fRecord)) {
                         uint16_t acbFlags = 0;
                         // Parse F Record
-                        parseSAMFRecord(fRecord.getBinary(), fRecord.getValLen(), lastLoginDate, lastPWResetDate, 
+                        parseSAMFRecord(fRecord->getBinary(), fRecord->getValLen(), lastLoginDate, lastPWResetDate, 
                             accountExpiryDate, lastFailedLoginDate, loginCount, acbFlags);
 
                         sLastLoginDate = FiletimeToStr(lastLoginDate);
@@ -307,6 +307,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                         if ((acbFlags & 0x0001) == 0x0001)
                             accountDisabled = true;
                     }
+
+                    delete fRecord;
 
                     if (!bError) {
 

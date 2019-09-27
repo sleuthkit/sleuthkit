@@ -36,7 +36,9 @@ namespace Rejistry {
     * @throws RegistryParseException if memory can't be allocated
     */
     RegistryHiveBuffer::RegistryHiveBuffer(const uint8_t * buffer, const uint32_t size) {
-        _buffer = new RegistryByteBuffer(new ByteBuffer(buffer, size));
+        _buffer = new RegistryByteBuffer(
+            new ByteBuffer(buffer, size)
+        );
     }
 
     RegistryHiveBuffer::~RegistryHiveBuffer() {
@@ -47,7 +49,10 @@ namespace Rejistry {
     }
 
     RegistryKey * RegistryHiveBuffer::getRoot() const {
-        return new RegistryKey(getHeader()->getRootNKRecord());
+        REGFHeader *header = getHeader();
+        Rejistry::NKRecord *nkRecord = header->getRootNKRecord();
+        delete header;
+        return new RegistryKey(nkRecord);
     }
 
     REGFHeader * RegistryHiveBuffer::getHeader() const {

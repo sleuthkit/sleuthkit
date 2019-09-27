@@ -239,6 +239,7 @@ int RegParser::getValue(const std::wstring &keyName, const std::wstring &valName
         std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
         Rejistry::RegistryValue *value = key->getValue(valName);
         val.initialize(value);
+        delete value;
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;
