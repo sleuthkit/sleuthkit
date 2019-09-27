@@ -87,11 +87,13 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
             if (fs_file->meta) {
                 if (fs_file->meta->size == 0) {
                     // ts_fs_file_read returns -1 with empty files, don't report it.
-                    return TSK_OK;
+                    result = TSK_OK;
+                    break;
                 }
                 else if (fs_file->meta->flags & TSK_FS_NAME_FLAG_UNALLOC) {
                     // don't report it
-                    return TSK_ERR;
+                    result = TSK_ERR;
+                    break;
                 }
                 else {
                     ReportUtil::printDebug("extractFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, offset);
