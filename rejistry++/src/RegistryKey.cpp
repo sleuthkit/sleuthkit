@@ -112,6 +112,9 @@ namespace Rejistry {
     }
 
     RegistryValue::RegistryValuePtr RegistryKey::getValue(const std::wstring& name) const {
-        return new RegistryValue(_nk->getValueList()->getValue(name));
+        Rejistry::ValueListRecord *valueListRecord = _nk->getValueList();
+        Rejistry::VKRecord *vkRecord = valueListRecord->getValue(name);
+        delete valueListRecord;
+        return new RegistryValue(vkRecord);
     }
 };
