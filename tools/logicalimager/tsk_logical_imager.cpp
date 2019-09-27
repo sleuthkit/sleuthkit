@@ -9,10 +9,6 @@
  **
  */
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>  
-#include <crtdbg.h> 
-
 #include <iostream>
 #include <conio.h>
 #include <string>
@@ -250,6 +246,7 @@ static bool hasTskLogicalImager() {
                 tsk_fs_file_close(fs_file);
                 break;
             }
+            tsk_fs_file_close(fs_file);
         }
         if (result) {
             break;
@@ -346,9 +343,9 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
                     std::string parent = getPathName(*filePathIter);
                     fs_file->name = fs_name;
                     matchCallback(matchedRuleInfo, fs_file, parent.c_str());
-
-                    tsk_fs_file_close(fs_file);
                 }
+                tsk_fs_name_free(fs_name);
+                tsk_fs_file_close(fs_file);
             }
         }
     }
@@ -427,8 +424,6 @@ main(int argc, char **argv1)
     // Arabic, Hebrew and Cyrillic strings).
     SetConsoleOutputCP(65001); // Set the CMD Console to Unicode codepage
     setlocale(LC_ALL, "en_US.UTF-8"); // Set locale to English and UTF-8 encoding.
-
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -658,6 +653,7 @@ main(int argc, char **argv1)
     if (fileExtractor) {
         delete fileExtractor;
     }
+    tsk_error_win32_thread_cleanup();
     ReportUtil::printDebug("Exiting");
     ReportUtil::handleExit(0);
 }

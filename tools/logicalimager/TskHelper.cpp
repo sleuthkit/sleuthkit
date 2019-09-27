@@ -410,6 +410,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                 tmp.append(fs_name->name);
                 if (addPathToInumCache(a_fs, tmp, pCacheData) == false) {
                     // it was already in the cache
+                    tsk_fs_dir_close(pCacheData->getFSDir());
                     delete (pCacheData);
                 }
             }
@@ -534,6 +535,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                 if (pCacheData) {
                     if (addPathToInumCache(a_fs, path_matched, pCacheData) == false) {
                         // it was already in the cache
+                        tsk_fs_dir_close(pCacheData->getFSDir());
                         delete (pCacheData);
                     }
                 }

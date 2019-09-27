@@ -68,6 +68,11 @@ namespace Rejistry {
             _type = type;
         }
         
+        ~ValueData() {
+            if (_buf)
+                delete _buf;
+        }
+
         VALUE_TYPES getValueType() const { return _type; };
 
         /**

@@ -164,6 +164,7 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
             // This shouldn't happen because we check the range above.
             break;
         }
+        delete valueData;
     }
     catch (Rejistry::RegistryParseException& e)
     {

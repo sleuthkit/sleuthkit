@@ -103,6 +103,7 @@ extern "C" {
 #ifdef TSK_MULTITHREAD_LIB
 #ifdef TSK_WIN32
     void *tsk_error_win32_get_per_thread_(unsigned struct_size);
+    void tsk_error_win32_thread_cleanup();
     typedef struct {
         CRITICAL_SECTION critical_section;
     } tsk_lock_t;
