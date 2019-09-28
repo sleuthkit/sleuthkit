@@ -48,6 +48,7 @@ namespace Rejistry {
          */
         virtual REGFHeader * getHeader() const = 0;
 
+        virtual ~RegistryHive() {}
     };
 };
 

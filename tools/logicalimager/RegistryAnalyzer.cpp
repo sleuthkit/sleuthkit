@@ -192,10 +192,13 @@ USER_ADMIN_PRIV::Enum samUserTypeToAdminPriv(uint32_t& acctType) {
 
 int RegistryAnalyzer::analyzeSAMUsers() const {
     std::map<std::wstring, FILETIME> acctCreationDateMap;
-    RegFileInfo *aRegFile = RegistryLoader::getInstance().getSAMHive();
+    RegistryLoader *registryLoader = new RegistryLoader();
+
+    RegFileInfo *aRegFile = registryLoader->getSAMHive();
     if (aRegFile == NULL) {
         fprintf(m_outputFile, "SAM HIVE not found\n");
         fclose(m_outputFile);
+        delete registryLoader;
         return -1;
     }
     RegParser &aRegParser = aRegFile->getRegParser();
@@ -367,6 +370,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         rc = -1;
     }
     fclose(m_outputFile);
+    delete registryLoader;
     return rc;
 }
 
