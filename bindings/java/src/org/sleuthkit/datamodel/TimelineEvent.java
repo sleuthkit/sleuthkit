@@ -130,7 +130,7 @@ public final class TimelineEvent {
 		this.eventID = eventID;
 		this.dataSourceObjID = dataSourceObjID;
 		this.contentObjID = contentObjID;
-		this.artifactID = artifactID;
+		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
 		/*
