@@ -29,9 +29,11 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOM
 /**
  * Version of TimelineEventType for events based on artifacts
  */
-class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl { 
+class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 
 	private static final Logger logger = Logger.getLogger(TimelineEventArtifactTypeImpl.class.getName());
+	
+	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
@@ -59,7 +61,7 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 			TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> eventPayloadFunction) {
 
-		super(typeID, displayName, TimelineEventType.TypeLevel.SUB_TYPE, superType);
+		super(typeID, displayName, TimelineEventType.HierarchyLevel.EVENT, superType);
 		this.artifactType = artifactType;
 		this.dateTimeAttributeType = dateTimeAttributeType;
 		this.shortExtractor = shortExtractor;
@@ -102,13 +104,14 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 		return artifactType;
 	}
 
-	
 	/**
 	 * Parses the artifact to create a triple description with a time.
-	 * 
+	 *
 	 * @param artifact
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	TimelineEventDescriptionWithTime makeEventDescription(BlackboardArtifact artifact) throws TskCoreException {
 		//if we got passed an artifact that doesn't correspond to this event type, 
@@ -122,7 +125,9 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 			return null;
 		}
 
-		/* Use the type-specific method */
+		/*
+		 * Use the type-specific method
+		 */
 		if (this.artifactParsingFunction != null) {
 			//use the hook provided by this subtype implementation to build the descriptions.
 			return this.artifactParsingFunction.apply(artifact);
@@ -204,6 +209,7 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 	 */
 	@FunctionalInterface
 	interface TSKCoreCheckedFunction<I, O> {
+
 		O apply(I input) throws TskCoreException;
 	}
 }

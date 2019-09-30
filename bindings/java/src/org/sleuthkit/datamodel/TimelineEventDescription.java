@@ -19,21 +19,40 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Encapsulates the potential multiple levels of description for an event in to
- * one object. Currently used for interim storage.
+ * A container for a timeline event description with potentially varying levels
+ * of detail.
  */
 class TimelineEventDescription {
 
-	String shortDesc;
-	String mediumDesc;
-	String fullDesc;
+	private final String shortDesc;
+	private final String mediumDesc;
+	private final String fullDesc;
 
+	/**
+	 * Constructs a container for a timeline event description that varies with
+	 * each of three levels of detail.
+	 *
+	 * @param fullDescription  The full length description of an event for use
+	 *                         at a high level of detail.
+	 * @param medDescription   The medium length description of an event for use
+	 *                         at a medium level of detail.
+	 * @param shortDescription The short length description of an event for use
+	 *                         at a low level of detail.
+	 */
 	TimelineEventDescription(String fullDescription, String medDescription, String shortDescription) {
 		this.shortDesc = shortDescription;
 		this.mediumDesc = medDescription;
 		this.fullDesc = fullDescription;
 	}
 
+	/**
+	 * Constructs a container for a timeline event description for the high
+	 * level of detail. The descriptions for the low and medium levels of detail
+	 * will be the empty string.
+	 *
+	 * @param fullDescription The full length description of an event for use at
+	 *                        a high level of detail.
+	 */
 	TimelineEventDescription(String fullDescription) {
 		this.shortDesc = "";
 		this.mediumDesc = "";
@@ -41,48 +60,22 @@ class TimelineEventDescription {
 	}
 
 	/**
-	 * Get the full description of this event.
+	 * Gets the description of this event at the given level of detail.
 	 *
-	 * @return the full description
+	 * @param lod The level of detail.
+	 *
+	 * @return The event description at the given level of detail.
 	 */
-	String getFullDescription() {
-		return fullDesc;
-	}
-
-	/**
-	 * Get the medium description of this event.
-	 *
-	 * @return the medium description
-	 */
-	String getMediumDescription() {
-		return mediumDesc;
-	}
-
-	/**
-	 * Get the short description of this event.
-	 *
-	 * @return the short description
-	 */
-	String getShortDescription() {
-		return shortDesc;
-	}
-
-	/**
-	 * Get the description of this event at the give level of detail(LoD).
-	 *
-	 * @param lod The level of detail to get.
-	 *
-	 * @return The description of this event at the given level of detail.
-	 */
-	String getDescription(TimelineEvent.DescriptionLevel lod) {
+	String getDescription(TimelineLevelOfDetail lod) {
 		switch (lod) {
-			case FULL:
+			case HIGH:
 			default:
-				return getFullDescription();
+				return fullDesc;
 			case MEDIUM:
-				return getMediumDescription();
-			case SHORT:
-				return getShortDescription();
+				return this.mediumDesc;
+			case LOW:
+				return this.shortDesc;
 		}
 	}
+	
 }

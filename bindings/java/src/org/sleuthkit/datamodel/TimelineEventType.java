@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Arrays;
@@ -37,95 +38,140 @@ import org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.AttributeExtractor;
 import static org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.getAttributeSafe;
 
 /**
- * Interface for distinct kinds of events (ie file system or web
- * activity) in a hierarchy. An TimelineEventType may have an optional 
- super-type and 0 or more subtypes.   NOTE: this is not currently
- extensible by modules. The structure is hard coded to a certain
- number of levels and types. 
+ * An interface implemented by timeline event types. Timeline event types are
+ * organized into a type hierarchy. This type hierarchy has three levels: the
+ * root level, the category level (e.g, file system events, web activity
+ * events), and the actual event level (e.g., file modified events, web download
+ * events).
+ *
+ * Currently (9/20/19), all supported timeline event types are defined as
+ * members of this interface.
+ *
+ * WARNING: THIS INTERFACE IS A "BETA" INTERFACE AND IS SUBJECT TO CHANGE AT ANY
+ * TIME.
  */
+@Beta
 public interface TimelineEventType extends Comparable<TimelineEventType> {
-	
-	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
 
+	/**
+	 * Gets the display name of this event type.
+	 *
+	 * @return The event type display name.
+	 */
 	String getDisplayName();
 
 	/**
-	 * 
-	 * @return Unique type iD (from database)
+	 * Gets the unique ID of this event type in the case database.
+	 *
+	 * @return The event type ID.
 	 */
 	long getTypeID();
 
 	/**
-	 * 
-	 * @return The level that this event is in the type hierarchy.
+	 * Gets the type hierarchy level of this event type.
+	 *
+	 * @return The type hierarchy level.
 	 */
-	TimelineEventType.TypeLevel getTypeLevel();
+	TimelineEventType.HierarchyLevel getTypeHierarchyLevel();
 
 	/**
-	 * @return A list of TimelineEventTypes, one for each subtype of this EventTYpe, or
-         an empty set if this TimelineEventType has no subtypes.
+	 * Gets the child event types of this event type in the type hierarchy.
+	 *
+	 * @return A sorted set of the child event types.
 	 */
-	SortedSet<? extends TimelineEventType> getSubTypes();
-
-	Optional<? extends TimelineEventType> getSubType(String string);
-
+	SortedSet<? extends TimelineEventType> getChildren();
 
 	/**
-	 * @return the super type of this event
+	 * Gets a specific child event type of this event type in the type
+	 * hierarchy.
+	 *
+	 * @param displayName The display name of the desired child event type.
+	 *
+	 * @return The child event type in an Optional object, may be empty.
 	 */
-	TimelineEventType getSuperType();
+	Optional<? extends TimelineEventType> getChild(String displayName);
 
-	default TimelineEventType getBaseType() {
-		TimelineEventType superType = getSuperType();
+	/**
+	 * Gets the parent event type of this event type in the type hierarchy.
+	 *
+	 * @return The parent event type.
+	 */
+	TimelineEventType getParent();
 
-		return superType.equals(ROOT_EVENT_TYPE)
+	/**
+	 * Gets the category level event type for this event type in the type
+	 * hierarchy.
+	 *
+	 * @return The category event type.
+	 */
+	default TimelineEventType getCategory() {
+		TimelineEventType parentType = getParent();
+		return parentType.equals(ROOT_EVENT_TYPE)
 				? this
-				: superType.getBaseType();
-
+				: parentType.getCategory();
 	}
 
-	default SortedSet<? extends TimelineEventType> getSiblingTypes() {
+	/**
+	 * Gets the sibling event types of this event type in the type hierarchy.
+	 *
+	 * @return The sibling event types.
+	 */
+	default SortedSet<? extends TimelineEventType> getSiblings() {
 		return this.equals(ROOT_EVENT_TYPE)
 				? ImmutableSortedSet.of(ROOT_EVENT_TYPE)
-				: this.getSuperType().getSubTypes();
-
+				: this.getParent().getChildren();
 	}
 
 	@Override
 	default int compareTo(TimelineEventType otherType) {
 		return Comparator.comparing(TimelineEventType::getTypeID).compare(this, otherType);
 	}
-	
+
 	/**
-	 * Enum of event type zoom levels.
+	 * An enumeration of the levels in the event type hierarchy.
 	 */
-	public enum TypeLevel {
+	public enum HierarchyLevel {
+
 		/**
-		 * The root event type zoom level. All event are the same type at this
-		 * level.
+		 * The root level of the event types hierarchy.
 		 */
-		ROOT_TYPE(getBundle().getString("EventTypeZoomLevel.rootType")),
+		ROOT_LEVEL(getBundle().getString("EventTypeLevel.rootType")),
 		/**
-		 * The zoom level of base event types like files system, and web activity
+		 * The category level of the event types hierarchy. Event types at this
+		 * level represent event categories such as file system events and web
+		 * activity events.
 		 */
-		BASE_TYPE(getBundle().getString("EventTypeZoomLevel.baseType")),
+		CATEGORY(getBundle().getString("EventTypeLevel.baseType")),
 		/**
-		 * The zoom level of specific type such as file modified time, or web
-		 * download.
+		 * The actual events level of the event types hierarchy. Event types at
+		 * this level represent actual events such as file modified time events
+		 * and web download events.
 		 */
-		SUB_TYPE(getBundle().getString("EventTypeZoomLevel.subType"));
+		EVENT(getBundle().getString("EventTypeLevel.subType"));
 
 		private final String displayName;
 
+		/**
+		 * Gets the display name of this element of the enumeration of the
+		 * levels in the event type hierarchy.
+		 *
+		 * @return The display name.
+		 */
 		public String getDisplayName() {
 			return displayName;
 		}
 
-		private TypeLevel(String displayName) {
+		/**
+		 * Constructs an element of the enumeration of the levels in the event
+		 * type hierarchy.
+		 *
+		 * @param displayName The display name of this hierarchy level.
+		 */
+		private HierarchyLevel(String displayName) {
 			this.displayName = displayName;
 		}
-	}
 
+	}
 
 	/**
 	 * The root type of all event types. No event should actually have this
@@ -133,36 +179,38 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	 */
 	TimelineEventType ROOT_EVENT_TYPE = new TimelineEventTypeImpl(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
-			TypeLevel.ROOT_TYPE, null) {
+			HierarchyLevel.ROOT_LEVEL, null) {
 		@Override
-		public SortedSet< TimelineEventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
 		}
 	};
 
 	TimelineEventType FILE_SYSTEM = new TimelineEventTypeImpl(1,
 			getBundle().getString("BaseTypes.fileSystem.name"),// NON-NLS
-			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
+			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet< TimelineEventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED,
 					FILE_CREATED, FILE_CHANGED);
 		}
 	};
+
 	TimelineEventType WEB_ACTIVITY = new TimelineEventTypeImpl(2,
 			getBundle().getString("BaseTypes.webActivity.name"), // NON-NLS
-			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
+			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet< TimelineEventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL, WEB_FORM_ADDRESSES);
 		}
 	};
+
 	TimelineEventType MISC_TYPES = new TimelineEventTypeImpl(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
-			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
+			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet<TimelineEventType> getSubTypes() {
+		public SortedSet<TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
 					EXIF, GPS_ROUTE, GPS_TRACKPOINT, INSTALLED_PROGRAM, MESSAGE,
 					RECENT_DOCUMENTS, REGISTRY, LOG_ENTRY);
@@ -171,16 +219,19 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 
 	TimelineEventType FILE_MODIFIED = new FilePathEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
-			TypeLevel.SUB_TYPE, FILE_SYSTEM);
+			HierarchyLevel.EVENT, FILE_SYSTEM);
+	
 	TimelineEventType FILE_ACCESSED = new FilePathEventType(5,
 			getBundle().getString("FileSystemTypes.fileAccessed.name"), // NON-NLS
-			TypeLevel.SUB_TYPE, FILE_SYSTEM);
+			HierarchyLevel.EVENT, FILE_SYSTEM);
+	
 	TimelineEventType FILE_CREATED = new FilePathEventType(6,
 			getBundle().getString("FileSystemTypes.fileCreated.name"), // NON-NLS
-			TypeLevel.SUB_TYPE, FILE_SYSTEM);
+			HierarchyLevel.EVENT, FILE_SYSTEM);
+	
 	TimelineEventType FILE_CHANGED = new FilePathEventType(7,
 			getBundle().getString("FileSystemTypes.fileChanged.name"), // NON-NLS
-			TypeLevel.SUB_TYPE, FILE_SYSTEM);
+			HierarchyLevel.EVENT, FILE_SYSTEM);
 
 	TimelineEventType WEB_DOWNLOADS = new URLArtifactEventType(8,
 			getBundle().getString("WebTypes.webDownloads.name"), // NON-NLS
@@ -188,24 +239,28 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_WEB_DOWNLOAD),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
+	
 	TimelineEventType WEB_COOKIE = new URLArtifactEventType(9,
 			getBundle().getString("WebTypes.webCookies.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME),
 			new Type(TSK_URL));
+	
 	TimelineEventType WEB_BOOKMARK = new URLArtifactEventType(10,
 			getBundle().getString("WebTypes.webBookmarks.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_BOOKMARK),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
+	
 	TimelineEventType WEB_HISTORY = new URLArtifactEventType(11,
 			getBundle().getString("WebTypes.webHistory.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
+	
 	TimelineEventType WEB_SEARCH = new URLArtifactEventType(12,
 			getBundle().getString("WebTypes.webSearch.name"), // NON-NLS
 			WEB_ACTIVITY,
@@ -226,11 +281,11 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				final BlackboardAttribute subject = getAttributeSafe(artf, new Type(TSK_SUBJECT));
 				BlackboardAttribute phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER));
 				// Make our best effort to find a valid phoneNumber for the description
-				if( phoneNumber == null) {
+				if (phoneNumber == null) {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_TO));
 				}
-				
-				if( phoneNumber == null) {
+
+				if (phoneNumber == null) {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
 				}
 
@@ -281,13 +336,13 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new AttributeExtractor(new Type(TSK_NAME)),
 			artf -> {
 				BlackboardAttribute phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER));
-				if( phoneNumber == null) {
+				if (phoneNumber == null) {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_TO));
 				}
-				if( phoneNumber == null) {
+				if (phoneNumber == null) {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
 				}
-				
+
 				return stringValueOf(phoneNumber);
 			},
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
@@ -306,8 +361,8 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			artf -> {
 				final BlackboardAttribute msgAttribute = getAttributeSafe(artf, new Type(TSK_EMAIL_CONTENT_PLAIN));
 				String msg = stringValueOf(msgAttribute);
-				if (msg.length() > EMAIL_FULL_DESCRIPTION_LENGTH_MAX) {
-					msg = msg.substring(0, EMAIL_FULL_DESCRIPTION_LENGTH_MAX);
+				if (msg.length() > TimelineEventArtifactTypeImpl.EMAIL_FULL_DESCRIPTION_LENGTH_MAX) {
+					msg = msg.substring(0, TimelineEventArtifactTypeImpl.EMAIL_FULL_DESCRIPTION_LENGTH_MAX);
 				}
 				return msg;
 			});
@@ -350,9 +405,9 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	//custom event type base type
 	TimelineEventType CUSTOM_TYPES = new TimelineEventTypeImpl(22,
 			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
-			TypeLevel.BASE_TYPE, ROOT_EVENT_TYPE) {
+			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
-		public SortedSet< TimelineEventType> getSubTypes() {
+		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(OTHER, USER_CREATED);
 		}
 	};
@@ -387,7 +442,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
-	
+
 	TimelineEventType WEB_FORM_AUTOFILL = new TimelineEventArtifactTypeImpl(27,
 			getBundle().getString("WebTypes.webFormAutoFill.name"),//NON-NLS
 			WEB_ACTIVITY,
@@ -399,7 +454,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				final BlackboardAttribute count = getAttributeSafe(artf, new Type(TSK_COUNT));
 				return stringValueOf(name) + ":" + stringValueOf(value) + " count: " + stringValueOf(count); // NON-NLS
 			}, new EmptyExtractor(), new EmptyExtractor());
-	
+
 	TimelineEventType WEB_FORM_ADDRESSES = new URLArtifactEventType(28,
 			getBundle().getString("WebTypes.webFormAddress.name"),//NON-NLS
 			WEB_ACTIVITY,
@@ -407,20 +462,20 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_EMAIL));
 
-	static SortedSet<? extends TimelineEventType> getBaseTypes() {
-		return ROOT_EVENT_TYPE.getSubTypes();
+	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
+		return ROOT_EVENT_TYPE.getChildren();
 	}
 
 	static SortedSet<? extends TimelineEventType> getFileSystemTypes() {
-		return FILE_SYSTEM.getSubTypes();
+		return FILE_SYSTEM.getChildren();
 	}
 
 	static SortedSet<? extends TimelineEventType> getWebActivityTypes() {
-		return WEB_ACTIVITY.getSubTypes();
+		return WEB_ACTIVITY.getChildren();
 	}
 
 	static SortedSet<? extends TimelineEventType> getMiscTypes() {
-		return MISC_TYPES.getSubTypes();
+		return MISC_TYPES.getChildren();
 	}
 
 	static String stringValueOf(BlackboardAttribute attr) {

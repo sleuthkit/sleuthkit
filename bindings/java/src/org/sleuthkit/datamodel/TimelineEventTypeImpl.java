@@ -32,7 +32,7 @@ class TimelineEventTypeImpl implements TimelineEventType {
 	private final long typeID;
 	private final String displayName;
 	private final TimelineEventType superType;
-	private final TimelineEventType.TypeLevel eventTypeZoomLevel;
+	private final TimelineEventType.HierarchyLevel eventTypeZoomLevel;
 
 	/**
 	 * 
@@ -41,7 +41,7 @@ class TimelineEventTypeImpl implements TimelineEventType {
 	 * @param eventTypeZoomLevel Where it is in the type hierarchy
 	 * @param superType 
 	 */
-	TimelineEventTypeImpl(long typeID, String displayName, TimelineEventType.TypeLevel eventTypeZoomLevel, TimelineEventType superType) {
+	TimelineEventTypeImpl(long typeID, String displayName, TimelineEventType.HierarchyLevel eventTypeZoomLevel, TimelineEventType superType) {
 		this.superType = superType;
 		this.typeID = typeID;
 		this.displayName = displayName;
@@ -55,13 +55,13 @@ class TimelineEventTypeImpl implements TimelineEventType {
 	}
 
 	@Override
-	public SortedSet<? extends TimelineEventType> getSubTypes() {
+	public SortedSet<? extends TimelineEventType> getChildren() {
 		return ImmutableSortedSet.of();
 	}
 
 	@Override
-	public Optional<? extends TimelineEventType> getSubType(String string) {
-		return getSubTypes().stream()
+	public Optional<? extends TimelineEventType> getChild(String string) {
+		return getChildren().stream()
 				.filter(type -> type.getDisplayName().equalsIgnoreCase(displayName))
 				.findFirst();
 	}
@@ -72,13 +72,13 @@ class TimelineEventTypeImpl implements TimelineEventType {
 	}
 
 	@Override
-	public TimelineEventType getSuperType() {
+	public TimelineEventType getParent() {
 		return ObjectUtils.defaultIfNull(superType, ROOT_EVENT_TYPE);
 
 	}
 
 	@Override
-	public TimelineEventType.TypeLevel getTypeLevel() {
+	public TimelineEventType.HierarchyLevel getTypeHierarchyLevel() {
 		return eventTypeZoomLevel;
 	}
 

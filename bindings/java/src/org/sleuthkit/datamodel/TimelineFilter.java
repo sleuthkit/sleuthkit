@@ -41,15 +41,16 @@ import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 
 /**
- * Interface for timeline event filters. Filters are given to the
- * TimelineManager who interpretes them appropriately for all db queries.
+ * Interface for filters used to query the timeline tables in the case database
+ * via the APIs of the TimelineManager. Each implementation of a filter supplies
+ * an SQL WHERE clause. 
  */
 public abstract class TimelineFilter {
 
 	/**
-	 * get the display name of this filter
+	 * Gets the display name for this filter.
 	 *
-	 * @return a name for this filter to show in the UI
+	 * @return The display name.
 	 */
 	public abstract String getDisplayName();
 
@@ -136,7 +137,7 @@ public abstract class TimelineFilter {
 			this.eventType = eventType;
 			if (recursive) {
 				// add subfilters for each subtype
-				for (TimelineEventType subType : eventType.getSubTypes()) {
+				for (TimelineEventType subType : eventType.getChildren()) {
 					addSubFilter(new EventTypeFilter(subType));
 				}
 			}
@@ -213,20 +214,22 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * Filter to show only events that are associated with objects that have 
+	 * Filter to show only events that are associated with objects that have
 	 * file or result tags.
 	 */
 	public static final class TagsFilter extends TimelineFilter {
+
 		private final BooleanProperty booleanProperty = new SimpleBooleanProperty();
 
 		/**
 		 * Filter constructor.
 		 */
-		public TagsFilter() {}
+		public TagsFilter() {
+		}
 
 		/**
 		 * Filter constructor and set initial state.
-		 * 
+		 *
 		 * @param isTagged Boolean initial state for the filter.
 		 */
 		public TagsFilter(boolean isTagged) {
@@ -235,9 +238,9 @@ public abstract class TimelineFilter {
 
 		/**
 		 * Set the state of the filter.
-		 * 
-		 * @param isTagged True to filter events that are associated tagged items
-		 * or results
+		 *
+		 * @param isTagged True to filter events that are associated tagged
+		 *                 items or results
 		 */
 		public synchronized void setTagged(boolean isTagged) {
 			booleanProperty.set(isTagged);
@@ -245,7 +248,7 @@ public abstract class TimelineFilter {
 
 		/**
 		 * Returns the current state of this filter.
-		 * 
+		 *
 		 * @return True to filter by objects that are tagged.
 		 */
 		public synchronized boolean isTagged() {
@@ -268,7 +271,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 
-			return ((TagsFilter)obj).isTagged() == booleanProperty.get();
+			return ((TagsFilter) obj).isTagged() == booleanProperty.get();
 		}
 
 		@Override
@@ -277,16 +280,16 @@ public abstract class TimelineFilter {
 			hash = 67 * hash + Objects.hashCode(this.booleanProperty);
 			return hash;
 		}
-		
+
 		@Override
 		String getSQLWhere(TimelineManager manager) {
 			String whereStr = "";
-			if	(booleanProperty.get()) {
+			if (booleanProperty.get()) {
 				whereStr = "tagged = 1";
 			} else {
 				whereStr = "tagged = 0";
 			}
-			
+
 			return whereStr;
 		}
 	}
@@ -647,7 +650,7 @@ public abstract class TimelineFilter {
 		}
 
 	}
-	
+
 	/**
 	 * Filter for an individual datasource
 	 */
@@ -714,19 +717,22 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * TimelineFilter for events that are associated with objects have Hash Hits.
+	 * TimelineFilter for events that are associated with objects have Hash
+	 * Hits.
 	 */
 	public static final class HashHitsFilter extends TimelineFilter {
+
 		private final BooleanProperty booleanProperty = new SimpleBooleanProperty();
 
 		/**
 		 * Default constructor.
 		 */
-		public HashHitsFilter() {}
+		public HashHitsFilter() {
+		}
 
 		/**
 		 * Construct the hash hit filter and set state based given argument.
-		 * 
+		 *
 		 * @param hasHashHit True to filter items that have hash hits.
 		 */
 		public HashHitsFilter(boolean hasHashHit) {
@@ -735,7 +741,7 @@ public abstract class TimelineFilter {
 
 		/**
 		 * Set the state of the filter.
-		 * 
+		 *
 		 * @param hasHashHit True to filter by items that have hash hits.
 		 */
 		public synchronized void setTagged(boolean hasHashHit) {
@@ -744,7 +750,7 @@ public abstract class TimelineFilter {
 
 		/**
 		 * Returns the current state of the filter.
-		 * 
+		 *
 		 * @return True to filter by hash hits
 		 */
 		public synchronized boolean hasHashHits() {
@@ -767,7 +773,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 
-			return ((HashHitsFilter)obj).hasHashHits() == booleanProperty.get();
+			return ((HashHitsFilter) obj).hasHashHits() == booleanProperty.get();
 		}
 
 		@Override
@@ -776,16 +782,16 @@ public abstract class TimelineFilter {
 			hash = 67 * hash + Objects.hashCode(this.booleanProperty);
 			return hash;
 		}
-		
+
 		@Override
 		String getSQLWhere(TimelineManager manager) {
 			String whereStr = "";
-			if	(booleanProperty.get()) {
+			if (booleanProperty.get()) {
 				whereStr = "hash_hit = 1";
 			} else {
 				whereStr = "hash_hit = 0";
 			}
-			
+
 			return whereStr;
 		}
 	}
@@ -827,26 +833,26 @@ public abstract class TimelineFilter {
 		}
 
 	}
-	
+
 	/**
-     * Gets all files that are NOT the specified types
-     */
-    static public class InverseFileTypeFilter extends FileTypeFilter {
+	 * Gets all files that are NOT the specified types
+	 */
+	static public class InverseFileTypeFilter extends FileTypeFilter {
 
-        public InverseFileTypeFilter(String displayName, Collection<String> mediaTypes) {
-            super(displayName, mediaTypes);
-        }
+		public InverseFileTypeFilter(String displayName, Collection<String> mediaTypes) {
+			super(displayName, mediaTypes);
+		}
 
-        @Override
-        public InverseFileTypeFilter copyOf() {
-            return new InverseFileTypeFilter(getDisplayName(), super.mediaTypes);
-        }
+		@Override
+		public InverseFileTypeFilter copyOf() {
+			return new InverseFileTypeFilter(getDisplayName(), super.mediaTypes);
+		}
 
-        @Override
-        String getSQLWhere(TimelineManager manager) {
-            return " NOT " + super.getSQLWhere(manager);
-        }
-    }
+		@Override
+		String getSQLWhere(TimelineManager manager) {
+			return " NOT " + super.getSQLWhere(manager);
+		}
+	}
 
 	/**
 	 * Filter for events derived from files with the given media/mime-types.
@@ -855,7 +861,7 @@ public abstract class TimelineFilter {
 
 		private final String displayName;
 		private final String sqlWhere;
-		Collection <String> mediaTypes = new HashSet<>();
+		Collection<String> mediaTypes = new HashSet<>();
 
 		private FileTypeFilter(String displayName, String sql) {
 			this.displayName = displayName;

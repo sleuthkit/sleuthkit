@@ -657,20 +657,32 @@ int TskDbPostgreSQL::initialize() {
             "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
             , "Error initializing tsk_event_types table rows: %s\n") ||
         attempt_exec(
+			/*
+			* Regarding the timeline event tables schema, note that several columns
+			* in the tsk_event_descriptions table seem, at first glance, to be
+			* attributes of events rather than their descriptions and would appear
+			* to belong in tsk_events table instead. The rationale for putting the
+			* data source object ID, content object ID, artifact ID and the flags
+			* indicating whether or not the event source has a hash set hit or is
+			* tagged were motivated by the fact that these attributes are identical
+			* for each event in a set of file system file MAC time events. The
+			* decision was made to avoid duplication and save space by placing this
+			* data in the tsk_event-descriptions table.
+			*/
             "CREATE TABLE tsk_event_descriptions ( "
             " event_description_id BIGSERIAL PRIMARY KEY, "
             " full_description TEXT NOT NULL, "
             " med_description TEXT, "
             " short_description TEXT,"
             " data_source_obj_id BIGINT NOT NULL, "
-            " file_obj_id BIGINT NOT NULL, "
+            " content_obj_id BIGINT NOT NULL, "
             " artifact_id BIGINT, "
             " hash_hit INTEGER NOT NULL, " //boolean 
             " tagged INTEGER NOT NULL, " //boolean 
             " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
-            " FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
+            " FOREIGN KEY(content_obj_id) REFERENCES tsk_objects(obj_id), "
             " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ,"
-			" UNIQUE (full_description, file_obj_id, artifact_id))",
+			" UNIQUE (full_description, content_obj_id, artifact_id))",
             "Error creating tsk_event_descriptions table: %s\n")
         ||
         attempt_exec(
@@ -751,8 +763,8 @@ int TskDbPostgreSQL::createIndexes() {
         //tsk_events indices
         attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id);",
             "Error creating events_data_source_obj_id index on tsk_event_descriptions: %s\n") ||
-        attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id);",
-            "Error creating events_file_obj_id index on tsk_event_descriptions: %s\n") ||
+        attempt_exec("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id);",
+            "Error creating events_content_obj_id index on tsk_event_descriptions: %s\n") ||
         attempt_exec("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id);",
             "Error creating events_artifact_id index on tsk_event_descriptions: %s\n") ||
         attempt_exec(
