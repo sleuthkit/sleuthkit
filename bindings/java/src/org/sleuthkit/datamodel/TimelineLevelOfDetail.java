@@ -25,9 +25,9 @@ import java.util.ResourceBundle;
  */
 public enum TimelineLevelOfDetail {
 
-	LOW(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("TimelineLOD.low")),
-	MEDIUM(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("TimelineLOD.medium")),
-	HIGH(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("TimelineLOD.high"));
+	LOW(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("TimelineLevelOfDetail.low")),
+	MEDIUM(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("TimelineLevelOfDetail.medium")),
+	HIGH(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("TimelineLevelOfDetail.high"));
 
 	private final String displayName;
 
