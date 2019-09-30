@@ -40,8 +40,8 @@ public final class TimelineEvent {
 	private final long contentObjID;
 
 	/**
-	 * The artifact ID (not the object ID) of the artifact, if any, that is
-	 * direct the source of this event. May be null.
+	 * The artifact ID (not the object ID) of the artifact, if any, that is the
+	 * direct source of this event. May be null.
 	 */
 	private final Long artifactID;
 
@@ -96,8 +96,9 @@ public final class TimelineEvent {
 	 *                                   of the artifact source: a file, a data
 	 *                                   source, or another artifact.
 	 * @param artifactID                 The artifact ID (not the object ID) of
-	 *                                   the artifact, if any, that is direct
-	 *                                   the source of this event. May be null.
+	 *                                   the artifact, if any, that is the
+	 *                                   direct source of this event. May be
+	 *                                   null.
 	 * @param time                       The time this event occurred, in
 	 *                                   seconds from the UNIX epoch.
 	 * @param type                       The type of this event.
@@ -171,7 +172,7 @@ public final class TimelineEvent {
 
 	/**
 	 * Gets the artifact ID (not object ID) of the artifact, if any, that is the
-	 * source of this event.
+	 * direct source of this event.
 	 *
 	 * @return An Optional object containing the artifact ID. May be empty.
 	 */
