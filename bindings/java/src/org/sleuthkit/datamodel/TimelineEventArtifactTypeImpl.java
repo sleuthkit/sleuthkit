@@ -34,7 +34,8 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 	private static final Logger logger = Logger.getLogger(TimelineEventArtifactTypeImpl.class.getName());
 	
 	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
-
+	static final int EMAIL_TO_FROM_LENGTH_MAX = 75;
+	
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor;

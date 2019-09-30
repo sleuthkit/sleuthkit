@@ -354,12 +354,12 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new Type(TSK_DATETIME_SENT),
 			artf -> {
 				String emailFrom = stringValueOf(getAttributeSafe(artf, new Type(TSK_EMAIL_FROM)));
-				if (emailFrom.length() > TimelineEventTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
-					emailFrom = emailFrom.substring(0, TimelineEventTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
+				if (emailFrom.length() > TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
+					emailFrom = emailFrom.substring(0, TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
 				}
 				String emailTo = stringValueOf(getAttributeSafe(artf, new Type(TSK_EMAIL_TO)));
-				if (emailTo.length() > TimelineEventTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
-					emailTo = emailTo.substring(0, TimelineEventTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
+				if (emailTo.length() > TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
+					emailTo = emailTo.substring(0, TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
 				}
 				return emailFrom + " to " + emailTo; // NON-NLS
 			},

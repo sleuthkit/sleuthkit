@@ -29,9 +29,6 @@ import org.apache.commons.lang3.ObjectUtils;
  */
 class TimelineEventTypeImpl implements TimelineEventType {
 
-	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
-	static final int EMAIL_TO_FROM_LENGTH_MAX = 75;
-
 	private final long typeID;
 	private final String displayName;
 	private final TimelineEventType superType;
