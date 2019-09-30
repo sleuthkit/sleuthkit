@@ -14,7 +14,6 @@
 #include <iomanip>
 
 #include "RegVal.h"
-#include "ReportUtil.h"
 
 std::string ValTypStrArr[] = {
   "REG_NONE",                    // ( 0 )   // No value type
@@ -168,7 +167,7 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
     }
     catch (Rejistry::RegistryParseException& e)
     {
-        ReportUtil::consoleOutput(stderr, "Failed to initialize registry value due to registry parse exception: %s\n", e.message().c_str());
+        std::cerr << "Failed to initialize registry value due to registry parse exception: " << e.message() << std::endl;
         return -1;
     }
     return 0;

@@ -40,9 +40,7 @@ void FileExtractor::initializePerImage(const std::string &imageDirName) {
     m_dirCounter = 1; // reset for each image
     m_fileCounter = 1;
     m_imageDirName = imageDirName;
-    if (!m_createVHD) {
-        createDirectoryRecursively(TskHelper::toWide((std::string(m_rootDirectoryPath + getRootImageDirPrefix() + std::to_string(m_dirCounter)))));
-    }
+    createDirectoryRecursively(TskHelper::toWide((std::string(m_rootDirectoryPath + getRootImageDirPrefix() + std::to_string(m_dirCounter)))));
 }
 
 /**

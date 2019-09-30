@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include "MatchedRuleInfo.h"
+#include "RuleMatchResult.h"
 #include "tsk/libtsk.h"
 
 /**
@@ -32,7 +32,7 @@ public:
     static void closeReport();
 
     static void reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, 
-        const MatchedRuleInfo *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath);
+        const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath);
 
     static void SetPromptBeforeExit(bool flag);
     static void handleExit(int code);

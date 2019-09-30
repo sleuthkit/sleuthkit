@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2019 Basis Technology.  All Rights reserved
+** Copyright (c) 2010-2019 Brian Carrier.  All Rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 **
@@ -13,7 +13,6 @@
 
 #include "RegistryLoader.h"
 #include "TskHelper.h"
-#include "ReportUtil.h"
 
 /** Responsible for loading and caching registry hives for the various modules that will need it. */
 
@@ -251,8 +250,8 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
     TSKFileNameInfo filenameInfo;
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), false, filenameInfo, NULL, NULL);
     if (retval == -1) {
-        ReportUtil::consoleOutput(stderr, "Error in finding system Registry files. System Registry files will not be analyzed.\n");
-        ReportUtil::consoleOutput(stderr, "findSystemRegFiles(): path2inum() failed for dir = %s, errno = %s\n", SYS_REG_FILES_DIR.c_str(), tsk_error_get());
+        std::cerr << "Error in finding system Registry files. System Registry files will not be analyzed." << std::endl;
+        std::cerr << "findSystemRegFiles(): path2inum() failed for dir = " << SYS_REG_FILES_DIR << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
     else if (retval > 0) { // not found   // @@@ ACTUALLY CHECK IF IT IS #2
@@ -262,9 +261,9 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
     // open the directory
     TSK_FS_DIR *fs_dir;
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-        ReportUtil::consoleOutput(stderr, "Error opening windows/system32/config folder. Some System Registry files may not be analyzed.\n");
-        ReportUtil::consoleOutput(stderr, "findSystemRegFiles(): tsk_fs_dir_open_meta() failed for windows/system32/config folder.  dir inum = %" PRIuINUM ", errno = %s\n",
-            filenameInfo.getINUM(), tsk_error_get());
+        std::cerr << "Error opening windows/system32/config folder. Some System Registry files may not be analyzed.";
+        std::cerr << "findSystemRegFiles(): tsk_fs_dir_open_meta() failed for windows/system32/config folder.  dir inum = " <<
+            filenameInfo.getINUM() << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
 
@@ -276,9 +275,9 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
         // get the entry
         const TSK_FS_NAME *fs_name;
         if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
-            ReportUtil::consoleOutput(stderr, "Error in finding System Registry files. Some System Registry files may not be analyzed.\n");
-            ReportUtil::consoleOutput(stderr, "findSystemRegFiles(): Error getting directory entry = %zu in dir inum = %" PRIuINUM
-                ", errno = %s, some System Registry files may not be analyzed.\n", i, filenameInfo.getINUM(), tsk_error_get());
+            std::cerr << "Error in finding System Registry files. Some System Registry files may not be analyzed." << std::endl;
+            std::cerr << "findSystemRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() <<
+                ", errno = " << tsk_error_get() << ", some System Registry files may not be analyzed." << std::endl;
             continue;
         }
 
@@ -295,15 +294,15 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
             // @@ FIX THE ERROR MSGS HERE
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                ReportUtil::consoleOutput(stderr, "Error in loading Registry file. The Registry file will not be analyzed.\n");
-                ReportUtil::consoleOutput(stderr, "findSystemRegFiles(): tsk_fs_dir_get failed for file = fs_file is null.\n");
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr << "findSystemRegFiles(): tsk_fs_dir_get failed for file = fs_file is null." << std::endl;
                 continue;
             }
 
             RegParser *pRegParser = new RegParser(hiveType);
             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                ReportUtil::consoleOutput(stderr, "Error in loading Registry file. The Registry file will not be analyzed.\n");
-                ReportUtil::consoleOutput(stderr, "findSystemRegFiles(): loadHive() failed for file = %s\n", fs_file->name->name);
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr << "findSystemRegFiles(): loadHive() failed for file = " << fs_file->name->name << std::endl;
                 continue;
             }
 
@@ -349,8 +348,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, a_starting_dir.c_str(), false, filenameInfo, NULL, NULL);
 
     if (retval == -1) {
-        ReportUtil::consoleOutput(stderr, "Error in finding User Registry files. Some User Registry files may not be analyzed.\n");
-        ReportUtil::consoleOutput(stderr, "findUserRegFiles(): tsk_fs_path2inum() failed for dir = %s, errno = %s\n", a_starting_dir.c_str(), tsk_error_get());
+        std::cerr << "Error in finding User Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findUserRegFiles(): tsk_fs_path2inum() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
     else if (retval > 0) { // not found
@@ -359,8 +358,8 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &
 
     // open the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-        ReportUtil::consoleOutput(stderr, "Error in finding User Registry files. Some User Registry files may not be analyzed.\n");;
-        ReportUtil::consoleOutput(stderr, "findUserRegFiles(): tsk_fs_dir_open_meta() failed for dir = %s, errno = %s\n", a_starting_dir.c_str(), tsk_error_get());
+        std::cerr << "Error in finding User Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findUserRegFiles(): tsk_fs_dir_open_meta() failed for dir = " << a_starting_dir << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
 
@@ -371,9 +370,9 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &
 
         // get the entry
         if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-            ReportUtil::consoleOutput(stderr, "Error in finding User Registry files. Some User Registry files may not be analyzed.\n");
-            ReportUtil::consoleOutput(stderr, "findUserRegFiles(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n", 
-                i, filenameInfo.getINUM(), tsk_error_get());
+            std::cerr << "Error in finding User Registry files. Some User Registry files may not be analyzed." << std::endl;
+            std::cerr << "findUserRegFiles(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() <<
+                ", errno = " << tsk_error_get() << std::endl;
             continue;
         }
 
@@ -409,8 +408,8 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
 
     // 1. open the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, a_dir_inum)) == NULL) {
-        ReportUtil::consoleOutput(stderr, "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.\n");
-        ReportUtil::consoleOutput(stderr, "findNTUserRegFilesInDir(): tsk_fs_dir_open_meta() failed for dir = %s, errno = %s\n", aUserDirName.c_str(), tsk_error_get());
+        std::cerr << "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findNTUserRegFilesInDir(): tsk_fs_dir_open_meta() failed for dir = " << aUserDirName << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
 
@@ -422,9 +421,9 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
         // get the entry
         const TSK_FS_NAME *fs_name;
         if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
-            ReportUtil::consoleOutput(stderr, "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.\n");
-            ReportUtil::consoleOutput(stderr, "findNTUserRegFilesInDir(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n", 
-                i, a_dir_inum, tsk_error_get());
+            std::cerr << "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed." << std::endl;
+            std::cerr << "findNTUserRegFilesInDir(): Error getting directory entry = " << i << " in dir inum = " << a_dir_inum <<
+                ", errno = " << tsk_error_get() << std::endl;
             continue;
         }
 
@@ -438,15 +437,15 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
 
             TSK_FS_FILE *fs_file;
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                ReportUtil::consoleOutput(stderr, "Error in loading Registry file. The Registry file will not be analyzed.\n");
-                ReportUtil::consoleOutput(stderr, "findNTUserRegFilesInDir(): tsk_fs_dir_get() failed for file = fs_file is null.\n");
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr << "findNTUserRegFilesInDir(): tsk_fs_dir_get() failed for file = fs_file is null." << std::endl;
                 continue;
             }
 
             RegParser *pRegParser = new RegParser(hiveType);
             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                ReportUtil::consoleOutput(stderr, "Error in loading Registry file. The Registry file will not be analyzed.\n");
-                ReportUtil::consoleOutput(stderr, "findNTUserRegFilesInDir(): loadHive() failed for file = %s\n", fs_file->name->name);
+                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                std::cerr << "findNTUserRegFilesInDir(): loadHive() failed for file = " << fs_file->name->name << std::endl;
                 continue;
             }
             RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(a_userFolderPath + "/" + aUserDirName), hiveType, 
@@ -500,9 +499,8 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
     int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, usrClassSubdir.c_str(), false, filenameInfo, NULL, NULL);
 
     if (retval == -1) {
-        ReportUtil::consoleOutput(stderr, "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.\n");
-        ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): tsk_fs_path2inum() failed for dir = %s, errno = %s\n", 
-            usrClassSubdir.c_str(), tsk_error_get());
+        std::cerr << "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed." << std::endl;
+        std::cerr << "findUsrClassRegFile(): tsk_fs_path2inum() failed for dir = " << usrClassSubdir << ", errno = " << tsk_error_get() << std::endl;
         return -1;
     }
     else if (retval == 0) {     //  found
@@ -511,9 +509,9 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
         // open the directory
         if ((fs_dir = tsk_fs_dir_open_meta(a_fs_info, filenameInfo.getINUM())) == NULL) {
-            ReportUtil::consoleOutput(stderr, "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.\n");
-            ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): tsk_fs_dir_open_meta() failed for dir inum = %" PRIuINUM ", errno = %s\n",
-                filenameInfo.getINUM(), tsk_error_get());
+            std::cerr << "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed." << std::endl;
+            std::cerr << "findUsrClassRegFile(): tsk_fs_dir_open_meta() failed for dir inum = " << filenameInfo.getINUM() <<
+                ", errno = " << tsk_error_get() << std::endl;
             return -1;
         }
 
@@ -524,9 +522,9 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
             // get the entry
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                ReportUtil::consoleOutput(stderr, "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.\n");
-                ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n", 
-                    i, filenameInfo.getINUM(), tsk_error_get());
+                std::cerr << "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed." << std::endl;
+                std::cerr << "findUsrClassRegFile(): Error getting directory entry = " << i << " in dir inum = " << filenameInfo.getINUM() <<
+                    ", errno = " << tsk_error_get() << std::endl;
                 continue;
             }
 
@@ -542,8 +540,8 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
                             RegParser *pRegParser = new RegParser(hiveType);
                             if (0 != pRegParser->loadHive(fs_file, hiveType)) {
-                                ReportUtil::consoleOutput(stderr, "Error in loading Registry file. The Registry file will not be analyzed.\n");
-                                ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): loadHive() failed for file = %s\n", fs_file->name->name);
+                                std::cerr << "Error in loading Registry file. The Registry file will not be analyzed." << std::endl;
+                                std::cerr << "findUsrClassRegFile(): loadHive() failed for file = " << fs_file->name->name << std::endl;
                                 return -1;
                             }
                             RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(usrClassSubdir), hiveType, 

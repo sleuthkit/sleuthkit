@@ -11,7 +11,6 @@
 #include <iostream>
 
 #include "RegParser.h"
-#include "ReportUtil.h"
 
 RegParser::RegParser(const RegHiveType::Enum aHiveType)
     : m_registryHive(NULL), m_rootKey(NULL) {
@@ -43,7 +42,7 @@ RegParser::~RegParser() {
  */
 int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     if (aHiveFile == NULL) {
-        ReportUtil::consoleOutput(stderr, "Null pointer passed to RegParser::loadHive. loadHive() failed.\n");
+        std::cerr << "Null pointer passed to RegParser::loadHive. loadHive() failed." << std::endl;
         return -1;
     }
 
@@ -56,14 +55,14 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     // Read the contents of the TSK_FS_FILE into memory.
     uint8_t *registryBuffer;
     if ((registryBuffer = (uint8_t *)malloc((size_t)aHiveFile->meta->size)) == NULL) {
-        ReportUtil::consoleOutput(stderr, "loadHive(): Error allocating memory for hive file. tsk_fs_file_read() failed.\n");
+        std::cerr << "loadHive(): Error allocating memory for hive file. tsk_fs_file_read() failed." << std::endl;
         return -1;
     }
 
     ssize_t bytesRead = tsk_fs_file_read(aHiveFile, 0, (char *)&registryBuffer[0],
         (size_t)aHiveFile->meta->size, TSK_FS_FILE_READ_FLAG_NONE);
     if (bytesRead != aHiveFile->meta->size) {
-        ReportUtil::consoleOutput(stderr, "loadHive(): Error reading content from hive file. tsk_fs_file_read() failed.\n");
+        std::cerr << "loadHive(): Error reading content from hive file. tsk_fs_file_read() failed." << std::endl;
         free(registryBuffer);
         return -1;
     }
@@ -72,12 +71,12 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
         m_registryHive = new Rejistry::RegistryHiveBuffer(registryBuffer, (uint32_t)aHiveFile->meta->size);
     }
     catch (Rejistry::RegistryParseException &) {
-        ReportUtil::consoleOutput(stderr, "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size.\n");
+        std::cerr << "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size." << std::endl;
         free(registryBuffer);
         return -1;
     }
     catch (...) {
-        ReportUtil::consoleOutput(stderr, "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size.\n");
+        std::cerr << "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size." << std::endl;
         free(registryBuffer);
         return -1;
     }

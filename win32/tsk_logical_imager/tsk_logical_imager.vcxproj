@@ -464,7 +464,7 @@
     <ClInclude Include="..\..\tools\logicalimager\RegKey.h" />
     <ClInclude Include="..\..\tools\logicalimager\RegParser.h" />
     <ClInclude Include="..\..\tools\logicalimager\RegVal.h" />
-    <ClInclude Include="..\..\tools\logicalimager\MatchedRuleInfo.h" />
+    <ClInclude Include="..\..\tools\logicalimager\RuleMatchResult.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskFindFiles.h" />
     <ClInclude Include="..\..\tools\logicalimager\TskHelper.h" />
     <ClInclude Include="..\..\tools\logicalimager\Version.h" />
@@ -488,7 +488,7 @@
     <ClCompile Include="..\..\tools\logicalimager\RegKey.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\RegParser.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\RegVal.cpp" />
-    <ClCompile Include="..\..\tools\logicalimager\MatchedRuleInfo.cpp" />
+    <ClCompile Include="..\..\tools\logicalimager\RuleMatchResult.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\TskFindFiles.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\TskHelper.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\tsk_logical_imager.cpp" />

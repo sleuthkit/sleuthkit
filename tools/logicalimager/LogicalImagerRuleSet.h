@@ -22,7 +22,7 @@
 
 #include "tsk/tsk_tools_i.h"
 #include "LogicalImagerRuleBase.h"
-#include "MatchedRuleInfo.h"
+#include "RuleMatchResult.h"
 #include "json.h"
 
 /**
@@ -32,20 +32,20 @@
 class LogicalImagerRuleSet
 {
 public:
-    typedef TSK_RETVAL_ENUM(*matchCallback)(const MatchedRuleInfo *, TSK_FS_FILE *, const char *);
+    typedef TSK_RETVAL_ENUM(*matchCallback)(const RuleMatchResult *, TSK_FS_FILE *, const char *);
 
     LogicalImagerRuleSet();
     ~LogicalImagerRuleSet();
 
     bool matches(TSK_FS_FILE *fs_file, const char *path, matchCallback callbackFunc) const;
-    const std::pair<const MatchedRuleInfo *, std::list<std::string>> getFullFilePaths() const;
+    const std::pair<const RuleMatchResult *, std::list<std::string>> getFullFilePaths() const;
 
-    const std::vector<std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>> getRules() {
+    const std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>> getRules() {
         return m_rules;
     }
 
     void constructRuleSet(const nlohmann::json ruleSet, 
-        std::vector<std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>> &ourRules
+        std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>> &ourRules
     );
 
 private:
@@ -53,6 +53,6 @@ private:
     void constructRule(const std::string &ruleSetName, nlohmann::json rule);
 
     std::string m_ruleSetName;
-    std::vector<std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>> m_rules;
-    std::pair<const MatchedRuleInfo *, std::list<std::string>> m_fullFilePaths;
+    std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>> m_rules;
+    std::pair<const RuleMatchResult *, std::list<std::string>> m_fullFilePaths;
 };
