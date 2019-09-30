@@ -135,19 +135,19 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		/**
 		 * The root level of the event types hierarchy.
 		 */
-		ROOT_LEVEL(getBundle().getString("EventTypeLevel.rootType")),
+		ROOT(getBundle().getString("EventTypeHierarchyLevel.root")),
 		/**
 		 * The category level of the event types hierarchy. Event types at this
 		 * level represent event categories such as file system events and web
 		 * activity events.
 		 */
-		CATEGORY(getBundle().getString("EventTypeLevel.baseType")),
+		CATEGORY(getBundle().getString("EventTypeHierarchyLevel.category")),
 		/**
 		 * The actual events level of the event types hierarchy. Event types at
 		 * this level represent actual events such as file modified time events
 		 * and web download events.
 		 */
-		EVENT(getBundle().getString("EventTypeLevel.subType"));
+		EVENT(getBundle().getString("EventTypeHierarchyLevel.event"));
 
 		private final String displayName;
 
@@ -179,7 +179,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	 */
 	TimelineEventType ROOT_EVENT_TYPE = new TimelineEventTypeImpl(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
-			HierarchyLevel.ROOT_LEVEL, null) {
+			HierarchyLevel.ROOT, null) {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
