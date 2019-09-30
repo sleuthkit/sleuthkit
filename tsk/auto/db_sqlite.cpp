@@ -454,7 +454,7 @@ TskDbSqlite::initialize()
 	        " event_id INTEGER PRIMARY KEY, "
 	        " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
 	        " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
-	        " time INTEGER NOT NULL , "
+	        " time BIGINT NOT NULL , "
 			" UNIQUE (event_type_id, event_description_id, time))"
 	        , "Error creating tsk_events table: %s\n")
 
@@ -1020,12 +1020,12 @@ int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_
     //for each  entry (type ->time)
     for (const auto entry : timeMap)
     {
-        const long long time = entry.second;
+        const time_t time = entry.second;
 
 
-        if (time == 0)
+        if (time <= 0)
         {
-            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull 
+            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull. time can't be negative either. 
             continue;
         }
         if (event_description_id == -1)
@@ -1065,7 +1065,7 @@ int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_
             "%" PRIu64 ")", // time
             entry.first,
             event_description_id,
-            time
+			(unsigned long long) time
         );
 
         if (attempt_exec(

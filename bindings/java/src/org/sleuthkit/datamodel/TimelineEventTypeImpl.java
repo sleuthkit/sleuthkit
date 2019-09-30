@@ -24,10 +24,13 @@ import java.util.SortedSet;
 import org.apache.commons.lang3.ObjectUtils;
 
 /**
- * Implementation of TimelineEventType for the standard predefined event types AND has package
- scope parsing methods.
+ * Implementation of TimelineEventType for the standard predefined event types
+ * AND has package scope parsing methods.
  */
 class TimelineEventTypeImpl implements TimelineEventType {
+
+	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
+	static final int EMAIL_TO_FROM_LENGTH_MAX = 75;
 
 	private final long typeID;
 	private final String displayName;
@@ -35,11 +38,11 @@ class TimelineEventTypeImpl implements TimelineEventType {
 	private final TimelineEventType.HierarchyLevel eventTypeZoomLevel;
 
 	/**
-	 * 
-	 * @param typeID  ID (from the Database)
+	 *
+	 * @param typeID             ID (from the Database)
 	 * @param displayName
 	 * @param eventTypeZoomLevel Where it is in the type hierarchy
-	 * @param superType 
+	 * @param superType
 	 */
 	TimelineEventTypeImpl(long typeID, String displayName, TimelineEventType.HierarchyLevel eventTypeZoomLevel, TimelineEventType superType) {
 		this.superType = superType;
@@ -48,7 +51,6 @@ class TimelineEventTypeImpl implements TimelineEventType {
 		this.eventTypeZoomLevel = eventTypeZoomLevel;
 	}
 
-	
 	TimelineEventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 		// The standard/default implementation:  Just bundle the three description levels into one object.
 		return new TimelineEventDescription(fullDescriptionRaw, medDescriptionRaw, shortDescriptionRaw);

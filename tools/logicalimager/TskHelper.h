@@ -81,6 +81,7 @@ public:
     static std::string toNarrow(const std::wstring& a_utf16Str);
     static std::wstring toWide(const std::string& a_utf8Str);
     static bool startsWith(const std::string &bigStr, const std::string &lilStr);
+    static bool endsWith(const std::string &str, const std::string &suffix);
     static std::string intToStr(long l);
     static std::string intToStr(size_t l);
     static void replaceAll(std::string& str, const std::string& from, const std::string& to);

@@ -486,7 +486,9 @@ main(int argc, char **argv1)
 
         std::string subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
         outputLocation = (iFlagUsed ? "sparse_image" : driveToProcess) + (createVHD ? ".vhd" : "");
-        fileExtractor->initializePerImage(subDirForFiles);
+        if (!createVHD) {
+            fileExtractor->initializePerImage(subDirForFiles);
+        }
 
         if (createVHD) {
             if (img->itype == TSK_IMG_TYPE_RAW) {
@@ -560,10 +562,16 @@ main(int argc, char **argv1)
         ReportUtil::consoleOutput(stdout, "%s - Searching for registry\n", driveToProcess.c_str());
         SetConsoleTitleA(std::string("Analyzing drive " + driveToProcess + " - Searching for registry").c_str());
 
-        string usersFileName = directoryPath + "/users.txt";
+        std::string prefix;
+        if (iFlagUsed) {
+            prefix = "sparse_image";
+        } else {
+            prefix = driveToProcess;
+        }
+        std::string userFilename = directoryPath + "/" + prefix + "_users.txt";
 
         // Enumerate Users with RegistryAnalyzer
-        RegistryAnalyzer registryAnalyzer(usersFileName);
+        RegistryAnalyzer registryAnalyzer(userFilename);
         registryAnalyzer.analyzeSAMUsers();
 
         TskHelper::getInstance().reset();
