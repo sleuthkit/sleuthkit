@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.Optional;
 
 /**
- * A representation of an event in the timeline of a case.
+ * A representation of an event in the timeline of a case. 
  */
 public final class TimelineEvent {
 
@@ -221,14 +221,14 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Gets the description of this event at a given level of detail(LoD).
+	 * Gets the description of this event at a given level of detail.
 	 *
-	 * @param lod The desired level of detail.
+	 * @param levelOfDetail The desired level of detail.
 	 *
 	 * @return The description of this event at the given level of detail.
 	 */
-	public String getDescription(TimelineLevelOfDetail lod) {
-		return descriptions.getDescription(lod);
+	public String getDescription(TimelineLevelOfDetail levelOfDetail) {
+		return descriptions.getDescription(levelOfDetail);
 	}
 
 	/**
