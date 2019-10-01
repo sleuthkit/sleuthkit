@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.Optional;
 
 /**
- * A representation of an event in the timeline of a case. 
+ * A representation of an event in the timeline of a case.
  */
 public final class TimelineEvent {
 
@@ -31,27 +31,28 @@ public final class TimelineEvent {
 	private final long eventID;
 
 	/**
-	 * The object ID of the content that is the direct or indirect source of
-	 * this event. For events associated with files, this will be the object ID
-	 * of the file that is the direct event source. For events associated with
-	 * artifacts, this will be the object ID of the artifact source: a file, a
-	 * data source, or another artifact.
+	 * The object ID of the content that is either the direct or indirect source
+	 * of this event. For events associated with files, this will be the object
+	 * ID of the file. For events associated with artifacts, this will be the
+	 * object ID of the artifact source: a file, a data source, or another
+	 * artifact.
 	 */
 	private final long contentObjID;
 
 	/**
 	 * The artifact ID (not the object ID) of the artifact, if any, that is the
-	 * direct source of this event. May be null.
+	 * source of this event. Will be null for events assoicated directly with
+	 * files.
 	 */
 	private final Long artifactID;
 
 	/**
-	 * The object ID of the data source for the source content of this event.
+	 * The object ID of the data source for the event source.
 	 */
 	private final long dataSourceObjID;
 
 	/**
-	 * The time this event occurred, in seconds from the UNIX epoch.
+	 * When this event occurred, in seconds from the UNIX epoch.
 	 */
 	private final long time;
 
@@ -85,13 +86,12 @@ public final class TimelineEvent {
 	 * @param eventID                    The unique ID of this event in the case
 	 *                                   database.
 	 * @param dataSourceObjID            The object ID of the data source for
-	 *                                   the source content of this event.
-	 * @param contentObjID               The object ID of the content that is
-	 *                                   the direct or indirect source of this
-	 *                                   event. For events associated with
+	 *                                   the event source.
+	 * @param contentObjID               he object ID of the content that is
+	 *                                   either the direct or indirect source of
+	 *                                   this event. For events associated with
 	 *                                   files, this will be the object ID of
-	 *                                   the file that is the direct event
-	 *                                   source. For events associated with
+	 *                                   the file. For events associated with
 	 *                                   artifacts, this will be the object ID
 	 *                                   of the artifact source: a file, a data
 	 *                                   source, or another artifact.
