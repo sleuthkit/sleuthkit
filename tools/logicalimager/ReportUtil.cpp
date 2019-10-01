@@ -132,7 +132,9 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
 
     // Remove any newlines
     origFileName.erase(std::remove(origFileName.begin(), origFileName.end(), '\n'), origFileName.end());
+    origFileName.erase(std::remove(origFileName.begin(), origFileName.end(), '\r'), origFileName.end());
     origFilePath.erase(std::remove(origFilePath.begin(), origFilePath.end(), '\n'), origFilePath.end());
+    origFilePath.erase(std::remove(origFilePath.begin(), origFilePath.end(), '\r'), origFilePath.end());
 
 
     fprintf(reportFile, "%s\t%" PRIdOFF "\t%" PRIuINUM "\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
