@@ -87,8 +87,8 @@ contents of the data units allocated to the metadata structure
 which metadata structure has allocated a given content unit or
 file name.
 
-Refer to the [ntfs.README](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes) 
-doc for information on addressing metadata attributes in NTFS.
+Refer to the [ntfs wiki](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes) 
+for information on addressing metadata attributes in NTFS.
 
 ### Human Interface Layer (file):
 The human interface layer allows one to interact with files in a
