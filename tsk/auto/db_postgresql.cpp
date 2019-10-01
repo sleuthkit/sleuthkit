@@ -1075,7 +1075,7 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 }
 
 
-int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj_id, const int64_t file_obj_id,
+int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj_id, const int64_t content_obj_id,
                                       std::map<int64_t, time_t> timeMap, const char* full_description)
 {
     int64_t event_description_id = -1;
@@ -1094,17 +1094,17 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
         if (event_description_id == -1)
         {
             if (0 > snprintf(zSQL, 2048 - 1,
-                             "INSERT INTO tsk_event_descriptions ( data_source_obj_id, file_obj_id , artifact_id, full_description, hash_hit, tagged) "
+                             "INSERT INTO tsk_event_descriptions ( data_source_obj_id, content_obj_id , artifact_id, full_description, hash_hit, tagged) "
                              " VALUES ("
                              "%" PRId64 "," // data_source_obj_id
-                             "%" PRId64 "," // file_obj_id
+                             "%" PRId64 "," // content_obj_id
                              "NULL," // fixed artifact_id
                              "%s," // full_description
                              "0," // fixed hash_hit
                              "0" // fixed tagged
                              ") RETURNING event_description_id",
                              data_source_obj_id,
-                             file_obj_id,
+                             content_obj_id,
                              full_description))
             {
                 return 1;
