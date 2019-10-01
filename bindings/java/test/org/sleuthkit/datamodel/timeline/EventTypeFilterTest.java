@@ -21,7 +21,7 @@ import static java.util.Objects.isNull;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.sleuthkit.datamodel.TimelineEventType;
-import org.sleuthkit.datamodel.TimelineFilter.EventTypeFilter;
+import org.sleuthkit.datamodel.TimelineFilter.EventTypesFilter;
 
 /**
  * Test class for EventTypeFilter
@@ -34,12 +34,12 @@ public class EventTypeFilterTest {
 	@Test
 	public void testGetEventType() {
 		System.out.println("getEventType");
-		EventTypeFilter instance = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
-		assertEquals(TimelineEventType.ROOT_EVENT_TYPE, instance.getEventType());
-		instance = new EventTypeFilter(TimelineEventType.FILE_SYSTEM);
-		assertEquals(TimelineEventType.FILE_SYSTEM, instance.getEventType());
-		instance = new EventTypeFilter(TimelineEventType.MESSAGE);
-		assertEquals(TimelineEventType.MESSAGE, instance.getEventType());
+		EventTypesFilter instance = new EventTypesFilter(TimelineEventType.ROOT_EVENT_TYPE);
+		assertEquals(TimelineEventType.ROOT_EVENT_TYPE, instance.getRootEventType());
+		instance = new EventTypesFilter(TimelineEventType.FILE_SYSTEM);
+		assertEquals(TimelineEventType.FILE_SYSTEM, instance.getRootEventType());
+		instance = new EventTypesFilter(TimelineEventType.MESSAGE);
+		assertEquals(TimelineEventType.MESSAGE, instance.getRootEventType());
 	}
 
 	/**
@@ -48,9 +48,9 @@ public class EventTypeFilterTest {
 	@Test
 	public void testGetDisplayName() {
 		System.out.println("getDisplayName");
-		EventTypeFilter instance = new EventTypeFilter(TimelineEventType.EMAIL);
+		EventTypesFilter instance = new EventTypesFilter(TimelineEventType.EMAIL);
 		assertEquals(TimelineEventType.EMAIL.getDisplayName(), instance.getDisplayName());
-		instance = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
+		instance = new EventTypesFilter(TimelineEventType.ROOT_EVENT_TYPE);
 		assertEquals("Event Type", instance.getDisplayName());
 	}
 
@@ -61,17 +61,17 @@ public class EventTypeFilterTest {
 	public void testCopyOf() {
 		System.out.println("copyOf");
 
-		EventTypeFilter instance = new EventTypeFilter(TimelineEventType.EMAIL);
-		EventTypeFilter result = instance.copyOf();
+		EventTypesFilter instance = new EventTypesFilter(TimelineEventType.EMAIL);
+		EventTypesFilter result = instance.copyOf();
 		assertEquals(instance, result);
 		assertNotSame(instance, result);
 
-		instance = new EventTypeFilter(TimelineEventType.MISC_TYPES);
+		instance = new EventTypesFilter(TimelineEventType.MISC_TYPES);
 		result = instance.copyOf();
 		assertEquals(instance, result);
 		assertNotSame(instance, result);
 
-		instance = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
+		instance = new EventTypesFilter(TimelineEventType.ROOT_EVENT_TYPE);
 		result = instance.copyOf();
 		assertEquals(instance, result);
 		assertNotSame(instance, result);
@@ -84,21 +84,21 @@ public class EventTypeFilterTest {
 	@Test
 	public void testEquals() {
 		System.out.println("equals");
-		EventTypeFilter root = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
-		EventTypeFilter root2 = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
+		EventTypesFilter root = new EventTypesFilter(TimelineEventType.ROOT_EVENT_TYPE);
+		EventTypesFilter root2 = new EventTypesFilter(TimelineEventType.ROOT_EVENT_TYPE);
 
 		assertFalse(isNull(root));
 		assertTrue(root.equals(root));
 		assertTrue(root.equals(root2));
 		assertTrue(root2.equals(root));
 
-		EventTypeFilter fileSystem = new EventTypeFilter(TimelineEventType.FILE_SYSTEM);
+		EventTypesFilter fileSystem = new EventTypesFilter(TimelineEventType.FILE_SYSTEM);
 		assertTrue(fileSystem.equals(fileSystem));
 		assertFalse(root.equals(fileSystem));
 		assertFalse(fileSystem.equals(root2));
 
-		EventTypeFilter exif = new EventTypeFilter(TimelineEventType.EXIF);
-		EventTypeFilter deviceAttached = new EventTypeFilter(TimelineEventType.DEVICES_ATTACHED);
+		EventTypesFilter exif = new EventTypesFilter(TimelineEventType.EXIF);
+		EventTypesFilter deviceAttached = new EventTypesFilter(TimelineEventType.DEVICES_ATTACHED);
 		assertTrue(exif.equals(exif));
 		assertTrue(deviceAttached.equals(deviceAttached));
 		assertFalse(root.equals(exif));

@@ -164,7 +164,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException If there is an error querying the case database.
 	 */
-	public Interval getSpanningInterval(Interval timeRange, TimelineFilter.RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
+	public Interval getSpanningInterval(Interval timeRange, TimelineFilter.MultiFilterFilter filter, DateTimeZone timeZone) throws TskCoreException {
 		long start = timeRange.getStartMillis() / 1000;
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
@@ -244,7 +244,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException If there is an error querying the case database.
 	 */
-	public List<Long> getEventIDs(Interval timeRange, TimelineFilter.RootFilter filter) throws TskCoreException {
+	public List<Long> getEventIDs(Interval timeRange, TimelineFilter.MultiFilterFilter filter) throws TskCoreException {
 		Long startTime = timeRange.getStartMillis() / 1000;
 		Long endTime = timeRange.getEndMillis() / 1000;
 
@@ -868,7 +868,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException If there is an error querying the case database.
 	 */
-	public Map<TimelineEventType, Long> countEventsByType(Long startTime, Long endTime, TimelineFilter.RootFilter filter, TimelineEventType.HierarchyLevel typeHierachyLevel) throws TskCoreException {
+	public Map<TimelineEventType, Long> countEventsByType(Long startTime, Long endTime, TimelineFilter.MultiFilterFilter filter, TimelineEventType.HierarchyLevel typeHierachyLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		//do we want the base or subtype column of the databse
 		String typeColumn = typeColumnHelper(TimelineEventType.HierarchyLevel.EVENT.equals(typeHierachyLevel));
@@ -915,8 +915,8 @@ public final class TimelineManager {
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static private String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
-		TimelineFilter.FileTypesFilter fileTypesFitler = filter.getFileTypesFilter();
+	static private String getAugmentedEventsTablesSQL(TimelineFilter.MultiFilterFilter filter) {
+		TimelineFilter.CompositeSourceFileTypesFilter fileTypesFitler = filter.getFileTypesFilter();
 		boolean needsMimeTypes = fileTypesFitler != null && fileTypesFitler.hasSubFilters();
 
 		return getAugmentedEventsTablesSQL(needsMimeTypes);
@@ -989,7 +989,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException If there is an error querying the case database.
 	 */
-	public List<TimelineEvent> getEvents(Interval timeRange, TimelineFilter.RootFilter filter) throws TskCoreException {
+	public List<TimelineEvent> getEvents(Interval timeRange, TimelineFilter.MultiFilterFilter filter) throws TskCoreException {
 		List<TimelineEvent> events = new ArrayList<>();
 
 		Long startTime = timeRange.getStartMillis() / 1000;
@@ -1072,7 +1072,7 @@ public final class TimelineManager {
 	 * @return An SQL where clause (without the "where") corresponding to the
 	 *         filter.
 	 */
-	String getSQLWhere(TimelineFilter.RootFilter filter) {
+	String getSQLWhere(TimelineFilter.MultiFilterFilter filter) {
 
 		String result;
 		if (filter == null) {

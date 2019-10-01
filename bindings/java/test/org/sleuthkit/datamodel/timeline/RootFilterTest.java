@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.sleuthkit.datamodel.PublicTagName;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TimelineFilter;
-import org.sleuthkit.datamodel.TimelineFilter.EventTypeFilter;
+import org.sleuthkit.datamodel.TimelineFilter.EventTypesFilter;
 import org.sleuthkit.datamodel.TimelineEventType;
 import org.sleuthkit.datamodel.TskData;
 
@@ -44,17 +44,17 @@ public class RootFilterTest {
 		assertEquals(instance, instance.copyOf());
 	}
 
-	TimelineFilter.RootFilter getNewRootFilter() {
-		TimelineFilter.TagsFilter tagsFilter = new TimelineFilter.TagsFilter();
+	TimelineFilter.MultiFilterFilter getNewRootFilter() {
+		TimelineFilter.TaggedEventSourcesFilter tagsFilter = new TimelineFilter.TaggedEventSourcesFilter();
 		tagsFilter.addSubFilter(new TimelineFilter.TagNameFilter(new PublicTagName(0, "test tagName", "test tag name description", TagName.HTML_COLOR.NONE, TskData.FileKnown.KNOWN)));
-		TimelineFilter.HashHitsFilter hashHitsFilter = new TimelineFilter.HashHitsFilter();
-		TimelineFilter.TextFilter textFilter = new TimelineFilter.TextFilter();
-		EventTypeFilter eventTypeFilter = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
+		TimelineFilter.SourceFileHashSetsHitFilter hashHitsFilter = new TimelineFilter.SourceFileHashSetsHitFilter();
+		TimelineFilter.DescriptionSubstringFilter textFilter = new TimelineFilter.DescriptionSubstringFilter();
+		EventTypesFilter eventTypeFilter = new EventTypesFilter(TimelineEventType.ROOT_EVENT_TYPE);
 		TimelineFilter.DataSourcesFilter dataSourcesFilter = new TimelineFilter.DataSourcesFilter();
-		TimelineFilter.HideKnownFilter hideKnownFilter = new TimelineFilter.HideKnownFilter();
-		TimelineFilter.FileTypesFilter fileTypesFilter = new TimelineFilter.FileTypesFilter();
+		TimelineFilter.ExcludeKnownSourceFilesFilter hideKnownFilter = new TimelineFilter.ExcludeKnownSourceFilesFilter();
+		TimelineFilter.CompositeSourceFileTypesFilter fileTypesFilter = new TimelineFilter.CompositeSourceFileTypesFilter();
 		List<TimelineFilter> emptyList = Collections.emptyList();
-		return new TimelineFilter.RootFilter(
+		return new TimelineFilter.MultiFilterFilter(
 				hideKnownFilter,
 				tagsFilter,
 				hashHitsFilter,
