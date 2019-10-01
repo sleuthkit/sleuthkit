@@ -41,8 +41,7 @@ public final class TimelineEvent {
 
 	/**
 	 * The artifact ID (not the object ID) of the artifact, if any, that is the
-	 * source of this event. Will be null for events assoicated directly with
-	 * files.
+	 * source of this event. Null for events assoicated directly with files.
 	 */
 	private final Long artifactID;
 
@@ -87,7 +86,7 @@ public final class TimelineEvent {
 	 *                                   database.
 	 * @param dataSourceObjID            The object ID of the data source for
 	 *                                   the event source.
-	 * @param contentObjID               he object ID of the content that is
+	 * @param contentObjID               The object ID of the content that is
 	 *                                   either the direct or indirect source of
 	 *                                   this event. For events associated with
 	 *                                   files, this will be the object ID of
@@ -97,8 +96,8 @@ public final class TimelineEvent {
 	 *                                   source, or another artifact.
 	 * @param artifactID                 The artifact ID (not the object ID) of
 	 *                                   the artifact, if any, that is the
-	 *                                   direct source of this event. May be
-	 *                                   null.
+	 *                                   source of this event. Null for events
+	 *                                   assoicated directly with files.
 	 * @param time                       The time this event occurred, in
 	 *                                   seconds from the UNIX epoch.
 	 * @param type                       The type of this event.

@@ -123,7 +123,7 @@ public final class TimelineManager {
 
 	/**
 	 * Gets the smallest possible time interval that spans a collection of
-	 * timeline events defined by event IDs.
+	 * timeline events.
 	 *
 	 * @param eventIDs The event IDs of the events for which to obtain the
 	 *                 spanning interval.
@@ -154,10 +154,10 @@ public final class TimelineManager {
 
 	/**
 	 * Gets the smallest possible time interval that spans a collection of
-	 * timeline events defined by a time range and a timeline events filter.
+	 * timeline events.
 	 *
-	 * @param timeRange The time range that the events must be within.
-	 * @param filter    The timeline events filter that the events must pass.
+	 * @param timeRange A time range that the events must be within.
+	 * @param filter    A timeline events filter that the events must pass.
 	 * @param timeZone  The time zone for the returned time interval.
 	 *
 	 * @return The minimal spanning interval, may be null.
@@ -420,7 +420,7 @@ public final class TimelineManager {
 	public Set<Long> getEventIDsForContent(Content content, boolean includeDerivedArtifacts) throws TskCoreException {
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection conn = caseDB.getConnection()) {
-			return getEventAndDescriptionIDsHelper(conn, content.getId(), (includeDerivedArtifacts ? "" : " AND artifact_id IS NULL")).keySet();
+			return getEventAndDescriptionIDs(conn, content.getId(), includeDerivedArtifacts).keySet();
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}

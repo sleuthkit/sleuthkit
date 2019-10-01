@@ -42,8 +42,8 @@ public enum TimelineLevelOfDetail {
 
 	/**
 	 * Constructs an element of the enumeration of the levels of detail of
-	 * various aspects of timeline data such as event descriptions and timeline
-	 * zoom levels.
+	 * various aspects of timeline data such as event descriptions and the
+	 * timeline event types hierarchy.
 	 *
 	 * @param displayName The display name of the level of detail.
 	 */

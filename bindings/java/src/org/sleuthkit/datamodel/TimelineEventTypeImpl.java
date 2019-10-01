@@ -24,8 +24,7 @@ import java.util.SortedSet;
 import org.apache.commons.lang3.ObjectUtils;
 
 /**
- * Implementation of TimelineEventType for the standard predefined event types
- * AND has package scope parsing methods.
+ * Implementation of TimelineEventType for the standard predefined event types.
  */
 class TimelineEventTypeImpl implements TimelineEventType {
 

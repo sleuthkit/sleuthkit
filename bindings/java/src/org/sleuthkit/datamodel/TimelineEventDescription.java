@@ -62,15 +62,15 @@ class TimelineEventDescription {
 	/**
 	 * Gets the description of this event at the given level of detail.
 	 *
-	 * @param lod The level of detail.
+	 * @param levelOfDetail The level of detail.
 	 *
 	 * @return The event description at the given level of detail.
 	 */
-	String getDescription(TimelineLevelOfDetail lod) {
-		switch (lod) {
+	String getDescription(TimelineLevelOfDetail levelOfDetail) {
+		switch (levelOfDetail) {
 			case HIGH:
 			default:
-				return fullDesc;
+				return this.fullDesc;
 			case MEDIUM:
 				return this.mediumDesc;
 			case LOW:
