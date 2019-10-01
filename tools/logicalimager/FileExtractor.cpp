@@ -75,8 +75,15 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
         filename = m_rootDirectoryPath + "/" + extractedFilePath;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
         if (file == NULL) {
-            ReportUtil::consoleOutput(stderr, "ERROR: extractFile failed for %s, reason: %s\n", filename.c_str(), _strerror(NULL));
-            ReportUtil::handleExit(1);
+            // This can happen when the extension is invalid under Windows. Try again with no extension.
+            ReportUtil::consoleOutput(stderr, "ERROR: extractFile failed for %s, reason: %s\nTrying again with fixed file extension\n", filename.c_str(), _strerror(NULL));
+            extractedFilePath = getRootImageDirPrefix() + std::to_string(m_dirCounter) + "/f-" + std::to_string(m_fileCounter - 1);
+            filename = m_rootDirectoryPath + "/" + extractedFilePath;
+            file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
+            if (file == NULL) {
+                ReportUtil::consoleOutput(stderr, "ERROR: extractFile failed for %s, reason: %s\n", filename.c_str(), _strerror(NULL));
+                ReportUtil::handleExit(1);
+            }
         }
         TskHelper::replaceAll(extractedFilePath, "/", "\\");
     }

@@ -127,6 +127,14 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
     std::string mtimeStr = (fs_file->meta ? std::to_string(fs_file->meta->mtime) : "0");
     std::string atimeStr = (fs_file->meta ? std::to_string(fs_file->meta->atime) : "0");
     std::string ctimeStr = (fs_file->meta ? std::to_string(fs_file->meta->ctime) : "0");
+    std::string origFileName(fs_file->name ? fs_file->name->name : "name is null");
+    std::string origFilePath(path);
+
+    // Remove any newlines
+    origFileName.erase(std::remove(origFileName.begin(), origFileName.end(), '\n'), origFileName.end());
+    origFilePath.erase(std::remove(origFilePath.begin(), origFilePath.end(), '\n'), origFilePath.end());
+
+
     fprintf(reportFile, "%s\t%" PRIdOFF "\t%" PRIuINUM "\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         outputLocation.c_str(),
         fs_file->fs_info->offset,
@@ -135,8 +143,10 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
         ruleMatchResult->getRuleSetName().c_str(),
         ruleMatchResult->getName().c_str(),
         ruleMatchResult->getDescription().c_str(),
-        (fs_file->name ? fs_file->name->name : "name is null"),
-        path,
+        //(fs_file->name ? fs_file->name->name : "name is null"),
+        //path,
+        origFileName.c_str(),
+        origFilePath.c_str(),
         extractedFilePath.c_str(),
         crtimeStr.c_str(),
         mtimeStr.c_str(),
