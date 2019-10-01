@@ -143,8 +143,6 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
         ruleMatchResult->getRuleSetName().c_str(),
         ruleMatchResult->getName().c_str(),
         ruleMatchResult->getDescription().c_str(),
-        //(fs_file->name ? fs_file->name->name : "name is null"),
-        //path,
         origFileName.c_str(),
         origFilePath.c_str(),
         extractedFilePath.c_str(),
