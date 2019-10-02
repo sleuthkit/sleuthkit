@@ -240,22 +240,22 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			throw new IllegalArgumentException("Contact name must be specified.");
 		}
 
-		// check if the caller has supplied a TSK_ID attribute
-		BlackboardAttribute idAttribute = null;
+		// check if the caller has included any phone/email/id in addtional attributes
+		boolean hasAnyIdAttribute = false;
 		if (additionalAttributes != null) {
 			for (BlackboardAttribute attr : additionalAttributes) {
 				if (attr.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID()) {
-					idAttribute = attr;
+					hasAnyIdAttribute = true;
 					break;
 				}
 			}
 		}
 
 		// At least one phone number or email address 
-		// or an optional TSK_ID attribute must be provided
+		// or an optional attribute with phone/email/id must be provided
 		if (StringUtils.isEmpty(phoneNumber) && StringUtils.isEmpty(homePhoneNumber)
 				&& StringUtils.isEmpty(mobilePhoneNumber) && StringUtils.isEmpty(emailAddr)
-				&& (idAttribute == null)) {
+				&& (!hasAnyIdAttribute)) {
 			throw new IllegalArgumentException("At least one phone number or email address or an id must be provided.");
 		}
 
@@ -283,10 +283,19 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		createContactMethodAccountAndRelationship(Account.Type.PHONE, mobilePhoneNumber, contactArtifact, 0);
 		createContactMethodAccountAndRelationship(Account.Type.EMAIL, emailAddr, contactArtifact, 0);
 
-		if (idAttribute != null) {
-			createContactMethodAccountAndRelationship(this.accountsType, idAttribute.getValueString(), contactArtifact, 0);
+		// if the additional attribute list has any phone/email/id attributes, create accounts & relationships for those. 
+		if ((additionalAttributes != null) && hasAnyIdAttribute) {
+			for (BlackboardAttribute bba : additionalAttributes) {
+                if (bba.getAttributeType().getTypeName().startsWith("TSK_PHONE")) {
+					createContactMethodAccountAndRelationship(Account.Type.PHONE, bba.getValueString(), contactArtifact, 0);
+                } else if (bba.getAttributeType().getTypeName().startsWith("TSK_EMAIL")) {
+                    createContactMethodAccountAndRelationship(Account.Type.EMAIL, bba.getValueString(), contactArtifact, 0);
+                } else if (bba.getAttributeType().getTypeName().startsWith("TSK_ID")) {
+                    createContactMethodAccountAndRelationship(this.accountsType, bba.getValueString(), contactArtifact, 0);
+                } 
+            }
 		}
-
+		
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(contactArtifact, getModuleName());
 
@@ -668,7 +677,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		// Either caller id or a callee id must be provided.
-		if (StringUtils.isEmpty(callerId) && (calleeIdsList == null || calleeIdsList.isEmpty())) {
+		if (StringUtils.isEmpty(callerId) && (isEffectivelyEmpty(calleeIdsList))) {
 			throw new IllegalArgumentException("Either a caller id, or at least one callee id must be provided for a call log.");
 		}
 
@@ -701,7 +710,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		// Create a comma separated string of callee
 		List<AccountFileInstance> recipientAccountsList = new ArrayList();
 		String calleesStr = "";
-		if ((calleeIdsList != null && !calleeIdsList.isEmpty())) {
+		if (! isEffectivelyEmpty(calleeIdsList)) {
 			calleesStr = addressListToString(calleeIdsList);
 			addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, calleesStr, attributes);
 
@@ -759,6 +768,29 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		return toAddresses;
 	}
 
+	/**
+	 * Checks if the given list of ids has at least one non-null non-blank id.
+	 *
+	 * @param addressList List of string ids.
+	 *
+	 * @return false if the list has at least one non-null non-blank id,
+	 *         otherwise true.
+	 *
+	 */
+	private boolean isEffectivelyEmpty(Collection<String> idList) {
+
+		if (idList == null || idList.isEmpty()) {
+			return true;
+		}
+		
+		for (String id: idList) {
+			if (!StringUtils.isEmpty(id))
+				return false;
+		}
+		
+		return true;
+				
+	}
 	/**
 	 * Adds communication direction attribute to the list, if it is not unknown.
 	 */
