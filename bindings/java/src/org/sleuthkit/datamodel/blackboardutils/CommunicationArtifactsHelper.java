@@ -190,7 +190,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param emailAddr         Email address for the contact, may be empty or
 	 *                          null.
 	 *
-	 * At least one phone number or email address or an id is required.
+	 * At least one phone number or email address is required.
 	 *
 	 * @return Contact artifact created.
 	 *
@@ -219,7 +219,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param emailAddr            Email address for the contact, may be empty
 	 *                             or null.
 	 *
-	 * At least one phone number or email address or an id is required.
+	 * At least one phone number or email address or an Id is required.
+	 * An Id may be passed in as a TSK_ID attribute in additionalAttributes.
 	 *
 	 * @param additionalAttributes Additional attributes for contact, may be an
 	 *                             empty list.
@@ -244,9 +245,11 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		boolean hasAnyIdAttribute = false;
 		if (additionalAttributes != null) {
 			for (BlackboardAttribute attr : additionalAttributes) {
-				if (attr.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID()) {
-					hasAnyIdAttribute = true;
-					break;
+				if ((attr.getAttributeType().getTypeName().startsWith("TSK_PHONE")) ||
+					(attr.getAttributeType().getTypeName().startsWith("TSK_EMAIL"))	||
+					(attr.getAttributeType().getTypeName().startsWith("TSK_ID")))  {
+						hasAnyIdAttribute = true;
+						break;
 				}
 			}
 		}
