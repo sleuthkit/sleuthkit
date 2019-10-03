@@ -57,8 +57,6 @@ int RegKey::initialize(const Rejistry::RegistryKey *regKey) {
 
     m_regKey = new Rejistry::RegistryKey(*regKey);
 
-    delete regKey;
-
     return 0;
 }
 

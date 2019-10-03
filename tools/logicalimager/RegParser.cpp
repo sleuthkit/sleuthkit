@@ -131,6 +131,10 @@ int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
     }
 
     aKey.initialize(key);
+
+    if (key != NULL) {
+        delete key;
+    }
     return 0;
 }
 
