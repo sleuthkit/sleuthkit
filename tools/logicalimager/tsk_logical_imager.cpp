@@ -233,6 +233,9 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
     bool result = false;
 
     TSK_IMG_INFO *img = DriveUtil::addFSFromImage(image);
+    if (img == NULL) {
+        return false;
+    }
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
@@ -480,8 +483,8 @@ main(int argc, char **argv1)
 
         TSK_IMG_INFO *img;
         if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
-            tsk_error_print(stderr);
-            ReportUtil::handleExit(1);
+            ReportUtil::consoleOutput(stderr, "%s\n", tsk_error_get());
+            continue;
         }
 
         std::string subDirForFiles = iFlagUsed ? "sparse_image" : driveToProcess;
@@ -495,8 +498,7 @@ main(int argc, char **argv1)
                 std::string outputFileName = directoryPath + "/" + outputLocation;
 
                 if (tsk_img_writer_create(img, (TSK_TCHAR *)TskHelper::toWide(outputFileName).c_str()) == TSK_ERR) {
-                    tsk_error_print(stderr);
-                    ReportUtil::consoleOutput(stderr, "Failed to initialize VHD writer\n");
+                    ReportUtil::consoleOutput(stderr, "Failed to initialize VHD writer, reason: %s\n", tsk_error_get());
                     ReportUtil::handleExit(1);
                 }
             }
@@ -577,9 +579,8 @@ main(int argc, char **argv1)
         TskHelper::getInstance().reset();
 
         if (findFiles.openImageHandle(img)) {
-            tsk_error_print(stderr);
-            ReportUtil::consoleOutput(stderr, "Failed to open image\n");
-            ReportUtil::handleExit(1);
+            ReportUtil::consoleOutput(stderr, "Failed to open image: reason %s\n", tsk_error_get());
+            continue;
         }
 
         ReportUtil::consoleOutput(stdout, "%s - Searching for files by attribute\n", driveToProcess.c_str());
@@ -603,8 +604,7 @@ main(int argc, char **argv1)
                 ReportUtil::consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
                 SetConsoleTitleA(std::string("Copying remainder of " + it->second).c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
-                    tsk_error_print(stderr);
-                    ReportUtil::consoleOutput(stderr, "Error finishing VHD for %s\n", it->second.c_str());
+                    ReportUtil::consoleOutput(stderr, "Error finishing VHD for %s: reason %s\n", it->second.c_str(), tsk_error_get());
                 }
             }
         }
