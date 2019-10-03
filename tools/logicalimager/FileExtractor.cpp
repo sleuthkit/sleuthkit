@@ -30,10 +30,10 @@ FileExtractor::FileExtractor(bool createVHD, const std::wstring &cwd, const std:
 }
 
 /*
-* Initialize a directory name per image. 
+* Initialize a directory name per image.
 * Call this method once per image at the start of analyzing a drive image.
 * This method creates a directory with the subDir name to store extracted files.
-* 
+*
 * @param imageDirName Directory name for this image
 */
 void FileExtractor::initializePerImage(const std::string &imageDirName) {
@@ -75,8 +75,15 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
         filename = m_rootDirectoryPath + "/" + extractedFilePath;
         file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
         if (file == NULL) {
-            ReportUtil::consoleOutput(stderr, "ERROR: extractFile failed to create file %s, reason: %s\n", filename.c_str(), _strerror(NULL));
-            ReportUtil::handleExit(1);
+            // This can happen when the extension is invalid under Windows. Try again with no extension.
+            ReportUtil::consoleOutput(stderr, "ERROR: extractFile failed for %s, reason: %s\nTrying again with fixed file extension\n", filename.c_str(), _strerror(NULL));
+            extractedFilePath = getRootImageDirPrefix() + std::to_string(m_dirCounter) + "/f-" + std::to_string(m_fileCounter - 1);
+            filename = m_rootDirectoryPath + "/" + extractedFilePath;
+            file = _wfopen(TskHelper::toWide(filename).c_str(), L"wb");
+            if (file == NULL) {
+                ReportUtil::consoleOutput(stderr, "ERROR: extractFile failed for %s, reason: %s\n", filename.c_str(), _strerror(NULL));
+                ReportUtil::handleExit(1);
+            }
         }
         TskHelper::replaceAll(extractedFilePath, "/", "\\");
     }
@@ -203,7 +210,7 @@ void FileExtractor::createDirectoryRecursively(const std::wstring &path) {
         pos = path2.find_first_of(L"\\", pos + 1);
         if (CreateDirectoryW(std::wstring(L"\\\\?\\" + m_cwd + L"\\" + path2.substr(0, pos)).c_str(), NULL) == 0) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                ReportUtil::consoleOutput(stderr, "ERROR: Fail to create directory %s Reason: %s\n", TskHelper::toNarrow(path).c_str(), 
+                ReportUtil::consoleOutput(stderr, "ERROR: Fail to create directory %s Reason: %s\n", TskHelper::toNarrow(path).c_str(),
                     ReportUtil::GetErrorStdStr(GetLastError()).c_str());
                 ReportUtil::handleExit(1);
             }
