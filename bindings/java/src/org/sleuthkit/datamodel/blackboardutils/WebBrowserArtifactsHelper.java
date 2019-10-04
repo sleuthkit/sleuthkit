@@ -189,9 +189,9 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	/**
 	 * Adds a TSK_WEB_DOWNNLOAD artifact.
 	 *
-	 * @param path        Path of downloaded file, required.
-	 * @param startTime   Date/time downloaded, 0 if not available.
 	 * @param url         URL downloaded from, required.
+	 * @param startTime   Date/time downloaded, 0 if not available.
+	 * @param path        Path of downloaded file, required.
 	 * @param programName Program that initiated the download, may be empty or
 	 *                    null.
 	 *
@@ -200,16 +200,16 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException    If there is an error creating the artifact.
 	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
-	public BlackboardArtifact addWebDownload(String path, long startTime, String url, String programName) throws TskCoreException, BlackboardException {
+	public BlackboardArtifact addWebDownload(String url, long startTime, String path, String programName) throws TskCoreException, BlackboardException {
 		return addWebDownload(path, startTime, url, programName, Collections.emptyList());
 	}
 
 	/**
 	 * Adds a TSK_WEB_DOWNNLOAD artifact.
 	 *
-	 * @param path                Path of downloaded file, required.
-	 * @param startTime           Date/time downloaded, 0 if not available.
 	 * @param url                 URL downloaded from, required.
+	 * @param startTime           Date/time downloaded, 0 if not available.
+	 * @param path                Path of downloaded file, required.
 	 * @param programName         Program that initiated the download, may be
 	 *                            empty or null.
 	 * @param otherAttributesList Other attributes, may be an empty list.
@@ -219,7 +219,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException	   If there is an error creating the artifact.
 	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
-	public BlackboardArtifact addWebDownload(String path, long startTime, String url, String programName,
+	public BlackboardArtifact addWebDownload(String url, long startTime, String path, String programName,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		BlackboardArtifact webDownloadArtifact;
@@ -393,7 +393,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 * @param accessTime   Last access time, may be 0 if not available.
 	 * @param referrer     Referrer, may be empty or null.
 	 * @param title        Website title, may be empty or null.
-	 * @param programName, Application/program recording the history, may be
+	 * @param programName  Application/program recording the history, may be
 	 *                     empty or null.
 	 *
 	 * @return Web history artifact created.
@@ -414,7 +414,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 * @param accessTime          Last access time, may be 0 if not available.
 	 * @param referrer            Referrer, may be empty or null.
 	 * @param title               Website title, may be empty or null.
-	 * @param programName,        Application/program recording the history, may
+	 * @param programName         Application/program recording the history, may
 	 *                            be empty or null.
 	 * @param otherAttributesList Other attributes, may be an empty list.
 	 *
