@@ -58,7 +58,7 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
     const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
     bool result = false;
 
-    TSK_IMG_INFO *img = addFSFromImage(image);
+    TSK_IMG_INFO *img = TskHelper::addFSFromImage(image);
     if (img == NULL) {
         return result;
     }

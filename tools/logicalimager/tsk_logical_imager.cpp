@@ -231,11 +231,6 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 static bool hasTskLogicalImager() {
     bool result = false;
 
-    TSK_IMG_INFO *img = DriveUtil::addFSFromImage(image);
-    if (img == NULL) {
-        return false;
-    }
-
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     TSKFileNameInfo filenameInfo;
     std::list<std::string> pathForTskLogicalImagerExe;
@@ -364,9 +359,8 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
 static void searchFilesByAttribute(LogicalImagerConfiguration *config, const std::string &driveName, TSK_IMG_INFO *img_info) {
     TskFindFiles findFiles(config, driveName);
     if (findFiles.openImageHandle(img_info)) {
-        tsk_error_print(stderr);
-        ReportUtil::consoleOutput(stderr, "Failed to open imagePath\n");
-        ReportUtil::handleExit(1);
+        ReportUtil::consoleOutput(stderr, "Failed to open imagePath, reason:%s\n", tsk_error_get());
+        return;
     }
 
     ReportUtil::consoleOutput(stdout, "%s - Searching for files by attribute\n", driveName.c_str());
@@ -557,6 +551,9 @@ main(int argc, char **argv1)
 
         TSK_IMG_INFO *img;
         img = TskHelper::addFSFromImage(imagePath);
+        if (img == NULL) {
+            continue;
+        }
 
         if (hasTskLogicalImager()) {
             ReportUtil::consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", imageShortName.c_str());
@@ -564,11 +561,6 @@ main(int argc, char **argv1)
             TskHelper::getInstance().reset();
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
-
-        TSK_IMG_INFO *img;
-        if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
-            ReportUtil::consoleOutput(stderr, "%s\n", tsk_error_get());
-            continue;
 
         std::string subDirForFiles;
         if (imgPathArg != NULL) {

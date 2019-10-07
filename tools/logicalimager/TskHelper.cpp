@@ -794,7 +794,7 @@ void TskHelper::enumerateFileAndVolumeSystems(TSK_IMG_INFO *img) {
 * May exit the program if image failed to open.
 *
 * @param image Path to image
-* @return TSK_IMG_INFO of the opened image if success,
+* @return TSK_IMG_INFO of the opened image if success, NULL if fail.
 */
 TSK_IMG_INFO *TskHelper::addFSFromImage(const TSK_TCHAR *image) {
     TSK_IMG_INFO *img;
@@ -802,8 +802,8 @@ TSK_IMG_INFO *TskHelper::addFSFromImage(const TSK_TCHAR *image) {
     unsigned int ssize = 0;
 
     if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
-        ReportUtil::consoleOutput(stderr, tsk_error_get());
-        ReportUtil::handleExit(1);
+        ReportUtil::consoleOutput(stderr, "%s\n", tsk_error_get());
+        return NULL;
     }
 
     TskHelper::getInstance().reset();
