@@ -844,7 +844,7 @@ public final class TimelineManager {
 					throw new TskCoreException("Error setting hash_hit of events.", ex);//NON-NLS
 				}
 			} else {
-				return new HashSet<>();
+				return eventIDs.keySet();
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting hash_hit of events.", ex);//NON-NLS
