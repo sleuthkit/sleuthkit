@@ -35,11 +35,11 @@ public class EventTypeFilterTest {
 	public void testGetEventType() {
 		System.out.println("getEventType");
 		EventTypeFilter instance = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
-		assertEquals(TimelineEventType.ROOT_EVENT_TYPE, instance.getEventType());
+		assertEquals(TimelineEventType.ROOT_EVENT_TYPE, instance.getRootEventType());
 		instance = new EventTypeFilter(TimelineEventType.FILE_SYSTEM);
-		assertEquals(TimelineEventType.FILE_SYSTEM, instance.getEventType());
+		assertEquals(TimelineEventType.FILE_SYSTEM, instance.getRootEventType());
 		instance = new EventTypeFilter(TimelineEventType.MESSAGE);
-		assertEquals(TimelineEventType.MESSAGE, instance.getEventType());
+		assertEquals(TimelineEventType.MESSAGE, instance.getRootEventType());
 	}
 
 	/**
