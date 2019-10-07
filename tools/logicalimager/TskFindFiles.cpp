@@ -32,8 +32,8 @@
  * Create the Find Files object given the Logical Imager Configuration
  * @param config LogicalImagerRuleSet to use for finding files
  */
-TskFindFiles::TskFindFiles(const LogicalImagerConfiguration *config, const std::string &driveToProcess) :
-    m_logicialImagerConfiguration(config), m_driveToProcess(driveToProcess)
+TskFindFiles::TskFindFiles(const LogicalImagerConfiguration *config, const std::string &driveName) :
+    m_logicialImagerConfiguration(config), m_driveDisplayName(driveName)
  {
     m_fileCounter = 0;
     m_totalNumberOfFiles = 0;
@@ -41,7 +41,7 @@ TskFindFiles::TskFindFiles(const LogicalImagerConfiguration *config, const std::
 }
 
 TskFindFiles::~TskFindFiles() {
-    std::string title = "Analyzing drive " + m_driveToProcess + " - Searching for files by attribute, 100% complete";
+    std::string title = "Analyzing drive " + m_driveDisplayName + " - Searching for files by attribute, 100% complete";
     SetConsoleTitleA(title.c_str());
 }
 
@@ -76,7 +76,7 @@ TskFindFiles::filterFs(TSK_FS_INFO * fs_info)
 
     setFileFilterFlags(filterFlags);
 
-    std::string title = "Analyzing drive " + m_driveToProcess + " - Searching for files by attribute";
+    std::string title = "Analyzing drive " + m_driveDisplayName + " - Searching for files by attribute";
     if (TSK_FS_TYPE_ISNTFS(fs_info->ftype)) {
         NTFS_INFO *ntfs_info = (NTFS_INFO *)fs_info;
         if (ntfs_info->alloc_file_count == 0) {
@@ -114,7 +114,7 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
                 m_percentComplete = (unsigned short)(((float)m_fileCounter / (float)m_totalNumberOfFiles) * 100);
                 static unsigned short lastReportedPctComplete = 0;
                 if ((m_percentComplete != lastReportedPctComplete)) {
-                    std::string title = "Analyzing drive " + m_driveToProcess + " - Searching for files by attribute, "
+                    std::string title = "Analyzing drive " + m_driveDisplayName + " - Searching for files by attribute, "
                         + TskHelper::intToStr((long)m_percentComplete) + std::string("% complete");
                     SetConsoleTitleA(title.c_str());
                     lastReportedPctComplete = m_percentComplete;

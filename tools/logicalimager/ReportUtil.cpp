@@ -32,9 +32,28 @@
 #include "ReportUtil.h"
 #include "TskHelper.h"
 
+static std::string sessionDirCopy;
 static FILE *reportFile;
 static FILE *consoleFile;
 static bool promptBeforeExit = true;
+
+void ReportUtil::initialize(const std::string &sessionDir) {
+    sessionDirCopy = sessionDir;
+    std::string consoleFileName = sessionDir + "/console.txt";
+    ReportUtil::openConsoleOutput(consoleFileName);
+
+    std::string reportFilename = sessionDir + "/SearchResults.txt";
+    ReportUtil::openReport(reportFilename);
+}
+
+void ReportUtil::copyConfigFile(const std::wstring &configFilename) {
+    // copy the config file into the output session directory
+    std::ifstream src(TskHelper::toNarrow(configFilename), std::ios::binary);
+    std::ofstream dst(sessionDirCopy + "/config.json", std::ios::binary);
+    dst << src.rdbuf();
+    dst.close();
+    src.close();
+}
 
 /*
 * Create the report file and print the header.
@@ -106,14 +125,14 @@ void ReportUtil::printDebug(char *msg) {
 *   - atime
 *   - ctime
 *
-* @param driveName Drive name
+* @param outputLocation output VHD file or directory
 * @param extractStatus Extract status: TSK_OK if file was extracted, TSK_ERR otherwise
-* @param ruleMatchResult The rule match result
+* @param matchedRuleInfo The matched rule info
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
-* @param extractedFilePath Extracted file path
+* @param extractedFilePath Extracted file path (non-VHD only)
 */
-void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath) {
+void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const MatchedRuleInfo *matchedRuleInfo, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't report . and ..
         return;
@@ -163,10 +182,20 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
         fullPath += "name is null";
     }
 
-    if (ruleMatchResult->isShouldAlert()) {
+    if (matchedRuleInfo->isShouldAlert()) {
         ReportUtil::consoleOutput(stdout, "Alert for %s: %s\n",
-            ruleMatchResult->getRuleSetName().c_str(),
+            matchedRuleInfo->getRuleSetName().c_str(),
             fullPath.c_str());
+    }
+}
+
+/*
+* Close a file.
+*/
+void closeFile(FILE **file) {
+    if (*file) {
+        fclose(*file);
+        *file = NULL;
     }
 }
 
@@ -174,17 +203,12 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
 * Close the report file.
 */
 void ReportUtil::closeReport() {
-    if (reportFile) {
-        fclose(reportFile);
-        reportFile = NULL;
-    }
+    closeFile(&reportFile);
 }
 
 void ReportUtil::handleExit(int code) {
-    if (consoleFile) {
-        fclose(consoleFile);
-        consoleFile = NULL;
-    }
+    closeFile(&reportFile);
+    closeFile(&consoleFile);
     if (promptBeforeExit) {
         std::cout << std::endl << "Press any key to exit";
         (void)_getch();
