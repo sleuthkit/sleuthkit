@@ -220,7 +220,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         }
     }
 
-    // Get the first part of the directory path. 
+    // Get the first part of the directory path.
     cur_name_to_match = (char *)strtok_r(cpath, "/", &strtok_last);
     cur_attr_to_match = NULL;
 
@@ -325,7 +325,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         path_matched.clear();
     }
 
-    // we loop until we know the outcome and then exit. 
+    // we loop until we know the outcome and then exit.
     // everything should return from inside the loop.
     is_done = 0;
     while (is_done == 0) {
@@ -335,7 +335,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         TSK_FS_DIR *fs_dir = NULL;
         bool bIsCachedFSDir = false;
 
-        if (NULL != starting_fs_dir) {	// if we found a partial cache hit, then use the cached TSK_FS_DIR as a starting point 
+        if (NULL != starting_fs_dir) {	// if we found a partial cache hit, then use the cached TSK_FS_DIR as a starting point
             fs_dir = starting_fs_dir;
             bIsCachedFSDir = true;      // remember this is a cached TSK_FS_DIR, so we don't close it
             starting_fs_dir = NULL;		// not valid for subsequent iterations
@@ -474,7 +474,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
             else if (fs_name->flags & TSK_FS_NAME_FLAG_ALLOC) {
                 fs_name_best = fs_name;
             }
-            // we found an unallocated entry 
+            // we found an unallocated entry
             else {
                 // if the existing 'best' is alloc, it wins
                 if (fs_name_best->flags & TSK_FS_NAME_FLAG_ALLOC) {
@@ -509,7 +509,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                 path_matched.append(cur_name_to_match);
             }
 
-            // save the matched path and its inum/TSK_FS_DIR to cache 
+            // save the matched path and its inum/TSK_FS_DIR to cache
             if (fs_name_best->flags & TSK_FS_NAME_FLAG_ALLOC) {
                 TSK_FS_DIR *cache_fs_dir = NULL;
                 Path2InumCacheData *pCacheData = NULL;
@@ -551,7 +551,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                         if ((fs_file2->meta->flags & TSK_FS_NAME_FLAG_ALLOC) && (fs_file2->meta->seq != fs_name_best->meta_seq)) { // MFT entry has been reallocated
                             isReallocated = true;
                         }
-                        else if ((fs_file2->meta->flags & TSK_FS_NAME_FLAG_UNALLOC) && (fs_file2->meta->seq + 1 != fs_name_best->meta_seq)) { // MFT entry has been reallocated 
+                        else if ((fs_file2->meta->flags & TSK_FS_NAME_FLAG_UNALLOC) && (fs_file2->meta->seq + 1 != fs_name_best->meta_seq)) { // MFT entry has been reallocated
                             isReallocated = true;
 
                         }
@@ -606,7 +606,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         if (!bIsCachedFSDir) {
             tsk_fs_dir_close(fs_dir);
         }
-        fs_dir = NULL;  
+        fs_dir = NULL;
     }
 
     // std::out << "TSKHlprPath2inum(): Not found = " << std::string(a_path) << std::endl;
@@ -733,4 +733,97 @@ void TskHelper::replaceAll(std::string &str, const std::string &from, const std:
         str.replace(start_pos, from.length(), to);
         start_pos += to.length();
     }
+}
+
+/*
+* Open the file system in the disk image and add it to the TskHelper.getInstance()
+*
+* @param img Disk image to open
+* @param byteOffset Byte offset to start analyzing from
+*/
+void TskHelper::openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset) {
+    TSK_FS_INFO *fs_info;
+    if ((fs_info = tsk_fs_open_img(img, byteOffset, TSK_FS_TYPE_DETECT)) != NULL) {
+        // Tell TSKHelper about this FS
+        TskHelper::getInstance().addFSInfo(fs_info);
+    }
+    else {
+        // check if it is bitlocker - POC effort
+        char buffer[32];
+        tsk_img_read(img, byteOffset, buffer, 32);
+        if ((buffer[3] == '-') && (buffer[4] == 'F') &&
+            (buffer[5] == 'V') && (buffer[6] == 'E') &&
+            (buffer[7] == '-') && (buffer[8] == 'F') &&
+            (buffer[9] == 'S') && (buffer[10] == '-'))
+        {
+            std::cerr << "Volume is encrypted with BitLocker." << std::endl
+                << "Volume did not have a file system and has a BitLocker signature" << std::endl;
+        }
+
+        ReportUtil::printDebug("Volume does not contain a file system");
+        tsk_error_reset();
+    }
+}
+
+void TskHelper::enumerateFileAndVolumeSystems(TSK_IMG_INFO *img) {
+    TSK_VS_INFO *vs_info;
+    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+        ReportUtil::printDebug("No volume system found. Looking for file system");
+        TskHelper::getInstance().openFs(img, 0);
+    }
+    else {
+        // process the volume system
+        //fprintf(stdout, "Partition:\n");
+        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+            //fprintf(stdout, "#%i: %s Start: %s Length: %s\n",
+            //    i, vs_part->desc, std::to_string(vs_part->start).c_str(), std::to_string(vs_part->len).c_str());
+            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                continue;
+            }
+            TskHelper::getInstance().openFs(img, vs_part->start * vs_part->vs->block_size);
+        }
+        tsk_vs_close(vs_info);
+    }
+}
+
+/*
+* Add all FS found in the given image to TskHelp::getInstance()
+* Returns TSK_IMG_INFO *, caller should call img->close(img) when done.
+* The FS can be obtained by calling TskHelper::getInstance().getFSInfoList()
+* Caller must call TskHelper::getInstance().reset() when done with the FS.
+* May exit the program if image failed to open.
+*
+* @param image Path to image
+* @return TSK_IMG_INFO of the opened image if success, NULL if fail.
+*/
+TSK_IMG_INFO *TskHelper::addFSFromImage(const TSK_TCHAR *image) {
+    TSK_IMG_INFO *img;
+    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+    unsigned int ssize = 0;
+
+    if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
+        ReportUtil::consoleOutput(stderr, "%s\n", tsk_error_get());
+        return NULL;
+    }
+
+    TskHelper::getInstance().reset();
+    TskHelper::getInstance().setImgInfo(img);
+
+    TSK_VS_INFO *vs_info;
+    if ((vs_info = tsk_vs_open(img, 0, TSK_VS_TYPE_DETECT)) == NULL) {
+        TskHelper::getInstance().openFs(img, 0);
+    }
+    else {
+        // process the volume system
+        for (TSK_PNUM_T i = 0; i < vs_info->part_count; i++) {
+            const TSK_VS_PART_INFO *vs_part = tsk_vs_part_get(vs_info, i);
+            if ((vs_part->flags & TSK_VS_PART_FLAG_UNALLOC) || (vs_part->flags & TSK_VS_PART_FLAG_META)) {
+                continue;
+            }
+            TskHelper::getInstance().openFs(img, vs_part->start * vs_part->vs->block_size);
+        }
+        tsk_vs_close(vs_info);
+    }
+    return img;
 }

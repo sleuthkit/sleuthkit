@@ -30,10 +30,10 @@ FileExtractor::FileExtractor(bool createVHD, const std::wstring &cwd, const std:
 }
 
 /*
-* Initialize a directory name per image. 
+* Initialize a directory name per image.
 * Call this method once per image at the start of analyzing a drive image.
 * This method creates a directory with the subDir name to store extracted files.
-* 
+*
 * @param imageDirName Directory name for this image
 */
 void FileExtractor::initializePerImage(const std::string &imageDirName) {
@@ -93,8 +93,15 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
         if (bytesRead == -1) {
             if (fs_file->meta) {
                 if (fs_file->meta->size == 0) {
-                    // ts_fs_file_read returns -1 with empty files, don't report it.
-                    result = TSK_OK;
+                    if (fs_file->meta->addr != 0) {
+                        // ts_fs_file_read returns -1 with empty files, don't report it.
+                        result = TSK_OK;
+                    } else {
+                        // if addr is 0, the drive maybe disconnected, extraction failed.
+                        ReportUtil::printDebug("extractFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, offset);
+                        ReportUtil::consoleOutput(stderr, "ERROR: Failed to extract file, filename=%s\tpath=%s\n", fs_file->name->name, path);
+                        result = TSK_ERR;
+                    }
                     break;
                 }
                 else if (fs_file->meta->flags & TSK_FS_NAME_FLAG_UNALLOC) {
@@ -104,12 +111,12 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
                 }
                 else {
                     ReportUtil::printDebug("extractFile: tsk_fs_file_read returns -1 filename=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, offset);
-                    ReportUtil::consoleOutput(stderr, "extractFile: tsk_fs_file_read returns -1 filename=%s\tpath=%s\toffset=%" PRIxOFF "\n", fs_file->name->name, path, offset);
+                    ReportUtil::consoleOutput(stderr, "ERROR: Failed to extract file, filename=%s\tpath=%s\n", fs_file->name->name, path);
                     result = TSK_ERR;
                     break;
                 }
             }
-            else {
+            else { // meta is NULL
                 // don't report it
                 result = TSK_ERR;
                 break;
@@ -122,7 +129,9 @@ TSK_RETVAL_ENUM FileExtractor::extractFile(TSK_FS_FILE *fs_file, const char *pat
         if (!m_createVHD && file) {
             size_t bytesWritten = fwrite((const void *)buffer, sizeof(char), bytesRead, file);
             if (bytesWritten != bytesRead) {
-                ReportUtil::consoleOutput(stderr, "ERROR: extractFile failed: %s\n", filename.c_str());
+                ReportUtil::consoleOutput(stderr, "ERROR: Failed to write file: %s reason: %s\n", filename.c_str(), _strerror(NULL));
+                result = TSK_ERR;
+                break; // don't read anymore once we have a write failure
             }
         }
         offset += bytesRead;
@@ -201,7 +210,7 @@ void FileExtractor::createDirectoryRecursively(const std::wstring &path) {
         pos = path2.find_first_of(L"\\", pos + 1);
         if (CreateDirectoryW(std::wstring(L"\\\\?\\" + m_cwd + L"\\" + path2.substr(0, pos)).c_str(), NULL) == 0) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                ReportUtil::consoleOutput(stderr, "ERROR: Fail to create directory %s Reason: %s\n", TskHelper::toNarrow(path).c_str(), 
+                ReportUtil::consoleOutput(stderr, "ERROR: Fail to create directory %s Reason: %s\n", TskHelper::toNarrow(path).c_str(),
                     ReportUtil::GetErrorStdStr(GetLastError()).c_str());
                 ReportUtil::handleExit(1);
             }
