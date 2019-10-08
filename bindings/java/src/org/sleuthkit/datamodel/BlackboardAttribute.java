@@ -1326,7 +1326,35 @@ public class BlackboardAttribute {
 		
 		TSK_DATETIME_DELETED(133, "TSK_DATETIME_DELETED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskdatetimedeleted.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
+		
+		TSK_DATETIME_PASSWORD_RESET(134, "TSK_DATETIME_PASSWORD_RESET",
+				bundle.getString("BlackboardAttribute.tskdatetimepwdreset.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
+				
+		TSK_DATETIME_PASSWORD_FAIL(135, "TSK_DATETIME_PWD_FAIL",
+				bundle.getString("BlackboardAttribute.tskdatetimepwdfail.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
+		
+		TSK_DISPLAY_NAME(136, "TSK_DISPLAY_NAME",
+				bundle.getString("BlackboardAttribute.tskdisplayname.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_PASSWORD_SETTINGS(137, "TSK_PASSWORD_SETTINGS",
+				bundle.getString("BlackboardAttribute.tskpasswordsettings.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_ACCOUNT_SETTINGS(138, "TSK_ACCOUNT_SETTINGS",
+				bundle.getString("BlackboardAttribute.tskaccountsettings.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_PASSWORD_HINT(139, "TSK_PASSWORD_HINT", 
+			bundle.getString("BlackboardAttribute.tskpasswordhint.text"), 
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_GROUPS (140, "TSK_GROUPS", 
+				bundle.getString("BlackboardAttribute.tskgroups.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
 		private final String typeName;

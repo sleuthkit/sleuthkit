@@ -217,13 +217,13 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
         throw std::logic_error("ERROR: a rule with full-paths cannot have other rule definitions");
     }
 
-    RuleMatchResult *ruleMatchKey = new RuleMatchResult(ruleSetName, name, description, shouldSave, shouldAlert);
+    MatchedRuleInfo *ruleMatchKey = new MatchedRuleInfo(ruleSetName, name, description, shouldSave, shouldAlert);
     if (!fullPaths.empty()) {
         m_fullFilePaths.first = ruleMatchKey;
         m_fullFilePaths.second = fullPaths;
     }
     else if (!vector.empty()) {
-        m_rules.push_back(std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>(ruleMatchKey, vector));
+        m_rules.push_back(std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>(ruleMatchKey, vector));
     }
 }
 
@@ -235,7 +235,7 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
 * @throws std::logic_error on any error
 */
 void LogicalImagerRuleSet::constructRuleSet(const nlohmann::json ruleSet,
-    std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>> &outRules
+    std::vector<std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>> &outRules
 ) {
     std::vector<LogicalImagerRuleBase *> vector;
     std::list<std::string> fullPaths;
@@ -279,8 +279,8 @@ LogicalImagerRuleSet::~LogicalImagerRuleSet() {
  */
 bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path, matchCallback callbackFunc) const {
     bool result = true;
-    for (std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
-        const std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>> tuple = *it;
+    for (std::vector<std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>>::const_iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
+        const std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>> tuple = *it;
         std::vector<LogicalImagerRuleBase *> rules = tuple.second;
         bool result = true;
         // All rules in this set must match (ANDed)
@@ -304,6 +304,6 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path, match
 * 
 * @returns the full file paths rule set
 */
-const std::pair<const RuleMatchResult *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {
+const std::pair<const MatchedRuleInfo *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {
     return m_fullFilePaths;
 }

@@ -54,6 +54,18 @@ public final class Account {
 		public static final Account.Type WHATSAPP = new Type("WHATSAPP", "WhatsApp");
 		public static final Account.Type MESSAGING_APP = new Type("MESSAGING_APP", "MessagingApp");
 		public static final Account.Type WEBSITE = new Type("WEBSITE", "Website");
+		
+		public static final Account.Type IMO = new Type("IMO", "IMO");
+		public static final Account.Type LINE = new Type("LINE", "LINE");
+		public static final Account.Type SKYPE = new Type("SKYPE", "Skype");
+		public static final Account.Type TANGO = new Type("TANGO", "Tango");
+		public static final Account.Type TEXTNOW = new Type("TEXTNOW", "TextNow");
+		public static final Account.Type THREEMA = new Type("THREEMA", "ThreeMa");
+		public static final Account.Type VIBER = new Type("VIBER", "Viber");
+		
+		public static final Account.Type XENDER = new Type("XENDER", "Xender");
+		public static final Account.Type ZAPYA = new Type("ZAPYA", "Zapya");
+		public static final Account.Type SHAREIT = new Type("SHAREIT", "ShareIt");
 
 		public static final List<Account.Type> PREDEFINED_ACCOUNT_TYPES = Arrays.asList(
 				CREDIT_CARD,
@@ -65,7 +77,17 @@ public final class Account {
 				INSTAGRAM,
 				WHATSAPP,
 				MESSAGING_APP,
-				WEBSITE
+				WEBSITE,
+				IMO,
+				LINE,
+				SKYPE,
+				TANGO,
+				TEXTNOW,
+				THREEMA,
+				VIBER,
+				XENDER,
+				ZAPYA,
+				SHAREIT
 		);
 
 		private final String typeName;

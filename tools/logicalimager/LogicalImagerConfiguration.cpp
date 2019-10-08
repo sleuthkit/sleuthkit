@@ -207,7 +207,7 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
         if (it.key() == "rule-sets") {
             for (auto ruleSetIter = it.value().begin(); ruleSetIter != it.value().end(); ++ruleSetIter) {
                 nlohmann::json ruleSetValue = ruleSetIter.value();
-                std::vector<std::pair<const RuleMatchResult *, std::vector<LogicalImagerRuleBase *>>> rules;
+                std::vector<std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>> rules;
                 LogicalImagerRuleSet *ruleSet = new LogicalImagerRuleSet();
                 ruleSet->constructRuleSet(ruleSetValue, rules);
                 m_ruleSets.push_back(ruleSet);
@@ -261,11 +261,11 @@ TSK_RETVAL_ENUM LogicalImagerConfiguration::matches(TSK_FS_FILE *fs_file, const 
 
 /**
 * Return a list of full-paths rule sets in the Logical Imager Configuration
-* @returns each element in the list consists of a RuleMatchResult and a list of full-paths.
+* @returns each element in the list consists of a MatchedRuleInfo and a list of full-paths.
 */
-const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> LogicalImagerConfiguration::getFullFilePaths() const
+const std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>> LogicalImagerConfiguration::getFullFilePaths() const
 {
-    std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> vector;
+    std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>> vector;
     for (std::vector<LogicalImagerRuleSet *>::const_iterator iter = m_ruleSets.begin(); iter != m_ruleSets.end(); ++iter) {
         vector.push_back((*iter)->getFullFilePaths());
     }

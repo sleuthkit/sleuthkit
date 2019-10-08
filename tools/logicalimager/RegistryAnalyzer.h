@@ -25,7 +25,6 @@ class RegistryAnalyzer {
 public:
     RegistryAnalyzer(const std::string &outputFilePath);
     ~RegistryAnalyzer();
-
     int analyzeSAMUsers() const;
 
 private:

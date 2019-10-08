@@ -91,7 +91,7 @@ class TimelineEventTypes {
 
 	static class FilePathEventType extends TimelineEventTypeImpl {
 
-		FilePathEventType(long typeID, String displayName, TimelineEventType.TypeLevel eventTypeZoomLevel, TimelineEventType superType) {
+		FilePathEventType(long typeID, String displayName, TimelineEventType.HierarchyLevel eventTypeZoomLevel, TimelineEventType superType) {
 			super(typeID, displayName, eventTypeZoomLevel, superType);
 		}
 
