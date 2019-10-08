@@ -17,6 +17,7 @@
 #include "tsk/base/tsk_base_i.h"
 #include "tsk/fs/tsk_fs_i.h"
 #include "TskHelper.h"
+#include "ReportUtil.h"
 
 static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 

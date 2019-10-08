@@ -32,9 +32,28 @@
 #include "ReportUtil.h"
 #include "TskHelper.h"
 
+static std::string sessionDirCopy;
 static FILE *reportFile;
 static FILE *consoleFile;
 static bool promptBeforeExit = true;
+
+void ReportUtil::initialize(const std::string &sessionDir) {
+    sessionDirCopy = sessionDir;
+    std::string consoleFileName = sessionDir + "/console.txt";
+    ReportUtil::openConsoleOutput(consoleFileName);
+
+    std::string reportFilename = sessionDir + "/SearchResults.txt";
+    ReportUtil::openReport(reportFilename);
+}
+
+void ReportUtil::copyConfigFile(const std::wstring &configFilename) {
+    // copy the config file into the output session directory
+    std::ifstream src(TskHelper::toNarrow(configFilename), std::ios::binary);
+    std::ofstream dst(sessionDirCopy + "/config.json", std::ios::binary);
+    dst << src.rdbuf();
+    dst.close();
+    src.close();
+}
 
 /*
 * Create the report file and print the header.
