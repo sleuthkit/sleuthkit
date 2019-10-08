@@ -31,9 +31,6 @@
 *
 */
 LogicalImagerConfiguration::~LogicalImagerConfiguration() {
-    for (std::vector<LogicalImagerRuleSet *>::const_iterator iter = m_ruleSets.begin(); iter != m_ruleSets.end(); ++iter) {
-        delete *iter;
-    }
 }
 
 /*

@@ -31,8 +31,6 @@ public:
     RegVal(std::wstring &valName, int valType, long valLen, unsigned char *binData); // bin data
     RegVal(const Rejistry::RegistryValue *value);
 
-    ~RegVal();
-
     int initialize(const Rejistry::RegistryValue *value);
 
     void setValName(std::wstring &valName) { m_valName = valName; }

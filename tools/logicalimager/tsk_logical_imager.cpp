@@ -453,7 +453,7 @@ main(int argc, char **argv1)
 
     std::string reportFilename = directoryPath + "/SearchResults.txt";
     ReportUtil::openReport(reportFilename);
-    
+
     std::list<std::pair<TSK_IMG_INFO *, std::string>> imgFinalizePending;
     fileExtractor = new FileExtractor(createVHD, cwd, directoryPath);
 
@@ -592,7 +592,7 @@ main(int argc, char **argv1)
         }
 
         if (closeImgNow) {
-            // close the image, if not creating VHD. 
+            // close the image, if not creating VHD.
             img->close(img);
         }
     }

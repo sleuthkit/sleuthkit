@@ -24,44 +24,42 @@ import java.util.SortedSet;
 import org.apache.commons.lang3.ObjectUtils;
 
 /**
- * Implementation of TimelineEventType for the standard predefined event types AND has package
- scope parsing methods.
+ * Implementation of TimelineEventType for the standard predefined event types.
  */
 class TimelineEventTypeImpl implements TimelineEventType {
 
 	private final long typeID;
 	private final String displayName;
 	private final TimelineEventType superType;
-	private final TimelineEventType.TypeLevel eventTypeZoomLevel;
+	private final TimelineEventType.HierarchyLevel eventTypeZoomLevel;
 
 	/**
-	 * 
-	 * @param typeID  ID (from the Database)
+	 *
+	 * @param typeID             ID (from the Database)
 	 * @param displayName
 	 * @param eventTypeZoomLevel Where it is in the type hierarchy
-	 * @param superType 
+	 * @param superType
 	 */
-	TimelineEventTypeImpl(long typeID, String displayName, TimelineEventType.TypeLevel eventTypeZoomLevel, TimelineEventType superType) {
+	TimelineEventTypeImpl(long typeID, String displayName, TimelineEventType.HierarchyLevel eventTypeZoomLevel, TimelineEventType superType) {
 		this.superType = superType;
 		this.typeID = typeID;
 		this.displayName = displayName;
 		this.eventTypeZoomLevel = eventTypeZoomLevel;
 	}
 
-	
 	TimelineEventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 		// The standard/default implementation:  Just bundle the three description levels into one object.
 		return new TimelineEventDescription(fullDescriptionRaw, medDescriptionRaw, shortDescriptionRaw);
 	}
 
 	@Override
-	public SortedSet<? extends TimelineEventType> getSubTypes() {
+	public SortedSet<? extends TimelineEventType> getChildren() {
 		return ImmutableSortedSet.of();
 	}
 
 	@Override
-	public Optional<? extends TimelineEventType> getSubType(String string) {
-		return getSubTypes().stream()
+	public Optional<? extends TimelineEventType> getChild(String string) {
+		return getChildren().stream()
 				.filter(type -> type.getDisplayName().equalsIgnoreCase(displayName))
 				.findFirst();
 	}
@@ -72,13 +70,13 @@ class TimelineEventTypeImpl implements TimelineEventType {
 	}
 
 	@Override
-	public TimelineEventType getSuperType() {
+	public TimelineEventType getParent() {
 		return ObjectUtils.defaultIfNull(superType, ROOT_EVENT_TYPE);
 
 	}
 
 	@Override
-	public TimelineEventType.TypeLevel getTypeLevel() {
+	public TimelineEventType.HierarchyLevel getTypeHierarchyLevel() {
 		return eventTypeZoomLevel;
 	}
 

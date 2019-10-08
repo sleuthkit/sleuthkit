@@ -28,7 +28,6 @@ LogicalImagerFilenameRule::LogicalImagerFilenameRule(const std::set<std::string>
 }
 
 LogicalImagerFilenameRule::~LogicalImagerFilenameRule() {
-    m_filenames.clear();
 }
 
 /**
