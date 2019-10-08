@@ -9,8 +9,8 @@
 */
 
 /**
-* \file RuleMatchResult.h
-* Contains the class definitions for the Rule Match Result.
+* \file MatchedRuleInfo.h
+* Contains the class definitions for the Matched Rule Info.
 */
 
 #pragma once
@@ -18,15 +18,15 @@
 #include <string>
 
 /**
-* Defines the rule match result
+* Defines the matched rule information
 *
 */
-class RuleMatchResult
+class MatchedRuleInfo
 {
 public:
-    RuleMatchResult(const std::string &ruleSetName, const std::string &name, 
+    MatchedRuleInfo(const std::string &ruleSetName, const std::string &name, 
         const std::string &description, bool shouldSave = true, bool shouldAlert = false);
-    ~RuleMatchResult() {}
+    ~MatchedRuleInfo() {}
 
     const std::string getRuleSetName() const { return m_ruleSetName; }
     const std::string getName() const { return m_name; }

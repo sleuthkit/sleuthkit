@@ -113,7 +113,7 @@ void ReportUtil::printDebug(char *msg) {
 * @param path Parent path of fs_file
 * @param extractedFilePath Extracted file path (non-VHD only)
 */
-void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const RuleMatchResult *ruleMatchResult, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath) {
+void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM extractStatus, const MatchedRuleInfo *matchedRuleInfo, TSK_FS_FILE *fs_file, const char *path, const std::string &extractedFilePath) {
     if (fs_file->name && (strcmp(fs_file->name->name, ".") == 0 || strcmp(fs_file->name->name, "..") == 0)) {
         // Don't report . and ..
         return;
@@ -163,9 +163,9 @@ void ReportUtil::reportResult(const std::string &outputLocation, TSK_RETVAL_ENUM
         fullPath += "name is null";
     }
 
-    if (ruleMatchResult->isShouldAlert()) {
+    if (matchedRuleInfo->isShouldAlert()) {
         ReportUtil::consoleOutput(stdout, "Alert for %s: %s\n",
-            ruleMatchResult->getRuleSetName().c_str(),
+            matchedRuleInfo->getRuleSetName().c_str(),
             fullPath.c_str());
     }
 }

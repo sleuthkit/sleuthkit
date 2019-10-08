@@ -264,13 +264,13 @@ static bool hasTskLogicalImager(const TSK_TCHAR *image) {
 *                 It is called when a file matches a rule. Depending on the matchResult setting,
 *                 this function may extract the matched file and alert the user.
 *
-* @param matchResult The RuleMatchResult
+* @param matchResult The MatchedRuleInfo
 * @param fs_file TSK_FS_FILE that matches the rule
 * @param path Path of the file
 *
 * @returns TSK_IMG_TYPE_ENUM TSK_OK if callback has no error
 */
-static TSK_RETVAL_ENUM matchCallback(const RuleMatchResult *matchResult, TSK_FS_FILE *fs_file, const char *path) {
+static TSK_RETVAL_ENUM matchCallback(const MatchedRuleInfo *matchResult, TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM extractStatus = TSK_ERR;
     std::string extractedFilePath;
 
@@ -540,9 +540,9 @@ main(int argc, char **argv1)
 
         const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
         TSKFileNameInfo filenameInfo;
-        const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
-        for (std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>>::const_iterator iter = fullFilePathsRules.begin(); iter != fullFilePathsRules.end(); ++iter) {
-            const RuleMatchResult *matchResult = iter->first;
+        const std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
+        for (std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>>::const_iterator iter = fullFilePathsRules.begin(); iter != fullFilePathsRules.end(); ++iter) {
+            const MatchedRuleInfo *matchResult = iter->first;
             const std::list<std::string> filePaths = iter->second;
             for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
                 for (std::list<std::string>::const_iterator iter = filePaths.begin(); iter != filePaths.end(); ++iter) {
