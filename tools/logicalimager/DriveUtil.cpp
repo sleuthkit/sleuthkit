@@ -26,7 +26,7 @@
 
 /*
 * Test if Current Working Directory file system is FAT.
-* 
+*
 * @param [out] cwd Current working directory
 * @returns true if current working directory file system is FAT, false otherwise.
 */
@@ -49,7 +49,7 @@ bool DriveUtil::cwdIsFAT(std::wstring &cwd) {
 
 /*
 * Test if drive is a FAT file system
-* 
+*
 * @param drive Drive to get, must be of the format "C:"
 * @return true if drive is FAT, false otherwise.
 */
@@ -59,6 +59,9 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
     bool result = false;
 
     TSK_IMG_INFO *img = TskHelper::addFSFromImage(image);
+    if (img == NULL) {
+        return result;
+    }
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
@@ -457,7 +460,7 @@ int DriveUtil::checkDriveForLDM(const std::string &driveLetter) {
 
 /*
 * Test if a drive is a BitLocker or LDM drive
-* 
+*
 * @param systemDriveLetter Drive letter, in the form of "C:"
 * @returns true if this is a BitLocker or LDM drive, false otherwise.
 *

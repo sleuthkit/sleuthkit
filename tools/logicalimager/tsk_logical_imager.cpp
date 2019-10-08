@@ -130,7 +130,7 @@ static int getLocalHost(string &a_hostName) {
 }
 
 /**
-* createDirectory: Create a directory relative to current working directory for host. 
+* createDirectory: Create a directory relative to current working directory for host.
 *
 * @param [out] directoryPathname - the directory pathname created
 * @returns  0 on success
@@ -325,7 +325,7 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
 
     // cycle over each FS in the image
     for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-        
+
         // cycle over the rule sets
         const std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>> fullFilePathsRules = config->getFullFilePaths();
         for (std::vector<std::pair<const MatchedRuleInfo *, std::list<std::string>>>::const_iterator ruleSetIter = fullFilePathsRules.begin(); ruleSetIter != fullFilePathsRules.end(); ++ruleSetIter) {
@@ -359,9 +359,8 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
 static void searchFilesByAttribute(LogicalImagerConfiguration *config, const std::string &driveName, TSK_IMG_INFO *img_info) {
     TskFindFiles findFiles(config, driveName);
     if (findFiles.openImageHandle(img_info)) {
-        tsk_error_print(stderr);
-        ReportUtil::consoleOutput(stderr, "Failed to open imagePath\n");
-        ReportUtil::handleExit(1);
+        ReportUtil::consoleOutput(stderr, "Failed to open imagePath, reason:%s\n", tsk_error_get());
+        return;
     }
 
     ReportUtil::consoleOutput(stdout, "%s - Searching for files by attribute\n", driveName.c_str());
@@ -552,6 +551,9 @@ main(int argc, char **argv1)
 
         TSK_IMG_INFO *img;
         img = TskHelper::addFSFromImage(imagePath);
+        if (img == NULL) {
+            continue;
+        }
 
         if (hasTskLogicalImager()) {
             ReportUtil::consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", imageShortName.c_str());
@@ -571,7 +573,7 @@ main(int argc, char **argv1)
             }
         }
         fileExtractor->initializePerImage(subDirForFiles);
-        
+
         // @@@ SHould probably rename outputLocation for non-VHD files
         outputLocation = subDirForFiles + (createVHD ? ".vhd" : "");
 
@@ -583,8 +585,7 @@ main(int argc, char **argv1)
                 std::string outputFileName = sessionDir + "/" + outputLocation;
 
                 if (tsk_img_writer_create(img, (TSK_TCHAR *)TskHelper::toWide(outputFileName).c_str()) == TSK_ERR) {
-                    tsk_error_print(stderr);
-                    ReportUtil::consoleOutput(stderr, "Failed to initialize VHD writer\n");
+                    ReportUtil::consoleOutput(stderr, "Failed to initialize VHD writer, reason: %s\n", tsk_error_get());
                     ReportUtil::handleExit(1);
                 }
                 imgFinalizePending.push_back(std::make_pair(img, imageShortName));
@@ -600,7 +601,7 @@ main(int argc, char **argv1)
         TskHelper::getInstance().enumerateFileAndVolumeSystems(img);
 
         ////////////////////////////////////////////////////////
-        // do the work 
+        // do the work
 
         // search for files based on full path
         searchFilesByFullPath(config, imageShortName);
@@ -619,9 +620,9 @@ main(int argc, char **argv1)
 
         // Full scan of drive for files based on extension, etc.
         searchFilesByAttribute(config, imageShortName, img);
-        
+
         if (closeImgNow) {
-            // close the image, if not creating VHD. 
+            // close the image, if not creating VHD.
             img->close(img);
         }
     }
@@ -638,8 +639,7 @@ main(int argc, char **argv1)
                 ReportUtil::consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
                 SetConsoleTitleA(std::string("Copying remainder of " + it->second).c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
-                    tsk_error_print(stderr);
-                    ReportUtil::consoleOutput(stderr, "Error finishing VHD for %s\n", it->second.c_str());
+                    ReportUtil::consoleOutput(stderr, "Error finishing VHD for %s: reason %s\n", it->second.c_str(), tsk_error_get());
                 }
             }
         }
