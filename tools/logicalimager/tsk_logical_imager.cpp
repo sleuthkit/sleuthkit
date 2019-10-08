@@ -3,7 +3,7 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2019 Basis Technology.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -166,7 +166,7 @@ static int createSessionDirectory(string &directoryPathname) {
 }
 
 /**
-* getDrivesToProcess() - returns the drive to process
+* getDrivesToProcess() - returns the drives to process
 *          By default we process all available PhysicalDrives, unless
 *          a drive is paritioned with LDM or has Bitlocker enabled, in which case we
 *          enumerate all drive letters.
@@ -224,7 +224,7 @@ static BOOL getDrivesToProcess(std::vector<std::wstring> &drivesToProcess) {
 }
 
 /**
-* hasTskLogicalImage - test if /tsk_logical_image.exe is in the image
+* hasTskLogicalImage - test if /tsk_logical_image.exe is in the image/drive
 *
 * @return true if found, false otherwise
 */
@@ -246,6 +246,7 @@ static bool hasTskLogicalImager() {
                 tsk_fs_file_close(fs_file);
                 break;
             }
+            tsk_fs_file_close(fs_file);
         }
         if (result) {
             break;
@@ -257,23 +258,23 @@ static bool hasTskLogicalImager() {
 
 /*
 * matchCallback - The function is passed into the LogicalImagerConfiguration.
-*                 It is called when a file matches a rule. Depending on the matchResult setting,
+*                 It is called when a file matches a rule. Depending on the matchedRuleInfo setting,
 *                 this function may extract the matched file and alert the user.
 *
-* @param matchResult The MatchedRuleInfo
+* @param matchedRuleInfo The MatchedRuleInfo
 * @param fs_file TSK_FS_FILE that matches the rule
 * @param path Path of the file
 *
 * @returns TSK_IMG_TYPE_ENUM TSK_OK if callback has no error
 */
-static TSK_RETVAL_ENUM matchCallback(const MatchedRuleInfo *matchResult, TSK_FS_FILE *fs_file, const char *path) {
+static TSK_RETVAL_ENUM matchCallback(const MatchedRuleInfo *matchedRuleInfo, TSK_FS_FILE *fs_file, const char *path) {
     TSK_RETVAL_ENUM extractStatus = TSK_ERR;
     std::string extractedFilePath;
 
-    if (matchResult->isShouldSave()) {
+    if (matchedRuleInfo->isShouldSave()) {
         extractStatus = fileExtractor->extractFile(fs_file, path, extractedFilePath);
     }
-    ReportUtil::reportResult(outputLocation, extractStatus, matchResult, fs_file, path, extractedFilePath);
+    ReportUtil::reportResult(outputLocation, extractStatus, matchedRuleInfo, fs_file, path, extractedFilePath);
     return TSK_OK;
 }
 
@@ -342,9 +343,9 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
                     std::string parent = getPathName(*filePathIter);
                     fs_file->name = fs_name;
                     matchCallback(matchedRuleInfo, fs_file, parent.c_str());
-
-                    tsk_fs_file_close(fs_file);
                 }
+                tsk_fs_name_free(fs_name);
+                tsk_fs_file_close(fs_file);
             }
         }
     }
@@ -455,6 +456,7 @@ main(int argc, char **argv1)
             tsk_version_print(stdout);
             exit(0);
 
+        // undocumented.  Used for testing only.
         case _TSK_T('i'):
             imgPathArg = OPTARG;
             break;
@@ -465,6 +467,7 @@ main(int argc, char **argv1)
     if (OPTIND != argc) {
         usage();
     }
+
 
     ////////////////////////////////////////////////////////
     // Load the configuration file
@@ -502,8 +505,7 @@ main(int argc, char **argv1)
         // @@@ Ideally, we'd just store the name of the image here and strip out parent folder
         imgShortNames.push_back(imgPathArg);
         imgPaths.push_back(imgPathArg);
-    }
-    else {
+    } else {
         if (getDrivesToProcess(imgShortNames)) {
             ReportUtil::printDebug("Process is running in elevated mode");
             for (auto it = std::begin(imgShortNames); it != std::end(imgShortNames); ++it) {
@@ -564,8 +566,7 @@ main(int argc, char **argv1)
         std::string subDirForFiles;
         if (imgPathArg != NULL) {
             subDirForFiles = "sparse_image";
-        }
-        else {
+        } else {
             subDirForFiles = imageShortName;
             // strip final ":"
             if (subDirForFiles.back() == ':') {
@@ -610,12 +611,12 @@ main(int argc, char **argv1)
         std::string prefix;
         if (imgPathArg != NULL) {
             prefix = "sparse_image";
-        }
-        else {
+        } else {
             prefix = imageShortName;
         }
         reportUsers(sessionDir, prefix);
 
+        // We no longer need the cached files
         TskHelper::getInstance().reset();
 
         // Full scan of drive for files based on extension, etc.

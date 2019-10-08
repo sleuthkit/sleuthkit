@@ -125,9 +125,9 @@ void ReportUtil::printDebug(char *msg) {
 *   - atime
 *   - ctime
 *
-* @param driveName Drive name
+* @param outputLocation output VHD file or directory
 * @param extractStatus Extract status: TSK_OK if file was extracted, TSK_ERR otherwise
-* @param ruleMatchResult The rule match result
+* @param matchedRuleInfo The matched rule info
 * @param fs_file TSK_FS_FILE that matches
 * @param path Parent path of fs_file
 * @param extractedFilePath Extracted file path (non-VHD only)

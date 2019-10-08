@@ -56,7 +56,7 @@ int RegKey::initialize(const Rejistry::RegistryKey *regKey) {
     m_modifyTime.dwHighDateTime = (DWORD)(timestamp >> 32);
 
     m_regKey = new Rejistry::RegistryKey(*regKey);
-
+    
     return 0;
 }
 

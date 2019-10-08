@@ -85,10 +85,9 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
 * Returns TSK_IMG_INFO *, caller should call img->close(img) when done.
 * The FS can be obtained by calling TskHelper::getInstance().getFSInfoList()
 * Caller must call TskHelper::getInstance().reset() when done with the FS.
-* May exit the program if image failed to open.
 *
 * @param image Path to image
-* @return TSK_IMG_INFO of the opened image if success,
+* @return TSK_IMG_INFO of the opened image if success, NULL otherwise.
 */
 TSK_IMG_INFO *DriveUtil::addFSFromImage(const TSK_TCHAR *image) {
     TSK_IMG_INFO *img;
@@ -96,8 +95,8 @@ TSK_IMG_INFO *DriveUtil::addFSFromImage(const TSK_TCHAR *image) {
     unsigned int ssize = 0;
 
     if ((img = tsk_img_open(1, &image, imgtype, ssize)) == NULL) {
-        ReportUtil::consoleOutput(stderr, tsk_error_get());
-        ReportUtil::handleExit(1);
+        ReportUtil::consoleOutput(stderr, "%s\n", tsk_error_get());
+        return NULL;
     }
 
     TskHelper::getInstance().reset();

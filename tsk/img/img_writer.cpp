@@ -843,6 +843,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
     }
     if ((writer->blockToSectorBitmap = (unsigned char **)tsk_malloc(writer->totalBlocks * sizeof(unsigned char *))) == NULL) {
         free(writer->blockToSectorNumber);
+        free(writer->blockStatus);
         free(writer->fileName);
         free(raw_info->img_writer);
         return TSK_ERR;

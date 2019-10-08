@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2010-2019 Brian Carrier.  All Rights reserved
+** Copyright (c) 2019 Basis Technology.  All Rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 **
@@ -226,7 +226,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         else if (-2 == rc) {
             std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUserNamesKeyName) + 
                 " Local user accounts may not be reported.";
-            std::cerr << errMsg << std::endl;
+            ReportUtil::consoleOutput(stderr, errMsg.c_str());
             rc = -1;
         }
 
@@ -303,7 +303,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                             sDateCreated = FiletimeToStr(it->second);
                         }
                         else {
-                            std::wcerr << "User name = " << wsUserName << " not found in acctCreationDateMap" << std::endl;
+                            std::string msg = TskHelper::toNarrow(L"User name = " + wsUserName + L" not found in acctCreationDateMap\n");
+                            ReportUtil::consoleOutput(stderr, msg.c_str());
                         }
 
                         if ((acbFlags & 0x0001) == 0x0001)
@@ -352,7 +353,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
             std::string errMsg = "analyzeSAMUsers: Error getting key  = "
                 + TskHelper::toNarrow(wsSAMUsersKeyName)
                 + " Local user accounts may not be reported.";
-            std::cerr << errMsg << std::endl;
+            ReportUtil::consoleOutput(stderr, errMsg.c_str());
             rc = -1;
         }
     }
@@ -363,8 +364,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         }
         catch (const std::exception& e) {
             std::string errMsg = "RegisteryAnalyzer: Uncaught exception in analyzeSAMUsers.";
-            std::cerr << errMsg << std::endl;
-            std::cerr << e.what() << std::endl;
+            ReportUtil::consoleOutput(stderr, errMsg.c_str());
+            ReportUtil::consoleOutput(stderr, e.what());
         }
         rc = -1;
     }
@@ -429,7 +430,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     comment = L"";
 
     if (aVRecLen < 44) {
-        std::cerr << "ERROR: SAMV record too short" << std::endl;
+        ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
         return -1;
     }
 
@@ -441,7 +442,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     len = makeDWORD(&pVRec[16]);
 
     if ((off >= aVRecLen) || (off + len > aVRecLen)) {
-        std::cerr << "ERROR: SAMV record too short" << std::endl;
+        ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
         return -1;
     }
     userName = utf16LEToWString(&pVRec[off], len);
@@ -451,7 +452,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     len = makeDWORD(&pVRec[28]);
     if (len > 0) {
         if (off + len > aVRecLen) {
-            std::cerr << "ERROR: SAMV record too short" << std::endl;
+            ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
             return -1;
         }
         userFullName = utf16LEToWString(&pVRec[off], len);
@@ -462,7 +463,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     len = makeDWORD(&pVRec[40]);
     if (len > 0) {
         if (off + len > aVRecLen) {
-            std::cerr << "ERROR: SAMV record too short" << std::endl;
+            ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
             return -1;
         }
         comment = utf16LEToWString(&pVRec[off], len);
@@ -496,7 +497,7 @@ int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen,
     FILETIME tv;
 
     if (aFRecLen < 68) {
-        std::cerr << "ERROR: SAMF record too short" << std::endl;
+        ReportUtil::consoleOutput(stderr, "ERROR: SAMF record too short\n");
         return -1;
     }
 

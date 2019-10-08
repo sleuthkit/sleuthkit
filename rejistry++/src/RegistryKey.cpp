@@ -104,7 +104,6 @@ namespace Rejistry {
     }
 
     size_t RegistryKey::getValueListSize() const {
-        RegistryValue::RegistryValuePtrList values;
         Rejistry::ValueListRecord *valueListRecord = _nk->getValueList();
         size_t size = valueListRecord->getValuesSize();
         delete valueListRecord;
