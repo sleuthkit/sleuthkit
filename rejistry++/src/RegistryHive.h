@@ -48,6 +48,10 @@ namespace Rejistry {
          */
         virtual REGFHeader * getHeader() const = 0;
 
+        /**
+         * Virtual destructor to prevent memory leak
+         */
+        virtual ~RegistryHive() {}
     };
 };
 

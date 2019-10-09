@@ -74,6 +74,13 @@ namespace Rejistry {
         RegistryKeyPtrList getSubkeyList() const;
 
         /**
+        * Get number of subkeys for the current registry key.
+        * @returns number of subkeys.
+        * @throws RegistryParseException on error.
+        */
+        size_t getSubkeyListSize() const;
+
+        /**
          * Get the subkey with the given name.
          * @param name ASCII name of the subkey of retrieve.
          * @returns Pointer to the subkey.
@@ -87,6 +94,13 @@ namespace Rejistry {
          * @throws RegistryParseException on error.
          */
         RegistryValue::RegistryValuePtrList getValueList() const;
+
+        /**
+        * Get number of values for the current key.
+        * @returns Number of values.
+        * @throws RegistryParseException on error.
+        */
+        size_t getValueListSize() const;
 
         /**
          * Get the value for the given name.
