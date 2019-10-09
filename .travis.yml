@@ -41,6 +41,7 @@ addons:
     - gettext
     - cppunit
     - afflib
+    - adoptopenjdk8
 
 python:
   - "2.7"
