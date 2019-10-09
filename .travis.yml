@@ -60,7 +60,7 @@ before_script:
     fi
 
 script:
-  - javac --version
+  - javac -version
   - ./bootstrap && ./configure --prefix=/usr && make
   - pushd bindings/java/ && ant -q dist-PostgreSQL && popd
   - make check && if [ -f "tests/test-suite.log" ];then cat tests/test-suite.log; fi ; if [ -f "unit_tests/base/test-suite.log" ];then cat unit_tests/base/test-suite.log; fi
