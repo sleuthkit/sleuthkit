@@ -56,6 +56,8 @@ LogicalImagerPathRule::LogicalImagerPathRule(const std::set<std::string> &paths)
 }
 
 LogicalImagerPathRule::~LogicalImagerPathRule() {
+    m_paths.clear();
+    m_userFolderRegexes.clear();
 }
 
 /**

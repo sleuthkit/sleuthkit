@@ -23,7 +23,7 @@
 
 class TskFindFiles : public TskAuto {
 public:
-    TskFindFiles(const LogicalImagerConfiguration *config, const std::string &driveToProcess);
+    TskFindFiles(const LogicalImagerConfiguration *config, const std::string &driveName);
     ~TskFindFiles();
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE *fs_file, const char *path);

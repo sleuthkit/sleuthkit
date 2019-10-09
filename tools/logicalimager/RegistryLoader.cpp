@@ -249,8 +249,7 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
     const std::string SYS_REG_FILES_DIR = "/Windows/System32/config";
 
     TSKFileNameInfo filenameInfo;
-    TSK_FS_FILE *fsFile;
-    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), false, filenameInfo, NULL, &fsFile);
+    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, SYS_REG_FILES_DIR.c_str(), false, filenameInfo, NULL, NULL);
     if (retval == -1) {
         ReportUtil::consoleOutput(stderr, "Error in finding system Registry files. System Registry files will not be analyzed.\n");
         ReportUtil::consoleOutput(stderr, "findSystemRegFiles(): path2inum() failed for dir = %s, errno = %s\n", SYS_REG_FILES_DIR.c_str(), tsk_error_get());
@@ -347,8 +346,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info) {
 int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &a_starting_dir) {
     TSK_FS_DIR *fs_dir;
     TSKFileNameInfo filenameInfo;
-    TSK_FS_FILE *fsFile;
-    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, a_starting_dir.c_str(), false, filenameInfo, NULL, &fsFile);
+    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, a_starting_dir.c_str(), false, filenameInfo, NULL, NULL);
 
     if (retval == -1) {
         ReportUtil::consoleOutput(stderr, "Error in finding User Registry files. Some User Registry files may not be analyzed.\n");
@@ -499,8 +497,7 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
     }
 
     TSKFileNameInfo filenameInfo;
-    TSK_FS_FILE *fsFile;
-    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, usrClassSubdir.c_str(), false, filenameInfo, NULL, &fsFile);
+    int8_t retval = TskHelper::getInstance().path2Inum(a_fs_info, usrClassSubdir.c_str(), false, filenameInfo, NULL, NULL);
 
     if (retval == -1) {
         ReportUtil::consoleOutput(stderr, "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.\n");
