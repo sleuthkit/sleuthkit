@@ -44,6 +44,7 @@ tsk_malloc(size_t len)
 void *
 tsk_realloc(void *ptr, size_t len)
 {
+    // Use tmpPtr to prevent memory leak when realloc failed
     void *tmpPtr = realloc(ptr, len);
     if (tmpPtr == 0) {
         tsk_error_reset();
