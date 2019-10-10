@@ -805,6 +805,10 @@ public final class TimelineManager {
 	}
 
 	private void updateEventSourceTaggedFlag(CaseDbConnection conn, Collection<Long> eventDescriptionIDs, int flagValue) throws TskCoreException {
+		if (eventDescriptionIDs.isEmpty()) {
+			return;
+		}
+		
 		String sql = "UPDATE tsk_event_descriptions SET tagged = " + flagValue + " WHERE event_description_id IN (" + buildCSVString(eventDescriptionIDs) + ")"; //NON-NLS
 		try (Statement updateStatement = conn.createStatement()) {
 			updateStatement.executeUpdate(sql);
@@ -831,12 +835,16 @@ public final class TimelineManager {
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = caseDB.getConnection(); Statement updateStatement = con.createStatement();) {
 			Map<Long, Long> eventIDs = getEventAndDescriptionIDs(con, content.getId(), true);
-			String sql = "UPDATE tsk_event_descriptions SET hash_hit = 1" + " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"; //NON-NLS
-			try {
-				updateStatement.executeUpdate(sql); //NON-NLS
+			if (! eventIDs.isEmpty()) {
+				String sql = "UPDATE tsk_event_descriptions SET hash_hit = 1" + " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"; //NON-NLS
+				try {
+					updateStatement.executeUpdate(sql); //NON-NLS
+					return eventIDs.keySet();
+				} catch (SQLException ex) {
+					throw new TskCoreException("Error setting hash_hit of events.", ex);//NON-NLS
+				}
+			} else {
 				return eventIDs.keySet();
-			} catch (SQLException ex) {
-				throw new TskCoreException("Error setting hash_hit of events.", ex);//NON-NLS
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting hash_hit of events.", ex);//NON-NLS
