@@ -130,7 +130,7 @@ static int getLocalHost(string &a_hostName) {
 }
 
 /**
-* createDirectory: Create a directory relative to current working directory for host.
+* createSessionDirectory: Create a directory relative to current working directory for host.
 *
 * @param [out] directoryPathname - the directory pathname created
 * @returns  0 on success
@@ -246,6 +246,7 @@ static bool hasTskLogicalImager() {
                 tsk_fs_file_close(fs_file);
                 break;
             }
+            tsk_fs_file_close(fs_file);
         }
         if (result) {
             break;
@@ -342,9 +343,9 @@ static void searchFilesByFullPath(LogicalImagerConfiguration *config, const std:
                     std::string parent = getPathName(*filePathIter);
                     fs_file->name = fs_name;
                     matchCallback(matchedRuleInfo, fs_file, parent.c_str());
-
-                    tsk_fs_file_close(fs_file);
                 }
+                tsk_fs_name_free(fs_name);
+                tsk_fs_file_close(fs_file);
             }
         }
     }
@@ -635,7 +636,7 @@ main(int argc, char **argv1)
         TSK_IMG_INFO *img = it->first;
         if (img->itype == TSK_IMG_TYPE_RAW) {
             if (createVHD && config->getFinalizeImagerWriter()) {
-                ReportUtil::printDebug("finalize imagePath writer for %s", it->second.c_str());
+                ReportUtil::printDebug("finalize image writer for %s", it->second.c_str());
                 ReportUtil::consoleOutput(stdout, "Copying remainder of %s\n", it->second.c_str());
                 SetConsoleTitleA(std::string("Copying remainder of " + it->second).c_str());
                 if (tsk_img_writer_finish(img) == TSK_ERR) {
@@ -648,6 +649,9 @@ main(int argc, char **argv1)
 
     if (config) {
         delete config;
+    }
+    if (fileExtractor) {
+        delete fileExtractor;
     }
     ReportUtil::printDebug("Exiting");
     ReportUtil::handleExit(0);
