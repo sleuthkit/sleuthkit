@@ -26,6 +26,10 @@ for i in ${ggID[@]};do
     CODE=$(echo $CODE | rev | cut -d: -f1 | rev | xargs)
     wget --load-cookies $COOKIES "https://docs.google.com/uc?export=download&confirm=${CODE}&id=${id}" -O ./data/${name}
     rm -f $COOKIES
+    if [ ! -f "./data/${name}" ]; then
+      echo "Error downloading data (${name})"
+      exit $EXIT_FAILURE
+    fi 
   fi
 done
 
