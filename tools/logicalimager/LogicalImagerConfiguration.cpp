@@ -189,6 +189,7 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
     }
     std::stringstream buffer;
     buffer << file.rdbuf();
+    file.close();
     std::string str = buffer.str();
 
     nlohmann::json configJson;
@@ -212,8 +213,14 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
                 m_ruleSets.push_back(ruleSet);
             }
         }
+        else if (it.key() == "create-VHD") {
+            it.value().get_to(m_createVHD);
+        }
         else if (it.key() == "finalize-image-writer") {
             it.value().get_to(m_finalizeImageWriter);
+        }
+        else if (it.key() == "prompt-before-exit") {
+            it.value().get_to(m_promptBeforeExit);
         }
         else if (it.key() == "version") {
             it.value().get_to(m_version);

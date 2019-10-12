@@ -101,6 +101,13 @@ std::string TskHelper::intToStr(long l)
     return ss.str();
 }
 
+std::string TskHelper::intToStr(size_t l)
+{
+    std::stringstream ss;
+    ss << l;
+    return ss.str();
+}
+
 std::string TskHelper::stripExt(const char *a_name) {
     std::string nameNoExt;
     std::string nameStr = std::string(a_name);
@@ -147,6 +154,14 @@ bool TskHelper::compareNames(const char *curFileName, const char *targetFileName
 bool TskHelper::startsWith(const std::string &bigStr, const std::string &lilStr) {
     return lilStr.length() <= bigStr.length()
         && equal(lilStr.begin(), lilStr.end(), bigStr.begin());
+}
+
+/*
+* Check if the string str ends with suffix
+*/
+bool TskHelper::endsWith(const std::string &str, const std::string &suffix) {
+    return str.size() >= suffix.size() &&
+        str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 /**
@@ -674,6 +689,16 @@ void TskHelper::replaceAll(std::string &str, const std::string &from, const std:
         return;
     size_t start_pos = 0;
     while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
+void TskHelper::replaceAll(std::wstring &str, const std::wstring &from, const std::wstring &to) {
+    if (from.empty())
+        return;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::wstring::npos) {
         str.replace(start_pos, from.length(), to);
         start_pos += to.length();
     }

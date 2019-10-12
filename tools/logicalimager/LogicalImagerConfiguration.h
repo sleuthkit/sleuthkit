@@ -37,14 +37,18 @@ public:
 
     TSK_RETVAL_ENUM matches(TSK_FS_FILE *fs_file, const char *path) const;
     const std::vector<std::pair<const RuleMatchResult *, std::list<std::string>>> getFullFilePaths() const;
+    bool getCreateVHD() { return m_createVHD; }
     bool getFinalizeImagerWriter() { return m_finalizeImageWriter; }
+    bool getPromptBeforeExit() { return m_promptBeforeExit; }
     std::string getVersion() { return m_version; }
 
 private:
     LogicalImagerConfiguration(const LogicalImagerConfiguration &) = delete;
 
     std::vector<LogicalImagerRuleSet *> m_ruleSets;
+    bool m_createVHD = false;
     bool m_finalizeImageWriter = false;
+    bool m_promptBeforeExit = true;
     std::string m_version;
     LogicalImagerRuleSet::matchCallback m_callbackFunc;
 

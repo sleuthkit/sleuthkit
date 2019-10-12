@@ -1,5 +1,31 @@
-Numbers refer to SourceForge.net tracker IDs:
-    http://sourceforge.net/tracker/?group_id=55685
+
+
+---------------- VERSION 4.7.0 --------------
+C/C++:
+- DB schema was expanded to store tsk_events and related tables.
+Time-based data is automatically added when files and artifacts are
+created.  Used by Autopsy timeline.
+- Logical Imager can save files as individual files instead of in
+VHD (saves space).
+- Logical imager produces log of results
+- Logical Imager refactor
+- Removed PRIuOFF and other macros that caused problems with
+signed/unsigned printing. For example, TSK_OFF_T is a signed value
+and PRIuOFF would cause problems as it printed a negative number
+as a big positive number.
+
+
+Java
+- Travis and Debian package use OpenJDK instead of OracleJDK
+- New Blackboard Helper packages (blackboardutils) to make it easier
+to make artifacts.
+- Blackboard scope was expanded, including the new postArtifact() method
+that adds event data to database and broadcasts an event to listeners.
+- SleuthkitCase now has an EventBus for database-related events.
+- New TimelineManager and associated filter classes to support new events 
+table
+
+
 
 ---------------- VERSION 4.6.7 --------------
 C/C++ Code:
