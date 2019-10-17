@@ -34,14 +34,22 @@ TskHelper::TskHelper()
 
 TskHelper::~TskHelper()
 {
+    if (m_img_info) {
+        tsk_img_free(m_img_info);
+    }
+    for (auto itr = m_FSInfoList.begin(); itr != m_FSInfoList.end(); itr++) {
+        tsk_fs_close(*itr);
+        tsk_fs_free(*itr);
+    }
 }
 
 void TskHelper::reset() {
     releasePath2InumCache();
-    // @@@ NEed to review if these shoudl close instead of just free
     m_img_info = NULL;
+    for (auto itr = m_FSInfoList.begin(); itr != m_FSInfoList.end(); itr++) {
+        tsk_fs_close(*itr);
+    }
     m_FSInfoList.clear();
-    m_path2InumCache.clear();
 }
 
 /**
@@ -402,6 +410,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                 tmp.append(fs_name->name);
                 if (addPathToInumCache(a_fs, tmp, pCacheData) == false) {
                     // it was already in the cache
+                    tsk_fs_dir_close(pCacheData->getFSDir());
                     delete (pCacheData);
                 }
             }
@@ -526,6 +535,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                 if (pCacheData) {
                     if (addPathToInumCache(a_fs, path_matched, pCacheData) == false) {
                         // it was already in the cache
+                        tsk_fs_dir_close(pCacheData->getFSDir());
                         delete (pCacheData);
                     }
                 }
