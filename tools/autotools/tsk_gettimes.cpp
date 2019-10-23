@@ -91,7 +91,7 @@ TSK_RETVAL_ENUM TskGetTimes::processFile(TSK_FS_FILE * /*fs_file*/, const char *
 TSK_FILTER_ENUM
 TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
 {
-    TSK_TCHAR volName[64];
+    TSK_TCHAR volName[65];
     if (m_curVolAddr > -1) {
         TSNPRINTF(volName, 32, _TSK_T("vol%d/"), m_curVolAddr);
     }
@@ -99,7 +99,7 @@ TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
         volName[0] = '\0';
     }
 
-    TSK_TCHAR poolVolName[32];
+    TSK_TCHAR poolVolName[33];
     if (m_curPoolVol > -1) {
         TSNPRINTF(poolVolName, 32, _TSK_T("poolVol%d/"), m_curPoolVol);
         TSTRNCAT(volName, poolVolName, 32);
