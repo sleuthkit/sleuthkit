@@ -617,8 +617,8 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     if (a_ssize)
         img_info->sector_size = a_ssize;
     else
-        img_info->sector_size = 512
-        
+        img_info->sector_size = 512;
+
     raw_info->is_winobj = 0;
 
 #if defined(TSK_WIN32) || defined(__CYGWIN__)
