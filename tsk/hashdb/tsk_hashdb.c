@@ -347,7 +347,7 @@ uint8_t
         return 0;
     }
 
-    return (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID);
+    return hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID;
 }
 
 /**

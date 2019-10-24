@@ -256,7 +256,7 @@ uint8_t
         return 0;
     }
     else {
-        return (strncmp(header, SQLITE_FILE_HEADER, strlen(SQLITE_FILE_HEADER)) == 0);
+        return strncmp(header, SQLITE_FILE_HEADER, strlen(SQLITE_FILE_HEADER)) == 0;
     }            
 }
 

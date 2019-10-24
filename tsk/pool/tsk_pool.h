@@ -47,6 +47,7 @@ typedef struct _TSK_POOL_INFO {
   TSK_POOL_VOLUME_INFO *vol_list;  ///< Linked list of volume info structs
 
   // Callbacks
+  TSK_IMG_INFO* (*tsk_create_img_info)(int pool_block);
   void (*close)(const struct _TSK_POOL_INFO *);  ///< \internal
   uint8_t (*poolstat)(const struct _TSK_POOL_INFO *pool,
                       FILE *hFile);  ///< \internal

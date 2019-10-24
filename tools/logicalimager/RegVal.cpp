@@ -14,6 +14,7 @@
 #include <iomanip>
 
 #include "RegVal.h"
+#include "ReportUtil.h"
 
 std::string ValTypStrArr[] = {
   "REG_NONE",                    // ( 0 )   // No value type
@@ -109,6 +110,12 @@ RegVal::RegVal(const Rejistry::RegistryValue *value) {
     initialize(value);
 }
 
+RegVal::~RegVal() {
+    if (m_registryValue) {
+        delete m_registryValue;
+    }
+}
+
 /*
 * Initialize a RegVal object
 * 
@@ -157,10 +164,11 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
             // This shouldn't happen because we check the range above.
             break;
         }
+        delete valueData;
     }
     catch (Rejistry::RegistryParseException& e)
     {
-        std::cerr << "Failed to initialize registry value due to registry parse exception: " << e.message() << std::endl;
+        ReportUtil::consoleOutput(stderr, "Failed to initialize registry value due to registry parse exception: %s\n", e.message().c_str());
         return -1;
     }
     return 0;

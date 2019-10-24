@@ -9,13 +9,13 @@
 */
 
 /**
-* \file RuleMatchResult.cpp
-* Contains C++ code that implement the Rule Match Resultt class.
+* \file MatchedRuleInfo.cpp
+* Contains C++ code that implement the Matched Rule Info class.
 */
 
-#include "RuleMatchResult.h"
+#include "MatchedRuleInfo.h"
 
-RuleMatchResult::RuleMatchResult(const std::string &ruleSetName, const std::string &name, 
+MatchedRuleInfo::MatchedRuleInfo(const std::string &ruleSetName, const std::string &name, 
     const std::string &description, bool shouldSave, bool shouldAlert) :
     m_ruleSetName(ruleSetName),
     m_name(name),
