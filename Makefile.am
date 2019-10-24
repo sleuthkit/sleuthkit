@@ -18,6 +18,7 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/*.java \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
     bindings/java/src/org/sleuthkit/datamodel/*.properties \
+    bindings/java/src/org/sleuthkit/datamodel/blackboardutils/*.java \
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
     bindings/java/src/*.html \
     framework/*.txt \

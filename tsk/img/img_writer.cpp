@@ -395,7 +395,7 @@ static uint32_t generateChecksum(unsigned char * buffer, int len) {
         sum += buffer[i];
     }
 
-    return (~sum);
+    return ~sum;
 }
 
 /*

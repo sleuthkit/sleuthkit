@@ -56,7 +56,7 @@ tsk_fs_meta_alloc(size_t a_buf_len)
     // assign the id so we know the structure is still alloc
     fs_meta->tag = TSK_FS_META_TAG;
 
-    return (fs_meta);
+    return fs_meta;
 }
 
 
@@ -84,7 +84,7 @@ tsk_fs_meta_realloc(TSK_FS_META * a_fs_meta, size_t a_buf_len)
             return NULL;
         }
     }
-    return (a_fs_meta);
+    return a_fs_meta;
 }
 
 

@@ -19,215 +19,233 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Optional;
-import java.util.ResourceBundle;
-import static org.sleuthkit.datamodel.TimelineEventType.TypeLevel.SUB_TYPE;
 
 /**
- * A single event.
+ * A representation of an event in the timeline of a case.
  */
 public final class TimelineEvent {
 
-	private final long eventID;
 	/**
-	 * The TSK object ID of the file this event is derived from.
+	 * The unique ID of this event in the case database.
 	 */
-	private final long fileObjID;
+	private final long eventID;
 
 	/**
-	 * The TSK artifact ID of the file this event is derived from. Null, if this
-	 * event is not derived from an artifact.
+	 * The object ID of the content that is either the direct or indirect source
+	 * of this event. For events associated with files, this will be the object
+	 * ID of the file. For events associated with artifacts, this will be the
+	 * object ID of the artifact source: a file, a data source, or another
+	 * artifact.
+	 */
+	private final long contentObjID;
+
+	/**
+	 * The artifact ID (not the object ID) of the artifact, if any, that is the
+	 * source of this event. Null for events assoicated directly with files.
 	 */
 	private final Long artifactID;
 
 	/**
-	 * The TSK datasource ID of the datasource this event belongs to.
+	 * The object ID of the data source for the event source.
 	 */
 	private final long dataSourceObjID;
 
 	/**
-	 * The time of this event in second from the Unix epoch.
+	 * When this event occurred, in seconds from the UNIX epoch.
 	 */
 	private final long time;
+
 	/**
 	 * The type of this event.
 	 */
 	private final TimelineEventType type;
 
 	/**
-	 * The three descriptions (full, med, short) stored in a map, keyed by
- DescriptionLOD (TypeLevel of Detail)
+	 * The description of this event, provided at three levels of detail: high
+	 * (full description), medium (medium description), and low (short
+	 * description).
 	 */
 	private final TimelineEventDescription descriptions;
 
 	/**
-	 * True if the file this event is derived from hits any of the configured
-	 * hash sets.
+	 * True if the file, if any, associated with this event, either directly or
+	 * indirectly, is a file for which a hash set hit has been detected.
 	 */
-	private final boolean hashHit;
+	private final boolean eventSourceHashHitDetected;
 
 	/**
-	 * True if the file or artifact this event is derived from is tagged.
+	 * True if the direct source (file or artifact) of this event has been
+	 * tagged.
 	 */
-	private final boolean tagged;
+	private final boolean eventSourceTagged;
 
 	/**
+	 * Constructs a representation of an event in the timeline of a case.
 	 *
-	 * @param eventID         ID from tsk_events table in database
-	 * @param dataSourceObjID Object Id for data source event is from
-	 * @param fileObjID       object id for non-artifact content that event is
-	 *                        associated with
-	 * @param artifactID      ID of artifact (not object id) if event came from
-	 *                        an artifact
-	 * @param time
-	 * @param type
-	 * @param descriptions
-	 * @param hashHit
-	 * @param tagged
+	 * @param eventID                    The unique ID of this event in the case
+	 *                                   database.
+	 * @param dataSourceObjID            The object ID of the data source for
+	 *                                   the event source.
+	 * @param contentObjID               The object ID of the content that is
+	 *                                   either the direct or indirect source of
+	 *                                   this event. For events associated with
+	 *                                   files, this will be the object ID of
+	 *                                   the file. For events associated with
+	 *                                   artifacts, this will be the object ID
+	 *                                   of the artifact source: a file, a data
+	 *                                   source, or another artifact.
+	 * @param artifactID                 The artifact ID (not the object ID) of
+	 *                                   the artifact, if any, that is the
+	 *                                   source of this event. Null for events
+	 *                                   assoicated directly with files.
+	 * @param time                       The time this event occurred, in
+	 *                                   seconds from the UNIX epoch.
+	 * @param type                       The type of this event.
+	 * @param fullDescription            The full length description of this
+	 *                                   event.
+	 * @param medDescription             The medium length description of this
+	 *                                   event.
+	 * @param shortDescription           The short length description of this
+	 *                                   event.
+	 * @param eventSourceHashHitDetected True if the file, if any, associated
+	 *                                   with this event, either directly or
+	 *                                   indirectly, is a file for which a hash
+	 *                                   set hit has been detected.
+	 * @param eventSourceTagged          True if the direct source (file or
+	 *                                   artifact) of this event has been
+	 *                                   tagged.
 	 */
-	TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
-			long time, TimelineEventType type,
+	TimelineEvent(long eventID,
+			long dataSourceObjID,
+			long contentObjID,
+			Long artifactID,
+			long time,
+			TimelineEventType type,
 			String fullDescription,
 			String medDescription,
 			String shortDescription,
-			boolean hashHit, boolean tagged) {
+			boolean eventSourceHashHitDetected,
+			boolean eventSourceTagged) {
 		this.eventID = eventID;
 		this.dataSourceObjID = dataSourceObjID;
-		this.fileObjID = fileObjID;
+		this.contentObjID = contentObjID;
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
-		// This isn't the best design, but it was the most expediant way to reduce 
-		// the public API (by keeping parseDescription()) out of the public API.  
+		/*
+		 * The cast that follows reflects the fact that we have not decided
+		 * whether or not to add the parseDescription method to the
+		 * TimelineEventType interface yet. Currently (9/18/19), this method is
+		 * part of TimelineEventTypeImpl and all implementations of
+		 * TimelineEventType are subclasses of TimelineEventTypeImpl.
+		 */
 		if (type instanceof TimelineEventTypeImpl) {
-			this.descriptions = ((TimelineEventTypeImpl)type).parseDescription(fullDescription, medDescription, shortDescription);
+			this.descriptions = ((TimelineEventTypeImpl) type).parseDescription(fullDescription, medDescription, shortDescription);
+		} else {
+			this.descriptions = new TimelineEventDescription(fullDescription, medDescription, shortDescription);
 		}
-		else {
-			throw new IllegalArgumentException();
-		}
-		this.hashHit = hashHit;
-		this.tagged = tagged;
+		this.eventSourceHashHitDetected = eventSourceHashHitDetected;
+		this.eventSourceTagged = eventSourceTagged;
 	}
 
 	/**
-	 * Is the file or artifact this event is derived from tagged?
+	 * Indicates whether or not the direct source (file or artifact) of this
+	 * artifact has been tagged.
 	 *
-	 * @return true if he file or artifact this event is derived from is tagged.
+	 * @return True or false.
 	 */
-	public boolean isTagged() {
-		return tagged;
+	public boolean eventSourceIsTagged() {
+		return eventSourceTagged;
 	}
 
 	/**
-	 * Is the file this event is derived from in any of the configured hash
-	 * sets.
+	 * Indicates whether or not the file, if any, associated with this event,
+	 * either directly or indirectly, is a file for which a hash set hit has
+	 * been detected.
 	 *
-	 *
-	 * @return True if the file this event is derived from is in any of the
-	 *         configured hash sets.
+	 * @return True or false.
 	 */
-	public boolean isHashHit() {
-		return hashHit;
+	public boolean eventSourceHasHashHits() {
+		return eventSourceHashHitDetected;
 	}
 
 	/**
-	 * Get the artifact id (not the object ID) of the artifact this event is
-	 * derived from.
+	 * Gets the artifact ID (not object ID) of the artifact, if any, that is the
+	 * direct source of this event.
 	 *
-	 * @return An Optional containing the artifact ID. Will be empty if this
-	 *         event is not derived from an artifact
+	 * @return An Optional object containing the artifact ID. May be empty.
 	 */
 	public Optional<Long> getArtifactID() {
 		return Optional.ofNullable(artifactID);
 	}
 
 	/**
-	 * Get the event id of this event.
+	 * Gets the unique ID of this event in the case database.
 	 *
-	 * @return The event id of this event.
+	 * @return The event ID.
 	 */
 	public long getEventID() {
 		return eventID;
 	}
 
 	/**
-	 * Get the Content obj id of the "file" (which could be a data source or
-	 * other non AbstractFile ContentS) this event is derived from.
+	 * Gets the object ID of the content that is the direct or indirect source
+	 * of this event. For events associated with files, this will be the object
+	 * ID of the file that is the direct event source. For events associated
+	 * with artifacts, this will be the object ID of the artifact source: a
+	 * file, a data source, or another artifact.
 	 *
-	 * @return the object id.
+	 * @return The object ID.
 	 */
-	public long getFileObjID() {
-		return fileObjID;
+	public long getContentObjID() {
+		return contentObjID;
 	}
 
 	/**
-	 * Get the time of this event (in seconds from the Unix epoch).
+	 * Gets the time this event occurred.
 	 *
-	 * @return the time of this event in seconds from Unix epoch
+	 * @return The time this event occurred, in seconds from UNIX epoch.
 	 */
 	public long getTime() {
 		return time;
 	}
 
+	/**
+	 * Gets the type of this event.
+	 *
+	 * @return The event type.
+	 */
 	public TimelineEventType getEventType() {
 		return type;
 	}
 
-	public TimelineEventType getEventType(TimelineEventType.TypeLevel zoomLevel) {
-		return zoomLevel.equals(SUB_TYPE) ? type : type.getBaseType();
-	}
-
 	/**
-	 * Get the full description of this event.
+	 * Gets the description of this event at a given level of detail.
 	 *
-	 * @return the full description
-	 */
-	public String getFullDescription() {
-		return getDescription(TimelineEvent.DescriptionLevel.FULL);
-	}
-
-	/**
-	 * Get the medium description of this event.
-	 *
-	 * @return the medium description
-	 */
-	public String getMedDescription() {
-		return getDescription(TimelineEvent.DescriptionLevel.MEDIUM);
-	}
-
-	/**
-	 * Get the short description of this event.
-	 *
-	 * @return the short description
-	 */
-	public String getShortDescription() {
-		return getDescription(TimelineEvent.DescriptionLevel.SHORT);
-	}
-
-	/**
-	 * Get the description of this event at the give level of detail(LoD).
-	 *
-	 * @param lod The level of detail to get.
+	 * @param levelOfDetail The desired level of detail.
 	 *
 	 * @return The description of this event at the given level of detail.
 	 */
-	public String getDescription(TimelineEvent.DescriptionLevel lod) {
-		return descriptions.getDescription(lod);
+	public String getDescription(TimelineLevelOfDetail levelOfDetail) {
+		return descriptions.getDescription(levelOfDetail);
 	}
 
 	/**
-	 * Get the datasource id of the datasource this event belongs to.
+	 * Gets the object ID of the data source for the source content of this
+	 * event.
 	 *
-	 * @return the datasource id.
+	 * @return The data source object ID.
 	 */
 	public long getDataSourceObjID() {
 		return dataSourceObjID;
 	}
 
-	public long getEndMillis() {
-		return time * 1000;
-	}
-
-	public long getStartMillis() {
+	/**
+	 * Gets the time this event occured, in milliseconds from the UNIX epoch.
+	 *
+	 * @return The event time in milliseconds from the UNIX epoch.
+	 */
+	public long getEventTimeInMs() {
 		return time * 1000;
 	}
 
@@ -247,42 +265,7 @@ public final class TimelineEvent {
 			return false;
 		}
 		final TimelineEvent other = (TimelineEvent) obj;
-		return this.eventID == other.eventID;
+		return this.eventID == other.getEventID();
 	}
 
-	/**
-	 * Defines the zoom levels that are available for the event description
-	 */
-	public enum DescriptionLevel {
-		SHORT(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.short")),
-		MEDIUM(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.medium")),
-		FULL(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.full"));
-
-		private final String displayName;
-
-		public String getDisplayName() {
-			return displayName;
-		}
-
-		private DescriptionLevel(String displayName) {
-			this.displayName = displayName;
-		}
-
-		public DescriptionLevel moreDetailed() {
-			try {
-				return values()[ordinal() + 1];
-			} catch (ArrayIndexOutOfBoundsException e) {
-				return null;
-			}
-		}
-
-		public DescriptionLevel lessDetailed() {
-			try {
-				return values()[ordinal() - 1];
-			} catch (ArrayIndexOutOfBoundsException e) {
-				return null;
-			}
-		}
-
-	}
 }
