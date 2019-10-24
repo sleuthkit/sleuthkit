@@ -26,6 +26,9 @@ typedef enum {
 
 #define TSK_POOL_VOL_INFO_TAG 0x50564F4C
 
+typedef struct TSK_VS_PART_INFO TSK_VS_PART_INFO;
+typedef struct TSK_IMG_INFO TSK_IMG_INFO;
+
 typedef struct _TSK_POOL_VOLUME_INFO {
   uint32_t tag;  ///< Set to TSK_POOL_VOLUME_INFO_TAG when struct is alloc
   int index;     ///< Index of Volume
@@ -50,13 +53,14 @@ typedef struct _TSK_POOL_INFO {
   void (*close)(const struct _TSK_POOL_INFO *);  ///< \internal
   uint8_t (*poolstat)(const struct _TSK_POOL_INFO *pool,
                       FILE *hFile);  ///< \internal
+  TSK_IMG_INFO* (*get_img_info)(const struct _TSK_POOL_INFO *pool,
+      TSK_DADDR_T pvol_block);  ///< \internal
 
   void *impl;  ///< \internal Implementation specific pointer
 
 } TSK_POOL_INFO;
 
-typedef struct TSK_VS_PART_INFO TSK_VS_PART_INFO;
-typedef struct TSK_IMG_INFO TSK_IMG_INFO;
+
 
 extern const TSK_POOL_INFO *tsk_pool_open_sing(const TSK_VS_PART_INFO *part,
                                                TSK_POOL_TYPE_ENUM type);

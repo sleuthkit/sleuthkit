@@ -37,6 +37,9 @@ class TSKPoolCompat : public T {
     _info.poolstat = [](const TSK_POOL_INFO *pool, FILE *hFile) {
       return static_cast<TSKPoolCompat *>(pool->impl)->poolstat(hFile);
     };
+    _info.get_img_info = [](const TSK_POOL_INFO *pool, TSK_DADDR_T pvol_block) {
+        return static_cast<TSKPoolCompat *>(pool->impl)->getImageInfo(pvol_block);
+    };
     _info.impl = this;
   }
 
@@ -54,4 +57,5 @@ class TSKPoolCompat : public T {
   }
 
   virtual uint8_t poolstat(FILE *) const noexcept = 0;
+  virtual TSK_IMG_INFO * getImageInfo(TSK_DADDR_T pvol_block) noexcept = NULL;
 };

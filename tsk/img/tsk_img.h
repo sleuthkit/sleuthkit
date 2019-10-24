@@ -16,6 +16,8 @@
  * It is included by both libtsk.h and tsk_img_i.h.
  */
 
+#include "../pool/tsk_pool.h"
+
 /**
  * \defgroup imglib C Disk Image Functions
  * \defgroup imglib_cpp C++ Disk Image Classes
@@ -89,6 +91,10 @@ extern "C" {
         unsigned int sector_size;       ///< sector size of device in bytes (typically 512)
         unsigned int page_size;         ///< page size of NAND page in bytes (defaults to 2048)
         unsigned int spare_size;        ///< spare or OOB size of NAND in bytes (defaults to 64)
+
+        // Pool support
+        TSK_POOL_INFO *pool;
+        TSK_DADDR_T pvol_block;
 
         // the following are protected by cache_lock in IMG_INFO
         TSK_TCHAR **images;    ///< Image names

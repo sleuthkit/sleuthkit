@@ -258,3 +258,13 @@ uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
   tsk_error_set_errstr("%s", e.what());
   return 1;
 }
+
+TSK_IMG_INFO * APFSPoolCompat::getImageInfo(TSK_DADDR_T pvol_block) noexcept try {
+    return NULL;
+}
+catch (const std::exception &e) {
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_POOL_GENPOOL);
+    tsk_error_set_errstr("%s", e.what());
+    return NULL;
+}
