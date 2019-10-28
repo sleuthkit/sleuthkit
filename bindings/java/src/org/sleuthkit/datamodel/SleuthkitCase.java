@@ -7905,7 +7905,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown when critical error occurs
 	 *                          within tsk core and the update fails
 	 */
-	private void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
+	void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		acquireSingleUserCaseWriteLock();

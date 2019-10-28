@@ -16,45 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.sleuthkit.datamodel;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 /**
- * 
- * Class to perform sleuthkit case admin functions
+ * Utility methods for administering a case database.
  */
 public class SleuthkitCaseAdmin {
-	
-	private String dbPath = null;
-	private String caseName = null;
-	private CaseDbConnectionInfo info = null;
-	private String caseDirPath = null;
-	private final SleuthkitCase sleuthkitCase;
-	
-	public SleuthkitCaseAdmin(String dbPath) throws TskCoreException {
-	    this.dbPath = dbPath;
-		this.sleuthkitCase = SleuthkitCase.openCase(this.dbPath);
-		
+
+	/**
+	 * Deletes a data source from a case database.
+	 *
+	 * @param caseDB          The case database.
+	 * @param dataSourceObjID The object ID of the data source to be deleted.
+	 *
+	 * @throws TskCoreException If there is an error deleting the data source.
+	 */
+	public static void deleteDataSource(SleuthkitCase caseDB, long dataSourceObjID) throws TskCoreException {
+		caseDB.deleteDataSource(dataSourceObjID);
 	}
-	
-	public SleuthkitCaseAdmin(String caseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
-		this.caseName = caseName;
-		this.info = info;
-		this.caseDirPath = caseDirPath;
-		this.sleuthkitCase = SleuthkitCase.openCase(this.caseName, this.info, this.caseDirPath);
+
+	/**
+	 * Prevent instantiation of this utility class.
+	 */
+	private SleuthkitCaseAdmin() {
 	}
-	
-	public void deleteDataSource(Long dataSourceObjId) throws TskCoreException {
-	
-		try {
-            Method m=sleuthkitCase.getClass().getDeclaredMethod("deleteDataSource", long.class);	
-		    m.setAccessible(true);
-		    m.invoke(sleuthkitCase, dataSourceObjId);
-		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
-			throw new TskCoreException("Error deleting data source.", ex);	
-		}
-	}
+
 }
