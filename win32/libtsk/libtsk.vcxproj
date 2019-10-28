@@ -502,6 +502,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
+    <ClCompile Include="..\..\tsk\img\pool.cpp" />
     <ClCompile Include="..\..\tsk\img\vhd.c" />
     <ClCompile Include="..\..\tsk\img\vmdk.c" />
     <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp" />
@@ -613,6 +614,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\img\img_writer.h" />
+    <ClInclude Include="..\..\tsk\img\pool.hpp" />
     <ClInclude Include="..\..\tsk\img\vhd.h" />
     <ClInclude Include="..\..\tsk\img\vmdk.h" />
     <ClInclude Include="..\..\tsk\libtsk.h" />

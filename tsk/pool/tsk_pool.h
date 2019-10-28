@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include "../base/tsk_base.h"
+#include "../img/tsk_img.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,8 +60,6 @@ typedef struct _TSK_POOL_INFO {
   void *impl;  ///< \internal Implementation specific pointer
 
 } TSK_POOL_INFO;
-
-
 
 extern const TSK_POOL_INFO *tsk_pool_open_sing(const TSK_VS_PART_INFO *part,
                                                TSK_POOL_TYPE_ENUM type);

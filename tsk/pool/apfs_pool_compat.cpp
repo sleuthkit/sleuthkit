@@ -3,6 +3,7 @@
 #include "../fs/apfs_fs.hpp"
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
+#include "../img/pool.hpp"
 
 #include <stdexcept>
 
@@ -259,8 +260,33 @@ uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
   return 1;
 }
 
-TSK_IMG_INFO * APFSPoolCompat::getImageInfo(TSK_DADDR_T pvol_block) noexcept try {
+TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {
+
+    //TSK_IMG_INFO **images;
+    //return create_pool_img(&_members, _info, pvol_block);
+
+    IMG_POOL_INFO *img_pool_info;
+    TSK_IMG_INFO *img_info;
+    int i;
+    TSK_OFF_T first_seg_size;
+
+    if ((img_pool_info =
+        (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO))) == NULL)
+        return NULL;
+
+    img_info = (TSK_IMG_INFO *)img_pool_info;
+
+
+    img_info->tag = TSK_IMG_INFO_TAG;
+    img_info->itype = TSK_IMG_TYPE_POOL;
+
+    img_pool_info->pool_info = pool_info;
+    img_pool_info->pvol_block = pvol_block;
+
+
+
     return NULL;
+
 }
 catch (const std::exception &e) {
     tsk_error_reset();

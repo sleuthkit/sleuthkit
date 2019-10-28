@@ -545,6 +545,7 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
   }
 
   fs_file->meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+  printf("APFSFSCompat::file_add_meta inum: 0x%llx\n", addr);
 
   fs_file->meta->reset_content = [](void* content_ptr) {
     // Destruct the APFSJObject
@@ -646,6 +647,7 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
     TSK_FS_ATTR_RUN* data_run_last = nullptr;
 
     // Create the runs
+    printf("Making runs?\n");
     for (const auto& extent : jobj->extents()) {
       auto data_run = tsk_fs_attr_run_alloc();
       if (data_run == nullptr) {
@@ -657,6 +659,8 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
       data_run->addr = extent.phys;
       data_run->offset = extent.offset / _fsinfo.block_size;
       data_run->len = extent.len / _fsinfo.block_size;
+      printf("  Run  addr: 0x%llx  offset: 0x%llx   len: 0x%llx\n", data_run->addr, data_run->offset, data_run->len);
+      fflush(stdout);
       data_run->crypto_id = extent.crypto_id;
       data_run->flags = TSK_FS_ATTR_RUN_FLAG_NONE;
       data_run->next = nullptr;

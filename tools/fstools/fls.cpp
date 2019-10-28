@@ -324,6 +324,12 @@ main(int argc, char **argv1)
                 exit(1);
             }
 
+            printf("Calling get image info...\n");
+            fflush(stdout);
+            TSK_IMG_INFO* newInfo = pool->get_img_info(pool, pvol_block);
+            printf("Ok cool done\n");
+            fflush(stdout);
+
 
             if ((fs = tsk_fs_open_pool_decrypt(pool, pvol_block, fstype, password)) == NULL) {
                 tsk_error_print(stderr);
@@ -367,6 +373,7 @@ main(int argc, char **argv1)
             }
         } else {
             pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+
             if (pool == NULL) {
                 tsk_error_print(stderr);
                 if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
@@ -375,6 +382,11 @@ main(int argc, char **argv1)
                 exit(1);
             }
 
+            printf("Calling get image info 2...\n");
+            fflush(stdout);
+            TSK_IMG_INFO* newInfo = pool->get_img_info(pool, pvol_block);
+            printf("Ok cool done\n");
+            fflush(stdout);
 
             if ((fs = tsk_fs_open_pool_decrypt(pool, pvol_block, fstype, password)) == NULL) {
                 tsk_error_print(stderr);

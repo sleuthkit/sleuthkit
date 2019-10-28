@@ -102,6 +102,8 @@ std::vector<APFSFileSystem> APFSPool::volumes() const {
 
 ssize_t APFSPool::read(uint64_t address, char* buf, size_t buf_size) const
     noexcept {
+    printf("APFSPool:read Reading block 0x%llx\n", address);
+    fflush(stdout);
   return tsk_img_read(_img, address + _offset, buf, buf_size);
 }
 
