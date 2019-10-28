@@ -260,10 +260,20 @@ uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
   return 1;
 }
 
-TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {
+static ssize_t
+apfs_pool_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
+{
+    printf("In apfs_pool_read\n");
+    fflush(stdout);
 
-    //TSK_IMG_INFO **images;
-    //return create_pool_img(&_members, _info, pvol_block);
+    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
+    const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
+    TSK_IMG_INFO *origInfo = pool->_members[0].first;
+
+    return origInfo->read(origInfo, offset, buf, len);
+}
+
+TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {
 
     IMG_POOL_INFO *img_pool_info;
     TSK_IMG_INFO *img_info;
@@ -283,9 +293,9 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_pool_info->pool_info = pool_info;
     img_pool_info->pvol_block = pvol_block;
 
+    img_pool_info->img_info.read = apfs_pool_read;
 
-
-    return NULL;
+    return img_info;
 
 }
 catch (const std::exception &e) {
@@ -294,3 +304,4 @@ catch (const std::exception &e) {
     tsk_error_set_errstr("%s", e.what());
     return NULL;
 }
+

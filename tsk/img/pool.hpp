@@ -27,6 +27,7 @@ extern "C" {
 
         const TSK_POOL_INFO *pool_info;
         TSK_DADDR_T pvol_block;
+
     } IMG_POOL_INFO;
 
 #ifdef __cplusplus

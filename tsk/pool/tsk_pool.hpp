@@ -40,11 +40,11 @@ class TSKPool {
       noexcept = 0;
 
   virtual const std::vector<range> unallocated_ranges() const { return {}; };
-
+  std::vector<img_t> _members{}; // Temp move to public
  protected:
   TSKPool(std::vector<img_t> &&imgs) noexcept : _members{std::move(imgs)} {}
 
-  std::vector<img_t> _members{};
+  
 
   Guid _uuid{};
   uint64_t _num_blocks;
