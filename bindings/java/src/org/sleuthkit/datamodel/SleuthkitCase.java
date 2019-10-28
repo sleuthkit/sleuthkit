@@ -893,8 +893,13 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
+<<<<<<< HEAD
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMinor() + " WHERE name = '" + SCHEMA_MINOR_VERSION_KEY + "'"); //NON-NLS
+=======
+				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended set value = " + dbSchemaVersion.getMajor() + " WHERE name = 'SCHEMA_MAJOR_VERSION'");
+				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended set value = " + dbSchemaVersion.getMinor() + " WHERE name = 'SCHEMA_MINOR_VERSION'");
+>>>>>>> mark/2414-remove-public-data-source-deletion-api-from-sleuthkitcase
 				statement.close();
 				statement = null;
 			}
@@ -1819,6 +1824,16 @@ public class SleuthkitCase {
 		}
 
 		acquireSingleUserCaseWriteLock();
+<<<<<<< HEAD
+=======
+		try {
+
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION';");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION';");
+			statement.execute("UPDATE tsk_db_info_extended SET value = '8' WHERE name = 'SCHEMA_MAJOR_VERSION");
+			statement.execute("UPDATE tsk_db_info_extended SET value = '3' WHERE name = 'SCHEMA_MINOR_VERSION");
+			return new CaseDbSchemaVersionNumber(8, 3);
+>>>>>>> mark/2414-remove-public-data-source-deletion-api-from-sleuthkitcase
 
 		ResultSet resultSet = null;
 
@@ -5586,7 +5601,11 @@ public class SleuthkitCase {
 
 			// Create the new Image object
 			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, displayName,
+<<<<<<< HEAD
 					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, savedSize);
+=======
+					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, size);
+>>>>>>> mark/2414-remove-public-data-source-deletion-api-from-sleuthkitcase
 		} catch (SQLException ex) {
 			if (!imagePaths.isEmpty()) {
 				throw new TskCoreException(String.format("Error adding image with path %s to database", imagePaths.get(0)), ex);
@@ -5746,6 +5765,7 @@ public class SleuthkitCase {
 		}
 	}
 
+<<<<<<< HEAD
 	/**
 	 * Add a file system file.
 	 * 
@@ -5857,6 +5877,8 @@ public class SleuthkitCase {
 		return null;
 	}
 
+=======
+>>>>>>> mark/2414-remove-public-data-source-deletion-api-from-sleuthkitcase
 	/**
 	 * Get IDs of the virtual folder roots (at the same level as image), used
 	 * for containers such as for local files.
@@ -6244,9 +6266,17 @@ public class SleuthkitCase {
 			boolean isFile, Content parentObj,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+<<<<<<< HEAD
 		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
 		localPath = localPath.replaceAll("^[/\\\\]+", "");
 
+=======
+
+		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
+		localPath = localPath.replaceAll("^[/\\\\]+", "");
+
+		CaseDbConnection connection = connections.getConnection();
+>>>>>>> mark/2414-remove-public-data-source-deletion-api-from-sleuthkitcase
 		acquireSingleUserCaseWriteLock();
 		TimelineManager timelineManager = getTimelineManager();
 
@@ -7894,6 +7924,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+<<<<<<< HEAD
     /**
 	 * Deletes a datasource from the open case, the database has foreign keys with a delete cascade
 	 * so that all the tables that have a datasource object id will have their data deleted.
@@ -7905,12 +7936,29 @@ public class SleuthkitCase {
 	 */
 	public void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
         CaseDbConnection connection = connections.getConnection();
+=======
+
+	/**
+	 * Deletes a datasource from the open case, the database has foreign keys
+	 * with a delete cascade so that all the tables that have a datasource
+	 * object id will have their data deleted. This is private to keep it out of
+	 * the public API
+	 *
+	 * @param dataSourceObjectId the id of the datasource to be deleted
+	 *
+	 * @throws TskCoreException exception thrown when critical error occurs
+	 *                          within tsk core and the update fails
+	 */
+	private void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+>>>>>>> mark/2414-remove-public-data-source-deletion-api-from-sleuthkitcase
 		Statement statement = null;
 		acquireSingleUserCaseWriteLock();
 		try {
 			statement = connection.createStatement();
 			connection.beginTransaction();
 			// The following delete(s) uses a foreign key delete with cascade in the DB so that it will delete
+<<<<<<< HEAD
 			// all associated rows from tsk_object and its children.  This is based on the datasource id.
 			// For large data sources this may take some time.
 			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
@@ -7925,10 +7973,24 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 				connection.rollbackTransaction();
 			    throw new TskCoreException(String.format("Error deleting data source with obj_id = %d", dataSourceObjectId), ex);	
+=======
+			// all associated rows from tsk_object and its children.  For large data sources this may take some time.
+			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
+			// The following delete uses a foreign key delete with cascade in the DB so that it will delete all
+			// associated rows from accounts table and its children.
+			String accountSql = "DELETE FROM accounts WHERE account_id in (SELECT account_id FROM accounts "
+					+ "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) "
+					+ "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
+			statement.execute(accountSql);
+			connection.commitTransaction();
+		} catch (SQLException ex) {
+			connection.rollbackTransaction();
+			throw new TskCoreException("Error deleting data source.", ex);
+>>>>>>> mark/2414-remove-public-data-source-deletion-api-from-sleuthkitcase
 		} finally {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
-		}	
+		}
 	}
 
 	/**
