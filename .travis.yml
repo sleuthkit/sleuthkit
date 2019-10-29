@@ -1,14 +1,15 @@
 language: cpp
+
 matrix:
   include:
   - compiler: clang
     os: linux
-    dist: xenial
+    dist: bionic
     sudo: required
     group: edge
   - compiler: gcc
     os: linux
-    dist: xenial
+    dist: bionic
     sudo: required
     group: edge
   - compiler: clang
@@ -16,11 +17,52 @@ matrix:
   - compiler: gcc
     os: osx
 
+addons:
+  apt:
+    update: true
+    packages:
+    - libafflib-dev
+    - libewf-dev
+    - libpq-dev
+    - autopoint
+    - libsqlite3-dev
+    - ant
+    - libcppunit-dev
+    - wget
+    - openjdk-8-jdk
+    - openjfx=8u161-b12-1ubuntu2
+    - libopenjfx-java=8u161-b12-1ubuntu2
+    - libopenjfx-jni=8u161-b12-1ubuntu2
+  homebrew:
+    update: true
+    packages:
+    - ant
+    - libewf
+    - gettext
+    - cppunit
+    - afflib
+
 python:
   - "2.7"
+
 install:
-  - ./travis_build.sh
+  - ./travis_install_libs.sh
+
+before_script:
+  - if [ $TRAVIS_OS_NAME = linux ]; then 
+        sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;
+        sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac;
+        export PATH=/usr/bin:$PATH; 
+        unset JAVA_HOME;
+    fi
+  - if [ $TRAVIS_OS_NAME = "osx" ]; then
+        export PATH=${PATH}:/usr/local/opt/gettext/bin;
+    fi
 
 script:
-  - make check && if [ -f "tests/test-suite.log" ];then cat tests/test-suite.log; fi ; if [ -f "unit_tests/base/test-suite.log" ];then cat unit_tests/base/test-suite.log; fi 
-  - if test ${TRAVIS_OS_NAME} = "linux"; then cd release; ./release-unix.pl ci; fi
+  - ./bootstrap && ./configure --prefix=/usr && make
+  - pushd bindings/java/ && ant -q dist-PostgreSQL && popd
+  - make check && if [ -f "tests/test-suite.log" ];then cat tests/test-suite.log; fi ; if [ -f "unit_tests/base/test-suite.log" ];then cat unit_tests/base/test-suite.log; fi
+  - if test ${TRAVIS_OS_NAME} = "linux"; then
+        pushd release && ./release-unix.pl ci && popd;
+    fi
