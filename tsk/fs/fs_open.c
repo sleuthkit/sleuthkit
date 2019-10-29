@@ -137,9 +137,10 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
         { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
 #if TSK_USE_HFS
-        { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
+//        { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
-        { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT }
+        { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
+        { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }
     };
 
     if (a_img_info == NULL) {
@@ -193,7 +194,6 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
         }
-
         return fs_first;
     }
     else if (TSK_FS_TYPE_ISNTFS(a_ftype)) {
@@ -222,6 +222,9 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (TSK_FS_TYPE_ISYAFFS2(a_ftype)) {
         return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
+    } 
+    else if (TSK_FS_TYPE_ISAPFS(a_ftype)) {
+        return apfs_open(a_img_info, a_offset, a_ftype, a_pass);
     }
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
@@ -241,9 +244,11 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
  * @return NULL on error
  */
 TSK_FS_INFO *
-tsk_fs_open_pool(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_block, TSK_FS_TYPE_ENUM a_ftype)
+tsk_fs_open_poolx(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_block, TSK_FS_TYPE_ENUM a_ftype)
 {
-    return tsk_fs_open_pool_decrypt(a_pool_info, a_vol_block, a_ftype, "");
+    printf("Shouldn't be in tsk_fs_open_pool!\n");
+    return NULL;
+    //return tsk_fs_open_pool_decryptx(a_pool_info, a_vol_block, a_ftype, "");
 }
 
 /**
@@ -260,12 +265,15 @@ tsk_fs_open_pool(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_block, TSK
  * @return NULL on error
  */
 TSK_FS_INFO *
-tsk_fs_open_pool_decrypt(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_block, 
+tsk_fs_open_pool_decryptx(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_block, 
     TSK_FS_TYPE_ENUM a_ftype, const char * a_pass)
 {
     TSK_FS_INFO *fs_info, *fs_first = NULL;
     const char *name_first;
     int i;
+
+    printf("Shouldn't be in tsk_fs_open_pool_decrypt!\n");
+    return NULL;
 
     const struct {
         char* name;

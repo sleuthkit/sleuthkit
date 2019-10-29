@@ -15,11 +15,6 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
         "Only single physical store APFS pools are currently supported");
   }
 
-  printf("Creating APFSPool object. imgs:\n");
-  for (int i = 0; i < _members.size(); i++) {
-      printf("  img_info %d, offset 0x%llx\n", i, _members[i].second);
-  }
-
   // If we're scanning for the latest NXSB then we need to start with the
   // last known good NXSB first
   if (_nx_block_num == APFS_POOL_NX_BLOCK_LATEST) {
@@ -107,8 +102,6 @@ std::vector<APFSFileSystem> APFSPool::volumes() const {
 
 ssize_t APFSPool::read(uint64_t address, char* buf, size_t buf_size) const
     noexcept {
-    printf("APFSPool:read Reading block 0x%llx\n", address);
-    fflush(stdout);
   return tsk_img_read(_img, address + _offset, buf, buf_size);
 }
 

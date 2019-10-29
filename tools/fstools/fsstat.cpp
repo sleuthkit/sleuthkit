@@ -205,8 +205,9 @@ main(int argc, char **argv1)
             exit(1);
         }
 
-
-        if ((fs = tsk_fs_open_pool_decrypt(pool, pvol_block, fstype, password)) == NULL) {
+        TSK_IMG_INFO* newInfo = pool->get_img_info(pool, pvol_block);
+        if ((fs = tsk_fs_open_img_decrypt(newInfo, imgaddr * img->sector_size, fstype, password)) == NULL) {
+        //if ((fs = tsk_fs_open_pool_decrypt(pool, pvol_block, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);

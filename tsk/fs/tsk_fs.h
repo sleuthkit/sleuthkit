@@ -877,6 +877,13 @@ extern "C" {
     /**
     * \ingroup fslib
     * Macro that takes a file system type and returns 1 if the type
+    * is for a YAFFS2 file system. */
+#define TSK_FS_TYPE_ISAPFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
+
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
     * is for a raw "file system". */
 #define TSK_FS_TYPE_ISRAW(ftype) \
     (((ftype) & TSK_FS_TYPE_RAW_DETECT)?1:0)

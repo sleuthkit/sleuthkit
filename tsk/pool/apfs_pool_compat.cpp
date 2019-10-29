@@ -260,12 +260,27 @@ uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
   return 1;
 }
 
-static ssize_t
-apfs_pool_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
+static void
+apfs_img_close(TSK_IMG_INFO * img_info)
 {
-    printf("In apfs_pool_read\n");
+    printf("In apfs_pool_close\n");
     fflush(stdout);
 
+    // No-op ??
+}
+
+static void
+apfs_img_imgstat(TSK_IMG_INFO * img_info, FILE *file)
+{
+    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
+    const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
+    TSK_IMG_INFO *origInfo = pool->_members[0].first;
+    origInfo->imgstat(origInfo, file);
+}
+
+static ssize_t
+apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
+{
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->_members[0].first;
@@ -281,11 +296,11 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     TSK_OFF_T first_seg_size;
 
     if ((img_pool_info =
-        (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO))) == NULL)
+        (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO))) == NULL) {
         return NULL;
+    }
 
     img_info = (TSK_IMG_INFO *)img_pool_info;
-
 
     img_info->tag = TSK_IMG_INFO_TAG;
     img_info->itype = TSK_IMG_TYPE_POOL;
@@ -293,7 +308,23 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_pool_info->pool_info = pool_info;
     img_pool_info->pvol_block = pvol_block;
 
-    img_pool_info->img_info.read = apfs_pool_read;
+    img_pool_info->img_info.read = apfs_img_read;
+    img_pool_info->img_info.close = apfs_img_close;
+    img_pool_info->img_info.imgstat = apfs_img_imgstat;
+
+    // Copy original info
+    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
+    const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
+    TSK_IMG_INFO *origInfo = pool->_members[0].first;
+
+    img_info->size = origInfo->size;
+    img_info->num_img = origInfo->num_img;
+    img_info->sector_size = origInfo->sector_size;
+    img_info->page_size = origInfo->page_size;
+    img_info->spare_size = origInfo->spare_size;
+    img_info->images = origInfo->images;
+
+    tsk_init_lock(&(img_info->cache_lock));
 
     return img_info;
 
