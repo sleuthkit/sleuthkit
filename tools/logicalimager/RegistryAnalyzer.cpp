@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2010-2019 Brian Carrier.  All Rights reserved
+** Copyright (c) 2019 Basis Technology.  All Rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 **
@@ -56,6 +56,7 @@ RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
 RegistryAnalyzer::~RegistryAnalyzer() {
     if (m_outputFile) {
         fclose(m_outputFile);
+        m_outputFile = NULL;
     }
 }
 
@@ -191,10 +192,13 @@ USER_ADMIN_PRIV::Enum samUserTypeToAdminPriv(uint32_t& acctType) {
 
 int RegistryAnalyzer::analyzeSAMUsers() const {
     std::map<std::wstring, FILETIME> acctCreationDateMap;
-    RegFileInfo *aRegFile = RegistryLoader::getInstance().getSAMHive();
+    RegistryLoader *registryLoader = new RegistryLoader();
+
+    RegFileInfo *aRegFile = registryLoader->getSAMHive();
     if (aRegFile == NULL) {
         fprintf(m_outputFile, "SAM HIVE not found\n");
         fclose(m_outputFile);
+        delete registryLoader;
         return -1;
     }
     RegParser &aRegParser = aRegFile->getRegParser();
@@ -221,8 +225,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         }
         else if (-2 == rc) {
             std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUserNamesKeyName) + 
-                " Local user accounts may not be reported.";
-            std::cerr << errMsg << std::endl;
+                " Local user accounts may not be reported.\n";
+            ReportUtil::consoleOutput(stderr, errMsg.c_str());
             rc = -1;
         }
 
@@ -246,12 +250,12 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     USER_ADMIN_PRIV::Enum acctAdminPriv;
 
                     // Get V Record
-                    RegVal vRecord;
+                    RegVal *vRecord = new RegVal();
                     std::wstring wsVRecordValname = L"V";
-                    vRecord.setValName(wsVRecordValname);
-                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsVRecordValname, vRecord)) {
+                    vRecord->setValName(wsVRecordValname);
+                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsVRecordValname, *vRecord)) {
                         uint32_t samAcctType = 0;
-                        if (parseSAMVRecord(vRecord.getBinary(), vRecord.getValLen(), wsUserName, wsFullName, wsComment, samAcctType)) {
+                        if (parseSAMVRecord(vRecord->getBinary(), vRecord->getValLen(), wsUserName, wsFullName, wsComment, samAcctType)) {
                             bError = true;
                         }
                         else {
@@ -263,6 +267,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     else {
                         bError = true;
                     }
+
+                    delete vRecord;
 
                     FILETIME lastLoginDate = { 0,0 };
                     FILETIME lastPWResetDate = { 0,0 };
@@ -278,14 +284,14 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                     bool accountDisabled = false;
 
                     // GET F Record
-                    RegVal fRecord;
+                    RegVal *fRecord = new RegVal();
                     std::wstring wsFRecordValname = L"F";
-                    fRecord.setValName(wsFRecordValname);
+                    fRecord->setValName(wsFRecordValname);
 
-                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsFRecordValname, fRecord)) {
+                    if (0 == aRegParser.getValue(wsSAMRIDKeyName, wsFRecordValname, *fRecord)) {
                         uint16_t acbFlags = 0;
                         // Parse F Record
-                        parseSAMFRecord(fRecord.getBinary(), fRecord.getValLen(), lastLoginDate, lastPWResetDate, 
+                        parseSAMFRecord(fRecord->getBinary(), fRecord->getValLen(), lastLoginDate, lastPWResetDate,
                             accountExpiryDate, lastFailedLoginDate, loginCount, acbFlags);
 
                         sLastLoginDate = FiletimeToStr(lastLoginDate);
@@ -297,12 +303,15 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
                             sDateCreated = FiletimeToStr(it->second);
                         }
                         else {
-                            std::wcerr << "User name = " << wsUserName << " not found in acctCreationDateMap" << std::endl;
+                            std::string msg = TskHelper::toNarrow(L"User name = " + wsUserName + L" not found in acctCreationDateMap\n");
+                            ReportUtil::consoleOutput(stderr, msg.c_str());
                         }
 
                         if ((acbFlags & 0x0001) == 0x0001)
                             accountDisabled = true;
                     }
+
+                    delete fRecord;
 
                     if (!bError) {
 
@@ -343,8 +352,8 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
         else {
             std::string errMsg = "analyzeSAMUsers: Error getting key  = "
                 + TskHelper::toNarrow(wsSAMUsersKeyName)
-                + " Local user accounts may not be reported.";
-            std::cerr << errMsg << std::endl;
+                + " Local user accounts may not be reported.\n";
+            ReportUtil::consoleOutput(stderr, errMsg.c_str());
             rc = -1;
         }
     }
@@ -354,13 +363,14 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
             std::rethrow_exception(eptr);
         }
         catch (const std::exception& e) {
-            std::string errMsg = "RegisteryAnalyzer: Uncaught exception in analyzeSAMUsers.";
-            std::cerr << errMsg << std::endl;
-            std::cerr << e.what() << std::endl;
+            std::string errMsg = "RegisteryAnalyzer: Uncaught exception in analyzeSAMUsers.\n";
+            ReportUtil::consoleOutput(stderr, errMsg.c_str());
+            ReportUtil::consoleOutput(stderr, e.what());
         }
         rc = -1;
     }
     fclose(m_outputFile);
+    delete registryLoader;
     return rc;
 }
 
@@ -420,7 +430,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     comment = L"";
 
     if (aVRecLen < 44) {
-        std::cerr << "ERROR: SAMV record too short" << std::endl;
+        ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
         return -1;
     }
 
@@ -432,7 +442,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     len = makeDWORD(&pVRec[16]);
 
     if ((off >= aVRecLen) || (off + len > aVRecLen)) {
-        std::cerr << "ERROR: SAMV record too short" << std::endl;
+        ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
         return -1;
     }
     userName = utf16LEToWString(&pVRec[off], len);
@@ -442,7 +452,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     len = makeDWORD(&pVRec[28]);
     if (len > 0) {
         if (off + len > aVRecLen) {
-            std::cerr << "ERROR: SAMV record too short" << std::endl;
+            ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
             return -1;
         }
         userFullName = utf16LEToWString(&pVRec[off], len);
@@ -453,7 +463,7 @@ int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLe
     len = makeDWORD(&pVRec[40]);
     if (len > 0) {
         if (off + len > aVRecLen) {
-            std::cerr << "ERROR: SAMV record too short" << std::endl;
+            ReportUtil::consoleOutput(stderr, "ERROR: SAMV record too short\n");
             return -1;
         }
         comment = utf16LEToWString(&pVRec[off], len);
@@ -487,7 +497,7 @@ int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen,
     FILETIME tv;
 
     if (aFRecLen < 68) {
-        std::cerr << "ERROR: SAMF record too short" << std::endl;
+        ReportUtil::consoleOutput(stderr, "ERROR: SAMF record too short\n");
         return -1;
     }
 

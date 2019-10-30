@@ -319,7 +319,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		// Find/Create an account instance for each of the contact method
 		// Create a relationship between selfAccount and contactAccount
 		if (!StringUtils.isEmpty(accountUniqueID)) {
-			AccountFileInstance contactAccountInstance = createAccountInstance(accountsType, accountUniqueID);
+			AccountFileInstance contactAccountInstance = createAccountInstance(accountType, accountUniqueID);
 
 			// Create a relationship between self account and the contact account
 			try {

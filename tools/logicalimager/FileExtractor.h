@@ -19,6 +19,7 @@
 class FileExtractor {
 public:
     FileExtractor(bool createVHD, const std::wstring &cwd, const std::string &directoryPath);
+    ~FileExtractor() {};
     void initializePerImage(const std::string &imageDirName);
     TSK_RETVAL_ENUM extractFile(TSK_FS_FILE *fs_file, const char *path, std::string &extractedFilePath);
 
@@ -29,7 +30,6 @@ private:
     void createDirectoryRecursively(const std::wstring &path);
     bool dirExists(const std::wstring &dirName);
     std::string getRootImageDirPrefix() const;
-    ~FileExtractor() {};
 
     bool m_createVHD;
     int m_dirCounter;

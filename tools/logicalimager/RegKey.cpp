@@ -49,6 +49,9 @@ int RegKey::initialize(const Rejistry::RegistryKey *regKey) {
     }
 
     m_keyName = regKey->getName();
+    // TODO - replace the following 2 lines when these methods are available in PR #1665
+    // m_numSubkeys = regKey->getSubkeyListSize();
+    // m_numValues = regKey->getValueListSize();
     m_numSubkeys = regKey->getSubkeyList().size();
     m_numValues = regKey->getValueList().size();
     uint64_t timestamp = regKey->getTimestamp();
