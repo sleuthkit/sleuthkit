@@ -23,7 +23,6 @@ TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
   IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)img_info; 
 
   if (pool_img->pool_info == nullptr) {
-      printf("pool_info is null\n");
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_ARG);
     tsk_error_set_errstr("tsk_apfs_open: Null pool_info");
@@ -31,7 +30,6 @@ TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
   }
 
   if (fstype != TSK_FS_TYPE_APFS) {
-      printf("fstype is not APFS\n");
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_ARG);
     tsk_error_set_errstr("tsk_apfs_open: invalid fstype");

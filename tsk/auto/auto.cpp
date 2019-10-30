@@ -433,7 +433,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
 
             if (filterRetval != TSK_FILTER_SKIP) {
                 TSK_IMG_INFO *pool_img = pool->get_img_info(pool, vol_info->block);
-                TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, ""); // TODO - does offset matter??
+                TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
                 if (fs_info) {
 
                     TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);

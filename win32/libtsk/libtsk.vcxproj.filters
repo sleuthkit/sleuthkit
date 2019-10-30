@@ -366,9 +366,6 @@
     <ClCompile Include="..\..\tsk\img\img_open.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\pool.cpp">
-      <Filter>img</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">

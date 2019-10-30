@@ -137,7 +137,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
         { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
 #if TSK_USE_HFS
-//        { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
+        { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
         { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }

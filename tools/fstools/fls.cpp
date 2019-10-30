@@ -98,7 +98,6 @@ main(int argc, char **argv1)
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
     TSK_DADDR_T pvol_block = 0;
     TSK_DADDR_T snap_id = 0;
-    const TSK_POOL_INFO *pool = NULL;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -315,7 +314,8 @@ main(int argc, char **argv1)
                 exit(1);
             }
         } else {
-            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+            // Pool block was specified, so open pool
+            const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
             if (pool == NULL) {
                 tsk_error_print(stderr);
                 if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
@@ -326,11 +326,9 @@ main(int argc, char **argv1)
 
             TSK_IMG_INFO* newInfo = pool->get_img_info(pool, pvol_block);
             if ((fs = tsk_fs_open_img_decrypt(newInfo, imgaddr * img->sector_size, fstype, password)) == NULL) {
-            //if ((fs = tsk_fs_open_pool_decrypt(pool, pvol_block, fstype, password)) == NULL) {
                 tsk_error_print(stderr);
                 if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                     tsk_fs_type_print(stderr);
-                pool->close(pool);
                 img->close(img);
                 exit(1);
             }
@@ -367,7 +365,8 @@ main(int argc, char **argv1)
                 exit(1);
             }
         } else {
-            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+            // Pool block was specified, so open pool
+            const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
 
             if (pool == NULL) {
                 tsk_error_print(stderr);
@@ -377,14 +376,11 @@ main(int argc, char **argv1)
                 exit(1);
             }
 
-            TSK_IMG_INFO* newInfo = pool->get_img_info(pool, pvol_block);
-            //if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
-            if ((fs = tsk_fs_open_img_decrypt(newInfo, imgaddr * img->sector_size, fstype, password)) == NULL) {
-            //if ((fs = tsk_fs_open_pool_decrypt(pool, pvol_block, fstype, password)) == NULL) {
+            img = pool->get_img_info(pool, pvol_block);
+            if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
                 tsk_error_print(stderr);
                 if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                     tsk_fs_type_print(stderr);
-                pool->close(pool);
                 img->close(img);
                 exit(1);
             }
@@ -399,17 +395,11 @@ main(int argc, char **argv1)
             (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre, sec_skew)) {
         tsk_error_print(stderr);
         fs->close(fs);
-        if (pool != NULL) {
-            pool->close(pool);
-        }
         img->close(img);
         exit(1);
     }
 
     fs->close(fs);
-    if (pool != NULL) {
-        pool->close(pool);
-    }
     img->close(img);
 
     exit(0);

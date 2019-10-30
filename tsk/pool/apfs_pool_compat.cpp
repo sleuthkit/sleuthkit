@@ -263,10 +263,25 @@ uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
 static void
 apfs_img_close(TSK_IMG_INFO * img_info)
 {
-    printf("In apfs_pool_close\n");
-    fflush(stdout);
+    if (img_info == NULL) {
+        return;
+    }
 
-    // No-op ??
+    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
+
+    // Close the pool and original image
+    if (pool_img_info->pool_info != NULL) {
+        const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
+        TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
+        tsk_img_close(origInfo);
+
+        pool_img_info->pool_info->close(pool_img_info->pool_info);
+        pool_img_info->pool_info = NULL;
+    }
+
+    // Close the pool image
+    tsk_deinit_lock(&(img_info->cache_lock));
+    tsk_img_free(img_info);
 }
 
 static void
@@ -274,7 +289,7 @@ apfs_img_imgstat(TSK_IMG_INFO * img_info, FILE *file)
 {
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
-    TSK_IMG_INFO *origInfo = pool->_members[0].first;
+    TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
     origInfo->imgstat(origInfo, file);
 }
 
@@ -283,7 +298,7 @@ apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 {
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
-    TSK_IMG_INFO *origInfo = pool->_members[0].first;
+    TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
 
     return origInfo->read(origInfo, offset, buf, len);
 }
@@ -292,7 +307,6 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
 
     IMG_POOL_INFO *img_pool_info;
     TSK_IMG_INFO *img_info;
-    int i;
     TSK_OFF_T first_seg_size;
 
     if ((img_pool_info =
@@ -312,7 +326,8 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_pool_info->img_info.close = apfs_img_close;
     img_pool_info->img_info.imgstat = apfs_img_imgstat;
 
-    // Copy original info
+    // Copy original info from the first TSK_IMG_INFO. There was a check in the
+    // APFSPool that _members has only one entry.
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->_members[0].first;

@@ -20,7 +20,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    //extern TSK_IMG_INFO * create_pool_img(std::vector<APFSPool::img_t>, TSK_POOL_INFO pool_info, TSK_DADDR_T pvol_block);
 
     typedef struct {
         TSK_IMG_INFO img_info;
