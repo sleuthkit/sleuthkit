@@ -240,7 +240,7 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)"
 </Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>libpq.lib</AdditionalDependencies>
+      <AdditionalDependencies>libpq.lib;libcrypto.lib</AdditionalDependencies>
     </Lib>
     <Lib>
       <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_32)\lib</AdditionalLibraryDirectories>
@@ -658,7 +658,17 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\img\tsk_img.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img_i.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets" Condition="Exists('..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets'))" />
+  </Target>
 </Project>
