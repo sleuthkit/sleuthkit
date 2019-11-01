@@ -31,7 +31,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  * File attachment to a message.
  *
  * The file may or may not have been downloaded, and hence may or may not be
- * part of the data data source.
+ * part of the data source.
  *
  * A file attachment may also be created for a blob that is added as a derived
  * file.
@@ -66,7 +66,7 @@ public final class FileAttachment {
 	 * @param dataSource Data source to search in.
 	 * @param pathName   Full path name of the attachment file.
 	 *
-	 * @throws TskCoreException IF there is an error in finding the attached
+	 * @throws TskCoreException If there is an error in finding the attached
 	 *                          file.
 	 */
 	public FileAttachment(SleuthkitCase caseDb, Content dataSource, String pathName) throws TskCoreException {
@@ -90,7 +90,7 @@ public final class FileAttachment {
 	}
 
 	/**
-	 * Creates a file attachments from a derived file.
+	 * Creates a file attachment from a derived file.
 	 *
 	 * Occasionally the contents of an attachment may be stored as a blob in an
 	 * application database. In that case, the ingest module must write out the contents 
