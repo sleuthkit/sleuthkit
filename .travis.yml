@@ -41,8 +41,8 @@ addons:
     - gettext
     - cppunit
     - afflib
-    taps: adoptopenjdk/openjdk
-    casks: adoptopenjdk8
+    taps: homebrew/cask-versions
+    casks: corretto8
 
 python:
   - "2.7"
