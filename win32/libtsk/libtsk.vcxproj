@@ -452,6 +452,9 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <Lib>
       <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_64)\lib;..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\lib\vc140\x64</AdditionalLibraryDirectories>
     </Lib>
+    <PreBuildEvent>
+      <Command>nuget restore</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|Win32'">
     <ClCompile>
