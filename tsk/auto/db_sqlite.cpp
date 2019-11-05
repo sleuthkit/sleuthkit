@@ -15,6 +15,7 @@
 
 #include "tsk_db_sqlite.h"
 #include "guid.h"
+#include "../img/pool.hpp"
 #include <string.h>
 #include <sstream>
 #include <algorithm>
@@ -304,7 +305,7 @@ TskDbSqlite::initialize()
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, pool_block INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
@@ -786,16 +787,23 @@ TskDbSqlite::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
 
     if (addObject(TSK_DB_OBJECT_TYPE_FS, parObjId, objId))
         return 1;
+    printf("addFsInfo\n");
+    fflush(stdout);
+    TSK_OFF_T pool_block = 0L;
+    if (fs_info->img_info->itype == TSK_IMG_TYPE_POOL) {
+        IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs_info->img_info;
+        pool_block = pool_img->pvol_block;
+    }
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
-        "root_inum, first_inum, last_inum) "
+        "root_inum, first_inum, last_inum, pool_block) "
         "VALUES ("
         "%" PRId64 ",%" PRIdOFF ",%d,%u,%" PRIuDADDR ","
-        "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
+        "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
         objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
-        fs_info->last_inum);
+        fs_info->last_inum, pool_block);
 
     return attempt_exec(stmt,
                         "Error adding data to tsk_fs_info table: %s\n");
@@ -1859,7 +1867,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO>& f
 {
     sqlite3_stmt* fsInfosStatement = NULL;
     if (prepare_stmt(
-        "SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info",
+        "SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, pool_block FROM tsk_fs_info",
         &fsInfosStatement))
     {
         return TSK_ERR;
@@ -1894,6 +1902,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO>& f
         rowData.root_inum = sqlite3_column_int64(fsInfosStatement, 5);
         rowData.first_inum = sqlite3_column_int64(fsInfosStatement, 6);
         rowData.last_inum = sqlite3_column_int64(fsInfosStatement, 7);
+        rowData.pool_block = sqlite3_column_int64(fsInfosStatement, 8);
 
         //insert a copy of the rowData
         fsInfos.push_back(rowData);

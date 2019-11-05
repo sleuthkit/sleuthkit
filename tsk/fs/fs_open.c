@@ -224,6 +224,8 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
     } 
     else if (TSK_FS_TYPE_ISAPFS(a_ftype)) {
+        printf("Opening apfs\n");
+        fflush(stdout);
         return apfs_open(a_img_info, a_offset, a_ftype, a_pass);
     }
     tsk_error_reset();

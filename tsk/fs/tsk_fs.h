@@ -927,16 +927,16 @@ extern "C" {
     */
     struct TSK_FS_INFO {
         int tag;                ///< \internal Will be set to TSK_FS_INFO_TAG if structure is still allocated, 0 if not
-        union {
-          struct {
+        //union {
+        struct {
             TSK_IMG_INFO *img_info; ///< Pointer to the image layer state
             TSK_OFF_T offset;       ///< Byte offset into img_info that fs starts
-          };
-          struct {
-            const TSK_POOL_INFO *pool_info; ///< Pointer to the pool layer state
-            TSK_DADDR_T vol_block; ///< Block number in the pool for the volume
-          };
         };
+        //  struct {
+        //    const TSK_POOL_INFO *fs_pool_info; ///< Pointer to the pool layer state
+        //    TSK_DADDR_T fs_vol_block; ///< Block number in the pool for the volume
+        //  };
+        //};
 
         /* meta data */
         TSK_INUM_T inum_count;  ///< Number of metadata addresses

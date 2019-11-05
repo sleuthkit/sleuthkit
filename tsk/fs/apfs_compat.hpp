@@ -23,7 +23,7 @@ class APFSFSCompat : public APFSJObjTree {
   mutable date_added_cache _da_cache{&_fsinfo};
 
  public:
-  APFSFSCompat(const TSK_POOL_INFO* pool_info, apfs_block_num vol_block,
+  APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_info, apfs_block_num vol_block,
                const char* pass = "");
   inline const TSK_FS_INFO& fs_info() const noexcept { return _fsinfo; }
   inline TSK_FS_INFO& fs_info() noexcept { return _fsinfo; }

@@ -304,6 +304,14 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 }
 
 TSK_FILTER_ENUM
+TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
+{
+    printf("filterPoolVol 0x%llx\n", pool_vol->index);
+    m_curPoolVol = pool_vol->index;
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM
 TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
@@ -985,6 +993,12 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 * @returns TSK_OK on success, TSK_ERR on error
 */
 TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+
+    // Unalloc space is not yet implemented for APFS
+    if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
+        return TSK_OK;
+    }
+
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {

@@ -30,7 +30,7 @@ import java.util.List;
 public class FileSystem extends AbstractContent {
 
 	private long imgOffset, blockSize, blockCount, rootInum,
-			firstInum, lastInum;
+			firstInum, lastInum, poolBlock;
 	private TskData.TSK_FS_TYPE_ENUM fsType;
 	private Content parent;
 	private volatile long filesystemHandle = 0;
@@ -51,7 +51,7 @@ public class FileSystem extends AbstractContent {
 	 */
 	protected FileSystem(SleuthkitCase db, long obj_id, String name, long img_offset,
 			TskData.TSK_FS_TYPE_ENUM fs_type, long block_size, long block_count, long root_inum,
-			long first_inum, long last_inum) {
+			long first_inum, long last_inum, long poolBlock) {
 		super(db, obj_id, name);
 		this.imgOffset = img_offset;
 		this.fsType = fs_type;
@@ -60,6 +60,7 @@ public class FileSystem extends AbstractContent {
 		this.rootInum = root_inum;
 		this.firstInum = first_inum;
 		this.lastInum = last_inum;
+		this.poolBlock = poolBlock;
 	}
 
 	@Override

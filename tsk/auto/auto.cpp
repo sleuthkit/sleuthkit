@@ -208,6 +208,7 @@ TskAuto::filterPoolVol(const TSK_POOL_VOLUME_INFO * /*pool_vol*/)
     /* Most of our tools can't handle pool volumes yet */
     if (tsk_verbose)
         fprintf(stderr, "filterPoolVol: Pool handling is not yet implemented for this tool\n");
+    printf("no pool!\n");
     return TSK_FILTER_SKIP;
 }
 
@@ -434,11 +435,15 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
             }
 
             if (filterRetval != TSK_FILTER_SKIP) {
+                printf("findFilesInPool - should be making new pool_img...\n");
+                fflush(stdout);
                 TSK_IMG_INFO *pool_img = pool->get_img_info(pool, vol_info->block);
                 if (pool_img != NULL) {
+                    printf("Calling apfs_open with image of type 0x%x\n", pool_img->itype);
                     TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
                     if (fs_info) {
-
+                        printf("Image in fs_info from apfs_open has type 0x%x\n", fs_info->img_info->itype);
+                        fflush(stdout);
                         TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
                         tsk_fs_close(fs_info);
 

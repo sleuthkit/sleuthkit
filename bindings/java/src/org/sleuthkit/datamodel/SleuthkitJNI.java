@@ -817,7 +817,12 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
+	
 	public static long openFs(long imgHandle, long fsOffset, SleuthkitCase skCase) throws TskCoreException {
+		return openFs(imgHandle, fsOffset, 0, skCase);
+	}
+	
+	public static long openFs(long imgHandle, long fsOffset, long poolBlock, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			long fsHandle;
@@ -832,13 +837,15 @@ public class SleuthkitJNI {
 				if (imgOffSetToFsHandle == null) {
 					throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
 				}
-				if (imgOffSetToFsHandle.containsKey(fsOffset)) {
+				
+				long combinedOffset = fsOffset + poolBlock;
+				if (imgOffSetToFsHandle.containsKey(combinedOffset)) {
 					//return cached
-					fsHandle = imgOffSetToFsHandle.get(fsOffset);
+					fsHandle = imgOffSetToFsHandle.get(combinedOffset);
 				} else {
-					fsHandle = openFsNat(imgHandle, fsOffset);
+					fsHandle = openFsNat(imgHandle, combinedOffset);
 					//cache it
-					imgOffSetToFsHandle.put(fsOffset, fsHandle);
+					imgOffSetToFsHandle.put(combinedOffset, fsHandle);
 				}
 			}
 			return fsHandle;

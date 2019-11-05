@@ -41,7 +41,7 @@ class TSKPool {
 
   virtual const std::vector<range> unallocated_ranges() const { return {}; };
 
-  TSK_IMG_INFO *getTSKImgInfo(int index) { 
+  TSK_IMG_INFO *getTSKImgInfo(int index) const { 
       if (index < _members.size()) {
           return _members[index].first;
       }

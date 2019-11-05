@@ -4,6 +4,7 @@
 #include "tsk_fs_i.h"
 
 #include "../pool/apfs_pool_compat.hpp"
+#include "../img/pool.hpp"
 #include "apfs_compat.hpp"
 
 #include <cstring>
@@ -14,8 +15,27 @@ extern "C" void error_returned(const char* errstr, ...);
 
 static inline const APFSPoolCompat& to_pool(
     const TSK_POOL_INFO* pool_info) noexcept {
-  const auto pool = static_cast<APFSPoolCompat*>(pool_info->impl);
-  return *pool;
+
+    const auto pool = static_cast<APFSPoolCompat*>(pool_info->impl);
+    return *pool;
+}
+
+static inline const APFSPoolCompat& fs_info_to_pool(
+    const TSK_FS_INFO* fs_info) noexcept {
+
+    IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs_info->img_info;
+    return to_pool(pool_img->pool_info);
+}
+
+static inline TSK_DADDR_T to_pool_vol_block(
+    const TSK_FS_INFO* fs_info) noexcept {
+
+    if (fs_info->img_info->itype != TSK_IMG_TYPE_POOL) {
+        return 0;
+    }
+
+    IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs_info->img_info;
+    return pool_img->pvol_block;
 }
 
 static inline APFSFSCompat& to_fs(const TSK_FS_INFO* fs_info) noexcept {
@@ -136,7 +156,7 @@ static const char* attr_type_name(uint32_t typeNum) noexcept {
   }
 }
 
-APFSFSCompat::APFSFSCompat(const TSK_POOL_INFO* pool_info,
+APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_info,
                            apfs_block_num vol_block, const char* pass)
     : APFSJObjTree(APFSFileSystem{to_pool(pool_info), vol_block, pass}) {
   const auto& pool = to_pool(pool_info);
@@ -153,8 +173,11 @@ APFSFSCompat::APFSFSCompat(const TSK_POOL_INFO* pool_info,
     _fsinfo.flags |= TSK_FS_INFO_FLAG_ENCRYPTED;
   }
 
-  _fsinfo.pool_info = pool_info;
-  _fsinfo.vol_block = vol_block;
+  //_fsinfo.fs_pool_info = pool_info;
+  //_fsinfo.fs_vol_block = vol_block;
+  _fsinfo.img_info = img_info; 
+  _fsinfo.offset = 0; // TODO FIX
+  printf("Storing image in apfs fs_info with type 0x%x\n", _fsinfo.img_info->itype);
   _fsinfo.block_count = vol.alloc_blocks();
   _fsinfo.block_size = pool.block_size();
   _fsinfo.dev_bsize = pool.dev_block_size();
@@ -231,11 +254,11 @@ APFSFSCompat::APFSFSCompat(const TSK_POOL_INFO* pool_info,
 }
 
 uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
-  const auto& pool = to_pool(_fsinfo.pool_info);
+  const auto& pool = fs_info_to_pool(&_fsinfo);
 #ifdef HAVE_LIBOPENSSL
-  APFSFileSystem vol{pool, _fsinfo.vol_block, _crypto.password};
+  APFSFileSystem vol{pool, to_pool_vol_block(&_fsinfo), _crypto.password};
 #else
-  APFSFileSystem vol{ pool, _fsinfo.vol_block};
+  APFSFileSystem vol{ pool, to_pool_vol_block(&_fsinfo) };
 #endif
 
   tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
@@ -403,7 +426,7 @@ uint8_t tsk_apfs_fsstat(TSK_FS_INFO* fs_info, apfs_fsstat_info* info) try {
     return 1;
   }
 
-  const APFSFileSystem vol{to_pool(fs_info->pool_info), fs_info->vol_block};
+  const APFSFileSystem vol{fs_info_to_pool(fs_info), to_pool_vol_block(fs_info)};
 
   memset(info, 0, sizeof(*info));
 
@@ -1315,10 +1338,10 @@ uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept 
 
 int APFSFSCompat::name_cmp(const char* s1, const char* s2) const noexcept try {
 #ifdef HAVE_LIBOPENSSL
-    const APFSFileSystem vol{to_pool(_fsinfo.pool_info), _fsinfo.vol_block,
+    const APFSFileSystem vol{ fs_info_to_pool(&_fsinfo), to_pool_vol_block(&_fsinfo),
                            _crypto.password};
 #else
-    const APFSFileSystem vol{ to_pool(_fsinfo.pool_info), _fsinfo.vol_block};
+    const APFSFileSystem vol{ fs_info_to_pool(&_fsinfo), to_pool_vol_block(&_fsinfo)};
 #endif
 
   if (vol.case_sensitive()) {
@@ -1350,7 +1373,7 @@ uint8_t tsk_apfs_list_snapshots(TSK_FS_INFO* fs_info,
   }
 
   const auto snapshots =
-      APFSFileSystem{to_pool(fs_info->pool_info), fs_info->vol_block}
+      APFSFileSystem{ fs_info_to_pool(fs_info), to_pool_vol_block(fs_info)}
           .snapshots();
 
   *list = (apfs_snapshot_list*)tsk_malloc(

@@ -5732,11 +5732,12 @@ public class SleuthkitCase {
 			preparedStatement.setLong(7, firstInum);
 			preparedStatement.setLong(8, lastInum);
 			preparedStatement.setString(9, displayName);
+			preparedStatement.setLong(10, 0); // TODO - deal with this properly
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new FileSystem object
 			return new FileSystem(this, newObjId, displayName, imgOffset, type, blockSize, blockCount, rootInum,
-					firstInum, lastInum);
+					firstInum, lastInum, 0);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating file system with image offset %d and parent ID %d",
 					imgOffset, parentObjId), ex);
@@ -7320,7 +7321,7 @@ public class SleuthkitCase {
 				TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
 				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
 						fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
-						rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
+						rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum"), rs.getLong("pool_block")); //NON-NLS
 				fs.setParent(parent);
 				// save it for the next call
 				synchronized (fileSystemIdMap) {
@@ -7481,7 +7482,7 @@ public class SleuthkitCase {
 					TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
 					FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
 							fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
-							rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
+							rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum"), rs.getLong("pool_block")); //NON-NLS
 					fs.setParent(null);
 					allFileSystems.add(fs);
 				}
@@ -10731,8 +10732,8 @@ public class SleuthkitCase {
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
-		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name, pool_block)"
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 		private final String sql;
 
