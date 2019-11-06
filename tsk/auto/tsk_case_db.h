@@ -128,6 +128,7 @@ class TskAutoDb:public TskAuto {
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
     int64_t m_curPoolVol; // POOL
+    int64_t m_curPoolVsId = 59; // POOL - temp
     int64_t m_curFsId;      ///< Object ID of file system currently being processed
     int64_t m_curFileId;    ///< Object ID of file currently being processed
     TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed

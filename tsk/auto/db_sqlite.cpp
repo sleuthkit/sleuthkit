@@ -750,6 +750,32 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
 
 
 /**
+* Adds the sector addresses of the pool volumes into the db.
+* @returns 1 on error, 0 on success
+*/
+int
+TskDbSqlite::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+    int64_t parObjId, int64_t& objId)
+{
+    char* zSQL;
+    int ret;
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
+        objId, (int)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
+        pool_vol->desc, pool_vol->flags);
+
+    ret = attempt_exec(zSQL,
+        "Error adding data to tsk_vs_parts table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
+}
+
+/**
 * Adds the sector addresses of the volumes into the db.
 * @returns 1 on error, 0 on success
 */

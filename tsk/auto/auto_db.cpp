@@ -308,6 +308,12 @@ TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 {
     printf("filterPoolVol 0x%llx\n", pool_vol->index);
     m_curPoolVol = pool_vol->index;
+
+    if (m_db->addPoolVolumeInfo(pool_vol, m_curPoolVsId, m_curPoolVol)) {
+        registerError();
+        return TSK_FILTER_STOP;
+    }
+
     return TSK_FILTER_CONT;
 }
 
