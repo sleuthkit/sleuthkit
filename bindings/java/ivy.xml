@@ -5,6 +5,7 @@
 		<dependency org="com.google.guava" name="guava" rev="19.0"/>
 		<dependency org="org.apache.commons" name="commons-lang3" rev="3.0"/>
 		
+		<dependency org="com.google.code.gson" name="gson" rev="2.8.5"/>
 		
 		<dependency org="junit" name="junit" rev="4.8.2"/>
 		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
