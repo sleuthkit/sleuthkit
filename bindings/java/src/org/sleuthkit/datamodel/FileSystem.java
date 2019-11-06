@@ -61,6 +61,7 @@ public class FileSystem extends AbstractContent {
 		this.firstInum = first_inum;
 		this.lastInum = last_inum;
 		this.poolBlock = poolBlock;
+		System.out.println("%%% Created new FileSystem object with poolBlock = " + poolBlock);
 	}
 
 	@Override
@@ -94,7 +95,7 @@ public class FileSystem extends AbstractContent {
 					Content dataSource = getDataSource();
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						Image image = (Image) dataSource;
-						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, getSleuthkitCase());
+						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, poolBlock, getSleuthkitCase());
 					} else {
 						throw new TskCoreException("Data Source of File System is not an image");
 					}

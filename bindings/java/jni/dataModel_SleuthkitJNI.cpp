@@ -1422,13 +1422,31 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
  * @param fs_offset the offset in bytes to the file system 
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
-    (JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset) {
+    (JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset, jlong pool_block) {
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
         //exception already set
         return 0;
     }
     TSK_FS_INFO *fs_info;
+    printf("Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat - pool_block = %lld\n", pool_block);
+    fflush(stdout);
+
+    if (pool_block > 0) {
+        printf("  Ok have a pool\n");
+        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img_info, fs_offset, TSK_POOL_TYPE_DETECT);
+
+        if (pool == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            setThrowTskCoreError(env, tsk_error_get());
+        }
+
+        printf("  Making new img_info\n");
+        fflush(stdout);
+        img_info = pool->get_img_info(pool, pool_block);
+    }
 
     fs_info =
         tsk_fs_open_img(img_info, (TSK_OFF_T) fs_offset,

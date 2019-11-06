@@ -843,7 +843,7 @@ public class SleuthkitJNI {
 					//return cached
 					fsHandle = imgOffSetToFsHandle.get(combinedOffset);
 				} else {
-					fsHandle = openFsNat(imgHandle, combinedOffset);
+					fsHandle = openFsNat(imgHandle, fsOffset, poolBlock);
 					//cache it
 					imgOffSetToFsHandle.put(combinedOffset, fsHandle);
 				}
@@ -1670,7 +1670,7 @@ public class SleuthkitJNI {
 
 	private static native long openVolNat(long vsHandle, long volId) throws TskCoreException;
 
-	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
+	private static native long openFsNat(long imgHandle, long fsId, long poolOffset) throws TskCoreException;
 
 	private static native long openFileNat(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException;
 

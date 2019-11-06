@@ -290,10 +290,10 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    openFsNat
- * Signature: (JJ)J
+ * Signature: (JJJ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
-  (JNIEnv *, jclass, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -472,6 +472,17 @@ extern "C" {
 
 #ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
 #define _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles
 #ifdef __cplusplus
 extern "C" {
 #endif
