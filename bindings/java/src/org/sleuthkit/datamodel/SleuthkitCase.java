@@ -3567,6 +3567,7 @@ public class SleuthkitCase {
 		PreparedStatement statement;
 		switch (attr.getAttributeType().getValueType()) {
 			case STRING:
+			case JSON:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setString(7, attr.getValueString());
@@ -3642,6 +3643,7 @@ public class SleuthkitCase {
 			if (BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE != valueType) {
 				switch (valueType) {
 					case STRING:
+					case JSON:
 						valueClause = " value_text = '" + escapeSingleQuotes(attr.getValueString()) + "'";
 						break;
 					case INTEGER:

@@ -344,7 +344,8 @@ public final class Blackboard {
 						fileAttributeValue = fileAttribute.getValueLong();
 						expectedAttributeValue = expectedAttribute.getValueLong();
 						break;
-					case STRING:
+					case STRING: // Fall-thru
+					case JSON:
 						fileAttributeValue = fileAttribute.getValueString();
 						expectedAttributeValue = expectedAttribute.getValueString();
 						break;
