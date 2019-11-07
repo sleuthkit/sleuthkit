@@ -1008,6 +1008,23 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
     return ret;
 }
 
+int
+TskDbPostgreSQL::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+    return TSK_ERR; // TODO TODO
+}
+
+/**
+* Adds the sector addresses of the pool volumes into the db.
+* @returns 1 on error, 0 on success
+*/
+int
+TskDbPostgreSQL::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+    int64_t parObjId, int64_t& objId)
+{
+
+    return TSK_ERR; // TODO TODO
+}
+
 
 /**
 * @returns 1 on error, 0 on success

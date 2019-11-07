@@ -46,6 +46,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_blkMapFlag = false;
     m_vsFound = false;
     m_volFound = false;
+    m_poolFound = false;
     m_stopped = false;
     m_foundStructure = false;
     m_imgTransactionOpen = false;
@@ -304,12 +305,39 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 }
 
 TSK_FILTER_ENUM
+TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
+{
+    printf("filterPool\n");
+
+    m_poolFound = true; // TODO - this needs to get reset at some point
+
+    if (m_volFound && m_vsFound) {
+        // there's a volume system and volume
+        if (m_db->addPoolInfo(pool_info, m_curVolId, m_curPoolVs)) {
+            registerError();
+            return TSK_FILTER_STOP;
+        }
+    }
+    else {
+        // pool doesn't live in a volume, use image as parent
+        if (m_db->addPoolInfo(pool_info, m_curImgId, m_curPoolVs)) {
+            registerError();
+            return TSK_FILTER_STOP;
+        }
+    }
+
+    
+
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM
 TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 {
     printf("filterPoolVol 0x%llx\n", pool_vol->index);
-    m_curPoolVol = pool_vol->index;
+    //m_curPoolVol = pool_vol->index;
 
-    if (m_db->addPoolVolumeInfo(pool_vol, m_curPoolVsId, m_curPoolVol)) {
+    if (m_db->addPoolVolumeInfo(pool_vol, m_curPoolVs, m_curPoolVol)) {
         registerError();
         return TSK_FILTER_STOP;
     }
@@ -338,7 +366,14 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     TSK_FS_FILE *file_root;
     m_foundStructure = true;
 
-    if (m_volFound && m_vsFound) {
+    if (m_poolFound) {
+        // there's a pool
+        if (m_db->addFsInfo(fs_info, m_curPoolVol, m_curFsId)) {
+            registerError();
+            return TSK_FILTER_STOP;
+        }
+    }
+    else if (m_volFound && m_vsFound) {
         // there's a volume system and volume
         if (m_db->addFsInfo(fs_info, m_curVolId, m_curFsId)) {
             registerError();
@@ -529,6 +564,9 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
     if (m_img_info == NULL) {
         return 1;
     }
+
+    printf("TskAutoDb::startAddImage\n");
+    fflush(stdout);
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");

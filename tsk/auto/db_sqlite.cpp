@@ -305,6 +305,10 @@ TskDbSqlite::initialize()
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
+        ("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+            "Error creating tsk_pool_info table: %s\n")
+        ||
+        attempt_exec
         ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, pool_block INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_fs_info table: %s\n")
         ||
@@ -748,6 +752,36 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
                         "Error adding data to tsk_vs_info table: %s\n");
 }
 
+int
+TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+
+    char
+        stmt[1024];
+
+    // Temp - Make pool and then VS
+    int64_t poolObjId;
+    if (addObject(TSK_DB_OBJECT_TYPE_POOL, parObjId, poolObjId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_pool_info (obj_id, addr, pool_type) VALUES (%" PRId64 ",%" PRIuDADDR ",%d)", poolObjId, 0, pool_info->ctype); // TODO - offset
+
+
+    int retVal = attempt_exec(stmt,
+        "Error adding data to tsk_pool_info table: %s\n");
+    if (retVal) {
+        return retVal;
+    }
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, objId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, 0, 0, pool_info->block_size); // TODO - offset
+
+    return attempt_exec(stmt,
+        "Error adding data to tsk_vs_info table: %s\n");
+}
 
 /**
 * Adds the sector addresses of the pool volumes into the db.

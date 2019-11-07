@@ -630,7 +630,8 @@ public class TskData {
 		FS(3), ///< File System - see tsk_fs_info for more details
 		ABSTRACTFILE(4), ///< File - see tsk_files for more details
 		ARTIFACT(5),	/// Artifact - see blackboard_artifacts for more details
-		REPORT(6)	///< Report - see reports for more details
+		REPORT(6),	///< Report - see reports for more details
+		POOL(7)     ///< Pool
 		; 
 		private short objectType;
 
@@ -721,6 +722,55 @@ public class TskData {
 			return name;
 		}
 	}
+	
+	/**
+	 * The type of file in a database, such as file system versus local file.
+	 * This is the type field in the tsk_files table.
+	 */
+	public enum TSK_DB_POOL_TYPE_ENUM {
+		TSK_POOL_TYPE_DETECT(0, "Auto detect"), ///< Use autodetection methods
+		TSK_POOL_TYPE_APFS(1, "APFS"), ///< APFS Pooled Volumes
+		TSK_POOL_TYPE_UNSUPP(0xffff, "Unsupported") ///< Unsupported pool container type
+		;
+
+		private final long poolType;
+		private final String name;
+
+		private TSK_DB_POOL_TYPE_ENUM(int poolType, String name) {
+			this.poolType = (short) poolType;
+			this.name = name;
+		}
+
+		/**
+		 * Convert db pool type short value to the enum type
+		 *
+		 * @param poolType long value to convert
+		 *
+		 * @return the enum type
+		 */
+		public static TSK_DB_POOL_TYPE_ENUM valueOf(long poolType) {
+			for (TSK_DB_POOL_TYPE_ENUM type : TSK_DB_POOL_TYPE_ENUM.values()) {
+				if (type.poolType == poolType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tskDbFilesTypeEnum.exception.msg1.text"), poolType)); // TODO
+		}
+
+		/**
+		 * Get short value of the file type
+		 *
+		 * @return the long value of the file type
+		 */
+		public long getPoolType() {
+			return poolType;
+		}
+
+		public String getName() {
+			return name;
+		}
+	}	
 
 	/**
 	 * Identifies if a file was in a hash database or not. This is the known

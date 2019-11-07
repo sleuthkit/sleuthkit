@@ -4644,6 +4644,9 @@ public class SleuthkitCase {
 				content = getVolumeById(id, parentId);
 				frequentlyUsedContentMap.put(id, content);
 				break;
+			case POOL:
+				content = getPoolById(id, parentId);
+				break;
 			case FS:
 				content = getFileSystemById(id, parentId);
 				frequentlyUsedContentMap.put(id, content);
@@ -7203,7 +7206,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	VolumeSystem getVolumeSystemById(long id, Image parent) throws TskCoreException {
+	VolumeSystem getVolumeSystemById(long id, Content parent) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -7289,6 +7292,75 @@ public class SleuthkitCase {
 	 */
 	FileSystem getFileSystemById(long id, Volume parent) throws TskCoreException {
 		return getFileSystemByIdHelper(id, parent);
+	}
+	
+	/**
+	 * Get a pool by the object id
+	 *
+	 * @param id     of the pool
+	 * @param parent parent of the pool (image or volume)
+	 *
+	 * @return populated Pool object
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	Pool getPoolById(long id, Content parent) throws TskCoreException {
+		return getPoolByIdHelper(id, parent);
+	}	
+	
+	/**
+	 * @param id       ID of the desired Volume
+	 * @param parentId ID of the Volume's parent
+	 *
+	 * @return the desired Volume
+	 *
+	 * @throws TskCoreException
+	 */
+	Pool getPoolById(long id, long parentId) throws TskCoreException {
+		Pool pool = getPoolById(id, null);
+		pool.setParentId(parentId);
+		return pool;
+	}
+	
+	/**
+	 * Get file system by id and Content parent
+	 *
+	 * @param id     of the filesystem to get
+	 * @param parent a direct parent Content object
+	 *
+	 * @return populated FileSystem object
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	private Pool getPoolByIdHelper(long id, Content parent) throws TskCoreException {
+
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_pool_info " //NON-NLS
+					+ "where obj_id = " + id); //NON-NLS
+			if (rs.next()) {
+				
+				Pool pool = new Pool(this, rs.getLong("obj_id"), "POOL!", rs.getLong("pool_type"), rs.getLong("addr"));
+				pool.setParent(parent);
+				
+				return pool;
+			} else {
+				throw new TskCoreException("No pool found for id:" + id);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting Pool by ID", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
 	}
 
 	/**
@@ -7552,6 +7624,9 @@ public class SleuthkitCase {
 					case VS:
 						children.add(getVolumeSystemById(info.id, img));
 						break;
+					case POOL:
+						children.add(getPoolById(info.id, img));
+						break;
 					case FS:
 						children.add(getFileSystemById(info.id, img));
 						break;
@@ -7593,6 +7668,7 @@ public class SleuthkitCase {
 		List<Long> children = new ArrayList<Long>();
 		for (ObjectInfo info : childInfos) {
 			if (info.type == ObjectType.VS
+					|| info.type == ObjectType.POOL
 					|| info.type == ObjectType.FS
 					|| info.type == ObjectType.ABSTRACTFILE
 					|| info.type == ObjectType.ARTIFACT) {
@@ -7605,6 +7681,68 @@ public class SleuthkitCase {
 		}
 		return children;
 	}
+	
+	/**
+	 * Returns the list of direct children for a given Pool
+	 *
+	 * @param pool pool to get children for
+	 *
+	 * @return list of pool children objects
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	List<Content> getPoolChildren(Pool pool) throws TskCoreException {
+		Collection<ObjectInfo> childInfos = getChildrenInfo(pool);
+		List<Content> children = new ArrayList<Content>();
+		for (ObjectInfo info : childInfos) {
+			if (null != info.type) {
+				switch (info.type) {
+					case VS:
+						children.add(getVolumeSystemById(info.id, pool));
+						break;
+					case ABSTRACTFILE:
+						AbstractFile f = getAbstractFileById(info.id);
+						if (f != null) {
+							children.add(f);
+						}
+						break;
+					case ARTIFACT:
+						BlackboardArtifact art = getArtifactById(info.id);
+						if (art != null) {
+							children.add(art);
+						}
+						break;
+					default:
+						throw new TskCoreException("Pool has child of invalid type: " + info.type);
+				}
+			}
+		}
+		return children;
+	}
+
+	/**
+	 * Returns the list of direct children IDs for a given Pool
+	 *
+	 * @param pool pool to get children for
+	 *
+	 * @return list of pool children IDs
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	List<Long> getPoolChildrenIds(Pool pool) throws TskCoreException {
+		Collection<ObjectInfo> childInfos = getChildrenInfo(pool);
+		List<Long> children = new ArrayList<Long>();
+		for (ObjectInfo info : childInfos) {
+			if (info.type == ObjectType.VS || info.type == ObjectType.ABSTRACTFILE || info.type == ObjectType.ARTIFACT) {
+				children.add(info.id);
+			} else {
+				throw new TskCoreException("Pool has child of invalid type: " + info.type);
+			}
+		}
+		return children;
+	}	
 
 	/**
 	 * Returns the list of direct children for a given VolumeSystem
@@ -7684,6 +7822,9 @@ public class SleuthkitCase {
 		for (ObjectInfo info : childInfos) {
 			if (null != info.type) {
 				switch (info.type) {
+					case POOL:
+						children.add(getPoolById(info.id, vol));
+						break;
 					case FS:
 						children.add(getFileSystemById(info.id, vol));
 						break;
