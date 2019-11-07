@@ -428,23 +428,39 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         while (vol_info != NULL) {
 
             TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
-            if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing))
+            if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing)) {
+                pool->close(pool);
                 return TSK_STOP;
+            }
 
             if (filterRetval != TSK_FILTER_SKIP) {
-                TSK_FS_INFO *fs_info = apfs_open(pool, vol_info->block, TSK_FS_TYPE_APFS, "");
-                if (fs_info) {
+                TSK_IMG_INFO *pool_img = pool->get_img_info(pool, vol_info->block);
+                if (pool_img != NULL) {
+                    TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
+                    if (fs_info) {
 
-                    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
-                    tsk_fs_close(fs_info);
+                        TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+                        tsk_fs_close(fs_info);
 
-                    if (retval == TSK_STOP) {
-                        return TSK_STOP;
+                        if (retval == TSK_STOP) {
+                            pool->close(pool);
+                            return TSK_STOP;
+                        }
                     }
+                    else {
+                        pool_img->close(pool_img);
+                        tsk_error_set_errstr2(
+                            "findFilesInPool: Error opening APFS file system");
+                        registerError();
+                        return TSK_ERR;
+                    }
+
+                    // Don't close pool_img here because it will also close the pool
                 }
                 else {
+                    pool->close(pool);
                     tsk_error_set_errstr2(
-                        "findFilesInPool: Error opening APFS file system");
+                        "findFilesInPool: Error opening APFS pool");
                     registerError();
                     return TSK_ERR;
                 }
@@ -454,12 +470,14 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         }
     }
     else {
+        pool->close(pool);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_POOL_UNSUPTYPE);
         tsk_error_set_errstr("%d", pool->ctype);
         registerError();
         return TSK_ERR;
     }
+    pool->close(pool);
     return TSK_OK;
 }
 

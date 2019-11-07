@@ -359,7 +359,7 @@
     </ClCompile>
     <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp">
       <Filter>pool</Filter>
-	</ClCompile>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\img\ewf.cpp">
       <Filter>img</Filter>
     </ClCompile>
@@ -539,6 +539,9 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk\pool\apfs_pool_compat.hpp">
       <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\pool.hpp">
+      <Filter>img</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

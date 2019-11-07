@@ -41,11 +41,17 @@ class TSKPool {
 
   virtual const std::vector<range> unallocated_ranges() const { return {}; };
 
+  TSK_IMG_INFO *getTSKImgInfo(int index) { 
+      if (index < _members.size()) {
+          return _members[index].first;
+      }
+      return NULL;
+  };
+
  protected:
   TSKPool(std::vector<img_t> &&imgs) noexcept : _members{std::move(imgs)} {}
-
+  
   std::vector<img_t> _members{};
-
   Guid _uuid{};
   uint64_t _num_blocks;
   int _num_vols;

@@ -613,6 +613,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\img\img_writer.h" />
+    <ClInclude Include="..\..\tsk\img\pool.hpp" />
     <ClInclude Include="..\..\tsk\img\vhd.h" />
     <ClInclude Include="..\..\tsk\img\vmdk.h" />
     <ClInclude Include="..\..\tsk\libtsk.h" />

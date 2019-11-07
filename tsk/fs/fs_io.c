@@ -172,10 +172,7 @@ tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_l
         return a_len;
     }
 
-    if (is_pool_fs(a_fs)) {
-        return tsk_pool_read(a_fs->pool_info, a_off, a_buf, a_len);
-    }
-    else if (((a_fs->block_pre_size) || (a_fs->block_post_size))
+    if (((a_fs->block_pre_size) || (a_fs->block_post_size))
         && (a_fs->block_size)) {
         return fs_prepost_read(a_fs, a_off, a_buf, a_len);
     }
