@@ -27,7 +27,7 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_POOL_TYPE_ENUM;
  */
 public class Pool extends AbstractContent {
 
-	private volatile long volumeSystemHandle = 0;
+	private volatile long poolHandle = 0;
 	private long type, imgOffset;
 
 	/**
@@ -80,28 +80,32 @@ public class Pool extends AbstractContent {
 		return imgOffset;
 	}
 
-
+	
 	/**
-	 * get the volume system Handle pointer Open a new handle if needed,
-	 * otherwise resuse the existing handle.
+	 * Lazily loads the internal pool structure: won't be loaded until
+	 * this is called and maintains the handle to it to reuse it
 	 *
-	 * @return volume system Handle pointer
+	 * @return a pool pointer from the sleuthkit
 	 *
-	 * @throws TskException
+	 * @throws TskCoreException exception throw if an internal tsk core error
+	 *                          occurs
 	 */
-	//protected synchronized long getPoolHandle() throws TskCoreException {
-		//if (volumeSystemHandle == 0) {
-		//	Content dataSource = getDataSource();
-		//	if ((dataSource != null) && (dataSource instanceof Image)) {
-		//		Image image = (Image) dataSource;
-		//		volumeSystemHandle = SleuthkitJNI.openVs(image.getImageHandle(), imgOffset);
-		//	} else {
-		//		throw new TskCoreException("Volume System data source is not an image");
-		//	}
-		//}
-
-		//return volumeSystemHandle;
-	//}
+	long getPoolHandle() throws TskCoreException {
+		if (poolHandle == 0) {
+			synchronized (this) {
+				if (poolHandle == 0) {
+					Content dataSource = getDataSource();
+					if ((dataSource != null) && (dataSource instanceof Image)) {
+						Image image = (Image) dataSource;
+						poolHandle = SleuthkitJNI.openPool(image.getImageHandle(), imgOffset, getType().getPoolType());
+					} else {
+						throw new TskCoreException("Data Source of pool is not an image");
+					}
+				}
+			}
+		}
+		return this.poolHandle;
+	}
 
 	@Override
 	public void close() {

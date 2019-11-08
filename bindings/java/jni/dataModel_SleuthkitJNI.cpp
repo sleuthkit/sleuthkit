@@ -150,6 +150,17 @@ castVsPartInfo(JNIEnv * env, jlong ptr)
     return lcl;
 }
 
+static TSK_POOL_INFO *
+castPoolInfo(JNIEnv * env, jlong ptr)
+{
+    TSK_POOL_INFO *lcl = (TSK_POOL_INFO *)ptr;
+    if (!lcl || lcl->tag != TSK_POOL_INFO_TAG) {
+        setThrowTskCoreError(env, "Invalid TSK_POOL_INFO object");
+        return 0;
+    }
+    return lcl;
+}
+
 static TSK_FS_INFO *
 castFsInfo(JNIEnv * env, jlong ptr)
 {
@@ -1412,6 +1423,82 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
     return (jlong) vol_part_info;
 }
 
+/*
+* Open pool with the given offset
+* @return the created TSK_POOL_INFO pointer
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param a_img_info the pointer to the parent img object
+* @param offset the offset in bytes to the pool
+* @param pool_type the type of pool
+*/
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat(JNIEnv * env,
+    jclass obj, jlong a_img_info, jlong offset, jlong pool_type)
+{
+    printf("@@@ openPoolNat\n");
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+    printf("  Casted img_info\n");
+
+    // TODO - use pool type
+    const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img_info, offset * img_info->sector_size, TSK_POOL_TYPE_DETECT);
+    if (pool == NULL) {
+        printf("  Failed to load pool\n");
+        tsk_error_print(stderr);
+        if (tsk_error_get_errno() == TSK_ERR_POOL_UNSUPTYPE)
+            tsk_pool_type_print(stderr);
+        setThrowTskCoreError(env, tsk_error_get());
+    }
+    printf("  Loaded pool! Has address 0x%x\n", pool);
+    return (jlong) pool;
+}
+
+/*
+* Open file system with the given offset
+* @return the created TSK_FS_INFO pointer
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param a_img_info the pointer to the parent img object
+* @param fs_offset the offset in bytes to the file system
+*/
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsPoolNat
+(JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset, jlong a_pool_info, jlong pool_block) {
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    printf("@@@ openFsPoolNat - trying to cast pool with address 0x%x\n", a_pool_info);
+    TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);
+    if (pool_info == 0) {
+        printf("@@@ openFsPoolNat - Invalid cast to pool???\n");
+        fflush(stdout);
+        //exception already set
+        return 0;
+    }
+
+    TSK_FS_INFO *fs_info;
+    printf("Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsPoolNat - pool_block = %lld\n", pool_block);
+    fflush(stdout);
+    printf("  Ok have a pool\n");
+
+    printf("  Making new img_info\n");
+    fflush(stdout);
+    img_info = pool_info->get_img_info(pool_info, pool_block);
+
+    fs_info =
+        tsk_fs_open_img(img_info, (TSK_OFF_T)fs_offset,
+            TSK_FS_TYPE_DETECT);
+    if (fs_info == NULL) {
+        setThrowTskCoreError(env, tsk_error_get());
+    }
+    return (jlong)fs_info;
+}
 
 /*
  * Open file system with the given offset
@@ -1422,32 +1509,13 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
  * @param fs_offset the offset in bytes to the file system 
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
-    (JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset, jlong pool_block) {
+    (JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset) {
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
         //exception already set
         return 0;
     }
     TSK_FS_INFO *fs_info;
-    printf("Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat - pool_block = %lld\n", pool_block);
-    fflush(stdout);
-
-    if (pool_block > 0) {
-        printf("  Ok have a pool\n");
-        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img_info, fs_offset, TSK_POOL_TYPE_DETECT);
-
-        if (pool == NULL) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_pool_type_print(stderr);
-            setThrowTskCoreError(env, tsk_error_get());
-        }
-
-        printf("  Making new img_info\n");
-        fflush(stdout);
-        img_info = pool->get_img_info(pool, pool_block);
-    }
-
     fs_info =
         tsk_fs_open_img(img_info, (TSK_OFF_T) fs_offset,
         TSK_FS_TYPE_DETECT);

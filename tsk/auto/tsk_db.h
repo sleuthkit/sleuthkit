@@ -119,7 +119,6 @@ typedef struct _TSK_DB_FS_INFO {
     TSK_INUM_T root_inum;
     TSK_INUM_T first_inum;
     TSK_INUM_T last_inum;   
-    TSK_INUM_T pool_block;
 } TSK_DB_FS_INFO;
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo);
