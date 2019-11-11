@@ -43,18 +43,17 @@ public class Pool extends AbstractContent {
 		super(db, obj_id, name);
 		this.type = type;
 		this.imgOffset = imgOffset;
-		System.out.println("### made a pool!\n");
+		System.out.println("### made a pool! Image offset " + imgOffset + "\n");
 	}
 
 	@Override
 	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException {
-		throw new TskCoreException("Not yet implemented");
-		//synchronized (this) {
-		//	if (volumeSystemHandle == 0) {
-		//		getVolumeSystemHandle();
-		//	}
-		//}
-		//return SleuthkitJNI.readVs(volumeSystemHandle, readBuffer, offset, len);
+		synchronized (this) {
+			if (poolHandle == 0) {
+				getPoolHandle();
+			}
+		}
+		return SleuthkitJNI.readPool(poolHandle, readBuffer, offset, len);
 	}
 
 	@Override
@@ -97,7 +96,7 @@ public class Pool extends AbstractContent {
 					Content dataSource = getDataSource();
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						Image image = (Image) dataSource;
-						poolHandle = SleuthkitJNI.openPool(image.getImageHandle(), imgOffset, getType().getPoolType());
+						poolHandle = SleuthkitJNI.openPool(image.getImageHandle(), imgOffset, getType().getPoolType(), getSleuthkitCase());
 					} else {
 						throw new TskCoreException("Data Source of pool is not an image");
 					}

@@ -7346,7 +7346,7 @@ public class SleuthkitCase {
 					+ "where obj_id = " + id); //NON-NLS
 			if (rs.next()) {
 				
-				Pool pool = new Pool(this, rs.getLong("obj_id"), "POOL!", rs.getLong("pool_type"), rs.getLong("addr"));
+				Pool pool = new Pool(this, rs.getLong("obj_id"), "POOL!", rs.getLong("pool_type"), rs.getLong("img_offset"));
 				pool.setParent(parent);
 				
 				return pool;

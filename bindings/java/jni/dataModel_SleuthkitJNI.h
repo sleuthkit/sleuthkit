@@ -297,19 +297,19 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getImgInfoNat
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoNat
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    openFsNat
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
   (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    openFsPoolNat
- * Signature: (JJJJ)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsPoolNat
-  (JNIEnv *, jclass, jlong, jlong, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -333,6 +333,14 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat
  * Signature: (J[BJJ)I
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    readPoolNat
+ * Signature: (J[BJJ)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readPoolNat
   (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
 
 /*
@@ -373,6 +381,14 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDat
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    closePoolNat
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closePoolNat
   (JNIEnv *, jclass, jlong);
 
 /*

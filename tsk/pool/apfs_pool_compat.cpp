@@ -270,14 +270,14 @@ apfs_img_close(TSK_IMG_INFO * img_info)
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
 
     // Close the pool and original image
-    if (pool_img_info->pool_info != NULL) {
-        const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
-        TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
-        tsk_img_close(origInfo);
+    //if (pool_img_info->pool_info != NULL) {
+    //    const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
+    //    TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
+    //    tsk_img_close(origInfo);
 
-        pool_img_info->pool_info->close(pool_img_info->pool_info);
-        pool_img_info->pool_info = NULL;
-    }
+        //pool_img_info->pool_info->close(pool_img_info->pool_info);
+        //pool_img_info->pool_info = NULL;
+    //}
 
     // Close the pool image
     tsk_deinit_lock(&(img_info->cache_lock));
@@ -296,11 +296,13 @@ apfs_img_imgstat(TSK_IMG_INFO * img_info, FILE *file)
 static ssize_t
 apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 {
+    printf("apfs_img_read: reading offset 0x%llx\n", offset);
+    fflush(stdout);
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
 
-    return origInfo->read(origInfo, offset, buf, len);
+    return origInfo->read(origInfo, offset + pool->first_img_offset(), buf, len);
 }
 
 TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {

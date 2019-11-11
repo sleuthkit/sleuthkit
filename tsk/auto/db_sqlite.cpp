@@ -305,7 +305,7 @@ TskDbSqlite::initialize()
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_pool_info table: %s\n")
         ||
         attempt_exec
@@ -764,7 +764,7 @@ TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_pool_info (obj_id, addr, pool_type) VALUES (%" PRId64 ",%" PRIuDADDR ",%d)", poolObjId, 0, pool_info->ctype); // TODO - offset
+        "INSERT INTO tsk_pool_info (obj_id, img_offset, pool_type) VALUES (%" PRId64 ",%" PRIuDADDR ",%d)", poolObjId, pool_info->img_offset, pool_info->ctype); // TODO - offset
 
 
     int retVal = attempt_exec(stmt,
@@ -777,7 +777,7 @@ TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, 0, 0, pool_info->block_size); // TODO - offset
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, 0, pool_info->img_offset, pool_info->block_size); // TODO - offset
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");

@@ -29,6 +29,7 @@ class TSKPoolCompat : public T {
     _info.ctype = type;
     _info.block_size = this->block_size();
     _info.num_blocks = this->num_blocks();
+    _info.img_offset = this->first_img_offset();
     _info.num_vols = this->num_vols();
     _info.vol_list = nullptr;
     _info.close = [](const TSK_POOL_INFO *pool) {

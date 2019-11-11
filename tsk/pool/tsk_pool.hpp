@@ -34,6 +34,12 @@ class TSKPool {
   inline uint32_t block_size() const noexcept { return _block_size; }
   inline uint32_t dev_block_size() const noexcept { return _dev_block_size; }
   inline uint64_t num_blocks() const noexcept { return _num_blocks; }
+  inline uint64_t first_img_offset() const noexcept {
+      if (_members.size() >= 1) {
+          return _members[0].second;
+      }
+      return 0;
+  }
   inline int num_vols() const noexcept { return _num_vols; }
 
   virtual ssize_t read(uint64_t address, char *buf, size_t buf_size) const

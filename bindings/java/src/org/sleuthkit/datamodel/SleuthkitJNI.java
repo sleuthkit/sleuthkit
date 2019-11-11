@@ -93,6 +93,10 @@ public class SleuthkitJNI {
 
 		private final Map<Long, List<Long>> fileSystemToFileHandles = new HashMap<>();
 		
+		private final Map<Long, Long> poolHandleCache = new HashMap<>();
+		
+		private final List<Long> poolImgCache = new ArrayList<>();
+		
 		private CaseHandles() {
 			// Nothing to do here
 		}
@@ -169,6 +173,7 @@ public class SleuthkitJNI {
 					caseHandlesCache.get(caseDbPointer).imageHandleCache.clear();
 					caseHandlesCache.get(caseDbPointer).fileHandleCache.clear();
 					caseHandlesCache.get(caseDbPointer).fileSystemToFileHandles.clear();
+					caseHandlesCache.get(caseDbPointer).poolHandleCache.clear();
 					caseHandlesCache.remove(caseDbPointer);
 				}
 			}
@@ -269,6 +274,20 @@ public class SleuthkitJNI {
 						// Then close the file system handle.
 						closeFsNat(fsHandle);
 					}
+				}
+				
+				/*
+				 * Close any cached pools
+				 */
+				for (Long poolHandle : getCaseHandles(caseDbPointer).poolHandleCache.values()) {
+					closePoolNat(poolHandle);
+				}
+				
+				/*
+				 * Close any open pool images
+				 */
+				for (Long imageHandle : getCaseHandles(caseDbPointer).poolImgCache) {
+					closeImgNat(imageHandle);
 				}
 
 				/*
@@ -816,12 +835,34 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openPool(long imgHandle, long offset, long poolType) throws TskCoreException {
+	public static long openPool(long imgHandle, long offset, long poolType, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
-			// TODO CACHE
-			//returned long is ptr to pool Handle object in tsk
-			return openPoolNat(imgHandle, offset, poolType);
+			if(! imgHandleIsValid(imgHandle)) {
+				throw new TskCoreException("Image handle " + imgHandle + " is closed");
+			}
+			
+			synchronized (HandleCache.cacheLock) {
+				long caseDbPointer;
+				if (skCase == null) {
+					caseDbPointer = HandleCache.getDefaultCaseDbPointer();
+				} else {
+					caseDbPointer = skCase.getCaseHandle().caseDbPointer;
+				}
+				
+				if (HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.containsKey(offset)) {
+					System.out.println("\n#### Using the pool cache!");
+					return HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.get(offset);
+				} else {
+					//returned long is ptr to pool Handle object in tsk
+					System.out.println("\n#### Trying to open pool at offset " + offset);
+					long poolHandle = openPoolNat(imgHandle, offset, poolType);
+					HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.put(offset, poolHandle);
+					return poolHandle;
+				}
+			}
+			
+
 		} finally {
 			releaseTSKReadLock();
 		}
@@ -891,7 +932,9 @@ public class SleuthkitJNI {
 					//return cached
 					fsHandle = imgOffSetToFsHandle.get(combinedOffset);
 				} else {
-					fsHandle = openFsPoolNat(imgHandle, fsOffset, poolHandle, poolBlock);
+					long poolImgHandle = getImgInfoNat(poolHandle, poolBlock);
+					HandleCache.getCaseHandles(caseDbPointer).poolImgCache.add(poolImgHandle);
+					fsHandle = openFsNat(poolImgHandle, fsOffset);
 					//cache it
 					imgOffSetToFsHandle.put(combinedOffset, fsHandle);
 				}
@@ -1018,6 +1061,24 @@ public class SleuthkitJNI {
 		getTSKReadLock();
 		try {
 			return readVsNat(vsHandle, readBuffer, offset, len);
+		} finally {
+			releaseTSKReadLock();
+		}
+	}
+	
+	/**
+	 * TODO
+	 * @param poolHandle
+	 * @param readBuffer
+	 * @param offset
+	 * @param len
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	public static int readPool(long poolHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
+		getTSKReadLock();
+		try {
+			return readPoolNat(poolHandle, readBuffer, offset, len);
 		} finally {
 			releaseTSKReadLock();
 		}
@@ -1720,15 +1781,17 @@ public class SleuthkitJNI {
 	
 	private static native long openPoolNat(long imgHandle, long offset, long poolType) throws TskCoreException;
 	
+	private static native long getImgInfoNat(long poolHandle, long poolOffset) throws TskCoreException;
+	
 	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
-
-	private static native long openFsPoolNat(long imgHandle, long fsId, long poolHandle, long poolOffset) throws TskCoreException;
 
 	private static native long openFileNat(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException;
 
 	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
 	private static native int readVsNat(long vsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
+	
+	private static native int readPoolNat(long poolHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;	
 
 	private static native int readVolNat(long volHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
@@ -1739,6 +1802,8 @@ public class SleuthkitJNI {
 	private static native int saveFileMetaDataTextNat(long fileHandle, String fileName) throws TskCoreException;
 
 	private static native void closeImgNat(long imgHandle);
+	
+	private static native void closePoolNat(long poolHandle);
 
 	private static native void closeVsNat(long vsHandle);
 
