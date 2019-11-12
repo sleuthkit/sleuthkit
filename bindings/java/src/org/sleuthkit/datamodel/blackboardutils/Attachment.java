@@ -19,40 +19,24 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 /**
- * Represents a message attachment where a URL of the attachment is available.
  *
+ * An interface implemented by message attachments.
  */
-public class URLAttachment implements Attachment {
-
-	private final String url;
+public interface Attachment {
 
 	/**
-	 * Creates URL attachment.
+	 * Returns location of an attachment - a path or a URL.
 	 *
-	 * @param url URL of attachment.
+	 * @return String representing location of attachment.
 	 */
-	public URLAttachment(String url) {
-		this.url = url;
-	}
+	public abstract String getLocation();
 
-	/**
-	 * Returns attachment URL.
+	/*
+	 * Returns object id of the attachment file.
 	 *
-	 * @return attachment URL.
+	 * @return Object id of attachment, may be null if not available or
+	 * applicable
 	 */
-	public String getURL() {
-		return url;
-	}
-
-	@Override
-	public String getLocation() {
-		return this.url;
-	}
-
-	@Override
-	public Long getObjId() {
-		// no real object available. 
-		return null;
-	}
+	public abstract Long getObjId();
 
 }
