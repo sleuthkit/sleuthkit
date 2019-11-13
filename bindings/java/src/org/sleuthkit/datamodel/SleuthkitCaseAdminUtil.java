@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel;
 /**
  * Utility methods for administering a case database.
  */
-public class SleuthkitCaseAdmin {
+public final class SleuthkitCaseAdminUtil {
 
 	/**
 	 * Deletes a data source from a case database.
@@ -38,7 +38,7 @@ public class SleuthkitCaseAdmin {
 	/**
 	 * Prevent instantiation of this utility class.
 	 */
-	private SleuthkitCaseAdmin() {
+	private SleuthkitCaseAdminUtil() {
 	}
 
 }
