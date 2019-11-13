@@ -29,14 +29,14 @@ public interface Attachment {
 	 *
 	 * @return String representing location of attachment.
 	 */
-	public abstract String getLocation();
+	String getLocation();
 
 	/*
 	 * Returns object id of the attachment file.
 	 *
 	 * @return Object id of attachment, may be null if not available or
-	 * applicable
+	 * not applicable.
 	 */
-	public abstract Long getObjId();
+	Long getObjId();
 
 }
