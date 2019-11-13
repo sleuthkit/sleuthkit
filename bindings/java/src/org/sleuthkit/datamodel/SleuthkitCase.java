@@ -1904,8 +1904,8 @@ public class SleuthkitCase {
 			);
 
 			// Fix mistakenly set names in tsk_db_info_extended 
-			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
-			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
 
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
@@ -5750,37 +5750,37 @@ public class SleuthkitCase {
 
 	/**
 	 * Add a file system file.
-	 * 
+	 *
 	 * @param dataSourceObjId	The object id of the root data source of this
-	 *							file.
-	 * @param fsObjId		The file system object id.
-	 * @param fileName		The name of the file.
-	 * @param metaAddr		The meta address of the file.
-	 * @param metaSeq		The meta address sequence of the file.
-	 * @param attrType		The attributed type of the file.
-	 * @param attrId		The attribute id 
-	 * @param dirFlag		The allocated status from the name structure
+	 *                        file.
+	 * @param fsObjId		       The file system object id.
+	 * @param fileName		      The name of the file.
+	 * @param metaAddr		      The meta address of the file.
+	 * @param metaSeq		       The meta address sequence of the file.
+	 * @param attrType		      The attributed type of the file.
+	 * @param attrId		        The attribute id
+	 * @param dirFlag		       The allocated status from the name structure
 	 * @param metaFlags
-	 * @param size			The size of the file in bytes.
-	 * @param ctime			The changed time of the file.
-	 * @param crtime		The creation time of the file.
-	 * @param atime			The accessed time of the file
-	 * @param mtime			The modified time of the file.
-	 ** @param isFile		True, unless the file is a directory.
-	 * @param parent		The parent of the file (e.g., a virtual directory)
-	 * 
+	 * @param size			         The size of the file in bytes.
+	 * @param ctime			        The changed time of the file.
+	 * @param crtime		        The creation time of the file.
+	 * @param atime			        The accessed time of the file
+	 * @param mtime			        The modified time of the file.
+	 ** @param isFile		        True, unless the file is a directory.
+	 * @param parent		        The parent of the file (e.g., a virtual directory)
+	 *
 	 * @return Newly created file
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
-	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId, 
-										String fileName,
-										long metaAddr, int metaSeq,
-										TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
-										TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, 
-										long ctime, long crtime, long atime, long mtime,
-										boolean isFile, Content parent) throws TskCoreException {
-		
+	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId,
+			String fileName,
+			long metaAddr, int metaSeq,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime,
+			boolean isFile, Content parent) throws TskCoreException {
+
 		CaseDbTransaction transaction = beginTransaction();
 		Statement queryStatement = null;
 		try {
@@ -5790,9 +5790,9 @@ public class SleuthkitCase {
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-			
+
 			String parentPath;
-			
+
 			if (parent instanceof AbstractFile) {
 				AbstractFile parentFile = (AbstractFile) parent;
 				if (isRootDirectory(parentFile, transaction)) {
@@ -5803,13 +5803,13 @@ public class SleuthkitCase {
 			} else {
 				parentPath = "/";
 			}
-	
+
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE);
 			statement.clearParameters();
 			statement.setLong(1, objectId);											// obj_is
 			statement.setLong(2, fsObjId);											// fs_obj_id 
 			statement.setLong(3, dataSourceObjId);									// data_source_obj_id 
-			statement.setShort(4, (short)attrType.getValue());						// attr_type
+			statement.setShort(4, (short) attrType.getValue());						// attr_type
 			statement.setInt(5, attrId);											// attr_id
 			statement.setString(6, fileName);										// name
 			statement.setLong(7, metaAddr);											// meta_addr
@@ -5822,7 +5822,7 @@ public class SleuthkitCase {
 			statement.setShort(12, metaType.getValue());							// meta_type
 			statement.setShort(13, dirFlag.getValue());								// dir_flags
 			statement.setShort(14, metaFlags);										// meta_flags
-			statement.setLong(15,  size < 0 ? 0 : size);
+			statement.setLong(15, size < 0 ? 0 : size);
 			statement.setLong(16, ctime);
 			statement.setLong(17, crtime);
 			statement.setLong(18, atime);
@@ -5832,21 +5832,20 @@ public class SleuthkitCase {
 			statement.setString(21, extension);
 
 			connection.executeUpdate(statement);
-			
+
 			transaction.commit();
 			transaction = null;
-			
+
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
-			attrType, attrId, fileName, metaAddr, metaSeq,
-			dirType, metaType, dirFlag, metaFlags,
-			size, ctime, crtime, atime, mtime,
-			(short)0, 0, 0, null, null, parentPath, null,
-			extension);
-			
-		} catch(SQLException ex) {
+					attrType, attrId, fileName, metaAddr, metaSeq,
+					dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime,
+					(short) 0, 0, 0, null, null, parentPath, null,
+					extension);
+
+		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Failed to add file system file", ex);
-		} 
-		finally {
+		} finally {
 			closeStatement(queryStatement);
 			if (null != transaction) {
 				try {
@@ -7891,6 +7890,43 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error updating image paths.", ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Deletes a datasource from the open case, the database has foreign keys
+	 * with a delete cascade so that all the tables that have a datasource
+	 * object id will have their data deleted. This is private to keep it out of
+	 * the public API
+	 *
+	 * @param dataSourceObjectId the id of the datasource to be deleted
+	 *
+	 * @throws TskCoreException exception thrown when critical error occurs
+	 *                          within tsk core and the update fails
+	 */
+	void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			connection.beginTransaction();
+			// The following delete(s) uses a foreign key delete with cascade in the DB so that it will delete
+			// all associated rows from tsk_object and its children.  For large data sources this may take some time.
+			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
+			// The following delete uses a foreign key delete with cascade in the DB so that it will delete all
+			// associated rows from accounts table and its children.
+			String accountSql = "DELETE FROM accounts WHERE account_id in (SELECT account_id FROM accounts "
+					+ "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) "
+					+ "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
+			statement.execute(accountSql);
+			connection.commitTransaction();
+		} catch (SQLException ex) {
+			connection.rollbackTransaction();
+			throw new TskCoreException("Error deleting data source.", ex);
 		} finally {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
