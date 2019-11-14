@@ -578,6 +578,7 @@ public class TskData {
 		TSK_VS_TYPE_SUN(0x0004, "SUN VTOC"), ///< Sun VTOC NON-NLS
 		TSK_VS_TYPE_MAC(0x0008, "Mac"), ///< Mac partition table NON-NLS
 		TSK_VS_TYPE_GPT(0x0010, "GPT"), ///< GPT partition table NON-NLS
+		TSK_VS_TYPE_APFS(0x0020, "APFS"), ///< APFS pool NON-NLS
 		TSK_VS_TYPE_DBFILLER(0x00F0, bundle.getString("TskData.tskVSTypeEnum.fake")), ///< fake partition table type for loaddb (for images that do not have a volume system)
 		TSK_VS_TYPE_UNSUPP(0xFFFF, bundle.getString("TskData.tskVSTypeEnum.unsupported"));    ///< Unsupported
 

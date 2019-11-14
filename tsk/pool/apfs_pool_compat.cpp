@@ -296,8 +296,6 @@ apfs_img_imgstat(TSK_IMG_INFO * img_info, FILE *file)
 static ssize_t
 apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 {
-    printf("apfs_img_read: reading offset 0x%llx\n", offset);
-    fflush(stdout);
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);

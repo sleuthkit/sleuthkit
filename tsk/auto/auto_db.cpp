@@ -307,9 +307,7 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 TSK_FILTER_ENUM
 TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
 {
-    printf("filterPool\n");
-
-    m_poolFound = true; // TODO - this needs to get reset at some point
+    m_poolFound = true;
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
@@ -334,8 +332,6 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
 TSK_FILTER_ENUM
 TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 {
-    printf("filterPoolVol 0x%llx\n", pool_vol->index);
-    //m_curPoolVol = pool_vol->index;
 
     if (m_db->addPoolVolumeInfo(pool_vol, m_curPoolVs, m_curPoolVol)) {
         registerError();
@@ -350,6 +346,7 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
     m_foundStructure = true;
+    m_poolFound = false;
 
     if (m_db->addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
         registerError();
@@ -564,9 +561,6 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
     if (m_img_info == NULL) {
         return 1;
     }
-
-    printf("TskAutoDb::startAddImage\n");
-    fflush(stdout);
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");

@@ -1430,31 +1430,24 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
 * @param obj the java object this was called from
 * @param a_img_info the pointer to the parent img object
 * @param offset the offset in bytes to the pool
-* @param pool_type the type of pool
 */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat(JNIEnv * env,
-    jclass obj, jlong a_img_info, jlong offset, jlong pool_type)
+    jclass obj, jlong a_img_info, jlong offset)
 {
-    printf("@@@ openPoolNat\n");
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
         //exception already set
         return 0;
     }
-    printf("  Casted img_info\n");
 
-    // TODO - use pool type
-    //const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img_info, offset * img_info->sector_size, TSK_POOL_TYPE_DETECT);
     const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img_info, offset, TSK_POOL_TYPE_DETECT);
     if (pool == NULL) {
-        printf("  Failed to load pool\n");
         tsk_error_print(stderr);
         if (tsk_error_get_errno() == TSK_ERR_POOL_UNSUPTYPE)
             tsk_pool_type_print(stderr);
         setThrowTskCoreError(env, tsk_error_get());
     }
-    printf("  Loaded pool! Has address 0x%x\n", pool);
     return (jlong) pool;
 }
 
@@ -1470,21 +1463,11 @@ TODO UPDATe
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoNat
 (JNIEnv * env, jclass obj, jlong a_pool_info, jlong pool_block) {
 
-
-    printf("@@@ openGetImgInfoNat - trying to cast pool with address 0x%x\n", a_pool_info);
     TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);
     if (pool_info == 0) {
-        printf("@@@ openGetImgInfoNat - Invalid cast to pool???\n");
-        fflush(stdout);
         //exception already set
         return 0;
     }
-
-    printf("Java_org_sleuthkit_datamodel_SleuthkitJNI_openGetImgInfoNat - pool_block = %lld\n", pool_block);
-    fflush(stdout);
-
-    printf("  Making new img_info\n");
-    fflush(stdout);
     TSK_IMG_INFO *img_info = pool_info->get_img_info(pool_info, pool_block);
 
     return (jlong)img_info;

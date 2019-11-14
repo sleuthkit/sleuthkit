@@ -431,10 +431,10 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
 
     // see if the super class wants to continue with this.
     TSK_FILTER_ENUM retval1 = filterPool(pool);
-    //if (retval1 == TSK_FILTER_SKIP)
-    //    return TSK_WALK_CONT;
-    //else if ((retval1 == TSK_FILTER_STOP) || (tsk->getStopProcessing()))
-    //    return TSK_WALK_STOP;
+    if (retval1 == TSK_FILTER_SKIP)
+        return TSK_OK;
+    else if ((retval1 == TSK_FILTER_STOP))
+        return TSK_STOP;
 
     /* Only APFS pools are currently supported */
     if (pool->ctype == TSK_POOL_TYPE_APFS) {
@@ -449,32 +449,29 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
             }
 
             if (filterRetval != TSK_FILTER_SKIP) {
-                printf("findFilesInPool - should be making new pool_img...\n");
-                fflush(stdout);
                 TSK_IMG_INFO *pool_img = pool->get_img_info(pool, vol_info->block);
                 if (pool_img != NULL) {
-                    printf("Calling apfs_open with image of type 0x%x\n", pool_img->itype);
                     TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
                     if (fs_info) {
-                        printf("Image in fs_info from apfs_open has type 0x%x\n", fs_info->img_info->itype);
-                        fflush(stdout);
                         TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
                         tsk_fs_close(fs_info);
 
                         if (retval == TSK_STOP) {
+                            pool_img->close(pool_img);
                             pool->close(pool);
                             return TSK_STOP;
                         }
                     }
                     else {
                         pool_img->close(pool_img);
+                        pool->close(pool);
                         tsk_error_set_errstr2(
                             "findFilesInPool: Error opening APFS file system");
                         registerError();
                         return TSK_ERR;
                     }
 
-                    // Don't close pool_img here because it will also close the pool
+                    tsk_img_close(pool_img);
                 }
                 else {
                     pool->close(pool);

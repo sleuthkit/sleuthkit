@@ -290,10 +290,10 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    openPoolNat
- * Signature: (JJJ)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

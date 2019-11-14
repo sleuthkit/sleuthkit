@@ -835,7 +835,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openPool(long imgHandle, long offset, long poolType, SleuthkitCase skCase) throws TskCoreException {
+	public static long openPool(long imgHandle, long offset, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			if(! imgHandleIsValid(imgHandle)) {
@@ -851,12 +851,10 @@ public class SleuthkitJNI {
 				}
 				
 				if (HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.containsKey(offset)) {
-					System.out.println("\n#### Using the pool cache!");
 					return HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.get(offset);
 				} else {
 					//returned long is ptr to pool Handle object in tsk
-					System.out.println("\n#### Trying to open pool at offset " + offset);
-					long poolHandle = openPoolNat(imgHandle, offset, poolType);
+					long poolHandle = openPoolNat(imgHandle, offset);
 					HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.put(offset, poolHandle);
 					return poolHandle;
 				}
@@ -1779,7 +1777,7 @@ public class SleuthkitJNI {
 
 	private static native long openVolNat(long vsHandle, long volId) throws TskCoreException;
 	
-	private static native long openPoolNat(long imgHandle, long offset, long poolType) throws TskCoreException;
+	private static native long openPoolNat(long imgHandle, long offset) throws TskCoreException;
 	
 	private static native long getImgInfoNat(long poolHandle, long poolOffset) throws TskCoreException;
 	

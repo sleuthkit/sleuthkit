@@ -764,7 +764,7 @@ TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_pool_info (obj_id, img_offset, pool_type) VALUES (%" PRId64 ",%" PRIuDADDR ",%d)", poolObjId, pool_info->img_offset, pool_info->ctype); // TODO - offset
+        "INSERT INTO tsk_pool_info (obj_id, img_offset, pool_type) VALUES (%" PRId64 ",%" PRIuDADDR ",%d)", poolObjId, pool_info->img_offset, pool_info->ctype);
 
 
     int retVal = attempt_exec(stmt,
@@ -777,7 +777,7 @@ TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, 0, pool_info->img_offset, pool_info->block_size); // TODO - offset
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");
@@ -847,8 +847,6 @@ TskDbSqlite::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
 
     if (addObject(TSK_DB_OBJECT_TYPE_FS, parObjId, objId))
         return 1;
-    printf("addFsInfo\n");
-    fflush(stdout);
     TSK_OFF_T pool_block = 0L;
     if (fs_info->img_info->itype == TSK_IMG_TYPE_POOL) {
         IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs_info->img_info;
