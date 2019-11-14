@@ -546,8 +546,6 @@ public class BlackboardAttribute {
 			}
 			break;
 			case JSON: {
-				// @TODO 5726: convert JSON string to multilevel bulleted lists 
-				// for display
 				return getValueString();
 			}
 		}

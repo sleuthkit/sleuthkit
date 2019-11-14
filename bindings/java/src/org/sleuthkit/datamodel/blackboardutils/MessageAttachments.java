@@ -62,4 +62,12 @@ public final class MessageAttachments {
 		return Collections.unmodifiableCollection(urlAttachments);
 	}
 
+	/**
+	 * Returns total count of attachments.
+	 * 
+	 * @return Count of attachments.
+	 */
+	public int getAttachmentsCount() {
+		return (fileAttachments.size() + urlAttachments.size());
+	}
 }
