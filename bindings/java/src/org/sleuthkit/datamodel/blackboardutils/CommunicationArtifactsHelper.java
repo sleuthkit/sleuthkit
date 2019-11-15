@@ -770,10 +770,30 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		// Create attribute 
 		message.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS, getModuleName(), attachmentsJson));
 
-		// @TODO 5698: create a TSK_ASSOCIATED_OBJECT artifact for each fileAttachment 
-		//             to associate the file with the message.
+		// Associate each attachment file with the message.
+		Collection<FileAttachment> fileAttachments = attachments.getFileAttachments();
+		for (FileAttachment fileAttachment : fileAttachments) {
+			long attachedFileObjId = fileAttachment.getObjectId();
+			if (attachedFileObjId >= 0) {
+				AbstractFile attachedFile = message.getSleuthkitCase().getAbstractFileById(attachedFileObjId);
+				associateAttachmentWithMesssge(message, attachedFile);
+			}
+		}
 	}
 
+	/**
+	 * Creates a TSK_ASSOCIATED_OBJECT artifact between the attachment file and 
+	 * the message.
+	 */
+	private BlackboardArtifact associateAttachmentWithMesssge(BlackboardArtifact message, AbstractFile attachedFile) throws TskCoreException {
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, this.getModuleName(), message.getArtifactID()));
+
+		BlackboardArtifact bba = attachedFile.newArtifact(ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
+		bba.addAttributes(attributes); //write out to bb
+		return bba;
+	}
+	
 	/**
 	 * Converts a list of ids into a single comma separated string.
 	 */
