@@ -106,10 +106,11 @@ public class Pool extends AbstractContent {
 
 	@Override
 	public void close() {
+		// Pools will be closed during case closing by the JNI code.
 	}
 
 	@Override
-	public void finalize() throws Throwable {
+	protected void finalize() throws Throwable {
 		try {
 			close();
 		} finally {

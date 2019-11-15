@@ -848,10 +848,8 @@ TskDbSqlite::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
 
     if (addObject(TSK_DB_OBJECT_TYPE_FS, parObjId, objId))
         return 1;
-    TSK_OFF_T pool_block = 0L;
     if (fs_info->img_info->itype == TSK_IMG_TYPE_POOL) {
         IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs_info->img_info;
-        pool_block = pool_img->pvol_block;
     }
 
     snprintf(stmt, 1024,

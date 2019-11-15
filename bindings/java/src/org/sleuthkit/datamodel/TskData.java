@@ -737,7 +737,7 @@ public class TskData {
 		private final long poolType;
 		private final String name;
 
-		private TSK_DB_POOL_TYPE_ENUM(int poolType, String name) {
+		TSK_DB_POOL_TYPE_ENUM(int poolType, String name) {
 			this.poolType = (short) poolType;
 			this.name = name;
 		}
