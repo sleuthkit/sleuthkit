@@ -201,7 +201,7 @@ public abstract class AbstractContent implements Content {
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public boolean isPoolContent() throws TskCoreException {
+	boolean isPoolContent() throws TskCoreException {
 		Content myParent = getParent();
 		if (myParent == null) {
 			return false;
@@ -225,7 +225,7 @@ public abstract class AbstractContent implements Content {
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public Volume getPoolVolume() throws TskCoreException {
+	Volume getPoolVolume() throws TskCoreException {
 		Content myParent = getParent();
 		if (myParent == null) {
 			return null;
@@ -256,7 +256,7 @@ public abstract class AbstractContent implements Content {
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public Pool getPool() throws TskCoreException {
+	Pool getPool() throws TskCoreException {
 		Content myParent = getParent();
 		if (myParent == null) {
 			return null;

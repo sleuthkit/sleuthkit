@@ -1459,7 +1459,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat(JNIEnv * env,
 * @param a_pool_info the pointer to the pool object
 * @param pool_block the block number of the pool volume
 */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoNat
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForPoolNat
 (JNIEnv * env, jclass obj, jlong a_pool_info, jlong pool_block) {
 
     TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);

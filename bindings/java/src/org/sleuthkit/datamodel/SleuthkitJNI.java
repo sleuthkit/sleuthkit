@@ -834,7 +834,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openPool(long imgHandle, long offset, SleuthkitCase skCase) throws TskCoreException {
+	static long openPool(long imgHandle, long offset, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			if(! imgHandleIsValid(imgHandle)) {
@@ -921,7 +921,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static long openFsPool(long imgHandle, long fsOffset, long poolHandle, long poolBlock, SleuthkitCase skCase) throws TskCoreException {
+	static long openFsPool(long imgHandle, long fsOffset, long poolHandle, long poolBlock, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			long fsHandle;
@@ -941,7 +941,7 @@ public class SleuthkitJNI {
 					//return cached
 					fsHandle = imgOffSetToFsHandle.get(poolBlock);
 				} else {
-					long poolImgHandle = getImgInfoNat(poolHandle, poolBlock);
+					long poolImgHandle = getImgInfoForPoolNat(poolHandle, poolBlock);
 					HandleCache.getCaseHandles(caseDbPointer).poolImgCache.add(poolImgHandle);
 					fsHandle = openFsNat(poolImgHandle, fsOffset);
 					//cache it
@@ -1087,7 +1087,7 @@ public class SleuthkitJNI {
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public static int readPool(long poolHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
+	static int readPool(long poolHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			return readPoolNat(poolHandle, readBuffer, offset, len);
@@ -1793,7 +1793,7 @@ public class SleuthkitJNI {
 	
 	private static native long openPoolNat(long imgHandle, long offset) throws TskCoreException;
 	
-	private static native long getImgInfoNat(long poolHandle, long poolOffset) throws TskCoreException;
+	private static native long getImgInfoForPoolNat(long poolHandle, long poolOffset) throws TskCoreException;
 	
 	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
 
