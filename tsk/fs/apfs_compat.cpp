@@ -173,8 +173,6 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
     _fsinfo.flags |= TSK_FS_INFO_FLAG_ENCRYPTED;
   }
 
-  //_fsinfo.fs_pool_info = pool_info;
-  //_fsinfo.fs_vol_block = vol_block;
   _fsinfo.img_info = img_info; 
   _fsinfo.offset = pool.first_img_offset();
   _fsinfo.block_count = vol.alloc_blocks();

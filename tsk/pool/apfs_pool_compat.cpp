@@ -269,16 +269,6 @@ apfs_img_close(TSK_IMG_INFO * img_info)
 
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
 
-    // Close the pool and original image
-    //if (pool_img_info->pool_info != NULL) {
-    //    const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
-    //    TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
-    //    tsk_img_close(origInfo);
-
-        //pool_img_info->pool_info->close(pool_img_info->pool_info);
-        //pool_img_info->pool_info = NULL;
-    //}
-
     // Close the pool image
     tsk_deinit_lock(&(img_info->cache_lock));
     tsk_img_free(img_info);

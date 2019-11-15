@@ -102,7 +102,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public Content getDataSource() throws TskCoreException;
-	
+
 	/**
 	 * Gets the child content objects of this content.
 	 *

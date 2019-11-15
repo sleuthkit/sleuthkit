@@ -1452,13 +1452,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat(JNIEnv * env,
 }
 
 /*
-TODO UPDATe
-* Open file system with the given offset
-* @return the created TSK_FS_INFO pointer
+* Create new image info to use with a specific pool volume
+* @return the created TSK_IMG_INFO pointer
 * @param env pointer to java environment this was called from
 * @param obj the java object this was called from
-* @param a_img_info the pointer to the parent img object
-* @param fs_offset the offset in bytes to the file system
+* @param a_pool_info the pointer to the pool object
+* @param pool_block the block number of the pool volume
 */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoNat
 (JNIEnv * env, jclass obj, jlong a_pool_info, jlong pool_block) {
@@ -1653,12 +1652,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
 }
 
 /*
-TODO UPDATE
-* Read bytes from the given volume system
-* @return number of bytes read from the volume system, -1 on error
+* Read bytes from the given pool
+* @return number of bytes read from the pool, -1 on error
 * @param env pointer to java environment this was called from
 * @param obj the java object this was called from
-* @param a_vs_info the pointer to the volume system object
+* @param a_pool_info the pointer to the pool object
+* @param jbuf the buffer to write to
 * @param offset the offset in bytes to start at
 * @param len number of bytes to read
 */

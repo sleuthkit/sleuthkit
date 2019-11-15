@@ -5737,7 +5737,6 @@ public class SleuthkitCase {
 			preparedStatement.setLong(7, firstInum);
 			preparedStatement.setLong(8, lastInum);
 			preparedStatement.setString(9, displayName);
-			preparedStatement.setLong(10, 0); // TODO - deal with this properly
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new FileSystem object
@@ -10910,8 +10909,8 @@ public class SleuthkitCase {
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
-		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name, pool_block)"
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 		private final String sql;
 

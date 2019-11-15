@@ -632,7 +632,7 @@ public class TskData {
 		ABSTRACTFILE(4), ///< File - see tsk_files for more details
 		ARTIFACT(5),	/// Artifact - see blackboard_artifacts for more details
 		REPORT(6),	///< Report - see reports for more details
-		POOL(7)     ///< Pool
+        POOL(7)	///< Pool
 		; 
 		private short objectType;
 
