@@ -730,7 +730,7 @@ public class TskData {
 	 */
 	public enum TSK_DB_POOL_TYPE_ENUM {
 		TSK_POOL_TYPE_DETECT(0, "Auto detect"), ///< Use autodetection methods
-		TSK_POOL_TYPE_APFS(1, "APFS"), ///< APFS Pooled Volumes
+		TSK_POOL_TYPE_APFS(1, "APFS Pool"), ///< APFS Pooled Volumes
 		TSK_POOL_TYPE_UNSUPP(0xffff, "Unsupported") ///< Unsupported pool container type
 		;
 

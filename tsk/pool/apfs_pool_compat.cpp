@@ -300,7 +300,7 @@ apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
 
-    return origInfo->read(origInfo, offset + pool->first_img_offset(), buf, len);
+    return origInfo->read(origInfo, offset, buf, len);
 }
 
 TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {

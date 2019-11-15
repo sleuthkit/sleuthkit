@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.datamodel.TskData.TSK_DB_POOL_TYPE_ENUM;
 
@@ -28,7 +27,7 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_POOL_TYPE_ENUM;
 public class Pool extends AbstractContent {
 
 	private volatile long poolHandle = 0;
-	private long type, imgOffset;
+	private final long type, imgOffset;
 
 	/**
 	 * Constructor most inputs are from the database
