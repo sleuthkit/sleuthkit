@@ -93,8 +93,9 @@ public class SleuthkitJNI {
 
 		private final Map<Long, List<Long>> fileSystemToFileHandles = new HashMap<>();
 		
-		private final Map<Long, Long> poolHandleCache = new HashMap<>();
+		private final Map<Long, Map<Long, Long>> poolHandleCache = new HashMap<>();
 		
+		// The poolImgCache is only used to close the images later.
 		private final List<Long> poolImgCache = new ArrayList<>();
 		
 		private CaseHandles() {
@@ -279,8 +280,10 @@ public class SleuthkitJNI {
 				/*
 				 * Close any cached pools
 				 */
-				for (Long poolHandle : getCaseHandles(caseDbPointer).poolHandleCache.values()) {
-					closePoolNat(poolHandle);
+				for (Long imgHandle : getCaseHandles(caseDbPointer).poolHandleCache.keySet()) {
+					for (Long poolHandle : getCaseHandles(caseDbPointer).poolHandleCache.get(imgHandle).values()) {
+						closePoolNat(poolHandle);
+					}
 				}
 				
 				/*
@@ -849,12 +852,20 @@ public class SleuthkitJNI {
 					caseDbPointer = skCase.getCaseHandle().caseDbPointer;
 				}
 				
-				if (HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.containsKey(offset)) {
-					return HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.get(offset);
+				// If a pool handle cache for this image does not exist, make one
+				if (! HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.containsKey(imgHandle)) {
+					HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.put(imgHandle, new HashMap<>());
+				}
+				
+				// Get the pool handle cache for this image
+				Map<Long, Long> poolCacheForImage = HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.get(imgHandle);
+				
+				if (poolCacheForImage.containsKey(offset)) {
+					return poolCacheForImage.get(offset);
 				} else {
 					//returned long is ptr to pool Handle object in tsk
 					long poolHandle = openPoolNat(imgHandle, offset);
-					HandleCache.getCaseHandles(caseDbPointer).poolHandleCache.put(offset, poolHandle);
+					poolCacheForImage.put(offset, poolHandle);
 					return poolHandle;
 				}
 			}
