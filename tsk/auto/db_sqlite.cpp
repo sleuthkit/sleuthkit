@@ -848,9 +848,6 @@ TskDbSqlite::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
 
     if (addObject(TSK_DB_OBJECT_TYPE_FS, parObjId, objId))
         return 1;
-    if (fs_info->img_info->itype == TSK_IMG_TYPE_POOL) {
-        IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs_info->img_info;
-    }
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
