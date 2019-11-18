@@ -756,7 +756,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	/**
 	 * Adds attachments to a message.
 	 *
-	 * @param message     Message artifact
+	 * @param message     Message artifact.
 	 * @param attachments Attachments to add to the message.
 	 *
 	 * @throws TskCoreException If there is an error in adding attachments
@@ -782,8 +782,16 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates a TSK_ASSOCIATED_OBJECT artifact between the attachment file and 
+	 * Creates a TSK_ASSOCIATED_OBJECT artifact between the attachment file and
 	 * the message.
+	 *
+	 * @param message     Message artifact.
+	 * @param attachments Attachment file.
+	 *
+	 * @return TSK_ASSOCIATED_OBJECT artifact.
+	 *
+	 * @throws TskCoreException If there is an error creating the
+	 *                          TSK_ASSOCIATED_OBJECT artifact.
 	 */
 	private BlackboardArtifact associateAttachmentWithMesssge(BlackboardArtifact message, AbstractFile attachedFile) throws TskCoreException {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
