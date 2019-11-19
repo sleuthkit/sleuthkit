@@ -1211,7 +1211,13 @@ public class BlackboardArtifact implements Content {
 		 * Indicates clipboard content
 		 */
 		TSK_CLIPBOARD_CONTENT (54, "TSK_CLIPBOARD_CONTENT",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskClipboardContent.text"));
+				bundle.getString("BlackboardArtifact.tskClipboardContent.text")),
+		
+		/**
+		 * An associated object.
+		 */
+		TSK_ASSOCIATED_OBJECT(55, "TSK_ASSOCIATED_OBJECT", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskAssociatedObject.text"));
 
 				
 		private final String label;
