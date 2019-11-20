@@ -1198,28 +1198,29 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Indicates web cache data
 		 */
-		TSK_WEB_CACHE (52, "TSK_WEB_CACHE",  //NON-NLS
+		TSK_WEB_CACHE(52, "TSK_WEB_CACHE", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebCache.text")),
-		
 		/**
 		 * A generic (timeline) event.
 		 */
 		TSK_TL_EVENT(53, "TSK_TL_EVENT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskTLEvent.text")),
-
 		/**
 		 * Indicates clipboard content
 		 */
-		TSK_CLIPBOARD_CONTENT (54, "TSK_CLIPBOARD_CONTENT",  //NON-NLS
+		TSK_CLIPBOARD_CONTENT(54, "TSK_CLIPBOARD_CONTENT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskClipboardContent.text")),
-
+		/**
+		 * An associated object.
+		 */
+		TSK_ASSOCIATED_OBJECT(55, "TSK_ASSOCIATED_OBJECT", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskAssociatedObject.text")),
 		/**
 		 * Indicates file may have been created by the user.
 		 */
-		TSK_USER_CREATED_SUSPECTED (55, "TSK_USER_CREATED_SUSPECTED",  //NON-NLS
+		TSK_USER_CREATED_SUSPECTED(56, "TSK_USER_CREATED_SUSPECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskUserCreatedSuspected.text"));
 
-				
 		private final String label;
 		private final int typeId;
 		private final String displayName;
