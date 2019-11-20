@@ -141,8 +141,8 @@ public final class FileAttachment implements Attachment {
 	 * @return normalized path.
 	 */
 	private String normalizePath(String path) {
-		//normalize the slashes.
-		String adjustedPath = path.replace("\\", "/");
+		//normalize the slashes, replace encoded space
+		String adjustedPath = path.replace("\\", "/").replace("%20"," ");
 
 		// Strip common known mountpoints.
 		for (String mountPoint : KNOWN_MOUNTPOINTS) {
