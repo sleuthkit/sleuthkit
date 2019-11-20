@@ -1211,7 +1211,13 @@ public class BlackboardArtifact implements Content {
 		 * Indicates clipboard content
 		 */
 		TSK_CLIPBOARD_CONTENT (54, "TSK_CLIPBOARD_CONTENT",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskClipboardContent.text"));
+				bundle.getString("BlackboardArtifact.tskClipboardContent.text")),
+
+		/**
+		 * Indicates file may have been created by the user.
+		 */
+		TSK_USER_CREATED_SUSPECTED (55, "TSK_USER_CREATED_SUSPECTED",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskUserCreatedSuspected.text"));
 
 				
 		private final String label;
