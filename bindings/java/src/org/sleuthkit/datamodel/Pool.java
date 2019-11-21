@@ -19,7 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
-import org.sleuthkit.datamodel.TskData.TSK_DB_POOL_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM;
 
 /**
  * Represents a volume system. Populated based on data in database.
@@ -64,8 +64,8 @@ public class Pool extends AbstractContent {
 	 *
 	 * @return type
 	 */
-	public TSK_DB_POOL_TYPE_ENUM getType() {
-		return TskData.TSK_DB_POOL_TYPE_ENUM.valueOf(type);
+	public TSK_POOL_TYPE_ENUM getType() {
+		return TskData.TSK_POOL_TYPE_ENUM.valueOf(type);
 	}
 
 	/**
