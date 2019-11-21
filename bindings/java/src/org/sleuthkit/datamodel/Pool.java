@@ -22,7 +22,7 @@ import java.util.List;
 import org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM;
 
 /**
- * Represents a volume system. Populated based on data in database.
+ * Represents a pool. Populated based on data in database.
  */
 public class Pool extends AbstractContent {
 
@@ -33,10 +33,10 @@ public class Pool extends AbstractContent {
 	 * Constructor most inputs are from the database
 	 *
 	 * @param db        case database handle
-	 * @param obj_id    the unique content object id for the volume system
-	 * @param name      name of the volume system
-	 * @param type      type of the volume system
-	 * @param imgOffset offset of the volume system with respect to image
+	 * @param obj_id    the unique content object id for the pool
+	 * @param name      name of the pool
+	 * @param type      type of the pool
+	 * @param imgOffset offset of the pool with respect to image
 	 */
 	protected Pool(SleuthkitCase db, long obj_id, String name, long type, long imgOffset) {
 		super(db, obj_id, name);
