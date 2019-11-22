@@ -734,7 +734,7 @@ public class TskData {
 		TSK_POOL_TYPE_UNSUPP(0xffff, "Unsupported") ///< Unsupported pool container type
 		;
 
-		private final long poolType;
+		private final short poolType;
 		private final String name;
 
 		TSK_POOL_TYPE_ENUM(int poolType, String name) {
@@ -764,7 +764,7 @@ public class TskData {
 		 *
 		 * @return the long value of the file type
 		 */
-		public long getPoolType() {
+		public short getValue() {
 			return poolType;
 		}
 

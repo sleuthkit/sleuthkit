@@ -5695,6 +5695,43 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Add a pool to the database
+	 *
+	 * @param parentObjId Object ID of the pool's parent
+     * @param type        Type of pool
+	 * @param transaction Case DB transaction
+	 *
+	 * @return the newly created Pool
+	 *
+	 * @throws TskCoreException
+	 */
+	public Pool addPool(long parentObjId, TskData.TSK_POOL_TYPE_ENUM type, CaseDbTransaction transaction) throws TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		try {
+			// Insert a row for the Pool into the tsk_objects table.
+			CaseDbConnection connection = transaction.getConnection();
+			long newObjId = addObject(parentObjId, TskData.ObjectType.POOL.getObjectType(), connection);
+
+			// Add a row to tsk_pool_info
+			// INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_POOL_INFO);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setShort(2, (short) type.getValue());
+			connection.executeUpdate(preparedStatement);
+
+			// Create the new Pool object
+			return new Pool(this, newObjId, type.getName(), type.getValue());
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating pool with type %d and parent ID %d", type.getValue(), parentObjId), ex);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}		
 
 	/**
 	 * Add a FileSystem to the database.
@@ -10909,6 +10946,7 @@ public class SleuthkitCase {
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
+		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
