@@ -27,7 +27,7 @@ import org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM;
 public class Pool extends AbstractContent {
 
 	private volatile long poolHandle = 0;
-	private final long type, imgOffset;
+	private final long type;
 
 	/**
 	 * Constructor most inputs are from the database
@@ -36,12 +36,10 @@ public class Pool extends AbstractContent {
 	 * @param obj_id    the unique content object id for the pool
 	 * @param name      name of the pool
 	 * @param type      type of the pool
-	 * @param imgOffset offset of the pool with respect to image
 	 */
-	protected Pool(SleuthkitCase db, long obj_id, String name, long type, long imgOffset) {
+	protected Pool(SleuthkitCase db, long obj_id, String name, long type) {
 		super(db, obj_id, name);
 		this.type = type;
-		this.imgOffset = imgOffset;
 	}
 
 	@Override
@@ -67,16 +65,6 @@ public class Pool extends AbstractContent {
 	public TSK_POOL_TYPE_ENUM getType() {
 		return TskData.TSK_POOL_TYPE_ENUM.valueOf(type);
 	}
-
-	/**
-	 * get the byte offset
-	 *
-	 * @return byte offset
-	 */
-	public long getOffset() {
-		return imgOffset;
-	}
-
 	
 	/**
 	 * Lazily loads the internal pool structure: won't be loaded until
@@ -94,7 +82,7 @@ public class Pool extends AbstractContent {
 					Content dataSource = getDataSource();
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						Image image = (Image) dataSource;
-						poolHandle = SleuthkitJNI.openPool(image.getImageHandle(), imgOffset, getSleuthkitCase());
+						poolHandle = SleuthkitJNI.openPool(image.getImageHandle(), getPoolOffset(image), getSleuthkitCase());
 					} else {
 						throw new TskCoreException("Data Source of pool is not an image");
 					}
@@ -102,6 +90,24 @@ public class Pool extends AbstractContent {
 			}
 		}
 		return this.poolHandle;
+	}
+	
+	/**
+	 * Get the offset of the pool from the parent object.
+	 * Needs to be in bytes.
+	 * 
+	 * @return the offset to the pool
+	 */
+	private long getPoolOffset(Image image) throws TskCoreException {
+		if (this.getParent() instanceof Image) {
+			// If the parent is an image, then the pool starts at offset zero
+			return 0;
+		} else if (this.getParent() instanceof Volume) {
+			// If the parent is a volume, then the pool starts at the volume offset
+			Volume parent = (Volume)this.getParent();
+			return parent.getStart() * image.getSsize(); // Offset needs to be in bytes
+		}
+		throw new TskCoreException("Pool with object ID " + this.getId() + " does not have Image or Volume parent");
 	}
 
 	@Override
@@ -141,6 +147,6 @@ public class Pool extends AbstractContent {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "Pool [\t" + "imgOffset " + imgOffset + "\t" + "type " + type + "]\t"; //NON-NLS
+		return super.toString(preserveState) + "Pool [\t" + "type " + type + "]\t"; //NON-NLS
 	}
 }

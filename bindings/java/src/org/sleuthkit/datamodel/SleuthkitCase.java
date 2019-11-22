@@ -7343,7 +7343,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_pool_info " //NON-NLS
 					+ "where obj_id = " + id); //NON-NLS
 			if (rs.next()) {
-				Pool pool = new Pool(this, rs.getLong("obj_id"), TskData.TSK_POOL_TYPE_ENUM.valueOf(rs.getLong("pool_type")).getName(), rs.getLong("pool_type"), rs.getLong("img_offset"));
+				Pool pool = new Pool(this, rs.getLong("obj_id"), TskData.TSK_POOL_TYPE_ENUM.valueOf(rs.getLong("pool_type")).getName(), rs.getLong("pool_type"));
 				pool.setParent(parent);
 				
 				return pool;
