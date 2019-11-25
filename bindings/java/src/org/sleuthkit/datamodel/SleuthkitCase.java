@@ -7322,9 +7322,9 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Get file system by id and Content parent
+	 * Get pool by id and Content parent
 	 *
-	 * @param id     of the filesystem to get
+	 * @param id     of the pool to get
 	 * @param parent a direct parent Content object
 	 *
 	 * @return populated FileSystem object
@@ -7334,28 +7334,22 @@ public class SleuthkitCase {
 	 */
 	private Pool getPoolByIdHelper(long id, Content parent) throws TskCoreException {
 
-		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT * FROM tsk_pool_info " //NON-NLS
-					+ "where obj_id = " + id); //NON-NLS
+		try (CaseDbConnection connection = connections.getConnection();
+			 Statement s = connection.createStatement();
+			 ResultSet rs = connection.executeQuery(s, "SELECT * FROM tsk_pool_info " //NON-NLS
+					+ "where obj_id = " + id);) { //NON-NLS
 			if (rs.next()) {
 				Pool pool = new Pool(this, rs.getLong("obj_id"), TskData.TSK_POOL_TYPE_ENUM.valueOf(rs.getLong("pool_type")).getName(), rs.getLong("pool_type"), rs.getLong("img_offset"));
 				pool.setParent(parent);
 				
 				return pool;
 			} else {
-				throw new TskCoreException("No pool found for id:" + id);
+				throw new TskCoreException("No pool found for ID:" + id);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Pool by ID", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
 	}

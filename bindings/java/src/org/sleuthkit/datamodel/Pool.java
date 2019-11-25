@@ -88,6 +88,7 @@ public class Pool extends AbstractContent {
 	 *                          occurs
 	 */
 	long getPoolHandle() throws TskCoreException {
+		// Note that once poolHandle is set, it will never be changed or reset to zero
 		if (poolHandle == 0) {
 			synchronized (this) {
 				if (poolHandle == 0) {
