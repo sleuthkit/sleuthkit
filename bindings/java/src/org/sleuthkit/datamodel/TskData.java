@@ -460,6 +460,8 @@ public class TskData {
 		TSK_FS_TYPE_EXT4(0x00002000, "Ext4"), ///< Ext4 file system
 		TSK_FS_TYPE_YAFFS2(0x00004000, "YAFFS2"), ///< YAFFS2 file system
 		TSK_FS_TYPE_YAFFS2_DETECT(0x00004000, bundle.getString("TskData.tskFsTypeEnum.YAFFS2autoDetect")), ///< YAFFS2 auto detection
+		TSK_FS_TYPE_APFS(0x00010000, "APFS"), ///< APFS file system
+		TSK_FS_TYPE_APFS_DETECT(0x00010000, bundle.getString("TskData.tskFsTypeEnum.APFSautoDetect")), ///< APFS auto detection
 		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 
 		private int value;
@@ -524,6 +526,7 @@ public class TskData {
 		TSK_IMG_TYPE_EWF_EWF(64, "E01"), // Expert Witness format (encase) NON-NLS
 		TSK_IMG_TYPE_VMDK_VMDK(128, "VMDK"), // VMware Virtual Disk (VMDK) NON-NLS
 		TSK_IMG_TYPE_VHD_VHD(256, "VHD"), // Virtual Hard Disk (VHD) image format NON-NLS
+		TSK_IMG_TYPE_POOL_POOL(16384, "POOL"), // Pool (internal use) NON-NLS
 		TSK_IMG_TYPE_UNSUPP(65535, bundle.getString("TskData.tskImgTypeEnum.unknown"));   // Unsupported Image Type
 
 		private long imgType;
@@ -575,6 +578,7 @@ public class TskData {
 		TSK_VS_TYPE_SUN(0x0004, "SUN VTOC"), ///< Sun VTOC NON-NLS
 		TSK_VS_TYPE_MAC(0x0008, "Mac"), ///< Mac partition table NON-NLS
 		TSK_VS_TYPE_GPT(0x0010, "GPT"), ///< GPT partition table NON-NLS
+		TSK_VS_TYPE_APFS(0x0020, "APFS"), ///< APFS pool NON-NLS
 		TSK_VS_TYPE_DBFILLER(0x00F0, bundle.getString("TskData.tskVSTypeEnum.fake")), ///< fake partition table type for loaddb (for images that do not have a volume system)
 		TSK_VS_TYPE_UNSUPP(0xFFFF, bundle.getString("TskData.tskVSTypeEnum.unsupported"));    ///< Unsupported
 
@@ -627,7 +631,8 @@ public class TskData {
 		FS(3), ///< File System - see tsk_fs_info for more details
 		ABSTRACTFILE(4), ///< File - see tsk_files for more details
 		ARTIFACT(5),	/// Artifact - see blackboard_artifacts for more details
-		REPORT(6)	///< Report - see reports for more details
+		REPORT(6),	///< Report - see reports for more details
+		POOL(7)	///< Pool
 		; 
 		private short objectType;
 
@@ -718,6 +723,55 @@ public class TskData {
 			return name;
 		}
 	}
+	
+	/**
+	 * The type of pool in a database.
+	 * This is the pool_type field in the tsk_pool_info table.
+	 */
+	public enum TSK_POOL_TYPE_ENUM {
+		TSK_POOL_TYPE_DETECT(0, "Auto detect"), ///< Use autodetection methods
+		TSK_POOL_TYPE_APFS(1, "APFS Pool"), ///< APFS Pooled Volumes
+		TSK_POOL_TYPE_UNSUPP(0xffff, "Unsupported") ///< Unsupported pool container type
+		;
+
+		private final long poolType;
+		private final String name;
+
+		TSK_POOL_TYPE_ENUM(int poolType, String name) {
+			this.poolType = (short) poolType;
+			this.name = name;
+		}
+
+		/**
+		 * Convert db pool type short value to the enum type
+		 *
+		 * @param poolType long value to convert
+		 *
+		 * @return the enum type
+		 */
+		public static TSK_POOL_TYPE_ENUM valueOf(long poolType) {
+			for (TSK_POOL_TYPE_ENUM type : TSK_POOL_TYPE_ENUM.values()) {
+				if (type.poolType == poolType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tskDbFilesTypeEnum.exception.msg1.text"), poolType)); // TODO
+		}
+
+		/**
+		 * Get short value of the file type
+		 *
+		 * @return the long value of the file type
+		 */
+		public long getPoolType() {
+			return poolType;
+		}
+
+		public String getName() {
+			return name;
+		}
+	}	
 
 	/**
 	 * Identifies if a file was in a hash database or not. This is the known

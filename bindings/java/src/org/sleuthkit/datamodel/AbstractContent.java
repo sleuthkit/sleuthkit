@@ -193,6 +193,73 @@ public abstract class AbstractContent implements Content {
 
 		return myParent.getDataSource();
 	}
+	
+	/**
+	 * Return whether this content has a Pool above it
+	 * 
+	 * @return true if there is a Pool object in the parent structure
+	 * 
+	 * @throws TskCoreException 
+	 */
+	boolean isPoolContent() throws TskCoreException {
+		return getPool() != null;
+	}
+	
+	/**
+	 * Get the pool volume 
+	 * 
+	 * @return the volume above this content and below a Pool object or null if not found
+	 * 
+	 * @throws TskCoreException 
+	 */
+	Volume getPoolVolume() throws TskCoreException {
+		Content myParent = getParent();
+		if (myParent == null) {
+			return null;
+		}
+		
+		if (! (myParent instanceof AbstractContent)) {
+			return null;
+		}
+		
+		if (myParent instanceof Volume) {
+			// This is potentially it, but need to check that this is a volume under a pool
+			if (((Volume) myParent).isPoolContent()) {
+				return (Volume)myParent;
+			} else {
+				// There are no pools in the hierarchy, so we're done
+				return null;
+			}
+		}
+		
+		// Try one level higher
+		return ((AbstractContent)myParent).getPoolVolume();
+	}	
+	
+	/**
+	 * Get the pool  
+	 * 
+	 * @return the pool above this content or null if not found
+	 * 
+	 * @throws TskCoreException 
+	 */
+	Pool getPool() throws TskCoreException {
+		Content myParent = getParent();
+		if (myParent == null) {
+			return null;
+		}
+		
+		if (! (myParent instanceof AbstractContent)) {
+			return null;
+		}
+		
+		if (myParent instanceof Pool) {
+			return (Pool)myParent;
+		}
+		
+		// Try one level higher
+		return ((AbstractContent)myParent).getPool();
+	}		
 
 	/**
 	 * Gets handle of SleuthkitCase to which this content belongs

@@ -28,13 +28,6 @@
 
 #include "tsk_fs_i.h"
 
-/** \internal
- * Internal method to detect pooled file systems
- */
-static inline int is_pool_fs(TSK_FS_INFO * a_fs) {
-    return (a_fs->pool_info->tag == TSK_POOL_INFO_TAG);
-}
-
 
 /** \internal
  * Internal method to deal with calculating correct offset when we have pre and post bytes
@@ -242,11 +235,7 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
 
     ssize_t ret_len;
 
-    if (is_pool_fs(a_fs)) {
-        TSK_OFF_T off = (TSK_OFF_T) (a_addr) * a_fs->block_size;
-        ret_len = tsk_pool_read(a_fs->pool_info, off, a_buf, a_len);
-    }
-    else if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
+    if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
         TSK_OFF_T off =
             a_fs->offset + (TSK_OFF_T) (a_addr) * a_fs->block_size;
         ret_len = tsk_img_read(a_fs->img_info, off, a_buf, a_len);

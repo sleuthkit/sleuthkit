@@ -87,6 +87,15 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(VolumeSystem vs);
+	
+	/**
+	 * Act on (visit) a Pool content object
+	 *
+	 * @param pool the volume system to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(Pool pool);
 
 	/**
 	 * Act on (visit) a blackboard artifact object
@@ -210,6 +219,11 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(VolumeSystem vs) {
 			return defaultVisit(vs);
+		}
+		
+		@Override
+		public T visit(Pool p) {
+			return defaultVisit(p);
 		}
 
 		@Override

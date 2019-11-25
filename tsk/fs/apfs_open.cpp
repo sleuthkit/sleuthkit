@@ -37,7 +37,7 @@ TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
   }
 
   try {
-    auto fs = new APFSFSCompat(pool_img->pool_info, pool_img->pvol_block, pass);
+    auto fs = new APFSFSCompat(img_info, pool_img->pool_info, pool_img->pvol_block, pass);
     return &fs->fs_info();
   } catch (std::runtime_error& e) {
     tsk_error_set_errno(TSK_ERR_FS_GENFS);

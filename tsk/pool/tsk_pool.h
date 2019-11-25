@@ -48,6 +48,7 @@ typedef struct _TSK_POOL_INFO {
   uint32_t block_size;       ///< Block size
   uint64_t num_blocks;       ///< Number of blocks
   int num_vols;              ///< Number of volumes
+  uint64_t img_offset;       ///< The image offset of the pool
   TSK_POOL_VOLUME_INFO *vol_list;  ///< Linked list of volume info structs
 
   // Callbacks

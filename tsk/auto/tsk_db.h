@@ -40,6 +40,9 @@ typedef enum {
     TSK_DB_OBJECT_TYPE_VOL,     ///< Object is a volume 
     TSK_DB_OBJECT_TYPE_FS,      ///< Object is a file system
     TSK_DB_OBJECT_TYPE_FILE,    ///< Object is a file (exact type can be determined in the tsk_files table via TSK_DB_FILES_TYPE_ENUM)
+    TSK_DB_OBJECT_TYPE_ARTIFACT, ///< Autopsy placeholder
+    TSK_DB_OBJECT_TYPE_REPORT,   ///< Autopsy placeholder
+    TSK_DB_OBJECT_TYPE_POOL     ///< Object is a pool
 } TSK_DB_OBJECT_TYPE_ENUM;
 
 /**
@@ -115,7 +118,7 @@ typedef struct _TSK_DB_FS_INFO {
     TSK_DADDR_T block_count;
     TSK_INUM_T root_inum;
     TSK_INUM_T first_inum;
-    TSK_INUM_T last_inum;     
+    TSK_INUM_T last_inum;   
 } TSK_DB_FS_INFO;
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo);
@@ -174,6 +177,9 @@ class TskDb {
     virtual int addImageName(int64_t objId, char const *imgName, int sequence) = 0;
     virtual int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId, int64_t & objId) = 0;
+    virtual int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) = 0;
+    virtual int addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+        int64_t parObjId, int64_t& objId) = 0;
     virtual int addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
