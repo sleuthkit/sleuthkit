@@ -19,6 +19,8 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM;
 
 /**
@@ -26,6 +28,7 @@ import org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM;
  */
 public class Pool extends AbstractContent {
 
+	private static final Logger logger = Logger.getLogger(Pool.class.getName());
 	private volatile long poolHandle = 0;
 	private final long type, imgOffset;
 
@@ -56,7 +59,12 @@ public class Pool extends AbstractContent {
 
 	@Override
 	public long getSize() {
-		return 0;
+		try {
+			return getParent().getSize();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting parent of pool with obj ID {0}", getId());
+			return 0;
+		}
 	}
 
 	/**
