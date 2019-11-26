@@ -98,7 +98,13 @@ public class SleuthkitJNI {
 		// The poolImgCache is only used to close the images later.
 		private final List<Long> poolImgCache = new ArrayList<>();
 		
-		// Temporary list of all pool file systems to be used when picking a lock type
+		/*
+		 * Currently, our APFS code is not thread-safe and it is the only code
+		 * that uses pools. To prevent crashes, we make any reads to a file system
+		 * contained in a pool single-threaded. This cache keeps track of which
+		 * open file system handles are contained in a pool so we can set the locks
+		 * appropriately. 
+		 */
 		private final List<Long> poolFsList = new ArrayList();
 		
 		private CaseHandles() {
@@ -957,6 +963,11 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	static long openFsPool(long imgHandle, long fsOffset, long poolHandle, long poolBlock, SleuthkitCase skCase) throws TskCoreException {
+		/*
+		 * Currently, our APFS code is not thread-safe and it is the only code
+		 * that uses pools. To prevent crashes, we make any reads to a file system
+		 * contained in a pool single-threaded.
+		 */
 		getTSKWriteLock();
 		try {
 			long fsHandle;
