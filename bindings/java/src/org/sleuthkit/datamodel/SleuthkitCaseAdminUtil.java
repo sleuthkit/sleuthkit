@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,43 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.blackboardutils;
+package org.sleuthkit.datamodel;
 
 /**
- * Represents a message attachment where a URL of the attachment is available.
- *
+ * Utility methods for administering a case database.
  */
-public class URLAttachment implements Attachment {
-
-	private final String url;
+public final class SleuthkitCaseAdminUtil {
 
 	/**
-	 * Creates URL attachment.
+	 * Deletes a data source from a case database.
 	 *
-	 * @param url URL of attachment.
+	 * @param caseDB          The case database.
+	 * @param dataSourceObjID The object ID of the data source to be deleted.
+	 *
+	 * @throws TskCoreException If there is an error deleting the data source.
 	 */
-	public URLAttachment(String url) {
-		this.url = url;
+	public static void deleteDataSource(SleuthkitCase caseDB, long dataSourceObjID) throws TskCoreException {
+		caseDB.deleteDataSource(dataSourceObjID);
 	}
 
 	/**
-	 * Returns attachment URL.
-	 *
-	 * @return attachment URL.
+	 * Prevent instantiation of this utility class.
 	 */
-	public String getURL() {
-		return url;
-	}
-
-	@Override
-	public String getLocation() {
-		return this.url;
-	}
-
-	@Override
-	public Long getObjId() {
-		// no real object available. 
-		return null;
+	private SleuthkitCaseAdminUtil() {
 	}
 
 }

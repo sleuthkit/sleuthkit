@@ -37,7 +37,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  * file.
  *
  */
-public final class FileAttachment {
+public final class FileAttachment implements Attachment {
 
 	private final String filePathName;
 	private final long objId;
@@ -103,6 +103,15 @@ public final class FileAttachment {
 		filePathName = derivedFile.getLocalAbsPath() + "/" + derivedFile.getName();
 	}
 
+	/**
+	 * Creates a file attachment from a file.
+	 *
+	 * @param abstractFile Abstract file for attachment..
+	 */
+	public FileAttachment(AbstractFile abstractFile) {
+		objId = abstractFile.getId();
+		filePathName = abstractFile.getParentPath() + "/" + abstractFile.getName();
+	}
 
 	/**
 	 * Returns the full path name of the file.
@@ -132,8 +141,8 @@ public final class FileAttachment {
 	 * @return normalized path.
 	 */
 	private String normalizePath(String path) {
-		//normalize the slashes.
-		String adjustedPath = path.replace("\\", "/");
+		//normalize the slashes, replace encoded space
+		String adjustedPath = path.replace("\\", "/").replace("%20"," ");
 
 		// Strip common known mountpoints.
 		for (String mountPoint : KNOWN_MOUNTPOINTS) {
@@ -144,5 +153,15 @@ public final class FileAttachment {
 		}
 
 		return adjustedPath;
+	}
+
+	@Override
+	public String getLocation() {
+		return this.filePathName;
+	}
+
+	@Override
+	public Long getObjId() {
+		return this.objId;
 	}
 }
