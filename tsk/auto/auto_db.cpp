@@ -311,14 +311,14 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
-        if (m_db->addPoolInfo(pool_info, m_curVolId, m_curPoolVs)) {
+        if (m_db->addPoolInfoAndVS(pool_info, m_curVolId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // pool doesn't live in a volume, use image as parent
-        if (m_db->addPoolInfo(pool_info, m_curImgId, m_curPoolVs)) {
+        if (m_db->addPoolInfoAndVS(pool_info, m_curImgId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
