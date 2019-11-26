@@ -753,13 +753,23 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
                         "Error adding data to tsk_vs_info table: %s\n");
 }
 
+/**
+* Creats a new tsk_pool_info database entry and a new tsk_vs_info 
+* entry with the tsk_pool_info as its parent.
+*
+* @ param pool_info The pool to save to the database
+* @ param parObjId The ID of the parent of the pool object
+* @ param objId Will be set to the object ID of the new volume system created as a child of 
+*               the new pool.
+* @returns 1 on error, 0 on success
+*/
 int
-TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
 
     char
         stmt[1024];
 
-    // Temp - Make pool and then VS
+    // Add pool
     int64_t poolObjId;
     if (addObject(TSK_DB_OBJECT_TYPE_POOL, parObjId, poolObjId))
         return 1;
@@ -774,6 +784,7 @@ TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64
         return retVal;
     }
 
+    // Add volume system
     if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, objId))
         return 1;
 
@@ -786,6 +797,10 @@ TskDbSqlite::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64
 
 /**
 * Adds the sector addresses of the pool volumes into the db.
+
+* @param pool_vol The pool volume to save to the DB
+* @param parObjId The ID of the parent of the pool volume (should be a volume system)
+* @param objId Will be set to the object ID of the new volume
 * @returns 1 on error, 0 on success
 */
 int

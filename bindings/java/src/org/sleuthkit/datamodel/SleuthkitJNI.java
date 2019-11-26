@@ -932,7 +932,8 @@ public class SleuthkitJNI {
 	}
 	
 	/**
-	 * Get file system Handle Opened handle is cached (transparently) so it does
+	 * Get file system handle for a file system contained in a pool.
+	 * Opened handle is cached (transparently) so it does
 	 * not need be reopened next time for the duration of the application
 	 * 
 	 * @param imgHandle pointer to imgHandle in sleuthkit

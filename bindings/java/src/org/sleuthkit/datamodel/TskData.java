@@ -632,7 +632,7 @@ public class TskData {
 		ABSTRACTFILE(4), ///< File - see tsk_files for more details
 		ARTIFACT(5),	/// Artifact - see blackboard_artifacts for more details
 		REPORT(6),	///< Report - see reports for more details
-        POOL(7)	///< Pool
+		POOL(7)	///< Pool
 		; 
 		private short objectType;
 
@@ -725,10 +725,10 @@ public class TskData {
 	}
 	
 	/**
-	 * The type of file in a database, such as file system versus local file.
-	 * This is the type field in the tsk_files table.
+	 * The type of pool in a database.
+	 * This is the pool_type field in the tsk_pool_info table.
 	 */
-	public enum TSK_DB_POOL_TYPE_ENUM {
+	public enum TSK_POOL_TYPE_ENUM {
 		TSK_POOL_TYPE_DETECT(0, "Auto detect"), ///< Use autodetection methods
 		TSK_POOL_TYPE_APFS(1, "APFS Pool"), ///< APFS Pooled Volumes
 		TSK_POOL_TYPE_UNSUPP(0xffff, "Unsupported") ///< Unsupported pool container type
@@ -737,7 +737,7 @@ public class TskData {
 		private final long poolType;
 		private final String name;
 
-		TSK_DB_POOL_TYPE_ENUM(int poolType, String name) {
+		TSK_POOL_TYPE_ENUM(int poolType, String name) {
 			this.poolType = (short) poolType;
 			this.name = name;
 		}
@@ -749,8 +749,8 @@ public class TskData {
 		 *
 		 * @return the enum type
 		 */
-		public static TSK_DB_POOL_TYPE_ENUM valueOf(long poolType) {
-			for (TSK_DB_POOL_TYPE_ENUM type : TSK_DB_POOL_TYPE_ENUM.values()) {
+		public static TSK_POOL_TYPE_ENUM valueOf(long poolType) {
+			for (TSK_POOL_TYPE_ENUM type : TSK_POOL_TYPE_ENUM.values()) {
 				if (type.poolType == poolType) {
 					return type;
 				}

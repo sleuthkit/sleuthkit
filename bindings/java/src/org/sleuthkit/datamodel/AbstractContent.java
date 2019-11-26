@@ -202,20 +202,7 @@ public abstract class AbstractContent implements Content {
 	 * @throws TskCoreException 
 	 */
 	boolean isPoolContent() throws TskCoreException {
-		Content myParent = getParent();
-		if (myParent == null) {
-			return false;
-		}
-		
-		if (! (myParent instanceof AbstractContent)) {
-			return false;
-		}
-
-		if (myParent instanceof Pool) {
-			return true;
-		}
-		
-		return ((AbstractContent)myParent).isPoolContent();
+		return getPool() != null;
 	}
 	
 	/**

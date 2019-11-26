@@ -50,7 +50,7 @@ class TskDbSqlite : public TskDb {
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
-    int addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId);
+    int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId);
     int addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         int64_t parObjId, int64_t& objId);
     int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,

@@ -1202,17 +1202,24 @@ public class BlackboardArtifact implements Content {
 				bundle.getString("BlackboardArtifact.tskWebCache.text")),
 		
 		/**
-		 * Indicates clipboard content
-		 */
-		TSK_CLIPBOARD_CONTENT (53, "TSK_CLIPBOARD_CONTENT",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskClipboardContent.text")),
-
-		/**
 		 * A generic (timeline) event.
 		 */
 		TSK_TL_EVENT(53, "TSK_TL_EVENT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
+				bundle.getString("BlackboardArtifact.tskTLEvent.text")),
 
+		/**
+		 * Indicates clipboard content
+		 */
+		TSK_CLIPBOARD_CONTENT (54, "TSK_CLIPBOARD_CONTENT",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskClipboardContent.text")),
+		
+		/**
+		 * An associated object.
+		 */
+		TSK_ASSOCIATED_OBJECT(55, "TSK_ASSOCIATED_OBJECT", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskAssociatedObject.text"));
+
+				
 		private final String label;
 		private final int typeId;
 		private final String displayName;
