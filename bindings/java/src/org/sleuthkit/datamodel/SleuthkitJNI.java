@@ -123,7 +123,15 @@ public class SleuthkitJNI {
 
 		private static final String INVALID_FILE_HANDLE = "Invalid file handle."; //NON-NLS
 		
-		// Temporary - protect with cacheLock
+		/*
+		 * Currently, our APFS code is not thread-safe and it is the only code
+		 * that uses pools. To prevent crashes, we make any reads to a file system
+		 * contained in a pool single-threaded. This cache keeps track of which
+		 * open file handles are contained in a pool so we can set the locks
+		 * appropriately. 
+		 * 
+		 * Access to this list should be guarded by cacheLock.
+		 */
 		private static final List<Long> poolFileHandles = new ArrayList<>();
 		
 		/**
@@ -275,6 +283,7 @@ public class SleuthkitJNI {
 						// First close all open file handles for the file system.
 						if (getCaseHandles(caseDbPointer).fileSystemToFileHandles.containsKey(fsHandle)) {
 							for (Long fileHandle : getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle)) {
+								// Update the cache of file handles contained in pools
 								if (poolFileHandles.contains(fileHandle)) {
 									poolFileHandles.remove(fileHandle);
 								}
@@ -1019,6 +1028,12 @@ public class SleuthkitJNI {
 				withinPool = true;
 			}
 		}
+		
+		/*
+		 * The current APFS code is not thread-safe. To compensate, we make any
+		 * reads to the APFS pool single-threaded by obtaining a write
+		 * lock instead of a read lock.
+		 */
 		if (withinPool) {
 			getTSKWriteLock();
 		} else {
@@ -1034,6 +1049,9 @@ public class SleuthkitJNI {
 					caseDbPointer = skCase.getCaseHandle().caseDbPointer;
 				}
 				HandleCache.addFileHandle(caseDbPointer, fileHandle, fsHandle);
+
+				// If this file is in a pool file system, record it so the locks
+				// can be set appropriately when reading it.
 				if (withinPool) {
 					HandleCache.poolFileHandles.add(fileHandle);
 				}
@@ -1234,6 +1252,12 @@ public class SleuthkitJNI {
 				withinPool = true;
 			}
 		}
+		
+		/*
+		 * The current APFS code is not thread-safe. To compensate, we make any
+		 * reads to the APFS pool single-threaded by obtaining a write
+		 * lock instead of a read lock.
+		 */
 		if (withinPool) {
 			getTSKWriteLock();
 		} else {
@@ -1348,6 +1372,12 @@ public class SleuthkitJNI {
 				withinPool = true;
 			}
 		}
+		
+		/*
+		 * The current APFS code is not thread-safe. To compensate, we make any
+		 * reads to the APFS pool single-threaded by obtaining a write
+		 * lock instead of a read lock.
+		 */
 		if (withinPool) {
 			getTSKWriteLock();
 		} else {
