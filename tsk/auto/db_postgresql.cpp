@@ -1009,7 +1009,7 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
 }
 
 int
-TskDbPostgreSQL::addPoolInfo(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
     return TSK_ERR; // TODO TODO
 }
 

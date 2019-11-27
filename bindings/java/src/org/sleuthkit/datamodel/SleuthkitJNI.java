@@ -98,6 +98,15 @@ public class SleuthkitJNI {
 		// The poolImgCache is only used to close the images later.
 		private final List<Long> poolImgCache = new ArrayList<>();
 		
+		/*
+		 * Currently, our APFS code is not thread-safe and it is the only code
+		 * that uses pools. To prevent crashes, we make any reads to a file system
+		 * contained in a pool single-threaded. This cache keeps track of which
+		 * open file system handles are contained in a pool so we can set the locks
+		 * appropriately. 
+		 */
+		private final List<Long> poolFsList = new ArrayList();
+		
 		private CaseHandles() {
 			// Nothing to do here
 		}
@@ -119,6 +128,17 @@ public class SleuthkitJNI {
 		private static final Map<Long, CaseHandles> caseHandlesCache = new HashMap<>();
 
 		private static final String INVALID_FILE_HANDLE = "Invalid file handle."; //NON-NLS
+		
+		/*
+		 * Currently, our APFS code is not thread-safe and it is the only code
+		 * that uses pools. To prevent crashes, we make any reads to a file system
+		 * contained in a pool single-threaded. This cache keeps track of which
+		 * open file handles are contained in a pool so we can set the locks
+		 * appropriately. 
+		 * 
+		 * Access to this list should be guarded by cacheLock.
+		 */
+		private static final List<Long> poolFileHandles = new ArrayList<>();
 		
 		/**
 		 * Create the empty cache for a new case
@@ -269,6 +289,10 @@ public class SleuthkitJNI {
 						// First close all open file handles for the file system.
 						if (getCaseHandles(caseDbPointer).fileSystemToFileHandles.containsKey(fsHandle)) {
 							for (Long fileHandle : getCaseHandles(caseDbPointer).fileSystemToFileHandles.get(fsHandle)) {
+								// Update the cache of file handles contained in pools
+								if (poolFileHandles.contains(fileHandle)) {
+									poolFileHandles.remove(fileHandle);
+								}
 								closeFile(fileHandle);
 							}
 						}
@@ -276,6 +300,11 @@ public class SleuthkitJNI {
 						closeFsNat(fsHandle);
 					}
 				}
+				
+				/*
+				 * Clear out the list of pool file systems.
+				 */
+				getCaseHandles(caseDbPointer).poolFsList.clear();
 				
 				/*
 				 * Close any cached pools
@@ -918,7 +947,8 @@ public class SleuthkitJNI {
 	}
 	
 	/**
-	 * Get file system Handle Opened handle is cached (transparently) so it does
+	 * Get file system handle for a file system contained in a pool.
+	 * Opened handle is cached (transparently) so it does
 	 * not need be reopened next time for the duration of the application
 	 * 
 	 * @param imgHandle pointer to imgHandle in sleuthkit
@@ -933,7 +963,12 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	static long openFsPool(long imgHandle, long fsOffset, long poolHandle, long poolBlock, SleuthkitCase skCase) throws TskCoreException {
-		getTSKReadLock();
+		/*
+		 * Currently, our APFS code is not thread-safe and it is the only code
+		 * that uses pools. To prevent crashes, we make any reads to a file system
+		 * contained in a pool single-threaded.
+		 */
+		getTSKWriteLock();
 		try {
 			long fsHandle;
 			synchronized (HandleCache.cacheLock) {
@@ -957,11 +992,12 @@ public class SleuthkitJNI {
 					fsHandle = openFsNat(poolImgHandle, fsOffset);
 					//cache it
 					imgOffSetToFsHandle.put(poolBlock, fsHandle);
+					HandleCache.getCaseHandles(caseDbPointer).poolFsList.add(fsHandle);
 				}
 			}
 			return fsHandle;
 		} finally {
-			releaseTSKReadLock();
+			releaseTSKWriteLock();
 		}
 	}
 
@@ -991,7 +1027,29 @@ public class SleuthkitJNI {
 		 * need to convert negative attribute id to uint16 which is what TSK is
 		 * using to store attribute id.
 		 */
-		getTSKReadLock();
+		boolean withinPool = false;
+		synchronized (HandleCache.cacheLock) {
+			long caseDbPointer;
+			if (skCase == null) {
+				caseDbPointer = HandleCache.getDefaultCaseDbPointer();
+			} else {
+				caseDbPointer = skCase.getCaseHandle().caseDbPointer;
+			}
+			if (HandleCache.getCaseHandles(caseDbPointer).poolFsList.contains(fsHandle)) {
+				withinPool = true;
+			}
+		}
+		
+		/*
+		 * The current APFS code is not thread-safe. To compensate, we make any
+		 * reads to the APFS pool single-threaded by obtaining a write
+		 * lock instead of a read lock.
+		 */
+		if (withinPool) {
+			getTSKWriteLock();
+		} else {
+			getTSKReadLock();
+		}
 		try {
 			long fileHandle = openFileNat(fsHandle, fileId, attrType.getValue(), convertSignedToUnsigned(attrId));
 			synchronized (HandleCache.cacheLock) {
@@ -1002,10 +1060,20 @@ public class SleuthkitJNI {
 					caseDbPointer = skCase.getCaseHandle().caseDbPointer;
 				}
 				HandleCache.addFileHandle(caseDbPointer, fileHandle, fsHandle);
+
+				// If this file is in a pool file system, record it so the locks
+				// can be set appropriately when reading it.
+				if (withinPool) {
+					HandleCache.poolFileHandles.add(fileHandle);
+				}
 			}
 			return fileHandle;
 		} finally {
-			releaseTSKReadLock();
+			if (withinPool) {
+				releaseTSKWriteLock();
+			} else {
+				releaseTSKReadLock();
+			}
 		}
 	}
 
@@ -1189,7 +1257,23 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		getTSKReadLock();
+		boolean withinPool = false;
+		synchronized (HandleCache.cacheLock) {
+			if (HandleCache.poolFileHandles.contains(fileHandle)) {
+				withinPool = true;
+			}
+		}
+		
+		/*
+		 * The current APFS code is not thread-safe. To compensate, we make any
+		 * reads to the APFS pool single-threaded by obtaining a write
+		 * lock instead of a read lock.
+		 */
+		if (withinPool) {
+			getTSKWriteLock();
+		} else {
+			getTSKReadLock();
+		}
 		try {
 			if (!HandleCache.isValidFileHandle(fileHandle)) {
 				throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
@@ -1197,7 +1281,11 @@ public class SleuthkitJNI {
 
 			return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_FILE.getValue(), len);
 		} finally {
-			releaseTSKReadLock();
+			if (withinPool) {
+				releaseTSKWriteLock();
+			} else {
+				releaseTSKReadLock();
+			}
 		}
 	}
 
@@ -1289,7 +1377,23 @@ public class SleuthkitJNI {
 	 * @param skCase     the case containing the file
 	 */
 	public static void closeFile(long fileHandle, SleuthkitCase skCase) {		
-		getTSKReadLock();
+		boolean withinPool = false;
+		synchronized (HandleCache.cacheLock) {
+			if (HandleCache.poolFileHandles.contains(fileHandle)) {
+				withinPool = true;
+			}
+		}
+		
+		/*
+		 * The current APFS code is not thread-safe. To compensate, we make any
+		 * reads to the APFS pool single-threaded by obtaining a write
+		 * lock instead of a read lock.
+		 */
+		if (withinPool) {
+			getTSKWriteLock();
+		} else {
+			getTSKReadLock();
+		}
 		try {
 			synchronized (HandleCache.cacheLock) {
 				if (!HandleCache.isValidFileHandle(fileHandle)) {
@@ -1298,9 +1402,16 @@ public class SleuthkitJNI {
 				}
 				closeFileNat(fileHandle);
 				HandleCache.removeFileHandle(fileHandle, skCase);
+				if (HandleCache.poolFileHandles.contains(fileHandle)) {
+					HandleCache.poolFileHandles.remove(fileHandle);
+				}
 			}
 		} finally {
-			releaseTSKReadLock();
+			if (withinPool) {
+				releaseTSKWriteLock();
+			} else {
+				releaseTSKReadLock();
+			}
 		}
 	}
 
@@ -1624,6 +1735,24 @@ public class SleuthkitJNI {
 	private static void releaseTSKReadLock() {
 		tskLock.readLock().unlock();
 	}
+	
+	/**
+	 * Get a write lock for the C++ layer. Do not get this lock after obtaining
+	 * HandleCache.cacheLock.
+	 * 
+	 * This is a temporary fix for APFS which is not thread-safe. Should be used
+	 * when accessing anything under a pool.
+	 */
+	private static void getTSKWriteLock() {
+		tskLock.writeLock().lock();
+	}
+
+	/**
+	 * Release the write lock
+	 */
+	private static void releaseTSKWriteLock() {
+		tskLock.writeLock().unlock();
+	}	
 
 	//free pointers
 	/**
