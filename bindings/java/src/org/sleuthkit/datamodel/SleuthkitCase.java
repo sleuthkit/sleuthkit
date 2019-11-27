@@ -1826,6 +1826,8 @@ public class SleuthkitCase {
 		try (Statement statement = connection.createStatement();) {
 
 			// Add the uniqueness constraint to the tsk_event and tsk_event_description tables.
+			// Unfortunately, SQLite doesn't support adding a constraint
+			// to an existing table so we have to rename the old...
 			String primaryKeyType;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -1944,8 +1946,6 @@ public class SleuthkitCase {
 
 		acquireSingleUserCaseWriteLock();
 		try {
-			// Make two new tables. These tables do not include "ON DELETE CASCADE" since data sources can not 
-			// be deleted from cases with creation schema earlier than 8.5
 			String primaryKeyType;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -1978,7 +1978,7 @@ public class SleuthkitCase {
 					+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_description(event_description_id),"
 					+ " time INTEGER NOT NULL, "
 					+ " UNIQUE (event_type_id, event_description_id, time))"
-			);						
+			);					
 
 			// Copy to the new tsk_event_description table
 			existingEvents = getExistingEventDescriptionsStatement.executeQuery("SELECT * FROM tsk_event_descriptions");
@@ -2027,7 +2027,7 @@ public class SleuthkitCase {
 				insertEventStatement.setLong(4, time);
 	
 				connection.executeUpdate(insertEventStatement);
-			}			
+			}
 
 			// Drop the old tables
 			updateSchemaStatement.execute("DROP TABLE tsk_events");
