@@ -5720,7 +5720,7 @@ public class SleuthkitCase {
 			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_POOL_INFO);
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
-			preparedStatement.setShort(2, (short) type.getValue());
+			preparedStatement.setShort(2, type.getValue());
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Pool object

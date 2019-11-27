@@ -105,7 +105,7 @@ public class SleuthkitJNI {
 		 * open file system handles are contained in a pool so we can set the locks
 		 * appropriately. 
 		 */
-		private final List<Long> poolFsList = new ArrayList();
+		private final List<Long> poolFsList = new ArrayList<>();
 		
 		private CaseHandles() {
 			// Nothing to do here
