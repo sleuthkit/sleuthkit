@@ -659,9 +659,9 @@ int TskDbPostgreSQL::initialize() {
         attempt_exec(
 			/*
 			* Regarding the timeline event tables schema, note that several columns
-			* in the tsk_event_descriptions table seem, at first glance, to be
+			* in the tsk_event_description table seem, at first glance, to be
 			* attributes of events rather than their descriptions and would appear
-			* to belong in tsk_events table instead. The rationale for putting the
+			* to belong in tsk_event table instead. The rationale for putting the
 			* data source object ID, content object ID, artifact ID and the flags
 			* indicating whether or not the event source has a hash set hit or is
 			* tagged were motivated by the fact that these attributes are identical
@@ -669,7 +669,7 @@ int TskDbPostgreSQL::initialize() {
 			* decision was made to avoid duplication and save space by placing this
 			* data in the tsk_event-descriptions table.
 			*/
-            "CREATE TABLE tsk_event_descriptions ( "
+            "CREATE TABLE tsk_event_description ( "
             " event_description_id BIGSERIAL PRIMARY KEY, "
             " full_description TEXT NOT NULL, "
             " med_description TEXT, "
@@ -683,16 +683,16 @@ int TskDbPostgreSQL::initialize() {
             " FOREIGN KEY(content_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
             " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE,"
 			" UNIQUE (full_description, content_obj_id, artifact_id))",
-            "Error creating tsk_event_descriptions table: %s\n")
+            "Error creating tsk_event_description table: %s\n")
         ||
         attempt_exec(
-            "CREATE TABLE tsk_events ("
+            "CREATE TABLE tsk_event ("
             " event_id BIGSERIAL PRIMARY KEY, "
             " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
-            " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ON DELETE CASCADE ,"
+            " event_description_id BIGINT NOT NULL REFERENCES tsk_event_description(event_description_id) ON DELETE CASCADE ,"
             " time BIGINT NOT NULL , "
 			" UNIQUE (event_type_id, event_description_id, time))"
-            , "Error creating tsk_events table: %s\n")
+            , "Error creating tsk_event table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
@@ -760,18 +760,18 @@ int TskDbPostgreSQL::createIndexes() {
             "Error creating relationships_relationship_type index on account_relationships: %s\n") ||
         attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
             "Error creating relationships_data_source_obj_id index on account_relationships: %s\n") ||
-        //tsk_events indices
-        attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id);",
-            "Error creating events_data_source_obj_id index on tsk_event_descriptions: %s\n") ||
-        attempt_exec("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id);",
-            "Error creating events_content_obj_id index on tsk_event_descriptions: %s\n") ||
-        attempt_exec("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id);",
-            "Error creating events_artifact_id index on tsk_event_descriptions: %s\n") ||
+        //tsk_event indices
+        attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_event_description(data_source_obj_id);",
+            "Error creating events_data_source_obj_id index on tsk_event_description: %s\n") ||
+        attempt_exec("CREATE INDEX events_content_obj_id  ON tsk_event_description(content_obj_id);",
+            "Error creating events_content_obj_id index on tsk_event_description: %s\n") ||
+        attempt_exec("CREATE INDEX events_artifact_id  ON tsk_event_description(artifact_id);",
+            "Error creating events_artifact_id index on tsk_event_description: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time);",
-            "Error creating events_sub_type_time index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
-            "Error creating events_time index on tsk_events: %s\n");
+            "CREATE INDEX events_sub_type_time ON tsk_event(event_type_id,  time);",
+            "Error creating events_sub_type_time index on tsk_event: %s\n") ||
+        attempt_exec("CREATE INDEX events_time  ON tsk_event(time);",
+            "Error creating events_time index on tsk_event: %s\n");
 }
 
 
@@ -1094,7 +1094,7 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
         if (event_description_id == -1)
         {
             if (0 > snprintf(zSQL, 2048 - 1,
-                             "INSERT INTO tsk_event_descriptions ( data_source_obj_id, content_obj_id , artifact_id, full_description, hash_hit, tagged) "
+                             "INSERT INTO tsk_event_description ( data_source_obj_id, content_obj_id , artifact_id, full_description, hash_hit, tagged) "
                              " VALUES ("
                              "%" PRId64 "," // data_source_obj_id
                              "%" PRId64 "," // content_obj_id
@@ -1125,7 +1125,7 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
         }
         //insert events time event
         if (0 > snprintf(zSQL, 2048 - 1,
-                         "INSERT INTO tsk_events ( event_type_id, event_description_id , time) "
+                         "INSERT INTO tsk_event ( event_type_id, event_description_id , time) "
                          " VALUES ("
                          "%" PRId64 "," // event_type_id
                          "%" PRId64 "," // event_description_id
@@ -1137,7 +1137,7 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
             return 1;
         };
 
-        if (attempt_exec(                zSQL, "TskDbPostgreSQL::addMACTimeEvents: Error adding filesystem event to tsk_events table: %s\n")        )
+        if (attempt_exec(                zSQL, "TskDbPostgreSQL::addMACTimeEvents: Error adding filesystem event to tsk_event table: %s\n")        )
         {
             return 1;
         }

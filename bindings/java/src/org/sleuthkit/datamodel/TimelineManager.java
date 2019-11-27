@@ -136,7 +136,7 @@ public final class TimelineManager {
 		if (eventIDs.isEmpty()) {
 			return null;
 		}
-		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM tsk_events WHERE event_id IN (" + buildCSVString(eventIDs) + ")"; //NON-NLS
+		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM tsk_event WHERE event_id IN (" + buildCSVString(eventIDs) + ")"; //NON-NLS
 		caseDB.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = caseDB.getConnection();
 				Statement stmt = con.createStatement();
@@ -254,7 +254,7 @@ public final class TimelineManager {
 
 		ArrayList<Long> resultIDs = new ArrayList<>();
 
-		String query = "SELECT tsk_events.event_id AS event_id FROM " + getAugmentedEventsTablesSQL(filter)
+		String query = "SELECT tsk_event.event_id AS event_id FROM " + getAugmentedEventsTablesSQL(filter)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		caseDB.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = caseDB.getConnection();
@@ -358,8 +358,8 @@ public final class TimelineManager {
 	 */
 	private enum STATEMENTS {
 
-		GET_MAX_TIME("SELECT Max(time) AS max FROM tsk_events"), // NON-NLS
-		GET_MIN_TIME("SELECT Min(time) AS min FROM tsk_events"); // NON-NLS
+		GET_MAX_TIME("SELECT Max(time) AS max FROM tsk_event"), // NON-NLS
+		GET_MIN_TIME("SELECT Min(time) AS min FROM tsk_event"); // NON-NLS
 
 		private final String sql;
 
@@ -386,8 +386,8 @@ public final class TimelineManager {
 		ArrayList<Long> eventIDs = new ArrayList<>();
 
 		String query
-				= "SELECT event_id FROM tsk_events "
-				+ " LEFT JOIN tsk_event_descriptions on ( tsk_events.event_description_id = tsk_event_descriptions.event_description_id ) "
+				= "SELECT event_id FROM tsk_event "
+				+ " LEFT JOIN tsk_event_description on ( tsk_event.event_description_id = tsk_event_description.event_description_id ) "
 				+ " WHERE artifact_id = " + artifact.getArtifactID();
 		caseDB.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = caseDB.getConnection();
@@ -427,7 +427,7 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Add a row to the tsk_events_description table.
+	 * Add a row to the tsk_event_description table.
 	 *
 	 * @param dataSourceObjId
 	 * @param fileObjId
@@ -447,7 +447,7 @@ public final class TimelineManager {
 			String fullDescription, String medDescription, String shortDescription,
 			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException {
 		String insertDescriptionSql
-				= "INSERT INTO tsk_event_descriptions ( "
+				= "INSERT INTO tsk_event_description ( "
 				+ "data_source_obj_id, content_obj_id, artifact_id,  "
 				+ " full_description, med_description, short_description, "
 				+ " hash_hit, tagged "
@@ -646,7 +646,7 @@ public final class TimelineManager {
 
 	private long addEventWithExistingDescription(Long time, TimelineEventType type, long descriptionID, CaseDbConnection connection) throws TskCoreException {
 		String insertEventSql
-				= "INSERT INTO tsk_events ( event_type_id, event_description_id , time) "
+				= "INSERT INTO tsk_event ( event_type_id, event_description_id , time) "
 				+ " VALUES (" + type.getTypeID() + ", " + descriptionID + ", " + time + ")";
 
 		caseDB.acquireSingleUserCaseWriteLock();
@@ -679,9 +679,9 @@ public final class TimelineManager {
 	private Map<Long, Long> getEventAndDescriptionIDsHelper(CaseDbConnection con, long fileObjID, String artifactClause) throws TskCoreException {
 		//map from event_id to the event_description_id for that event.
 		Map<Long, Long> eventIDToDescriptionIDs = new HashMap<>();
-		String sql = "SELECT event_id, tsk_events.event_description_id"
-				+ " FROM tsk_events "
-				+ " LEFT JOIN tsk_event_descriptions ON ( tsk_events.event_description_id = tsk_event_descriptions.event_description_id )"
+		String sql = "SELECT event_id, tsk_event.event_description_id"
+				+ " FROM tsk_event "
+				+ " LEFT JOIN tsk_event_description ON ( tsk_event.event_description_id = tsk_event_description.event_description_id )"
 				+ " WHERE content_obj_id = " + fileObjID
 				+ artifactClause;
 		try (Statement selectStmt = con.createStatement(); ResultSet executeQuery = selectStmt.executeQuery(sql);) {
@@ -809,7 +809,7 @@ public final class TimelineManager {
 			return;
 		}
 		
-		String sql = "UPDATE tsk_event_descriptions SET tagged = " + flagValue + " WHERE event_description_id IN (" + buildCSVString(eventDescriptionIDs) + ")"; //NON-NLS
+		String sql = "UPDATE tsk_event_description SET tagged = " + flagValue + " WHERE event_description_id IN (" + buildCSVString(eventDescriptionIDs) + ")"; //NON-NLS
 		try (Statement updateStatement = conn.createStatement()) {
 			updateStatement.executeUpdate(sql);
 		} catch (SQLException ex) {
@@ -836,7 +836,7 @@ public final class TimelineManager {
 		try (CaseDbConnection con = caseDB.getConnection(); Statement updateStatement = con.createStatement();) {
 			Map<Long, Long> eventIDs = getEventAndDescriptionIDs(con, content.getId(), true);
 			if (! eventIDs.isEmpty()) {
-				String sql = "UPDATE tsk_event_descriptions SET hash_hit = 1" + " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"; //NON-NLS
+				String sql = "UPDATE tsk_event_description SET hash_hit = 1" + " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"; //NON-NLS
 				try {
 					updateStatement.executeUpdate(sql); //NON-NLS
 					return eventIDs.keySet();
@@ -881,7 +881,7 @@ public final class TimelineManager {
 		//do we want the base or subtype column of the databse
 		String typeColumn = typeColumnHelper(TimelineEventType.HierarchyLevel.EVENT.equals(typeHierachyLevel));
 
-		String queryString = "SELECT count(DISTINCT tsk_events.event_id) AS count, " + typeColumn//NON-NLS
+		String queryString = "SELECT count(DISTINCT tsk_event.event_id) AS count, " + typeColumn//NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(filter)//NON-NLS
 				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumn; // NON-NLS
@@ -947,9 +947,9 @@ public final class TimelineManager {
 	static private String getAugmentedEventsTablesSQL(boolean needMimeTypes) {
 		/*
 		 * Regarding the timeline event tables schema, note that several columns
-		 * in the tsk_event_descriptions table seem, at first glance, to be
+		 * in the tsk_event_description table seem, at first glance, to be
 		 * attributes of events rather than their descriptions and would appear
-		 * to belong in tsk_events table instead. The rationale for putting the
+		 * to belong in tsk_event table instead. The rationale for putting the
 		 * data source object ID, content object ID, artifact ID and the flags
 		 * indicating whether or not the event source has a hash set hit or is
 		 * tagged were motivated by the fact that these attributes are identical
@@ -957,17 +957,17 @@ public final class TimelineManager {
 		 * decision was made to avoid duplication and save space by placing this
 		 * data in the tsk_event-descriptions table.
 		 */
-		return "( SELECT event_id, time, tsk_event_descriptions.data_source_obj_id, content_obj_id, artifact_id, "
-				+ " full_description, med_description, short_description, tsk_events.event_type_id, super_type_id,"
+		return "( SELECT event_id, time, tsk_event_description.data_source_obj_id, content_obj_id, artifact_id, "
+				+ " full_description, med_description, short_description, tsk_event.event_type_id, super_type_id,"
 				+ " hash_hit, tagged "
 				+ (needMimeTypes ? ", mime_type" : "")
-				+ " FROM tsk_events "
-				+ " JOIN tsk_event_descriptions ON ( tsk_event_descriptions.event_description_id = tsk_events.event_description_id)"
-				+ " JOIN tsk_event_types ON (tsk_events.event_type_id = tsk_event_types.event_type_id )  "
+				+ " FROM tsk_event "
+				+ " JOIN tsk_event_description ON ( tsk_event_description.event_description_id = tsk_event.event_description_id)"
+				+ " JOIN tsk_event_types ON (tsk_event.event_type_id = tsk_event_types.event_type_id )  "
 				+ (needMimeTypes ? " LEFT OUTER JOIN tsk_files "
-						+ "	ON (tsk_event_descriptions.content_obj_id = tsk_files.obj_id)"
+						+ "	ON (tsk_event_description.content_obj_id = tsk_files.obj_id)"
 						: "")
-				+ ")  AS tsk_events";
+				+ ")  AS tsk_event";
 	}
 
 	/**
@@ -1106,7 +1106,7 @@ public final class TimelineManager {
 
 	/**
 	 * Event fired by SleuthkitCase to indicate that a event has been added to
-	 * the tsk_events table.
+	 * the tsk_event table.
 	 */
 	final static public class TimelineEventAddedEvent {
 

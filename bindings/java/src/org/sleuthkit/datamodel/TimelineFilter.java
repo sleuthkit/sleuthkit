@@ -222,7 +222,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		String getSQLWhere(TimelineManager manager) {
-			return "(tsk_events.event_type_id IN (" + getSubTypeIDs().collect(Collectors.joining(",")) + "))"; //NON-NLS
+			return "(tsk_event.event_type_id IN (" + getSubTypeIDs().collect(Collectors.joining(",")) + "))"; //NON-NLS
 		}
 
 		private Stream<String> getSubTypeIDs() {
@@ -1061,8 +1061,8 @@ public abstract class TimelineFilter {
 
 		private static String mediaTypeToSQL(MediaType mediaType) {
 			return mediaType.hasWildcard()
-					? " (tsk_events.mime_type LIKE '" + escapeSingleQuotes(mediaType.type()) + "/_%' ) "
-					: " (tsk_events.mime_type = '" + escapeSingleQuotes(mediaType.toString()) + "' ) ";
+					? " (tsk_event.mime_type LIKE '" + escapeSingleQuotes(mediaType.type()) + "/_%' ) "
+					: " (tsk_event.mime_type = '" + escapeSingleQuotes(mediaType.toString()) + "' ) ";
 		}
 
 		@Override

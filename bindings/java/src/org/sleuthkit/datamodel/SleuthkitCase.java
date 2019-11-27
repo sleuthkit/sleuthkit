@@ -97,7 +97,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 3);
+			= new CaseDbSchemaVersionNumber(8, 4);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -112,8 +112,8 @@ public class SleuthkitCase {
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
 
 	private static final Set<String> CORE_TABLE_NAMES = ImmutableSet.of(
-			"tsk_events",
-			"tsk_event_descriptions",
+			"tsk_event",
+			"tsk_event_description",
 			"tsk_event_types",
 			"tsk_db_info",
 			"tsk_objects",
@@ -891,6 +891,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot3toSchema8dot4(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -1825,8 +1826,6 @@ public class SleuthkitCase {
 		try (Statement statement = connection.createStatement();) {
 
 			// Add the uniqueness constraint to the tsk_event and tsk_event_description tables.
-			// Unfortunately, SQLite doesn't support adding a constraint
-			// to an existing table so we have to rename the old...
 			String primaryKeyType;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -1913,6 +1912,136 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Updates a schema version 8.3 database to a schema version 8.4 database.
+	 * This is a bug fix update for a misnamed column in tsk_event_descriptions in
+	 * the previous update code.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot3toSchema8dot4(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 3) {
+			return schemaVersion;
+		}
+
+		Statement updateSchemaStatement = connection.createStatement();
+		Statement getExistingEventsStatement = connection.createStatement();
+		Statement getExistingEventDescriptionsStatement = connection.createStatement();
+		ResultSet existingEvents = null;
+
+		acquireSingleUserCaseWriteLock();
+		try {
+			// Make two new tables. These tables do not include "ON DELETE CASCADE" since data sources can not 
+			// be deleted from cases with creation schema earlier than 8.5
+			String primaryKeyType;
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					primaryKeyType = "BIGSERIAL";
+					break;
+				case SQLITE:
+					primaryKeyType = "INTEGER";
+					break;
+				default:
+					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}
+			updateSchemaStatement.execute("CREATE TABLE tsk_event_description ("
+					+ " event_description_id " + primaryKeyType + " PRIMARY KEY, "
+					+ " full_description TEXT NOT NULL, "
+					+ " med_description TEXT, "
+					+ " short_description TEXT,"
+					+ " data_source_obj_id BIGINT NOT NULL, "
+					+ " content_obj_id BIGINT NOT NULL, "
+					+ " artifact_id BIGINT, "
+					+ " hash_hit INTEGER NOT NULL, " //boolean 
+					+ " tagged INTEGER NOT NULL, " //boolean 
+					+ " UNIQUE(full_description, content_obj_id, artifact_id), "
+					+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+					+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_files(obj_id), "
+					+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
+			);
+			updateSchemaStatement.execute("CREATE TABLE tsk_event ( "
+					+ " event_id " + primaryKeyType + " PRIMARY KEY, "
+					+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+					+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_description(event_description_id),"
+					+ " time INTEGER NOT NULL, "
+					+ " UNIQUE (event_type_id, event_description_id, time))"
+			);						
+
+			// Copy to the new tsk_event_description table
+			existingEvents = getExistingEventDescriptionsStatement.executeQuery("SELECT * FROM tsk_event_descriptions");
+			while (existingEvents.next()) {
+				long eventDescriptionId = existingEvents.getLong(1);
+				String fullDescription = existingEvents.getString(2);
+				String medDescription = existingEvents.getString(3);
+				String shortDescription = existingEvents.getString(4);
+				long dsObjId = existingEvents.getLong(5);
+				long contentObjId = existingEvents.getLong(6);
+				long artifactId = existingEvents.getLong(7);
+				int hashHit = existingEvents.getInt(8); 
+				int tagged = existingEvents.getInt(9); 								
+				
+				PreparedStatement insertEventDescriptionStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_EVENT_DESCRIPTION);
+				insertEventDescriptionStatement.clearParameters();
+				insertEventDescriptionStatement.setLong(1, eventDescriptionId);
+				insertEventDescriptionStatement.setString(2, fullDescription);
+				insertEventDescriptionStatement.setString(3, medDescription);
+				insertEventDescriptionStatement.setString(4, shortDescription);
+				insertEventDescriptionStatement.setLong(5, dsObjId);
+				insertEventDescriptionStatement.setLong(6, contentObjId);
+				if (artifactId > 0) {
+					insertEventDescriptionStatement.setLong(7, artifactId);
+				} else {
+					insertEventDescriptionStatement.setNull(7, java.sql.Types.BIGINT);
+				}
+				insertEventDescriptionStatement.setInt(8, hashHit);
+				insertEventDescriptionStatement.setInt(9, tagged);
+				connection.executeUpdate(insertEventDescriptionStatement);
+			}
+			
+			// Copy to the new tsk_event table
+			existingEvents = getExistingEventsStatement.executeQuery("SELECT * FROM tsk_events");
+			while (existingEvents.next()) {
+				long eventId = existingEvents.getLong(1);
+				long eventTypeId = existingEvents.getLong(2);
+				long eventDescriptionId = existingEvents.getLong(3);
+				int time = existingEvents.getInt(4);		
+
+				PreparedStatement insertEventStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_EVENT);
+				insertEventStatement.clearParameters();
+				insertEventStatement.setLong(1, eventId);
+				insertEventStatement.setLong(2, eventTypeId);
+				insertEventStatement.setLong(3, eventDescriptionId);
+				insertEventStatement.setLong(4, time);
+	
+				connection.executeUpdate(insertEventStatement);
+			}			
+
+			// Drop the old tables
+			updateSchemaStatement.execute("DROP TABLE tsk_events");
+			updateSchemaStatement.execute("DROP TABLE tsk_event_descriptions");
+
+			return new CaseDbSchemaVersionNumber(8, 4);
+		} finally {
+			closeResultSet(existingEvents);
+			closeStatement(updateSchemaStatement);
+			closeStatement(getExistingEventDescriptionsStatement);
+			closeStatement(getExistingEventsStatement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}	
 
 	/**
 	 * Extract the extension from a file name.
@@ -10770,7 +10899,11 @@ public class SleuthkitCase {
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		INSERT_EVENT_DESCRIPTION("INSERT INTO tsk_event_description (event_description_id, full_description, med_description, short_description, data_source_obj_id, content_obj_id, artifact_id, hash_hit, tagged)"
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		INSERT_EVENT("INSERT INTO tsk_event (event_id, event_type_id, event_description_id, time)"
+				+ "VALUES (?, ?, ?, ?)");
 
 		private final String sql;
 
