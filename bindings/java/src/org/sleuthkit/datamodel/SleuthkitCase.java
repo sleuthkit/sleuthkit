@@ -1939,108 +1939,78 @@ public class SleuthkitCase {
 			return schemaVersion;
 		}
 
-		Statement updateSchemaStatement = connection.createStatement();
-		Statement getExistingEventsStatement = connection.createStatement();
-		Statement getExistingEventDescriptionsStatement = connection.createStatement();
-		ResultSet existingEvents = null;
+		Statement statement = connection.createStatement();
+		ResultSet results = null;
 
-		acquireSingleUserCaseWriteLock();
+		acquireSingleUserCaseWriteLock();				
 		try {
-			String primaryKeyType;
+			// This is a bug fix update for a misnamed column in tsk_event_descriptions in
+			// the previous update code.
+			if (null == getDatabaseType()) {
+				throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}
+			
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
-					primaryKeyType = "BIGSERIAL";
+					// In PostgreSQL we can rename the column if it exists
+					results = statement.executeQuery("SELECT column_name FROM information_schema.columns "
+							+ "WHERE table_name='tsk_event_descriptions' and column_name='file_obj_id'");
+					if (results.next()) {
+						statement.execute("ALTER TABLE tsk_event_descriptions "
+								+ "RENAME COLUMN file_obj_id TO content_obj_id");
+					}	
+
+					// Now rename the tables
+					statement.execute("ALTER TABLE tsk_events RENAME TO tsk_event");
+					statement.execute("ALTER TABLE tsk_event_descriptions RENAME TO tsk_event_description");
 					break;
 				case SQLITE:
-					primaryKeyType = "INTEGER";
+					// Since we can't rename the column we'll need to make new tables
+					statement.execute("CREATE TABLE tsk_event_description ("
+							+ " event_description_id INTEGER PRIMARY KEY, "
+							+ " full_description TEXT NOT NULL, "
+							+ " med_description TEXT, "
+							+ " short_description TEXT,"
+							+ " data_source_obj_id BIGINT NOT NULL, "
+							+ " content_obj_id BIGINT NOT NULL, "
+							+ " artifact_id BIGINT, "
+							+ " hash_hit INTEGER NOT NULL, " //boolean
+							+ " tagged INTEGER NOT NULL, " //boolean
+							+ " UNIQUE(full_description, content_obj_id, artifact_id), "
+							+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+							+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_files(obj_id), "
+							+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
+					);	
+					
+					statement.execute("CREATE TABLE tsk_event ( "
+							+ " event_id INTEGER PRIMARY KEY, "
+							+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+							+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_description(event_description_id),"
+							+ " time INTEGER NOT NULL, "
+							+ " UNIQUE (event_type_id, event_description_id, time))"
+					);	
+					
+					statement.execute("INSERT INTO tsk_event_description(event_description_id, full_description, "
+							+ "med_description, short_description, data_source_obj_id, content_obj_id, artifact_id, "
+							+ "hash_hit, tagged) SELECT * FROM tsk_event_descriptions");
+					
+					statement.execute("INSERT INTO tsk_event(event_id, event_type_id, "
+							+ "event_description_id, time) SELECT * FROM tsk_events");
+					
+					// Drop the old tables
+					statement.execute("DROP TABLE tsk_events");
+					statement.execute("DROP TABLE tsk_event_descriptions");
 					break;
 				default:
 					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
 			}
-			updateSchemaStatement.execute("CREATE TABLE tsk_event_description ("
-					+ " event_description_id " + primaryKeyType + " PRIMARY KEY, "
-					+ " full_description TEXT NOT NULL, "
-					+ " med_description TEXT, "
-					+ " short_description TEXT,"
-					+ " data_source_obj_id BIGINT NOT NULL, "
-					+ " content_obj_id BIGINT NOT NULL, "
-					+ " artifact_id BIGINT, "
-					+ " hash_hit INTEGER NOT NULL, " //boolean 
-					+ " tagged INTEGER NOT NULL, " //boolean 
-					+ " UNIQUE(full_description, content_obj_id, artifact_id), "
-					+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
-					+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_files(obj_id), "
-					+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
-			);
-			updateSchemaStatement.execute("CREATE TABLE tsk_event ( "
-					+ " event_id " + primaryKeyType + " PRIMARY KEY, "
-					+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
-					+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_description(event_description_id),"
-					+ " time INTEGER NOT NULL, "
-					+ " UNIQUE (event_type_id, event_description_id, time))"
-			);					
-
-			// Copy to the new tsk_event_description table
-			existingEvents = getExistingEventDescriptionsStatement.executeQuery("SELECT * FROM tsk_event_descriptions");
-			while (existingEvents.next()) {
-				long eventDescriptionId = existingEvents.getLong(1);
-				String fullDescription = existingEvents.getString(2);
-				String medDescription = existingEvents.getString(3);
-				String shortDescription = existingEvents.getString(4);
-				long dsObjId = existingEvents.getLong(5);
-				long contentObjId = existingEvents.getLong(6);
-				long artifactId = existingEvents.getLong(7);
-				int hashHit = existingEvents.getInt(8); 
-				int tagged = existingEvents.getInt(9); 								
-				
-				PreparedStatement insertEventDescriptionStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_EVENT_DESCRIPTION);
-				insertEventDescriptionStatement.clearParameters();
-				insertEventDescriptionStatement.setLong(1, eventDescriptionId);
-				insertEventDescriptionStatement.setString(2, fullDescription);
-				insertEventDescriptionStatement.setString(3, medDescription);
-				insertEventDescriptionStatement.setString(4, shortDescription);
-				insertEventDescriptionStatement.setLong(5, dsObjId);
-				insertEventDescriptionStatement.setLong(6, contentObjId);
-				if (artifactId > 0) {
-					insertEventDescriptionStatement.setLong(7, artifactId);
-				} else {
-					insertEventDescriptionStatement.setNull(7, java.sql.Types.BIGINT);
-				}
-				insertEventDescriptionStatement.setInt(8, hashHit);
-				insertEventDescriptionStatement.setInt(9, tagged);
-				connection.executeUpdate(insertEventDescriptionStatement);
-			}
 			
-			// Copy to the new tsk_event table
-			existingEvents = getExistingEventsStatement.executeQuery("SELECT * FROM tsk_events");
-			while (existingEvents.next()) {
-				long eventId = existingEvents.getLong(1);
-				long eventTypeId = existingEvents.getLong(2);
-				long eventDescriptionId = existingEvents.getLong(3);
-				int time = existingEvents.getInt(4);		
-
-				PreparedStatement insertEventStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_EVENT);
-				insertEventStatement.clearParameters();
-				insertEventStatement.setLong(1, eventId);
-				insertEventStatement.setLong(2, eventTypeId);
-				insertEventStatement.setLong(3, eventDescriptionId);
-				insertEventStatement.setLong(4, time);
-	
-				connection.executeUpdate(insertEventStatement);
-			}
-
-			// Drop the old tables
-			updateSchemaStatement.execute("DROP TABLE tsk_events");
-			updateSchemaStatement.execute("DROP TABLE tsk_event_descriptions");
-
 			return new CaseDbSchemaVersionNumber(8, 4);
 		} finally {
-			closeResultSet(existingEvents);
-			closeStatement(updateSchemaStatement);
-			closeStatement(getExistingEventDescriptionsStatement);
-			closeStatement(getExistingEventsStatement);
+			closeResultSet(results);
+			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
-		}
+		}		
 	}	
 
 	/**
