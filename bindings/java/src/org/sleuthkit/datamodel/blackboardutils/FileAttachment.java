@@ -77,16 +77,8 @@ public final class FileAttachment implements Attachment {
 		String fileName = filePathName.substring(filePathName.lastIndexOf('/') + 1);
 		String parentPathSubString = filePathName.substring(0, filePathName.lastIndexOf('/'));
 
-		long matchedFileObjId = -1;
-		List<AbstractFile> matchedFiles = caseDb.findFiles(dataSource, fileName, parentPathSubString);
-		for (AbstractFile file : matchedFiles) {
-			if (file.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC)) {
-				matchedFileObjId = file.getId();
-				break;
-			}
-		}
-		objId = matchedFileObjId;
-
+		// find the attachment file 
+		objId = findAttachmentFile(caseDb, fileName, parentPathSubString, dataSource);
 	}
 
 	/**
@@ -155,6 +147,62 @@ public final class FileAttachment implements Attachment {
 		return adjustedPath;
 	}
 
+	/**
+	 * Finds the attachment file, given the name and path, and returns the
+	 * object id of the matched file.
+	 *
+	 * @param caseDb              Case database.
+	 * @param dataSource          Data source the message was found in.
+	 * @param fileName            Name of attachment file.
+	 * @param parentPathSubstring Partial parent path of the attachment file.
+	 *
+	 * @throws TskCoreException If there is an error in finding the attached
+	 *                          file.
+	 * @return Object id of the matching file. -1 if no suitable match is found.
+	 */
+	private long findAttachmentFile(SleuthkitCase caseDb, String fileName, String parentPathSubstring, Content dataSource) throws TskCoreException {
+
+		// Use the following algorithm to find a matching file:
+		// - Search across all data sources, but if multiple allocated files match, 
+		//     then preference is given to the file on the specified data source.
+		// - If there are no allocated files that match, but there is one unallocated 
+		//     file that matches, then it is returned.
+		// - If there are more then 1 equally suitable matches, then don't return any match.
+		String whereClause = String.format("LOWER(name) = LOWER('%s') AND LOWER(parent_path) LIKE LOWER('%%%s%%')", fileName, parentPathSubstring);
+		List<AbstractFile> matchedFiles = caseDb.findAllFilesWhere(whereClause);
+
+		long bestMatchAllocatedFileObjId = -1;
+		int bestMatchAllocatedFileCount = 0;
+		long bestMatchUnallocatedFileObjId = -1;
+		int bestMatchUnallocatedFileCount = 0;
+
+		for (AbstractFile file : matchedFiles) {
+			if (file.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC)) {
+				bestMatchAllocatedFileCount++;
+				if (dataSource == file.getDataSource()) {
+					bestMatchAllocatedFileCount = 1;
+					bestMatchAllocatedFileObjId = file.getId();
+				} else if (bestMatchAllocatedFileObjId < 0) {
+					bestMatchAllocatedFileObjId = file.getId();
+				}
+			} else {	// unallocated file 
+				bestMatchUnallocatedFileCount++;
+				if (bestMatchUnallocatedFileObjId < 0) {
+					bestMatchUnallocatedFileObjId = file.getId();
+				}
+			}
+		}
+
+		long bestMatchedFileObjId = -1;
+		if (bestMatchAllocatedFileObjId >= 0 && bestMatchAllocatedFileCount == 1) {
+			bestMatchedFileObjId = bestMatchAllocatedFileObjId;
+		} else if (bestMatchUnallocatedFileObjId >= 0 && bestMatchUnallocatedFileCount == 1) {
+			bestMatchedFileObjId = bestMatchUnallocatedFileObjId;
+		}
+
+		return bestMatchedFileObjId;
+	}
+	
 	@Override
 	public String getLocation() {
 		return this.filePathName;
