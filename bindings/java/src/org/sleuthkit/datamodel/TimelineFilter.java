@@ -1000,7 +1000,6 @@ public abstract class TimelineFilter {
 		@Override
 		public String getDisplayName() {
 			return BundleProvider.getBundle().getString("FileTypesFilter.displayName.text");
-
 		}
 
 	}
