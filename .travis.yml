@@ -37,6 +37,7 @@ addons:
     update: true
     packages:
     - ant
+    - wget
     - libewf
     - gettext
     - cppunit
