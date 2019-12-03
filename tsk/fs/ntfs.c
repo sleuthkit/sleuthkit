@@ -2608,9 +2608,19 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
          * to the TSK_FS_META structure
          */
         if (processed_inum_list != NULL && tsk_stack_find(processed_inum_list, mftToDo[a])) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr, "ntfs_proc_attrlist: skipping previously processed MFT entry\n");
-            continue;
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+            tsk_error_set_errstr("ntfs_proc_attrlist: MFT %" PRIuINUM
+                " seen in more than one attribute list for %"
+                PRIuINUM
+                " (base file ref = %" PRIuINUM ")",
+                mftToDo[a],
+                fs_file->meta->addr,
+                tsk_getu48(fs->endian, mft->base_ref));
+            free(mft);
+            free(map);
+            free(buf);
+            return TSK_COR;
         }
 
         if (processed_inum_list == NULL) {
