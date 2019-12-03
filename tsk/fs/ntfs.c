@@ -1705,7 +1705,8 @@ typedef struct {
  * @param a_attrinum MFT entry address that the attribute sequence came from (diff from fs_file for attribute lists)
  * @param a_attr_map List that maps to new IDs that were assigned by processing
  * the attribute list attribute (if it exists) or NULL if there is no attrlist.
- * @param a_seen_inum_list List of inums that have been previously processed.
+ * @param a_seen_inum_list List of inums that have been previously processed based on attribute lists. 
+ *    Can be NULL when this is called for the first time. Should be non-NULL when this is called recursively by proc_attrlist.
  * @returns Error code
  */
 static TSK_RETVAL_ENUM
