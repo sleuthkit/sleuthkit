@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.TskData;
@@ -164,7 +165,7 @@ public final class FileAttachment implements Attachment {
 
 		// Use the following algorithm to find a matching file:
 		// - Search across all data sources
-		//   -- if a matching allocated file is found on the same data source then resolve it
+		//   -- if one matching allocated file is found on the same data source then resolve it
 		//	 -- if no allocated match on the same data source, but exactly one other allocated match is found on one of the others data sources, resolve it
 		//   -- if multiple allocated files match on other data source, then do not resolve
 		// - If there are no allocated files that match, but there is exactly one unallocated 
@@ -173,35 +174,34 @@ public final class FileAttachment implements Attachment {
 		String whereClause = String.format("LOWER(name) = LOWER('%s') AND LOWER(parent_path) LIKE LOWER('%%%s%%')", fileName, parentPathSubstring);
 		List<AbstractFile> matchedFiles = caseDb.findAllFilesWhere(whereClause);
 
-		long bestMatchAllocatedFileObjId = -1;
-		int bestMatchAllocatedFileCount = 0;
-		boolean allocatedMatchOnSameDatasource = false;
-		long bestMatchUnallocatedFileObjId = -1;
-		int bestMatchUnallocatedFileCount = 0;
-
+		List<Long> allocFileMatchesOnSameDatasource = new ArrayList<>();
+		List<Long> allocFileMatchesOnOtherDatasources = new ArrayList<>();
+		List<Long> unallocFileMatches = new ArrayList<>();
+		
 		for (AbstractFile file : matchedFiles) {
 			if (file.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC)) {
-				bestMatchAllocatedFileCount++;
 				if (dataSource.getId() == file.getDataSource().getId()) {
-					allocatedMatchOnSameDatasource = true;
-					bestMatchAllocatedFileObjId = file.getId();
-				} else if (bestMatchAllocatedFileObjId < 0) {
-					bestMatchAllocatedFileObjId = file.getId();
+					allocFileMatchesOnSameDatasource.add(file.getId());
+				} else {
+					allocFileMatchesOnOtherDatasources.add(file.getId());
 				}
 			} else {	// unallocated file 
-				bestMatchUnallocatedFileCount++;
-				bestMatchUnallocatedFileObjId = file.getId();
+				unallocFileMatches.add(file.getId());
 			}
 		}
 
 		long bestMatchedFileObjId = -1;
-		if (bestMatchAllocatedFileObjId >= 0 && 
-			 (allocatedMatchOnSameDatasource || bestMatchAllocatedFileCount == 1)) {
-			bestMatchedFileObjId = bestMatchAllocatedFileObjId;
-		} else if (bestMatchUnallocatedFileObjId >= 0 && bestMatchUnallocatedFileCount == 1) {
-			bestMatchedFileObjId = bestMatchUnallocatedFileObjId;
+		if (allocFileMatchesOnSameDatasource.isEmpty() == false) {
+			if (allocFileMatchesOnSameDatasource.size() == 1) {
+				bestMatchedFileObjId = allocFileMatchesOnSameDatasource.get(0);
+			}
+		} else if (allocFileMatchesOnOtherDatasources.isEmpty() == false) {
+			if (allocFileMatchesOnOtherDatasources.size() == 1) {
+				bestMatchedFileObjId = allocFileMatchesOnOtherDatasources.get(0);
+			}
+		} else if (unallocFileMatches.isEmpty() == false && unallocFileMatches.size() == 1) {
+			bestMatchedFileObjId = unallocFileMatches.get(0);
 		}
-
 		return bestMatchedFileObjId;
 	}
 	
