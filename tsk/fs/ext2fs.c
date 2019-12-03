@@ -1052,6 +1052,19 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             ext2fs->fs->s_inodes_per_group) + 1;
 
         /*
+         * Ensure that inum - ibase refers to a valid offset in imap_buf.
+         */
+        if ((inum - ibase) > fs->block_size) {
+            tsk_release_lock(&ext2fs->lock);
+            free(dino_buf);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+            tsk_error_set_errstr("%s: Invalid offset into imap_buf (inum %" PRIuINUM " - ibase %" PRIuINUM ")",
+                myname, inum, ibase);
+            return 1;
+        }
+
+        /*
          * Apply the allocated/unallocated restriction.
          */
         myflags = (isset(ext2fs->imap_buf, inum - ibase) ?
