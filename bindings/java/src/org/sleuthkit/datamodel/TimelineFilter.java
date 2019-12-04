@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
+import java.util.ArrayList;
+import java.util.Arrays;
 import static java.util.Arrays.asList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,8 +32,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.joining;
 import java.util.stream.Stream;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
@@ -145,7 +145,7 @@ public abstract class TimelineFilter {
 		 *                      event types hierarchy from the root event type.
 		 */
 		private EventTypeFilter(TimelineEventType rootEventType, boolean recursive) {
-			super(FXCollections.observableArrayList());
+			super(new ArrayList<>());
 			this.rootEventType = rootEventType;
 			if (recursive) {
 				// add subfilters for each subtype
@@ -335,12 +335,12 @@ public abstract class TimelineFilter {
 	 */
 	public static abstract class UnionFilter<SubFilterType extends TimelineFilter> extends TimelineFilter.CompoundFilter<SubFilterType> {
 
-		UnionFilter(ObservableList<SubFilterType> subFilters) {
+		UnionFilter(List<SubFilterType> subFilters) {
 			super(subFilters);
 		}
 
 		UnionFilter() {
-			super(FXCollections.<SubFilterType>observableArrayList());
+			super(new ArrayList<SubFilterType>());
 		}
 
 		@Override
@@ -568,7 +568,7 @@ public abstract class TimelineFilter {
 				FileTypesFilter fileTypesFilter,
 				Collection<TimelineFilter> additionalFilters) {
 
-			super(FXCollections.observableArrayList(descriptionSubstringFilter, knownFilesFilter, tagsFilter, dataSourcesFilter, hashSetHitsFilter, fileTypesFilter, eventTypesFilter));
+			super(Arrays.asList(descriptionSubstringFilter, knownFilesFilter, tagsFilter, dataSourcesFilter, hashSetHitsFilter, fileTypesFilter, eventTypesFilter));
 			getSubFilters().removeIf(Objects::isNull);
 			this.knownFilesFilter = knownFilesFilter;
 			this.tagsFilter = tagsFilter;
@@ -716,15 +716,15 @@ public abstract class TimelineFilter {
 			}
 		}
 
-		private final ObservableList<SubFilterType> subFilters = FXCollections.observableArrayList();
+		private final List<SubFilterType> subFilters = new ArrayList<>();
 
 		/**
 		 * Gets the collection of filters that make up this filter.
 		 *
 		 * @return The filters.
 		 */
-		public final ObservableList<SubFilterType> getSubFilters() {
-			return subFilters;
+		public final List<SubFilterType> getSubFilters() {
+			return subFilters; // RJCTODO: DO we need to hand out a mutable reference?
 		}
 
 		/**
@@ -744,7 +744,7 @@ public abstract class TimelineFilter {
 		 */
 		protected CompoundFilter(List<SubFilterType> subFilters) {
 			super();
-			this.subFilters.setAll(subFilters);
+			this.subFilters.addAll(subFilters);
 		}
 
 		@Override
