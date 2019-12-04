@@ -153,9 +153,9 @@ public final class FileAttachment implements Attachment {
 	 * object id of the matched file.
 	 *
 	 * @param caseDb              Case database.
-	 * @param dataSource          Data source the message was found in.
 	 * @param fileName            Name of attachment file.
 	 * @param parentPathSubstring Partial parent path of the attachment file.
+	 * @param dataSource          Data source the message was found in.
 	 *
 	 * @throws TskCoreException If there is an error in finding the attached
 	 *                          file.
@@ -163,21 +163,16 @@ public final class FileAttachment implements Attachment {
 	 */
 	private long findAttachmentFile(SleuthkitCase caseDb, String fileName, String parentPathSubstring, Content dataSource) throws TskCoreException {
 
-		// Use the following algorithm to find a matching file:
-		// - Search across all data sources
-		//   -- if one matching allocated file is found on the same data source then resolve it
-		//	 -- if no allocated match on the same data source, but exactly one other allocated match is found on one of the others data sources, resolve it
-		//   -- if multiple allocated files match on other data source, then do not resolve
-		// - If there are no allocated files that match, but there is exactly one unallocated 
-		//     file that matches, then it is resolved.
-		// - If there are more then 1 equally suitable matches, then don't return any match.
+		// Find all files with matching name and parent path substring
 		String whereClause = String.format("LOWER(name) = LOWER('%s') AND LOWER(parent_path) LIKE LOWER('%%%s%%')", fileName, parentPathSubstring);
 		List<AbstractFile> matchedFiles = caseDb.findAllFilesWhere(whereClause);
 
+		// separate the matching files into allocated files on same datsource, 
+		// allocated files on other data sources, and unallocated files.
 		List<Long> allocFileMatchesOnSameDatasource = new ArrayList<>();
 		List<Long> allocFileMatchesOnOtherDatasources = new ArrayList<>();
 		List<Long> unallocFileMatches = new ArrayList<>();
-		
+
 		for (AbstractFile file : matchedFiles) {
 			if (file.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC)) {
 				if (dataSource.getId() == file.getDataSource().getId()) {
@@ -190,21 +185,57 @@ public final class FileAttachment implements Attachment {
 			}
 		}
 
+		// pick the best match from the 3 lists.
+		return pickBestMatchFile(allocFileMatchesOnSameDatasource, allocFileMatchesOnOtherDatasources, unallocFileMatches);
+	}
+	
+	/**
+	 * Returns best match file from the specified lists, based on the following
+	 * algorithm:
+	 *
+	 * - If there is exactly one allocated file on the same data source as the message, 
+	 *   that file is returned. 
+	 * - If there is exactly one allocated match on one of the other data sources, 
+	 *   that file is returned. 
+	 * - If there is exactly one unallocated file matched among all data sources, 
+	 *   that file is returned. 
+	 * - If no match is found or there are more than one equally suitable matches, 
+	 *   then -1 is returned.
+	 *
+	 * @param allocFileMatchesOnSameDatasource   List of matching allocated file
+	 *                                           object ids, found on the same
+	 *                                           data source as the message.
+	 * @param allocFileMatchesOnOtherDatasources List of matching allocated file
+	 *                                           object ids, found on data
+	 *                                           sources other than the one
+	 *                                           where the the message is found.
+	 * @param unallocFileMatches                 List of matching unallocated
+	 *                                           file object ids,
+	 *
+	 * @return Object id of the best match file, -1 if there's no definitive
+	 *         best match.
+	 */
+	private long pickBestMatchFile(List<Long> allocFileMatchesOnSameDatasource,
+			List<Long> allocFileMatchesOnOtherDatasources,
+			List<Long> unallocFileMatches) {
+
 		// check if there's an allocated file match on the same data source
-		if ( !allocFileMatchesOnSameDatasource.isEmpty() && allocFileMatchesOnSameDatasource.size() == 1) {
+		if (!allocFileMatchesOnSameDatasource.isEmpty() && allocFileMatchesOnSameDatasource.size() == 1) {
 			return allocFileMatchesOnSameDatasource.get(0);
 		}
-		// if no match found yet,check if there's an allocated file match on oher data sources.
-		if (!allocFileMatchesOnOtherDatasources.isEmpty() && 
-			allocFileMatchesOnOtherDatasources.size() == 1) {
+		// if no match found yet,check if there's an allocated file match on other data sources.
+		if (!allocFileMatchesOnOtherDatasources.isEmpty()
+				&& allocFileMatchesOnOtherDatasources.size() == 1) {
 			return allocFileMatchesOnOtherDatasources.get(0);
-		} 
+		}
 		// if no match found yet, check if there is an unallocated file that matches.
-		if (!unallocFileMatches.isEmpty() && 
-			unallocFileMatches.size() == 1) {
+		if (!unallocFileMatches.isEmpty()
+				&& unallocFileMatches.size() == 1) {
 			return unallocFileMatches.get(0);
 		}
+		// no single suitable match found
 		return -1;
+
 	}
 	
 	@Override
