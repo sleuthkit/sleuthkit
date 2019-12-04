@@ -664,7 +664,16 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
-            ("fix_idxrec: More Update Sequence Entries than idx record size");
+            ("ntfs_fix_idxrec: More Update Sequence Entries than idx record size");
+        return 1;
+    }
+
+    uint16_t upd_off = tsk_getu16(fs->endian, idxrec->upd_off);
+    if (upd_off > len || sizeof(ntfs_upd) > (len - upd_off)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+            ("ntfs_fix_idxrec: Corrupt idx record");
         return 1;
     }
 
