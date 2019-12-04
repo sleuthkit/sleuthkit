@@ -257,12 +257,12 @@ public abstract class TimelineFilter {
 		 * the direct source (file or artifact) of the events has either been
 		 * tagged or not tagged.
 		 *
-		 * @param eventSourceIsTagged Whether the direct sources of the events
-		 *                            need to be tagged or not tagged to be
-		 *                            accepted by this filter.
+		 * @param eventSourcesAreTagged Whether the direct sources of the events
+		 *                              need to be tagged or not tagged to be
+		 *                              accepted by this filter.
 		 */
-		public TagsFilter(boolean eventSourceIsTagged) {
-			this.eventSourcesAreTagged = eventSourceIsTagged;
+		public TagsFilter(boolean eventSourcesAreTagged) {
+			this.eventSourcesAreTagged = eventSourcesAreTagged;
 		}
 
 		/**
@@ -388,11 +388,6 @@ public abstract class TimelineFilter {
 			this.descriptionSubstring = descriptionSubstring.trim();
 		}
 
-		@Override
-		public String getDisplayName() {
-			return BundleProvider.getBundle().getString("TextFilter.displayName.text");
-		}
-
 		/**
 		 * Sets the substring that must be present in one or more of the
 		 * descriptions of each event that passes the filter.
@@ -401,6 +396,11 @@ public abstract class TimelineFilter {
 		 */
 		public synchronized void setDescriptionSubstring(String descriptionSubstring) {
 			this.descriptionSubstring = descriptionSubstring.trim();
+		}
+
+		@Override
+		public String getDisplayName() {
+			return BundleProvider.getBundle().getString("TextFilter.displayName.text");
 		}
 
 		/**
@@ -433,7 +433,7 @@ public abstract class TimelineFilter {
 		@Override
 		public int hashCode() {
 			int hash = 5;
-			hash = 29 * hash + Objects.hashCode(descriptionSubstring);
+			hash = 29 * hash + Objects.hashCode(this.descriptionSubstring);
 			return hash;
 		}
 
@@ -724,7 +724,7 @@ public abstract class TimelineFilter {
 		 * @return The filters.
 		 */
 		public final List<SubFilterType> getSubFilters() {
-			return subFilters; // RJCTODO: DO we need to hand out a mutable reference?
+			return subFilters;
 		}
 
 		/**
@@ -885,21 +885,22 @@ public abstract class TimelineFilter {
 		 * the files that are the direct or indirect sources of the events
 		 * either have or do not have hash set hits.
 		 *
-		 * @param hasHashHit Whether or not the files associated with the events
-		 *                   have or do not have hash set hits.
+		 * @param eventSourcesHaveHashSetHits Whether or not the files
+		 *                                    associated with the events have or
+		 *                                    do not have hash set hits.
 		 */
-		public HashHitsFilter(boolean hasHashHit) {
-			eventSourcesHaveHashSetHits = hasHashHit;
+		public HashHitsFilter(boolean eventSourcesHaveHashSetHits) {
+			this.eventSourcesHaveHashSetHits = eventSourcesHaveHashSetHits;
 		}
 
 		/**
 		 * Sets whether or not the files associated with the events have or do
 		 * not have hash set hits
 		 *
-		 * @param hasHashHit True or false.
+		 * @param eventSourcesHaveHashSetHits True or false.
 		 */
-		public synchronized void setEventSourcesHaveHashSetHits(boolean hasHashHit) {
-			eventSourcesHaveHashSetHits = hasHashHit;
+		public synchronized void setEventSourcesHaveHashSetHits(boolean eventSourcesHaveHashSetHits) {
+			this.eventSourcesHaveHashSetHits = eventSourcesHaveHashSetHits;
 		}
 
 		/**
