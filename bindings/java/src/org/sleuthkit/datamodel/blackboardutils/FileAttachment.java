@@ -191,15 +191,20 @@ public final class FileAttachment implements Attachment {
 		}
 
 		long bestMatchedFileObjId = -1;
-		if (allocFileMatchesOnSameDatasource.isEmpty() == false) {
-			if (allocFileMatchesOnSameDatasource.size() == 1) {
-				bestMatchedFileObjId = allocFileMatchesOnSameDatasource.get(0);
-			}
-		} else if (allocFileMatchesOnOtherDatasources.isEmpty() == false) {
-			if (allocFileMatchesOnOtherDatasources.size() == 1) {
+		// check if there's an allocated file match on the same data source
+		if ( !allocFileMatchesOnSameDatasource.isEmpty() && allocFileMatchesOnSameDatasource.size() == 1) {
+			bestMatchedFileObjId = allocFileMatchesOnSameDatasource.get(0);
+		}
+		// if no match found yet,check if there's an allocated file match on oher data sources.
+		if (bestMatchedFileObjId == -1 && 
+		    !allocFileMatchesOnOtherDatasources.isEmpty() && 
+			allocFileMatchesOnOtherDatasources.size() == 1) {
 				bestMatchedFileObjId = allocFileMatchesOnOtherDatasources.get(0);
-			}
-		} else if (unallocFileMatches.isEmpty() == false && unallocFileMatches.size() == 1) {
+		} 
+		// if no match found yet, check if there is an unallocated file that matches.
+		if (bestMatchedFileObjId == -1 && 
+			!unallocFileMatches.isEmpty() && 
+			unallocFileMatches.size() == 1) {
 			bestMatchedFileObjId = unallocFileMatches.get(0);
 		}
 		return bestMatchedFileObjId;
