@@ -74,10 +74,15 @@ public final class FileAttachment implements Attachment {
 
 		//normalize the slashes.
 		this.filePathName = normalizePath(pathName);
-
+		
+		
 		String fileName = filePathName.substring(filePathName.lastIndexOf('/') + 1);
-		String parentPathSubString = filePathName.substring(0, filePathName.lastIndexOf('/'));
+		if (fileName.isEmpty()) {
+			throw new TskCoreException(String.format("No name specified for attachment: %s", pathName ));
+		}
 
+		String parentPathSubString = (filePathName.lastIndexOf('/') < 0) ? "" : filePathName.substring(0, filePathName.lastIndexOf('/'));
+		
 		// find the attachment file 
 		objId = findAttachmentFile(caseDb, fileName, parentPathSubString, dataSource);
 	}
