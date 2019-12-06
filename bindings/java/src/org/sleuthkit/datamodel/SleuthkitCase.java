@@ -1826,7 +1826,8 @@ public class SleuthkitCase {
 
 			// Add the uniqueness constraint to the tsk_event and tsk_event_description tables.
 			// Unfortunately, SQLite doesn't support adding a constraint
-			// to an existing table so we have to rename the old...
+			// to an existing table. Fortunately, these tables were not used, so
+			// they can be simply dropped and created anew.
 			String primaryKeyType;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -1878,19 +1879,31 @@ public class SleuthkitCase {
 			statement.execute("DROP TABLE IF EXISTS tsk_event_descriptions");
 
 			//create new tsk_event_description table
+			/*
+			 * NOTE: This code has been modified since its first release (TSK
+			 * 4.7.0). The database creation code for case database schema 8.3
+			 * in db_sqlite.cpp and db_postgresql.cpp creates a
+			 * tsk_event_descriptions table with a content_obj_id column, not a
+			 * file_obj_id column. This upgrade code, however, retained the
+			 * file_obj_id column from the unused version of the table created
+			 * by updateFromSchema8dot1toSchema8dot2. Rather than doing an
+			 * additional add/drop of these tables for case database schema 8.4,
+			 * it was decided to correct this code to use content_obj_id instead
+			 * of file_obj_id.
+			 */
 			statement.execute("CREATE TABLE tsk_event_descriptions ("
 					+ " event_description_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " full_description TEXT NOT NULL, "
 					+ " med_description TEXT, "
 					+ " short_description TEXT,"
 					+ " data_source_obj_id BIGINT NOT NULL, "
-					+ " file_obj_id BIGINT NOT NULL, "
+					+ " content_obj_id BIGINT NOT NULL, "
 					+ " artifact_id BIGINT, "
 					+ " hash_hit INTEGER NOT NULL, " //boolean 
 					+ " tagged INTEGER NOT NULL, " //boolean 
-					+ " UNIQUE(full_description, file_obj_id, artifact_id), "
+					+ " UNIQUE(full_description, content_obj_id, artifact_id), "
 					+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
-					+ " FOREIGN KEY(file_obj_id) REFERENCES tsk_files(obj_id), "
+					+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_files(obj_id), "
 					+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
 			);
 
