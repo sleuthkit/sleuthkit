@@ -1891,7 +1891,7 @@ public class SleuthkitCase {
 			);
 
 			/*
-			 * Create indexes for the new tables.
+			 * Create indexes for the tables.
 			 */
 			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
 			statement.execute("CREATE INDEX events_type ON tsk_events(event_type_id)");
