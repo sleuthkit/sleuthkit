@@ -9261,22 +9261,12 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			PreparedStatement statement;
-			if (dbType == DbType.POSTGRESQL) {
-				// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME_POSTGRES, Statement.RETURN_GENERATED_KEYS);
-				statement.clearParameters();
-				statement.setString(5, description);
-				statement.setString(6, color.getName());
-				statement.setByte(7, knownStatus.getFileKnownValue());
-			} else {
-				// WITH new (display_name, description, color, knownStatus) 
-				// AS ( VALUES(?, ?, ?, ?)) INSERT OR REPLACE INTO tag_names 
-				// (tag_name_id, display_name, description, color, knownStatus) 
-				// SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus 
-				// FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME_SQLITE, Statement.RETURN_GENERATED_KEYS);
-				statement.clearParameters();
-			}
+			// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME, Statement.RETURN_GENERATED_KEYS);
+			statement.clearParameters();
+			statement.setString(5, description);
+			statement.setString(6, color.getName());
+			statement.setByte(7, knownStatus.getFileKnownValue());
 			statement.setString(1, displayName);
 			statement.setString(2, description);
 			statement.setString(3, color.getName());
@@ -10751,12 +10741,7 @@ public class SleuthkitCase {
 				+ "FROM tsk_objects INNER JOIN blackboard_artifacts " //NON-NLS
 				+ "ON tsk_objects.obj_id=blackboard_artifacts.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ?)"),
-		INSERT_OR_UPDATE_TAG_NAME_POSTGRES("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
-		INSERT_OR_UPDATE_TAG_NAME_SQLITE("WITH new (display_name, description, color, knownStatus) "
-				+ "AS ( VALUES(?, ?, ?, ?)) INSERT OR REPLACE INTO tag_names "
-				+ "(tag_name_id, display_name, description, color, knownStatus) "
-				+ "SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus "
-				+ "FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name"),
+		INSERT_OR_UPDATE_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
 		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?"),
 		UPDATE_FILE_NAME("UPDATE tsk_files SET name = ? WHERE obj_id = ?"),
