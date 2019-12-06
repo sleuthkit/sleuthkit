@@ -1818,16 +1818,40 @@ public class SleuthkitCase {
 			return schemaVersion;
 		}
 
+		/*
+		 * IMPORTANT NOTE:
+		 *
+		 * Several tables were added in schema 8.2 to support storing timeline
+		 * data in the case database instead of in a separate timeline database.
+		 * The tables were not yet in use. Then this upgrade to schema 8.3
+		 * dropped those tables and replaced them with somewhat different ones.
+		 *
+		 * However, there were bugs in this method as released (TSK 4.7.0). The
+		 * database creation code for case database schema 8.3 (and later) in
+		 * db_sqlite.cpp and db_postgresql.cpp creates a tsk_event_descriptions
+		 * table with a content_obj_id column, not a file_obj_id column. This
+		 * upgrade code, however, retained the file_obj_id column from the
+		 * unused version of the table created by
+		 * updateFromSchema8dot1toSchema8dot2. Also, the dropped indexes were
+		 * not replaced.
+		 *
+		 * Rather than than trying to fix these issues in a case database schema
+		 * 8.4 upgrade, it was decided to correct this code.
+		 */
 		acquireSingleUserCaseWriteLock();
-
-		ResultSet resultSet = null;
-
 		try (Statement statement = connection.createStatement();) {
+			/*
+			 * Delete the unused versions of the timeline tables that were added
+			 * by the schema 8.1 to 8.2 update.
+			 */
+			statement.execute("DROP TABLE IF EXISTS tsk_events");
+			statement.execute("DROP TABLE IF EXISTS tsk_event_descriptions");
+			statement.execute("DROP TABLE IF EXISTS tsk_event_descriptions");
+			statement.execute("DROP TABLE IF EXISTS tsk_event_types");
 
-			// Add the uniqueness constraint to the tsk_event and tsk_event_description tables.
-			// Unfortunately, SQLite doesn't support adding a constraint
-			// to an existing table. Fortunately, these tables were not used, so
-			// they can be simply dropped and created anew.
+			/*
+			 * Create the new versions of the tables and indexes.
+			 */
 			String primaryKeyType;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -1839,58 +1863,10 @@ public class SleuthkitCase {
 				default:
 					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
 			}
-
-			//create and initialize tsk_event_types tables which may or may not exist
-			statement.execute("CREATE TABLE IF NOT EXISTS tsk_event_types ("
+			statement.execute("CREATE TABLE tsk_event_types ("
 					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " display_name TEXT UNIQUE NOT NULL, "
 					+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
-
-			resultSet = statement.executeQuery("SELECT * from tsk_event_types");
-
-			// If there is something in resultSet then the table must have previously 
-			// existing therefore there is not need to populate
-			if (!resultSet.next()) {
-
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values( 0, 'Event Types', null)");
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values(1, 'File System', 0)");
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values(2, 'Web Activity', 0)");
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values(3, 'Misc Types', 0)");
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values(4, 'Modified', 1)");
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values(5, 'Accessed', 1)");
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values(6, 'Created', 1)");
-				statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
-						+ " values(7, 'Changed', 1)");
-			}
-
-			// Delete the old table that may have been created with the upgrade
-			// from 8.1 to 8.2.
-			statement.execute("DROP TABLE IF EXISTS tsk_events");
-
-			// Delete the old table that may have been created with the upgrade
-			// from 8.1 to 8.2
-			statement.execute("DROP TABLE IF EXISTS tsk_event_descriptions");
-
-			//create new tsk_event_description table
-			/*
-			 * NOTE: This code has been modified since its first release (TSK
-			 * 4.7.0). The database creation code for case database schema 8.3
-			 * in db_sqlite.cpp and db_postgresql.cpp creates a
-			 * tsk_event_descriptions table with a content_obj_id column, not a
-			 * file_obj_id column. This upgrade code, however, retained the
-			 * file_obj_id column from the unused version of the table created
-			 * by updateFromSchema8dot1toSchema8dot2. Rather than doing an
-			 * additional add/drop of these tables for case database schema 8.4,
-			 * it was decided to correct this code to use content_obj_id instead
-			 * of file_obj_id.
-			 */
 			statement.execute("CREATE TABLE tsk_event_descriptions ("
 					+ " event_description_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " full_description TEXT NOT NULL, "
@@ -1906,8 +1882,6 @@ public class SleuthkitCase {
 					+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_files(obj_id), "
 					+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
 			);
-
-			// create a new table
 			statement.execute("CREATE TABLE tsk_events ( "
 					+ " event_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
@@ -1916,13 +1890,43 @@ public class SleuthkitCase {
 					+ " UNIQUE (event_type_id, event_description_id, time))"
 			);
 
+			/*
+			 * Create indexes for the new tables.
+			 */
+			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
+			statement.execute("CREATE INDEX events_type ON tsk_events(event_type_id)");
+			statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
+			statement.execute("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id ");
+			statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
+			statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
+			statement.execute("CREATE INDEX events_time  ON tsk_events(time ");
+
+			/*
+			 * Initialize the tsk_event_types table.
+			 */
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES( 0, 'Event Types', null)");
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES(1, 'File System', 0)");
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES(2, 'Web Activity', 0)");
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES(3, 'Misc Types', 0)");
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES(4, 'Modified', 1)");
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES(5, 'Accessed', 1)");
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES(6, 'Created', 1)");
+			statement.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id)"
+					+ " VALUES(7, 'Changed', 1)");
+
 			// Fix mistakenly set names in tsk_db_info_extended 
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
 
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
-			closeResultSet(resultSet);
 			releaseSingleUserCaseWriteLock();
 		}
 	}
