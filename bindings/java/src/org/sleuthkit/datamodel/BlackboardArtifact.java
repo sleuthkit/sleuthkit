@@ -1218,8 +1218,8 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Indicates file may have been created by the user.
 		 */
-		TSK_USER_CREATED_SUSPECTED(56, "TSK_USER_CREATED_SUSPECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskUserCreatedSuspected.text"));
+		TSK_DEVICE_ORIGINAL_SUSPECTED(56, "TSK_DEVICE_ORIGINAL_SUSPECTED", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDeviceOriginalSuspected.text"));
 
 		private final String label;
 		private final int typeId;
