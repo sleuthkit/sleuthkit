@@ -1057,6 +1057,16 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         for (off = 0; off < idxalloc_len; off += ntfs->csize_b) {
             uint32_t list_len, rec_len;
 
+            // Ensure that there is enough data for an idxrec
+            if (sizeof(ntfs_idxrec) > idxalloc_len - off) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("ntfs_dir_open_meta: Not enough data in idxalloc buffer for an idxrec.");
+                free(idxalloc);
+                return TSK_COR;
+            }
+
             idxrec = (ntfs_idxrec *) & idxalloc[off];
 
             if (tsk_verbose)
