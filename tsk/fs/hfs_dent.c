@@ -418,7 +418,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_ERR;
     }
 
-    if ((fs_name = tsk_fs_name_alloc(HFS_MAXNAMLEN, 0)) == NULL) {
+    if ((fs_name = tsk_fs_name_alloc(HFS_MAXNAMLEN + 1, 0)) == NULL) {
         return TSK_ERR;
     }
     info.fs_dir = fs_dir;
