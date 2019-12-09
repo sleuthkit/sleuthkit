@@ -697,6 +697,18 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     free(node);
                     return 1;
                 }
+
+                // Check that the whole hfs_btree_key_ext structure is set
+                if (sizeof(hfs_btree_key_ext) > nodesize - rec_off) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                    ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %"
+                        PRIu16 " bytes)", rec, cur_node, nodesize - (int)rec_off,
+                        sizeof(hfs_btree_key_ext));
+                    free(node);
+                    return 1;
+                }
+
                 key = (hfs_btree_key_ext *) & node[rec_off];
 
                 if (tsk_verbose)
@@ -953,6 +965,15 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     return 1;
                 }
 
+                if (sizeof(hfs_btree_key_cat) > nodesize - rec_off) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                    ("hfs_cat_traverse: record %d in index node %d truncated",
+                        rec, cur_node);
+                    free(node);
+                    return 1;
+                }
+
                 key = (hfs_btree_key_cat *) & node[rec_off];
 
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
@@ -995,12 +1016,18 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     int keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
                             key->key_len), &(hfs->catalog_header));
-                    if (rec_off + keylen > nodesize) {
+                    if (keylen > nodesize - rec_off) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
                             ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%d vs %"
                             PRIu16 ")", rec, cur_node,
                             (int) rec_off + keylen, nodesize);
+                        free(node);
+                        return 1;
+                    }
+                    if (sizeof(hfs_btree_index_record) > nodesize - rec_off - keylen) {
+                        tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                        tsk_error_set_errstr("hfs_cat_traverse: truncated btree index record");
                         free(node);
                         return 1;
                     }
@@ -1058,6 +1085,16 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     free(node);
                     return 1;
                 }
+
+                if (sizeof(hfs_btree_key_cat) > nodesize - rec_off) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                    ("hfs_cat_traverse: record %d in leaf node %d truncated",
+                        rec, cur_node);
+                    free(node);
+                    return 1;
+                }
+
                 key = (hfs_btree_key_cat *) & node[rec_off];
 
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);

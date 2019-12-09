@@ -1192,7 +1192,11 @@ public class BlackboardArtifact implements Content {
 				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
 		/**
 		 * Indicates source of a file/object
+		 * 
+		 * @deprecated TSK_ASSOCIATED_OBJECT should be used instead to associate 
+		 *             the file/object with its source artifact/object..
 		 */
+		@Deprecated
 		TSK_DOWNLOAD_SOURCE(51, "TSK_DOWNLOAD_SOURCE", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskDownloadSource.text")),
 		/**
