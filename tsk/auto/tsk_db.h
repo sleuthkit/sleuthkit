@@ -28,6 +28,9 @@ using std::ostream;
 using std::vector;
 using std::string;
 
+/**
+ * Keep these values in sync with CURRENT_DB_SCHEMA_VERSION in SleuthkitCase.java
+ */
 #define TSK_SCHEMA_VER 8
 #define TSK_SCHEMA_MINOR_VER 4
 

@@ -97,7 +97,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 3);
+			= new CaseDbSchemaVersionNumber(8, 4);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -891,6 +891,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot3toSchema8dot4(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -1785,10 +1786,10 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
 			statement.execute("CREATE INDEX events_type ON tsk_events(event_type_id)");
 			statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
-			statement.execute("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id ");
+			statement.execute("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id) ");
 			statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
 			statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
-			statement.execute("CREATE INDEX events_time  ON tsk_events(time ");
+			statement.execute("CREATE INDEX events_time  ON tsk_events(time) ");
 			return new CaseDbSchemaVersionNumber(8, 2);
 
 		} finally {
@@ -1913,6 +1914,131 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Updates a schema version 8.3 database to a schema version 8.4 database.
+	 * This is a bug fix update for a misnamed column in tsk_event_descriptions in
+	 * the previous update code.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot3toSchema8dot4(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 3) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		ResultSet results = null;
+
+		acquireSingleUserCaseWriteLock();				
+		try {
+			// This is a bug fix update for a misnamed column in tsk_event_descriptions in
+			// the previous update code.
+			if (null == getDatabaseType()) {
+				throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}		
+			
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					// Check if the misnamed column is present
+					results = statement.executeQuery("SELECT column_name FROM information_schema.columns "
+						+ "WHERE table_name='tsk_event_descriptions' and column_name='file_obj_id'");
+					if (results.next()) {
+						// In PostgreSQL we can rename the column if it exists
+						statement.execute("ALTER TABLE tsk_event_descriptions "
+							+ "RENAME COLUMN file_obj_id TO content_obj_id");
+						
+						//create tsk_events indices that were skipped in the 8.2 to 8.3 update code
+						statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
+						statement.execute("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id) ");
+						statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
+						statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
+						statement.execute("CREATE INDEX events_time  ON tsk_events(time) ");
+					}
+					break;
+				case SQLITE:
+					boolean hasMisnamedColumn = false;
+					results = statement.executeQuery("pragma table_info('tsk_event_descriptions')");
+					while (results.next()) {
+						if (results.getString("name") != null && results.getString("name").equals("file_obj_id")) {
+							hasMisnamedColumn = true;
+							break;
+						}	
+					}
+					
+					if (hasMisnamedColumn) {
+						// Since we can't rename the column we'll need to make new tables and copy the data
+						statement.execute("CREATE TABLE temp_tsk_event_descriptions ("
+								+ " event_description_id INTEGER PRIMARY KEY, "
+								+ " full_description TEXT NOT NULL, "
+								+ " med_description TEXT, "
+								+ " short_description TEXT,"
+								+ " data_source_obj_id BIGINT NOT NULL, "
+								+ " content_obj_id BIGINT NOT NULL, "
+								+ " artifact_id BIGINT, "
+								+ " hash_hit INTEGER NOT NULL, " //boolean
+								+ " tagged INTEGER NOT NULL, " //boolean
+								+ " UNIQUE(full_description, content_obj_id, artifact_id), "
+								+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+								+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_files(obj_id), "
+								+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
+						);	
+					
+						statement.execute("CREATE TABLE temp_tsk_events ( "
+								+ " event_id INTEGER PRIMARY KEY, "
+								+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+								+ " event_description_id BIGINT NOT NULL REFERENCES temp_tsk_event_descriptions(event_description_id),"
+								+ " time INTEGER NOT NULL, "
+								+ " UNIQUE (event_type_id, event_description_id, time))"
+						);	
+					
+						// Copy the data
+						statement.execute("INSERT INTO temp_tsk_event_descriptions(event_description_id, full_description, "
+								+ "med_description, short_description, data_source_obj_id, content_obj_id, artifact_id, "
+								+ "hash_hit, tagged) SELECT * FROM tsk_event_descriptions");
+
+						statement.execute("INSERT INTO temp_tsk_events(event_id, event_type_id, "
+								+ "event_description_id, time) SELECT * FROM tsk_events");
+					
+						// Drop the old tables
+						statement.execute("DROP TABLE tsk_events");
+						statement.execute("DROP TABLE tsk_event_descriptions");
+
+						// Rename the new tables
+						statement.execute("ALTER TABLE temp_tsk_event_descriptions RENAME TO tsk_event_descriptions");
+						statement.execute("ALTER TABLE temp_tsk_events RENAME TO tsk_events");
+						
+						//create tsk_events indices
+						statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
+						statement.execute("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id) ");
+						statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
+						statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
+						statement.execute("CREATE INDEX events_time  ON tsk_events(time) ");
+					}
+					break;
+				default:
+					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}
+			
+			return new CaseDbSchemaVersionNumber(8, 4);
+		} finally {
+			closeResultSet(results);
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}		
+	}		
 
 	/**
 	 * Extract the extension from a file name.
