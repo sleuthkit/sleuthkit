@@ -1004,12 +1004,18 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     int keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
                             key->key_len), &(hfs->catalog_header));
-                    if (rec_off + keylen > nodesize) {
+                    if (keylen > nodesize - rec_off) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
                             ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%d vs %"
                             PRIu16 ")", rec, cur_node,
                             (int) rec_off + keylen, nodesize);
+                        free(node);
+                        return 1;
+                    }
+                    if (sizeof(hfs_btree_index_record) > nodesize - rec_off - keylen) {
+                        tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                        tsk_error_set_errstr("hfs_cat_traverse: truncated btree index record");
                         free(node);
                         return 1;
                     }
