@@ -40,7 +40,7 @@ addons:
     - cppunit
     - afflib
     taps: homebrew/cask-versions
-    casks: corretto8
+    casks: openjdk-8-jdk
 
 python:
   - "2.7"
