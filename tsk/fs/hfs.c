@@ -1085,6 +1085,16 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     free(node);
                     return 1;
                 }
+
+                if (sizeof(hfs_btree_key_cat) > nodesize - rec_off) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                    ("hfs_cat_traverse: record %d in leaf node %d truncated",
+                        rec, cur_node);
+                    free(node);
+                    return 1;
+                }
+
                 key = (hfs_btree_key_cat *) & node[rec_off];
 
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
