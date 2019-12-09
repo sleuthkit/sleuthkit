@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.TskData;
@@ -73,20 +74,17 @@ public final class FileAttachment implements Attachment {
 
 		//normalize the slashes.
 		this.filePathName = normalizePath(pathName);
-
+		
+		
 		String fileName = filePathName.substring(filePathName.lastIndexOf('/') + 1);
-		String parentPathSubString = filePathName.substring(0, filePathName.lastIndexOf('/'));
-
-		long matchedFileObjId = -1;
-		List<AbstractFile> matchedFiles = caseDb.findFiles(dataSource, fileName, parentPathSubString);
-		for (AbstractFile file : matchedFiles) {
-			if (file.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC)) {
-				matchedFileObjId = file.getId();
-				break;
-			}
+		if (fileName.isEmpty()) {
+			throw new TskCoreException(String.format("No file name specified for attachment file: %s, on data source = %d", filePathName, dataSource.getId() ));
 		}
-		objId = matchedFileObjId;
 
+		String parentPathSubString = (filePathName.lastIndexOf('/') < 0) ? "" : filePathName.substring(0, filePathName.lastIndexOf('/'));
+		
+		// find the attachment file 
+		objId = findAttachmentFile(caseDb, fileName, parentPathSubString, dataSource);
 	}
 
 	/**
@@ -155,6 +153,96 @@ public final class FileAttachment implements Attachment {
 		return adjustedPath;
 	}
 
+	/**
+	 * Finds the attachment file, given the name and path, and returns the
+	 * object id of the matched file.
+	 *
+	 * @param caseDb              Case database.
+	 * @param fileName            Name of attachment file.
+	 * @param parentPathSubstring Partial parent path of the attachment file.
+	 * @param dataSource          Data source the message was found in.
+	 *
+	 * @throws TskCoreException If there is an error in finding the attached
+	 *                          file.
+	 * @return Object id of the matching file. -1 if no suitable match is found.
+	 */
+	private long findAttachmentFile(SleuthkitCase caseDb, String fileName, String parentPathSubstring, Content dataSource) throws TskCoreException {
+
+		// Find all files with matching name and parent path substring
+		String whereClause = String.format("LOWER(name) = LOWER('%s') AND LOWER(parent_path) LIKE LOWER('%%%s%%')", fileName, parentPathSubstring);
+		List<AbstractFile> matchedFiles = caseDb.findAllFilesWhere(whereClause);
+
+		// separate the matching files into allocated files on same datsource, 
+		// allocated files on other data sources, and unallocated files.
+		List<Long> allocFileMatchesOnSameDatasource = new ArrayList<>();
+		List<Long> allocFileMatchesOnOtherDatasources = new ArrayList<>();
+		List<Long> unallocFileMatches = new ArrayList<>();
+
+		for (AbstractFile file : matchedFiles) {
+			if (file.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC)) {
+				if (dataSource.getId() == file.getDataSource().getId()) {
+					allocFileMatchesOnSameDatasource.add(file.getId());
+				} else {
+					allocFileMatchesOnOtherDatasources.add(file.getId());
+				}
+			} else {	// unallocated file 
+				unallocFileMatches.add(file.getId());
+			}
+		}
+
+		// pick the best match from the 3 lists.
+		return pickBestMatchFile(allocFileMatchesOnSameDatasource, allocFileMatchesOnOtherDatasources, unallocFileMatches);
+	}
+	
+	/**
+	 * Returns best match file from the specified lists, based on the following
+	 * algorithm:
+	 *
+	 * - If there is exactly one allocated file on the same data source as the message, 
+	 *   that file is returned. 
+	 * - If there is exactly one allocated match on one of the other data sources, 
+	 *   that file is returned. 
+	 * - If there is exactly one unallocated file matched among all data sources, 
+	 *   that file is returned. 
+	 * - If no match is found or there are more than one equally suitable matches, 
+	 *   then -1 is returned.
+	 *
+	 * @param allocFileMatchesOnSameDatasource   List of matching allocated file
+	 *                                           object ids, found on the same
+	 *                                           data source as the message.
+	 * @param allocFileMatchesOnOtherDatasources List of matching allocated file
+	 *                                           object ids, found on data
+	 *                                           sources other than the one
+	 *                                           where the the message is found.
+	 * @param unallocFileMatches                 List of matching unallocated
+	 *                                           file object ids,
+	 *
+	 * @return Object id of the best match file, -1 if there's no definitive
+	 *         best match.
+	 */
+	private long pickBestMatchFile(List<Long> allocFileMatchesOnSameDatasource,
+			List<Long> allocFileMatchesOnOtherDatasources,
+			List<Long> unallocFileMatches) {
+
+		// check if there's an allocated file match on the same data source
+		if (!allocFileMatchesOnSameDatasource.isEmpty() && allocFileMatchesOnSameDatasource.size() == 1) {
+			return allocFileMatchesOnSameDatasource.get(0);
+		}
+		// if no match found yet,check if there's an allocated file match on other data sources.
+		if (!allocFileMatchesOnOtherDatasources.isEmpty()
+				&& allocFileMatchesOnOtherDatasources.size() == 1) {
+			return allocFileMatchesOnOtherDatasources.get(0);
+		}
+		// if no match found yet, check if there is an unallocated file that matches.
+		if (!unallocFileMatches.isEmpty()
+				&& unallocFileMatches.size() == 1) {
+			return unallocFileMatches.get(0);
+		}
+		// no single suitable match found
+		return -1;
+
+	}
+	
 	@Override
 	public String getLocation() {
 		return this.filePathName;
