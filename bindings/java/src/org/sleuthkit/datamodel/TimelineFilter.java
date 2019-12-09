@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
+import java.util.ArrayList;
+import java.util.Arrays;
 import static java.util.Arrays.asList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,12 +32,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.joining;
 import java.util.stream.Stream;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.Property;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
@@ -149,7 +145,7 @@ public abstract class TimelineFilter {
 		 *                      event types hierarchy from the root event type.
 		 */
 		private EventTypeFilter(TimelineEventType rootEventType, boolean recursive) {
-			super(FXCollections.observableArrayList());
+			super(new ArrayList<>());
 			this.rootEventType = rootEventType;
 			if (recursive) {
 				// add subfilters for each subtype
@@ -246,7 +242,7 @@ public abstract class TimelineFilter {
 	 */
 	public static final class TagsFilter extends TimelineFilter {
 
-		private final BooleanProperty eventSourcesAreTagged = new SimpleBooleanProperty();
+		private boolean eventSourcesAreTagged;
 
 		/**
 		 * Constructs a timeline events filter used to query for a events where
@@ -261,24 +257,24 @@ public abstract class TimelineFilter {
 		 * the direct source (file or artifact) of the events has either been
 		 * tagged or not tagged.
 		 *
-		 * @param eventSourceIsTagged Whether the direct sources of the events
-		 *                            need to be tagged or not tagged to be
-		 *                            accepted by this filter.
+		 * @param eventSourcesAreTagged Whether the direct sources of the events
+		 *                              need to be tagged or not tagged to be
+		 *                              accepted by this filter.
 		 */
-		public TagsFilter(boolean eventSourceIsTagged) {
-			this.eventSourcesAreTagged.set(eventSourceIsTagged);
+		public TagsFilter(boolean eventSourcesAreTagged) {
+			this.eventSourcesAreTagged = eventSourcesAreTagged;
 		}
 
 		/**
 		 * Sets whether the direct sources of the events have to be tagged or
 		 * not tagged to be accepted by this filter.
 		 *
-		 * @param eventSourceIsTagged Whether the direct sources of the events
-		 *                            have to be tagged or not tagged to be
-		 *                            accepted by this filter.
+		 * @param eventSourcesAreTagged Whether the direct sources of the events
+		 *                              have to be tagged or not tagged to be
+		 *                              accepted by this filter.
 		 */
-		public synchronized void setEventSourcesAreTagged(boolean eventSourceIsTagged) {
-			this.eventSourcesAreTagged.set(eventSourceIsTagged);
+		public synchronized void setEventSourcesAreTagged(boolean eventSourcesAreTagged) {
+			this.eventSourcesAreTagged = eventSourcesAreTagged;
 		}
 
 		/**
@@ -288,7 +284,7 @@ public abstract class TimelineFilter {
 		 * @return True or false.
 		 */
 		public synchronized boolean getEventSourceAreTagged() {
-			return eventSourcesAreTagged.get();
+			return eventSourcesAreTagged;
 		}
 
 		@Override
@@ -298,7 +294,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public TagsFilter copyOf() {
-			return new TagsFilter(eventSourcesAreTagged.get());
+			return new TagsFilter(eventSourcesAreTagged);
 		}
 
 		@Override
@@ -307,7 +303,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 
-			return ((TagsFilter) obj).getEventSourceAreTagged() == eventSourcesAreTagged.get();
+			return ((TagsFilter) obj).getEventSourceAreTagged() == getEventSourceAreTagged();
 		}
 
 		@Override
@@ -320,7 +316,7 @@ public abstract class TimelineFilter {
 		@Override
 		String getSQLWhere(TimelineManager manager) {
 			String whereStr;
-			if (eventSourcesAreTagged.get()) {
+			if (eventSourcesAreTagged) {
 				whereStr = "tagged = 1";
 			} else {
 				whereStr = "tagged = 0";
@@ -339,12 +335,12 @@ public abstract class TimelineFilter {
 	 */
 	public static abstract class UnionFilter<SubFilterType extends TimelineFilter> extends TimelineFilter.CompoundFilter<SubFilterType> {
 
-		UnionFilter(ObservableList<SubFilterType> subFilters) {
+		UnionFilter(List<SubFilterType> subFilters) {
 			super(subFilters);
 		}
 
 		UnionFilter() {
-			super(FXCollections.<SubFilterType>observableArrayList());
+			super(new ArrayList<SubFilterType>());
 		}
 
 		@Override
@@ -368,7 +364,7 @@ public abstract class TimelineFilter {
 	 */
 	public static final class TextFilter extends TimelineFilter {
 
-		private final SimpleStringProperty descriptionSubstring = new SimpleStringProperty();
+		private String descriptionSubstring;
 
 		/**
 		 * Constructs a timeline events filter used to query for events that
@@ -389,7 +385,7 @@ public abstract class TimelineFilter {
 		 */
 		public TextFilter(String descriptionSubstring) {
 			super();
-			this.descriptionSubstring.set(descriptionSubstring.trim());
+			this.descriptionSubstring = descriptionSubstring.trim();
 		}
 
 		/**
@@ -399,7 +395,7 @@ public abstract class TimelineFilter {
 		 * @param descriptionSubstring The substring.
 		 */
 		public synchronized void setDescriptionSubstring(String descriptionSubstring) {
-			this.descriptionSubstring.set(descriptionSubstring.trim());
+			this.descriptionSubstring = descriptionSubstring.trim();
 		}
 
 		@Override
@@ -413,23 +409,13 @@ public abstract class TimelineFilter {
 		 *
 		 * @return The required substring.
 		 */
-		public synchronized String getSubstring() {
-			return descriptionSubstring.getValue();
-		}
-
-		/**
-		 * Gets the substring that must be present in one or more of the
-		 * descriptions of each event that passes the filter.
-		 *
-		 * @return The required substring as a Property.
-		 */
-		public Property<String> substringProperty() {
+		public synchronized String getDescriptionSubstring() {
 			return descriptionSubstring;
 		}
 
 		@Override
 		public synchronized TextFilter copyOf() {
-			return new TextFilter(getSubstring());
+			return new TextFilter(getDescriptionSubstring());
 		}
 
 		@Override
@@ -441,22 +427,22 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final TextFilter other = (TextFilter) obj;
-			return Objects.equals(getSubstring(), other.getSubstring());
+			return Objects.equals(getDescriptionSubstring(), other.getDescriptionSubstring());
 		}
 
 		@Override
 		public int hashCode() {
 			int hash = 5;
-			hash = 29 * hash + Objects.hashCode(this.descriptionSubstring.get());
+			hash = 29 * hash + Objects.hashCode(this.descriptionSubstring);
 			return hash;
 		}
 
 		@Override
 		String getSQLWhere(TimelineManager manager) {
-			if (StringUtils.isNotBlank(this.getSubstring())) {
-				return "((med_description like '%" + escapeSingleQuotes(this.getSubstring()) + "%')" //NON-NLS
-						+ " or (full_description like '%" + escapeSingleQuotes(this.getSubstring()) + "%')" //NON-NLS
-						+ " or (short_description like '%" + escapeSingleQuotes(this.getSubstring()) + "%'))"; //NON-NLS
+			if (StringUtils.isNotBlank(this.getDescriptionSubstring())) {
+				return "((med_description like '%" + escapeSingleQuotes(this.getDescriptionSubstring()) + "%')" //NON-NLS
+						+ " or (full_description like '%" + escapeSingleQuotes(this.getDescriptionSubstring()) + "%')" //NON-NLS
+						+ " or (short_description like '%" + escapeSingleQuotes(this.getDescriptionSubstring()) + "%'))"; //NON-NLS
 			} else {
 				return manager.getSQLWhere(null);
 			}
@@ -464,7 +450,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String toString() {
-			return "TextFilter{" + "textProperty=" + descriptionSubstring.getValue() + '}';
+			return "TextFilter{" + "textProperty=" + descriptionSubstring + '}';
 		}
 
 	}
@@ -582,7 +568,7 @@ public abstract class TimelineFilter {
 				FileTypesFilter fileTypesFilter,
 				Collection<TimelineFilter> additionalFilters) {
 
-			super(FXCollections.observableArrayList(descriptionSubstringFilter, knownFilesFilter, tagsFilter, dataSourcesFilter, hashSetHitsFilter, fileTypesFilter, eventTypesFilter));
+			super(Arrays.asList(descriptionSubstringFilter, knownFilesFilter, tagsFilter, dataSourcesFilter, hashSetHitsFilter, fileTypesFilter, eventTypesFilter));
 			getSubFilters().removeIf(Objects::isNull);
 			this.knownFilesFilter = knownFilesFilter;
 			this.tagsFilter = tagsFilter;
@@ -730,14 +716,14 @@ public abstract class TimelineFilter {
 			}
 		}
 
-		private final ObservableList<SubFilterType> subFilters = FXCollections.observableArrayList();
+		private final List<SubFilterType> subFilters = new ArrayList<>();
 
 		/**
 		 * Gets the collection of filters that make up this filter.
 		 *
 		 * @return The filters.
 		 */
-		public final ObservableList<SubFilterType> getSubFilters() {
+		public final List<SubFilterType> getSubFilters() {
 			return subFilters;
 		}
 
@@ -758,7 +744,7 @@ public abstract class TimelineFilter {
 		 */
 		protected CompoundFilter(List<SubFilterType> subFilters) {
 			super();
-			this.subFilters.setAll(subFilters);
+			this.subFilters.addAll(subFilters);
 		}
 
 		@Override
@@ -884,7 +870,7 @@ public abstract class TimelineFilter {
 	 */
 	public static final class HashHitsFilter extends TimelineFilter {
 
-		private final BooleanProperty eventSourcesHaveHashSetHits = new SimpleBooleanProperty();
+		private boolean eventSourcesHaveHashSetHits;
 
 		/**
 		 * Constructs a timeline events filter used to query for events where
@@ -899,21 +885,22 @@ public abstract class TimelineFilter {
 		 * the files that are the direct or indirect sources of the events
 		 * either have or do not have hash set hits.
 		 *
-		 * @param hasHashHit Whether or not the files associated with the events
-		 *                   have or do not have hash set hits.
+		 * @param eventSourcesHaveHashSetHits Whether or not the files
+		 *                                    associated with the events have or
+		 *                                    do not have hash set hits.
 		 */
-		public HashHitsFilter(boolean hasHashHit) {
-			eventSourcesHaveHashSetHits.set(hasHashHit);
+		public HashHitsFilter(boolean eventSourcesHaveHashSetHits) {
+			this.eventSourcesHaveHashSetHits = eventSourcesHaveHashSetHits;
 		}
 
 		/**
 		 * Sets whether or not the files associated with the events have or do
 		 * not have hash set hits
 		 *
-		 * @param hasHashHit True or false.
+		 * @param eventSourcesHaveHashSetHits True or false.
 		 */
-		public synchronized void setEventSourcesHaveHashSetHits(boolean hasHashHit) {
-			eventSourcesHaveHashSetHits.set(hasHashHit);
+		public synchronized void setEventSourcesHaveHashSetHits(boolean eventSourcesHaveHashSetHits) {
+			this.eventSourcesHaveHashSetHits = eventSourcesHaveHashSetHits;
 		}
 
 		/**
@@ -923,7 +910,7 @@ public abstract class TimelineFilter {
 		 * @return True or false.
 		 */
 		public synchronized boolean getEventSourcesHaveHashSetHits() {
-			return eventSourcesHaveHashSetHits.get();
+			return eventSourcesHaveHashSetHits;
 		}
 
 		@Override
@@ -933,7 +920,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public HashHitsFilter copyOf() {
-			return new HashHitsFilter(eventSourcesHaveHashSetHits.get());
+			return new HashHitsFilter(eventSourcesHaveHashSetHits);
 		}
 
 		@Override
@@ -942,7 +929,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 
-			return ((HashHitsFilter) obj).getEventSourcesHaveHashSetHits() == eventSourcesHaveHashSetHits.get();
+			return ((HashHitsFilter) obj).getEventSourcesHaveHashSetHits() == getEventSourcesHaveHashSetHits();
 		}
 
 		@Override
@@ -955,7 +942,7 @@ public abstract class TimelineFilter {
 		@Override
 		String getSQLWhere(TimelineManager manager) {
 			String whereStr = "";
-			if (eventSourcesHaveHashSetHits.get()) {
+			if (eventSourcesHaveHashSetHits) {
 				whereStr = "hash_hit = 1";
 			} else {
 				whereStr = "hash_hit = 0";
