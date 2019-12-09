@@ -512,7 +512,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		// set recipient attribute and create recipient accounts
-		List<AccountFileInstance> recipientAccountsList = new ArrayList();
+		List<AccountFileInstance> recipientAccountsList = new ArrayList<>();
 		String recipientsStr = "";
 		if (recipientIdsList != null) {
 			for (String recipient : recipientIdsList) {
@@ -712,7 +712,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		// Create a comma separated string of callee
-		List<AccountFileInstance> recipientAccountsList = new ArrayList();
+		List<AccountFileInstance> recipientAccountsList = new ArrayList<>();
 		String calleesStr = "";
 		if (!isEffectivelyEmpty(calleeIdsList)) {
 			calleesStr = addressListToString(calleeIdsList);
