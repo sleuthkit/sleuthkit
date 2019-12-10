@@ -2625,6 +2625,12 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         }
 
         if (processed_inum_list == NULL) {
+            /*
+             * Create a stack to keep track of inums already seen.
+             * The local mftSeenList variable is used to keep track
+             * of which iteration created the stack so that it can
+             * be correctly freed later.
+             */
             processed_inum_list = mftSeenList = tsk_stack_create();
         }
 
