@@ -58,5 +58,5 @@ class TSKPoolCompat : public T {
   }
 
   virtual uint8_t poolstat(FILE *) const noexcept = 0;
-  virtual TSK_IMG_INFO * getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept = NULL;
+  virtual TSK_IMG_INFO * getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) = 0;
 };

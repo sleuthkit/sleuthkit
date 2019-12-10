@@ -16,6 +16,6 @@ class APFSPoolCompat : public TSKPoolCompat<APFSPool> {
 
   ~APFSPoolCompat();
 
-  uint8_t poolstat(FILE* hFile) const noexcept final;
+  uint8_t poolstat(FILE* hFile) const noexcept;
   TSK_IMG_INFO * getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept;
 };
