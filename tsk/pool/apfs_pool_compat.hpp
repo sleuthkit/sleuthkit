@@ -10,7 +10,7 @@ class APFSPoolCompat : public TSKPoolCompat<APFSPool> {
  public:
   template <typename... Args>
   APFSPoolCompat(Args&&... args)
-      : TSKPoolCompat(TSK_POOL_TYPE_APFS, std::forward<Args>(args)...) {
+      : TSKPoolCompat<APFSPool>(TSK_POOL_TYPE_APFS, std::forward<Args>(args)...) {
     init_volumes();
   }
 
