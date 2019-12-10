@@ -66,6 +66,15 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(Image i);
+	
+	/**
+	 * Act on (visit) a Pool content object
+	 *
+	 * @param p pool to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(Pool p);	
 
 	/**
 	 * Act on (visit) a Volume content object
@@ -194,6 +203,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(Volume v) {
 			return defaultVisit(v);
+		}
+		
+		@Override
+		public T visit(Pool p) {
+			return defaultVisit(p);
 		}
 
 		@Override

@@ -68,6 +68,12 @@ public class Volume extends AbstractContent {
 				throw new TskCoreException(bundle.getString("Volume.read.exception.msg1.text"));
 			}
 			VolumeSystem parentVs = (VolumeSystem) myParent;
+			
+			// Reading from APFS volumes/volume systems is not yet supported
+			if (parentVs.getType().equals(TskData.TSK_VS_TYPE_ENUM.TSK_VS_TYPE_APFS)) {
+				throw new TskCoreException("Reading APFS pool volumes not yet supported");
+			}
+			
 			// read from the volume
 			if (volumeHandle == 0) {
 				volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);

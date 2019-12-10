@@ -46,6 +46,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_blkMapFlag = false;
     m_vsFound = false;
     m_volFound = false;
+    m_poolFound = false;
     m_stopped = false;
     m_foundStructure = false;
     m_imgTransactionOpen = false;
@@ -304,10 +305,48 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 }
 
 TSK_FILTER_ENUM
+TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
+{
+    m_poolFound = true;
+
+    if (m_volFound && m_vsFound) {
+        // there's a volume system and volume
+        if (m_db->addPoolInfoAndVS(pool_info, m_curVolId, m_curPoolVs)) {
+            registerError();
+            return TSK_FILTER_STOP;
+        }
+    }
+    else {
+        // pool doesn't live in a volume, use image as parent
+        if (m_db->addPoolInfoAndVS(pool_info, m_curImgId, m_curPoolVs)) {
+            registerError();
+            return TSK_FILTER_STOP;
+        }
+    }
+
+    
+
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM
+TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
+{
+
+    if (m_db->addPoolVolumeInfo(pool_vol, m_curPoolVs, m_curPoolVol)) {
+        registerError();
+        return TSK_FILTER_STOP;
+    }
+
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM
 TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
     m_foundStructure = true;
+    m_poolFound = false;
 
     if (m_db->addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
         registerError();
@@ -324,7 +363,14 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     TSK_FS_FILE *file_root;
     m_foundStructure = true;
 
-    if (m_volFound && m_vsFound) {
+    if (m_poolFound) {
+        // there's a pool
+        if (m_db->addFsInfo(fs_info, m_curPoolVol, m_curFsId)) {
+            registerError();
+            return TSK_FILTER_STOP;
+        }
+    }
+    else if (m_volFound && m_vsFound) {
         // there's a volume system and volume
         if (m_db->addFsInfo(fs_info, m_curVolId, m_curFsId)) {
             registerError();
@@ -985,6 +1031,12 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 * @returns TSK_OK on success, TSK_ERR on error
 */
 TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+
+    // Unalloc space is not yet implemented for APFS
+    if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
+        return TSK_OK;
+    }
+
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {

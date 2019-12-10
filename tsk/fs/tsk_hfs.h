@@ -10,13 +10,13 @@
 **
 **
 ** Copyright (c) 2009-2011 Brian Carrier.  All rights reserved.
-** 
+**
 ** Judson Powers [jpowers@atc-nycorp.com]
 ** Matt Stillerman [matt@atc-nycorp.com]
 ** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
-** 
+**
 ** Wyatt Banks [wbanks@crucialsecurity.com]
 ** Copyright (c) 2005 Crucial Security Inc.  All rights reserved.
 **
@@ -309,7 +309,7 @@ typedef struct {
 
 
 /**
- *   Flags to control hfs_UTF16toUTF8() 
+ *   Flags to control hfs_UTF16toUTF8()
  */
 
 // If this flag is set, the function will replace fwd slash with colon, as
@@ -475,7 +475,7 @@ typedef struct {
 
 /***************** ATTRIBUTES FILE ******************************/
 
-// Maximum UTF8 size of an attribute name = 127 * 4 
+// Maximum UTF8 size of an attribute name = 127 * 4
 #define HFS_MAX_ATTR_NAME_LEN_UTF8_B 508
 #define HFS_MAX_ATTR_NAME_LEN_UTF16_B 254
 
@@ -510,54 +510,19 @@ typedef struct {
 #define HFS_ATTR_RECORD_EXTENTS 0x30
 
 
-/*
- * If a file is compressed, then it will have an extended attribute
- * with name com.apple.decmpfs.  The value of that attribute is a data
- * structure, arranged as shown in the following struct, possibly followed
- * by some actual compressed data.
- *
- * If compression_type = 3, then data follows this compression header, in-line.
- * If the first byte of that data is 0xF, then the data is not really compressed, so
- * the following bytes are the data.  Otherwise, the data following the compression
- * header is zlib-compressed.
- *
- * If the compression_type = 4, then compressed data is stored in the file's resource
- * fork, in a resource of type CMPF.  There will be a single resource in the fork, and
- * it will have this type.  The beginning of the resource is a table of offsets for
- * successive compression units within the resource.
- */
-
-typedef struct {
-    /* this structure represents the xattr on disk; the fields below are little-endian */
-    uint8_t compression_magic[4];
-    uint8_t compression_type[4];
-    uint8_t uncompressed_size[8];
-    unsigned char attr_bytes[];        /* the bytes of the attribute after the header, if any. */
-} DECMPFS_DISK_HEADER;
-
-typedef enum {
-  DECMPFS_TYPE_ZLIB_ATTR = 3,
-  DECMPFS_TYPE_ZLIB_RSRC = 4,
-  DECMPFS_TYPE_DATALESS = 5,
-  DECMPFS_TYPE_LZVN_ATTR = 7,
-  DECMPFS_TYPE_LZVN_RSRC = 8,
-  DECMPFS_TYPE_RAW_ATTR = 9,
-  DECMPFS_TYPE_RAW_RSRC = 10
-} DECMPFS_TYPE_ENUM;
-
-#define COMPRESSION_UNIT_SIZE 65536U
-
-
 /********* CATALOG Record structures *********/
 typedef struct {
     int8_t v[2];
     int8_t h[2];
 } hfs_point;
 
-#define HFS_FINDER_FLAG_NAME_LOCKED  0x1000
-#define HFS_FINDER_FLAG_HAS_BUNDLE   0x2000
-#define HFS_FINDER_FLAG_IS_INVISIBLE 0x4000
-#define HFS_FINDER_FLAG_IS_ALIAS     0x8000
+#define HFS_FINDER_FLAG_COLOR_MASK      0x000E
+#define HFS_FINDER_FLAG_IS_STATIONARY   0x0800
+#define HFS_FINDER_FLAG_HAS_CUSTOM_ICON 0x0400
+#define HFS_FINDER_FLAG_NAME_LOCKED     0x1000
+#define HFS_FINDER_FLAG_HAS_BUNDLE      0x2000
+#define HFS_FINDER_FLAG_IS_INVISIBLE    0x4000
+#define HFS_FINDER_FLAG_IS_ALIAS        0x8000
 
 // Finder info stored in file and folder structures
 typedef struct {
@@ -567,6 +532,10 @@ typedef struct {
     hfs_point loc;              /* location in the folder */
     uint8_t res[2];             /* reserved */
 } hfs_fileinfo;
+
+#define HFS_FINDER_EXTFLAG_HAS_ROUTING_INFO 0x0004
+#define HFS_FINDER_EXTFLAG_HAS_CUSTOM_BADGE 0x0100
+#define HFS_FINDER_EXTFLAG_HAS_FLAGS        0x8000
 
 typedef struct {
     uint8_t res1[8];            /* reserved 1 */
@@ -647,11 +616,11 @@ typedef struct {
     /* lock protects blockmap_file, blockmap_attr, blockmap_cache, blockmap_cache_start, blockmap_cache_len */
     tsk_lock_t lock;
 
-    TSK_FS_FILE *blockmap_file; //(r/w shared - lock) 
-    const TSK_FS_ATTR *blockmap_attr;   // (r/w shared - lock) 
-    char blockmap_cache[4096];  ///< Cache for blockmap (r/w shared - lock) 
-    TSK_OFF_T blockmap_cache_start;     ///< Byte offset of blockmap where cache starts (r/w shared - lock) 
-    size_t blockmap_cache_len;  ///< Length of cache that is being used (r/w shared - lock) 
+    TSK_FS_FILE *blockmap_file; //(r/w shared - lock)
+    const TSK_FS_ATTR *blockmap_attr;   // (r/w shared - lock)
+    char blockmap_cache[4096];  ///< Cache for blockmap (r/w shared - lock)
+    TSK_OFF_T blockmap_cache_start;     ///< Byte offset of blockmap where cache starts (r/w shared - lock)
+    size_t blockmap_cache_len;  ///< Length of cache that is being used (r/w shared - lock)
 
     TSK_FS_FILE *catalog_file;
     const TSK_FS_ATTR *catalog_attr;
@@ -784,8 +753,9 @@ extern TSK_INUM_T hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * entry,
     unsigned char *is_error);
 extern uint8_t hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum,
     HFS_ENTRY * entry, unsigned char follow_hard_link);
-extern void error_returned(char *errstr, ...);
-extern void error_detected(uint32_t errnum, char *errstr, ...);
+extern void error_returned(const char *errstr, ...);
+extern void error_detected(uint32_t errnum, const char *errstr, ...);
+extern char hfs_is_hard_link(TSK_FS_INFO * fs, TSK_INUM_T inum);
 
 /**
  * @param hfs
@@ -804,8 +774,15 @@ typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
 #define HFS_BTREE_CB_LEAF_STOP  4       // stop processing keys in the leaf node
 #define HFS_BTREE_CB_ERR        5
 
-extern uint8_t hfs_cat_traverse(HFS_INFO * hfs, 
+extern uint8_t hfs_cat_traverse(HFS_INFO * hfs,
     TSK_HFS_BTREE_CB a_cb, void *ptr);
 
+typedef struct {
+    TSK_OFF_T offset;
+    uint16_t keylen;
+} hfs_cat_rec_off;
+
+extern uint8_t
+hfs_cat_get_cat_offset(HFS_INFO * hfs, TSK_INUM_T inum, hfs_cat_rec_off * data);
 
 #endif
