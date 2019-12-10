@@ -305,7 +305,7 @@ TskDbSqlite::initialize()
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
             "Error creating tsk_pool_info table: %s\n")
         ||
         attempt_exec
