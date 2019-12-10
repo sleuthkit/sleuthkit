@@ -108,7 +108,7 @@ Guid::Guid(const string &fromString)
 
   char charOne, charTwo;
   bool lookingForFirstChar = true;
-  
+
   // for (const char &ch : fromString) C++ 11 CODE CHANGED FOR TSK
   for (std::string::const_iterator it = fromString.begin(); it != fromString.end(); ++it)
   {
@@ -144,6 +144,13 @@ Guid::Guid(const Guid &other)
   _bytes = other._bytes;
 }
 
+std::string Guid::str() const {
+  std::stringstream ss;
+  ss << (*this);
+
+  return ss.str();
+}
+
 // overload assignment operator
 Guid &Guid::operator=(const Guid &other)
 {
@@ -174,7 +181,7 @@ Guid GuidGenerator::newGuid()
 }
 #endif
 
-// this is the mac and ios version 
+// this is the mac and ios version
 #ifdef GUID_CFUUID
 Guid GuidGenerator::newGuid()
 {
@@ -212,7 +219,7 @@ Guid GuidGenerator::newGuid()
   GUID newId;
   CoCreateGuid(&newId);
 
-  const unsigned char bytes[16] = 
+  const unsigned char bytes[16] =
   {
     (unsigned char)((newId.Data1 >> 24) & 0xFF),
     (unsigned char)((newId.Data1 >> 16) & 0xFF),
@@ -256,7 +263,7 @@ Guid GuidGenerator::newGuid()
   jlong mostSignificant = _env->CallLongMethod(javaUuid, _mostSignificantBitsMethod);
   jlong leastSignificant = _env->CallLongMethod(javaUuid, _leastSignificantBitsMethod);
 
-  unsigned char bytes[16] = 
+  unsigned char bytes[16] =
   {
     (mostSignificant >> 56) & 0xFF,
     (mostSignificant >> 48) & 0xFF,

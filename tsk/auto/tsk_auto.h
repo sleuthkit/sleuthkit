@@ -30,6 +30,7 @@
 #include "tsk/img/tsk_img.h"
 #include "tsk/vs/tsk_vs.h"
 #include "tsk/fs/tsk_fs.h"
+#include "tsk/pool/tsk_pool.h"
 
 #include <string>
 #include <vector>
@@ -84,6 +85,9 @@ class TskAuto {
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
     uint8_t findFilesInVs(TSK_OFF_T start, TSK_VS_TYPE_ENUM vtype);
+    bool hasPool(TSK_OFF_T a_start);
+    uint8_t findFilesInPool(TSK_OFF_T start);
+    uint8_t findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype);
     uint8_t findFilesInFs(TSK_OFF_T start);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
@@ -115,6 +119,26 @@ class TskAuto {
      * @returns Value to show if volume should be processed, skipped, or process should stop.
      */
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+
+    /**
+    * TskAuto calls this method before it processes each pool that is found. 
+    * You can use this to learn about each pool before it is processed
+    * and you can force TskAuto to skip this volume.
+    *
+    * @param pool_vol Pool details
+    * @returns Value to show if pool should be processed, skipped, or process should stop.
+    */
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
+
+    /**
+    * TskAuto calls this method before it processes each pool volume that is found in a
+    * pool. You can use this to learn about each volume before it is processed
+    * and you can force TskAuto to skip this volume. 
+    *
+    * @param pool_vol Pool volume details
+    * @returns Value to show if pool volume should be processed, skipped, or process should stop.
+    */
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
 
     /**
      * TskAuto calls this method before it processes each file system that is found in a 

@@ -1,6 +1,6 @@
 /*
 ** istat
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Display all inode info about a given inode.
 **
@@ -19,6 +19,7 @@
 **
 */
 #include "tsk/tsk_tools_i.h"
+#include "tsk/fs/apfs_fs.h"
 #include <locale.h>
 #include <time.h>
 
@@ -30,10 +31,10 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-B num] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-z zone] [-s seconds] [-rvV] image inum\n"),
+        ("usage: %s [-N num] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-z zone] [-s seconds] [-rvV] image inum\n"),
         progname);
     tsk_fprintf(stderr,
-        "\t-B num: force the display of NUM address of block pointers\n");
+        "\t-N num: force the display of NUM address of block pointers\n");
     tsk_fprintf(stderr, "\t-r: display run list instead of list of block addresses\n");
     tsk_fprintf(stderr,
         "\t-z zone: time zone of original machine (i.e. EST5EDT or GMT)\n");
@@ -46,9 +47,15 @@ usage()
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
-        "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");    
+        "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
+    tsk_fprintf(stderr, "\t-S snap_id: Snapshot ID (for APFS only)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: print version\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
     exit(1);
 }
 
@@ -62,6 +69,11 @@ main(int argc, char **argv1)
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
+    const char * password = "";
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_DADDR_T pvol_block = 0;
+    TSK_DADDR_T snap_id = 0;
 
     TSK_INUM_T inum;
     int ch;
@@ -88,14 +100,14 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:rs:vVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:N:f:i:o:rs:vVz:P:B:k:S:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
-        case _TSK_T('B'):
+        case _TSK_T('N'):
             numblock = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || numblock < 1) {
                 TFPRINTF(stderr,
@@ -127,6 +139,9 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
+            break;
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_img_type_print(stderr);
@@ -141,6 +156,30 @@ main(int argc, char **argv1)
             break;
         case _TSK_T('o'):
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                usage();
+            }
+            break;
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
+        case _TSK_T('S'):
+            if ((snap_id = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -178,7 +217,7 @@ main(int argc, char **argv1)
     }
 
     /* if we are given the inode in the inode-type-id form, then ignore
-     * the other stuff w/out giving an error 
+     * the other stuff w/out giving an error
      *
      * This will make scripting easier
      */
@@ -204,12 +243,33 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-        tsk_error_print(stderr);
-        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-            tsk_fs_type_print(stderr);
-        img->close(img);
-        exit(1);
+    if (pvol_block == 0) {
+        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, 
+                                          fstype, password)) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            img->close(img);
+            exit(1);
+        }
+    } else {
+        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+        if (pool == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            img->close(img);
+            exit(1);
+        }
+
+        img = pool->get_img_info(pool, pvol_block);
+        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            img->close(img);
+            exit(1);
+        }
     }
 
     if (inum > fs->last_inum) {
@@ -228,6 +288,10 @@ main(int argc, char **argv1)
         fs->close(fs);
         img->close(img);
         exit(1);
+    }
+
+    if (snap_id > 0) {
+      tsk_apfs_set_snapshot(fs, snap_id);
     }
 
     if (fs->istat(fs, (TSK_FS_ISTAT_FLAG_ENUM) istat_flags, stdout, inum, numblock, sec_skew)) {

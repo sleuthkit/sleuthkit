@@ -203,6 +203,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
     a_fs_name_to->par_seq = a_fs_name_from->par_seq;
     a_fs_name_to->type = a_fs_name_from->type;
     a_fs_name_to->flags = a_fs_name_from->flags;
+    a_fs_name_to->date_added = a_fs_name_from->date_added;
 
     return 0;
 }
