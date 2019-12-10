@@ -69,4 +69,3 @@ script:
   - if test ${TRAVIS_OS_NAME} = "linux"; then
         pushd release && ./release-unix.pl ci && popd;
     fi
-

@@ -60,13 +60,17 @@ At the time of writing this, libvmdk requires zlib source code in order to build
 
 The LIBVMDK_HOME environment variable should look something like this: C:\cygwin64\home\user_name\libvmdk_64bit\libvmdk
 
-8) If you want to build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
+8) Download OpenSSL from https://slproweb.com/products/Win32OpenSSL.html and install.  Set the OPENSSL_HOME environment variable to the installed location.
 
-9) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory.
+The OPENSSL_HOME environment variable should look something like this: C:\Program Files\OpenSSL-Win64
 
-10) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables. The resulting libraries and executables on a 32-bit build will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate. A 64-bit build will put them into the win32/x64 folders. You can change the type of build using the pulldown in Visual Studio and switching between Win32 and x64.
+9) If you want to build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
 
-11) Note that the libraries and executables will depend on the libewf, libvmdk, libvhdi, and zlib DLL files (which are copied to the TSK build directories).
+10) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory.
+
+11) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables. The resulting libraries and executables on a 32-bit build will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate. A 64-bit build will put them into the win32/x64 folders. You can change the type of build using the pulldown in Visual Studio and switching between Win32 and x64.
+
+12) Note that the libraries and executables will depend on the libewf, libvmdk, libvhdi, and zlib DLL files (which are copied to the TSK build directories).
 
 
 

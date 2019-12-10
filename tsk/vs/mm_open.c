@@ -194,6 +194,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             return tsk_vs_sun_open(img_info, offset);
         case TSK_VS_TYPE_GPT:
             return tsk_vs_gpt_open(img_info, offset);
+        case TSK_VS_TYPE_APFS: // Not supported yet
         case TSK_VS_TYPE_UNSUPP:
         default:
             tsk_error_reset();

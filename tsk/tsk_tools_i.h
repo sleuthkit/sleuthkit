@@ -11,5 +11,6 @@
 #include "tsk/fs/tsk_fs.h"
 #include "tsk/hashdb/tsk_hashdb.h"
 #include "tsk/auto/tsk_auto.h"
+#include "tsk/pool/tsk_pool.h"
 
 #endif
