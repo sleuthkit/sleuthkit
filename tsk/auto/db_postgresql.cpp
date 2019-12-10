@@ -605,6 +605,10 @@ int TskDbPostgreSQL::initialize() {
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
+        ("CREATE TABLE tsk_pool_info (obj_id BIGSERIAL PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
+            "Error creating tsk_pool_info table: %s\n")
+        ||
+        attempt_exec
         ("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)",
             "Error creating ingest_module_types table: %s\n")
         ||
@@ -1010,7 +1014,32 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
 
 int
 TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
-    return TSK_ERR; // TODO TODO
+
+    char stmt[1024];
+
+    // Add pool
+    int64_t poolObjId;
+    if (addObject(TSK_DB_OBJECT_TYPE_POOL, parObjId, poolObjId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (%" PRId64 ",%d)", poolObjId, pool_info->ctype);
+
+    int retVal = attempt_exec(stmt,
+        "Error adding data to tsk_pool_info table: %s\n");
+    if (retVal) {
+        return retVal;
+    }
+
+    // Add volume system
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, objId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size);
+
+    return attempt_exec(stmt,
+        "Error adding data to tsk_vs_info table: %s\n");
 }
 
 /**
@@ -1022,7 +1051,18 @@ TskDbPostgreSQL::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     int64_t parObjId, int64_t& objId)
 {
 
-    return TSK_ERR; // TODO TODO
+    char stmt[1024];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
+        objId, (int)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
+        pool_vol->desc, pool_vol->flags);
+
+    return attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n");
 }
 
 
