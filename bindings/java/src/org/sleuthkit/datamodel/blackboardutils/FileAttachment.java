@@ -40,8 +40,8 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 public final class FileAttachment implements Attachment {
 
-	private final String filePathName;
-	private final long objId;
+	private final String path;
+	private final long objectID;
 
 	// Mobile phones often create mount points to refer to SD Cards or other 
 	// fixed/removable storage media.
@@ -73,18 +73,18 @@ public final class FileAttachment implements Attachment {
 	public FileAttachment(SleuthkitCase caseDb, Content dataSource, String pathName) throws TskCoreException {
 
 		//normalize the slashes.
-		this.filePathName = normalizePath(pathName);
+		this.path = normalizePath(pathName);
 		
 		
-		String fileName = filePathName.substring(filePathName.lastIndexOf('/') + 1);
+		String fileName = path.substring(path.lastIndexOf('/') + 1);
 		if (fileName.isEmpty()) {
-			throw new TskCoreException(String.format("No file name specified for attachment file: %s, on data source = %d", filePathName, dataSource.getId() ));
+			throw new TskCoreException(String.format("No file name specified for attachment file: %s, on data source = %d", path, dataSource.getId() ));
 		}
 
-		String parentPathSubString = (filePathName.lastIndexOf('/') < 0) ? "" : filePathName.substring(0, filePathName.lastIndexOf('/'));
+		String parentPathSubString = (path.lastIndexOf('/') < 0) ? "" : path.substring(0, path.lastIndexOf('/'));
 		
 		// find the attachment file 
-		objId = findAttachmentFile(caseDb, fileName, parentPathSubString, dataSource);
+		objectID = findAttachmentFile(caseDb, fileName, parentPathSubString, dataSource);
 	}
 
 	/**
@@ -97,8 +97,8 @@ public final class FileAttachment implements Attachment {
 	 * @param derivedFile Derived file for the attachment.
 	 */
 	public FileAttachment(DerivedFile derivedFile) {
-		objId = derivedFile.getId();
-		filePathName = derivedFile.getLocalAbsPath() + "/" + derivedFile.getName();
+		objectID = derivedFile.getId();
+		path = derivedFile.getLocalAbsPath() + "/" + derivedFile.getName();
 	}
 
 	/**
@@ -107,8 +107,8 @@ public final class FileAttachment implements Attachment {
 	 * @param abstractFile Abstract file for attachment..
 	 */
 	public FileAttachment(AbstractFile abstractFile) {
-		objId = abstractFile.getId();
-		filePathName = abstractFile.getParentPath() + "/" + abstractFile.getName();
+		objectID = abstractFile.getId();
+		path = abstractFile.getParentPath() + "/" + abstractFile.getName();
 	}
 
 	/**
@@ -117,17 +117,17 @@ public final class FileAttachment implements Attachment {
 	 * @return full path name.
 	 */
 	public String getPathName() {
-		return filePathName;
+		return path;
 	}
 
 	/**
-	 * Returns the objId of the attachment file, if the file was found in the
-	 * data source.
+	 * Returns the objectID of the attachment file, if the file was found in the
+     * data source.
 	 *
 	 * @return object id of the file. -1 if no matching file is found.
 	 */
 	public long getObjectId() {
-		return objId;
+		return objectID;
 	}
 
 	/**
@@ -245,11 +245,11 @@ public final class FileAttachment implements Attachment {
 	
 	@Override
 	public String getLocation() {
-		return this.filePathName;
+		return this.path;
 	}
 
 	@Override
 	public Long getObjId() {
-		return this.objId;
+		return this.objectID;
 	}
 }
