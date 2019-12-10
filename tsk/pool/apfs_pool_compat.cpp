@@ -267,8 +267,6 @@ apfs_img_close(TSK_IMG_INFO * img_info)
         return;
     }
 
-    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
-
     // Close the pool image
     tsk_deinit_lock(&(img_info->cache_lock));
     tsk_img_free(img_info);
@@ -297,7 +295,6 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
 
     IMG_POOL_INFO *img_pool_info;
     TSK_IMG_INFO *img_info;
-    TSK_OFF_T first_seg_size;
 
     if ((img_pool_info =
         (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO))) == NULL) {
