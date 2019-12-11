@@ -76,7 +76,7 @@ SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS)
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
-    tsk/img/tsk_img.h tsk/vs/tsk_vs.h \
+    tsk/img/tsk_img.h tsk/vs/tsk_vs.h tsk/img/pool.hpp \
     tsk/vs/tsk_bsd.h tsk/vs/tsk_dos.h tsk/vs/tsk_gpt.h \
     tsk/vs/tsk_mac.h tsk/vs/tsk_sun.h \
     tsk/fs/tsk_fs.h tsk/fs/tsk_ffs.h tsk/fs/tsk_ext2fs.h tsk/fs/tsk_fatfs.h \
