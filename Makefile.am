@@ -85,7 +85,8 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/fs/decmpfs.h tsk/fs/tsk_exfatfs.h tsk/fs/tsk_fatxxfs.h \
     tsk/hashdb/tsk_hashdb.h tsk/auto/tsk_auto.h \
     tsk/auto/tsk_is_image_supported.h tsk/auto/guid.h \
-    tsk/pool/tsk_pool.h tsk/pool/tsk_pool.hpp tsk/pool/tsk_apfs.h tsk/pool/tsk_apfs.hpp tsk/pool/apfs_pool_compat.hpp \
+    tsk/pool/tsk_pool.h tsk/pool/tsk_pool.hpp tsk/pool/tsk_apfs.h tsk/pool/tsk_apfs.hpp \
+	tsk/pool/pool_compat.hpp tsk/pool/apfs_pool_compat.hpp \
     tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
