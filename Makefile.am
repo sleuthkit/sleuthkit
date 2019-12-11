@@ -81,7 +81,7 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/vs/tsk_mac.h tsk/vs/tsk_sun.h \
     tsk/fs/tsk_fs.h tsk/fs/tsk_ffs.h tsk/fs/tsk_ext2fs.h tsk/fs/tsk_fatfs.h \
     tsk/fs/tsk_ntfs.h tsk/fs/tsk_iso9660.h tsk/fs/tsk_hfs.h tsk/fs/tsk_yaffs.h \
-    tsk/fs/tsk_apfs.h tsk/fs/tsk_apfs.hpp tsk/fs/apfs_fs.h tsk/fs/apfs_fs.hpp \
+    tsk/fs/tsk_apfs.h tsk/fs/tsk_apfs.hpp tsk/fs/apfs_fs.h tsk/fs/apfs_fs.hpp tsk/fs/apfs_compat.hpp \
     tsk/fs/decmpfs.h tsk/fs/tsk_exfatfs.h tsk/fs/tsk_fatxxfs.h \
     tsk/hashdb/tsk_hashdb.h tsk/auto/tsk_auto.h \
     tsk/auto/tsk_is_image_supported.h tsk/auto/guid.h \
