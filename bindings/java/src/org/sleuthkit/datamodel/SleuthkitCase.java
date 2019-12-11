@@ -1789,7 +1789,6 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id) ");
 			statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
 			statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
-			statement.execute("CREATE INDEX events_time  ON tsk_events(time) ");
 			return new CaseDbSchemaVersionNumber(8, 2);
 
 		} finally {
