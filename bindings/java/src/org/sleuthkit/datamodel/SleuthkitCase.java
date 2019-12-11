@@ -1789,7 +1789,6 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id) ");
 			statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
 			statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
-			statement.execute("CREATE INDEX events_time  ON tsk_events(time) ");
 			return new CaseDbSchemaVersionNumber(8, 2);
 
 		} finally {
@@ -1917,8 +1916,13 @@ public class SleuthkitCase {
 	
 	/**
 	 * Updates a schema version 8.3 database to a schema version 8.4 database.
-	 * This is a bug fix update for a misnamed column in tsk_event_descriptions in
+	 * 
+	 * This includes a bug fix update for a misnamed column in tsk_event_descriptions in
 	 * the previous update code.
+	 * 
+	 * Note that 8.4 also introduced cascading deletes on many of the database tables. We do not need to 
+	 * add these in the upgrade code because data sources in cases that were originally created with 8.3 
+	 * or earlier can not be deleted.
 	 *
 	 * @param schemaVersion The current schema version of the database.
 	 * @param connection    A connection to the case database.
@@ -2032,13 +2036,20 @@ public class SleuthkitCase {
 					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
 			}
 			
+			// create pool info table
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+			} else {
+				statement.execute("CREATE TABLE tsk_pool_info (obj_id BIGSERIAL PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+			}
+			
 			return new CaseDbSchemaVersionNumber(8, 4);
 		} finally {
 			closeResultSet(results);
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}		
-	}		
+	}
 
 	/**
 	 * Extract the extension from a file name.

@@ -1672,7 +1672,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
 /* needs to be predefined for proc_attrseq */
 static TSK_RETVAL_ENUM ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
-    const TSK_FS_ATTR *);
+    const TSK_FS_ATTR *, TSK_STACK *);
 
 
 /* This structure is used when processing attrlist attributes.
@@ -1705,12 +1705,14 @@ typedef struct {
  * @param a_attrinum MFT entry address that the attribute sequence came from (diff from fs_file for attribute lists)
  * @param a_attr_map List that maps to new IDs that were assigned by processing
  * the attribute list attribute (if it exists) or NULL if there is no attrlist.
+ * @param a_seen_inum_list List of inums that have been previously processed based on attribute lists. 
+ *    Can be NULL when this is called for the first time. Should be non-NULL when this is called recursively by proc_attrlist.
  * @returns Error code
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrseq(NTFS_INFO * ntfs,
     TSK_FS_FILE * fs_file, const ntfs_attr * a_attrseq, size_t len,
-    TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP * a_attr_map)
+    TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP * a_attr_map, TSK_STACK * a_seen_inum_list)
 {
     const ntfs_attr *attr;
     const TSK_FS_ATTR *fs_attr_attrl = NULL;
@@ -2343,7 +2345,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
      */
     if (fs_attr_attrl) {
 		TSK_RETVAL_ENUM retval;
-        if ((retval = ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl)) != TSK_OK) {
+        if (a_seen_inum_list != NULL) {
+            tsk_stack_push(a_seen_inum_list, a_attrinum);
+        }
+        if ((retval = ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl, a_seen_inum_list)) != TSK_OK) {
             return retval;
         }
     }
@@ -2368,12 +2373,14 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
  * @param ntfs File system being analyzed
  * @param fs_file Main file that will have attributes added to it.
  * @param fs_attr_attrlist Attrlist attribute that needs to be parsed.
+ * @param a_seen_inum_list List of MFT entries (inums) previously 
+ * processed for this file or NULL.
  *
  * @returns status of error, corrupt, or OK
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrlist(NTFS_INFO * ntfs,
-    TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr_attrlist)
+    TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr_attrlist, TSK_STACK * processed_inum_list)
 {
     ntfs_attrlist *list;
     char *buf;
@@ -2385,6 +2392,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     uint16_t mftToDoCnt = 0;
     NTFS_ATTRLIST_MAP *map;
     uint16_t nextid = 0;
+    TSK_STACK * mftSeenList = NULL;
     int a;
 
     if (tsk_verbose)
@@ -2600,11 +2608,37 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         /* Process the attribute seq for this MFT entry and add them
          * to the TSK_FS_META structure
          */
+        if (processed_inum_list != NULL && tsk_stack_find(processed_inum_list, mftToDo[a])) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+            tsk_error_set_errstr("ntfs_proc_attrlist: MFT %" PRIuINUM
+                " seen in more than one attribute list for %"
+                PRIuINUM
+                " (base file ref = %" PRIuINUM ")",
+                mftToDo[a],
+                fs_file->meta->addr,
+                tsk_getu48(fs->endian, mft->base_ref));
+            free(mft);
+            free(map);
+            free(buf);
+            return TSK_COR;
+        }
+
+        if (processed_inum_list == NULL) {
+            /*
+             * Create a stack to keep track of inums already seen.
+             * The local mftSeenList variable is used to keep track
+             * of which iteration created the stack so that it can
+             * be correctly freed later.
+             */
+            processed_inum_list = mftSeenList = tsk_stack_create();
+        }
+
         if ((retval =
                 ntfs_proc_attrseq(ntfs, fs_file, (ntfs_attr *) ((uintptr_t)
                         mft + tsk_getu16(fs->endian, mft->attr_off)),
                     ntfs->mft_rsize_b - tsk_getu16(fs->endian,
-                        mft->attr_off), mftToDo[a], map)) != TSK_OK) {
+                        mft->attr_off), mftToDo[a], map, processed_inum_list)) != TSK_OK) {
 
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -2616,6 +2650,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
+            if (mftSeenList != NULL)
+                tsk_stack_free(mftSeenList);
             return TSK_ERR;
         }
     }
@@ -2623,6 +2659,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     free(mft);
     free(map);
     free(buf);
+    if (mftSeenList != NULL)
+        tsk_stack_free(mftSeenList);
     return TSK_OK;
 }
 
@@ -2739,7 +2777,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     if ((retval = ntfs_proc_attrseq(ntfs, a_fs_file, attr,
                 ntfs->mft_rsize_b - tsk_getu16(fs->endian,
                     mft->attr_off), a_fs_file->meta->addr,
-                NULL)) != TSK_OK) {
+                NULL, NULL)) != TSK_OK) {
         return retval;
     }
 
