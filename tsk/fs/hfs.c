@@ -346,7 +346,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             TSK_FS_ATTR_TYPE_DEFAULT);
         if (!hfs->extents_attr) {
             tsk_error_errstr2_concat
-                (" - Default Attribute not found in Extents File");
+                (" - Default Attribute not found in Extents  File");
             return 1;
         }
 
