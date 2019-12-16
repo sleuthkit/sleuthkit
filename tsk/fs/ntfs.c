@@ -1762,8 +1762,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             break;
         }
 
-        if (attr->name_off > ((uintptr_t)attr + tsk_getu32(fs->endian,
-            attr->len))) {
+        // Ensure that the name offset doesn't refer to a location beyond
+        // the attribute.
+        if (((uintptr_t)attr + tsk_getu16(fs->endian, attr->name_off)) > 
+            ((uintptr_t)attr + tsk_getu32(fs->endian, attr->len))) {
             break;
         }
 
