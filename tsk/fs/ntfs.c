@@ -1762,6 +1762,11 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             break;
         }
 
+        if (attr->name_off > ((uintptr_t)attr + tsk_getu32(fs->endian,
+            attr->len))) {
+            break;
+        }
+
         /* Get the type of this attribute */
         type = tsk_getu32(fs->endian, attr->type);
         id = tsk_getu16(fs->endian, attr->id);
