@@ -1227,7 +1227,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Stores metadata about an object.
 		 */
-		TSK_METADATA(56, "TSK_METADATA", //NON-NLS
+		TSK_METADATA(57, "TSK_METADATA", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskMetadata.text"));
 
 		private final String label;
