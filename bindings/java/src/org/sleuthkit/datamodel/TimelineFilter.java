@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
+import java.util.ArrayList;
+import java.util.Arrays;
 import static java.util.Arrays.asList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,26 +32,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.joining;
 import java.util.stream.Stream;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.Property;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 
 /**
- * Interface for timeline event filters. Filters are given to the
- * TimelineManager who interpretes them appropriately for all db queries.
+ * An interface for timeline events filters used to selectively query the
+ * timeline tables in the case database for timeline events via the APIs of the
+ * timeline manager.
  */
 public abstract class TimelineFilter {
 
 	/**
-	 * get the display name of this filter
+	 * Gets the display name for this filter.
 	 *
-	 * @return a name for this filter to show in the UI
+	 * @return The display name.
 	 */
 	public abstract String getDisplayName();
 
@@ -64,6 +61,11 @@ public abstract class TimelineFilter {
 	 */
 	abstract String getSQLWhere(TimelineManager manager);
 
+	/**
+	 * Makes a copy of this filter.
+	 *
+	 * @return A copy of this filter.
+	 */
 	public abstract TimelineFilter copyOf();
 
 	@SuppressWarnings("unchecked")
@@ -73,21 +75,28 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * Intersection (And) filter
+	 * A timeline events filter that ANDs together a collection of timeline
+	 * event filters.
 	 *
-	 * @param <S> The type of sub Filters in this IntersectionFilter.
+	 * @param <SubFilterType> The type of the filters to be AND'ed together.
 	 */
-	public static class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
+	public static class IntersectionFilter<SubFilterType extends TimelineFilter> extends CompoundFilter<SubFilterType> {
 
+		/**
+		 * Constructs timeline events filter that ANDs together a collection of
+		 * timeline events filters.
+		 *
+		 * @param subFilters The collection of filters to be AND'ed together.
+		 */
 		@VisibleForTesting
-		public IntersectionFilter(List<S> subFilters) {
+		public IntersectionFilter(List<SubFilterType> subFilters) {
 			super(subFilters);
 		}
 
 		@Override
-		public IntersectionFilter<S> copyOf() {
+		public IntersectionFilter<SubFilterType> copyOf() {
 			@SuppressWarnings("unchecked")
-			List<S> subfilters = Lists.transform(getSubFilters(), f -> (S) f.copyOf()); //make copies of all the subfilters.
+			List<SubFilterType> subfilters = Lists.transform(getSubFilters(), f -> (SubFilterType) f.copyOf()); //make copies of all the subfilters.
 			return new IntersectionFilter<>(subfilters);
 		}
 
@@ -109,68 +118,83 @@ public abstract class TimelineFilter {
 					.collect(Collectors.joining(" AND "));
 			return join.isEmpty() ? trueLiteral : "(" + join + ")";
 		}
+
 	}
 
 	/**
-	 * Event Type Filter. An instance of EventTypeFilter is usually a tree that
-	 * parallels the event type hierarchy with one filter/node for each event
-	 * type.
+	 * A timeline events filter used to query for a subset of the event types in
+	 * the event types hierarchy. The filter is built via a recursive descent
+	 * from any given type in the hierarchy, effectively creating a filter that
+	 * accepts the events in a branch of the event types hierarchy.
 	 */
 	public static final class EventTypeFilter extends UnionFilter<EventTypeFilter> {
 
-		/**
-		 * the event type this filter passes
-		 */
-		private final TimelineEventType eventType;
+		private final TimelineEventType rootEventType;
 
 		/**
-		 * private constructor that enables non recursive/tree construction of
-		 * the filter hierarchy for use in EventTypeFilter.copyOf().
+		 * Constucts a timeline events filter used to query for a subset of the
+		 * event types in the event types hierarchy. The filter is optionally
+		 * built via a recursive descent from any given type in the hierarchy,
+		 * effectively creating a filter that accepts the events in a branch of
+		 * the event types hierarchy. Thsi constructor exists solely for the use
+		 * of this filter's implementation of the copyOf API.
 		 *
-		 * @param eventType the event type this filter passes
-		 * @param recursive true if subfilters should be added for each subtype.
-		 *                  False if no subfilters should be added.
+		 * @param rootEventType The "root" of the event hierarchy for the
+		 *                      purposes of this filter.
+		 * @param recursive     Whether or not to do a recursive descent of the
+		 *                      event types hierarchy from the root event type.
 		 */
-		private EventTypeFilter(TimelineEventType eventType, boolean recursive) {
-			super(FXCollections.observableArrayList());
-			this.eventType = eventType;
+		private EventTypeFilter(TimelineEventType rootEventType, boolean recursive) {
+			super(new ArrayList<>());
+			this.rootEventType = rootEventType;
 			if (recursive) {
 				// add subfilters for each subtype
-				for (TimelineEventType subType : eventType.getSubTypes()) {
+				for (TimelineEventType subType : rootEventType.getChildren()) {
 					addSubFilter(new EventTypeFilter(subType));
 				}
 			}
 		}
 
 		/**
-		 * public constructor. creates a subfilter for each subtype of the given
-		 * event type
+		 * Constructs a timeline events filter used to query for a subset of the
+		 * event types in the event types hierarchy. The subset of event types
+		 * that pass the filter is determined by a recursive descent from any
+		 * given type in the hierarchy, effectively creating a filter that
+		 * accepts the events in a branch of the event types hierarchy.
 		 *
-		 * @param eventType the event type this filter will pass
+		 * @param rootEventType The "root" of the event hierarchy for the
+		 *                      purposes of this filter.
 		 */
-		public EventTypeFilter(TimelineEventType eventType) {
-			this(eventType, true);
+		public EventTypeFilter(TimelineEventType rootEventType) {
+			this(rootEventType, true);
 		}
 
-		public TimelineEventType getEventType() {
-			return eventType;
+		/**
+		 * Gets the "root" of the branch of the event types hierarchy accepted
+		 * by this filter.
+		 *
+		 * @return The "root" event type.
+		 */
+		public TimelineEventType getRootEventType() {
+			return rootEventType;
 		}
 
 		@Override
 		public String getDisplayName() {
-			return (TimelineEventType.ROOT_EVENT_TYPE.equals(eventType)) ? BundleProvider.getBundle().getString("TypeFilter.displayName.text") : eventType.getDisplayName();
+			return (TimelineEventType.ROOT_EVENT_TYPE.equals(rootEventType)) ? BundleProvider.getBundle().getString("TypeFilter.displayName.text") : rootEventType.getDisplayName();
 		}
 
 		@Override
 		public EventTypeFilter copyOf() {
 			//make a nonrecursive copy of this filter, and then copy subfilters
-			return copySubFilters(this, new EventTypeFilter(eventType, false));
+			// RC (10/1/19): Why?
+			return copySubFilters(this, new EventTypeFilter(rootEventType, false));
 		}
 
 		@Override
 		public int hashCode() {
 			int hash = 7;
-			hash = 17 * hash + Objects.hashCode(this.eventType);
+			hash = 17 * hash + Objects.hashCode(this.rootEventType);
 			return hash;
 		}
 
@@ -186,7 +210,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final EventTypeFilter other = (EventTypeFilter) obj;
-			if (notEqual(this.eventType, other.eventType)) {
+			if (notEqual(this.rootEventType, other.getRootEventType())) {
 				return false;
 			}
 			return Objects.equals(this.getSubFilters(), other.getSubFilters());
@@ -199,7 +223,7 @@ public abstract class TimelineFilter {
 
 		private Stream<String> getSubTypeIDs() {
 			if (this.getSubFilters().isEmpty()) {
-				return Stream.of(String.valueOf(getEventType().getTypeID()));
+				return Stream.of(String.valueOf(getRootEventType().getTypeID()));
 			} else {
 				return this.getSubFilters().stream().flatMap(EventTypeFilter::getSubTypeIDs);
 			}
@@ -207,49 +231,60 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String toString() {
-			return "EventTypeFilter{" + "eventType=" + eventType + ", subfilters=" + getSubFilters() + '}';
+			return "EventTypeFilter{" + "rootEventType=" + rootEventType + ", subfilters=" + getSubFilters() + '}';
 		}
 
 	}
 
 	/**
-	 * Filter to show only events that are associated with objects that have 
-	 * file or result tags.
+	 * A timeline events filter used to query for events where the direct source
+	 * (file or artifact) of the events has either been tagged or not tagged.
 	 */
 	public static final class TagsFilter extends TimelineFilter {
-		private final BooleanProperty booleanProperty = new SimpleBooleanProperty();
+
+		private boolean eventSourcesAreTagged;
 
 		/**
-		 * Filter constructor.
+		 * Constructs a timeline events filter used to query for a events where
+		 * the direct source (file or artifact) of the events has not been
+		 * tagged.
 		 */
-		public TagsFilter() {}
-
-		/**
-		 * Filter constructor and set initial state.
-		 * 
-		 * @param isTagged Boolean initial state for the filter.
-		 */
-		public TagsFilter(boolean isTagged) {
-			booleanProperty.set(isTagged);
+		public TagsFilter() {
 		}
 
 		/**
-		 * Set the state of the filter.
-		 * 
-		 * @param isTagged True to filter events that are associated tagged items
-		 * or results
+		 * Constructs a timeline events filter used to query for events where
+		 * the direct source (file or artifact) of the events has either been
+		 * tagged or not tagged.
+		 *
+		 * @param eventSourcesAreTagged Whether the direct sources of the events
+		 *                              need to be tagged or not tagged to be
+		 *                              accepted by this filter.
 		 */
-		public synchronized void setTagged(boolean isTagged) {
-			booleanProperty.set(isTagged);
+		public TagsFilter(boolean eventSourcesAreTagged) {
+			this.eventSourcesAreTagged = eventSourcesAreTagged;
 		}
 
 		/**
-		 * Returns the current state of this filter.
-		 * 
-		 * @return True to filter by objects that are tagged.
+		 * Sets whether the direct sources of the events have to be tagged or
+		 * not tagged to be accepted by this filter.
+		 *
+		 * @param eventSourcesAreTagged Whether the direct sources of the events
+		 *                              have to be tagged or not tagged to be
+		 *                              accepted by this filter.
 		 */
-		public synchronized boolean isTagged() {
-			return booleanProperty.get();
+		public synchronized void setEventSourcesAreTagged(boolean eventSourcesAreTagged) {
+			this.eventSourcesAreTagged = eventSourcesAreTagged;
+		}
+
+		/**
+		 * Indicates whether the direct sources of the events have to be tagged
+		 * or not tagged.
+		 *
+		 * @return True or false.
+		 */
+		public synchronized boolean getEventSourceAreTagged() {
+			return eventSourcesAreTagged;
 		}
 
 		@Override
@@ -259,7 +294,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public TagsFilter copyOf() {
-			return new TagsFilter(booleanProperty.get());
+			return new TagsFilter(eventSourcesAreTagged);
 		}
 
 		@Override
@@ -268,42 +303,44 @@ public abstract class TimelineFilter {
 				return false;
 			}
 
-			return ((TagsFilter)obj).isTagged() == booleanProperty.get();
+			return ((TagsFilter) obj).getEventSourceAreTagged() == getEventSourceAreTagged();
 		}
 
 		@Override
 		public int hashCode() {
 			int hash = 7;
-			hash = 67 * hash + Objects.hashCode(this.booleanProperty);
+			hash = 67 * hash + Objects.hashCode(this.eventSourcesAreTagged);
 			return hash;
 		}
-		
+
 		@Override
 		String getSQLWhere(TimelineManager manager) {
-			String whereStr = "";
-			if	(booleanProperty.get()) {
+			String whereStr;
+			if (eventSourcesAreTagged) {
 				whereStr = "tagged = 1";
 			} else {
 				whereStr = "tagged = 0";
 			}
-			
+
 			return whereStr;
 		}
+
 	}
 
 	/**
-	 * Union(or) filter
+	 * A timeline events filter that ORs together a collection of timeline
+	 * events filters.
 	 *
-	 * @param <SubFilterType> The type of the subfilters.
+	 * @param <SubFilterType> The type of the filters to be OR'ed together.
 	 */
 	public static abstract class UnionFilter<SubFilterType extends TimelineFilter> extends TimelineFilter.CompoundFilter<SubFilterType> {
 
-		UnionFilter(ObservableList<SubFilterType> subFilters) {
+		UnionFilter(List<SubFilterType> subFilters) {
 			super(subFilters);
 		}
 
 		UnionFilter() {
-			super(FXCollections.<SubFilterType>observableArrayList());
+			super(new ArrayList<SubFilterType>());
 		}
 
 		@Override
@@ -322,23 +359,43 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * Filter for text matching
+	 * A timeline events filter used to query for events that have a particular
+	 * substring in their short, medium, or full descriptions.
 	 */
 	public static final class TextFilter extends TimelineFilter {
 
-		private final SimpleStringProperty textProperty = new SimpleStringProperty();
+		private String descriptionSubstring;
 
+		/**
+		 * Constructs a timeline events filter used to query for events that
+		 * have the empty string as a substring in their short, medium, or full
+		 * descriptions.
+		 */
 		public TextFilter() {
 			this("");
 		}
 
-		public TextFilter(String text) {
+		/**
+		 * Constructs a timeline events filter used to query for events that
+		 * have a given substring in their short, medium, or full descriptions.
+		 *
+		 * @param descriptionSubstring The substring that must be present in one
+		 *                             or more of the descriptions of each event
+		 *                             that passes the filter.
+		 */
+		public TextFilter(String descriptionSubstring) {
 			super();
-			this.textProperty.set(text.trim());
+			this.descriptionSubstring = descriptionSubstring.trim();
 		}
 
-		public synchronized void setText(String text) {
-			this.textProperty.set(text.trim());
+		/**
+		 * Sets the substring that must be present in one or more of the
+		 * descriptions of each event that passes the filter.
+		 *
+		 * @param descriptionSubstring The substring.
+		 */
+		public synchronized void setDescriptionSubstring(String descriptionSubstring) {
+			this.descriptionSubstring = descriptionSubstring.trim();
 		}
 
 		@Override
@@ -346,17 +403,19 @@ public abstract class TimelineFilter {
 			return BundleProvider.getBundle().getString("TextFilter.displayName.text");
 		}
 
-		public synchronized String getText() {
-			return textProperty.getValue();
-		}
-
-		public Property<String> textProperty() {
-			return textProperty;
+		/**
+		 * Gets the substring that must be present in one or more of the
+		 * descriptions of each event that passes the filter.
+		 *
+		 * @return The required substring.
+		 */
+		public synchronized String getDescriptionSubstring() {
+			return descriptionSubstring;
 		}
 
 		@Override
 		public synchronized TextFilter copyOf() {
-			return new TextFilter(getText());
+			return new TextFilter(getDescriptionSubstring());
 		}
 
 		@Override
@@ -368,22 +427,22 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final TextFilter other = (TextFilter) obj;
-			return Objects.equals(getText(), other.getText());
+			return Objects.equals(getDescriptionSubstring(), other.getDescriptionSubstring());
 		}
 
 		@Override
 		public int hashCode() {
 			int hash = 5;
-			hash = 29 * hash + Objects.hashCode(this.textProperty.get());
+			hash = 29 * hash + Objects.hashCode(this.descriptionSubstring);
 			return hash;
 		}
 
 		@Override
 		String getSQLWhere(TimelineManager manager) {
-			if (StringUtils.isNotBlank(this.getText())) {
-				return "((med_description like '%" + escapeSingleQuotes(this.getText()) + "%')" //NON-NLS
-						+ " or (full_description like '%" + escapeSingleQuotes(this.getText()) + "%')" //NON-NLS
-						+ " or (short_description like '%" + escapeSingleQuotes(this.getText()) + "%'))"; //NON-NLS
+			if (StringUtils.isNotBlank(this.getDescriptionSubstring())) {
+				return "((med_description like '%" + escapeSingleQuotes(this.getDescriptionSubstring()) + "%')" //NON-NLS
+						+ " or (full_description like '%" + escapeSingleQuotes(this.getDescriptionSubstring()) + "%')" //NON-NLS
+						+ " or (short_description like '%" + escapeSingleQuotes(this.getDescriptionSubstring()) + "%'))"; //NON-NLS
 			} else {
 				return manager.getSQLWhere(null);
 			}
@@ -391,109 +450,174 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String toString() {
-			return "TextFilter{" + "textProperty=" + textProperty.getValue() + '}';
+			return "TextFilter{" + "textProperty=" + descriptionSubstring + '}';
 		}
 
 	}
 
 	/**
-	 * An implementation of IntersectionFilter designed to be used as the root
-	 * of a filter tree. provides named access to specific subfilters.
+	 * A timeline events filter that ANDs together instances of a variety of
+	 * event filter types to create what is in effect a "tree" of filters.
 	 */
 	public static final class RootFilter extends IntersectionFilter<TimelineFilter> {
 
-		private final HideKnownFilter knownFilter;
+		private final HideKnownFilter knownFilesFilter;
 		private final TagsFilter tagsFilter;
-		private final HashHitsFilter hashFilter;
-		private final TextFilter textFilter;
-		private final EventTypeFilter typeFilter;
+		private final HashHitsFilter hashSetHitsFilter;
+		private final TextFilter descriptionSubstringFilter;
+		private final EventTypeFilter eventTypesFilter;
 		private final DataSourcesFilter dataSourcesFilter;
 		private final FileTypesFilter fileTypesFilter;
-		private final Set<TimelineFilter> namedSubFilters = new HashSet<>();
+		private final Set<TimelineFilter> additionalFilters = new HashSet<>();
 
+		/**
+		 * Get the data sources filter of this filter.
+		 *
+		 * @return The filter.
+		 */
 		public DataSourcesFilter getDataSourcesFilter() {
 			return dataSourcesFilter;
 		}
 
+		/**
+		 * Gets the tagged events sources filter of this filter.
+		 *
+		 * @return The filter.
+		 */
 		public TagsFilter getTagsFilter() {
 			return tagsFilter;
 		}
 
+		/**
+		 * Gets the source file hash set hits filter of this filter.
+		 *
+		 * @return The filter.
+		 */
 		public HashHitsFilter getHashHitsFilter() {
-			return hashFilter;
+			return hashSetHitsFilter;
 		}
 
+		/**
+		 * Gets the event types filter of this filter.
+		 *
+		 * @return The filter.
+		 */
 		public EventTypeFilter getEventTypeFilter() {
-			return typeFilter;
+			return eventTypesFilter;
 		}
 
+		/**
+		 * Gets the exclude known source files filter of this filter.
+		 *
+		 * @return The filter.
+		 */
 		public HideKnownFilter getKnownFilter() {
-			return knownFilter;
+			return knownFilesFilter;
 		}
 
+		/**
+		 * Gets the description substring filter of this filter.
+		 *
+		 * @return The filter.
+		 */
 		public TextFilter getTextFilter() {
-			return textFilter;
+			return descriptionSubstringFilter;
 		}
 
+		/**
+		 * Gets the source file types filter of this filter.
+		 *
+		 * @return The filter.
+		 */
 		public FileTypesFilter getFileTypesFilter() {
 			return fileTypesFilter;
 		}
 
-		public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter,
-				TextFilter textFilter, EventTypeFilter typeFilter, DataSourcesFilter dataSourcesFilter,
-				FileTypesFilter fileTypesFilter, Collection<TimelineFilter> annonymousSubFilters) {
-			super(FXCollections.observableArrayList(textFilter, knownFilter, tagsFilter, dataSourcesFilter, hashFilter, fileTypesFilter, typeFilter));
+		/**
+		 * Constructs a timeline events filter that ANDs together instances of a
+		 * variety of event filter types to create what is in effect a "tree" of
+		 * filters.
+		 *
+		 * @param knownFilesFilter           A filter that excludes events with
+		 *                                   knwon file event sources.
+		 * @param tagsFilter                 A filter that exludes or includes
+		 *                                   events with tagged event sources.
+		 * @param hashSetHitsFilter          A filter that excludes or includes
+		 *                                   events with event sources that have
+		 *                                   hash set hits.
+		 * @param descriptionSubstringFilter A filter that requires a substring
+		 *                                   to be present in the event
+		 *                                   description.
+		 * @param eventTypesFilter           A filter that accepts events of
+		 *                                   specified events types.
+		 * @param dataSourcesFilter          A filter that accepts events
+		 *                                   associated with a specified subset
+		 *                                   of data sources.
+		 * @param fileTypesFilter            A filter that includes or excludes
+		 *                                   events with source files of
+		 *                                   particular media types.
+		 * @param additionalFilters          Additional filters.
+		 */
+		public RootFilter(
+				HideKnownFilter knownFilesFilter,
+				TagsFilter tagsFilter,
+				HashHitsFilter hashSetHitsFilter,
+				TextFilter descriptionSubstringFilter,
+				EventTypeFilter eventTypesFilter,
+				DataSourcesFilter dataSourcesFilter,
+				FileTypesFilter fileTypesFilter,
+				Collection<TimelineFilter> additionalFilters) {
 
+			super(Arrays.asList(descriptionSubstringFilter, knownFilesFilter, tagsFilter, dataSourcesFilter, hashSetHitsFilter, fileTypesFilter, eventTypesFilter));
 			getSubFilters().removeIf(Objects::isNull);
-			this.knownFilter = knownFilter;
+			this.knownFilesFilter = knownFilesFilter;
 			this.tagsFilter = tagsFilter;
-			this.hashFilter = hashFilter;
-			this.textFilter = textFilter;
-			this.typeFilter = typeFilter;
+			this.hashSetHitsFilter = hashSetHitsFilter;
+			this.descriptionSubstringFilter = descriptionSubstringFilter;
+			this.eventTypesFilter = eventTypesFilter;
 			this.dataSourcesFilter = dataSourcesFilter;
 			this.fileTypesFilter = fileTypesFilter;
-
-			namedSubFilters.addAll(asList(textFilter, knownFilter, tagsFilter, dataSourcesFilter, hashFilter, fileTypesFilter, typeFilter));
-			namedSubFilters.removeIf(Objects::isNull);
-			annonymousSubFilters.stream().
+			this.additionalFilters.addAll(asList(descriptionSubstringFilter, knownFilesFilter, tagsFilter, dataSourcesFilter, hashSetHitsFilter, fileTypesFilter, eventTypesFilter));
+			this.additionalFilters.removeIf(Objects::isNull);
+			additionalFilters.stream().
 					filter(Objects::nonNull).
-					filter(this::isNotNamedSubFilter).
+					filter(this::hasAdditionalFilter).
 					map(TimelineFilter::copyOf).
 					forEach(anonymousFilter -> getSubFilters().add(anonymousFilter));
 		}
 
 		@Override
 		public RootFilter copyOf() {
-			Set<TimelineFilter> annonymousSubFilters = getSubFilters().stream()
-					.filter(this::isNotNamedSubFilter)
+			Set<TimelineFilter> subFilters = getSubFilters().stream()
+					.filter(this::hasAdditionalFilter)
 					.map(TimelineFilter::copyOf)
 					.collect(Collectors.toSet());
-			return new RootFilter(knownFilter.copyOf(), tagsFilter.copyOf(),
-					hashFilter.copyOf(), textFilter.copyOf(), typeFilter.copyOf(),
-					dataSourcesFilter.copyOf(), fileTypesFilter.copyOf(), annonymousSubFilters);
+			return new RootFilter(knownFilesFilter.copyOf(), tagsFilter.copyOf(),
+					hashSetHitsFilter.copyOf(), descriptionSubstringFilter.copyOf(), eventTypesFilter.copyOf(),
+					dataSourcesFilter.copyOf(), fileTypesFilter.copyOf(), subFilters);
 
 		}
 
-		private boolean isNotNamedSubFilter(TimelineFilter subFilter) {
-			return !(namedSubFilters.contains(subFilter));
+		private boolean hasAdditionalFilter(TimelineFilter subFilter) {
+			return !(additionalFilters.contains(subFilter));
 		}
 
 		@Override
 		public String toString() {
-			return "RootFilter{" + "knownFilter=" + knownFilter + ", tagsFilter=" + tagsFilter + ", hashFilter=" + hashFilter + ", textFilter=" + textFilter + ", typeFilter=" + typeFilter + ", dataSourcesFilter=" + dataSourcesFilter + ", fileTypesFilter=" + fileTypesFilter + ", namedSubFilters=" + namedSubFilters + '}';
+			return "RootFilter{" + "knownFilter=" + knownFilesFilter + ", tagsFilter=" + tagsFilter + ", hashFilter=" + hashSetHitsFilter + ", textFilter=" + descriptionSubstringFilter + ", typeFilter=" + eventTypesFilter + ", dataSourcesFilter=" + dataSourcesFilter + ", fileTypesFilter=" + fileTypesFilter + ", namedSubFilters=" + additionalFilters + '}';
 		}
 
 		@Override
 		public int hashCode() {
 			int hash = 7;
-			hash = 17 * hash + Objects.hashCode(this.knownFilter);
+			hash = 17 * hash + Objects.hashCode(this.knownFilesFilter);
 			hash = 17 * hash + Objects.hashCode(this.tagsFilter);
-			hash = 17 * hash + Objects.hashCode(this.hashFilter);
-			hash = 17 * hash + Objects.hashCode(this.textFilter);
-			hash = 17 * hash + Objects.hashCode(this.typeFilter);
+			hash = 17 * hash + Objects.hashCode(this.hashSetHitsFilter);
+			hash = 17 * hash + Objects.hashCode(this.descriptionSubstringFilter);
+			hash = 17 * hash + Objects.hashCode(this.eventTypesFilter);
 			hash = 17 * hash + Objects.hashCode(this.dataSourcesFilter);
 			hash = 17 * hash + Objects.hashCode(this.fileTypesFilter);
-			hash = 17 * hash + Objects.hashCode(this.namedSubFilters);
+			hash = 17 * hash + Objects.hashCode(this.additionalFilters);
 			return hash;
 		}
 
@@ -509,45 +633,42 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final RootFilter other = (RootFilter) obj;
-			if (notEqual(this.knownFilter, other.knownFilter)) {
+			if (notEqual(this.knownFilesFilter, other.getKnownFilter())) {
 				return false;
 			}
-			if (notEqual(this.tagsFilter, other.tagsFilter)) {
+			if (notEqual(this.tagsFilter, other.getTagsFilter())) {
 				return false;
 			}
-			if (notEqual(this.hashFilter, other.hashFilter)) {
+			if (notEqual(this.hashSetHitsFilter, other.getHashHitsFilter())) {
 				return false;
 			}
-			if (notEqual(this.textFilter, other.textFilter)) {
+			if (notEqual(this.descriptionSubstringFilter, other.getTextFilter())) {
 				return false;
 			}
-			if (notEqual(this.typeFilter, other.typeFilter)) {
+			if (notEqual(this.eventTypesFilter, other.getEventTypeFilter())) {
 				return false;
 			}
-			if (notEqual(this.dataSourcesFilter, other.dataSourcesFilter)) {
+			if (notEqual(this.dataSourcesFilter, other.getDataSourcesFilter())) {
 				return false;
 			}
 
-			if (notEqual(this.fileTypesFilter, other.fileTypesFilter)) {
+			if (notEqual(this.fileTypesFilter, other.getFileTypesFilter())) {
 				return false;
 			}
-			return Objects.equals(this.namedSubFilters, other.namedSubFilters);
+			return Objects.equals(this.additionalFilters, other.getSubFilters());
 		}
 
 	}
 
 	/**
-	 * Filter to hide known files
+	 * A timeline events filter used to filter out events that have a direct or
+	 * indirect event source that is a known file.
 	 */
 	public static final class HideKnownFilter extends TimelineFilter {
 
 		@Override
 		public String getDisplayName() {
 			return BundleProvider.getBundle().getString("hideKnownFilter.displayName.text");
-		}
-
-		public HideKnownFilter() {
-			super();
 		}
 
 		@Override
@@ -577,11 +698,13 @@ public abstract class TimelineFilter {
 		public String toString() {
 			return "HideKnownFilter{" + '}';
 		}
+
 	}
 
 	/**
-	 * A Filter with a collection of sub-filters. Concrete implementations can
-	 * decide how to combine the sub-filters.
+	 * A timeline events filter composed of a collection of event filters.
+	 * Concrete implementations can decide how to combine the filters in the
+	 * collection.
 	 *
 	 * @param <SubFilterType> The type of the subfilters.
 	 */
@@ -593,27 +716,35 @@ public abstract class TimelineFilter {
 			}
 		}
 
-		/**
-		 * The list of sub-filters that make up this filter
-		 */
-		private final ObservableList<SubFilterType> subFilters = FXCollections.observableArrayList();
+		private final List<SubFilterType> subFilters = new ArrayList<>();
 
-		public final ObservableList<SubFilterType> getSubFilters() {
+		/**
+		 * Gets the collection of filters that make up this filter.
+		 *
+		 * @return The filters.
+		 */
+		public final List<SubFilterType> getSubFilters() {
 			return subFilters;
 		}
 
+		/**
+		 * Indicates whether or not this filter has subfilters.
+		 *
+		 * @return True or false.
+		 */
 		public boolean hasSubFilters() {
 			return getSubFilters().isEmpty() == false;
 		}
 
 		/**
-		 * construct a compound filter from a list of other filters to combine.
+		 * Constructs a timeline events filter composed of a collection of event
+		 * filters.
 		 *
-		 * @param subFilters
+		 * @param subFilters The collection of filters.
 		 */
 		protected CompoundFilter(List<SubFilterType> subFilters) {
 			super();
-			this.subFilters.setAll(subFilters);
+			this.subFilters.addAll(subFilters);
 		}
 
 		@Override
@@ -647,23 +778,41 @@ public abstract class TimelineFilter {
 		}
 
 	}
-	
+
 	/**
-	 * Filter for an individual datasource
+	 * A timeline events filter used to query for events associated with a given
+	 * data source.
 	 */
 	public static final class DataSourceFilter extends TimelineFilter {
 
 		private final String dataSourceName;
 		private final long dataSourceID;
 
+		/**
+		 * Gets the object ID of the specified data source.
+		 *
+		 * @return The data source object ID.
+		 */
 		public long getDataSourceID() {
 			return dataSourceID;
 		}
 
+		/**
+		 * Gets the display name of the specified data source.
+		 *
+		 * @return The data source display name.
+		 */
 		public String getDataSourceName() {
 			return dataSourceName;
 		}
 
+		/**
+		 * Constructs a timeline events filter used to query for events
+		 * associated with a given data source.
+		 *
+		 * @param dataSourceName The data source display name.
+		 * @param dataSourceID   The data source object ID.
+		 */
 		public DataSourceFilter(String dataSourceName, long dataSourceID) {
 			super();
 			this.dataSourceName = dataSourceName;
@@ -714,41 +863,54 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * TimelineFilter for events that are associated with objects have Hash Hits.
+	 * A timeline events filter used to query for events where the files that
+	 * are the direct or indirect sources of the events either have or do not
+	 * have hash set hits.
+	 *
 	 */
 	public static final class HashHitsFilter extends TimelineFilter {
-		private final BooleanProperty booleanProperty = new SimpleBooleanProperty();
+
+		private boolean eventSourcesHaveHashSetHits;
 
 		/**
-		 * Default constructor.
+		 * Constructs a timeline events filter used to query for events where
+		 * the files that are the direct or indirect sources of the events
+		 * either do not have hash set hits.
 		 */
-		public HashHitsFilter() {}
-
-		/**
-		 * Construct the hash hit filter and set state based given argument.
-		 * 
-		 * @param hasHashHit True to filter items that have hash hits.
-		 */
-		public HashHitsFilter(boolean hasHashHit) {
-			booleanProperty.set(hasHashHit);
+		public HashHitsFilter() {
 		}
 
 		/**
-		 * Set the state of the filter.
-		 * 
-		 * @param hasHashHit True to filter by items that have hash hits.
+		 * Constructs a timeline events filter used to query for events where
+		 * the files that are the direct or indirect sources of the events
+		 * either have or do not have hash set hits.
+		 *
+		 * @param eventSourcesHaveHashSetHits Whether or not the files
+		 *                                    associated with the events have or
+		 *                                    do not have hash set hits.
 		 */
-		public synchronized void setTagged(boolean hasHashHit) {
-			booleanProperty.set(hasHashHit);
+		public HashHitsFilter(boolean eventSourcesHaveHashSetHits) {
+			this.eventSourcesHaveHashSetHits = eventSourcesHaveHashSetHits;
 		}
 
 		/**
-		 * Returns the current state of the filter.
-		 * 
-		 * @return True to filter by hash hits
+		 * Sets whether or not the files associated with the events have or do
+		 * not have hash set hits
+		 *
+		 * @param eventSourcesHaveHashSetHits True or false.
 		 */
-		public synchronized boolean hasHashHits() {
-			return booleanProperty.get();
+		public synchronized void setEventSourcesHaveHashSetHits(boolean eventSourcesHaveHashSetHits) {
+			this.eventSourcesHaveHashSetHits = eventSourcesHaveHashSetHits;
+		}
+
+		/**
+		 * Indicates whether or not the files associated with the events have or
+		 * do not have hash set hits
+		 *
+		 * @return True or false.
+		 */
+		public synchronized boolean getEventSourcesHaveHashSetHits() {
+			return eventSourcesHaveHashSetHits;
 		}
 
 		@Override
@@ -758,7 +920,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public HashHitsFilter copyOf() {
-			return new HashHitsFilter(booleanProperty.get());
+			return new HashHitsFilter(eventSourcesHaveHashSetHits);
 		}
 
 		@Override
@@ -767,37 +929,36 @@ public abstract class TimelineFilter {
 				return false;
 			}
 
-			return ((HashHitsFilter)obj).hasHashHits() == booleanProperty.get();
+			return ((HashHitsFilter) obj).getEventSourcesHaveHashSetHits() == getEventSourcesHaveHashSetHits();
 		}
 
 		@Override
 		public int hashCode() {
 			int hash = 7;
-			hash = 67 * hash + Objects.hashCode(this.booleanProperty);
+			hash = 67 * hash + Objects.hashCode(this.eventSourcesHaveHashSetHits);
 			return hash;
 		}
-		
+
 		@Override
 		String getSQLWhere(TimelineManager manager) {
 			String whereStr = "";
-			if	(booleanProperty.get()) {
+			if (eventSourcesHaveHashSetHits) {
 				whereStr = "hash_hit = 1";
 			} else {
 				whereStr = "hash_hit = 0";
 			}
-			
+
 			return whereStr;
 		}
+
 	}
 
 	/**
-	 * union of DataSourceFilters
+	 * A timeline events filter used to query for events associated with a given
+	 * subset of data sources. The filter is a union of one or more single data
+	 * source filters.
 	 */
-	static public final class DataSourcesFilter extends UnionFilter< DataSourceFilter> {
-
-		public DataSourcesFilter() {
-			super();
-		}
+	static public final class DataSourcesFilter extends UnionFilter<DataSourceFilter> {
 
 		@Override
 		public DataSourcesFilter copyOf() {
@@ -808,10 +969,13 @@ public abstract class TimelineFilter {
 		public String getDisplayName() {
 			return BundleProvider.getBundle().getString("DataSourcesFilter.displayName.text");
 		}
+
 	}
 
 	/**
-	 * union of FileTypeFilters
+	 * A timeline events filter used to query for events with direct or indirect
+	 * event sources that are files with a given set of media types. The filter
+	 * is a union of one or more file source filters.
 	 */
 	static public final class FileTypesFilter extends UnionFilter<FileTypeFilter> {
 
@@ -823,45 +987,55 @@ public abstract class TimelineFilter {
 		@Override
 		public String getDisplayName() {
 			return BundleProvider.getBundle().getString("FileTypesFilter.displayName.text");
-
 		}
 
 	}
-	
-	/**
-     * Gets all files that are NOT the specified types
-     */
-    static public class InverseFileTypeFilter extends FileTypeFilter {
-
-        public InverseFileTypeFilter(String displayName, Collection<String> mediaTypes) {
-            super(displayName, mediaTypes);
-        }
-
-        @Override
-        public InverseFileTypeFilter copyOf() {
-            return new InverseFileTypeFilter(getDisplayName(), super.mediaTypes);
-        }
-
-        @Override
-        String getSQLWhere(TimelineManager manager) {
-            return " NOT " + super.getSQLWhere(manager);
-        }
-    }
 
 	/**
-	 * Filter for events derived from files with the given media/mime-types.
+	 * A timeline events filter used to query for events with direct or indirect
+	 * event sources that are files that do not have a given set of media types.
+	 */
+	static public class InverseFileTypeFilter extends FileTypeFilter {
+
+		public InverseFileTypeFilter(String displayName, Collection<String> mediaTypes) {
+			super(displayName, mediaTypes);
+		}
+
+		@Override
+		public InverseFileTypeFilter copyOf() {
+			return new InverseFileTypeFilter(getDisplayName(), super.mediaTypes);
+		}
+
+		@Override
+		String getSQLWhere(TimelineManager manager) {
+			return " NOT " + super.getSQLWhere(manager);
+		}
+	}
+
+	/**
+	 * A timeline events filter used to query for events with direct or indirect
+	 * event sources that are files with a given set of media types.
 	 */
 	public static class FileTypeFilter extends TimelineFilter {
 
 		private final String displayName;
 		private final String sqlWhere;
-		Collection <String> mediaTypes = new HashSet<>();
+		Collection<String> mediaTypes = new HashSet<>();
 
 		private FileTypeFilter(String displayName, String sql) {
 			this.displayName = displayName;
 			this.sqlWhere = sql;
 		}
 
+		/**
+		 * Constructs a timeline events filter used to query for events with
+		 * direct or indirect event sources that are files with a given set of
+		 * media types.
+		 *
+		 * @param displayName The display name for the filter.
+		 * @param mediaTypes  The event source file media types that pass the
+		 *                    filter.
+		 */
 		public FileTypeFilter(String displayName, Collection<String> mediaTypes) {
 			this(displayName,
 					mediaTypes.stream()
@@ -924,4 +1098,5 @@ public abstract class TimelineFilter {
 		}
 
 	}
+
 }

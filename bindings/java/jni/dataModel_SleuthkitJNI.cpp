@@ -150,6 +150,17 @@ castVsPartInfo(JNIEnv * env, jlong ptr)
     return lcl;
 }
 
+static TSK_POOL_INFO *
+castPoolInfo(JNIEnv * env, jlong ptr)
+{
+    TSK_POOL_INFO *lcl = (TSK_POOL_INFO *)ptr;
+    if (!lcl || lcl->tag != TSK_POOL_INFO_TAG) {
+        setThrowTskCoreError(env, "Invalid TSK_POOL_INFO object");
+        return 0;
+    }
+    return lcl;
+}
+
 static TSK_FS_INFO *
 castFsInfo(JNIEnv * env, jlong ptr)
 {
@@ -1412,6 +1423,54 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
     return (jlong) vol_part_info;
 }
 
+/*
+* Open pool with the given offset
+* @return the created TSK_POOL_INFO pointer
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param a_img_info the pointer to the parent img object
+* @param offset the offset in bytes to the pool
+*/
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat(JNIEnv * env,
+    jclass obj, jlong a_img_info, jlong offset)
+{
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img_info, offset, TSK_POOL_TYPE_DETECT);
+    if (pool == NULL) {
+        tsk_error_print(stderr);
+        if (tsk_error_get_errno() == TSK_ERR_POOL_UNSUPTYPE)
+            tsk_pool_type_print(stderr);
+        setThrowTskCoreError(env, tsk_error_get());
+    }
+    return (jlong) pool;
+}
+
+/*
+* Create new image info to use with a specific pool volume
+* @return the created TSK_IMG_INFO pointer
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param a_pool_info the pointer to the pool object
+* @param pool_block the block number of the pool volume
+*/
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForPoolNat
+(JNIEnv * env, jclass obj, jlong a_pool_info, jlong pool_block) {
+
+    TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);
+    if (pool_info == 0) {
+        //exception already set
+        return 0;
+    }
+    TSK_IMG_INFO *img_info = pool_info->get_img_info(pool_info, pool_block);
+
+    return (jlong)img_info;
+}
 
 /*
  * Open file system with the given offset
@@ -1429,7 +1488,6 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
         return 0;
     }
     TSK_FS_INFO *fs_info;
-
     fs_info =
         tsk_fs_open_img(img_info, (TSK_OFF_T) fs_offset,
         TSK_FS_TYPE_DETECT);
@@ -1573,6 +1631,70 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
             free(buf);
         }
         setThrowTskCoreError(env, tsk_error_get());
+        return -1;
+    }
+
+    // package it up for return
+    // adjust number bytes to copy
+    ssize_t copybytes = bytesread;
+    jsize jbuflen = env->GetArrayLength(jbuf);
+    if (jbuflen < copybytes)
+        copybytes = jbuflen;
+
+    ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
+    if (dynBuf) {
+        free(buf);
+    }
+    if (copiedbytes == -1) {
+        setThrowTskCoreError(env, tsk_error_get());
+    }
+    return (jint)copiedbytes;
+}
+
+/*
+* Read bytes from the given pool
+* @return number of bytes read from the pool, -1 on error
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param a_pool_info the pointer to the pool object
+* @param jbuf the buffer to write to
+* @param offset the offset in bytes to start at
+* @param len number of bytes to read
+*/
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_readPoolNat(JNIEnv * env,
+    jclass obj, jlong a_pool_info, jbyteArray jbuf, jlong offset, jlong len)
+{
+    //use fixed size stack-allocated buffer if possible
+    char fixed_buf[FIXED_BUF_SIZE];
+
+    char * buf = fixed_buf;
+    bool dynBuf = false;
+    if (len > FIXED_BUF_SIZE) {
+        dynBuf = true;
+        buf = (char *)tsk_malloc((size_t)len);
+        if (buf == NULL) {
+            setThrowTskCoreError(env);
+            return -1;
+        }
+    }
+
+    TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);
+    if (pool_info == 0) {
+        //exception already set
+        if (dynBuf) {
+            free(buf);
+        }
+        return -1;
+    }
+
+    ssize_t bytesread = tsk_pool_read(pool_info, (TSK_DADDR_T)offset, buf,
+        (size_t)len);
+    if (bytesread == -1) {
+        setThrowTskCoreError(env, tsk_error_get());
+        if (dynBuf) {
+            free(buf);
+        }
         return -1;
     }
 
@@ -1948,7 +2070,7 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeVsNat
 }
 
 /*
- * Close the given volume system
+ * Close the given file system
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_fs_info the pointer to the file system object
@@ -1961,6 +2083,22 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
         return;
     }
     tsk_fs_close(fs_info);
+}
+
+/*
+* Close the given pool
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param a_pool_info the pointer to the pool object
+*/
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closePoolNat
+(JNIEnv * env, jclass obj, jlong a_pool_info) {
+    TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);
+    if (pool_info == 0) {
+        //exception already set
+        return;
+    }
+    tsk_pool_close(pool_info);
 }
 
 /*

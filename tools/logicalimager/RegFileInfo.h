@@ -24,7 +24,7 @@
 class RegFileInfo {
 public:
     RegFileInfo(std::string &aName, std::string &aPath, RegHiveType::Enum a_hiveType, TSK_OFF_T aOff, TSK_INUM_T aMetaAddr, RegParser *a_regParser);
-    ~RegFileInfo(void);
+    ~RegFileInfo();
 
     static RegHiveType::Enum hiveNameToType(const std::string &aName);
 

@@ -168,10 +168,10 @@ img_file_header_signature_ncmp(const char *filename,
     int fd;
 
     if ((filename == NULL) || (file_header_signature == NULL)) {
-        return (0);
+        return 0;
     }
     if (size_of_signature <= 0) {
-        return (0);
+        return 0;
     }
 
     if ((fd = open(filename, O_RDONLY | O_BINARY)) < 0) {
@@ -192,7 +192,7 @@ img_file_header_signature_ncmp(const char *filename,
 
     match = strncmp(file_header_signature, header, size_of_signature) == 0;
 
-    return (match);
+    return match;
 }
 #endif
 
@@ -409,10 +409,10 @@ ewf_open(int a_num_img,
     }
     ewf_info->md5hash_isset = result;
 
-    int sha1_result = libewf_handle_get_utf8_hash_value_sha1(ewf_info->handle,
+    result = libewf_handle_get_utf8_hash_value_sha1(ewf_info->handle,
         (uint8_t *)ewf_info->sha1hash, 41, &ewf_error);
 
-    if (sha1_result == -1) {
+    if (result == -1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
@@ -427,7 +427,7 @@ ewf_open(int a_num_img,
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting SHA1 of EWF file\n");
         }
-        return (NULL);
+        return NULL;
     }
     ewf_info->sha1hash_isset = result;
 

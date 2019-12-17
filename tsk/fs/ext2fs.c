@@ -63,7 +63,7 @@ static uint8_t
 test_root(uint32_t a, uint32_t b)
 {
     if (a == 0) {
-        return (b == 0);
+        return b == 0;
     }
     else if (b == 0) {
         return 0;
@@ -81,7 +81,7 @@ test_root(uint32_t a, uint32_t b)
     for (b2 = b; b2 < a; b2 *= b) {}
  
     // was it an exact match?
-    return (b2 == a);
+    return b2 == a;
 }
 
 /** \internal
@@ -1050,6 +1050,19 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         ibase =
             grp_num * tsk_getu32(fs->endian,
             ext2fs->fs->s_inodes_per_group) + 1;
+
+        /*
+         * Ensure that inum - ibase refers to a valid offset in imap_buf.
+         */
+        if ((inum - ibase) > fs->block_size) {
+            tsk_release_lock(&ext2fs->lock);
+            free(dino_buf);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+            tsk_error_set_errstr("%s: Invalid offset into imap_buf (inum %" PRIuINUM " - ibase %" PRIuINUM ")",
+                myname, inum, ibase);
+            return 1;
+        }
 
         /*
          * Apply the allocated/unallocated restriction.
@@ -3462,5 +3475,5 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     tsk_init_lock(&ext2fs->lock);
 
-    return (fs);
+    return fs;
 }

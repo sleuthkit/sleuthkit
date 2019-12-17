@@ -289,6 +289,22 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    openPoolNat
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getImgInfoForPoolNat
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForPoolNat
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    openFsNat
  * Signature: (JJ)J
  */
@@ -317,6 +333,14 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat
  * Signature: (J[BJJ)I
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    readPoolNat
+ * Signature: (J[BJJ)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readPoolNat
   (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
 
 /*
@@ -357,6 +381,14 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDat
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    closePoolNat
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closePoolNat
   (JNIEnv *, jclass, jlong);
 
 /*
@@ -472,6 +504,17 @@ extern "C" {
 
 #ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
 #define _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles
 #ifdef __cplusplus
 extern "C" {
 #endif

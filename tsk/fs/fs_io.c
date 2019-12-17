@@ -4,8 +4,8 @@
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
- * 
- * Copyright (c) 1997,1998,1999, International Business Machines          
+ *
+ * Copyright (c) 1997,1998,1999, International Business Machines
  * Corporation and others. All Rights Reserved.
  *
  *
@@ -23,8 +23,10 @@
  */
 
 #include <errno.h>
-#include "tsk_fs_i.h"
 
+#include "../pool/tsk_pool.h"
+
+#include "tsk_fs_i.h"
 
 
 /** \internal
@@ -75,21 +77,36 @@ fs_prepost_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf,
     return cur_idx;
 }
 
-
 /**
  * \ingroup fslib
- * Read arbitrary data from inside of the file system. 
+ * Read arbitrary data from inside of the file system.
  * @param a_fs The file system handle.
  * @param a_off The byte offset to start reading from (relative to start of file system)
  * @param a_buf The buffer to store the block in.
  * @param a_len The number of bytes to read
- * @return The number of bytes read or -1 on error. 
+ * @return The number of bytes read or -1 on error.
  */
 ssize_t
 tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
 {
+    return tsk_fs_read_decrypt(a_fs, a_off, a_buf, a_len, 0);
+}
+/**
+ * \ingroup fslib
+ * Read arbitrary data from inside of the file system.
+ * @param a_fs The file system handle.
+ * @param a_off The byte offset to start reading from (relative to start of file system)
+ * @param a_buf The buffer to store the block in.
+ * @param a_len The number of bytes to read
+ * @param crypto_id Starting block number needed for the XTS IV
+ * @return The number of bytes read or -1 on error.
+ */
+ssize_t
+tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len, 
+    TSK_DADDR_T crypto_id)
+{
     // do a sanity check on the read bounds, but only if the block
-    // value has been set. 
+    // value has been set.
     // note that this could prevent us from viewing the FS slack...
     if ((a_fs->last_block_act > 0)
         && ((TSK_DADDR_T) a_off >=
@@ -108,6 +125,46 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
         return -1;
     }
 
+    // We need different logic for encrypted file systems
+    if ((a_fs->flags & TSK_FS_INFO_FLAG_ENCRYPTED) && a_fs->block_size) {
+        // If we're reading on block boundaries and a multiple of block
+        // sizes, we can just decrypt directly to the buffer.
+        if ((a_off % a_fs->block_size == 0) && (a_len % a_fs->block_size == 0)) {
+           return tsk_fs_read_block_decrypt(a_fs, a_off / a_fs->block_size, a_buf, a_len, crypto_id);
+        }
+
+        // Since we can only decrypt on block boundaries, we'll need to
+        // decrypt the blocks and then copy to the output buffer.
+
+        // Starting address needs to be aligned by block size;
+        TSK_OFF_T bit_magic = a_fs->block_size - 1;
+        TSK_OFF_T start = a_off & ~bit_magic;
+
+        // Ending address needs to be rounded up to the nearest
+        // block boundary.
+        TSK_OFF_T end = (a_off + a_len + bit_magic) & ~bit_magic;
+        TSK_OFF_T len = end - start;
+
+        // Decrypt the blocks to a temp buffer
+        char * temp_buffer = tsk_malloc(len);
+        if (temp_buffer == NULL) {
+            return -1;
+        }
+
+        if (tsk_fs_read_block_decrypt(a_fs, start / a_fs->block_size, temp_buffer,
+                              len, crypto_id) != len) {
+            free(temp_buffer);
+            return -1;
+        }
+
+        // Copy the decrypted data
+        memcpy(a_buf, temp_buffer + a_off - start, a_len);
+
+        free(temp_buffer);
+
+        return a_len;
+    }
+
     if (((a_fs->block_pre_size) || (a_fs->block_post_size))
         && (a_fs->block_size)) {
         return fs_prepost_read(a_fs, a_off, a_buf, a_len);
@@ -118,22 +175,41 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
     }
 }
 
-
 /**
  * \ingroup fslib
- * Read a file system block into a char* buffer.  
+ * Read a file system block into a char* buffer.
  * This is actually a wrapper around the fs_read_random function,
- * but it allows the starting location to be specified as a block address. 
+ * but it allows the starting location to be specified as a block address.
  *
  * @param a_fs The file system structure.
- * @param a_addr The starting block file system address. 
+ * @param a_addr The starting block file system address.
  * @param a_buf The char * buffer to store the block data in.
  * @param a_len The number of bytes to read (must be a multiple of the block size)
- * @return The number of bytes read or -1 on error. 
+ * @return The number of bytes read or -1 on error.
  */
 ssize_t
 tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
     size_t a_len)
+{
+    return tsk_fs_read_block_decrypt(a_fs, a_addr, a_buf, a_len, 0);
+}
+
+/**
+ * \ingroup fslib
+ * Read a file system block into a char* buffer.
+ * This is actually a wrapper around the fs_read_random function,
+ * but it allows the starting location to be specified as a block address.
+ *
+ * @param a_fs The file system structure.
+ * @param a_addr The starting block file system address.
+ * @param a_buf The char * buffer to store the block data in.
+ * @param a_len The number of bytes to read (must be a multiple of the block size)
+ * @param crypto_id Starting block number needed for the XTS IV
+ * @return The number of bytes read or -1 on error.
+ */
+ssize_t
+tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
+    size_t a_len, TSK_DADDR_T crypto_id)
 {
     if (a_len % a_fs->block_size) {
         tsk_error_reset();
@@ -157,14 +233,26 @@ tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         return -1;
     }
 
+    ssize_t ret_len;
 
     if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
         TSK_OFF_T off =
             a_fs->offset + (TSK_OFF_T) (a_addr) * a_fs->block_size;
-        return tsk_img_read(a_fs->img_info, off, a_buf, a_len);
+        ret_len = tsk_img_read(a_fs->img_info, off, a_buf, a_len);
     }
     else {
         TSK_OFF_T off = (TSK_OFF_T) (a_addr) * a_fs->block_size;
-        return fs_prepost_read(a_fs, off, a_buf, a_len);
+        ret_len = fs_prepost_read(a_fs, off, a_buf, a_len);
     }
+
+    if ((a_fs->flags & TSK_FS_INFO_FLAG_ENCRYPTED)
+        && ret_len > 0
+        && a_fs->decrypt_block) {
+        for (TSK_DADDR_T i = 0; i < a_len / a_fs->block_size; i++) {
+            a_fs->decrypt_block(a_fs, crypto_id + i,
+                a_buf + (a_fs->block_size * i));
+        }
+    }
+
+    return ret_len;
 }

@@ -45,6 +45,8 @@ class TskAutoDb:public TskAuto {
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path);
@@ -126,6 +128,8 @@ class TskAutoDb:public TskAuto {
     int64_t m_curImgId;     ///< Object ID of image currently being processed
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
+    int64_t m_curPoolVol;   ///< Object ID of the pool volume currently being processed
+    int64_t m_curPoolVs;    ///< Object ID of the pool volume system currently being processed
     int64_t m_curFsId;      ///< Object ID of file system currently being processed
     int64_t m_curFileId;    ///< Object ID of file currently being processed
     TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed
@@ -137,6 +141,7 @@ class TskAutoDb:public TskAuto {
     bool m_fileHashFlag;
     bool m_vsFound;
     bool m_volFound;
+    bool m_poolFound;
     bool m_stopped;
     bool m_imgTransactionOpen;
     TSK_HDB_INFO * m_NSRLDb;

@@ -15,6 +15,7 @@
 
 #include "tsk_db_sqlite.h"
 #include "guid.h"
+#include "../img/pool.hpp"
 #include <string.h>
 #include <sstream>
 #include <algorithm>
@@ -284,36 +285,41 @@ TskDbSqlite::initialize()
 	}
 
 	if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) references tsk_objects(obj_id) ON DELETE CASCADE);",
         "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_names (obj_id INTEGER NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_image_names (obj_id INTEGER NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
             "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_info (obj_id INTEGER PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_vs_info (obj_id INTEGER PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
             "Error creating tsk_vs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
+            "Error creating tsk_pool_info table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
+
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
             "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, data_source_obj_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, extension TEXT , "
-            "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
+            "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE);",
             "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
@@ -321,11 +327,11 @@ TskDbSqlite::initialize()
             "Error creating file_encoding_types table: %s\n")
         ||
         attempt_exec(
-            "CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, encoding_type INTEGER NOT NULL, FOREIGN KEY(encoding_type) references file_encoding_types(encoding_type), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+            "CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, encoding_type INTEGER NOT NULL, FOREIGN KEY(encoding_type) references file_encoding_types(encoding_type), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)",
             "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived (obj_id INTEGER PRIMARY KEY, derived_id INTEGER NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+        ("CREATE TABLE tsk_files_derived (obj_id INTEGER PRIMARY KEY, derived_id INTEGER NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)",
             "Error creating tsk_files_derived table: %s\n")
         ||
         attempt_exec
@@ -348,9 +354,9 @@ TskDbSqlite::initialize()
             "data_source_obj_id INTEGER NOT NULL, "
             "artifact_type_id INTEGER NOT NULL, "
             "review_status_id INTEGER NOT NULL, "
-            "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
-            "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id), "
-            "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
+            "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+            "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+            "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
             "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
             "FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))",
             "Error creating blackboard_artifact table: %s\n")
@@ -358,7 +364,7 @@ TskDbSqlite::initialize()
         attempt_exec
         ("CREATE TABLE blackboard_attributes (artifact_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL, source TEXT, context TEXT, attribute_type_id INTEGER NOT NULL, value_type INTEGER NOT NULL, "
             "value_byte BLOB, value_text TEXT, value_int32 INTEGER, value_int64 INTEGER, value_double NUMERIC(20, 10), "
-            "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
+            "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
             "Error creating blackboard_attribute table: %s\n")
         ||
         attempt_exec
@@ -378,19 +384,19 @@ TskDbSqlite::initialize()
             "Error creating ingest_job_status_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));",
+        ("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id) ON DELETE CASCADE);",
             "Error creating ingest_modules table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));",
+        ("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id) ON DELETE CASCADE);",
             "Error creating ingest_jobs table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));",
+        ("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id) ON DELETE CASCADE, FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id) ON DELETE CASCADE);",
             "Error creating ingest_job_modules table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE reports (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE reports (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
             "Error creating reports table: %s\n")
         ||
         attempt_exec
@@ -402,7 +408,7 @@ TskDbSqlite::initialize()
             "Error creating accounts table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE account_relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id INTEGER NOT NULL,  date_time INTEGER, relationship_type INTEGER NOT NULL, data_source_obj_id INTEGER NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
+        ("CREATE TABLE account_relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id INTEGER NOT NULL,  date_time INTEGER, relationship_type INTEGER NOT NULL, data_source_obj_id INTEGER NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)",
             "Error creating relationships table: %s\n")
         ||
         attempt_exec(
@@ -424,24 +430,36 @@ TskDbSqlite::initialize()
 	        , "Error initializing event_types table rows: %s\n")
 	    ||
 	    attempt_exec(
+			/*
+			* Regarding the timeline event tables schema, note that several columns
+			* in the tsk_event_descriptions table seem, at first glance, to be
+			* attributes of events rather than their descriptions and would appear
+			* to belong in tsk_events table instead. The rationale for putting the
+			* data source object ID, content object ID, artifact ID and the flags
+			* indicating whether or not the event source has a hash set hit or is
+			* tagged were motivated by the fact that these attributes are identical
+			* for each event in a set of file system file MAC time events. The
+			* decision was made to avoid duplication and save space by placing this
+			* data in the tsk_event-descriptins table.
+			*/
 	        "CREATE TABLE tsk_event_descriptions ( "
 	        " event_description_id INTEGER PRIMARY KEY, "
 	        " full_description TEXT NOT NULL, "
 	        " med_description TEXT, "
 	        " short_description TEXT,"
-	        " data_source_obj_id INTEGER NOT NULL REFERENCES data_source_info(obj_id), "
-	        " file_obj_id INTEGER NOT NULL REFERENCES tsk_objects(obj_id), "
-	        " artifact_id INTEGER REFERENCES blackboard_artifacts(artifact_id), "
+	        " data_source_obj_id INTEGER NOT NULL REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
+	        " content_obj_id INTEGER NOT NULL REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+	        " artifact_id INTEGER REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
 	        " hash_hit INTEGER NOT NULL, " //boolean 
 	        " tagged INTEGER NOT NULL, " //boolean 
-			" UNIQUE (full_description, file_obj_id, artifact_id))",
+			" UNIQUE (full_description, content_obj_id, artifact_id))",
 	        "Error creating tsk_event_event_types table: %4\n")
 	    ||
 	    attempt_exec(
 	        "CREATE TABLE tsk_events ("
 	        " event_id INTEGER PRIMARY KEY, "
 	        " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
-	        " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ,"
+	        " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ON DELETE CASCADE ,"
 	        " time BIGINT NOT NULL , "
 			" UNIQUE (event_type_id, event_description_id, time))"
 	        , "Error creating tsk_events table: %s\n")
@@ -453,18 +471,18 @@ TskDbSqlite::initialize()
         ||
 		attempt_exec
 		("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL, examiner_id INTEGER, "
-			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
+			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)",
 			"Error creating content_tags table: %s\n")
 		||
 		attempt_exec
 		("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, examiner_id INTEGER, "
-			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
+			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)",
 			"Error creating blackboard_artifact_tags table: %s\n")) {
         return 1;
     }
 
     if (attempt_exec
-        ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);",
         "Error creating tsk_fs_blocks table: %s\n")) {
             return 1;
     }
@@ -518,8 +536,8 @@ int TskDbSqlite::createIndexes()
         //events indices
         attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id);",
                      "Error creating events_data_source_obj_id index on tsk_event_descriptions: %s\n") ||
-        attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id);",
-                     "Error creating events_file_obj_id index on tsk_event_descriptions: %s\n") ||
+        attempt_exec("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id);",
+                     "Error creating events_content_obj_id index on tsk_event_descriptions: %s\n") ||
         attempt_exec("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id);",
                      "Error creating events_artifact_id index on tsk_event_descriptions: %s\n") ||
         attempt_exec(
@@ -735,6 +753,76 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
                         "Error adding data to tsk_vs_info table: %s\n");
 }
 
+/**
+* Creats a new tsk_pool_info database entry and a new tsk_vs_info 
+* entry with the tsk_pool_info as its parent.
+*
+* @ param pool_info The pool to save to the database
+* @ param parObjId The ID of the parent of the pool object
+* @ param objId Will be set to the object ID of the new volume system created as a child of 
+*               the new pool.
+* @returns 1 on error, 0 on success
+*/
+int
+TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+
+    char
+        stmt[1024];
+
+    // Add pool
+    int64_t poolObjId;
+    if (addObject(TSK_DB_OBJECT_TYPE_POOL, parObjId, poolObjId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (%" PRId64 ",%d)", poolObjId, pool_info->ctype);
+
+    int retVal = attempt_exec(stmt,
+        "Error adding data to tsk_pool_info table: %s\n");
+    if (retVal) {
+        return retVal;
+    }
+
+    // Add volume system
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, objId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
+
+    return attempt_exec(stmt,
+        "Error adding data to tsk_vs_info table: %s\n");
+}
+
+/**
+* Adds the sector addresses of the pool volumes into the db.
+
+* @param pool_vol The pool volume to save to the DB
+* @param parObjId The ID of the parent of the pool volume (should be a volume system)
+* @param objId Will be set to the object ID of the new volume
+* @returns 1 on error, 0 on success
+*/
+int
+TskDbSqlite::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+    int64_t parObjId, int64_t& objId)
+{
+    char* zSQL;
+    int ret;
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
+        objId, (int)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
+        pool_vol->desc, pool_vol->flags);
+
+    ret = attempt_exec(zSQL,
+        "Error adding data to tsk_vs_parts table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
+}
 
 /**
 * Adds the sector addresses of the volumes into the db.
@@ -1000,7 +1088,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE* fs_file, const char* parent
     return parObjId;
 }
 
-int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_t file_obj_id,
+int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_t content_obj_id,
                                   std::map<int64_t, time_t> timeMap, const char* full_description)
 {
     int64_t event_description_id = -1;
@@ -1020,17 +1108,17 @@ int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_
         {
             //insert common description for file
             char* descriptionSql = sqlite3_mprintf(
-                "INSERT INTO tsk_event_descriptions ( data_source_obj_id, file_obj_id , artifact_id,  full_description, hash_hit, tagged) "
+                "INSERT INTO tsk_event_descriptions ( data_source_obj_id, content_obj_id , artifact_id,  full_description, hash_hit, tagged) "
                 " VALUES ("
                 "%" PRId64 "," // data_source_obj_id
-                "%" PRId64 "," // file_obj_id
+                "%" PRId64 "," // content_obj_id
                 "NULL," // fixed artifact_id
                 "%Q," // full_description
                 "0," // fixed hash_hit
                 "0" // fixed tagged
                 ")",
                 data_source_obj_id,
-                file_obj_id,
+                content_obj_id,
                 full_description);
 
             if (attempt_exec(descriptionSql,

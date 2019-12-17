@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "RegParser.h"
+#include "ReportUtil.h"
 
 RegParser::RegParser(const RegHiveType::Enum aHiveType)
     : m_registryHive(NULL), m_rootKey(NULL) {
@@ -42,7 +43,7 @@ RegParser::~RegParser() {
  */
 int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     if (aHiveFile == NULL) {
-        std::cerr << "Null pointer passed to RegParser::loadHive. loadHive() failed." << std::endl;
+        ReportUtil::consoleOutput(stderr, "Null pointer passed to RegParser::loadHive. loadHive() failed.\n");
         return -1;
     }
 
@@ -55,14 +56,14 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
     // Read the contents of the TSK_FS_FILE into memory.
     uint8_t *registryBuffer;
     if ((registryBuffer = (uint8_t *)malloc((size_t)aHiveFile->meta->size)) == NULL) {
-        std::cerr << "loadHive(): Error allocating memory for hive file. tsk_fs_file_read() failed." << std::endl;
+        ReportUtil::consoleOutput(stderr, "loadHive(): Error allocating memory for hive file. tsk_fs_file_read() failed.\n");
         return -1;
     }
 
     ssize_t bytesRead = tsk_fs_file_read(aHiveFile, 0, (char *)&registryBuffer[0],
         (size_t)aHiveFile->meta->size, TSK_FS_FILE_READ_FLAG_NONE);
     if (bytesRead != aHiveFile->meta->size) {
-        std::cerr << "loadHive(): Error reading content from hive file. tsk_fs_file_read() failed." << std::endl;
+        ReportUtil::consoleOutput(stderr, "loadHive(): Error reading content from hive file. tsk_fs_file_read() failed.\n");
         free(registryBuffer);
         return -1;
     }
@@ -71,12 +72,12 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
         m_registryHive = new Rejistry::RegistryHiveBuffer(registryBuffer, (uint32_t)aHiveFile->meta->size);
     }
     catch (Rejistry::RegistryParseException &) {
-        std::cerr << "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size." << std::endl;
+        ReportUtil::consoleOutput(stderr, "loadHive(): Error creating RegistryHiveBuffer.  Likely because of memory size.\n");
         free(registryBuffer);
         return -1;
     }
     catch (...) {
-        std::cerr << "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size." << std::endl;
+        ReportUtil::consoleOutput(stderr, "loadHive(): Error creating RegistryHiveBuffer (general exception).  Likely because of memory size.\n");
         free(registryBuffer);
         return -1;
     }
@@ -131,6 +132,10 @@ int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
     }
 
     aKey.initialize(key);
+
+    if (key != NULL) {
+        delete key;
+    }
     return 0;
 }
 
@@ -238,6 +243,7 @@ int RegParser::getValue(const std::wstring &keyName, const std::wstring &valName
         std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
         Rejistry::RegistryValue *value = key->getValue(valName);
         val.initialize(value);
+        delete value;
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;
@@ -278,6 +284,7 @@ int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName,
         std::auto_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
         Rejistry::RegistryValue *value = key->getValue(valName);
         val.initialize(value);
+        delete value;
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;

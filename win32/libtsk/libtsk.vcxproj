@@ -193,7 +193,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;_ITERATOR_DEBUG_LEVEL=2;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;_ITERATOR_DEBUG_LEVEL=2;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -202,6 +202,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
@@ -214,7 +215,7 @@ copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"</Command>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBVMDK;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBVMDK;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -223,6 +224,7 @@ copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
@@ -248,13 +250,14 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)"
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
@@ -267,13 +270,14 @@ copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
@@ -298,13 +302,14 @@ copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;_LIB;WINVER=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;_LIB;WINVER=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
@@ -320,7 +325,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -328,6 +333,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAsManaged>false</CompileAsManaged>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -339,13 +345,14 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
@@ -373,13 +380,14 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
@@ -395,7 +403,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -403,6 +411,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAsManaged>false</CompileAsManaged>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -414,13 +423,14 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
@@ -447,7 +457,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -455,19 +465,21 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -475,6 +487,11 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\auto\guid.cpp" />
     <ClCompile Include="..\..\tsk\auto\is_image_supported.cpp" />
     <ClCompile Include="..\..\tsk\auto\tsk_db.cpp" />
+    <ClCompile Include="..\..\tsk\fs\apfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\apfs_compat.cpp" />
+    <ClCompile Include="..\..\tsk\fs\apfs_fs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\apfs_open.cpp" />
+    <ClCompile Include="..\..\tsk\fs\decmpfs.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
@@ -487,6 +504,12 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
     <ClCompile Include="..\..\tsk\img\vhd.c" />
     <ClCompile Include="..\..\tsk\img\vmdk.c" />
+    <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp" />
+    <ClCompile Include="..\..\tsk\pool\apfs_pool.cpp" />
+    <ClCompile Include="..\..\tsk\pool\pool_open.cpp" />
+    <ClCompile Include="..\..\tsk\pool\pool_read.cpp" />
+    <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
+    <ClCompile Include="..\..\tsk\util\crypto.cpp" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -580,12 +603,29 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\auto\tsk_db.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_is_image_supported.h" />
+    <ClInclude Include="..\..\tsk\fs\apfs_compat.hpp" />
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.h" />
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.hpp" />
+    <ClInclude Include="..\..\tsk\fs\decmpfs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp" />
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\img\img_writer.h" />
+    <ClInclude Include="..\..\tsk\img\pool.hpp" />
     <ClInclude Include="..\..\tsk\img\vhd.h" />
     <ClInclude Include="..\..\tsk\img\vmdk.h" />
+    <ClInclude Include="..\..\tsk\libtsk.h" />
+    <ClInclude Include="..\..\tsk\pool\apfs_pool_compat.hpp" />
+    <ClInclude Include="..\..\tsk\pool\pool_compat.hpp" />
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.h" />
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.hpp" />
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.h" />
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
+    <ClInclude Include="..\..\tsk\util\crypto.hpp" />
+    <ClInclude Include="..\..\tsk\util\lw_shared_ptr.hpp" />
+    <ClInclude Include="..\..\tsk\util\span.hpp" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_dos.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_gpt.h" />
