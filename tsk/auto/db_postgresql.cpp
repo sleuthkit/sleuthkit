@@ -1056,13 +1056,21 @@ TskDbPostgreSQL::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
         return 1;
 
+    char *desc_sql = PQescapeLiteral(conn, pool_vol->desc, strlen(pool_vol->desc));
+
     snprintf(stmt, 1024,
         "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
-        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",%s,%d)",
         objId, (int)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
-        pool_vol->desc, pool_vol->flags);
+        desc_sql, pool_vol->flags);
 
-    return attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n");
+    if (attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n")) {
+        PQfreemem(desc_sql);
+        return TSK_ERR;
+    }
+
+    PQfreemem(desc_sql);
+    return TSK_OK;
 }
 
 

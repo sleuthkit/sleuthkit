@@ -67,7 +67,7 @@ usage()
         "\t-z: Time zone of original machine (i.e. EST5EDT or GMT) (only useful with -l)\n");
     tsk_fprintf(stderr,
         "\t-s seconds: Time skew of original machine (in seconds) (only useful with -l & -m)\n");
-    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
+    //tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }

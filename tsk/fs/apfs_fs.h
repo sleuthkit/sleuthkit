@@ -54,7 +54,7 @@ typedef struct {
 } apfs_snapshot;
 
 typedef struct {
-  int num_snapshots;
+  size_t num_snapshots;
   int _reserved;  // unused (ensures consistant alignment)
   apfs_snapshot snapshots[0];
 } apfs_snapshot_list;
