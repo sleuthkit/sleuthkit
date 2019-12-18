@@ -1222,8 +1222,8 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Indicates file may have been created by the user.
 		 */
-		TSK_DEVICE_ORIGINAL_SUSPECTED(56, "TSK_DEVICE_ORIGINAL_SUSPECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskDeviceOriginalSuspected.text")),
+		TSK_USER_CONTENT_SUSPECTED(56, "TSK_USER_CONTENT_SUSPECTED", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskUserContentSuspected.text")),
 		/**
 		 * Stores metadata about an object.
 		 */
