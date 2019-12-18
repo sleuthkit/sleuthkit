@@ -10989,9 +10989,9 @@ public class SleuthkitCase {
 				+ "LEFT OUTER JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id "
 				+ "WHERE tag_name_id = ?"), //NON-NLS
 		SELECT_CONTENT_TAGS_BY_TAG_NAME_BY_DATASOURCE("SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name "
-				+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names "
-				+ "LEFT OUTER JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id "
-				+ "WHERE content_tags.obj_id = tsk_files.obj_id"
+				+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names, tsk_examiners as tsk_examiners "
+				+ "WHERE content_tags.examiner_id = tsk_examiners.examiner_id"
+				+ " AND content_tags.obj_id = tsk_files.obj_id"
 				+ " AND content_tags.tag_name_id = tag_names.tag_name_id"
 				+ " AND content_tags.tag_name_id = ?"
 				+ " AND tsk_files.data_source_obj_id = ? "),
@@ -11021,9 +11021,9 @@ public class SleuthkitCase {
 				+ "LEFT OUTER JOIN tsk_examiners ON blackboard_artifact_tags.examiner_id = tsk_examiners.examiner_id "
 				+ "WHERE tag_name_id = ?"), //NON-NLS
 		SELECT_ARTIFACT_TAGS_BY_TAG_NAME_BY_DATASOURCE("SELECT artifact_tags.tag_id, artifact_tags.artifact_id, artifact_tags.tag_name_id, artifact_tags.comment, arts.obj_id, arts.artifact_obj_id, arts.data_source_obj_id, arts.artifact_type_id, arts.review_status_id, tsk_examiners.login_name "
-				+ "FROM blackboard_artifact_tags as artifact_tags, blackboard_artifacts AS arts "
-				+ "LEFT OUTER JOIN tsk_examiners ON artifact_tags.examiner_id = tsk_examiners.examiner_id "
-				+ "WHERE artifact_tags.artifact_id = arts.artifact_id"
+				+ "FROM blackboard_artifact_tags as artifact_tags, blackboard_artifacts AS arts, tsk_examiners AS tsk_examiners "
+				+ "WHERE artifact_tags.examiner_id = tsk_examiners.examiner_id"
+				+ " AND artifact_tags.artifact_id = arts.artifact_id"
 				+ " AND artifact_tags.tag_name_id = ? "
 				+ " AND arts.data_source_obj_id =  ? "),
 		SELECT_ARTIFACT_TAG_BY_ID("SELECT blackboard_artifact_tags.tag_id, blackboard_artifact_tags.artifact_id, blackboard_artifact_tags.tag_name_id, blackboard_artifact_tags.comment, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name "
