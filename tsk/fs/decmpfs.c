@@ -1156,10 +1156,10 @@ static int
 decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                               uint8_t cmpType,
                               char* buffer,
-                              uint32_t attributeLength,
+                              TSK_OFF_T attributeLength,
                               uint64_t uncSize,
                               int (*decompress_attr)(char* rawBuf,
-                                                     uint32_t rawSize,
+                                                     TSK_OFF_T rawSize,
                                                      uint64_t uncSize,
                                                      char** dstBuf,
                                                      uint64_t* dstSize,
@@ -1250,7 +1250,7 @@ on_error:
  */
 int decmpfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
-                            uint32_t attributeLength,
+                            TSK_OFF_T attributeLength,
                             uint64_t uncSize)
 {
     return decmpfs_file_read_compressed_attr(
@@ -1272,7 +1272,7 @@ int decmpfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
  */
 int decmpfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
-                            uint32_t attributeLength,
+                            TSK_OFF_T attributeLength,
                             uint64_t uncSize)
 {
     return decmpfs_file_read_compressed_attr(
