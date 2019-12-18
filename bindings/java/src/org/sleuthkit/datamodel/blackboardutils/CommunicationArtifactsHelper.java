@@ -776,7 +776,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			long attachedFileObjId = fileAttachment.getObjectId();
 			if (attachedFileObjId >= 0) {
 				AbstractFile attachedFile = message.getSleuthkitCase().getAbstractFileById(attachedFileObjId);
-				associateAttachmentWithMesssge(message, attachedFile);
+				associateAttachmentWithMessage(message, attachedFile);
 			}
 		}
 	}
@@ -793,7 +793,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException If there is an error creating the
 	 *                          TSK_ASSOCIATED_OBJECT artifact.
 	 */
-	private BlackboardArtifact associateAttachmentWithMesssge(BlackboardArtifact message, AbstractFile attachedFile) throws TskCoreException {
+	private BlackboardArtifact associateAttachmentWithMessage(BlackboardArtifact message, AbstractFile attachedFile) throws TskCoreException {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, this.getModuleName(), message.getArtifactID()));
 
