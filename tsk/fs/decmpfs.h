@@ -47,12 +47,12 @@ typedef enum {
 
 extern int decmpfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
-                            uint32_t attributeLength,
+                            TSK_OFF_T attributeLength,
                             uint64_t uncSize);
 
 extern int decmpfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
-                            uint32_t attributeLength,
+                            TSK_OFF_T attributeLength,
                             uint64_t uncSize);
 
 extern uint8_t decmpfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,

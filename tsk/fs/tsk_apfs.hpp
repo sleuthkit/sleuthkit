@@ -758,7 +758,7 @@ class APFSBitmapBlock : public APFSBlock {
   static constexpr auto no_bits_left = std::numeric_limits<uint32_t>::max();
 
   // Number of bits in cache
-  static constexpr auto cached_bits = sizeof(uintptr_t) * 8;
+  static constexpr uint32_t cached_bits = sizeof(uintptr_t) * 8;
 
   const APFSSpacemanCIB::bm_entry _entry;
   uint32_t _hint{};

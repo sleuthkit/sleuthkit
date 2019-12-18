@@ -55,7 +55,7 @@ usage()
     tsk_fprintf(stderr, "\t-S snap_id: Snapshot ID (for APFS only)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: print version\n");
-    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
+    //tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
     exit(1);
 }
 
