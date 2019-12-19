@@ -875,7 +875,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @return Self account instance.
 	 * @throws TskCoreException 
 	 */
-	private AccountFileInstance getSelfAccountInstance() throws TskCoreException {
+	private synchronized AccountFileInstance getSelfAccountInstance() throws TskCoreException {
 		if (selfAccountInstance == null) {
 			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getAbstractFile());
 		}
