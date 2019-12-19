@@ -2542,7 +2542,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         /* Sanity check. */
         if (mftToDo[a] < ntfs->fs_info.first_inum ||
-            mftToDo[a] > ntfs->fs_info.last_inum ||
+            // decrement the last_inum because the last value is a special value for the ORPHANS directory
+            mftToDo[a] > ntfs->fs_info.last_inum - 1 ||
             // MFT 0 is for $MFT.  We had one system that we got a reference to it from parsing an allocated attribute list
             mftToDo[a] == 0) {
 
