@@ -1,3 +1,15 @@
+---------------- VERSION 4.8.0 --------------
+C/C++
+- Pool layer was added to support APFS. API is likely to change. 
+- APFS support added in libtsk and some of the command line tools. 
+- DB schema was updated to support pools 
+- Various bugs from Google fuzzing efforts and X (TBD)
+
+Java:
+- Added Pool class and associated infrastructure
+- Added concept of JSON in Blackboard Attributes
+
+
 
 
 ---------------- VERSION 4.7.0 --------------
