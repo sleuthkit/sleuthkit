@@ -6,7 +6,7 @@ C/C++
 -- Blackbag Technologies submitted the initial PR. Basis Technology
   did some minor refactoring.
 - Refactoring and minor fixes to logical imager
-- Various bug fixes from Google fuzzing efforts and X (TBD)
+- Various bug fixes from Google fuzzing efforts and Jonathan B from Afarsec
 - Fixed infinite NTFS loop from cyclical attribute lists.  Reported by X.  
 - File system bug fixes from uckelman-sf on github
 
