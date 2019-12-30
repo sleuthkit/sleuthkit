@@ -3344,7 +3344,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
-    if (tsk_getu32(fs->endian, ext2fs->fs->s_log_block_size) >= sizeof(EXT2FS_MIN_BLOCK_SIZE) * 8) {
+    if (tsk_getu32(fs->endian, ext2fs->fs->s_log_block_size) >= sizeof(uint32_t) * 8) {
         free(ext2fs->fs);
         tsk_fs_free((TSK_FS_INFO *)ext2fs);
         tsk_error_reset();
