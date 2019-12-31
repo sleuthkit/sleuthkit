@@ -1907,6 +1907,19 @@ public class SleuthkitCase {
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
 
+			
+			// Add new account types for newly supported messaging applications.
+			statement.execute("insert into account_types(type_name, display_name) values('IMO', 'IMO')");
+			statement.execute("insert into account_types(type_name, display_name) values('LINE', 'LINE')");
+			statement.execute("insert into account_types(type_name, display_name) values('SKYPE', 'Skype')");
+			statement.execute("insert into account_types(type_name, display_name) values('TANGO', 'Tango')");
+			statement.execute("insert into account_types(type_name, display_name) values('TEXTNOW', 'TextNow')");
+			statement.execute("insert into account_types(type_name, display_name) values('THREEMA', 'ThreeMa')");
+			statement.execute("insert into account_types(type_name, display_name) values('VIBER', 'Viber')");
+			statement.execute("insert into account_types(type_name, display_name) values('XENDER', 'Xender')");
+			statement.execute("insert into account_types(type_name, display_name) values('ZAPYA', 'Zapya')");
+			statement.execute("insert into account_types(type_name, display_name) values('SHAREIT', 'ShareIt')");
+			
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
 			closeResultSet(resultSet);
