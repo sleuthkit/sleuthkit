@@ -1908,17 +1908,6 @@ public class SleuthkitCase {
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
 
 			
-			// Add new account types for newly supported messaging applications.
-			statement.execute("insert into account_types(type_name, display_name) values('IMO', 'IMO')");
-			statement.execute("insert into account_types(type_name, display_name) values('LINE', 'LINE')");
-			statement.execute("insert into account_types(type_name, display_name) values('SKYPE', 'Skype')");
-			statement.execute("insert into account_types(type_name, display_name) values('TANGO', 'Tango')");
-			statement.execute("insert into account_types(type_name, display_name) values('TEXTNOW', 'TextNow')");
-			statement.execute("insert into account_types(type_name, display_name) values('THREEMA', 'ThreeMa')");
-			statement.execute("insert into account_types(type_name, display_name) values('VIBER', 'Viber')");
-			statement.execute("insert into account_types(type_name, display_name) values('XENDER', 'Xender')");
-			statement.execute("insert into account_types(type_name, display_name) values('ZAPYA', 'Zapya')");
-			statement.execute("insert into account_types(type_name, display_name) values('SHAREIT', 'ShareIt')");
 			
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
@@ -2056,6 +2045,18 @@ public class SleuthkitCase {
 				statement.execute("CREATE TABLE tsk_pool_info (obj_id BIGSERIAL PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 			}
 			
+			// Add new account types for newly supported messaging applications, if they dont exists already.
+			insertAccountTypeIfNotExists(statement, "IMO", "IMO");
+			insertAccountTypeIfNotExists(statement, "LINE", "LINE");
+			insertAccountTypeIfNotExists(statement, "SKYPE", "Skype");
+			insertAccountTypeIfNotExists(statement, "TANGO", "Tango");
+			insertAccountTypeIfNotExists(statement, "TEXTNOW", "TextNow");
+			insertAccountTypeIfNotExists(statement, "THREEMA", "ThreeMa");
+			insertAccountTypeIfNotExists(statement, "VIBER", "Viber");
+			insertAccountTypeIfNotExists(statement, "XENDER", "Xender");
+			insertAccountTypeIfNotExists(statement, "ZAPYA", "Zapya");
+			insertAccountTypeIfNotExists(statement, "SHAREIT", "ShareIt");
+			
 			return new CaseDbSchemaVersionNumber(8, 4);
 		} finally {
 			closeResultSet(results);
@@ -2065,6 +2066,32 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Inserts a row for the given account type in account_types table, 
+	 * if one doesn't exist.
+	 * 
+	 * @param statement Statement to use to execute SQL.
+	 * @param type_name Account type name.
+	 * @param display_name Account type display name.
+	 * 
+	 * @throws TskCoreException
+	 * @throws SQLException 
+	 */
+	private void insertAccountTypeIfNotExists(Statement statement, String type_name, String display_name) throws TskCoreException, SQLException {
+		
+		String insertSQL = String.format("INTO account_types(type_name, display_name) VALUES ('%s', '%s')", type_name, display_name);
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				insertSQL = "INSERT " + insertSQL + " ON CONFLICT DO NOTHING"; //NON-NLS
+				break;
+			case SQLITE:
+				insertSQL = "INSERT OR IGNORE " + insertSQL;
+				break;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+		}
+		statement.execute(insertSQL); //NON-NLS
+	}
+ /**
 	 * Extract the extension from a file name.
 	 *
 	 * @param fileName the file name to extract the extension from.
