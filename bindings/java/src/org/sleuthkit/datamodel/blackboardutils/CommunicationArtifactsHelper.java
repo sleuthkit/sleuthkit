@@ -731,8 +731,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		} else {
 			// For incoming call, if no callee specified, assume self account is callee
 			if (direction == CommunicationDirection.INCOMING) {
-				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, this.selfAccountInstance.getAccount().getTypeSpecificID(), attributes);
-				recipientAccountsList.add(this.getSelfAccountInstance());
+				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, getSelfAccountInstance().getAccount().getTypeSpecificID(), attributes);
+				recipientAccountsList.add(getSelfAccountInstance());
 			} else { // outgoing call without any callee
 				throw new IllegalArgumentException("Callee not provided for an outgoing call.");
 			}
