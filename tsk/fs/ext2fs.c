@@ -3344,6 +3344,18 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
+    if (tsk_getu32(fs->endian, ext2fs->fs->s_log_block_size) >= sizeof(uint32_t) * 8) {
+        free(ext2fs->fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+        tsk_error_set_errstr("Block size too large");
+        if (tsk_verbose)
+            fprintf(stderr,
+                "ext2fs_open: block size too large\n");
+        return NULL;
+    }
+
     fs->block_size =
         EXT2FS_MIN_BLOCK_SIZE << tsk_getu32(fs->endian,
         ext2fs->fs->s_log_block_size);
