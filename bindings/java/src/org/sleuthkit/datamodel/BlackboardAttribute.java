@@ -1371,7 +1371,16 @@ public class BlackboardAttribute {
 		
 		TSK_ATTACHMENTS (141, "TSK_ATTACHMENTS", 
 				bundle.getString("BlackboardAttribute.tskattachments.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+		
+		TSK_GPS_DISTANCE_FROM_HOMEPOINT(142, "TSK_GPS_DISTANCE_FROM_HOMEPOINT", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskdronehpdistance.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
+	
+		TSK_GPS_DISTANCE_TRAVELED(143, "TSK_GPS_DISTANCE_TRAVELED", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskdronedistancetraveled.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
+		
 		
 		;
 
