@@ -682,10 +682,10 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     }
 
     fs_meta->uid =
-        tsk_getu16(fs->endian, dino_buf->i_uid) + (tsk_getu16(fs->endian,
+        tsk_getu16(fs->endian, dino_buf->i_uid) + ((TSK_UID_T)tsk_getu16(fs->endian,
             dino_buf->i_uid_high) << 16);
     fs_meta->gid =
-        tsk_getu16(fs->endian, dino_buf->i_gid) + (tsk_getu16(fs->endian,
+        tsk_getu16(fs->endian, dino_buf->i_gid) + ((TSK_GID_T)tsk_getu16(fs->endian,
             dino_buf->i_gid_high) << 16);
     fs_meta->mtime = tsk_getu32(fs->endian, dino_buf->i_mtime);
     fs_meta->atime = tsk_getu32(fs->endian, dino_buf->i_atime);
