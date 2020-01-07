@@ -20,8 +20,8 @@ package org.sleuthkit.datamodel.blackboardutils;
 
 import java.util.Collection;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
@@ -31,29 +31,29 @@ import org.sleuthkit.datamodel.SleuthkitCase;
 class ArtifactHelperBase {
 
 	private final SleuthkitCase caseDb;
-	private final AbstractFile srcAbstractFile;	// artifact source
-	private final String moduleName;			// module creating the artifacts
+	private final Content srcContent;		// artifact source
+	private final String moduleName;		// module creating the artifacts
 
 	/**
 	 * Creates an artifact helper.
 	 *
 	 * @param caseDb     Sleuthkit case db
 	 * @param moduleName name module using the helper
-	 * @param srcFile    source file
+	 * @param srcContent source content
 	 */
-	ArtifactHelperBase(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
+	ArtifactHelperBase(SleuthkitCase caseDb, String moduleName, Content srcContent) {
 		this.moduleName = moduleName;
-		this.srcAbstractFile = srcFile;
+		this.srcContent = srcContent;
 		this.caseDb = caseDb;
 	}
 
 	/**
-	 * Returns the source abstract file.
+	 * Returns the source content.
 	 *
-	 * @return Source abstract file.
+	 * @return Source content.
 	 */
-	AbstractFile getAbstractFile() {
-		return this.srcAbstractFile;
+	Content getContent() {
+		return this.srcContent;
 	}
 
 	/**
