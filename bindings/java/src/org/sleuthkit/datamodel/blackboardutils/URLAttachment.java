@@ -18,12 +18,15 @@
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * Represents a message attachment where a URL of the attachment is available.
  *
  */
 public class URLAttachment implements Attachment {
 
+	@SerializedName("TSK_URL")
 	private final String url;
 
 	/**
