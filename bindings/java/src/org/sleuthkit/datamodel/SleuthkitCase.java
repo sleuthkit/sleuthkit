@@ -8827,8 +8827,11 @@ public class SleuthkitCase {
 		return connections.getConnection();
 	}
 
-	SleuthkitJNI.CaseDbHandle getCaseHandle() {
-		return this.caseHandle;
+	synchronized long getCaseDbPointer() throws TskCoreException {
+		if (caseHandle != null) {
+			return caseHandle.getCaseDbPointer();
+		}
+		throw new TskCoreException("Case has been closed");
 	}
 
 	@Override
