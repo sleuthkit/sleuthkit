@@ -39,8 +39,89 @@
 #define S_IFDIR __S_IFDIR
 #endif
 
+/**
+ * \internal
+ * Close the file handle held by a particular split disk image
+ *
+ * @param raw_info Disk image containing the split image
+ * @param cimg split image to close
+ */
+static void
+raw_close_segment(IMG_RAW_INFO * raw_info, IMG_SPLIT_CACHE * cimg) {
+    if (cimg->fd != 0) {
+        if (tsk_verbose) {
+            tsk_fprintf(stderr,
+                "raw_close_segment: closing file %" PRIttocTSK "\n",
+                raw_info->img_info.images[cimg->image]);
+        }
+#ifdef TSK_WIN32
+        CloseHandle(cimg->fd);
+#else
+        close(cimg->fd);
+#endif
+        raw_info->cptr[cimg->image] = -1;
+    }
+}
 
-/** 
+/**
+ * \internal
+ * Open a split disk image
+ *
+ * @param raw_info Disk image to be opened
+ * @param slot Cache slot for the segment to be opened into
+ * @param idx Index of the disk image in the set to read from
+ *
+ * @return NULL on error
+ */
+static IMG_SPLIT_CACHE *
+raw_open_segment(IMG_RAW_INFO * raw_info, int slot, int idx) {
+    IMG_SPLIT_CACHE *cimg;
+    if (tsk_verbose) {
+        tsk_fprintf(stderr,
+            "raw_open_segment: opening file into slot %d: %" PRIttocTSK
+            "\n", slot, raw_info->img_info.images[idx]);
+    }
+
+    /* Grab the cache slot */
+    cimg = &raw_info->cache[slot];
+
+    /* Free it if being used */
+    raw_close_segment(raw_info, cimg);
+
+
+#ifdef TSK_WIN32
+    cimg->fd = CreateFile(raw_info->img_info.images[idx], FILE_READ_DATA,
+                          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
+                          NULL);
+    if ( cimg->fd == INVALID_HANDLE_VALUE ) {
+        int lastError = (int)GetLastError();
+        cimg->fd = 0; /* so we don't close it next time */
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+                            "\" - %d", raw_info->img_info.images[idx], lastError);
+        return NULL;
+    }
+
+#else
+    if ((cimg->fd =
+            open(raw_info->img_info.images[idx], O_RDONLY | O_BINARY)) < 0) {
+        cimg->fd = 0; /* so we don't close it next time */
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+            "\" - %s", raw_info->img_info.images[idx], strerror(errno));
+        return NULL;
+    }
+#endif
+    cimg->image = idx;
+    cimg->seek_pos = 0;
+    raw_info->cptr[idx] = slot;
+    return cimg;
+}
+
+
+/**
  * \internal
  * Read from one of the multiple files in a split set of disk images.
  *
@@ -61,58 +142,12 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
     /* Is the image already open? */
     if (raw_info->cptr[idx] == -1) {
-        if (tsk_verbose) {
-            tsk_fprintf(stderr,
-                "raw_read_segment: opening file into slot %d: %" PRIttocTSK
-                "\n", raw_info->next_slot, raw_info->img_info.images[idx]);
+        /* open the image at the next cache slot */
+        if ((cimg = raw_open_segment(raw_info, raw_info->next_slot, idx)) == NULL) {
+          return -1;
         }
 
-        /* Grab the next cache slot */
-        cimg = &raw_info->cache[raw_info->next_slot];
-
-        /* Free it if being used */
-        if (cimg->fd != 0) {
-            if (tsk_verbose) {
-                tsk_fprintf(stderr,
-                    "raw_read_segment: closing file %" PRIttocTSK "\n",
-                    raw_info->img_info.images[cimg->image]);
-            }
-#ifdef TSK_WIN32
-            CloseHandle(cimg->fd);
-#else
-            close(cimg->fd);
-#endif
-            raw_info->cptr[cimg->image] = -1;
-        }
-
-#ifdef TSK_WIN32
-        cimg->fd = CreateFile(raw_info->img_info.images[idx], FILE_READ_DATA,
-                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
-                              NULL);
-        if ( cimg->fd == INVALID_HANDLE_VALUE ) {
-            int lastError = (int)GetLastError();
-            cimg->fd = 0; /* so we don't close it next time */
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                                "\" - %d", raw_info->img_info.images[idx], lastError);
-            return -1;
-        }
-
-#else
-        if ((cimg->fd =
-                open(raw_info->img_info.images[idx], O_RDONLY | O_BINARY)) < 0) {
-            cimg->fd = 0; /* so we don't close it next time */
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                "\" - %s", raw_info->img_info.images[idx], strerror(errno));
-            return -1;
-        }
-#endif
-        cimg->image = idx;
-        cimg->seek_pos = 0;
-        raw_info->cptr[idx] = raw_info->next_slot;
+        /* rotate the cache */
         if (++raw_info->next_slot == SPLIT_CACHE) {
             raw_info->next_slot = 0;
         }
@@ -152,8 +187,34 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         if ((raw_info->is_winobj) && (rel_offset + (TSK_OFF_T)len > raw_info->img_info.size ))
             len = (size_t)(raw_info->img_info.size - rel_offset);
 
-        if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
-            int lastError = GetLastError();
+        int retries;
+        int lastError = 0;
+        for (retries = 2; retries > 0; --retries) {
+            if (ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
+                break;
+            }
+            lastError = GetLastError();
+            // ReadFile can fail with ERROR_NOT_READY if a volume device has been
+            // reformatted since it was opened.
+            // We should try to reopen the file and read again.
+            if (lastError == ERROR_NOT_READY && retries > 1) {
+                if ((cimg = raw_open_segment(raw_info, raw_info->cptr[idx], idx)) == NULL) {
+                    return -1;
+                }
+            }
+            else {
+              tsk_error_reset();
+              tsk_error_set_errno(TSK_ERR_IMG_READ);
+              tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+                  "\" offset: %" PRIuOFF " read len: %" PRIuSIZE " - %d",
+                  raw_info->img_info.images[idx], rel_offset, len,
+                  lastError);
+              return -1;
+            }
+        }
+
+        if (retries == 0) {
+            // This should only happen in the case of programming error.
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
@@ -162,6 +223,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                 lastError);
             return -1;
         }
+
         // When the read operation reaches the end of a file,
         // ReadFile returns TRUE and sets nread to zero.
         // We need to check if we've reached the end of a file and set nread to
