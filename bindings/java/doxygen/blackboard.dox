@@ -14,7 +14,7 @@ When a module wants to store its results in the blackboard, it makes an artifact
 
 There are two special types of artifacts that are used a bit differently than the rest. The first is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store single attributes that are not related to each other and that do not need their own artifact. There are special methods to access this artifact to ensure that only a single TSK_GEN_INFO artifact is created per Content object and that you get a cached version of the artifact. These methods will be given in the relevant sections below.
 
-The second special type of artifact is the TSK_ASSOCIATED_OBJECT. All artifacts are created as the child of a file or artifact. This TSK_ASSOCIATED_OBJECT is used to make additional relationships with files and artifacts apart from this parent-child relationship. See \ref jni_bb_associated_object section below.
+The second special type of artifact is the TSK_ASSOCIATED_OBJECT. All artifacts are created as the child of a file or artifact. This TSK_ASSOCIATED_OBJECT is used to make additional relationships with files and artifacts apart from this parent-child relationship. See the \ref jni_bb_associated_object section below.
 
 \section jni_bb_access Accessing the Blackboard
 
