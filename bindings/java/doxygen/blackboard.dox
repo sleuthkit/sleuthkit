@@ -6,22 +6,15 @@ The blackboard allows modules (in Autopsy or other frameworks) to communicate an
 
 \subsection jni_bb_concepts Concepts
 
-The blackboard is a collection of <em>artifacts</em>.  Each artifact has a type, such as web browser history, EXIF, or GPS track points. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE) and you can also create your own. 
+The blackboard is a collection of <em>artifacts</em>.  Each artifact has a type, such as web browser history, EXIF, or GPS track points. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE and the \ref artifact_catalog_page "artifact catalog") and you can also \ref jni_bb_artifact2 "create your own". 
 
-Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, Created Date, or Device Make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also create your own. 
+Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, Created Date, or Device Make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also create your own.  See the \ref artifact_catalog_page "artifact catalog" for a list of artifacts and the attributes that should be associated with each.
 
 When a module wants to store its results in the blackboard, it makes an artifact of the correct type and then adds attributes to it. Other modules can then query the blackboard for artifacts of a given type or artifacts associated with a given file. 
 
+There are two special types of artifacts that are used a bit differently than the rest. The first is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store single attributes that are not related to each other and that do not need their own artifact. There are special methods to access this artifact to ensure that only a single TSK_GEN_INFO artifact is created per Content object and that you get a cached version of the artifact. These methods will be given in the relevant sections below.
 
-
-\subsection jni_bb_geninfo General Information Artifact
-
-One artifact type deserves special focus. It is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store single attributes that are not related to each other and that do not need their own artifact.  The most notable use of this artifact is to store the file type, using the 
-org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FILE_TYPE_SIG.  
-
-There are special methods on the Content object, such as org.sleuthkit.datamodel.Content.getGenInfoArtifact() and org.sleuthkit.datamodel.Content.getGenInfoAttributes() that you should use to ensure that only a single TSK_GEN_INFO artifact is created per Content object and to ensure you get a cached version of the artifact. 
-
-
+The second special type of artifact is the TSK_ASSOCIATED_OBJECT. All artifacts are created as the child of a file or artifact. This TSK_ASSOCIATED_OBJECT is used to make additional relationships with files and artifacts apart from this parent-child relationship. See \ref jni_bb_associated_object section below.
 
 \section jni_bb_access Accessing the Blackboard
 
@@ -41,10 +34,7 @@ If you want to create an attribute in the TSK_GEN_INFO artifact, use org.sleuthk
 
 Next, you need to make attributes and add them to the artifact.  Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. After you create one with the correct type and value, you add it to the artifact using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). 
 
-
-
-
-\subsection jni_bb_artifact2 Creating Multiple Artifacts or Multiple Attributes
+\subsubsection jni_bb_artifact2 Creating Multiple Artifacts or Multiple Attributes
 
 In some cases, it may not be clear if you should post multiple single-attribute artifacts for a file or post a single multiple-attribute artifact.  
 Here are some guidelines:
@@ -52,7 +42,50 @@ Here are some guidelines:
  - If a single file is associated with multiple items of the same type (e.g., log entries in a log file, bookmarks in a bookmark file, cookies in a cookie database), then each instance should be posted as a separate artifact so that you can differentiate them and keep all related attributes clearly grouped (e.g., it is clear which date goes with which log entry).  
  - All attributes in artifacts other than in org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifacts should be closely related to each other.  
 
+\subsubsection jni_bb_artifact_helpers Artifact Helpers
 
+Artifact helpers are a set of classes that make it easier for module developers to create artifacts.
+These classes provide methods that abstract the details of artifacts and attributes, and provide simpler and more readable API.
+
+The following helpers are available:
+
+<ul>
+<li>org.sleuthkit.datamodel.blackboardutils.ArtifactsHelper - provides methods for some creating some general artifacts
+<ul>
+<li>addGPSLocation(): creates TSK_GPS_TRACKPOINT artifact
+<li>addInstalledPrograms(): creates TSK_INSTALLED_PROG artifact
+</ul></ul>
+
+<ul>
+<li>org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper - provides methods for some creating web browser related artifacts
+<ul>
+<li>addWebBookmark(): creates TSK_WEB_BOOKMARK artifact for browser bookmarks
+<li>addWebCookie(): creates TSK_WEB_COOKIE artifact for browser cookies
+<li>addWebDownload(): creates TSK_WEB_DOWNLOAD artifact for web downloads.
+<li>addWebFormAddress(): creates TSK_WEB_FORM_ADDRESS artifact for form address data
+<li>addWebFormAutofill(): creates TSK_WEB_FORM_AUTOFILL artifact for autofill data
+<li>addWebHistory(): creates TSK_WEB_HISTORY artifact for web history.
+</ul></ul>
+
+<ul>
+<li>org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper - provides methods for communication related artifacts: contacts, call logs, messages.
+<ul>
+<li>addCalllog(): creates TSK_CALLLOG artifact for call logs.
+<li>addContact() creates TSK_CONTACT artifact for contacts.
+<li>addMessage() creates a TSK_MESSAGE artifact for messages.
+<li>addAttachments() adds attachments to a message.
+</ul></ul>
+
+\subsubsection jni_bb_associated_object Associated Objects
+
+Artifacts should be created as children of the file that they were derived or parsed from. For example, a TSK_WEB_DOWNLOAD artifact would be a child of the browser's SQLite database that was parsed. This creates a relationship between the source file and the artifact. But, sometimes you also want to make a relationship between the artifact and another file (or artifact). This is where the TSK_ASSOCIATED_OBJECT artifact comes in.
+
+For example, suppose you have a module that parses a SQLite database that has a log of downloaded files. Each entry might contain the URL the file was downloaded from, timestamp information, and the location the file was saved to on disk. This data would be saved in a TSK_WEB_DOWNLOAD artifact that would be a child of the SQLite database. But suppose the downloaded file also exists in our image. It would be helpful to link that file to our TSK_WEB_DOWNLOAD artifact to show when and where it was download from.
+
+We achieve this relationship by creating a TSK_ASSOCIATED_OBJECT artifact on the downloaded file. This artifact stores the ID of the TSK_WEB_DOWNLOAD artifact in TSK_ASSOCIATED_ARTIFACT attribute so we have a direct link from the file to the artifact that shows where it came from.
+ 
+\image html associated_object.png
+ 
 \subsection jni_bb_query  Querying the Blackboard
 
 You can find artifacts using a variety of ways:
