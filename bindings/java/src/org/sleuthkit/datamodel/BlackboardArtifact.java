@@ -928,7 +928,7 @@ public class BlackboardArtifact implements Content {
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
 		/**
-		 * A generic information artifact, the default type.
+		 * A generic information artifact.
 		 */
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGenInfo.text")),

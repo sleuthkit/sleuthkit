@@ -1966,6 +1966,26 @@ public class SleuthkitCase {
 						statement.execute("ALTER TABLE tsk_event_descriptions "
 							+ "RENAME COLUMN file_obj_id TO content_obj_id");
 						
+						// In 8.2 to 8.3 upgrade, the event_id & time column in tsk_events table was erroneously created as type INTEGER, instead of BIGINT
+						// Fix the schema, preserving any data if exists.
+						statement.execute("CREATE TABLE temp_tsk_events ( "
+								+ " event_id BIGSERIAL PRIMARY KEY, "
+								+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+								+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id),"
+								+ " time BIGINT NOT NULL, "
+								+ " UNIQUE (event_type_id, event_description_id, time))"
+						);	
+					
+						// Copy the data
+						statement.execute("INSERT INTO temp_tsk_events(event_id, event_type_id, "
+								+ "event_description_id, time) SELECT * FROM tsk_events");
+					
+						// Drop the old table
+						statement.execute("DROP TABLE tsk_events");
+					
+						// Rename the new table
+						statement.execute("ALTER TABLE temp_tsk_events RENAME TO tsk_events");
+						
 						//create tsk_events indices that were skipped in the 8.2 to 8.3 update code
 						statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
 						statement.execute("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id) ");
@@ -8827,8 +8847,11 @@ public class SleuthkitCase {
 		return connections.getConnection();
 	}
 
-	SleuthkitJNI.CaseDbHandle getCaseHandle() {
-		return this.caseHandle;
+	synchronized long getCaseDbPointer() throws TskCoreException {
+		if (caseHandle != null) {
+			return caseHandle.getCaseDbPointer();
+		}
+		throw new TskCoreException("Case has been closed");
 	}
 
 	@Override
