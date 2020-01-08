@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import com.google.common.collect.ImmutableList;
+import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.datamodel.AbstractFile;
@@ -40,7 +41,10 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 public final class FileAttachment implements Attachment {
 
+	@SerializedName("TSK_PATH")
 	private final String path;
+	
+	@SerializedName("TSK_ID")
 	private final long objectID;
 
 	// Mobile phones often create mount points to refer to SD Cards or other 
