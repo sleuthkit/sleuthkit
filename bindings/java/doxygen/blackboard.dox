@@ -18,10 +18,7 @@ The second special type of artifact is the TSK_ASSOCIATED_OBJECT. All artifacts 
 
 \section jni_bb_access Accessing the Blackboard
 
-Java modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.  
-
-Refer to the <a href="http://wiki.sleuthkit.org/index.php?title=Artifact_Examples">artifact examples wiki page</a> for artifact and attribute combinations that are commonly used. 
-
+Java modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.
 
 \subsection jni_bb_access_post Posting to the Blackboard
 
