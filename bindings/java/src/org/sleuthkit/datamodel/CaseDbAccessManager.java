@@ -703,10 +703,9 @@ public final class CaseDbAccessManager {
 	 * @throws TskCoreException 
 	 */
 	private void validateSQL(String sql) throws TskCoreException {
-
-		if (sql.contains(";")) {
-			throw new TskCoreException("SQL unsafe to execute, it contains a ; ");
-		}
+		/*
+		 * TODO (JIRA-5950): Need SQL injection defense in CaseDbAccessManager 
+		 */
 	}
 
 }
