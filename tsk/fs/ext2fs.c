@@ -511,7 +511,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
             tsk_getu16(fs->endian, ext2fs->fs->s_desc_size));
 #endif
         /* Test for possible overflow */
-        if ((TSK_OFF_T)ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo) 
+        if (ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo) 
                 >= LLONG_MAX / fs->block_size) {
             tsk_release_lock(&ext2fs->lock);
 
@@ -682,10 +682,10 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     }
 
     fs_meta->uid =
-        tsk_getu16(fs->endian, dino_buf->i_uid) + (tsk_getu16(fs->endian,
+        tsk_getu16(fs->endian, dino_buf->i_uid) + ((TSK_UID_T)tsk_getu16(fs->endian,
             dino_buf->i_uid_high) << 16);
     fs_meta->gid =
-        tsk_getu16(fs->endian, dino_buf->i_gid) + (tsk_getu16(fs->endian,
+        tsk_getu16(fs->endian, dino_buf->i_gid) + ((TSK_GID_T)tsk_getu16(fs->endian,
             dino_buf->i_gid_high) << 16);
     fs_meta->mtime = tsk_getu32(fs->endian, dino_buf->i_mtime);
     fs_meta->atime = tsk_getu32(fs->endian, dino_buf->i_atime);
@@ -3341,6 +3341,18 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         if (tsk_verbose)
             fprintf(stderr,
                 "ext2fs_open: fragment size not equal to block size\n");
+        return NULL;
+    }
+
+    if (tsk_getu32(fs->endian, ext2fs->fs->s_log_block_size) >= sizeof(uint32_t) * 8) {
+        free(ext2fs->fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+        tsk_error_set_errstr("Block size too large");
+        if (tsk_verbose)
+            fprintf(stderr,
+                "ext2fs_open: block size too large\n");
         return NULL;
     }
 

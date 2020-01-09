@@ -21,10 +21,10 @@ package org.sleuthkit.datamodel.blackboardutils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -39,11 +39,11 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @param caseDb     Sleuthkit case database.
 	 * @param moduleName Name of module using the helper.
-	 * @param srcFile    Source file for the artifacts.
+	 * @param srcContent Source content for the artifacts.
 	 *
 	 */
-	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
-		super(caseDb, moduleName, srcFile);
+	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
+		super(caseDb, moduleName, srcContent);
 	}
 
 	/**
@@ -95,7 +95,7 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
 		// create artifact
-		gpsTrackpointArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT);
+		gpsTrackpointArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE, getModuleName(), latitude));
@@ -154,7 +154,7 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
 		// create artifact
-		installedProgramArtifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG);
+		installedProgramArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));

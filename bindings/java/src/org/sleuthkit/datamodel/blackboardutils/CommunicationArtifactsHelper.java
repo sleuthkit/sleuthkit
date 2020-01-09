@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2019 Basis Technology Corp.
+ * Copyright 2019-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,11 +33,14 @@ import org.sleuthkit.datamodel.AccountFileInstance;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.Relationship;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskDataException;
+import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
+import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments.FileAttachment;
 
 /**
  * Class to help ingest modules create communication artifacts. Communication
@@ -138,7 +141,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @param caseDb       Sleuthkit case db.
 	 * @param moduleName   Name of module using the helper.
-	 * @param srcFile      Source file being processed by the module.
+	 * @param srcContent   Source content being processed by the module.
 	 * @param accountsType Account type {@link Account.Type} created by this
 	 *                     module.
 	 *
@@ -146,13 +149,13 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *                          account.
 	 */
 	public CommunicationArtifactsHelper(SleuthkitCase caseDb,
-			String moduleName, AbstractFile srcFile, Account.Type accountsType) throws TskCoreException {
+			String moduleName, Content srcContent, Account.Type accountsType) throws TskCoreException {
 
-		super(caseDb, moduleName, srcFile);
+		super(caseDb, moduleName, srcContent);
 
 		this.moduleAccountsType = accountsType;
 		this.selfAccountType = Account.Type.DEVICE;
-		this.selfAccountId = ((DataSource) getAbstractFile().getDataSource()).getDeviceId();
+		this.selfAccountId = ((DataSource) getContent().getDataSource()).getDeviceId();
 	}
 
 	/**
@@ -166,7 +169,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @param caseDb          Sleuthkit case db.
 	 * @param moduleName      Name of module using the helper.
-	 * @param srcFile         Source file being processed by the module.
+	 * @param srcContent      Source content being processed by the module.
 	 * @param accountsType    Account type {@link Account.Type} created by this
 	 *                        module.
 	 * @param selfAccountType Self account type to be created for this module.
@@ -174,9 +177,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @throws TskCoreException	If there is an error creating the self account
 	 */
-	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId) throws TskCoreException {
+	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId) throws TskCoreException {
 
-		super(caseDb, moduleName, srcFile);
+		super(caseDb, moduleName, srcContent);
 
 		this.moduleAccountsType = accountsType;
 		this.selfAccountType = selfAccountType;
@@ -272,7 +275,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
 		// create TSK_CONTACT artifact
-		contactArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CONTACT);
+		contactArtifact = getContent().newArtifact(ARTIFACT_TYPE.TSK_CONTACT);
 
 		// construct attributes
 		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), contactName));
@@ -351,7 +354,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *                          instance.
 	 */
 	private AccountFileInstance createAccountInstance(Account.Type accountType, String accountUniqueID) throws TskCoreException {
-		return getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(accountType, accountUniqueID, getModuleName(), getAbstractFile());
+		return getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(accountType, accountUniqueID, getModuleName(), getContent());
 	}
 
 	/**
@@ -497,7 +500,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
 		// create TSK_MESSAGE artifact
-		msgArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_MESSAGE);
+		msgArtifact = getContent().newArtifact(ARTIFACT_TYPE.TSK_MESSAGE);
 
 		// construct attributes
 		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, getModuleName(), messageType));
@@ -694,7 +697,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
 		// Create TSK_CALLLOG artifact
-		callLogArtifact = getAbstractFile().newArtifact(ARTIFACT_TYPE.TSK_CALLLOG);
+		callLogArtifact = getContent().newArtifact(ARTIFACT_TYPE.TSK_CALLLOG);
 
 		// Add basic attributes 
 		addAttributeIfNotZero(ATTRIBUTE_TYPE.TSK_DATETIME_START, startDateTime, attributes);
@@ -731,8 +734,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		} else {
 			// For incoming call, if no callee specified, assume self account is callee
 			if (direction == CommunicationDirection.INCOMING) {
-				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, this.selfAccountInstance.getAccount().getTypeSpecificID(), attributes);
-				recipientAccountsList.add(this.getSelfAccountInstance());
+				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, getSelfAccountInstance().getAccount().getTypeSpecificID(), attributes);
+				recipientAccountsList.add(getSelfAccountInstance());
 			} else { // outgoing call without any callee
 				throw new IllegalArgumentException("Callee not provided for an outgoing call.");
 			}
@@ -877,7 +880,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 */
 	private synchronized AccountFileInstance getSelfAccountInstance() throws TskCoreException {
 		if (selfAccountInstance == null) {
-			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getAbstractFile());
+			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getContent());
 		}
 		return selfAccountInstance;
 	}

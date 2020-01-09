@@ -1907,6 +1907,8 @@ public class SleuthkitCase {
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
 			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
 
+			
+			
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
 			closeResultSet(resultSet);
@@ -1963,6 +1965,26 @@ public class SleuthkitCase {
 						// In PostgreSQL we can rename the column if it exists
 						statement.execute("ALTER TABLE tsk_event_descriptions "
 							+ "RENAME COLUMN file_obj_id TO content_obj_id");
+						
+						// In 8.2 to 8.3 upgrade, the event_id & time column in tsk_events table was erroneously created as type INTEGER, instead of BIGINT
+						// Fix the schema, preserving any data if exists.
+						statement.execute("CREATE TABLE temp_tsk_events ( "
+								+ " event_id BIGSERIAL PRIMARY KEY, "
+								+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+								+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id),"
+								+ " time BIGINT NOT NULL, "
+								+ " UNIQUE (event_type_id, event_description_id, time))"
+						);	
+					
+						// Copy the data
+						statement.execute("INSERT INTO temp_tsk_events(event_id, event_type_id, "
+								+ "event_description_id, time) SELECT * FROM tsk_events");
+					
+						// Drop the old table
+						statement.execute("DROP TABLE tsk_events");
+					
+						// Rename the new table
+						statement.execute("ALTER TABLE temp_tsk_events RENAME TO tsk_events");
 						
 						//create tsk_events indices that were skipped in the 8.2 to 8.3 update code
 						statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
@@ -2043,6 +2065,18 @@ public class SleuthkitCase {
 				statement.execute("CREATE TABLE tsk_pool_info (obj_id BIGSERIAL PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 			}
 			
+			// Add new account types for newly supported messaging applications, if they dont exists already.
+			insertAccountTypeIfNotExists(statement, "IMO", "IMO");
+			insertAccountTypeIfNotExists(statement, "LINE", "LINE");
+			insertAccountTypeIfNotExists(statement, "SKYPE", "Skype");
+			insertAccountTypeIfNotExists(statement, "TANGO", "Tango");
+			insertAccountTypeIfNotExists(statement, "TEXTNOW", "TextNow");
+			insertAccountTypeIfNotExists(statement, "THREEMA", "ThreeMa");
+			insertAccountTypeIfNotExists(statement, "VIBER", "Viber");
+			insertAccountTypeIfNotExists(statement, "XENDER", "Xender");
+			insertAccountTypeIfNotExists(statement, "ZAPYA", "Zapya");
+			insertAccountTypeIfNotExists(statement, "SHAREIT", "ShareIt");
+			
 			return new CaseDbSchemaVersionNumber(8, 4);
 		} finally {
 			closeResultSet(results);
@@ -2052,6 +2086,32 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Inserts a row for the given account type in account_types table, 
+	 * if one doesn't exist.
+	 * 
+	 * @param statement Statement to use to execute SQL.
+	 * @param type_name Account type name.
+	 * @param display_name Account type display name.
+	 * 
+	 * @throws TskCoreException
+	 * @throws SQLException 
+	 */
+	private void insertAccountTypeIfNotExists(Statement statement, String type_name, String display_name) throws TskCoreException, SQLException {
+		
+		String insertSQL = String.format("INTO account_types(type_name, display_name) VALUES ('%s', '%s')", type_name, display_name);
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				insertSQL = "INSERT " + insertSQL + " ON CONFLICT DO NOTHING"; //NON-NLS
+				break;
+			case SQLITE:
+				insertSQL = "INSERT OR IGNORE " + insertSQL;
+				break;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+		}
+		statement.execute(insertSQL); //NON-NLS
+	}
+ /**
 	 * Extract the extension from a file name.
 	 *
 	 * @param fileName the file name to extract the extension from.
@@ -8787,8 +8847,11 @@ public class SleuthkitCase {
 		return connections.getConnection();
 	}
 
-	SleuthkitJNI.CaseDbHandle getCaseHandle() {
-		return this.caseHandle;
+	synchronized long getCaseDbPointer() throws TskCoreException {
+		if (caseHandle != null) {
+			return caseHandle.getCaseDbPointer();
+		}
+		throw new TskCoreException("Case has been closed");
 	}
 
 	@Override

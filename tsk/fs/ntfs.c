@@ -652,10 +652,22 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         if (totlen)
             *totlen += (data_run->len * ntfs->csize_b);
 
-        /* Get the address of this run */
+        /* Get the address offset of this run.
+         * An address offset of more than eight bytes will not fit in the
+         * 64-bit addr_offset field (and is likely corrupt)
+         */
+        if (NTFS_RUNL_LENSZ(run) > 8) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("ntfs_make_run: Run address offset is too large to process");
+            tsk_fs_attr_run_free(*a_data_run_head);
+            *a_data_run_head = NULL;
+            return TSK_COR;
+        }
         for (i = 0, data_run->addr = 0; i < NTFS_RUNL_OFFSZ(run); i++) {
             //data_run->addr |= (run->buf[idx++] << (i * 8));
-            addr_offset |= (run->buf[idx++] << (i * 8));
+            addr_offset |= ((int64_t)(run->buf[idx++]) << (i * 8));
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_make_data_run: Off idx: %i cur: %"
