@@ -18,11 +18,13 @@
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 import com.google.gson.Gson;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -40,7 +42,7 @@ public final class GeoArtifactHelper extends ArtifactHelperBase {
 	 * @param moduleName	Name of module using the helper.
 	 * @param srcFile			 Source file being processed by the module.
 	 */
-	public GeoArtifactHelper(SleuthkitCase caseDb, String moduleName, AbstractFile srcFile) {
+	public GeoArtifactHelper(SleuthkitCase caseDb, String moduleName, Content srcFile) {
 		super(caseDb, moduleName, srcFile);
 	}
 
@@ -61,7 +63,7 @@ public final class GeoArtifactHelper extends ArtifactHelperBase {
 			throw new IllegalArgumentException("GeoTrackPoint instance must be valid");
 		}
 
-		BlackboardArtifact artifact = getAbstractFile().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
+		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 		if (trackName != null) {
 			artifact.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), trackName));
 		}

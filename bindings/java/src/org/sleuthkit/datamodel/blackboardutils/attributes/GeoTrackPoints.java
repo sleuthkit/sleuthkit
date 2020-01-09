@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.blackboardutils;
+package org.sleuthkit.datamodel.blackboardutils.attributes;
 
 import java.util.Collection;
 import java.util.Collections;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
 /**
  * Helper class to make it easier to serialize and deserialize the list of track
