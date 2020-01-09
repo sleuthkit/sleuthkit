@@ -760,8 +760,8 @@ WARN_LOGFILE           =
 
 INPUT                  = main.dox \
                          query_database.dox \
-			             blackboard.dox \
-						 artifact_catalog.dox \
+                         blackboard.dox \
+                         artifact_catalog.dox \
                          insert_and_update_database.dox \
                          communications.dox \
 						 ../src
