@@ -696,17 +696,14 @@ public final class CaseDbAccessManager {
 	/**
 	 * Validates given SQL string.
 	 * 
-	 * Specifically, it ensurer the SQL  doesn't have a ";" 
+	 * @param sql The SQL to validate.
 	 * 
-	 * @param sql
-	 * 
-	 * @throws TskCoreException 
+	 * @throws TskCoreException Thrown if the SQL is not valid.
 	 */
 	private void validateSQL(String sql) throws TskCoreException {
-
-		if (sql.contains(";")) {
-			throw new TskCoreException("SQL unsafe to execute, it contains a ; ");
-		}
+		/*
+		 * TODO (JIRA-5950): Need SQL injection defense in CaseDbAccessManager 
+		 */
 	}
 
 }
