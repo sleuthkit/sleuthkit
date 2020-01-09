@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2019 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1373,15 +1373,18 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskattachments.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		
-		TSK_GPS_DISTANCE_FROM_HOMEPOINT(142, "TSK_GPS_DISTANCE_FROM_HOMEPOINT", //NON-NLS
+		TSK_GEO_DISTANCE_FROM_HOME_POINT(142, "TSK_GEO_DISTANCE_FROM_HOME_POINT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskdronehpdistance.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 	
-		TSK_GPS_DISTANCE_TRAVELED(143, "TSK_GPS_DISTANCE_TRAVELED", //NON-NLS
+		TSK_GEO_DISTANCE_TRAVELED(143, "TSK_GEO_DISTANCE_TRAVELED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskdronedistancetraveled.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		
-		
+		TSK_GEO_TRACKPOINTS(144, "TSK_GEO_TRACKPOINTS",
+			bundle.getString("BlackboardAttribute.tskgeopath.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+
 		;
 
 		private final int typeID;
