@@ -33,7 +33,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  * artifacts include: TSK_GPS_TRACK.
  *
  */
-public final class GeoArtifactHelper extends ArtifactHelperBase {
+public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 	/**
 	 * Constructs a geolocation artifact helper for the given source file.
@@ -42,7 +42,7 @@ public final class GeoArtifactHelper extends ArtifactHelperBase {
 	 * @param moduleName	Name of module using the helper.
 	 * @param srcFile			 Source file being processed by the module.
 	 */
-	public GeoArtifactHelper(SleuthkitCase caseDb, String moduleName, Content srcFile) {
+	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcFile) {
 		super(caseDb, moduleName, srcFile);
 	}
 
