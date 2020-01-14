@@ -313,14 +313,15 @@ case "$host" in
   ;;
 esac
 
-AC_CHECK_PROG([have_pkgconfig], [pkg-config], [yes], [no])
-if test "x$have_pkgconfig" = "xyes"; then
-  AX_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit], [], [no_cppunit=yes])
+AC_CHECK_PROG([PKGCONFIG], [pkg-config], [yes], [no])
+if test "x$PKGCONFIG" = xyes; then
+  AX_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit >= 1.12.1], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
 else
   AM_PATH_CPPUNIT(1.12.1)
+  AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
 fi
 
-AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$no_cppunit" = x])
+AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
@@ -465,6 +466,7 @@ Building:
    libvmdk support:                       $ax_libvmdk
    postgresql support:                    $ax_libpq
 Features:
+   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ]);
