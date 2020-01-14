@@ -1,1 +1,1 @@
-SUBDIRS= base
+SUBDIRS = base

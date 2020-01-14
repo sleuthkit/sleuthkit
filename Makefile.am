@@ -61,7 +61,7 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
 ACLOCAL_AMFLAGS = -I m4
 
 # directories to compile
-if CPPUNIT
+if HAVE_CPPUNIT
   UNIT_TESTS=unit_tests
 endif
 
