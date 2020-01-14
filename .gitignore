@@ -98,6 +98,11 @@ Makefile
 .deps
 .libs
 *.swp
+.dirstamp
+
+# unit tests
+unit_tests/*/*.log
+unit_tests/*/*.trs
 
 #javadoc generated
 /bindings/java/javadoc
@@ -116,7 +121,6 @@ libtool
 m4/libtool.m4
 m4/lt*.m4
 config/*
-
 
 # Executables
 samples/callback_cpp_style
@@ -165,9 +169,9 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
-unit_tests/base/*.log
-unit_tests/base/*.trs
 unit_tests/base/test_base
+unit_tests/*/*.exe
+
 # EMACS backup files
 *~
 
