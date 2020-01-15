@@ -1770,7 +1770,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         // sanity check on bounds of attribute. Prevents other
         // issues later on that use attr->len for bounds checks.
         if (((uintptr_t) attr + tsk_getu32(fs->endian,
-                               attr->len)) > (uintptr_t) (a_attrseq + len)) {
+                               attr->len)) > (uintptr_t)a_attrseq + len) {
             break;
         }
 
