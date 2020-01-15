@@ -18,8 +18,10 @@
  */
 package org.sleuthkit.datamodel.blackboardutils.attributes;
 
-import java.util.Collection;
-import java.util.Collections;
+import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
 /**
@@ -29,35 +31,60 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPo
  */
 public final class GeoTrackPoints {
 
-	private final Collection<GeoTrackPoint> points;
+	private final List<GeoTrackPoint> points;
+
+	/**
+	 * Deserialize the given list of GeoTrackPoints.
+	 *
+	 * @param jsonString JSon string of track points.
+	 *
+	 * @return	Timestamp ordered list of GeoTrackPoints, empty list will be
+	 *         returned if jsonString is null or empty.
+	 */
+	public static List<GeoTrackPoint> deserializePoints(String jsonString) {
+		if (jsonString == null || jsonString.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return (new Gson()).fromJson(jsonString, GeoTrackPoints.class).getTimeOrderedPoints();
+	}
+
+	/**
+	 * Serialize the given list of GeoTrackPoints.
+	 *
+	 * @param points List of GeoTrackPoints
+	 *
+	 * @return	JSon formatted string is returned or empty string if points was
+	 *         null
+	 */
+	public static String serializePoints(List<GeoTrackPoint> points) {
+		if (points == null) {
+			return "";
+		}
+
+		Gson gson = new Gson();
+		return gson.toJson(new GeoTrackPoints(points));
+	}
 
 	/**
 	 * Constructs a new instance with the give list of GeoTrackPoints.
 	 *
 	 * @param points
 	 */
-	public GeoTrackPoints(Collection<GeoTrackPoint> points) {
+	private GeoTrackPoints(List<GeoTrackPoint> points) {
 		if (points == null) {
 			throw new IllegalArgumentException("Invalid list of track points passed to constructor");
 		}
+
 		this.points = points;
 	}
 
 	/**
-	 * Return whether or not the points list is empty
+	 * Returns a timestamp ordered copy of the points list.
 	 *
-	 * @return True if list is empty.
+	 * @return timestamp
 	 */
-	public boolean isEmpty() {
-		return points.isEmpty();
-	}
-
-	/**
-	 * Returns the list of track points.
-	 *
-	 * @return Unmodifiable collection of trackpoints.
-	 */
-	public Collection<GeoTrackPoint> getPoints() {
-		return Collections.unmodifiableCollection(points);
+	private List<GeoTrackPoint> getTimeOrderedPoints() {
+		return points.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
 	}
 }

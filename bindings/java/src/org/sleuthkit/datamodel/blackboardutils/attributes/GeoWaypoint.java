@@ -82,7 +82,7 @@ public class GeoWaypoint {
 	 * point.
 	 *
 	 */
-	public final static class GeoTrackPoint extends GeoWaypoint {
+	public final static class GeoTrackPoint extends GeoWaypoint implements Comparable<GeoTrackPoint> {
 
 		@SerializedName("TSK_GEO_VELOCITY")
 		private final Double velocity;
@@ -160,6 +160,19 @@ public class GeoWaypoint {
 		 */
 		public Long getTimeStamp() {
 			return timestamp;
+		}
+
+		@Override
+		public int compareTo(GeoTrackPoint otherTP) {
+			Long otherTimeStamp = otherTP.getTimeStamp();
+
+			if (timestamp == null && otherTimeStamp != null) {
+				return -1;
+			} else if (timestamp != null && otherTimeStamp == null) {
+				return 1;
+			} else {
+				return timestamp.compareTo(otherTP.getTimeStamp());
+			}
 		}
 	}
 

@@ -19,19 +19,20 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
 /**
- * Class to help ingest modules create Geolocation artifacts. 
+ * Class to help ingest modules create Geolocation artifacts.
  *
  */
 public final class GeoArtifactsHelper extends ArtifactHelperBase {
@@ -59,7 +60,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException		  If there is an error creating the artifact.
 	 * @throws BlackboardException	If there is a problem posting the artifact
 	 */
-	public BlackboardArtifact addTrack(String trackName, GeoTrackPoints points) throws TskCoreException, BlackboardException {
+	public BlackboardArtifact addTrack(String trackName, List<GeoTrackPoint> points) throws TskCoreException, BlackboardException {
 		if (points == null) {
 			throw new IllegalArgumentException("GeoTrackPoint instance must be valid");
 		}
@@ -69,33 +70,17 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			artifact.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), trackName));
 		}
 
-		addPathToArtifact(artifact, points);
+		artifact.addAttribute(
+				new BlackboardAttribute(
+						BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS,
+						getModuleName(),
+						GeoTrackPoints.serializePoints(points)));
 
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
 		return artifact;
 	}
 
-	/**
-	 * Creates the json for GeoTrackPoints and adds as attribute to the given
-	 * artifact.
-	 *
-	 * @param artifact
-	 * @param points
-	 *
-	 * @throws TskCoreException
-	 */
-	private void addPathToArtifact(BlackboardArtifact artifact, GeoTrackPoints points) throws TskCoreException {
-		Gson gson = new Gson();
-		String jsonString = gson.toJson(points);
-
-		artifact.addAttribute(
-				new BlackboardAttribute(
-						BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS,
-						getModuleName(),
-						jsonString));
-	}
-	
 	/**
 	 * Adds a TSK_GPS_TRACKPOINT artifact.
 	 *
@@ -109,7 +94,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @return GPS trackpoint artifact added
 	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws TskCoreException		  If there is an error creating the artifact.
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addGPSTrackpoint(double latitude, double longitude,
@@ -135,7 +120,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @return GPS trackpoint artifact added
 	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws TskCoreException		  If there is an error creating the artifact.
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addGPSTrackpoint(double latitude, double longitude, long timeStamp, String name, String programName,
