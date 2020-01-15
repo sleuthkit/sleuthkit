@@ -46,7 +46,8 @@ public final class GeoTrackPoints {
 			return new ArrayList<>();
 		}
 
-		return (new Gson()).fromJson(jsonString, GeoTrackPoints.class).getTimeOrderedPoints();
+		GeoTrackPoints trackPoints = (new Gson()).fromJson(jsonString, GeoTrackPoints.class);
+		return trackPoints.getTimeOrderedPoints();
 	}
 
 	/**
