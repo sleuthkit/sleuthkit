@@ -68,7 +68,7 @@ AC_CHECK_FUNCS([strlcpy strlcat])
 
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
-    CLIBS="$PTHREAD_LIBS $LIBS"
+    LIBS="$PTHREAD_LIBS $LIBS"
     CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
     LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"],[])
