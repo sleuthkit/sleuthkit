@@ -20,11 +20,17 @@ package org.sleuthkit.datamodel;
 
 import com.google.common.net.InternetDomainName;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
 /**
  * Version of TimelineEventType for events based on artifacts
@@ -126,6 +132,10 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 		}
 		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
 		if (timeAttribute == null) {
+			if (artifact.getArtifactID() != TSK_GPS_TRACK.getTypeID()) {
+				return makeRouteDescription(artifact);
+			}
+
 			/*
 			 * This has the side effect of making sure that a TimelineEvent
 			 * object is not created for this artifact.
@@ -167,6 +177,57 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 			logger.log(Level.SEVERE, MessageFormat.format("Error getting attribute from artifact {0}.", artf.getArtifactID()), ex); // NON-NLS
 			return null;
 		}
+	}
+
+	/**
+	 * Parses a TSK_GPS_TRACK artifact to create a triple description with
+	 * time extracted from the TSK_GEO_TRACKPOINTS attribute.
+	 * 
+	 * @param artifact
+	 * 
+	 * @return
+	 * 
+	 * @throws TskCoreException 
+	 */
+	private TimelineEventDescriptionWithTime makeRouteDescription(BlackboardArtifact artifact) throws TskCoreException {
+		BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_GEO_TRACKPOINTS));
+		if (attribute == null) {
+			// Cannot create and event if there are no track points to extract time
+			return null;
+		}
+
+		List<GeoTrackPoint> points = GeoTrackPoints.deserializePoints(attribute.getValueString());
+		Long startTime = null;
+		for (GeoTrackPoint point : points) {
+			// Points are in time order so return the first non-null time stamp
+			startTime = point.getTimeStamp();
+			if (startTime != null) {
+				break;
+			}
+		}
+
+		// If we didn't find a startime do not create an event.
+		if (startTime == null) {
+			return null;
+		}
+
+		//combine descriptions in standard way
+		String shortDescription = extractShortDescription(artifact);
+		if (shortDescription.length() > MAX_SHORT_DESCRIPTION_LENGTH) {
+			shortDescription = shortDescription.substring(0, MAX_SHORT_DESCRIPTION_LENGTH);
+		}
+
+		String medDescription = shortDescription + " : " + extractMedDescription(artifact);
+		if (medDescription.length() > MAX_MED_DESCRIPTION_LENGTH) {
+			medDescription = medDescription.substring(0, MAX_MED_DESCRIPTION_LENGTH);
+		}
+
+		String fullDescription = medDescription + " : " + extractFullDescription(artifact);
+		if (fullDescription.length() > MAX_FULL_DESCRIPTION_LENGTH) {
+			fullDescription = fullDescription.substring(0, MAX_FULL_DESCRIPTION_LENGTH);
+		}
+
+		return new TimelineEventDescriptionWithTime(startTime, shortDescription, medDescription, fullDescription);
 	}
 
 	/**
