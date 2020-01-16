@@ -36,8 +36,6 @@ import org.sleuthkit.datamodel.TimelineEventTypes.FilePathEventType;
 import org.sleuthkit.datamodel.TimelineEventTypes.URLArtifactEventType;
 import org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.AttributeExtractor;
 import static org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.getAttributeSafe;
-import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
-import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
 /**
  * An interface implemented by timeline event types. Timeline event types are
