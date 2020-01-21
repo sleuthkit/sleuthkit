@@ -573,11 +573,8 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
   APFSJObjBtreeNode(const APFSObjectBtreeNode *obj_root,
                     apfs_block_num block_num, const uint8_t *key);
 
-  APFSJObjBtreeNode(const APFSJObjBtreeNode &) = default;
-  APFSJObjBtreeNode &operator=(const APFSJObjBtreeNode &) = default;
 
   APFSJObjBtreeNode(APFSJObjBtreeNode &&) = default;
-  APFSJObjBtreeNode &operator=(APFSJObjBtreeNode &&) = default;
 
   using iterator = APFSBtreeNodeIterator<APFSJObjBtreeNode>;
 
