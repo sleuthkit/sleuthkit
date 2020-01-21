@@ -122,11 +122,7 @@ class APFSJObjTree {
                uint64_t root_tree_oid,
                const APFSFileSystem::crypto_info_t &crypto);
 
-  APFSJObjTree(const APFSJObjTree &) = default;
-  APFSJObjTree &operator=(const APFSJObjTree &) = default;
-
   APFSJObjTree(APFSJObjTree &&) = default;
-  APFSJObjTree &operator=(APFSJObjTree &&) = default;
 
   inline APFSJObject obj(uint64_t oid) const { return {jobjs(oid)}; }
 
