@@ -15,7 +15,7 @@ endif
 $(tsk_jar):
 
 all-local:
-	ant -d dist $(ant_args)
+	ant dist $(ant_args)
 
 CLEANFILES = $(tsk_jar)
 
