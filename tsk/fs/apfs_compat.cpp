@@ -1010,6 +1010,26 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
   return 1;
 }
 
+#define APFS_PRINT_WIDTH   8
+typedef struct {
+    FILE *hFile;
+    int idx;
+} APFS_PRINT_ADDR;
+
+static TSK_WALK_RET_ENUM
+print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
+    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+{
+    APFS_PRINT_ADDR *print = (APFS_PRINT_ADDR *)ptr;
+    tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
+    if (++(print->idx) == APFS_PRINT_WIDTH) {
+        tsk_fprintf(print->hFile, "\n");
+        print->idx = 0;
+    }
+
+    return TSK_WALK_CONT;
+}
+
 uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
                             TSK_INUM_T inode_num, TSK_DADDR_T numblock,
                             int32_t sec_skew) const noexcept try {
@@ -1209,13 +1229,28 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
                     (fs_attr->flags & TSK_FS_ATTR_COMP) ? ", Compressed" : "",
                     (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
                     fs_attr->size, fs_attr->nrd.initsize);
-
         if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
           if (tsk_fs_attr_print(fs_attr, hFile)) {
             tsk_fprintf(hFile, "\nError creating run lists\n");
             tsk_error_print(hFile);
             tsk_error_reset();
           }
+        }
+        else {
+            APFS_PRINT_ADDR print_addr;
+            print_addr.idx = 0;
+            print_addr.hFile = hFile;
+            if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
+                fs_attr->id,
+                TSK_FS_FILE_WALK_FLAG_ENUM((TSK_FS_FILE_WALK_FLAG_AONLY |
+                    TSK_FS_FILE_WALK_FLAG_SLACK)),
+                print_addr_act, (void *)&print_addr)) {
+                tsk_fprintf(hFile, "\nError walking file\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+            if (print_addr.idx != 0)
+                tsk_fprintf(hFile, "\n");
         }
       } else {
         // Resident attributes
