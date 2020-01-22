@@ -35,7 +35,6 @@ class APFSBlock {
 
   // Move constructible
   APFSBlock(APFSBlock &&) = default;
-  APFSBlock &operator=(APFSBlock &&) = default;
 
   virtual ~APFSBlock() = default;
 

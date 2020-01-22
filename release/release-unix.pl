@@ -417,6 +417,43 @@ sub update_buildxml {
     rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
 }
 
+sub update_doxygen {
+
+    print "Updating the version in Doxyfile file\n";
+    
+    my $IFILE = "bindings/java/doxygen/Doxyfile";
+    my $OFILE = "bindings/java/doxygen/Doxyfile2";
+
+    open (CONF_IN, "<${IFILE}") or 
+        die "Cannot open $IFILE";
+    open (CONF_OUT, ">${OFILE}") or 
+        die "Cannot open $OFILE";
+
+    my $found = 0;
+    while (<CONF_IN>) {
+        if (/^PROJECT_NUMBER\s*=/) {
+            print CONF_OUT "PROJECT_NUMBER = ${VER}\n";
+            $found++;
+        }
+        elsif (/^HTML_OUTPUT\s*=/) {
+            print CONF_OUT "HTML_OUTPUT = jni-docs/${VER}/\n";
+            $found++;
+        }
+        else {
+            print CONF_OUT $_;
+        }
+    }
+    close (CONF_IN);
+    close (CONF_OUT);
+
+    if ($found != 2) {
+        die "Error: Found $found (instead of 2) occurrences of Version: in Doxyfile";
+    }
+
+    unlink ($IFILE) or die "Error deleting $IFILE";
+    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
+}
+
 sub update_debian_changelog {
 
     print "Updating the version in Debian changelog file\n";
@@ -681,6 +718,7 @@ update_pkgver();
 update_buildxml();
 update_debian_changelog();
 update_debian_install();
+update_doxygen();
 
 bootstrap();
 checkin_vers();
