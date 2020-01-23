@@ -670,6 +670,30 @@ TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)
     return m_errors.empty() ? 0 : 1;
 }
 
+/**
+* Processes the file system represented by the given TSK_FS_INFO
+* pointer. Will Call processFile() on each file that is found.
+*
+* @param a_fs_info Pointer to a previously opened file system.
+ * @param a_inum inum to start walking files system at.
+*
+* @returns 1 if an error occurred (messages will have been registered) and 0 on success
+*/
+uint8_t
+TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info, TSK_INUM_T inum)
+{
+    if (a_fs_info == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
+        tsk_error_set_errstr("findFilesInFs - fs_info");
+        registerError();
+        return 1;
+    }
+
+    findFilesInFsInt(a_fs_info, inum);
+    return m_errors.empty() ? 0 : 1;
+}
+
 /** \internal
  * file name walk callback.  Walk the contents of each file
  * that is found.
