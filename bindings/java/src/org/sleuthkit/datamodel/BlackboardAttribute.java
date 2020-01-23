@@ -239,10 +239,13 @@ public class BlackboardAttribute {
 	 *
 	 * @throws IllegalArgumentException If the value type of the specified
 	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+	 *                                  or
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, String valueString) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
+		if  (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+		     && attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) 		{
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
@@ -273,7 +276,8 @@ public class BlackboardAttribute {
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
 	 */
 	public BlackboardAttribute(Type attributeType, String source, String valueString) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+			&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
@@ -414,7 +418,8 @@ public class BlackboardAttribute {
 
 	/**
 	 * Gets the value of this attribute. The value is only valid if the
-	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
+	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING or
+	 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON.
 	 *
 	 * @return The attribute value.
 	 */
@@ -538,6 +543,10 @@ public class BlackboardAttribute {
 					// return time string in default timezone
 					return TimeUtilities.epochToTime(getValueLong());
 				}
+			}
+			break;
+			case JSON: {
+				return getValueString();
 			}
 		}
 		return "";
@@ -795,7 +804,11 @@ public class BlackboardAttribute {
 		 * The value type of the attribute is a long representing seconds from
 		 * January 1, 1970.
 		 */
-		DATETIME(5, "DateTime");
+		DATETIME(5, "DateTime"),
+		/**
+		 * The value type of the attribute is a JSON string.
+		 */
+		JSON(6, "Json" );
 
 		private final long typeId;
 		private final String typeName;
@@ -1354,7 +1367,13 @@ public class BlackboardAttribute {
 		
 		TSK_GROUPS (140, "TSK_GROUPS", 
 				bundle.getString("BlackboardAttribute.tskgroups.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_ATTACHMENTS (141, "TSK_ATTACHMENTS", 
+				bundle.getString("BlackboardAttribute.tskattachments.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON);
+		
+		;
 
 		private final int typeID;
 		private final String typeName;

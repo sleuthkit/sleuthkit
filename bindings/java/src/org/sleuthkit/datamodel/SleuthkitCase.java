@@ -97,7 +97,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 3);
+			= new CaseDbSchemaVersionNumber(8, 4);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -891,6 +891,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot3toSchema8dot4(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -1785,10 +1786,9 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
 			statement.execute("CREATE INDEX events_type ON tsk_events(event_type_id)");
 			statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
-			statement.execute("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id ");
+			statement.execute("CREATE INDEX events_file_obj_id  ON tsk_event_descriptions(file_obj_id) ");
 			statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
 			statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
-			statement.execute("CREATE INDEX events_time  ON tsk_events(time ");
 			return new CaseDbSchemaVersionNumber(8, 2);
 
 		} finally {
@@ -1904,17 +1904,214 @@ public class SleuthkitCase {
 			);
 
 			// Fix mistakenly set names in tsk_db_info_extended 
-			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
-			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MAJOR_VERSION' WHERE name = 'CREATED_SCHEMA_MAJOR_VERSION'");
+			statement.execute("UPDATE tsk_db_info_extended SET name = 'CREATION_SCHEMA_MINOR_VERSION' WHERE name = 'CREATED_SCHEMA_MINOR_VERSION'");
 
+			
+			
 			return new CaseDbSchemaVersionNumber(8, 3);
 		} finally {
 			closeResultSet(resultSet);
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Updates a schema version 8.3 database to a schema version 8.4 database.
+	 * 
+	 * This includes a bug fix update for a misnamed column in tsk_event_descriptions in
+	 * the previous update code.
+	 * 
+	 * Note that 8.4 also introduced cascading deletes on many of the database tables. We do not need to 
+	 * add these in the upgrade code because data sources in cases that were originally created with 8.3 
+	 * or earlier can not be deleted.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot3toSchema8dot4(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 3) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		ResultSet results = null;
+
+		acquireSingleUserCaseWriteLock();				
+		try {
+			// This is a bug fix update for a misnamed column in tsk_event_descriptions in
+			// the previous update code.
+			if (null == getDatabaseType()) {
+				throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}		
+			
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					// Check if the misnamed column is present
+					results = statement.executeQuery("SELECT column_name FROM information_schema.columns "
+						+ "WHERE table_name='tsk_event_descriptions' and column_name='file_obj_id'");
+					if (results.next()) {
+						// In PostgreSQL we can rename the column if it exists
+						statement.execute("ALTER TABLE tsk_event_descriptions "
+							+ "RENAME COLUMN file_obj_id TO content_obj_id");
+						
+						// In 8.2 to 8.3 upgrade, the event_id & time column in tsk_events table was erroneously created as type INTEGER, instead of BIGINT
+						// Fix the schema, preserving any data if exists.
+						statement.execute("CREATE TABLE temp_tsk_events ( "
+								+ " event_id BIGSERIAL PRIMARY KEY, "
+								+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+								+ " event_description_id BIGINT NOT NULL REFERENCES tsk_event_descriptions(event_description_id),"
+								+ " time BIGINT NOT NULL, "
+								+ " UNIQUE (event_type_id, event_description_id, time))"
+						);	
+					
+						// Copy the data
+						statement.execute("INSERT INTO temp_tsk_events(event_id, event_type_id, "
+								+ "event_description_id, time) SELECT * FROM tsk_events");
+					
+						// Drop the old table
+						statement.execute("DROP TABLE tsk_events");
+					
+						// Rename the new table
+						statement.execute("ALTER TABLE temp_tsk_events RENAME TO tsk_events");
+						
+						//create tsk_events indices that were skipped in the 8.2 to 8.3 update code
+						statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
+						statement.execute("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id) ");
+						statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
+						statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
+						statement.execute("CREATE INDEX events_time  ON tsk_events(time) ");
+					}
+					break;
+				case SQLITE:
+					boolean hasMisnamedColumn = false;
+					results = statement.executeQuery("pragma table_info('tsk_event_descriptions')");
+					while (results.next()) {
+						if (results.getString("name") != null && results.getString("name").equals("file_obj_id")) {
+							hasMisnamedColumn = true;
+							break;
+						}	
+					}
+					
+					if (hasMisnamedColumn) {
+						// Since we can't rename the column we'll need to make new tables and copy the data
+						statement.execute("CREATE TABLE temp_tsk_event_descriptions ("
+								+ " event_description_id INTEGER PRIMARY KEY, "
+								+ " full_description TEXT NOT NULL, "
+								+ " med_description TEXT, "
+								+ " short_description TEXT,"
+								+ " data_source_obj_id BIGINT NOT NULL, "
+								+ " content_obj_id BIGINT NOT NULL, "
+								+ " artifact_id BIGINT, "
+								+ " hash_hit INTEGER NOT NULL, " //boolean
+								+ " tagged INTEGER NOT NULL, " //boolean
+								+ " UNIQUE(full_description, content_obj_id, artifact_id), "
+								+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+								+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_files(obj_id), "
+								+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id))"
+						);	
+					
+						statement.execute("CREATE TABLE temp_tsk_events ( "
+								+ " event_id INTEGER PRIMARY KEY, "
+								+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+								+ " event_description_id BIGINT NOT NULL REFERENCES temp_tsk_event_descriptions(event_description_id),"
+								+ " time INTEGER NOT NULL, "
+								+ " UNIQUE (event_type_id, event_description_id, time))"
+						);	
+					
+						// Copy the data
+						statement.execute("INSERT INTO temp_tsk_event_descriptions(event_description_id, full_description, "
+								+ "med_description, short_description, data_source_obj_id, content_obj_id, artifact_id, "
+								+ "hash_hit, tagged) SELECT * FROM tsk_event_descriptions");
+
+						statement.execute("INSERT INTO temp_tsk_events(event_id, event_type_id, "
+								+ "event_description_id, time) SELECT * FROM tsk_events");
+					
+						// Drop the old tables
+						statement.execute("DROP TABLE tsk_events");
+						statement.execute("DROP TABLE tsk_event_descriptions");
+
+						// Rename the new tables
+						statement.execute("ALTER TABLE temp_tsk_event_descriptions RENAME TO tsk_event_descriptions");
+						statement.execute("ALTER TABLE temp_tsk_events RENAME TO tsk_events");
+						
+						//create tsk_events indices
+						statement.execute("CREATE INDEX events_data_source_obj_id  ON tsk_event_descriptions(data_source_obj_id) ");
+						statement.execute("CREATE INDEX events_content_obj_id  ON tsk_event_descriptions(content_obj_id) ");
+						statement.execute("CREATE INDEX events_artifact_id  ON tsk_event_descriptions(artifact_id) ");
+						statement.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time) ");
+						statement.execute("CREATE INDEX events_time  ON tsk_events(time) ");
+					}
+					break;
+				default:
+					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}
+			
+			// create pool info table
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE tsk_pool_info (obj_id INTEGER PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+			} else {
+				statement.execute("CREATE TABLE tsk_pool_info (obj_id BIGSERIAL PRIMARY KEY, pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+			}
+			
+			// Add new account types for newly supported messaging applications, if they dont exists already.
+			insertAccountTypeIfNotExists(statement, "IMO", "IMO");
+			insertAccountTypeIfNotExists(statement, "LINE", "LINE");
+			insertAccountTypeIfNotExists(statement, "SKYPE", "Skype");
+			insertAccountTypeIfNotExists(statement, "TANGO", "Tango");
+			insertAccountTypeIfNotExists(statement, "TEXTNOW", "TextNow");
+			insertAccountTypeIfNotExists(statement, "THREEMA", "ThreeMa");
+			insertAccountTypeIfNotExists(statement, "VIBER", "Viber");
+			insertAccountTypeIfNotExists(statement, "XENDER", "Xender");
+			insertAccountTypeIfNotExists(statement, "ZAPYA", "Zapya");
+			insertAccountTypeIfNotExists(statement, "SHAREIT", "ShareIt");
+			
+			return new CaseDbSchemaVersionNumber(8, 4);
+		} finally {
+			closeResultSet(results);
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}		
+	}
 
 	/**
+	 * Inserts a row for the given account type in account_types table, 
+	 * if one doesn't exist.
+	 * 
+	 * @param statement Statement to use to execute SQL.
+	 * @param type_name Account type name.
+	 * @param display_name Account type display name.
+	 * 
+	 * @throws TskCoreException
+	 * @throws SQLException 
+	 */
+	private void insertAccountTypeIfNotExists(Statement statement, String type_name, String display_name) throws TskCoreException, SQLException {
+		
+		String insertSQL = String.format("INTO account_types(type_name, display_name) VALUES ('%s', '%s')", type_name, display_name);
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				insertSQL = "INSERT " + insertSQL + " ON CONFLICT DO NOTHING"; //NON-NLS
+				break;
+			case SQLITE:
+				insertSQL = "INSERT OR IGNORE " + insertSQL;
+				break;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+		}
+		statement.execute(insertSQL); //NON-NLS
+	}
+ /**
 	 * Extract the extension from a file name.
 	 *
 	 * @param fileName the file name to extract the extension from.
@@ -3567,6 +3764,7 @@ public class SleuthkitCase {
 		PreparedStatement statement;
 		switch (attr.getAttributeType().getValueType()) {
 			case STRING:
+			case JSON:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setString(7, attr.getValueString());
@@ -3642,6 +3840,7 @@ public class SleuthkitCase {
 			if (BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE != valueType) {
 				switch (valueType) {
 					case STRING:
+					case JSON:
 						valueClause = " value_text = '" + escapeSingleQuotes(attr.getValueString()) + "'";
 						break;
 					case INTEGER:
@@ -4641,6 +4840,9 @@ public class SleuthkitCase {
 			case VOL:
 				content = getVolumeById(id, parentId);
 				frequentlyUsedContentMap.put(id, content);
+				break;
+			case POOL:
+				content = getPoolById(id, parentId);
 				break;
 			case FS:
 				content = getFileSystemById(id, parentId);
@@ -5690,6 +5892,43 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Add a pool to the database
+	 *
+	 * @param parentObjId Object ID of the pool's parent
+     * @param type        Type of pool
+	 * @param transaction Case DB transaction
+	 *
+	 * @return the newly created Pool
+	 *
+	 * @throws TskCoreException
+	 */
+	public Pool addPool(long parentObjId, TskData.TSK_POOL_TYPE_ENUM type, CaseDbTransaction transaction) throws TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		try {
+			// Insert a row for the Pool into the tsk_objects table.
+			CaseDbConnection connection = transaction.getConnection();
+			long newObjId = addObject(parentObjId, TskData.ObjectType.POOL.getObjectType(), connection);
+
+			// Add a row to tsk_pool_info
+			// INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_POOL_INFO);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setShort(2, type.getValue());
+			connection.executeUpdate(preparedStatement);
+
+			// Create the new Pool object
+			return new Pool(this, newObjId, type.getName(), type.getValue());
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating pool with type %d and parent ID %d", type.getValue(), parentObjId), ex);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}		
 
 	/**
 	 * Add a FileSystem to the database.
@@ -5748,37 +5987,37 @@ public class SleuthkitCase {
 
 	/**
 	 * Add a file system file.
-	 * 
+	 *
 	 * @param dataSourceObjId	The object id of the root data source of this
-	 *							file.
-	 * @param fsObjId		The file system object id.
-	 * @param fileName		The name of the file.
-	 * @param metaAddr		The meta address of the file.
-	 * @param metaSeq		The meta address sequence of the file.
-	 * @param attrType		The attributed type of the file.
-	 * @param attrId		The attribute id 
-	 * @param dirFlag		The allocated status from the name structure
+	 *                        file.
+	 * @param fsObjId		       The file system object id.
+	 * @param fileName		      The name of the file.
+	 * @param metaAddr		      The meta address of the file.
+	 * @param metaSeq		       The meta address sequence of the file.
+	 * @param attrType		      The attributed type of the file.
+	 * @param attrId		        The attribute id
+	 * @param dirFlag		       The allocated status from the name structure
 	 * @param metaFlags
-	 * @param size			The size of the file in bytes.
-	 * @param ctime			The changed time of the file.
-	 * @param crtime		The creation time of the file.
-	 * @param atime			The accessed time of the file
-	 * @param mtime			The modified time of the file.
-	 ** @param isFile		True, unless the file is a directory.
-	 * @param parent		The parent of the file (e.g., a virtual directory)
-	 * 
+	 * @param size			         The size of the file in bytes.
+	 * @param ctime			        The changed time of the file.
+	 * @param crtime		        The creation time of the file.
+	 * @param atime			        The accessed time of the file
+	 * @param mtime			        The modified time of the file.
+	 ** @param isFile		        True, unless the file is a directory.
+	 * @param parent		        The parent of the file (e.g., a virtual directory)
+	 *
 	 * @return Newly created file
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
-	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId, 
-										String fileName,
-										long metaAddr, int metaSeq,
-										TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
-										TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, 
-										long ctime, long crtime, long atime, long mtime,
-										boolean isFile, Content parent) throws TskCoreException {
-		
+	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId,
+			String fileName,
+			long metaAddr, int metaSeq,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime,
+			boolean isFile, Content parent) throws TskCoreException {
+
 		CaseDbTransaction transaction = beginTransaction();
 		Statement queryStatement = null;
 		try {
@@ -5788,9 +6027,9 @@ public class SleuthkitCase {
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-			
+
 			String parentPath;
-			
+
 			if (parent instanceof AbstractFile) {
 				AbstractFile parentFile = (AbstractFile) parent;
 				if (isRootDirectory(parentFile, transaction)) {
@@ -5801,13 +6040,13 @@ public class SleuthkitCase {
 			} else {
 				parentPath = "/";
 			}
-	
+
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE);
 			statement.clearParameters();
 			statement.setLong(1, objectId);											// obj_is
 			statement.setLong(2, fsObjId);											// fs_obj_id 
 			statement.setLong(3, dataSourceObjId);									// data_source_obj_id 
-			statement.setShort(4, (short)attrType.getValue());						// attr_type
+			statement.setShort(4, (short) attrType.getValue());						// attr_type
 			statement.setInt(5, attrId);											// attr_id
 			statement.setString(6, fileName);										// name
 			statement.setLong(7, metaAddr);											// meta_addr
@@ -5820,7 +6059,7 @@ public class SleuthkitCase {
 			statement.setShort(12, metaType.getValue());							// meta_type
 			statement.setShort(13, dirFlag.getValue());								// dir_flags
 			statement.setShort(14, metaFlags);										// meta_flags
-			statement.setLong(15,  size < 0 ? 0 : size);
+			statement.setLong(15, size < 0 ? 0 : size);
 			statement.setLong(16, ctime);
 			statement.setLong(17, crtime);
 			statement.setLong(18, atime);
@@ -5830,21 +6069,20 @@ public class SleuthkitCase {
 			statement.setString(21, extension);
 
 			connection.executeUpdate(statement);
-			
+
 			transaction.commit();
 			transaction = null;
-			
+
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
-			attrType, attrId, fileName, metaAddr, metaSeq,
-			dirType, metaType, dirFlag, metaFlags,
-			size, ctime, crtime, atime, mtime,
-			(short)0, 0, 0, null, null, parentPath, null,
-			extension);
-			
-		} catch(SQLException ex) {
+					attrType, attrId, fileName, metaAddr, metaSeq,
+					dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime,
+					(short) 0, 0, 0, null, null, parentPath, null,
+					extension);
+
+		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Failed to add file system file", ex);
-		} 
-		finally {
+		} finally {
 			closeStatement(queryStatement);
 			if (null != transaction) {
 				try {
@@ -7200,7 +7438,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	VolumeSystem getVolumeSystemById(long id, Image parent) throws TskCoreException {
+	VolumeSystem getVolumeSystemById(long id, Content parent) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -7286,6 +7524,68 @@ public class SleuthkitCase {
 	 */
 	FileSystem getFileSystemById(long id, Volume parent) throws TskCoreException {
 		return getFileSystemByIdHelper(id, parent);
+	}
+	
+	/**
+	 * Get a pool by the object id
+	 *
+	 * @param id     of the pool
+	 * @param parent parent of the pool (image or volume)
+	 *
+	 * @return populated Pool object
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	Pool getPoolById(long id, Content parent) throws TskCoreException {
+		return getPoolByIdHelper(id, parent);
+	}	
+	
+	/**
+	 * @param id       ID of the desired Volume
+	 * @param parentId ID of the Volume's parent
+	 *
+	 * @return the desired Volume
+	 *
+	 * @throws TskCoreException
+	 */
+	Pool getPoolById(long id, long parentId) throws TskCoreException {
+		Pool pool = getPoolById(id, null);
+		pool.setParentId(parentId);
+		return pool;
+	}
+	
+	/**
+	 * Get pool by id and Content parent
+	 *
+	 * @param id     of the pool to get
+	 * @param parent a direct parent Content object
+	 *
+	 * @return populated FileSystem object
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	private Pool getPoolByIdHelper(long id, Content parent) throws TskCoreException {
+
+		acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = connections.getConnection();
+			 Statement s = connection.createStatement();
+			 ResultSet rs = connection.executeQuery(s, "SELECT * FROM tsk_pool_info " //NON-NLS
+					+ "where obj_id = " + id);) { //NON-NLS
+			if (rs.next()) {
+				Pool pool = new Pool(this, rs.getLong("obj_id"), TskData.TSK_POOL_TYPE_ENUM.valueOf(rs.getLong("pool_type")).getName(), rs.getLong("pool_type"));
+				pool.setParent(parent);
+				
+				return pool;
+			} else {
+				throw new TskCoreException("No pool found for ID:" + id);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting Pool by ID", ex);
+		} finally {
+			releaseSingleUserCaseReadLock();
+		}
 	}
 
 	/**
@@ -7549,6 +7849,9 @@ public class SleuthkitCase {
 					case VS:
 						children.add(getVolumeSystemById(info.id, img));
 						break;
+					case POOL:
+						children.add(getPoolById(info.id, img));
+						break;
 					case FS:
 						children.add(getFileSystemById(info.id, img));
 						break;
@@ -7590,6 +7893,7 @@ public class SleuthkitCase {
 		List<Long> children = new ArrayList<Long>();
 		for (ObjectInfo info : childInfos) {
 			if (info.type == ObjectType.VS
+					|| info.type == ObjectType.POOL
 					|| info.type == ObjectType.FS
 					|| info.type == ObjectType.ABSTRACTFILE
 					|| info.type == ObjectType.ARTIFACT) {
@@ -7602,6 +7906,68 @@ public class SleuthkitCase {
 		}
 		return children;
 	}
+	
+	/**
+	 * Returns the list of direct children for a given Pool
+	 *
+	 * @param pool pool to get children for
+	 *
+	 * @return list of pool children objects
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	List<Content> getPoolChildren(Pool pool) throws TskCoreException {
+		Collection<ObjectInfo> childInfos = getChildrenInfo(pool);
+		List<Content> children = new ArrayList<Content>();
+		for (ObjectInfo info : childInfos) {
+			if (null != info.type) {
+				switch (info.type) {
+					case VS:
+						children.add(getVolumeSystemById(info.id, pool));
+						break;
+					case ABSTRACTFILE:
+						AbstractFile f = getAbstractFileById(info.id);
+						if (f != null) {
+							children.add(f);
+						}
+						break;
+					case ARTIFACT:
+						BlackboardArtifact art = getArtifactById(info.id);
+						if (art != null) {
+							children.add(art);
+						}
+						break;
+					default:
+						throw new TskCoreException("Pool has child of invalid type: " + info.type);
+				}
+			}
+		}
+		return children;
+	}
+
+	/**
+	 * Returns the list of direct children IDs for a given Pool
+	 *
+	 * @param pool pool to get children for
+	 *
+	 * @return list of pool children IDs
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	List<Long> getPoolChildrenIds(Pool pool) throws TskCoreException {
+		Collection<ObjectInfo> childInfos = getChildrenInfo(pool);
+		List<Long> children = new ArrayList<Long>();
+		for (ObjectInfo info : childInfos) {
+			if (info.type == ObjectType.VS || info.type == ObjectType.ABSTRACTFILE || info.type == ObjectType.ARTIFACT) {
+				children.add(info.id);
+			} else {
+				throw new TskCoreException("Pool has child of invalid type: " + info.type);
+			}
+		}
+		return children;
+	}	
 
 	/**
 	 * Returns the list of direct children for a given VolumeSystem
@@ -7681,6 +8047,9 @@ public class SleuthkitCase {
 		for (ObjectInfo info : childInfos) {
 			if (null != info.type) {
 				switch (info.type) {
+					case POOL:
+						children.add(getPoolById(info.id, vol));
+						break;
 					case FS:
 						children.add(getFileSystemById(info.id, vol));
 						break;
@@ -7889,6 +8258,43 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error updating image paths.", ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Deletes a datasource from the open case, the database has foreign keys
+	 * with a delete cascade so that all the tables that have a datasource
+	 * object id will have their data deleted. This is private to keep it out of
+	 * the public API
+	 *
+	 * @param dataSourceObjectId the id of the datasource to be deleted
+	 *
+	 * @throws TskCoreException exception thrown when critical error occurs
+	 *                          within tsk core and the update fails
+	 */
+	void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			connection.beginTransaction();
+			// The following delete(s) uses a foreign key delete with cascade in the DB so that it will delete
+			// all associated rows from tsk_object and its children.  For large data sources this may take some time.
+			statement.execute("DELETE FROM tsk_objects WHERE obj_id = " + dataSourceObjectId);
+			// The following delete uses a foreign key delete with cascade in the DB so that it will delete all
+			// associated rows from accounts table and its children.
+			String accountSql = "DELETE FROM accounts WHERE account_id in (SELECT account_id FROM accounts "
+					+ "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) "
+					+ "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
+			statement.execute(accountSql);
+			connection.commitTransaction();
+		} catch (SQLException ex) {
+			connection.rollbackTransaction();
+			throw new TskCoreException("Error deleting data source.", ex);
 		} finally {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
@@ -8441,8 +8847,11 @@ public class SleuthkitCase {
 		return connections.getConnection();
 	}
 
-	SleuthkitJNI.CaseDbHandle getCaseHandle() {
-		return this.caseHandle;
+	synchronized long getCaseDbPointer() throws TskCoreException {
+		if (caseHandle != null) {
+			return caseHandle.getCaseDbPointer();
+		}
+		throw new TskCoreException("Case has been closed");
 	}
 
 	@Override
@@ -9223,22 +9632,12 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			PreparedStatement statement;
-			if (dbType == DbType.POSTGRESQL) {
-				// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME_POSTGRES, Statement.RETURN_GENERATED_KEYS);
-				statement.clearParameters();
-				statement.setString(5, description);
-				statement.setString(6, color.getName());
-				statement.setByte(7, knownStatus.getFileKnownValue());
-			} else {
-				// WITH new (display_name, description, color, knownStatus) 
-				// AS ( VALUES(?, ?, ?, ?)) INSERT OR REPLACE INTO tag_names 
-				// (tag_name_id, display_name, description, color, knownStatus) 
-				// SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus 
-				// FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME_SQLITE, Statement.RETURN_GENERATED_KEYS);
-				statement.clearParameters();
-			}
+			// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME, Statement.RETURN_GENERATED_KEYS);
+			statement.clearParameters();
+			statement.setString(5, description);
+			statement.setString(6, color.getName());
+			statement.setByte(7, knownStatus.getFileKnownValue());
 			statement.setString(1, displayName);
 			statement.setString(2, description);
 			statement.setString(3, color.getName());
@@ -10653,9 +11052,9 @@ public class SleuthkitCase {
 				+ "LEFT OUTER JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id "
 				+ "WHERE tag_name_id = ?"), //NON-NLS
 		SELECT_CONTENT_TAGS_BY_TAG_NAME_BY_DATASOURCE("SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name "
-				+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names "
-				+ "LEFT OUTER JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id "
-				+ "WHERE content_tags.obj_id = tsk_files.obj_id"
+				+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names, tsk_examiners as tsk_examiners "
+				+ "WHERE content_tags.examiner_id = tsk_examiners.examiner_id"
+				+ " AND content_tags.obj_id = tsk_files.obj_id"
 				+ " AND content_tags.tag_name_id = tag_names.tag_name_id"
 				+ " AND content_tags.tag_name_id = ?"
 				+ " AND tsk_files.data_source_obj_id = ? "),
@@ -10685,9 +11084,9 @@ public class SleuthkitCase {
 				+ "LEFT OUTER JOIN tsk_examiners ON blackboard_artifact_tags.examiner_id = tsk_examiners.examiner_id "
 				+ "WHERE tag_name_id = ?"), //NON-NLS
 		SELECT_ARTIFACT_TAGS_BY_TAG_NAME_BY_DATASOURCE("SELECT artifact_tags.tag_id, artifact_tags.artifact_id, artifact_tags.tag_name_id, artifact_tags.comment, arts.obj_id, arts.artifact_obj_id, arts.data_source_obj_id, arts.artifact_type_id, arts.review_status_id, tsk_examiners.login_name "
-				+ "FROM blackboard_artifact_tags as artifact_tags, blackboard_artifacts AS arts "
-				+ "LEFT OUTER JOIN tsk_examiners ON artifact_tags.examiner_id = tsk_examiners.examiner_id "
-				+ "WHERE artifact_tags.artifact_id = arts.artifact_id"
+				+ "FROM blackboard_artifact_tags as artifact_tags, blackboard_artifacts AS arts, tsk_examiners AS tsk_examiners "
+				+ "WHERE artifact_tags.examiner_id = tsk_examiners.examiner_id"
+				+ " AND artifact_tags.artifact_id = arts.artifact_id"
 				+ " AND artifact_tags.tag_name_id = ? "
 				+ " AND arts.data_source_obj_id =  ? "),
 		SELECT_ARTIFACT_TAG_BY_ID("SELECT blackboard_artifact_tags.tag_id, blackboard_artifact_tags.artifact_id, blackboard_artifact_tags.tag_name_id, blackboard_artifact_tags.comment, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name "
@@ -10713,12 +11112,7 @@ public class SleuthkitCase {
 				+ "FROM tsk_objects INNER JOIN blackboard_artifacts " //NON-NLS
 				+ "ON tsk_objects.obj_id=blackboard_artifacts.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ?)"),
-		INSERT_OR_UPDATE_TAG_NAME_POSTGRES("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
-		INSERT_OR_UPDATE_TAG_NAME_SQLITE("WITH new (display_name, description, color, knownStatus) "
-				+ "AS ( VALUES(?, ?, ?, ?)) INSERT OR REPLACE INTO tag_names "
-				+ "(tag_name_id, display_name, description, color, knownStatus) "
-				+ "SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus "
-				+ "FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name"),
+		INSERT_OR_UPDATE_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
 		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?"),
 		UPDATE_FILE_NAME("UPDATE tsk_files SET name = ? WHERE obj_id = ?"),
@@ -10731,6 +11125,7 @@ public class SleuthkitCase {
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
+		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
