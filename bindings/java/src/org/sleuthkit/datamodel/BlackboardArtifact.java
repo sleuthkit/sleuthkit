@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2019 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1228,7 +1228,10 @@ public class BlackboardArtifact implements Content {
 		 * Stores metadata about an object.
 		 */
 		TSK_METADATA(57, "TSK_METADATA", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskMetadata.text"));
+				bundle.getString("BlackboardArtifact.tskMetadata.text")),
+		
+		TSK_GPS_TRACK(58, "TSK_GPS_TRACK",
+				bundle.getString("BlackboardArtifact.tskTrack.text"));
 
 		private final String label;
 		private final int typeId;
