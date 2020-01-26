@@ -90,7 +90,7 @@
 		</path>
 	</target>
 
-	<property name="ivy.install.version" value="2.3.0-rc2"/>
+	<property name="ivy.install.version" value="2.4.0"/>
 	<condition property="ivy.home" value="${env.IVY_HOME}">
 		<isset property="env.IVY_HOME"/>
 	</condition>
@@ -105,7 +105,7 @@
 
 	<target name="-download-ivy" unless="ivy.available">
 		<mkdir dir="${ivy.jar.dir}"/>
-		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
+		<get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
 	</target>
 
 	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path">
