@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +37,8 @@ import java.util.Objects;
 import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
@@ -51,6 +54,8 @@ import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
  */
 public final class TimelineManager {
 
+	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
+	
 	/**
 	 * Timeline event types added to the case database when it is created.
 	 */
@@ -81,6 +86,11 @@ public final class TimelineManager {
 
 	private final SleuthkitCase caseDB;
 
+	/**
+	 * Maximum timestamp to look to in future. Twelve (12) years from current date. 
+	 */
+	private static final Long MAX_TIMESTAMP_TO_ADD = Instant.now().getEpochSecond() + 394200000;
+	
 	/**
 	 * Mapping of timeline event type IDs to TimelineEventType objects.
 	 */
@@ -501,7 +511,7 @@ public final class TimelineManager {
 
 			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
 				Long time = timeEntry.getValue();
-				if (time > 0) {// if the time is legitimate ( greater than zero ) insert it
+				if (time > 0 || time <= MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero or less then 12 years from current date) insert it
 					TimelineEventType type = timeEntry.getKey();
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
@@ -512,6 +522,10 @@ public final class TimelineManager {
 					 */
 					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
 							description, null, null, false, false));
+				} else {
+					if (time >= MAX_TIMESTAMP_TO_ADD) {
+						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName()));
+					}
 				}
 			}
 
@@ -605,8 +619,11 @@ public final class TimelineManager {
 			return Optional.empty();
 		}
 		long time = eventPayload.getTime();
-		// if the time is legitimate ( greater than zero ) insert it into the db
-		if (time <= 0) {
+		// if the time is legitimate ( greater than zero and less then 12 years from present time) insert it into the db
+		if (time <= 0 || time >= MAX_TIMESTAMP_TO_ADD) {
+			if (time >= MAX_TIMESTAMP_TO_ADD) {
+				logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for artifact %s", artifact.getDisplayName(), eventPayload.getDescription(TimelineLevelOfDetail.HIGH)));
+			}
 			return Optional.empty();
 		}
 		String fullDescription = eventPayload.getDescription(TimelineLevelOfDetail.HIGH);
