@@ -198,9 +198,11 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
     return TSK_FS_BLOCK_FLAG_ALLOC;
   };
 
-  _fsinfo.inode_walk = [](TSK_FS_INFO*, TSK_INUM_T, TSK_INUM_T,
-                          TSK_FS_META_FLAG_ENUM, TSK_FS_META_WALK_CB,
-                          void*) { return unsupported_function("inode_walk"); };
+  _fsinfo.inode_walk = [](TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
+                          TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB action,
+                          void* ptr) {
+      return to_fs(fs).inode_walk(fs, start_inum, end_inum, flags, action, ptr); 
+  };
 
   _fsinfo.file_add_meta = [](TSK_FS_INFO* fs, TSK_FS_FILE* fs_file,
                              TSK_INUM_T addr) {
@@ -544,6 +546,74 @@ TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(TSK_FS_DIR** a_fs_dir,
   tsk_error_set_errno(TSK_ERR_FS_GENFS);
   tsk_error_set_errstr("%s", e.what());
   return TSK_ERR;
+}
+
+uint8_t APFSFSCompat::inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
+    TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB action, void* ptr) {
+
+    TSK_FS_FILE *fs_file;
+    TSK_INUM_T inum;
+    int result;
+
+    if (end_inum < start_inum) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("inode_walk: end object id must be >= start object id: "
+            "%" PRIx32 " must be >= %" PRIx32 "",
+            end_inum, start_inum);
+        return 1;
+    }
+
+    if (flags & TSK_FS_META_FLAG_ORPHAN) {
+        if (tsk_verbose) {
+            tsk_fprintf(stderr, "inode_walk: ORPHAN flag unsupported by AFPS");
+        }
+    }
+
+    if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
+        ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
+        flags = (TSK_FS_META_FLAG_ENUM)(flags | TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
+    }
+
+    /* If neither of the USED or UNUSED flags are set, then set them both
+    */
+    if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
+        ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
+        flags = (TSK_FS_META_FLAG_ENUM)(flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
+    }
+
+    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+        return 1;
+    if ((fs_file->meta =
+        tsk_fs_meta_alloc(sizeof(APFSJObject))) == NULL)
+        return 1;
+
+    for (inum = start_inum; inum < end_inum; inum++) {
+
+        result = fs->file_add_meta(fs, fs_file, inum);
+        if (result == TSK_OK) {
+
+            if ((fs_file->meta->flags & flags) == fs_file->meta->flags) {
+                int retval = action(fs_file, ptr);
+                if (retval == TSK_WALK_STOP) {
+                    tsk_fs_file_close(fs_file);
+                    return 0;
+                }
+                else if (retval == TSK_WALK_ERROR) {
+                    tsk_fs_file_close(fs_file);
+                    return 1;
+                }
+            }
+        }
+    }
+
+
+    /*
+    * Cleanup.
+    */
+    tsk_fs_file_close(fs_file);
+
+    return TSK_OK;
 }
 
 uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const

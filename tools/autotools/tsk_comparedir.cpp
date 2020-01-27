@@ -113,7 +113,8 @@ uint8_t
         //if the file is a directory make recursive call
         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             // skip the '.' and '..' entries
-            if ((file[0] == L'.') && ((file[1] == '\0') || ((file[1] == L'.') && (file[2] == '\0')))) {
+            //if ((file[0] == L'.') && ((file[1] == '\0') || ((file[1] == L'.') && (file[2] == '\0')))) {
+            if ((ffd.cFileName[0] == L'.') && ((ffd.cFileName[1] == '\0') || ((ffd.cFileName[1] == L'.') && (ffd.cFileName[2] == '\0')))) {
                 // do nothing
             }
             else if (processLclDir(file)) {
@@ -145,7 +146,7 @@ uint8_t
                 m_filesInImg.erase(it);
             }
             else {
-                printf("file: %s not found in image file\n", file8);
+                printf("filex: %s not found in image file\n", file8);
                 m_missDirFile = true;
             }
         }
