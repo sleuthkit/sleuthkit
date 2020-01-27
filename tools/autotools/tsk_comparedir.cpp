@@ -223,7 +223,7 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     
     //create the full path
     size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
-    char *fullPath = (char *) tsk_malloc(len);
+    char *fullPath = (char *) tsk_malloc(len + 1);
     if (fullPath == NULL) {
         registerError();
         return TSK_STOP;
