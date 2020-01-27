@@ -235,6 +235,7 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
           CXXFLAGS="$SAVED_CXXFLAGS"
           LDFLAGS="$SAVED_LDFLAGS"
           LIBS="$SAVED_LIBS"
+          ax_$1=no
         ]
       )
     ]
