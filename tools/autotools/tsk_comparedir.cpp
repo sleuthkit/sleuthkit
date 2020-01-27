@@ -146,7 +146,7 @@ uint8_t
                 m_filesInImg.erase(it);
             }
             else {
-                printf("filex: %s not found in image file\n", file8);
+                printf("file: %s not found in image file\n", file8);
                 m_missDirFile = true;
             }
         }
@@ -178,7 +178,7 @@ uint8_t
         stat(fullPath, &status);
         if (S_ISDIR(status.st_mode)) {
             // skip the '.' and '..' entries
-            if ((file[0] == '.') && ((file[1] == '\0') || ((file[1] == '.') && (file[2] == '\0')))) {
+            if ((dirp->d_name[0] == '.') && ((dirp->d_name[1] == '\0') || ((dirp->d_name[1] == '.') && (dirp->d_name[2] == '\0')))) {
                 // do nothing
             }
             else if (processLclDir(file)) {
@@ -294,8 +294,9 @@ uint8_t
     else {
         std::set < char *, ltstr >::iterator it;
         for (it = m_filesInImg.begin(); it != m_filesInImg.end(); ++it)
-            printf("file: %" PRIttocTSK " not found in directory\n",
-                (TSK_TCHAR *) * it);
+            printf("file: %s not found in directory\n",
+                    (char *) * it);
+                
     }
 
     return 0;
