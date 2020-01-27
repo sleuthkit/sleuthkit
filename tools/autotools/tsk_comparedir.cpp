@@ -37,7 +37,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-n start_inum] [-vV] image [image] comparison_directory\n"),
+        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-n start_inum] [-vV] image [image] comparison_directory\n"),
         progname);
 
     tsk_fprintf(stderr,
@@ -48,6 +48,10 @@ usage()
         "\t-f fstype: The file system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for file system to compare\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
         "\t-n start_inum: inum for directory in image file to start compare at\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -310,6 +314,10 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     unsigned int ssize = 0;
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_DADDR_T pvol_block = 0;
+    const char * password = "";
     
 #ifdef WIN32
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -329,7 +337,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:n:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:P:n:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
