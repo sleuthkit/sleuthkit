@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018-2019 Basis Technology Corp.
+ * Copyright 2018-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -524,7 +524,7 @@ public final class TimelineManager {
 							description, null, null, false, false));
 				} else {
 					if (time >= MAX_TIMESTAMP_TO_ADD) {
-						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName()));
+						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
 					}
 				}
 			}
@@ -622,7 +622,7 @@ public final class TimelineManager {
 		// if the time is legitimate ( greater than zero and less then 12 years from present time) insert it into the db
 		if (time <= 0 || time >= MAX_TIMESTAMP_TO_ADD) {
 			if (time >= MAX_TIMESTAMP_TO_ADD) {
-				logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for artifact %s", artifact.getDisplayName(), eventPayload.getDescription(TimelineLevelOfDetail.HIGH)));
+				logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for artifact %s with id %d", artifact.getDisplayName(), eventPayload.getDescription(TimelineLevelOfDetail.HIGH), artifact.getId()));
 			}
 			return Optional.empty();
 		}
