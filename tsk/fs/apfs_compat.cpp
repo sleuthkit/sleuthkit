@@ -189,13 +189,14 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   tsk_init_lock(&_fsinfo.orphan_dir_lock);
 
   // Callbacks
-  _fsinfo.block_walk = [](TSK_FS_INFO*, TSK_DADDR_T, TSK_DADDR_T,
-                          TSK_FS_BLOCK_WALK_FLAG_ENUM, TSK_FS_BLOCK_WALK_CB,
-                          void*) { return unsupported_function("block_walk"); };
+  _fsinfo.block_walk = [](TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, 
+                          TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, 
+                          void *ptr) {
+      return to_fs(fs).block_walk(fs, start, end, flags, cb, ptr);
+  };
 
   _fsinfo.block_getflags = [](TSK_FS_INFO* a_fs, TSK_DADDR_T a_addr) {
-    // TODO(JTS): Implement me!
-    return TSK_FS_BLOCK_FLAG_ALLOC;
+      return to_fs(a_fs).block_getflags(a_fs, a_addr);
   };
 
   _fsinfo.inode_walk = [](TSK_FS_INFO*, TSK_INUM_T, TSK_INUM_T,
@@ -1340,6 +1341,127 @@ uint8_t tsk_apfs_istat(TSK_FS_FILE* fs_file, apfs_istat_info* info) try {
   tsk_error_set_errno(TSK_ERR_FS_GENFS);
   tsk_error_set_errstr("%s", e.what());
   return 1;
+}
+
+/* Returns TSK_FS_BLOCK_FLAG_UNALLOC if the addr corresponds to an address
+ * stored in the unallocated ranges for the pool and TSK_FS_BLOCK_FLAG_ALLOC
+ * otherwise. Note that TSK_FS_BLOCK_FLAG_ALLOC does not mean the block belongs
+ * to the current file system, just that one of the volumes in the pool or the pool
+ * itself is using it.
+ */
+TSK_FS_BLOCK_FLAG_ENUM APFSFSCompat::block_getflags(TSK_FS_INFO* fs, TSK_DADDR_T addr) {
+
+    TSK_FS_FILE *fs_file;
+    int result;
+
+    if (fs->img_info->itype != TSK_IMG_TYPE_POOL) {
+        // No way to return an error
+        return TSK_FS_BLOCK_FLAG_UNALLOC;
+    }
+
+    IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs->img_info;
+    const APFSPoolCompat* pool = static_cast<APFSPoolCompat*>(pool_img->pool_info->impl);
+
+    // Check if the given addr is contained in an unallocated range
+    for (const TSKPool::range &range : pool->nx()->unallocated_ranges()) {
+        if (range.start_block < addr
+            && (range.start_block + range.num_blocks > addr)) {
+            return TSK_FS_BLOCK_FLAG_UNALLOC;
+        }
+    }
+    return TSK_FS_BLOCK_FLAG_ALLOC;
+}
+
+uint8_t APFSFSCompat::block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
+    TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb,
+    void *ptr) {
+
+    TSK_FS_BLOCK *fs_block;
+    TSK_DADDR_T addr;
+
+    // clean up any error messages that are lying around
+    tsk_error_reset();
+
+    /*
+    * Sanity checks.
+    */
+    if (start < fs->first_block || start > fs->last_block) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("APFSFSCompat::block_walk: start block: %" PRIuDADDR,
+            start);
+        return 1;
+    }
+    if (end < fs->first_block || end > fs->last_block
+        || end < start) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("APFSFSCompat::block_walk: end block: %" PRIuDADDR,
+            end);
+        return 1;
+    }
+
+    /* Sanity check on a_flags -- make sure at least one ALLOC is set */
+    if (((flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
+        ((flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
+        flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+                TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
+    }
+    if (((flags & TSK_FS_BLOCK_WALK_FLAG_META) == 0) &&
+        ((flags & TSK_FS_BLOCK_WALK_FLAG_CONT) == 0)) {
+        flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (flags | TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
+    }
+
+    /* Allocate memory for a block */
+    if ((fs_block = tsk_fs_block_alloc(fs)) == NULL) {
+        return 1;
+    }
+
+    for (addr = start; addr <= end; addr++) {
+        int retval;
+        int myflags;
+
+        /* If we're getting both alloc and unalloc, no need to load and
+         * check the flags here */
+        if (((flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) ||
+            ((flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
+            myflags = fs->block_getflags(fs, addr);
+
+            // Test if we should call the callback with this one
+            if ((myflags & TSK_FS_BLOCK_FLAG_ALLOC)
+                && (!(flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC)))
+                continue;
+            else if ((myflags & TSK_FS_BLOCK_FLAG_UNALLOC)
+                && (!(flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
+                continue;
+        }
+
+        /* Get the block */
+        if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
+            tsk_error_set_errstr2("APFSFSCompat::block_walk: block %" PRIuDADDR,
+                addr);
+            tsk_fs_block_free(fs_block);
+            return 1;
+        }
+
+        /* Run the callback on the block */
+        retval = cb(fs_block, ptr);
+        if (retval == TSK_WALK_STOP) {
+            break;
+        }
+        else if (retval == TSK_WALK_ERROR) {
+            tsk_fs_block_free(fs_block);
+            return 1;
+        }
+    }
+    /*
+    * Cleanup.
+    */
+    tsk_fs_block_free(fs_block);
+
+    return TSK_OK;
 }
 
 uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept {
