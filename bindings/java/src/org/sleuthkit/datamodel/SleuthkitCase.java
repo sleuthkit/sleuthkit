@@ -2935,9 +2935,9 @@ public class SleuthkitCase {
 		}
 	}
 	
-		/**
-	 * Get a count of artifacts of a given type for the given data source. Does not include rejected
-	 * artifacts.
+	/**
+	 * Get a count of artifacts of a given type for the given data source. Does
+	 * not include rejected artifacts.
 	 *
 	 * @param artifactTypeID Id of the artifact type.
 	 * @param dataSourceID
