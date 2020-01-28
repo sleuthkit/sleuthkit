@@ -330,6 +330,16 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
 }
 
 TSK_FILTER_ENUM
+TskAutoDb::addUnallocatedPoolBlocks(const TSK_POOL_INFO * pool_info) {
+    /* Only APFS pools are currently supported */
+    if (pool_info->ctype != TSK_POOL_TYPE_APFS) {
+        return TSK_FILTER_CONT;
+    }
+
+
+}
+
+TSK_FILTER_ENUM
 TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 {
 
@@ -1032,7 +1042,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 */
 TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
-    // Unalloc space is not yet implemented for APFS
+    // Unalloc space is handled separately for APFS
     if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
         return TSK_OK;
     }

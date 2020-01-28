@@ -186,6 +186,7 @@ class TskAutoDb:public TskAuto {
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
+    TSK_FILTER_ENUM addUnallocatedPoolBlocks(const TSK_POOL_INFO * pool_info);
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
