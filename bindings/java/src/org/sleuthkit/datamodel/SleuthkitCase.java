@@ -2934,6 +2934,42 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Get a count of artifacts of a given type for the given data source. Does
+	 * not include rejected artifacts.
+	 *
+	 * @param artifactTypeID Id of the artifact type.
+	 * @param dataSourceID
+	 *
+	 * @return The artifacts count for the type.
+	 *
+	 * @throws TskCoreException
+	 */
+	public long getBlackboardArtifactsTypeCount(int artifactTypeID, long dataSourceID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		try {
+			// SELECT COUNT(*) AS count FROM blackboard_artifacts WHERE artifact_type_id = ?
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_ARTIFACTS_OF_TYPE_BY_DATA_SOURCE);
+			statement.clearParameters();
+			statement.setInt(2, artifactTypeID);
+			statement.setLong(1, dataSourceID);
+			rs = connection.executeQuery(statement);
+			long count = 0;
+			if (rs.next()) {
+				count = rs.getLong("count");
+			}
+			return count;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting number of blackboard artifacts by type (%d) and data source (%d)", artifactTypeID, dataSourceID), ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
 
 	/**
 	 * Get all blackboard artifacts that have an attribute of the given type and
@@ -10948,6 +10984,7 @@ public class SleuthkitCase {
 		SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
 				+ "WHERE artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) AS count FROM blackboard_artifacts WHERE artifact_type_id = ? AND review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()), //NON-NLS
+		COUNT_ARTIFACTS_OF_TYPE_BY_DATA_SOURCE("SELECT COUNT(*) AS count FROM blackboard_artifacts WHERE data_source_obj_id = ? AND artifact_type_id = ? AND review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()), //NON-NLS
 		COUNT_ARTIFACTS_FROM_SOURCE("SELECT COUNT(*) AS count FROM blackboard_artifacts WHERE obj_id = ? AND review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()), //NON-NLS
 		COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT COUNT(*) AS count FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ? AND review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()), //NON-NLS
 		SELECT_FILES_BY_PARENT("SELECT tsk_files.* " //NON-NLS
