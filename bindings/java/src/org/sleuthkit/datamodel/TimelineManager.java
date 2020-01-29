@@ -511,7 +511,7 @@ public final class TimelineManager {
 
 			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
 				Long time = timeEntry.getValue();
-				if (time > 0 || time <= MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero or less then 12 years from current date) insert it
+				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero or less then 12 years from current date) insert it
 					TimelineEventType type = timeEntry.getKey();
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
