@@ -1421,13 +1421,13 @@ uint8_t APFSFSCompat::block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_
 
     for (addr = start; addr <= end; addr++) {
         int retval;
-        int myflags;
 
         /* If we're getting both alloc and unalloc, no need to load and
          * check the flags here */
         if (((flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) ||
             ((flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-            myflags = fs->block_getflags(fs, addr);
+
+            int myflags = fs->block_getflags(fs, addr);
 
             // Test if we should call the callback with this one
             if ((myflags & TSK_FS_BLOCK_FLAG_ALLOC)
