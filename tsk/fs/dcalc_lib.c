@@ -186,6 +186,7 @@ tsk_fs_blkcalc(TSK_FS_INFO * fs, TSK_FS_BLKCALC_FLAG_ENUM a_lclflags,
     BLKCALC_DATA data;
 
     data.count = a_cnt;
+    data.uncnt = 0;
     data.found = 0;
 
     if (a_lclflags == TSK_FS_BLKCALC_BLKLS) {
