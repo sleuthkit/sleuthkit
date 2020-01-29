@@ -37,7 +37,7 @@ usage()
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for a volume to recover (recovers only that volume)\n");
     tsk_fprintf(stderr,
-        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr, 

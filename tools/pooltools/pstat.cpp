@@ -16,7 +16,7 @@ usage()
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
-        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
