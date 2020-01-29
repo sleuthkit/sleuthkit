@@ -754,23 +754,23 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
 }
 
 /**
-* Creats a new tsk_pool_info database entry and a new tsk_vs_info 
+* Creates a new tsk_pool_info database entry and a new tsk_vs_info 
 * entry with the tsk_pool_info as its parent.
 *
 * @ param pool_info The pool to save to the database
 * @ param parObjId The ID of the parent of the pool object
-* @ param objId Will be set to the object ID of the new volume system created as a child of 
+* @ param poolObjId Will be set to the object ID of the new pool
+* @ param vsObjId Will be set to the object ID of the new volume system created as a child of 
 *               the new pool.
 * @returns 1 on error, 0 on success
 */
 int
-TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& poolObjId, int64_t& vsObjId) {
 
     char
         stmt[1024];
 
     // Add pool
-    int64_t poolObjId;
     if (addObject(TSK_DB_OBJECT_TYPE_POOL, parObjId, poolObjId))
         return 1;
 
@@ -784,11 +784,11 @@ TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, 
     }
 
     // Add volume system
-    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, vsObjId))
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", vsObjId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");

@@ -21,8 +21,14 @@ TSK_FS_ATTR_RUN *tsk_pool_unallocated_runs(const TSK_POOL_INFO *a_pool) {
 
   TSK_DADDR_T offset = 0;
 
+  int count = 0;
+  printf("Pool block size: %lld\n", pool->block_size());
   // Create the runs
   for (const auto &range : ranges) {
+      count++;
+      if (count < 10) {
+          printf("Range start block: %lld, num blocks; %lld\n", range.start_block, range.num_blocks);
+      }
     auto data_run = tsk_fs_attr_run_alloc();
     if (data_run == nullptr) {
       tsk_fs_attr_run_free(data_run_head);
@@ -34,6 +40,9 @@ TSK_FS_ATTR_RUN *tsk_pool_unallocated_runs(const TSK_POOL_INFO *a_pool) {
     data_run->len = range.num_blocks;
     data_run->flags = TSK_FS_ATTR_RUN_FLAG_NONE;
     data_run->next = nullptr;
+    if (count < 10) {
+        printf("Run addr: %lld, offset: %lld, len: %lld\n\n", data_run->addr, data_run->offset, data_run->len);
+    }
 
     offset += range.num_blocks;
 

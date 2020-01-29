@@ -307,36 +307,60 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 TSK_FILTER_ENUM
 TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
 {
+    int64_t poolObjId;
     m_poolFound = true;
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
-        if (m_db->addPoolInfoAndVS(pool_info, m_curVolId, m_curPoolVs)) {
+        if (m_db->addPoolInfoAndVS(pool_info, m_curVolId, poolObjId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // pool doesn't live in a volume, use image as parent
-        if (m_db->addPoolInfoAndVS(pool_info, m_curImgId, m_curPoolVs)) {
+        if (m_db->addPoolInfoAndVS(pool_info, m_curImgId, poolObjId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
 
-    
+    if (addUnallocatedPoolBlocksToDb(pool_info, poolObjId)) {
+        registerError();
+        return TSK_FILTER_STOP;
+    }
 
     return TSK_FILTER_CONT;
 }
 
 TSK_FILTER_ENUM
-TskAutoDb::addUnallocatedPoolBlocks(const TSK_POOL_INFO * pool_info) {
+TskAutoDb::addUnallocatedPoolBlocksToDb(const TSK_POOL_INFO * pool_info, int64_t poolObjId) {
     /* Only APFS pools are currently supported */
     if (pool_info->ctype != TSK_POOL_TYPE_APFS) {
         return TSK_FILTER_CONT;
     }
 
+    TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
+    TSK_FS_ATTR_RUN * current_run = unalloc_runs;
+    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+    while (current_run != NULL) {
 
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
+        
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+        if (m_db->addUnallocBlockFile(poolObjId, NULL, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+            registerError();
+            tsk_fs_attr_run_free(unalloc_runs);
+            return TSK_FILTER_STOP;
+        }
+
+        current_run = current_run->next;
+        ranges.clear();
+    }
+    tsk_fs_attr_run_free(unalloc_runs);
+
+    return TSK_FILTER_CONT;
 }
 
 TSK_FILTER_ENUM
