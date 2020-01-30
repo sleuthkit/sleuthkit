@@ -511,7 +511,7 @@ public final class TimelineManager {
 
 			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
 				Long time = timeEntry.getValue();
-				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero or less then 12 years from current date) insert it
+				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
 					TimelineEventType type = timeEntry.getKey();
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
@@ -619,7 +619,7 @@ public final class TimelineManager {
 			return Optional.empty();
 		}
 		long time = eventPayload.getTime();
-		// if the time is legitimate ( greater than zero and less then 12 years from present time) insert it into the db
+		// if the time is legitimate ( greater than or equal to zero or less than or equal to 12 years from present time) insert it into the db
 		if (time <= 0 || time >= MAX_TIMESTAMP_TO_ADD) {
 			if (time >= MAX_TIMESTAMP_TO_ADD) {
 				logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for artifact %s with id %d", artifact.getDisplayName(), eventPayload.getDescription(TimelineLevelOfDetail.HIGH), artifact.getId()));
