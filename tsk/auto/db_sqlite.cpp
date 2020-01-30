@@ -795,13 +795,31 @@ TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, 
 }
 
 /**
-* Adds the sector addresses of the pool volumes into the db.
-
-* @param pool_vol The pool volume to save to the DB
-* @param parObjId The ID of the parent of the pool volume (should be a volume system)
-* @param objId Will be set to the object ID of the new volume
+* Adds a fake volume that will hold the unallocated blocks for the pool.
 * @returns 1 on error, 0 on success
 */
+int
+TskDbSqlite::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId)
+{
+    char* zSQL;
+    int ret;
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    char* desc = "Unallocated Blocks";
+    zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
+        objId, vol_index, 0, 0,
+        desc, 0);
+
+    ret = attempt_exec(zSQL,
+        "Error adding data to tsk_vs_parts table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
+}
+
 int
 TskDbSqlite::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     int64_t parObjId, int64_t& objId)

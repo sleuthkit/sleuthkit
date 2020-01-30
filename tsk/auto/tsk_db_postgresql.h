@@ -61,6 +61,7 @@ class TskDbPostgreSQL : public TskDb {
     int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& poolObjId, int64_t& vsObjId);
     int addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         int64_t parObjId, int64_t& objId);
+    int addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId);
     int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,

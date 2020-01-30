@@ -183,6 +183,7 @@ class TskDb {
     virtual int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& poolObjId, int64_t& vsObjId) = 0;
     virtual int addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         int64_t parObjId, int64_t& objId) = 0;
+    virtual int addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId) = 0;
     virtual int addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,

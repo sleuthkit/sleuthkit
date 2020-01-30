@@ -1083,6 +1083,37 @@ TskDbPostgreSQL::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     return TSK_OK;
 }
 
+/**
+* Adds a fake volume that will hold the unallocated blocks for the pool.
+* @returns 1 on error, 0 on success
+*/
+int
+TskDbPostgreSQL::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId)
+{
+
+    char stmt[1024];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    char *desc = "Unallocated Blocks";
+    char *desc_sql = PQescapeLiteral(conn, desc, strlen(desc));
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",%s,%d)",
+        objId, vol_index, 0, 0,
+        desc_sql, 0);
+
+    if (attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n")) {
+        PQfreemem(desc_sql);
+        return TSK_ERR;
+    }
+
+    PQfreemem(desc_sql);
+    return TSK_OK;
+}
+
 
 /**
 * @returns 1 on error, 0 on success

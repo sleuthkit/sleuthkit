@@ -340,6 +340,10 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(const TSK_POOL_INFO * pool_info, int64_t
         return TSK_FILTER_CONT;
     }
 
+    // Create the volume
+    int64_t unallocVolObjId;
+    m_db->addUnallocatedPoolVolume(pool_info->num_vols, poolObjId, unallocVolObjId);
+
     TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
     TSK_FS_ATTR_RUN * current_run = unalloc_runs;
     vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
@@ -349,7 +353,7 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(const TSK_POOL_INFO * pool_info, int64_t
         
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
-        if (m_db->addUnallocBlockFile(poolObjId, NULL, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+        if (m_db->addUnallocBlockFile(unallocVolObjId, NULL, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
             registerError();
             tsk_fs_attr_run_free(unalloc_runs);
             return TSK_FILTER_STOP;
