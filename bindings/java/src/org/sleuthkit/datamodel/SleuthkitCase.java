@@ -6054,6 +6054,8 @@ public class SleuthkitCase {
 			long ctime, long crtime, long atime, long mtime,
 			boolean isFile, Content parent) throws TskCoreException {
 
+		TimelineManager timelineManager = getTimelineManager();
+
 		CaseDbTransaction transaction = beginTransaction();
 		Statement queryStatement = null;
 		try {
@@ -6105,6 +6107,11 @@ public class SleuthkitCase {
 			statement.setString(21, extension);
 
 			connection.executeUpdate(statement);
+
+            DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime, null, null, parentPath, null, parent.getId(), null, null, extension);
+
+			timelineManager.addEventsForNewFile(derivedFile, connection);			
 
 			transaction.commit();
 			transaction = null;
