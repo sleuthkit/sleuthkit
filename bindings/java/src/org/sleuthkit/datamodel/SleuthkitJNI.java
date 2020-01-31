@@ -800,8 +800,10 @@ public class SleuthkitJNI {
 					nonNullCaseDbPointer = HandleCache.getDefaultCaseDbPointer();
 				}
 				
-				// If we're getting a fresh copy, move the existing cache reference so
-				// it won't be used by any subsequent calls to openImage but will still be valid.			
+				// If we're getting a fresh copy and an image with this path is already
+				// in the cache, move the existing cache reference so it won't be used by 
+				// any subsequent calls to openImage but will still be valid if any objects
+				// have it cached.
 				if (!useCache && HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.containsKey(imageKey)) {
 					long tempImageHandle = HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.get(imageKey);
 					
