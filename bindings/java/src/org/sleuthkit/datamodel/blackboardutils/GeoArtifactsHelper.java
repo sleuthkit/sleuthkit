@@ -49,11 +49,11 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds a TSK_GPS_TRACK artifact to the case with specified
-	 * attributes and posts the artifact to the Blackboard.
+	 * Add a Track from a GPS device to the database.  A Track represents a series of points that the device
+	 * has traveled on.  This will create a TSK_GPS_TRACK artifact and add it to the case. 
 	 *
-	 * @param trackName	Name of GPS track, not required
-	 * @param points		  GeoTrackPoints, required.
+	 * @param trackName	Name of GPS track, not required.  Pass in null if unknown. 
+	 * @param points	Set of GeoTrackPoints that the track traversed. Required.
 	 *
 	 * @return	TSK_GPS_TRACK artifact
 	 *
@@ -82,7 +82,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Adds a TSK_GPS_TRACKPOINT artifact.
+	 * Adds a Track with a single point.  A GPS track generally refers to several points that a device has 
+	 * traversed and addTrack() is more appropriate. 
 	 *
 	 * @param latitude    Location latitude, required.
 	 * @param longitude   Location longitude, required.
