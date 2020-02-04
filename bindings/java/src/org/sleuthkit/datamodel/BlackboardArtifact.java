@@ -35,13 +35,15 @@ import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
- * An artifact that has been posted to the blackboard. An artifact is a typed
+ * An artifact that has been posted to the blackboard. Artifacts store 
+ * analysis results (such as hash set hits) and extracted data (such as 
+ * a web bookmark). An artifact is a typed
  * collection of name value pairs (attributes) that is associated with its
- * source content (either a data source, or file within a data source). Both
+ * source content (A data source, a file, or another artifact).   Both
  * standard artifact types and custom artifact types are supported.
  *
  * IMPORTANT NOTE: No more than one attribute of a given type should be added to
- * an artifact.
+ * an artifact.  It is undefined about which will be used. 
  */
 public class BlackboardArtifact implements Content {
 
@@ -922,8 +924,8 @@ public class BlackboardArtifact implements Content {
 
 	/**
 	 * Enum for the standard artifact types. Refer to
-	 * http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for details
-	 * on the standard attributes for each standard artifact type.
+	 * http://sleuthkit.org/sleuthkit/docs/jni-docs/latest/artifact_catalog_page.html 
+	 * for details on the standard attributes for each artifact type.
 	 */
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
