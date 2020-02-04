@@ -803,7 +803,8 @@ public class SleuthkitJNI {
 				// If we're getting a fresh copy and an image with this path is already
 				// in the cache, move the existing cache reference so it won't be used by 
 				// any subsequent calls to openImage but will still be valid if any objects
-				// have it cached.
+				// have it cached. This happens in the case where the user adds the same data
+				// source twice.
 				if (!useCache && HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.containsKey(imageKey)) {
 					long tempImageHandle = HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.get(imageKey);
 					
