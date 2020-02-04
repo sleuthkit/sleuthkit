@@ -22,12 +22,10 @@ import com.google.common.net.InternetDomainName;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS;
-import org.sleuthkit.datamodel.BlackboardAttribute.Type;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
@@ -132,7 +130,6 @@ class TimelineEventTypes {
 		
 		@Override
 		public TimelineEventDescriptionWithTime makeEventDescription(BlackboardArtifact artifact) throws TskCoreException {
-			String description = extractFullDescription(artifact);
 			
 			//If there is not a list if track points do not create an event.
 			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_GEO_TRACKPOINTS));
@@ -156,7 +153,7 @@ class TimelineEventTypes {
 				return null;
 			}
 			
-			return new TimelineEventDescriptionWithTime(startTime, null, null, description);
+			return new TimelineEventDescriptionWithTime(startTime, null, null, extractFullDescription(artifact));
 		}
 	}
 
