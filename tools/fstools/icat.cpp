@@ -50,7 +50,7 @@ usage()
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
     tsk_fprintf(stderr,
-        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr, "\t-S snap_id: Snapshot ID (for APFS only)\n");

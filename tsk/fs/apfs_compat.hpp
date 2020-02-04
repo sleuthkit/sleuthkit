@@ -40,6 +40,10 @@ class APFSFSCompat : public APFSJObjTree {
   uint8_t load_attrs(TSK_FS_FILE*) const noexcept;
   uint8_t istat(TSK_FS_ISTAT_FLAG_ENUM, FILE*, TSK_INUM_T, TSK_DADDR_T,
                 int32_t) const noexcept;
+  uint8_t block_walk(TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T,
+      TSK_FS_BLOCK_WALK_FLAG_ENUM, TSK_FS_BLOCK_WALK_CB,
+      void *);
+  TSK_FS_BLOCK_FLAG_ENUM block_getflags(TSK_FS_INFO*, TSK_DADDR_T);
   uint8_t decrypt_block(TSK_DADDR_T, void*) noexcept;
   int name_cmp(const char*, const char*) const noexcept;
 

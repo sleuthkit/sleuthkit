@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
+** Copyright (c) 2010-2020 Brian Carrier.  All Rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 **
@@ -1144,6 +1144,7 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
                                       std::map<int64_t, time_t> timeMap, const char* full_description)
 {
     int64_t event_description_id = -1;
+	int64_t future_epoch_time = std::time(0) + 394200000;
 
     //for each  entry (type ->time)
     for (const auto entry : timeMap)
@@ -1151,9 +1152,10 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
         const time_t time = entry.second;
 
 
-        if (time <= 0)
+        if ((time <= 0) || (time >= future_epoch_time))
         {
             //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull. time can't be negative either.
+            //Also skip any time that is more then 12 years in the future.
             continue;
         }
         if (event_description_id == -1)
