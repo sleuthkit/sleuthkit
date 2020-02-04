@@ -49,7 +49,7 @@ usage()
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for file system to compare\n");
     tsk_fprintf(stderr,
-        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
@@ -206,6 +206,38 @@ uint8_t
     return 0;
 }
 
+uint8_t
+TskCompareDir::openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_ENUM pooltype, TSK_DADDR_T pvol_block)
+{
+    if (pvol_block == 0) {
+        if ((m_fs_info = tsk_fs_open_img_decrypt(m_img_info, a_soffset * m_img_info->sector_size,
+            fstype, "")) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            return TSK_ERR;
+        }
+    }
+    else {
+        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(m_img_info, a_soffset * m_img_info->sector_size, pooltype);
+        if (pool == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            return TSK_ERR;
+        }
+
+        m_img_info = pool->get_img_info(pool, pvol_block);
+        if ((m_fs_info = tsk_fs_open_img_decrypt(m_img_info, a_soffset * m_img_info->sector_size, fstype, "")) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            return TSK_ERR;
+        }
+    }
+    return TSK_OK;
+}
+
 
 /********** Methods that load the internal list / set with info from the image **********/
 
@@ -266,17 +298,16 @@ TskCompareDir::filterVol(const TSK_VS_PART_INFO * /*a_vs_part*/)
  * @returns 1 on error
  */
 uint8_t
-    TskCompareDir::compareDirs(TSK_OFF_T a_soffset, TSK_INUM_T a_inum,
-    TSK_FS_TYPE_ENUM a_fstype, const TSK_TCHAR * a_lcl_dir)
+    TskCompareDir::compareDirs(TSK_INUM_T a_inum, const TSK_TCHAR * a_lcl_dir)
 {
     uint8_t retval;
 
     // collect the file names that are in the disk image
     if (a_inum != 0)
         retval =
-            findFilesInFs(a_soffset * m_img_info->sector_size, a_fstype, a_inum);
+            findFilesInFs(m_fs_info, a_inum);
     else
-        retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_fstype);
+        retval = findFilesInFs(m_fs_info);
 
     if (retval)
         return 1;
@@ -397,6 +428,26 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
+
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                usage();
+            }
+            break;
+
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
         
         case _TSK_T('v'):
             tsk_verbose++;
@@ -424,7 +475,12 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tskCompareDir.compareDirs(soffset, inum, fstype, argv[argc - 1])) {
+    if (tskCompareDir.openFs(soffset, fstype, pooltype, pvol_block)) {
+        // Errors were already logged
+        exit(1);
+    }
+
+    if (tskCompareDir.compareDirs(inum, argv[argc - 1])) {
         // errors were already displayed
         exit(1);
     }
