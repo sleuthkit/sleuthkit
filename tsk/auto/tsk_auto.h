@@ -94,6 +94,7 @@ class TskAuto {
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype,
         TSK_INUM_T inum);
     uint8_t findFilesInFs(TSK_FS_INFO * a_fs_info);
+    uint8_t findFilesInFs(TSK_FS_INFO * a_fs_info, TSK_INUM_T inum);
     TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start,
         TSK_FS_TYPE_ENUM a_ftype);
 

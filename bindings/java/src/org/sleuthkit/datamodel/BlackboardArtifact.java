@@ -1082,7 +1082,7 @@ public class BlackboardArtifact implements Content {
 		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskBluetoothPairing.text")),
 		/**
-		 * A GPS bookmark.
+		 * A GPS bookmark / way point that the user saved. 
 		 */
 		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGpsBookmark.text")),
