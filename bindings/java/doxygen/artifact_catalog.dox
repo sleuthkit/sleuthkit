@@ -1,4 +1,4 @@
-/*! \page artifact_catalog_page Autopsy Standard Artifacts Catalog
+/*! \page artifact_catalog_page Standard Artifacts Catalog
 
 
 # Introduction
@@ -9,6 +9,7 @@ Note that "TSK" is an abbreviation of "The SleuthKit." Artifact type names with 
 The catalog section below has one entry for each standard artifact type. Each entry lists the required and optional attributes of artifacts of the type.
 <h1>Artifacts Catalog</h1>
 
+In alphabetical order.
 
 ---
 ## TSK_ACCOUNT
@@ -24,6 +25,12 @@ TSK_CARD_NUMBER (Credit card number)
 - TSK_KEYWORD_SEARCH_DOCUMENT_ID (Document ID of the Solr document that contains the TSK_CARD_NUMBER when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
 - TSK_SET_NAME (The keyword list name, i.e., "Credit Card Numbers", when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
 
+---
+## TSK_ASSOCIATED_OBJECT
+Provides a backwards link to an artifact that references the parent file of this artifact.  Example usage is that a downloaded file will have this artifact and it will point back to the TSK_WEB_DOWNLOAD artifact that is associated with a browser's SQLite database. See \ref jni_bb_associated_object.
+
+### REQUIRED ATTRIBUTES
+- TSK_ASSOCIATED_ARTIFACT (Artifact ID of associated artifact)
 
 
 ---
@@ -228,7 +235,7 @@ None
 
 ---
 ## TSK_GPS_BOOKMARK
-A bookmarked GPS location.
+A bookmarked GPS location or saved waypoint.
 
 ### REQUIRED ATTRIBUTES
 - TSK_GEO_LATITUDE (The latitude value of the bookmark)
