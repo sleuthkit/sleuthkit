@@ -19,9 +19,6 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
