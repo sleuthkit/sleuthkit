@@ -961,6 +961,8 @@ public class BlackboardArtifact implements Content {
 				bundle.getString("BlackboardArtifact.tsk.recentObject.text")),
 		/**
 		 * A GPS track point (geolocation data).
+		 * 
+		 * @deprecated Use TSK_GPS_TRACK instead
 		 */
 		@Deprecated
 		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT", //NON-NLS
