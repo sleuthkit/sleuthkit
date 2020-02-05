@@ -769,12 +769,7 @@ public class BlackboardArtifact implements Content {
 
 	@Override
 	public Content getDataSource() throws TskCoreException {
-		Content myParent = getParent();
-		if (myParent == null) {
-			return null;
-		}
-
-		return myParent.getDataSource();
+		return getSleuthkitCase().getContentById(dataSourceObjId);
 	}
 
 	/**
