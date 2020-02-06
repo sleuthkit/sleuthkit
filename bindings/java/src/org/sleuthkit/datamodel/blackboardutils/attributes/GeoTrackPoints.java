@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel.blackboardutils.attributes;
 
 import com.google.gson.Gson;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
@@ -87,5 +88,61 @@ public final class GeoTrackPoints {
 	 */
 	private List<GeoTrackPoint> getTimeOrderedPoints() {
 		return points.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
+	}
+
+	public final static class GeoWaypoints {
+
+		private final List<GeoWaypoint> points;
+
+		/**
+		 * Deserialize the given list of GeoTrackPoints.
+		 *
+		 * @param jsonString JSon string of track points.
+		 *
+		 * @return	Timestamp ordered list of GeoTrackPoints, empty list will be
+		 *         returned if jsonString is null or empty.
+		 */
+		public static List<GeoWaypoint> deserializePoints(String jsonString) {
+			if (jsonString == null || jsonString.isEmpty()) {
+				return new ArrayList<>();
+			}
+
+			GeoWaypoints wayPoints = (new Gson()).fromJson(jsonString, GeoWaypoints.class);
+			return wayPoints.getPoints();
+		}
+
+		/**
+		 * Serialize the given list of GeoTrackPoints.
+		 *
+		 * @param points List of GeoTrackPoints
+		 *
+		 * @return	JSon formatted string is returned or empty string if points
+		 *         was null
+		 */
+		public static String serializePoints(List<GeoWaypoint> points) {
+			if (points == null) {
+				return "";
+			}
+
+			Gson gson = new Gson();
+			return gson.toJson(new GeoWaypoints(points));
+		}
+
+		/**
+		 * Constructs a new instance with the give list of GeoTrackPoints.
+		 *
+		 * @param points
+		 */
+		private GeoWaypoints(List<GeoWaypoint> points) {
+			if (points == null) {
+				throw new IllegalArgumentException("Invalid list of track points passed to constructor");
+			}
+
+			this.points = points;
+		}
+		
+		private List<GeoWaypoint> getPoints() {
+			return Collections.unmodifiableList(points);
+		}
 	}
 }

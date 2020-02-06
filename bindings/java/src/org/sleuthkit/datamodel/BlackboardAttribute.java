@@ -1384,6 +1384,10 @@ public class BlackboardAttribute {
 		TSK_GEO_TRACKPOINTS(144, "TSK_GEO_TRACKPOINTS",
 			bundle.getString("BlackboardAttribute.tskgeopath.text"),
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+		
+		TSK_GEO_WAYPOINTS(145, "TSK_GEO_WAYPOINTS",
+			bundle.getString("BlackboardAttribute.tskgeowaypoints.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 
 		;
 

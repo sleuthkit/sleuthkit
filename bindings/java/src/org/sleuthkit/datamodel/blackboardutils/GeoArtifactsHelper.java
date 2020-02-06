@@ -29,6 +29,8 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints.GeoWaypoints;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
 /**
@@ -49,11 +51,14 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Add a Track from a GPS device to the database.  A Track represents a series of points that the device
-	 * has traveled on.  This will create a TSK_GPS_TRACK artifact and add it to the case. 
+	 * Add a Track from a GPS device to the database. A Track represents a
+	 * series of points that the device has traveled on. This will create a
+	 * TSK_GPS_TRACK artifact and add it to the case.
 	 *
-	 * @param trackName	Name of GPS track, not required.  Pass in null if unknown. 
-	 * @param points	Set of GeoTrackPoints that the track traversed. Required.
+	 * @param trackName	Name of GPS track, not required. Pass in null if
+	 *                  unknown.
+	 * @param points	   List of GeoTrackPoints that the track traversed.
+	 *                  Required.
 	 *
 	 * @return	TSK_GPS_TRACK artifact
 	 *
@@ -62,7 +67,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 */
 	public BlackboardArtifact addTrack(String trackName, List<GeoTrackPoint> points) throws TskCoreException, BlackboardException {
 		if (points == null) {
-			throw new IllegalArgumentException("GeoTrackPoint instance must be valid");
+			throw new IllegalArgumentException(String.format("List of GeoTrackPoints instance must be valid for track %s", trackName != null ? trackName : ""));
 		}
 
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
@@ -82,8 +87,100 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Adds a Track with a single point.  A GPS track generally refers to several points that a device has 
-	 * traversed and addTrack() is more appropriate. 
+	 * Add a Route from a GPS device to the database.
+	 *
+	 * @param name			      Name of the route, not required
+	 * @param creationTime	Time the route was created
+	 * @param location		   The final destination of the route, not required
+	 * @param programName	 The name of the program creating this route, not
+	 *                     required
+	 * @param category		   String category of the route, not required
+	 * @param points		     List of GeoWaypoints belonging to the route
+	 *
+	 * @return TSK_GPS_ROUTE artifact
+	 *
+	 * @throws TskCoreException		  If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
+	 */
+	public BlackboardArtifact addRoute(String name, Long creationTime, String location, String programName, String category, List<GeoWaypoint> points) throws TskCoreException, BlackboardException {
+
+		if (points == null) {
+			throw new IllegalArgumentException(String.format("List of GeoWaypoints must be valid for route %s", name != null ? name : ""));
+		}
+
+		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
+		List<BlackboardAttribute> attributes = new ArrayList<>();
+
+		attributes.add(new BlackboardAttribute(
+				BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS,
+				getModuleName(),
+				GeoWaypoints.serializePoints(points)));
+
+		if (name != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), name));
+		}
+
+		if (creationTime != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, getModuleName(), creationTime));
+		}
+
+		if (location != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCATION, getModuleName(), location));
+		}
+
+		if (programName != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
+		}
+
+		if (category != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_CATEGORY, getModuleName(), category));
+		}
+
+		artifact.addAttributes(attributes);
+
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
+
+		return artifact;
+	}
+
+	/**
+	 * Add a Route with a start and end point from a GPS device to the database.
+	 *
+	 * @param name			        Name of the route, not required
+	 * @param creationTime	  Time the route was created
+	 * @param location		     The final destination of the route, not required
+	 * @param programName	   The name of the program creating this route, not
+	 *                       required
+	 * @param category		     String category of the route, not required
+	 * @param startLatitude	 Starting point latitude
+	 * @param startLongitude Starting point longitude
+	 * @param endLatitude	   End point latitude
+	 * @param endLongitude	  End point longitude
+	 *
+	 * @return TSK_GPS_ROUTE
+	 *
+	 * @throws TskCoreException		  If there is an error creating the artifact.
+	 * @throws BlackboardException	If there is a problem posting the artifact.
+	 */
+	public BlackboardArtifact addRoute(String name, Long creationTime, String location, String programName, String category, Double startLatitude, Double startLongitude, Double endLatitude, Double endLongitude) throws TskCoreException, BlackboardException {
+		if (startLatitude == null || startLongitude == null) {
+			throw new IllegalArgumentException(String.format("Start latitude & longitude must be valid for route %s", name != null ? name : ""));
+		}
+
+		if (endLatitude == null || endLongitude == null) {
+			throw new IllegalArgumentException(String.format("End latitude & longitude must be valid for route %s", name != null ? name : ""));
+		}
+
+		List<GeoWaypoint> waypointList = new ArrayList<>();
+		waypointList.add(new GeoWaypoint(startLatitude, startLongitude, null));
+		waypointList.add(new GeoWaypoint(endLatitude, endLongitude, null));
+
+		return addRoute(name, creationTime, location, programName, category, waypointList);
+	}
+
+	/**
+	 * Adds a Track with a single point. A GPS track generally refers to several
+	 * points that a device has traversed and addTrack() is more appropriate.
 	 *
 	 * @param latitude    Location latitude, required.
 	 * @param longitude   Location longitude, required.
