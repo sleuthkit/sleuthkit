@@ -262,9 +262,10 @@ class TskAuto {
 
   protected:
     TSK_IMG_INFO * m_img_info;
+    std::vector<const TSK_POOL_INFO*> m_poolInfos;
+
     bool m_internalOpen;        ///< True if m_img_info was opened in TskAuto and false if passed in
     bool m_stopAllProcessing;   ///< True if no further processing should occur
-
 
     uint8_t isNtfsSystemFiles(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isFATSystemFiles(TSK_FS_FILE * fs_file);
