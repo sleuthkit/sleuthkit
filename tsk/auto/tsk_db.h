@@ -180,7 +180,7 @@ class TskDb {
     virtual int addImageName(int64_t objId, char const *imgName, int sequence) = 0;
     virtual int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId, int64_t & objId) = 0;
-    virtual int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& poolObjId, int64_t& vsObjId) = 0;
+    virtual int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& vsObjId) = 0;
     virtual int addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         int64_t parObjId, int64_t& objId) = 0;
     virtual int addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId) = 0;

@@ -1018,17 +1018,17 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
 *
 * @ param pool_info The pool to save to the database
 * @ param parObjId The ID of the parent of the pool object
-* @ param poolObjId Will be set to the object ID of the new pool
 * @ param vsObjId Will be set to the object ID of the new volume system created as a child of
 *               the new pool.
 * @returns 1 on error, 0 on success
 */
 int
-TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& poolObjId, int64_t& vsObjId) {
+TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& vsObjId) {
 
     char stmt[1024];
 
     // Add pool
+    int64_t poolObjId;
     if (addObject(TSK_DB_OBJECT_TYPE_POOL, parObjId, poolObjId))
         return 1;
 
@@ -1101,9 +1101,8 @@ TskDbPostgreSQL::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
-        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",%s,%d)",
-        objId, vol_index, 0, 0,
-        desc_sql, 0);
+        "VALUES (%lld, %" PRIuPNUM ",%d, %d, %s, %d)",
+        objId, vol_index, 0, 0, desc_sql, 0);
 
     if (attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n")) {
         PQfreemem(desc_sql);
