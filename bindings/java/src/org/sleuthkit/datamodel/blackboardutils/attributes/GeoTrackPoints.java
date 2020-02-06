@@ -27,7 +27,7 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPo
 
 /**
  * Helper class to make it easier to serialize and deserialize the list of track
- * points with Gson.
+ * points with json.
  *
  */
 public final class GeoTrackPoints {
@@ -90,16 +90,21 @@ public final class GeoTrackPoints {
 		return points.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
 	}
 
+	/**
+	* Helper class to make it easier to serialize and deserialize the list of waypoints
+	* points with json.
+	*
+	*/
 	public final static class GeoWaypoints {
 
 		private final List<GeoWaypoint> points;
 
 		/**
-		 * Deserialize the given list of GeoTrackPoints.
+		 * Deserialize the given list of GeoWaypoints.
 		 *
-		 * @param jsonString JSon string of track points.
+		 * @param jsonString JSon string of waypoints.
 		 *
-		 * @return	Timestamp ordered list of GeoTrackPoints, empty list will be
+		 * @return	Timestamp ordered list of GeoWaypoints, empty list will be
 		 *         returned if jsonString is null or empty.
 		 */
 		public static List<GeoWaypoint> deserializePoints(String jsonString) {
@@ -114,7 +119,7 @@ public final class GeoTrackPoints {
 		/**
 		 * Serialize the given list of GeoTrackPoints.
 		 *
-		 * @param points List of GeoTrackPoints
+		 * @param points List of GeoWaypoints
 		 *
 		 * @return	JSon formatted string is returned or empty string if points
 		 *         was null
@@ -129,7 +134,7 @@ public final class GeoTrackPoints {
 		}
 
 		/**
-		 * Constructs a new instance with the give list of GeoTrackPoints.
+		 * Constructs a new instance with the give list of GeoWaypoints.
 		 *
 		 * @param points
 		 */
@@ -141,6 +146,11 @@ public final class GeoTrackPoints {
 			this.points = points;
 		}
 		
+		/**
+		 * Returns the list of GeoWaypoint
+		 * 
+		 * @return Returns unmodifiableListlist of GeoWaypoints, or 
+		 */
 		private List<GeoWaypoint> getPoints() {
 			return Collections.unmodifiableList(points);
 		}
