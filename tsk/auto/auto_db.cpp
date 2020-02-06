@@ -334,6 +334,13 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
     return TSK_FILTER_CONT;
 }
 
+/**
+* Adds unallocated pool blocks to a new volume.
+*
+* @param numPool Will be updated with the number of pools processed
+*
+* @return Returns 0 for success, 1 for failure
+*/
 TSK_RETVAL_ENUM
 TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
 
@@ -359,12 +366,15 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         if (pool_info->ctype != TSK_POOL_TYPE_APFS) {
             continue;
         }
+
+        /* Increment the count of pools found */
         numPool++;
 
-        // Create the volume
+        /* Create the volume */
         int64_t unallocVolObjId;
         m_db->addUnallocatedPoolVolume(pool_info->num_vols, curPoolVs, unallocVolObjId);
 
+        /* Create the unallocated space files */
         TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
         TSK_FS_ATTR_RUN * current_run = unalloc_runs;
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
