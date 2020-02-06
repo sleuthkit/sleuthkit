@@ -554,7 +554,6 @@ uint8_t APFSFSCompat::inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INU
 
     TSK_FS_FILE *fs_file;
     TSK_INUM_T inum;
-    int result;
 
     if (end_inum < start_inum) {
         tsk_error_reset();
@@ -591,7 +590,7 @@ uint8_t APFSFSCompat::inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INU
 
     for (inum = start_inum; inum < end_inum; inum++) {
 
-        result = fs->file_add_meta(fs, fs_file, inum);
+        int result = fs->file_add_meta(fs, fs_file, inum);
         if (result == TSK_OK) {
 
             if ((fs_file->meta->flags & flags) == fs_file->meta->flags) {
