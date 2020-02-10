@@ -21,43 +21,7 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/*.java \
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/attributes/*.java \
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
-    bindings/java/src/*.html \
-    framework/*.txt \
-    framework/Makefile.am \
-    framework/bootstrap \
-    framework/config/* \
-    framework/config.h.in \
-    framework/configure.ac \
-    framework/m4/* \
-    framework/tsk/framework/*.h \
-    framework/tsk/framework/Makefile.am \
-    framework/tsk/framework/extraction/Makefile.am \
-    framework/tsk/framework/extraction/*.cpp \
-    framework/tsk/framework/extraction/*.h \
-    framework/tsk/framework/file/Makefile.am \
-    framework/tsk/framework/file/*.cpp \
-    framework/tsk/framework/file/*.h \
-    framework/tsk/framework/pipeline/Makefile.am \
-    framework/tsk/framework/pipeline/*.cpp \
-    framework/tsk/framework/pipeline/*.h \
-    framework/tsk/framework/services/Makefile.am \
-    framework/tsk/framework/services/*.cpp \
-    framework/tsk/framework/services/*.h \
-    framework/tsk/framework/utilities/Makefile.am \
-    framework/tsk/framework/utilities/*.cpp \
-    framework/tsk/framework/utilities/*.h \
-    framework/modules/* \
-    framework/SampleConfig/*.xml \
-    framework/docs/* \
-    framework/man/* \
-    framework/tools/tsk_analyzeimg/Makefile.am \
-    framework/tools/tsk_analyzeimg/*.cpp \
-    framework/tools/tsk_validatepipeline/Makefile.am \
-    framework/tools/tsk_validatepipeline/*.cpp \
-    framework/tools/Makefile.am \
-    framework/msvcpp/*/*.vcxproj \
-    framework/msvcpp/*/*.sln \
-    framework/msvcpp/Makefile
+    bindings/java/src/*.html 
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -96,7 +60,6 @@ nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
-# doxygen framework/docs/Doxyfile
 	cd bindings/java/doxygen; doxygen Doxyfile
 
 man-html:
