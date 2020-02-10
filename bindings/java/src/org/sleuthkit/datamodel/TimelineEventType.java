@@ -207,14 +207,26 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		}
 	};
 
+	// The MISC_TYPE events are sorted alphebetically by their display name instead of their 
+	// "natural order" which is by their event ID.
 	TimelineEventType MISC_TYPES = new TimelineEventTypeImpl(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
 			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet<TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
-					EXIF, GPS_ROUTE, GPS_TRACKPOINT, INSTALLED_PROGRAM, MESSAGE,
-					RECENT_DOCUMENTS, REGISTRY, LOG_ENTRY, GPS_SEARCH, GPS_BOOKMARK, GPS_LAST_KNOWN_LOCATION, GPS_TRACK);
+			ImmutableSortedSet.Builder<TimelineEventType> builder = ImmutableSortedSet.orderedBy(new Comparator<TimelineEventType>() {
+				@Override
+				public int compare(TimelineEventType o1, TimelineEventType o2) {
+					return o1.getDisplayName().compareTo(o2.getDisplayName());
+				}
+			});
+
+			builder.add(CALL_LOG, DEVICES_ATTACHED, EMAIL,
+					EXIF, GPS_BOOKMARK, GPS_LAST_KNOWN_LOCATION, GPS_TRACKPOINT,
+					GPS_ROUTE, GPS_SEARCH, GPS_TRACK, INSTALLED_PROGRAM, LOG_ENTRY, MESSAGE,
+					RECENT_DOCUMENTS, REGISTRY);
+
+			return builder.build();
 		}
 	};
 
