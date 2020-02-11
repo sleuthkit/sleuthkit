@@ -34,6 +34,7 @@ import org.sleuthkit.datamodel.TimelineEventTypes.EmptyExtractor;
 import org.sleuthkit.datamodel.TimelineEventTypes.FilePathArtifactEventType;
 import org.sleuthkit.datamodel.TimelineEventTypes.FilePathEventType;
 import org.sleuthkit.datamodel.TimelineEventTypes.URLArtifactEventType;
+import org.sleuthkit.datamodel.TimelineEventTypes.GPSTrackArtifactEventType;
 import org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.AttributeExtractor;
 import static org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.getAttributeSafe;
 
@@ -206,14 +207,26 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		}
 	};
 
+	// The MISC_TYPE events are sorted alphebetically by their display name instead of their 
+	// "natural order" which is by their event ID.
 	TimelineEventType MISC_TYPES = new TimelineEventTypeImpl(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
 			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet<TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
-					EXIF, GPS_ROUTE, GPS_TRACKPOINT, INSTALLED_PROGRAM, MESSAGE,
-					RECENT_DOCUMENTS, REGISTRY, LOG_ENTRY);
+			ImmutableSortedSet.Builder<TimelineEventType> builder = ImmutableSortedSet.orderedBy(new Comparator<TimelineEventType>() {
+				@Override
+				public int compare(TimelineEventType o1, TimelineEventType o2) {
+					return o1.getDisplayName().compareTo(o2.getDisplayName());
+				}
+			});
+
+			builder.add(CALL_LOG, DEVICES_ATTACHED, EMAIL,
+					EXIF, GPS_BOOKMARK, GPS_LAST_KNOWN_LOCATION, GPS_TRACKPOINT,
+					GPS_ROUTE, GPS_SEARCH, GPS_TRACK, INSTALLED_PROGRAM, LOG_ENTRY, MESSAGE,
+					RECENT_DOCUMENTS, REGISTRY);
+
+			return builder.build();
 		}
 	};
 
@@ -467,6 +480,51 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_WEB_FORM_ADDRESS),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_EMAIL));
+	
+	TimelineEventType GPS_BOOKMARK = new TimelineEventArtifactTypeImpl(29,
+			getBundle().getString("MiscTypes.GPSBookmark.name"), // NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_GPS_BOOKMARK),
+			new Type(TSK_DATETIME),
+			new AttributeExtractor(new Type(TSK_NAME)),
+			artf -> {
+				final BlackboardAttribute longitude = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE));
+				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
+				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
+			},
+			new EmptyExtractor());
+
+	TimelineEventType GPS_LAST_KNOWN_LOCATION = new TimelineEventArtifactTypeImpl(30,
+			getBundle().getString("MiscTypes.GPSLastknown.name"), // NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_GPS_LAST_KNOWN_LOCATION),
+			new Type(TSK_DATETIME),
+			new AttributeExtractor(new Type(TSK_NAME)),
+			artf -> {
+				final BlackboardAttribute longitude = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE));
+				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
+				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
+			},
+			new EmptyExtractor());
+
+	TimelineEventType GPS_SEARCH = new TimelineEventArtifactTypeImpl(31,
+			getBundle().getString("MiscTypes.GPSearch.name"), // NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_GPS_SEARCH),
+			new Type(TSK_DATETIME),
+			new AttributeExtractor(new Type(TSK_NAME)),
+			artf -> {
+				final BlackboardAttribute longitude = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE));
+				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
+				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
+			},
+			new EmptyExtractor());
+
+	TimelineEventType GPS_TRACK = new GPSTrackArtifactEventType(32,
+			getBundle().getString("MiscTypes.GPSTrack.name"), // NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_GPS_TRACK),
+			new Type(TSK_NAME));
 
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();
