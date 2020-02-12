@@ -80,6 +80,10 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
+import org.sleuthkit.datamodel.databaseutils.DatabaseQueryHelper;
+import org.sleuthkit.datamodel.databaseutils.PostgreSQLQueryHelper;
+import org.sleuthkit.datamodel.databaseutils.SQLiteQueryHelper;
+
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
 import org.sqlite.SQLiteJDBCLoader;
@@ -96,7 +100,7 @@ public class SleuthkitCase {
 	 * This must be the same as TSK_SCHEMA_VER and TSK_SCHEMA_MINOR_VER in
 	 * tsk/auto/tsk_db.h.
 	 */
-	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
+	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
 			= new CaseDbSchemaVersionNumber(8, 4);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
@@ -182,6 +186,7 @@ public class SleuthkitCase {
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
+	private DatabaseQueryHelper dBqueryHelper;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private String dbBackupPath;
 	private Map<Integer, BlackboardArtifact.Type> typeIdToArtifactTypeMap;
@@ -352,6 +357,15 @@ public class SleuthkitCase {
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
 		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
 
+		/*
+		 * Set up the appropriate database helper
+		 */
+		if (dbType == DbType.POSTGRESQL) {
+			dBqueryHelper = new PostgreSQLQueryHelper();
+		} else {
+			dBqueryHelper = new SQLiteQueryHelper();
+		}
+		
 		/*
 		 * The following methods need to be called before updateDatabaseSchema
 		 * due to the way that updateFromSchema2toSchema3 was implemented.
@@ -2338,6 +2352,17 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase newCase(String dbPath) throws TskCoreException {
 		try {
+			
+			File dbFile = new File(dbPath);
+			String testingDb = Paths.get(dbFile.getParent(), "testing.db").toString();
+			CaseDatabaseFactory factory = new CaseDatabaseFactory(testingDb);
+			try {
+				factory.createCaseDatabase();
+			} catch (TskCoreException ex) {
+				// Oh no
+				logger.log(Level.SEVERE, "Error in new case code", ex);
+			}
+			
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
 			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (Exception ex) {
