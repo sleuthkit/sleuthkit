@@ -328,6 +328,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				return String.format("from %1$s %2$s to %3$s %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
 			});
 
+	@SuppressWarnings("deprecation")
 	TimelineEventType GPS_TRACKPOINT = new TimelineEventArtifactTypeImpl(15,
 			getBundle().getString("MiscTypes.GPSTrackpoint.name"), // NON-NLS
 			MISC_TYPES,
