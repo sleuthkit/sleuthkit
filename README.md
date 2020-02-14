@@ -156,7 +156,7 @@ under the Common Public License.  Other tools in the src directory
 are either Common Public License or the GNU Public License.
 
 ## INSTALL
-For installation instructions, refer to the INSTALL document.
+For installation instructions, refer to the INSTALL.txt document.
 
 ## OTHER DOCS
 The 'docs' directory contains documents that describe the provided tools
