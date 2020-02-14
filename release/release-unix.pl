@@ -417,9 +417,46 @@ sub update_buildxml {
     rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
 }
 
-sub update_doxygen {
+sub update_doxygen_c {
 
-    print "Updating the version in Doxyfile file\n";
+    print "Updating the version in Doxyfile C file\n";
+    
+    my $IFILE = "tsk/docs/Doxyfile";
+    my $OFILE = "tsk/docs/Doxyfile2";
+
+    open (CONF_IN, "<${IFILE}") or 
+        die "Cannot open $IFILE";
+    open (CONF_OUT, ">${OFILE}") or 
+        die "Cannot open $OFILE";
+
+    my $found = 0;
+    while (<CONF_IN>) {
+        if (/^PROJECT_NUMBER\s*=/) {
+            print CONF_OUT "PROJECT_NUMBER = ${VER}\n";
+            $found++;
+        }
+        elsif (/^HTML_OUTPUT\s*=/) {
+            print CONF_OUT "HTML_OUTPUT = api-docs/${VER}/\n";
+            $found++;
+        }
+        else {
+            print CONF_OUT $_;
+        }
+    }
+    close (CONF_IN);
+    close (CONF_OUT);
+
+    if ($found != 2) {
+        die "Error: Found $found (instead of 2) occurrences of Version: in C++ Doxyfile";
+    }
+
+    unlink ($IFILE) or die "Error deleting $IFILE";
+    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
+}
+
+sub update_doxygen_java {
+
+    print "Updating the version in Java Doxyfile file\n";
     
     my $IFILE = "bindings/java/doxygen/Doxyfile";
     my $OFILE = "bindings/java/doxygen/Doxyfile2";
@@ -447,7 +484,7 @@ sub update_doxygen {
     close (CONF_OUT);
 
     if ($found != 2) {
-        die "Error: Found $found (instead of 2) occurrences of Version: in Doxyfile";
+        die "Error: Found $found (instead of 2) occurrences of Version: in Java Doxyfile";
     }
 
     unlink ($IFILE) or die "Error deleting $IFILE";
@@ -718,7 +755,8 @@ update_pkgver();
 update_buildxml();
 update_debian_changelog();
 update_debian_install();
-update_doxygen();
+update_doxygen_c();
+update_doxygen_java();
 
 bootstrap();
 checkin_vers();
