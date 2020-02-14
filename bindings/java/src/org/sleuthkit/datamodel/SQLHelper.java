@@ -16,12 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.databaseutils;
+package org.sleuthkit.datamodel;
 
 /**
  * Interface for classes to help create queries for SQLite or PostgreSQL
  */
-public interface DatabaseQueryHelper {
+interface SQLHelper {
 	
 	// Get the type for the primary key
 	String getPrimaryKey();
@@ -32,6 +32,54 @@ public interface DatabaseQueryHelper {
 	// Get the type for blob-type data
 	String getBlobType();
 	
-	// Get the description column name for the tsk_vs_parts table
+	// Get the description column name for the tsk_vs_parts table.
+	// This varies between SQLite and PostgreSQL.
 	String getVSDescColName();
+
+
+	class PostgreSQLHelper implements SQLHelper {
+
+		@Override
+		public String getPrimaryKey() {
+			return "BIGSERIAL";
+		}
+
+		@Override
+		public String getBigIntType() {
+			return "BIGINT";
+		}
+
+		@Override
+		public String getBlobType() {
+			return "BYTEA";
+		}
+
+		@Override
+		public String getVSDescColName() {
+			return "descr";
+		}
+	}
+	
+	class SQLiteHelper implements SQLHelper {
+
+		@Override
+		public String getPrimaryKey() {
+			return "INTEGER";
+		}
+
+		@Override
+		public String getBigIntType() {
+			return "INTEGER";
+		}
+
+		@Override
+		public String getBlobType() {
+			return "BLOB";
+		}
+
+		@Override
+		public String getVSDescColName() {
+			return "desc";
+		}
+	}
 }

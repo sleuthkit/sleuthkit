@@ -80,9 +80,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-import org.sleuthkit.datamodel.databaseutils.DatabaseQueryHelper;
-import org.sleuthkit.datamodel.databaseutils.PostgreSQLQueryHelper;
-import org.sleuthkit.datamodel.databaseutils.SQLiteQueryHelper;
 
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
@@ -186,7 +183,6 @@ public class SleuthkitCase {
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
-	private DatabaseQueryHelper dBqueryHelper;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private String dbBackupPath;
 	private Map<Integer, BlackboardArtifact.Type> typeIdToArtifactTypeMap;
@@ -356,15 +352,6 @@ public class SleuthkitCase {
 		typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
 		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
-
-		/*
-		 * Set up the appropriate database helper
-		 */
-		if (dbType == DbType.POSTGRESQL) {
-			dBqueryHelper = new PostgreSQLQueryHelper();
-		} else {
-			dBqueryHelper = new SQLiteQueryHelper();
-		}
 		
 		/*
 		 * The following methods need to be called before updateDatabaseSchema
@@ -2352,18 +2339,10 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase newCase(String dbPath) throws TskCoreException {
 		try {
-			
-			File dbFile = new File(dbPath);
-			String testingDb = Paths.get(dbFile.getParent(), "testing.db").toString();
-			CaseDatabaseFactory factory = new CaseDatabaseFactory(testingDb);
-			try {
-				factory.createCaseDatabase();
-			} catch (TskCoreException ex) {
-				// Oh no
-				logger.log(Level.SEVERE, "Error in new case code", ex);
-			}
-			
-			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
+			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
+			factory.createCaseDatabase();
+
+			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
@@ -2400,7 +2379,10 @@ public class SleuthkitCase {
 			 * the case. In this way, we obtain more detailed information if we
 			 * are able, but do not lose any information if unable.
 			 */
-			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(databaseName, info);
+			CaseDatabaseFactory factory = new CaseDatabaseFactory(databaseName, info);
+			factory.createCaseDatabase();
+
+			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
 					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType());
 		} catch (PropertyVetoException exp) {
