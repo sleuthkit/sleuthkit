@@ -2315,6 +2315,15 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
     return (jboolean) result;
 }
 
+/*
+* Returns the current Sleuthkit version as a long
+* @return the current version
+*/
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getSleuthkitVersionNat
+(JNIEnv * env, jclass obj) {
+    return (jlong)TSK_VERSION_NUM;
+}
+
 
 /*
  * Finish the image being created by image writer.

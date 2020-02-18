@@ -30,7 +30,7 @@ import org.sleuthkit.datamodel.SQLHelper.PostgreSQLHelper;
 import org.sleuthkit.datamodel.SQLHelper.SQLiteHelper;
 
 /**
- *
+ * Creates a SQLite or PostgreSQL case database.
  */
 class CaseDatabaseFactory {
 	private static final Logger logger = Logger.getLogger(CaseDatabaseFactory.class.getName());
@@ -125,7 +125,7 @@ class CaseDatabaseFactory {
 	 */
 	private void addDbInfo(Connection conn) throws TskCoreException {
 		CaseDbSchemaVersionNumber version = SleuthkitCase.CURRENT_DB_SCHEMA_VERSION;
-		long tskVersionNum = 0; // This is the current version of TSK (not the DB schema version)
+		long tskVersionNum = SleuthkitJNI.getSleuthkitVersion(); // This is the current version of TSK
 		
 		try (Statement stmt = conn.createStatement()) {
 			stmt.execute("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER, schema_minor_ver INTEGER)");
@@ -552,8 +552,8 @@ class CaseDatabaseFactory {
 		
 		@Override
 		void createDatabase() throws TskCoreException {
-			// SQLite doesn't need to explicitly create the case database, so
-			// just check that the folder exists and the database does not
+			// SQLite doesn't need to explicitly create the case database but we will set the
+			// chunk size here after a check that the folder exists and the database does not
 			File dbFile = new File(dbPath);
 			if (dbFile.exists()) {
 				throw new TskCoreException("Case database already exists : " + dbPath);
@@ -584,7 +584,6 @@ class CaseDatabaseFactory {
 		
 		@Override
 		void performPreInitialization(Connection conn) throws TskCoreException {
-		
 			try (Statement stmt = conn.createStatement()) {
 				stmt.execute(PRAGMA_SYNC_OFF);
 				stmt.execute(PRAGMA_READ_UNCOMMITTED_TRUE);
@@ -594,7 +593,7 @@ class CaseDatabaseFactory {
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error setting pragmas", ex);
 			}
-			
+
 			/* TODO? Implement this C code
 			    // increase the DB by 1MB at a time -- supposed to help performance when populating
 				int chunkSize = 1024 * 1024;

@@ -1734,6 +1734,23 @@ public class SleuthkitJNI {
 	public static boolean isImageSupported(String imagePath) {
 		return isImageSupportedNat(imagePath);
 	}
+	
+	/** Get the version of the Sleuthkit code in number form.
+	 * Upper byte is A, next is B, and next byte is C in version A.B.C.
+	 * Lowest byte is 0xff, except in beta releases, in which case it
+	 * increments from 1.  Nightly snapshots will have upper byte as
+	 * 0xff and next bytes with year, month, and date, respectively.
+	 * Note that you will not be able to differentiate between snapshots
+	 * from the trunk or branches with this method...
+	 * For example, 3.1.2 would be stored as 0x030102FF.
+	 * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
+	 * 0xFF030102.
+	 * 
+	 * @return the current Sleuthkit version
+     */
+	static long getSleuthkitVersion() {
+		return getSleuthkitVersionNat();
+	}
 
 	/**
 	 * Get a read lock for the C++ layer. Do not get this lock after obtaining
@@ -1982,6 +1999,8 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 
 	private static native boolean isImageSupportedNat(String imagePath);
+	
+	private static native long getSleuthkitVersionNat();
 
 	private static native int finishImageWriterNat(long a_img_info);
 
