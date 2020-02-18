@@ -75,7 +75,7 @@ class CaseDatabaseFactory {
 	}
 	
 	/**
-	 * Create the database
+	 * Create the database itself (if necessary)
 	 * 
 	 * @throws TskCoreException 
 	 */
@@ -364,7 +364,6 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE TABLE tsk_file_layout (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 					+ "byte_start " + dbQueryHelper.getBigIntType() + " NOT NULL, byte_len " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 					+ "sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing tables", ex);
 		}
@@ -391,8 +390,10 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id)");
 			
 			//file type indexes
-			stmt.execute("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type)"); //mime type
-			stmt.execute("CREATE INDEX file_extension ON tsk_files(extension)");  //file extenssion
+			stmt.execute("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type)");
+			stmt.execute("CREATE INDEX file_extension ON tsk_files(extension)");
+			
+			// account indexes
 			stmt.execute("CREATE INDEX relationships_account1 ON account_relationships(account1_id)");
 			stmt.execute("CREATE INDEX relationships_account2 ON account_relationships(account2_id)");
 			stmt.execute("CREATE INDEX relationships_relationship_source_obj_id ON account_relationships(relationship_source_obj_id)");
@@ -411,10 +412,13 @@ class CaseDatabaseFactory {
 		}
 	}
 	
+	/**
+	 * Helper class for holding code unique to each database type.
+	 */
 	private abstract class DbCreationHelper {
 		
 		/**
-		 * Create and initialize the database
+		 * Create the database itself (if necessary)
 		 * 
 		 * @throws TskCoreException 
 		 */
@@ -493,6 +497,13 @@ class CaseDatabaseFactory {
 			return getConnection("postgres");
 		}
 		
+		/**
+		 * Connects to an existing database with the given name.
+		 * 
+		 * @param databaseName the name of the database
+		 * 
+		 * @return the connection to the database
+		 */
 		Connection getConnection(String databaseName) {
 			
 			StringBuilder url = new StringBuilder();
@@ -510,9 +521,7 @@ class CaseDatabaseFactory {
 				Class.forName(JDBC_DRIVER);
 				conn = DriverManager.getConnection(url.toString(), props);
 			} catch (ClassNotFoundException | SQLException ex) {
-				// TODO: Determine why a connection failure (ConnectionException) re-throws
-				// the SQLException and does not print this log message?
-				logger.log(Level.SEVERE, "Failed to acquire ephemeral connection to postgresql."); // NON-NLS
+				logger.log(Level.SEVERE, "Failed to acquire ephemeral connection to postgresql.", ex); // NON-NLS
 				conn = null;
 			}
 			return conn;
@@ -528,18 +537,18 @@ class CaseDatabaseFactory {
 			try (Statement stmt = conn.createStatement()) {
 				stmt.execute("ALTER SEQUENCE blackboard_artifacts_artifact_id_seq minvalue -9223372036854775808 restart with -9223372036854775808");
 			} catch (SQLException ex) {
-				throw new TskCoreException("Error setting pragmas", ex);
+				throw new TskCoreException("Error altering artifact ID sequence", ex);
 			}
 		}
 	}
 	
 	private class SQLiteDbCreationHelper extends DbCreationHelper {
 		
-		private final static String PRAGMA_SYNC_OFF = "PRAGMA synchronous = OFF";
-		private final static String PRAGMA_READ_UNCOMMITTED_TRUE = "PRAGMA read_uncommitted = True";
-		private final static String PRAGMA_ENCODING_UTF8 = "PRAGMA encoding = 'UTF-8'";
-		private final static String PRAGMA_PAGE_SIZE_4096 = "PRAGMA page_size = 4096";
-		private final static String PRAGMA_FOREIGN_KEYS_ON = "PRAGMA foreign_keys = ON";
+		private final static String PRAGMA_SYNC_OFF = "PRAGMA synchronous = OFF"; // NON-NLS
+		private final static String PRAGMA_READ_UNCOMMITTED_TRUE = "PRAGMA read_uncommitted = True"; // NON-NLS
+		private final static String PRAGMA_ENCODING_UTF8 = "PRAGMA encoding = 'UTF-8'"; // NON-NLS
+		private final static String PRAGMA_PAGE_SIZE_4096 = "PRAGMA page_size = 4096"; // NON-NLS
+		private final static String PRAGMA_FOREIGN_KEYS_ON = "PRAGMA foreign_keys = ON"; // NON-NLS
 		
 		private final static String JDBC_DRIVER = "org.sqlite.JDBC"; // NON-NLS
         private final static String JDBC_BASE_URI = "jdbc:sqlite:"; // NON-NLS
@@ -552,13 +561,13 @@ class CaseDatabaseFactory {
 		
 		@Override
 		void createDatabase() throws TskCoreException {
-			// SQLite doesn't need to explicitly create the case database but we will set the
-			// chunk size here after a check that the folder exists and the database does not
+			// SQLite doesn't need to explicitly create the case database but we will
+			// check that the folder exists and the database does not
 			File dbFile = new File(dbPath);
 			if (dbFile.exists()) {
 				throw new TskCoreException("Case database already exists : " + dbPath);
 			}
-			
+
 			if (dbFile.getParentFile() != null && !dbFile.getParentFile().exists()) {
 				throw new TskCoreException("Case database folder does not exist : " + dbFile.getParent());
 			}
@@ -593,18 +602,6 @@ class CaseDatabaseFactory {
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error setting pragmas", ex);
 			}
-
-			/* TODO? Implement this C code
-			    // increase the DB by 1MB at a time -- supposed to help performance when populating
-				int chunkSize = 1024 * 1024;
-				if (sqlite3_file_control(m_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunkSize) != SQLITE_OK)
-				{
-					tsk_error_reset();
-					tsk_error_set_errno(TSK_ERR_AUTO_DB);
-					tsk_error_set_errstr("TskDbSqlite::initialize: error setting chunk size %s", sqlite3_errmsg(m_db));
-					return 1;
-				}
-			*/
 		}	
 
 		@Override

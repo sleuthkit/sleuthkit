@@ -80,7 +80,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
 import org.sqlite.SQLiteJDBCLoader;
@@ -352,7 +351,7 @@ public class SleuthkitCase {
 		typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
 		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
-		
+
 		/*
 		 * The following methods need to be called before updateDatabaseSchema
 		 * due to the way that updateFromSchema2toSchema3 was implemented.
