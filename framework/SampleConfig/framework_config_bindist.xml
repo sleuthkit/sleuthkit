@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Used in binary distribution of framework  - Contains only the settings that are relevant for it -->
-<!-- For more information please consult the TskSystemProperties::PredefinedProperty member enumeration documentation at http://www.sleuthkit.org/sleuthkit/docs/framework-docs/classTskSystemProperties.html -->
-<TSK_FRAMEWORK_CONFIG>
-  <CONFIG_DIR>#PROG_DIR#</CONFIG_DIR>
-  <MODULE_DIR>#PROG_DIR#\..\modules\</MODULE_DIR>  
-  <MODULE_CONFIG_DIR>#PROG_DIR#\..\modules\</MODULE_CONFIG_DIR>  
-  <!-- <SCALPEL_DIR>path</SCALPEL_DIR> -->
-</TSK_FRAMEWORK_CONFIG>

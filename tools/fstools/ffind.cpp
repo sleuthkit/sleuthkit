@@ -28,7 +28,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-aduvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inode\n"),
+        ("usage: %s [-aduvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images] inode\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: Find all occurrences\n");
     tsk_fprintf(stderr, "\t-d: Find deleted entries ONLY\n");
@@ -41,6 +41,10 @@ usage()
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr, "\t-v: Verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
 
@@ -57,6 +61,10 @@ main(int argc, char **argv1)
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_DADDR_T pvol_block = 0;
+    const char * password = ""; // Not currently used
 
     int dir_walk_flags = TSK_FS_DIR_WALK_FLAG_RECURSE;
     int ch;
@@ -84,7 +92,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:df:i:o:uvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:df:i:o:P:uvV"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             ffind_flags |= TSK_FS_FFIND_ALL;
@@ -128,6 +136,24 @@ main(int argc, char **argv1)
             break;
         case _TSK_T('o'):
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                usage();
+            }
+            break;
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -184,12 +210,35 @@ main(int argc, char **argv1)
             PRIu64 ")\n", img->size / img->sector_size);
         exit(1);
     }
-    if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-        tsk_error_print(stderr);
-        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-            tsk_fs_type_print(stderr);
-        img->close(img);
-        exit(1);
+
+    if (pvol_block == 0) {
+        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size,
+            fstype, password)) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            img->close(img);
+            exit(1);
+        }
+    }
+    else {
+        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+        if (pool == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            img->close(img);
+            exit(1);
+        }
+
+        img = pool->get_img_info(pool, pvol_block);
+        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            img->close(img);
+            exit(1);
+        }
     }
 
     if (inode < fs->first_inum) {

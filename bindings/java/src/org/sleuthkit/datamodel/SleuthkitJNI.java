@@ -800,10 +800,18 @@ public class SleuthkitJNI {
 					nonNullCaseDbPointer = HandleCache.getDefaultCaseDbPointer();
 				}
 				
-				// If we're getting a fresh copy, remove any existing cache references
+				// If we're getting a fresh copy and an image with this path is already
+				// in the cache, move the existing cache reference so it won't be used by 
+				// any subsequent calls to openImage but will still be valid if any objects
+				// have it cached. This happens in the case where the user adds the same data
+				// source twice (see JIRA-5868).
 				if (!useCache && HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.containsKey(imageKey)) {
 					long tempImageHandle = HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.get(imageKey);
-					HandleCache.getCaseHandles(nonNullCaseDbPointer).fsHandleCache.remove(tempImageHandle);
+					
+					// Store the old image handle in a fake path. This way it will no longer be found but will
+					// still be valid and the image and its file systems will be closed with the case.
+					String newPath = "Image_" + UUID.randomUUID().toString();
+					HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.put(newPath, tempImageHandle);
 					HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.remove(imageKey);
 				}
 
@@ -813,7 +821,7 @@ public class SleuthkitJNI {
 				} else {
 					//open new handle and cache it
 					imageHandle = openImgNat(imageFiles, imageFiles.length, sSize);
-					HandleCache.getCaseHandles(nonNullCaseDbPointer).fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
+					HandleCache.getCaseHandles(nonNullCaseDbPointer).fsHandleCache.put(imageHandle, new HashMap<>());
 					HandleCache.getCaseHandles(nonNullCaseDbPointer).imageHandleCache.put(imageKey, imageHandle);
 				}
 			}
