@@ -505,7 +505,7 @@ class CaseDatabaseFactory {
 				Class.forName(JDBC_DRIVER);
 				conn = DriverManager.getConnection(url.toString(), props);
 			} catch (ClassNotFoundException | SQLException ex) {
-				throw new TskCoreException("Failed to acquire ephemeral connection to postgresql.", ex); // NON-NLS
+				throw new TskCoreException("Failed to acquire ephemeral connection to PostgreSQL database " + databaseName, ex); // NON-NLS
 			}
 			return conn;
 		}	
@@ -571,7 +571,7 @@ class CaseDatabaseFactory {
 				Class.forName(JDBC_DRIVER);
 				conn = DriverManager.getConnection(url.toString());
 			} catch (ClassNotFoundException | SQLException ex) {
-				throw new TskCoreException("Failed to acquire ephemeral connection to SQLite.", ex); // NON-NLS
+				throw new TskCoreException("Failed to acquire ephemeral connection SQLite database " + dbPath, ex); // NON-NLS
 			}
 			return conn;
 		}
