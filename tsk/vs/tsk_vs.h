@@ -110,7 +110,7 @@ extern "C" {
         TSK_DADDR_T len;        ///< Number of sectors in partition
         char *desc;             ///< UTF-8 description of partition (volume system type-specific)
         int8_t table_num;       ///< Table address that describes this partition
-        int8_t slot_num;        ///< Entry in the table that describes this partition
+        int16_t slot_num;        ///< Entry in the table that describes this partition
         TSK_PNUM_T addr;        ///< Address of this partition
         TSK_VS_PART_FLAG_ENUM flags;    ///< Flags for partition
     };
@@ -283,7 +283,7 @@ class TskVsPartInfo {
     * Return entry in the table that describes this partition
     * @return entry in the table that describes this partition
     */
-    int8_t getSlotNum() const {
+    int16_t getSlotNum() const {
         if (m_vsPartInfo != NULL)
             return m_vsPartInfo->slot_num;
         else
