@@ -89,12 +89,7 @@ class CaseDatabaseFactory {
 	 * @throws TskCoreException 
 	 */
 	private void initializeSchema() throws TskCoreException {
-		Connection conn = dbCreationHelper.getConnection();
-		if (conn == null) {
-			throw new TskCoreException("Error connecting to database");
-		}
-		
-		try {
+		try (Connection conn = dbCreationHelper.getConnection()) {
 			// Perform any needed steps before creating the tables
 			dbCreationHelper.performPreInitialization(conn);
 
@@ -107,12 +102,8 @@ class CaseDatabaseFactory {
 		
 			// Add indexes
 			addIndexes(conn);
-		} finally {
-			try {
-				conn.close();
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Error closing connection.", ex);
-			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error initializing case database", ex);
 		}
 	}
 	
@@ -429,7 +420,7 @@ class CaseDatabaseFactory {
 		 * 
 		 * @return the connection
 		 */
-		abstract Connection getConnection();
+		abstract Connection getConnection() throws TskCoreException;
 		
 		/**
 		 * Do any needed initialization before creating the tables.
@@ -450,6 +441,9 @@ class CaseDatabaseFactory {
 		abstract void performPostTableInitialization(Connection conn) throws TskCoreException;
 	}
 	
+	/**
+	 * Implements the PostgreSQL-specific methods for creating the case
+	 */
 	private class PostgreSQLDbCreationHelper extends DbCreationHelper {
 		
 		private final static String JDBC_BASE_URI = "jdbc:postgresql://"; // NON-NLS
@@ -465,26 +459,16 @@ class CaseDatabaseFactory {
 		
 		@Override
 		void createDatabase() throws TskCoreException{
-			Connection conn = getPostgresConnection();
-			if (conn == null) {
-				throw new TskCoreException("Error connecting to the PostgreSQL server");
-			}
-		
-			try(Statement stmt = conn.createStatement()) {
+			try(Connection conn = getPostgresConnection();
+					Statement stmt = conn.createStatement()) {
 				stmt.execute("CREATE DATABASE \"" + caseName + "\" WITH ENCODING='UTF8'");		
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error creating PostgreSQL case " + caseName, ex);
-			} finally {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing connection.", ex);
-				}
 			}
 		}
 		
 		@Override
-		Connection getConnection() {
+		Connection getConnection() throws TskCoreException {
 			return getConnection(caseName);
 		}		
 		
@@ -493,7 +477,7 @@ class CaseDatabaseFactory {
 		 * 
 		 * @return the connection to the "postgres" database
 		 */
-		Connection getPostgresConnection() {
+		Connection getPostgresConnection() throws TskCoreException {
 			return getConnection("postgres");
 		}
 		
@@ -504,25 +488,24 @@ class CaseDatabaseFactory {
 		 * 
 		 * @return the connection to the database
 		 */
-		Connection getConnection(String databaseName) {
+		Connection getConnection(String databaseName) throws TskCoreException {
 			
 			StringBuilder url = new StringBuilder();
 			url.append(JDBC_BASE_URI)
 				.append(info.getHost())
-				.append("/") // NON-NLS
+				.append('/') // NON-NLS
 				.append(databaseName);
 			
 			Connection conn;
 			try {
 				Properties props = new Properties();
-				props.setProperty("user", info.getUserName());
-				props.setProperty("password", info.getPassword());
+				props.setProperty("user", info.getUserName());     // NON-NLS
+				props.setProperty("password", info.getPassword()); // NON-NLS
 
 				Class.forName(JDBC_DRIVER);
 				conn = DriverManager.getConnection(url.toString(), props);
 			} catch (ClassNotFoundException | SQLException ex) {
-				logger.log(Level.SEVERE, "Failed to acquire ephemeral connection to postgresql.", ex); // NON-NLS
-				conn = null;
+				throw new TskCoreException("Failed to acquire ephemeral connection to postgresql.", ex); // NON-NLS
 			}
 			return conn;
 		}	
@@ -542,6 +525,9 @@ class CaseDatabaseFactory {
 		}
 	}
 	
+	/**
+	 * Implements the SQLite-specific methods for creating the case
+	 */
 	private class SQLiteDbCreationHelper extends DbCreationHelper {
 		
 		private final static String PRAGMA_SYNC_OFF = "PRAGMA synchronous = OFF"; // NON-NLS
@@ -574,19 +560,18 @@ class CaseDatabaseFactory {
 		}
 		
 		@Override
-		Connection getConnection() {
+		Connection getConnection() throws TskCoreException {
 			
 			StringBuilder url = new StringBuilder();
-			url.append(JDBC_BASE_URI);
-			url.append(dbPath);
+			url.append(JDBC_BASE_URI)
+				.append(dbPath);
 			
 			Connection conn;
 			try {
 				Class.forName(JDBC_DRIVER);
 				conn = DriverManager.getConnection(url.toString());
 			} catch (ClassNotFoundException | SQLException ex) {
-				logger.log(Level.SEVERE, "Failed to acquire ephemeral connection to sqlite.", ex); // NON-NLS
-				conn = null;
+				throw new TskCoreException("Failed to acquire ephemeral connection to SQLite.", ex); // NON-NLS
 			}
 			return conn;
 		}

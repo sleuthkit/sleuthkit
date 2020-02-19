@@ -37,6 +37,9 @@ interface SQLHelper {
 	String getVSDescColName();
 
 
+	/**
+	 * PostgreSQL-specific implementation
+	 */
 	class PostgreSQLHelper implements SQLHelper {
 
 		@Override
@@ -60,6 +63,9 @@ interface SQLHelper {
 		}
 	}
 	
+	/**
+	 * SQLite-specific implementation
+	 */
 	class SQLiteHelper implements SQLHelper {
 
 		@Override
