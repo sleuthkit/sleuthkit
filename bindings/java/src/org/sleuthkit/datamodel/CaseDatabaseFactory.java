@@ -23,8 +23,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.Properties;
 import org.sleuthkit.datamodel.SQLHelper.PostgreSQLHelper;
 import org.sleuthkit.datamodel.SQLHelper.SQLiteHelper;
@@ -33,7 +31,6 @@ import org.sleuthkit.datamodel.SQLHelper.SQLiteHelper;
  * Creates a SQLite or PostgreSQL case database.
  */
 class CaseDatabaseFactory {
-	private static final Logger logger = Logger.getLogger(CaseDatabaseFactory.class.getName());
 	
 	private final SQLHelper dbQueryHelper;
 	private final DbCreationHelper dbCreationHelper;
