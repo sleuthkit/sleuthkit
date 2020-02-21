@@ -20,17 +20,17 @@
 #include <string>
 using std::string;
 
-#include "tsk_auto_i.h"
+#include "tsk/auto/tsk_auto_i.h"
 
 
 /** \internal
  * C++ class that implements TskAuto to load file metadata into a database. 
  * This is used by the TskCaseDb class. 
  */
-class TskAutoDb:public TskAuto {
+class TskAutoDbJava :public TskAuto {
   public:
-    TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
-    virtual ~ TskAutoDb();
+    TskAutoDbJava();
+    virtual ~TskAutoDbJava();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual uint8_t openImage(const char* a_deviceId = NULL);
@@ -120,7 +120,6 @@ class TskAutoDb:public TskAuto {
     int64_t commitAddImage();
 
   private:
-    TskDb * m_db;
     int64_t m_curImgId;     ///< Object ID of image currently being processed
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
@@ -133,15 +132,11 @@ class TskAutoDb:public TskAuto {
     string m_curDirPath;		//< Path of the current directory being processed
     tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath
     string m_curImgTZone;
-    bool m_blkMapFlag;
-    bool m_fileHashFlag;
     bool m_vsFound;
     bool m_volFound;
     bool m_poolFound;
     bool m_stopped;
     bool m_imgTransactionOpen;
-    TSK_HDB_INFO * m_NSRLDb;
-    TSK_HDB_INFO * m_knownBadDb;
     bool m_addFileSystems;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
@@ -151,14 +146,14 @@ class TskAutoDb:public TskAuto {
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
     // prevent copying until we add proper logic to handle it
-    TskAutoDb(const TskAutoDb&);
-    TskAutoDb & operator=(const TskAutoDb&);
+    TskAutoDbJava(const TskAutoDbJava&);
+    TskAutoDbJava & operator=(const TskAutoDbJava&);
 
     //internal structure to keep track of temp. unalloc block range
     typedef struct _UNALLOC_BLOCK_WLK_TRACK {
-        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t minChunkSize, int64_t maxChunkSize)
+        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDbJava & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t minChunkSize, int64_t maxChunkSize)
             : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), minChunkSize(minChunkSize), maxChunkSize(maxChunkSize), prevBlock(0), isStart(true), nextSequenceNo(0) {}
-        const TskAutoDb & tskAutoDb;
+        const TskAutoDbJava & tskAutoDb;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
@@ -190,41 +185,6 @@ class TskAutoDb:public TskAuto {
     TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
     TSK_RETVAL_ENUM addUnallocSpaceToDb();
 
-};
-
-
-#define TSK_CASE_DB_TAG 0xB0551A33
-
-/**
- * Stores case-level information in a database on one or more disk images.
- */
-class TskCaseDb {
-  public:
-    unsigned int m_tag;
-
-    ~TskCaseDb();
-
-    static TskCaseDb *newDb(const TSK_TCHAR * path);
-    static TskCaseDb *newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info);
-    static TskCaseDb *openDb(const TSK_TCHAR * path);
-    static TskCaseDb *openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info);
-
-    void clearLookupDatabases();
-    uint8_t setNSRLHashDb(TSK_TCHAR * const indexFile);
-    uint8_t setKnownBadHashDb(TSK_TCHAR * const indexFile);
-
-    uint8_t addImage(int numImg, const TSK_TCHAR * const imagePaths[],
-        TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
-    TskAutoDb *initAddImage();
-
-  private:
-    // prevent copying until we add proper logic to handle it
-    TskCaseDb(const TskCaseDb&);
-    TskCaseDb & operator=(const TskCaseDb&);
-    TskCaseDb(TskDb * a_db);
-    TskDb *m_db;
-    TSK_HDB_INFO * m_NSRLDb;
-    TSK_HDB_INFO * m_knownBadDb;
 };
 
 #endif

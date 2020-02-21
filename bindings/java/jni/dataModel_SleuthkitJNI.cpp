@@ -957,7 +957,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
  * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
  *
- * @return A pointer to the process (TskAutoDb object) or NULL on error.
+ * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
@@ -976,18 +976,18 @@ JNIEXPORT jlong JNICALL
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
  * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
  *
- * @return A pointer to the process (TskAutoDb object) or NULL on error.
+ * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj,
     jlong caseHandle, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
     jboolean isCopy;
 
-    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
-    if (tskCase == 0) {
+    //TskCaseDb *tskCase = castCaseDb(env, caseHandle);
+    //if (tskCase == 0) {
         //exception already set
-        return 0;
-    }
+    //    return 0;
+    //}
 
     if (env->GetStringUTFLength(timeZone) > 0) {
         const char *tzstr = env->GetStringUTFChars(timeZone, &isCopy);
@@ -1016,9 +1016,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
         TZSET();
     }
 
-    TskAutoDb *tskAuto = tskCase->initAddImage();
-    if (tskAuto == NULL) {
-        setThrowTskCoreError(env, "Error getting tskAuto handle from initAddImage");
+    TskAutoDbJava *tskAutoJava = new TskAutoDbJava();
+    if (tskAutoJava == NULL) {
+        setThrowTskCoreError(env, "Error creating TskAutoDbJava");
         return 0;
     }
 

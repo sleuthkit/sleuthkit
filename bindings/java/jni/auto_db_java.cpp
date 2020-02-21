@@ -2,15 +2,15 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2020 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
  */
 
 /**
- * \file auto_db.cpp
- * Contains code to populate SQLite database with volume and file system information from a specific image.
+ * \file auto_db_java.cpp
+ * Contains code to populate database with volume and file system information from a specific image.
  */
 
 #include "auto_db_java.h"
@@ -28,13 +28,9 @@ using std::stringstream;
 using std::for_each;
 
 /**
- * @param a_db Database to add an image to
- * @param a_NSRLDb Database of "known" files (can be NULL)
- * @param a_knownBadDb Database of "known bad" files (can be NULL)
  */
-TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb)
+TskAutoDbJava::TskAutoDbJava()
 {
-    m_db = a_db;
     m_curImgId = 0;
     m_curVsId = 0;
     m_curVolId = 0;
@@ -43,7 +39,6 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_curUnallocDirId = 0;
     m_curDirAddr = 0;
     m_curDirPath = "";
-    m_blkMapFlag = false;
     m_vsFound = false;
     m_volFound = false;
     m_poolFound = false;
@@ -51,14 +46,6 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_foundStructure = false;
     m_imgTransactionOpen = false;
     m_attributeAdded = false;
-    m_NSRLDb = a_NSRLDb;
-    m_knownBadDb = a_knownBadDb;
-    if ((m_NSRLDb) || (m_knownBadDb)) {
-        m_fileHashFlag = true;
-    }
-    else {
-        m_fileHashFlag = false;
-    }
     m_addFileSystems = true;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
@@ -67,61 +54,90 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     tsk_init_lock(&m_curDirPathLock);
 }
 
-TskAutoDb::~TskAutoDb()
+TskAutoDbJava::~TskAutoDbJava()
 {
-    // if they didn't commit / revert, then revert
-    if (m_imgTransactionOpen) {
-        revertAddImage();
-    }
-
     closeImage();
     tsk_deinit_lock(&m_curDirPathLock);
 }
 
+
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+
+int64_t
+addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
+    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails) {
+    printf("addImageInfo2\n");
+    return 2;
+}
+
+int64_t
+addImageName(int64_t objId, char const* imgName, int sequence) {
+    printf("addImageName\n");
+    return 3;
+}
+
+int64_t
+addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId) {
+    printf("addImageName\n");
+    return 4;
+}
+
+int64_t
+addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+    printf("addPoolInfoAndVS\n");
+    return 5;
+}
+
+int64_t
+addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+    int64_t parObjId, int64_t& objId) {
+    printf("addPoolVolumeInfo\n");
+    return 6;
+}
+
+
+int64_t
+addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
+    int64_t parObjId, int64_t& objId) {
+    printf("addVolumeInfo\n");
+    return 7;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+
 void
- TskAutoDb::closeImage()
+ TskAutoDbJava::closeImage()
 {
     TskAuto::closeImage();
-    m_NSRLDb = NULL;
-    m_knownBadDb = NULL;
 }
 
-
-void
- TskAutoDb::createBlockMap(bool flag)
-{
-    m_blkMapFlag = flag;
-}
-
-void
- TskAutoDb::hashFiles(bool flag)
-{
-    m_fileHashFlag = flag;
-}
-
-void TskAutoDb::setAddFileSystems(bool addFileSystems)
+void TskAutoDbJava::setAddFileSystems(bool addFileSystems)
 {
     m_addFileSystems = addFileSystems;
 }
 
-void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
+void TskAutoDbJava::setNoFatFsOrphans(bool noFatFsOrphans)
 {
     m_noFatFsOrphans = noFatFsOrphans;
 }
 
-void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace)
+void TskAutoDbJava::setAddUnallocSpace(bool addUnallocSpace)
 {
     setAddUnallocSpace(addUnallocSpace, -1);
 }
 
-void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize)
+void TskAutoDbJava::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize)
 {
     m_addUnallocSpace = addUnallocSpace;
     m_minChunkSize = minChunkSize;
     m_maxChunkSize = -1;
 }
 
-void TskAutoDb::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize)
+void TskAutoDbJava::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize)
 {
     m_addUnallocSpace = true;
     m_minChunkSize = minChunkSize;
@@ -139,7 +155,7 @@ void TskAutoDb::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize)
  * @return 0 for success, 1 for failure
  */
 uint8_t
-    TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
+    TskAutoDbJava::openImageUtf8(int a_num, const char *const a_images[],
     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
 {
     uint8_t retval =
@@ -165,7 +181,7 @@ uint8_t
  * @return 0 for success, 1 for failure
  */
 uint8_t
-    TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
+    TskAutoDbJava::openImage(int a_num, const TSK_TCHAR * const a_images[],
     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
 {
 
@@ -191,7 +207,7 @@ uint8_t
 * @return 0 for success, 1 for failure
 */
 uint8_t
-TskAutoDb::openImage(const char* a_deviceId)
+TskAutoDbJava::openImage(const char* a_deviceId)
 {
     if (m_img_info == NULL) {
         return 1;
@@ -207,7 +223,7 @@ TskAutoDb::openImage(const char* a_deviceId)
  * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char* deviceId)
+TskAutoDbJava::addImageDetails(const char* deviceId)
 {
    string md5 = "";
    string sha1 = "";
@@ -233,7 +249,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
     } else {
         devId = "";
     }
-    if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
+    if (-1 == addImageInfo(m_img_info->itype, m_img_info->sector_size,
           m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails)) {
         registerError();
         return 1;
@@ -275,7 +291,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
     for (int i = 0; i < m_img_info->num_img; i++) {
         const char *img_ptr = img_ptrs[i];
 
-        if (m_db->addImageName(m_curImgId, img_ptr, i)) {
+        if (-1 == addImageName(m_curImgId, img_ptr, i)) {
             registerError();
             return 1;
         }
@@ -293,10 +309,10 @@ TskAutoDb::addImageDetails(const char* deviceId)
 }
 
 
-TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
+TSK_FILTER_ENUM TskAutoDbJava::filterVs(const TSK_VS_INFO * vs_info)
 {
     m_vsFound = true;
-    if (m_db->addVsInfo(vs_info, m_curImgId, m_curVsId)) {
+    if (-1 == addVsInfo(vs_info, m_curImgId, m_curVsId)) {
         registerError();
         return TSK_FILTER_STOP;
     }
@@ -305,20 +321,20 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 }
 
 TSK_FILTER_ENUM
-TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
+TskAutoDbJava::filterPool(const TSK_POOL_INFO * pool_info)
 {
     m_poolFound = true;
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
-        if (m_db->addPoolInfoAndVS(pool_info, m_curVolId, m_curPoolVs)) {
+        if (-1 == addPoolInfoAndVS(pool_info, m_curVolId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // pool doesn't live in a volume, use image as parent
-        if (m_db->addPoolInfoAndVS(pool_info, m_curImgId, m_curPoolVs)) {
+        if (-1 == addPoolInfoAndVS(pool_info, m_curImgId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
@@ -330,10 +346,10 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
 }
 
 TSK_FILTER_ENUM
-TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
+TskAutoDbJava::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 {
 
-    if (m_db->addPoolVolumeInfo(pool_vol, m_curPoolVs, m_curPoolVol)) {
+    if (-1 == addPoolVolumeInfo(pool_vol, m_curPoolVs, m_curPoolVol)) {
         registerError();
         return TSK_FILTER_STOP;
     }
@@ -342,13 +358,13 @@ TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 }
 
 TSK_FILTER_ENUM
-TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
+TskAutoDbJava::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
     m_foundStructure = true;
     m_poolFound = false;
 
-    if (m_db->addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
+    if (-1 == addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
         registerError();
         return TSK_FILTER_STOP;
     }
@@ -358,7 +374,7 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 
 
 TSK_FILTER_ENUM
-TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
+TskAutoDbJava::filterFs(TSK_FS_INFO * fs_info)
 {
     TSK_FS_FILE *file_root;
     m_foundStructure = true;
@@ -416,7 +432,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
  * Returns TSK_ERR on error.
  */
 TSK_RETVAL_ENUM
-    TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
+    TskAutoDbJava::insertFileData(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
@@ -437,7 +453,7 @@ TSK_RETVAL_ENUM
  * for more control. 
  * @returns 1 if a critical error occurred (DB doesn't exist, no file system, etc.), 2 if errors occurred at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
  */
-uint8_t TskAutoDb::addFilesInImgToDb()
+uint8_t TskAutoDbJava::addFilesInImgToDb()
 {
     if (m_db == NULL || m_db->isDbOpen() == false) {
         tsk_error_reset();
@@ -496,16 +512,16 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * @return 0 for success, 1 for failure
  */
 uint8_t
-    TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
+    TskAutoDbJava::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDbJava::startAddImage: Starting add image process\n");
 
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): An add-image savepoint already exists");
         registerError();
         return 1;
     }
@@ -514,7 +530,7 @@ uint8_t
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
+        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -526,7 +542,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
     if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
-        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        tsk_error_set_errstr2("TskAutoDbJava::startAddImage");
         registerError();
         if (revertAddImage())
             registerError();
@@ -554,7 +570,7 @@ uint8_t
 * @return 0 for success, 1 for failure
 */
 uint8_t
-TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
+TskAutoDbJava::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
 {
     openImageHandle(img_info);
 
@@ -563,12 +579,12 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
     }
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDbJava::startAddImage: Starting add image process\n");
 
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): An add-image savepoint already exists");
         registerError();
         return 1;
     }
@@ -577,7 +593,7 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
+        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -589,7 +605,7 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
 
     m_imgTransactionOpen = true;
     if (openImage(deviceId)) {
-        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        tsk_error_set_errstr2("TskAutoDbJava::startAddImage");
         registerError();
         if (revertAddImage())
             registerError();
@@ -627,17 +643,17 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
  * @return 0 for success 1, for failure
  */
 uint8_t
-    TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
+    TskAutoDbJava::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
     if (tsk_verbose) 
-        tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDbJava::startAddImage_utf8: Starting add image process\n");
    
 
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): An add-image savepoint already exists");
         registerError();
         return 1;
     }
@@ -646,7 +662,7 @@ uint8_t
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
+        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -660,7 +676,7 @@ uint8_t
     m_imgTransactionOpen = true;
 
     if (openImageUtf8(numImg, imagePaths, imgType, sSize, deviceId)) {
-        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        tsk_error_set_errstr2("TskAutoDbJava::startAddImage");
         registerError();
         if (revertAddImage())
             registerError();
@@ -683,10 +699,10 @@ uint8_t
  * Cancel the running process.  Will not be handled immediately. 
  */
 void
- TskAutoDb::stopAddImage()
+ TskAutoDbJava::stopAddImage()
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::stopAddImage: Stop request received\n");
+        tsk_fprintf(stderr, "TskAutoDbJava::stopAddImage: Stop request received\n");
     
     m_stopped = true;
     setStopProcessing();
@@ -698,10 +714,10 @@ void
  * @returns 1 on error (error was NOT registered in list), 0 on success
  */
 int
- TskAutoDb::revertAddImage()
+ TskAutoDbJava::revertAddImage()
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::revertAddImage: Reverting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDbJava::revertAddImage: Reverting add image process\n");
 
     if (m_imgTransactionOpen == false) {
         tsk_error_reset();
@@ -715,7 +731,7 @@ int
         if (m_db->inTransaction()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("TskAutoDb::revertAddImage(): Image reverted, but still in a transaction.");
+            tsk_error_set_errstr("TskAutoDbJava::revertAddImage(): Image reverted, but still in a transaction.");
             retval = 1;
         }
     }
@@ -728,10 +744,10 @@ int
  * @returns Id of the image that was added or -1 on error (error was NOT registered in list)
  */
 int64_t
-TskAutoDb::commitAddImage()
+TskAutoDbJava::commitAddImage()
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::commitAddImage: Committing add image process\n");
+        tsk_fprintf(stderr, "TskAutoDbJava::commitAddImage: Committing add image process\n");
 
     if (m_imgTransactionOpen == false) {
         tsk_error_reset();
@@ -748,7 +764,7 @@ TskAutoDb::commitAddImage()
         if (m_db->inTransaction()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("TskAutoDb::revertAddImage(): Image savepoint released, but still in a transaction.");
+            tsk_error_set_errstr("TskAutoDbJava::revertAddImage(): Image savepoint released, but still in a transaction.");
             return -1;
         }
     }
@@ -760,19 +776,19 @@ TskAutoDb::commitAddImage()
  * Set the current image's timezone
  */
 void
-TskAutoDb::setTz(string tzone)
+TskAutoDbJava::setTz(string tzone)
 {
     m_curImgTZone = tzone;
 }
 
 TSK_RETVAL_ENUM
-TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
+TskAutoDbJava::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     
     // Check if the process has been canceled
      if (m_stopped) {
         if (tsk_verbose)
-            tsk_fprintf(stderr, "TskAutoDb::processFile: Stop request detected\n");
+            tsk_fprintf(stderr, "TskAutoDbJava::processFile: Stop request detected\n");
         return TSK_STOP;
     }
 
@@ -825,7 +841,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 
 // we return only OK or STOP -- errors are registered only and OK is returned. 
 TSK_RETVAL_ENUM
-TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
+TskAutoDbJava::processAttribute(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
 {
     // add the file metadata for the default attribute type
@@ -907,7 +923,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
  * Helper for md5HashAttr
  */
 TSK_WALK_RET_ENUM
-TskAutoDb::md5HashCallback(TSK_FS_FILE * /*file*/, TSK_OFF_T /*offset*/,
+TskAutoDbJava::md5HashCallback(TSK_FS_FILE * /*file*/, TSK_OFF_T /*offset*/,
     TSK_DADDR_T /*addr*/, char *buf, size_t size,
     TSK_FS_BLOCK_FLAG_ENUM /*a_flags*/, void *ptr)
 {
@@ -929,7 +945,7 @@ TskAutoDb::md5HashCallback(TSK_FS_FILE * /*file*/, TSK_OFF_T /*offset*/,
  * @return Returns 1 on error (message has been registered)
  */
 int
-TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
+TskAutoDbJava::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 {
     TSK_MD5_CTX md;
 
@@ -953,10 +969,10 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 * @param a_ptr a pointer to an UNALLOC_BLOCK_WLK_TRACK struct
 * @returns TSK_WALK_CONT if continue, otherwise TSK_WALK_STOP if stop processing requested
 */
-TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
+TSK_WALK_RET_ENUM TskAutoDbJava::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
     UNALLOC_BLOCK_WLK_TRACK * unallocBlockWlkTrack = (UNALLOC_BLOCK_WLK_TRACK *) a_ptr;
 
-    if (unallocBlockWlkTrack->tskAutoDb.m_stopAllProcessing)
+    if (unallocBlockWlkTrack->TskAutoDbJava.m_stopAllProcessing)
         return TSK_WALK_STOP;
 
     // initialize if this is the first block
@@ -1005,8 +1021,8 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     // at this point we are either chunking and have reached the chunk limit
     // or we're not chunking. Either way we now add what we've got to the DB
     int64_t fileObjId = 0;
-    if (unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId, 
-        unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, unallocBlockWlkTrack->tskAutoDb.m_curImgId) == TSK_ERR) {
+    if (unallocBlockWlkTrack->TskAutoDbJava.m_db->addUnallocBlockFile(unallocBlockWlkTrack->TskAutoDbJava.m_curUnallocDirId, 
+        unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, unallocBlockWlkTrack->TskAutoDbJava.m_curImgId) == TSK_ERR) {
             // @@@ Handle error -> Don't have access to registerError() though...
     }
 
@@ -1030,7 +1046,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 * @param dbFsInfo fs to process
 * @returns TSK_OK on success, TSK_ERR on error
 */
-TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
     // Unalloc space is not yet implemented for APFS
     if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
@@ -1040,7 +1056,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
-        tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %" PRIdOFF, dbFsInfo.imgOffset);
+        tsk_error_set_errstr2("TskAutoDbJava::addFsInfoUnalloc: error opening fs at offset %" PRIdOFF, dbFsInfo.imgOffset);
         registerError();
         return TSK_ERR;
     }
@@ -1061,7 +1077,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     if (block_walk_ret == 1) {
         stringstream errss;
         tsk_fs_close(fsInfo);
-        errss << "TskAutoDb::addFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
+        errss << "TskAutoDbJava::addFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
         errss << unallocBlockWlkTrack.fsObjId;
         tsk_error_set_errstr2("%s", errss.str().c_str());
         registerError();
@@ -1096,7 +1112,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 * Process all unallocated space for this disk image and create "virtual" files with layouts
 * @returns TSK_OK on success, TSK_ERR on error
 */
-TSK_RETVAL_ENUM TskAutoDb::addUnallocSpaceToDb() {
+TSK_RETVAL_ENUM TskAutoDbJava::addUnallocSpaceToDb() {
     if (m_stopAllProcessing) {
         return TSK_OK;
     }
@@ -1126,7 +1142,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocSpaceToDb() {
 * @param numFs (out) number of filesystems found
 * @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
 */
-TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
+TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
 
     vector<TSK_DB_FS_INFO> fsInfos;
 
@@ -1162,7 +1178,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
 * @param numVsP (out) number of vs partitions found
 * @returns TSK_OK on success, TSK_ERR on error
 */
-TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
+TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
 
     vector<TSK_DB_VS_PART_INFO> vsPartInfos;
 
@@ -1262,7 +1278,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
 *
 * @returns TSK_OK on success, TSK_ERR on error
 */
-TSK_RETVAL_ENUM TskAutoDb::addUnallocImageSpaceToDb() {
+TSK_RETVAL_ENUM TskAutoDbJava::addUnallocImageSpaceToDb() {
     TSK_RETVAL_ENUM retImgFile = TSK_OK;
 
     const TSK_OFF_T imgSize = getImageSize();
@@ -1288,7 +1304,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocImageSpaceToDb() {
 *
 * @returns curDirPath string representing currently analyzed directory
 */
-const std::string TskAutoDb::getCurDir() {
+const std::string TskAutoDbJava::getCurDir() {
     string curDirPath;
     tsk_take_lock(&m_curDirPathLock);
     curDirPath = m_curDirPath;
@@ -1297,7 +1313,7 @@ const std::string TskAutoDb::getCurDir() {
 }
 
 
-bool TskAutoDb::isDbOpen() {
+bool TskAutoDbJava::isDbOpen() {
     if(m_db!=NULL) {
         return m_db->isDbOpen();
     }
