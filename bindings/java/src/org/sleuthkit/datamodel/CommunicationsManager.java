@@ -45,12 +45,14 @@ import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 public final class CommunicationsManager {
 
 	private static final Logger LOGGER = Logger.getLogger(CommunicationsManager.class.getName());
-	private static String MODULE_NAME_FOR_ACCT_ARTIFACTS = "Communications Manager";
 
 	private final SleuthkitCase db;
-	private final Map<Account.Type, Integer> accountTypeToTypeIdMap = new ConcurrentHashMap<>();
-	private final Map<String, Account.Type> typeNameToAccountTypeMap = new ConcurrentHashMap<>();
-		
+
+	private final Map<Account.Type, Integer> accountTypeToTypeIdMap
+			= new ConcurrentHashMap<>();
+	private final Map<String, Account.Type> typeNameToAccountTypeMap
+			= new ConcurrentHashMap<>();
+
 	// Artifact types that can represent a relationship between accounts. 
 	private static final Set<Integer> RELATIONSHIP_ARTIFACT_TYPE_IDS = new HashSet<Integer>(Arrays.asList(
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
@@ -453,10 +455,10 @@ public final class CommunicationsManager {
 	 * @param accountType     The account type of the account instance.
 	 * @param accountUniqueID The account ID of the account instance, should be
 	 *                        unique for the account type (e.g., an email
-	 *                        address).
-	 * @param moduleName      The name of the module name that found the account
+	 *                        address for an email account).
+	 * @param moduleName      The name of the module that found the account
 	 *                        instance.
-	 * @param sourceFile      The source file of the accoiunt instance.
+	 * @param sourceFile      The file in which the account instance was found.
 	 *
 	 * @return The account artifact.
 	 *
@@ -464,17 +466,15 @@ public final class CommunicationsManager {
 	 *                          case database.
 	 */
 	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
-
 		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
-		if (null != accountArtifact) {
-			// Create a new artifact.
+		if (accountArtifact == null) {
 			accountArtifact = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, sourceFile.getId());
 			Collection<BlackboardAttribute> attributes = new ArrayList<>();
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()));
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID));
 			accountArtifact.addAttributes(attributes);
 			try {
-				db.getBlackboard().postArtifact(accountArtifact, MODULE_NAME_FOR_ACCT_ARTIFACTS);
+				db.getBlackboard().postArtifact(accountArtifact, moduleName);
 			} catch (BlackboardException ex) {
 				LOGGER.log(Level.SEVERE, String.format("Error posting new account artifact to the blackboard (object ID = %d)", accountArtifact.getId()), ex);
 			}
