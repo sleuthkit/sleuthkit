@@ -14,6 +14,7 @@
 #include "tsk/auto/tsk_is_image_supported.h"
 #include "tsk/img/img_writer.h"
 #include "tsk/img/raw.h"
+#include "auto_db_java.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -1023,28 +1024,22 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
     }
 
     // set the options flags
-    tskAuto->setAddFileSystems(addFileSystems?true:false);
+    tskAutoJava->setAddFileSystems(addFileSystems?true:false);
     if (addFileSystems) {
         if (addUnallocSpace) {
             // Minimum size of unalloc files: 500 MB, maximum size: 1 GB
-            tskAuto->setAddUnallocSpace((int64_t)500 * 1024 * 1024, (int64_t)1024 * 1024 * 1024);
+            tskAutoJava->setAddUnallocSpace((int64_t)500 * 1024 * 1024, (int64_t)1024 * 1024 * 1024);
         }
         else {
-            tskAuto->setAddUnallocSpace(false);
+            tskAutoJava->setAddUnallocSpace(false);
         }
-        tskAuto->setNoFatFsOrphans(skipFatFsOrphans?true:false);
+        tskAutoJava->setNoFatFsOrphans(skipFatFsOrphans?true:false);
     } else {
-        tskAuto->setAddUnallocSpace(false);
-        tskAuto->setNoFatFsOrphans(true);
+        tskAutoJava->setAddUnallocSpace(false);
+        tskAutoJava->setNoFatFsOrphans(true);
     }
 
-    // we don't use the block map and it slows it down
-    tskAuto->createBlockMap(false);
-
-    // ingest modules calc hashes
-    tskAuto->hashFiles(false);
-
-    return (jlong) tskAuto;
+    return (jlong)tskAutoJava;
 }
 
 /*

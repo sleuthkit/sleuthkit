@@ -44,7 +44,6 @@ TskAutoDbJava::TskAutoDbJava()
     m_poolFound = false;
     m_stopped = false;
     m_foundStructure = false;
-    m_imgTransactionOpen = false;
     m_attributeAdded = false;
     m_addFileSystems = true;
     m_noFatFsOrphans = false;
@@ -102,6 +101,59 @@ addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
     int64_t parObjId, int64_t& objId) {
     printf("addVolumeInfo\n");
     return 7;
+}
+
+int64_t
+addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
+    int64_t& objId) {
+    printf("addFsInfo\n");
+    return 8;
+}
+
+int64_t
+addFsFile(TSK_FS_FILE* fs_file,
+    const TSK_FS_ATTR* fs_attr, const char* path,
+    const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+    int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId) {
+
+    printf("addFsFile\n");
+    return 9;
+}
+
+int64_t
+addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
+    const int64_t fsObjId, const uint64_t size,
+    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+    int64_t dataSourceObjId) {
+    printf("addFileWithLayoutRange\n");
+    return 10;
+}
+
+int64_t
+addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
+    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+    int64_t dataSourceObjId) {
+    printf("addUnallocBlockFile\n");
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId,
+        dataSourceObjId);
+}
+
+int64_t
+addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
+    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+    int64_t dataSourceObjId) {
+    printf("addUnusedBlockFile\n");
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId,
+        dataSourceObjId);
+}
+
+
+
+int64_t
+addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId,
+    int64_t dataSourceObjId) {
+    printf("addUnallocFsBlockfilesParent\n");
+    return 11;
 }
 
 
@@ -381,21 +433,21 @@ TskAutoDbJava::filterFs(TSK_FS_INFO * fs_info)
 
     if (m_poolFound) {
         // there's a pool
-        if (m_db->addFsInfo(fs_info, m_curPoolVol, m_curFsId)) {
+        if (-1 != addFsInfo(fs_info, m_curPoolVol, m_curFsId)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else if (m_volFound && m_vsFound) {
         // there's a volume system and volume
-        if (m_db->addFsInfo(fs_info, m_curVolId, m_curFsId)) {
+        if (-1 != addFsInfo(fs_info, m_curVolId, m_curFsId)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // file system doesn't live in a volume, use image as parent
-        if (m_db->addFsInfo(fs_info, m_curImgId, m_curFsId)) {
+        if (-1 != addFsInfo(fs_info, m_curImgId, m_curFsId)) {
             registerError();
             return TSK_FILTER_STOP;
         }
@@ -433,12 +485,10 @@ TskAutoDbJava::filterFs(TSK_FS_INFO * fs_info)
  */
 TSK_RETVAL_ENUM
     TskAutoDbJava::insertFileData(TSK_FS_FILE * fs_file,
-    const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5,
-    const TSK_DB_FILES_KNOWN_ENUM known)
+    const TSK_FS_ATTR * fs_attr, const char *path)
 {
 
-    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
+    if (-1 == addFsFile(fs_file, fs_attr, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN, m_curFsId, m_curFileId,
             m_curImgId)) {
         registerError();
         return TSK_ERR;
@@ -455,13 +505,6 @@ TSK_RETVAL_ENUM
  */
 uint8_t TskAutoDbJava::addFilesInImgToDb()
 {
-    if (m_db == NULL || m_db->isDbOpen() == false) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("addFilesInImgToDb: m_db not open");
-        registerError();
-        return 1;
-    }
 
     // @@@ This seems bad because we are overriding what the user may
     // have set. We should remove the public API if we are going to 
@@ -518,34 +561,9 @@ uint8_t
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDbJava::startAddImage: Starting add image process\n");
 
-    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): An add-image savepoint already exists");
-        registerError();
-        return 1;
-    }
-
-    // @@@ This check is a bit paranoid, and may need to be removed in the future
-    if (m_db->inTransaction()) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): Already in a transaction, image might not be committed");
-        registerError();
-        return 1;
-    }
-
-    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
-        registerError();
-        return 1;
-    }
-
-    m_imgTransactionOpen = true;
     if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDbJava::startAddImage");
         registerError();
-        if (revertAddImage())
-            registerError();
         return 1;
     }
 
@@ -581,34 +599,9 @@ TskAutoDbJava::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDbJava::startAddImage: Starting add image process\n");
 
-    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): An add-image savepoint already exists");
-        registerError();
-        return 1;
-    }
-
-    // @@@ This check is a bit paranoid, and may need to be removed in the future
-    if (m_db->inTransaction()) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): Already in a transaction, image might not be committed");
-        registerError();
-        return 1;
-    }
-
-    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
-        registerError();
-        return 1;
-    }
-
-    m_imgTransactionOpen = true;
     if (openImage(deviceId)) {
         tsk_error_set_errstr2("TskAutoDbJava::startAddImage");
         registerError();
-        if (revertAddImage())
-            registerError();
         return 1;
     }
 
@@ -648,38 +641,10 @@ uint8_t
 {
     if (tsk_verbose) 
         tsk_fprintf(stderr, "TskAutoDbJava::startAddImage_utf8: Starting add image process\n");
-   
-
-    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): An add-image savepoint already exists");
-        registerError();
-        return 1;
-    }
-
-    // @@@ This check is a bit paranoid, and may need to be removed in the future
-    if (m_db->inTransaction()) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDbJava::startAddImage(): Already in a transaction, image might not be committed");
-        registerError();
-        return 1;
-    }
-
-
-    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
-        registerError();
-        return 1;
-    }
-
-    m_imgTransactionOpen = true;
 
     if (openImageUtf8(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDbJava::startAddImage");
         registerError();
-        if (revertAddImage())
-            registerError();
         return 1;
     }
     if (m_imageWriterEnabled) {
@@ -707,69 +672,6 @@ void
     m_stopped = true;
     setStopProcessing();
     // flag is checked every time processFile() is called
-}
-
-/**
- * Revert all changes after the startAddImage() process has run successfully.
- * @returns 1 on error (error was NOT registered in list), 0 on success
- */
-int
- TskAutoDbJava::revertAddImage()
-{
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDbJava::revertAddImage: Reverting add image process\n");
-
-    if (m_imgTransactionOpen == false) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("revertAddImage(): transaction is already closed");
-        return 1;
-    }
-
-    int retval = m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
-    if (retval == 0) {
-        if (m_db->inTransaction()) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("TskAutoDbJava::revertAddImage(): Image reverted, but still in a transaction.");
-            retval = 1;
-        }
-    }
-    m_imgTransactionOpen = false;
-    return retval;
-}
-
-/**
- * Finish the transaction after the startAddImage is finished.  
- * @returns Id of the image that was added or -1 on error (error was NOT registered in list)
- */
-int64_t
-TskAutoDbJava::commitAddImage()
-{
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDbJava::commitAddImage: Committing add image process\n");
-
-    if (m_imgTransactionOpen == false) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("commitAddImage(): transaction is already closed");
-        return -1;
-    }
-
-    int retval = m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
-    m_imgTransactionOpen = false;
-    if (retval == 1) {
-        return -1;
-    } else {
-        if (m_db->inTransaction()) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("TskAutoDbJava::revertAddImage(): Image savepoint released, but still in a transaction.");
-            return -1;
-        }
-    }
-
-    return m_curImgId;
 }
 
 /**
@@ -826,7 +728,7 @@ TskAutoDbJava::processFile(TSK_FS_FILE * fs_file, const char *path)
 
     // insert a general row if we didn't add a specific attribute one
     if ((retval == TSK_OK) && (m_attributeAdded == false)) {
-        retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
+        retval = insertFileData(fs_file, NULL, path);
     }
     
     // reset the file id
@@ -847,119 +749,18 @@ TskAutoDbJava::processAttribute(TSK_FS_FILE * fs_file,
     // add the file metadata for the default attribute type
     if (isDefaultType(fs_file, fs_attr)) {
 
-        // calculate the MD5 hash if the attribute is a file
-        unsigned char hash[16];
-        unsigned char *md5 = NULL;
-        memset(hash, 0, 16);
-
-        TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
-
-        if (m_fileHashFlag && isFile(fs_file)) {
-            if (md5HashAttr(hash, fs_attr)) {
-                // error was registered
-                return TSK_OK;
-            }
-            md5 = hash;
-
-            if (m_NSRLDb != NULL) {
-                int8_t retval = tsk_hdb_lookup_raw(m_NSRLDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
-                if (retval == -1) {
-                    registerError();
-                    return TSK_OK;
-                } 
-                else if (retval) {
-                    file_known = TSK_DB_FILES_KNOWN_KNOWN;
-                }
-            }
-
-            if (m_knownBadDb != NULL) {
-                int8_t retval = tsk_hdb_lookup_raw(m_knownBadDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
-                if (retval == -1) {
-                    registerError();
-                    return TSK_OK;
-                } 
-                else if (retval) {
-                    file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
-                }
-            }
-        }
-
-        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR) {
+        if (insertFileData(fs_attr->fs_file, fs_attr, path) == TSK_ERR) {
             registerError();
             return TSK_OK;
         }
         else {
             m_attributeAdded = true;
         }
-
-        // add the block map, if requested and the file is non-resident
-        if ((m_blkMapFlag) && (isNonResident(fs_attr))
-            && (isDotDir(fs_file) == 0)) {
-            TSK_FS_ATTR_RUN *run;
-            int sequence = 0;
-
-            for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
-                unsigned int block_size = fs_file->fs_info->block_size;
-
-                // ignore sparse blocks
-                if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
-                    continue;
-
-                // @@@ We probably want to keep on going here
-                if (m_db->addFileLayoutRange(m_curFileId,
-                    run->addr * block_size, run->len * block_size, sequence++)) {
-                    registerError();
-                    return TSK_OK;
-                }
-            }
-        }
     }
 
     return TSK_OK;
 }
 
-
-/**
- * Helper for md5HashAttr
- */
-TSK_WALK_RET_ENUM
-TskAutoDbJava::md5HashCallback(TSK_FS_FILE * /*file*/, TSK_OFF_T /*offset*/,
-    TSK_DADDR_T /*addr*/, char *buf, size_t size,
-    TSK_FS_BLOCK_FLAG_ENUM /*a_flags*/, void *ptr)
-{
-    TSK_MD5_CTX *md = (TSK_MD5_CTX *) ptr;
-    if (md == NULL)
-        return TSK_WALK_CONT;
-
-    TSK_MD5_Update(md, (unsigned char *) buf, (unsigned int) size);
-
-    return TSK_WALK_CONT;
-}
-
-
-
-/**
- * MD5 hash an attribute and put the result in the given array
- * @param md5Hash array to write the hash to
- * @param fs_attr attribute to hash the data of
- * @return Returns 1 on error (message has been registered)
- */
-int
-TskAutoDbJava::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
-{
-    TSK_MD5_CTX md;
-
-    TSK_MD5_Init(&md);
-
-    if (tsk_fs_attr_walk(fs_attr, TSK_FS_FILE_WALK_FLAG_NONE,
-            md5HashCallback, (void *) &md)) {
-        registerError();
-        return 1;
-    }
-
-    TSK_MD5_Final(md5Hash, &md);
-    return 0;
-}
 
 /**
 * Callback invoked per every unallocated block in the filesystem
@@ -972,7 +773,7 @@ TskAutoDbJava::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_att
 TSK_WALK_RET_ENUM TskAutoDbJava::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
     UNALLOC_BLOCK_WLK_TRACK * unallocBlockWlkTrack = (UNALLOC_BLOCK_WLK_TRACK *) a_ptr;
 
-    if (unallocBlockWlkTrack->TskAutoDbJava.m_stopAllProcessing)
+    if (unallocBlockWlkTrack->tskAutoDbJava.m_stopAllProcessing)
         return TSK_WALK_STOP;
 
     // initialize if this is the first block
@@ -1021,8 +822,8 @@ TSK_WALK_RET_ENUM TskAutoDbJava::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_blo
     // at this point we are either chunking and have reached the chunk limit
     // or we're not chunking. Either way we now add what we've got to the DB
     int64_t fileObjId = 0;
-    if (unallocBlockWlkTrack->TskAutoDbJava.m_db->addUnallocBlockFile(unallocBlockWlkTrack->TskAutoDbJava.m_curUnallocDirId, 
-        unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, unallocBlockWlkTrack->TskAutoDbJava.m_curImgId) == TSK_ERR) {
+    if (-1 == addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDbJava.m_curUnallocDirId,
+        unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, unallocBlockWlkTrack->tskAutoDbJava.m_curImgId) == TSK_ERR) {
             // @@@ Handle error -> Don't have access to registerError() though...
     }
 
@@ -1062,7 +863,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     }
 
     //create a "fake" dir to hold the unalloc files for the fs
-    if (m_db->addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId, m_curImgId) == TSK_ERR) {
+    if (-1 == addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId, m_curImgId) == TSK_ERR) {
         tsk_error_set_errstr2("addFsInfoUnalloc: error creating dir for unallocated space");
         registerError();
         return TSK_ERR;
@@ -1096,7 +897,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, unallocBlockWlkTrack.nextSequenceNo++));
     int64_t fileObjId = 0;
 
-    if (m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
+    if (-1 == addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
         registerError();
         tsk_fs_close(fsInfo);
         return TSK_ERR;
@@ -1150,6 +951,9 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
         return TSK_OK;
     }
 
+
+    printf("SKIPPING addUnallocFsSpaceToDb!!!!\n"); // TODO TODO
+/*
     uint16_t ret = m_db->getFsInfos(m_curImgId, fsInfos);
     if (ret) {
         tsk_error_set_errstr2("addUnallocFsSpaceToDb: error getting fs infos from db");
@@ -1170,7 +974,8 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
 
     //TODO set parent_path for newly created virt dir/file hierarchy for consistency
 
-    return allFsProcessRet;
+    return allFsProcessRet;*/
+    return TSK_OK;
 }
 
 /**
@@ -1182,6 +987,9 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
 
     vector<TSK_DB_VS_PART_INFO> vsPartInfos;
 
+
+    printf("SKIPPING addUnallocVsSpaceToDb!!!!\n"); // TODO TODO
+    /*
     TSK_RETVAL_ENUM retVsPartInfos = m_db->getVsPartInfos(m_curImgId, vsPartInfos);
     if (retVsPartInfos == TSK_ERR) {
         tsk_error_set_errstr2("addUnallocVsSpaceToDb: error getting vs part infos from db");
@@ -1267,7 +1075,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
             registerError();
             return TSK_ERR;
         }
-    }
+    }*/
 
     return TSK_OK;
 }
@@ -1279,13 +1087,12 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
 * @returns TSK_OK on success, TSK_ERR on error
 */
 TSK_RETVAL_ENUM TskAutoDbJava::addUnallocImageSpaceToDb() {
-    TSK_RETVAL_ENUM retImgFile = TSK_OK;
 
     const TSK_OFF_T imgSize = getImageSize();
     if (imgSize == -1) {
         tsk_error_set_errstr("addUnallocImageSpaceToDb: error getting current image size, can't create unalloc block file for the image.");
         registerError();
-        retImgFile = TSK_ERR;
+        return TSK_ERR;
     }
     else {
         TSK_DB_FILE_LAYOUT_RANGE tempRange(0, imgSize, 0);
@@ -1293,9 +1100,11 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocImageSpaceToDb() {
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
-        retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId);
+        if (-1 == addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId)) {
+            return TSK_ERR;
+        }
     }
-    return retImgFile;
+    return TSK_OK;
 }
 
 /**
@@ -1310,12 +1119,4 @@ const std::string TskAutoDbJava::getCurDir() {
     curDirPath = m_curDirPath;
     tsk_release_lock(&m_curDirPathLock);
     return curDirPath;
-}
-
-
-bool TskAutoDbJava::isDbOpen() {
-    if(m_db!=NULL) {
-        return m_db->isDbOpen();
-    }
-    return false;
 }

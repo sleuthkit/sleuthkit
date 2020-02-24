@@ -21,6 +21,7 @@
 using std::string;
 
 #include "tsk/auto/tsk_auto_i.h"
+#include "tsk/auto/tsk_db.h"
 
 
 /** \internal
@@ -46,7 +47,6 @@ class TskAutoDbJava :public TskAuto {
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path);
-    virtual void createBlockMap(bool flag);
     const std::string getCurDir();
     
     /**
@@ -54,14 +54,6 @@ class TskAutoDbJava :public TskAuto {
     * Returns true if the database is reachable with current credentials, false otherwise.
     */
     bool isDbOpen();
-
-    /**
-     * Calculate hash values of files and add them to database.
-     * Default is false.  Will be set to true if a Hash DB is configured.
-     *
-     * @param flag True to calculate hash values and look them up.
-     */
-    virtual void hashFiles(bool flag);
 
     /**
      * Sets whether or not the file systems for an image should be added when 
@@ -116,8 +108,6 @@ class TskAutoDbJava :public TskAuto {
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #endif
     void stopAddImage();
-    int revertAddImage();
-    int64_t commitAddImage();
 
   private:
     int64_t m_curImgId;     ///< Object ID of image currently being processed
@@ -136,7 +126,6 @@ class TskAutoDbJava :public TskAuto {
     bool m_volFound;
     bool m_poolFound;
     bool m_stopped;
-    bool m_imgTransactionOpen;
     bool m_addFileSystems;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
@@ -151,9 +140,9 @@ class TskAutoDbJava :public TskAuto {
 
     //internal structure to keep track of temp. unalloc block range
     typedef struct _UNALLOC_BLOCK_WLK_TRACK {
-        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDbJava & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t minChunkSize, int64_t maxChunkSize)
-            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), minChunkSize(minChunkSize), maxChunkSize(maxChunkSize), prevBlock(0), isStart(true), nextSequenceNo(0) {}
-        const TskAutoDbJava & tskAutoDb;
+        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDbJava & tskAutoDbJava, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t minChunkSize, int64_t maxChunkSize)
+            : tskAutoDbJava(tskAutoDbJava),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), minChunkSize(minChunkSize), maxChunkSize(maxChunkSize), prevBlock(0), isStart(true), nextSequenceNo(0) {}
+        const TskAutoDbJava & tskAutoDbJava;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
@@ -168,9 +157,7 @@ class TskAutoDbJava :public TskAuto {
 
     uint8_t addImageDetails(const char *);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
-        const TSK_FS_ATTR *, const char *path,
-        const unsigned char *const md5,
-        const TSK_DB_FILES_KNOWN_ENUM known);
+        const TSK_FS_ATTR *, const char *path);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
