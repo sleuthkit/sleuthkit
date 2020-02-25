@@ -10958,6 +10958,90 @@ public class SleuthkitCase {
 
 		}
 	}
+	
+		/**
+	 * Add an image to the database.
+	 *
+	 * @param type        Type of image
+	 * @param sectorSize  Sector size
+	 * @param size        Image size
+	 * @param displayName Display name for the image
+	 * @param imagePaths  Image path(s)
+	 * @param timezone    Time zone
+	 * @param md5         MD5 hash
+	 * @param sha1        SHA1 hash
+	 * @param sha256      SHA256 hash
+	 * @param deviceId    Device ID
+	 * @param transaction Case DB transaction
+	 *
+	 * @return the newly added Image
+	 *
+	 * @throws TskCoreException
+	 */
+	long addImageJNI(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName,
+			String timezone, String md5, String sha1, String sha256,
+			String deviceId,
+			CaseDbTransaction transaction) throws TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		try {
+			// Insert a row for the Image into the tsk_objects table.
+			CaseDbConnection connection = transaction.getConnection();
+			long newObjId = addObject(0, TskData.ObjectType.IMG.getObjectType(), connection);
+
+			// Add a row to tsk_image_info
+			// INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_INFO);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setShort(2, (short) type.getValue());
+			preparedStatement.setLong(3, sectorSize);
+			preparedStatement.setString(4, timezone);
+			//prevent negative size
+			long savedSize = size < 0 ? 0 : size;
+			preparedStatement.setLong(5, savedSize);
+			preparedStatement.setString(6, md5);
+			preparedStatement.setString(7, sha1);
+			preparedStatement.setString(8, sha256);
+			preparedStatement.setString(9, displayName);
+			connection.executeUpdate(preparedStatement);
+
+			// Add a row to data_source_info
+			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO);
+			statement = connection.createStatement();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setString(2, deviceId);
+			preparedStatement.setString(3, timezone);
+			connection.executeUpdate(preparedStatement);
+
+			return newObjId;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error adding image with display name %s to database", displayName), ex);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	void addImageNameJNI(long objId, String name, long sequence,
+			CaseDbTransaction transaction) throws TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		Statement statement = null;
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, objId);
+			preparedStatement.setString(2, name);
+			preparedStatement.setLong(3, sequence);
+			connection.executeUpdate(preparedStatement);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error adding image name %s to image with object ID %d", name, objId), ex);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
 
 	/**
 	 * Stores a pair of object ID and its type

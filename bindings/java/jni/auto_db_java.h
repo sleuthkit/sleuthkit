@@ -22,6 +22,7 @@ using std::string;
 
 #include "tsk/auto/tsk_auto_i.h"
 #include "tsk/auto/tsk_db.h"
+#include "jni.h"
 
 
 /** \internal
@@ -109,6 +110,8 @@ class TskAutoDbJava :public TskAuto {
 #endif
     void stopAddImage();
 
+    TSK_RETVAL_ENUM initializeJni(JNIEnv *, jobject);
+
   private:
     int64_t m_curImgId;     ///< Object ID of image currently being processed
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
@@ -133,6 +136,14 @@ class TskAutoDbJava :public TskAuto {
     int64_t m_maxChunkSize; ///< Max number of unalloc bytes to process before writing to the database, even if there is no natural break. -1 for no chunking
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
+
+    // JNI data
+    JNIEnv * m_jniEnv;
+    jclass m_callbackClass;
+    jobject m_javaDbObj;
+    jmethodID m_addImageMethodID = NULL;
+    jmethodID m_addImageNameMethodID = NULL;
+
 
     // prevent copying until we add proper logic to handle it
     TskAutoDbJava(const TskAutoDbJava&);
@@ -163,7 +174,6 @@ class TskAutoDbJava :public TskAuto {
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
-    int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
@@ -171,6 +181,31 @@ class TskAutoDbJava :public TskAuto {
     TSK_RETVAL_ENUM addUnallocVsSpaceToDb(size_t & numVsP);
     TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
     TSK_RETVAL_ENUM addUnallocSpaceToDb();
+
+    // JNI methods
+    TSK_RETVAL_ENUM addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
+        const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails);
+    TSK_RETVAL_ENUM addImageName(int64_t objId, char const* imgName, int sequence);
+    TSK_RETVAL_ENUM addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId);
+    TSK_RETVAL_ENUM addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId);
+    TSK_RETVAL_ENUM addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol, int64_t parObjId, int64_t& objId);
+    TSK_RETVAL_ENUM addVolumeInfo(const TSK_VS_PART_INFO* vs_part, int64_t parObjId, int64_t& objId);
+    TSK_RETVAL_ENUM addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId, int64_t& objId);
+    TSK_RETVAL_ENUM addFsFile(TSK_FS_FILE* fs_file,
+        const TSK_FS_ATTR* fs_attr, const char* path,
+        const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+        int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
+    //TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
+    //    const int64_t fsObjId, const uint64_t size,
+    //    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+    //    int64_t dataSourceObjId);
+    //TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
+    //    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+    //    int64_t dataSourceObjId);
+    //TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
+    //    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+    //    int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
 
 };
 

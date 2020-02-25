@@ -14,6 +14,7 @@
  */
 
 #include "auto_db_java.h"
+#include "jni.h"
 #include "tsk/img/img_writer.h"
 #if HAVE_LIBEWF
 #include "tsk/img/ewf.h"
@@ -50,6 +51,9 @@ TskAutoDbJava::TskAutoDbJava()
     m_addUnallocSpace = false;
     m_minChunkSize = -1;
     m_maxChunkSize = -1;
+
+    m_jniEnv = NULL;
+
     tsk_init_lock(&m_curDirPathLock);
 }
 
@@ -59,77 +63,162 @@ TskAutoDbJava::~TskAutoDbJava()
     tsk_deinit_lock(&m_curDirPathLock);
 }
 
+TSK_RETVAL_ENUM
+TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
+    m_jniEnv = jniEnv;
+    m_javaDbObj = m_jniEnv->NewGlobalRef(jobj); // TODO free this
+
+    printf("\n#### initializeJni\n");
+    fflush(stdout);
+
+    jclass localCallbackClass = m_jniEnv->FindClass("org/sleuthkit/datamodel/JniDbHelper");
+    if (localCallbackClass == NULL) {
+        return TSK_ERR;
+    }
+    m_callbackClass = (jclass)m_jniEnv->NewGlobalRef(localCallbackClass);
+
+    m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)J");
+    if (m_addImageMethodID == NULL) {
+        printf("#### Error loading m_addImageMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
+    m_addImageNameMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageName", "(JLjava/lang/String;J)I");
+    if (m_addImageNameMethodID == NULL) {
+        printf("#### Error loading m_addImageNameMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
+    printf("\n#### Yay found method IDs!\n");
+    fflush(stdout);
+    return TSK_OK;
+}
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-int64_t
-addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
+
+
+
+TSK_RETVAL_ENUM
+TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
     const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails) {
-    printf("addImageInfo2\n");
-    return 2;
+
+    printf("addImageInfo - preparing all the jstrings\n");
+    fflush(stdout);
+
+    const char *tz_cstr = timezone.c_str();
+    jstring tzj = m_jniEnv->NewStringUTF(tz_cstr);
+
+    const char *md5_cstr = md5.c_str();
+    jstring md5j = m_jniEnv->NewStringUTF(md5_cstr);
+
+    const char *sha1_cstr = sha1.c_str();
+    jstring sha1j = m_jniEnv->NewStringUTF(sha1_cstr);
+
+    const char *sha256_cstr = sha256.c_str();
+    jstring sha256j = m_jniEnv->NewStringUTF(sha256_cstr);
+
+    const char *devId_cstr = deviceId.c_str();
+    jstring devIdj = m_jniEnv->NewStringUTF(devId_cstr);
+
+    const char *coll_cstr = collectionDetails.c_str();
+    jstring collj = m_jniEnv->NewStringUTF(coll_cstr);
+    // TODO TODO free strings?
+
+    printf("addImageInfo - making JNI call\n");
+    fflush(stdout);
+
+    if (m_addImageMethodID == NULL) {
+        printf("#### Yikes addImageMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addImageMethodID,
+        jint(type), jlong(ssize), tzj, jlong(size), md5j, sha1j, sha256j, devIdj, collj);
+    objId = (int64_t)objIdj;
+
+    return TSK_OK;
 }
 
-int64_t
-addImageName(int64_t objId, char const* imgName, int sequence) {
+TSK_RETVAL_ENUM
+TskAutoDbJava::addImageName(int64_t objId, char const* imgName, int sequence) {
     printf("addImageName\n");
-    return 3;
+
+    if (m_addImageNameMethodID == NULL) {
+        printf("#### Yikes m_addImageNameMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jstring imgNamej = m_jniEnv->NewStringUTF(imgName);
+
+    jint res = m_jniEnv->CallIntMethod(m_javaDbObj, m_addImageNameMethodID,
+        jlong(objId), imgNamej, jlong(sequence));
+
+    if (res == 0) {
+        return TSK_OK;
+    }
+    else {
+        return TSK_ERR;
+    }
 }
 
-int64_t
-addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId) {
-    printf("addImageName\n");
-    return 4;
+TSK_RETVAL_ENUM
+TskAutoDbJava::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId) {
+    printf("addVsInfo\n");
+    return TSK_OK;
 }
 
-int64_t
-addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+TSK_RETVAL_ENUM
+TskAutoDbJava::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
     printf("addPoolInfoAndVS\n");
-    return 5;
+    return TSK_OK;
 }
 
-int64_t
-addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+TSK_RETVAL_ENUM
+TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     int64_t parObjId, int64_t& objId) {
     printf("addPoolVolumeInfo\n");
-    return 6;
+    return TSK_OK;
 }
 
 
-int64_t
-addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
+TSK_RETVAL_ENUM
+TskAutoDbJava::addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
     int64_t parObjId, int64_t& objId) {
     printf("addVolumeInfo\n");
-    return 7;
+    return TSK_OK;
 }
 
-int64_t
-addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
+TSK_RETVAL_ENUM
+TskAutoDbJava::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
     int64_t& objId) {
     printf("addFsInfo\n");
-    return 8;
+    return TSK_OK;
 }
 
-int64_t
-addFsFile(TSK_FS_FILE* fs_file,
+TSK_RETVAL_ENUM
+TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
     const TSK_FS_ATTR* fs_attr, const char* path,
     const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId) {
 
     printf("addFsFile\n");
-    return 9;
+    return TSK_OK;
 }
 
-int64_t
+TSK_RETVAL_ENUM
 addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
     const int64_t fsObjId, const uint64_t size,
     vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
     int64_t dataSourceObjId) {
     printf("addFileWithLayoutRange\n");
-    return 10;
+    return TSK_OK;
 }
 
-int64_t
+TSK_RETVAL_ENUM
 addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
     vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
     int64_t dataSourceObjId) {
@@ -138,7 +227,7 @@ addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint
         dataSourceObjId);
 }
 
-int64_t
+TSK_RETVAL_ENUM
 addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
     vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
     int64_t dataSourceObjId) {
@@ -149,11 +238,11 @@ addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint6
 
 
 
-int64_t
-addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId,
+TSK_RETVAL_ENUM
+TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId,
     int64_t dataSourceObjId) {
     printf("addUnallocFsBlockfilesParent\n");
-    return 11;
+    return TSK_OK;
 }
 
 
@@ -237,7 +326,6 @@ uint8_t
     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
 {
 
-// make name of database
 #ifdef TSK_WIN32
 
     uint8_t retval = TskAuto::openImage(a_num, a_images, a_type, a_ssize);
@@ -301,11 +389,13 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     } else {
         devId = "";
     }
-    if (-1 == addImageInfo(m_img_info->itype, m_img_info->sector_size,
+    if (TSK_ERR == addImageInfo(m_img_info->itype, m_img_info->sector_size,
           m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails)) {
         registerError();
         return 1;
     }
+
+
 
     char **img_ptrs;
 #ifdef TSK_WIN32
@@ -356,8 +446,10 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     }
     free(img_ptrs);
 #endif
-
-    return 0;
+    printf("Returning error from end of addImageDetails\n"); // TODO TODO
+    fflush(stdout);
+    return 1;
+    //return 0;
 }
 
 
@@ -505,6 +597,8 @@ TSK_RETVAL_ENUM
  */
 uint8_t TskAutoDbJava::addFilesInImgToDb()
 {
+    printf("\n#### addFilesInImgToDb...\n");
+    fflush(stdout);
 
     // @@@ This seems bad because we are overriding what the user may
     // have set. We should remove the public API if we are going to 
