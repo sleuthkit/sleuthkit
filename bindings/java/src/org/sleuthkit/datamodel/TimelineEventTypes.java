@@ -26,8 +26,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS;
-import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPointList;
-import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPointList.GeoTrackPoint;
+import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil;
+import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList;
+import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList.GeoTrackPoint;
 
 /**
  * Container class for various types of timeline events
@@ -126,6 +127,8 @@ class TimelineEventTypes {
 	 */
 	static class GPSTrackArtifactEventType extends TimelineEventArtifactTypeSingleDescription {
 		
+		private final TskGeoTrackpointsUtil trackpointUtil = new TskGeoTrackpointsUtil("");
+		
 		GPSTrackArtifactEventType(int typeID, String displayName, TimelineEventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type descriptionAttribute) {
 			// Passing TSK_GEO_TRACKPOINTS as the "time attribute" as more of a place filler, to avoid any null issues
 			super(typeID, displayName, superType, artifactType, new BlackboardAttribute.Type(TSK_GEO_TRACKPOINTS), descriptionAttribute);
@@ -141,11 +144,9 @@ class TimelineEventTypes {
 			}
 			
 			// Get the waypoint list "start time"
-			GeoTrackPointList points = GeoTrackPointList.deserialize(attribute.getValueString());
+			GeoTrackPointList pointsList = trackpointUtil.fromAttribute(attribute);
 			Long startTime = null;
-			Iterator<GeoTrackPoint> pointIter = points.iterator();
-			while(pointIter.hasNext()) {
-				GeoTrackPoint point = pointIter.next();
+			for(GeoTrackPoint point: pointsList) {
 				// Points are in time order so return the first non-null time stamp
 				startTime = point.getTimeStamp();
 				if (startTime != null) {
