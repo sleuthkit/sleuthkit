@@ -19,7 +19,7 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import java.util.ArrayList;
-import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPointList;
+import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList;
 import java.util.List;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
@@ -27,7 +27,9 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypointList;
+import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil.GeoWaypointList;
+import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil;
+import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil;
 
 /**
  * Class to help ingest modules create Geolocation artifacts.
@@ -36,6 +38,8 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypointList;
 public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 	private final String programName;
+	private final TskGeoTrackpointsUtil trackPointAttributeUtil;
+	private final TskGeoWaypointsUtil waypointsAttributeUtil;
 
 	/**
 	 * Constructs a geolocation artifact helper for the given source file.
@@ -48,6 +52,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcFile) {
 		super(caseDb, moduleName, srcFile);
 		this.programName = programName;
+		trackPointAttributeUtil = new TskGeoTrackpointsUtil(moduleName);
+		waypointsAttributeUtil = new TskGeoWaypointsUtil(moduleName);
 	}
 
 	/**
@@ -67,21 +73,13 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 * @throws BlackboardException	If there is a problem posting the artifact
 	 */
 	public BlackboardArtifact addTrack(String trackName, GeoTrackPointList points, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
-		if (points == null) {
-			throw new IllegalArgumentException(String.format("List of GeoTrackPoints instance must be valid for track %s", trackName != null ? trackName : ""));
-		}
-
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 		if (trackName != null) {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), trackName));
 		}
 
-		attributes.add(
-				new BlackboardAttribute(
-						BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS,
-						getModuleName(),
-						points.serialize()));
+		attributes.add(trackPointAttributeUtil.toAttribute(points));
 
 		if (programName != null) {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
@@ -120,10 +118,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 
-		attributes.add(new BlackboardAttribute(
-				BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS,
-				getModuleName(),
-				points.serialize()));
+		attributes.add(waypointsAttributeUtil.toAttribute(points));
 		
 		if (routeName != null) {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), routeName));
