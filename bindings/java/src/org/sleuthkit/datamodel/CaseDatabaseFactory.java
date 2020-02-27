@@ -140,8 +140,9 @@ class CaseDatabaseFactory {
 	 */
 	private void addTables(Connection conn) throws TskCoreException {
 		try (Statement stmt = conn.createStatement()) {
+			// The UNIQUE here on the object ID is to create an index
 			stmt.execute("CREATE TABLE tsk_objects (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, par_obj_id " + dbQueryHelper.getBigIntType() 
-					+ ", type INTEGER NOT NULL, FOREIGN KEY (par_obj_id) REFERENCES tsk_objects (obj_id) ON DELETE CASCADE)");
+					+ ", type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) REFERENCES tsk_objects (obj_id) ON DELETE CASCADE)");
 			
 			stmt.execute("CREATE TABLE tsk_image_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, type INTEGER, ssize INTEGER, " 
 					+ "tzone TEXT, size " + dbQueryHelper.getBigIntType() + ", md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, "
@@ -338,16 +339,16 @@ class CaseDatabaseFactory {
 					+ "comment TEXT NOT NULL, begin_byte_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 					+ "end_byte_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 					+ "examiner_id " + dbQueryHelper.getBigIntType() + ", "
-					+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), "
+					+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))");
+					+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)");
             
 			stmt.execute("CREATE TABLE blackboard_artifact_tags (tag_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 					+ "artifact_id " + dbQueryHelper.getBigIntType() + " NOT NULL, tag_name_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 					+ "comment TEXT NOT NULL,  examiner_id " + dbQueryHelper.getBigIntType() + ", "
-					+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), "
+					+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
-							+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))");
+					+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)");
             
 			stmt.execute("CREATE TABLE tsk_file_layout (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 					+ "byte_start " + dbQueryHelper.getBigIntType() + " NOT NULL, byte_len " + dbQueryHelper.getBigIntType() + " NOT NULL, "
