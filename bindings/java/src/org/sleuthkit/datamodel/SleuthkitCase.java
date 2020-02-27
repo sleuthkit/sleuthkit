@@ -10978,7 +10978,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 */
-	long addImageJNI(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName,
+	long addImageJNI(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size,
 			String timezone, String md5, String sha1, String sha256,
 			String deviceId,
 			CaseDbTransaction transaction) throws TskCoreException {
@@ -11003,7 +11003,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(6, md5);
 			preparedStatement.setString(7, sha1);
 			preparedStatement.setString(8, sha256);
-			preparedStatement.setString(9, displayName);
+			preparedStatement.setString(9, "");
 			connection.executeUpdate(preparedStatement);
 
 			// Add a row to data_source_info
@@ -11016,7 +11016,7 @@ public class SleuthkitCase {
 
 			return newObjId;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding image with display name %s to database", displayName), ex);
+			throw new TskCoreException(String.format("Error adding image to database"), ex);
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();

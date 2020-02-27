@@ -91,6 +91,35 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
+    m_addVolumeSystemMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addVsInfo", "(JIJJ)J");
+    if (m_addVolumeSystemMethodID == NULL) {
+        printf("#### Error loading m_addVolumeSystemMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
+    m_addVolumeMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addVolume", "(JJJJLjava/lang/String;J)J");
+    if (m_addVolumeMethodID == NULL) {
+        printf("#### Error loading m_addVolumeMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
+    m_addPoolMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addPool", "(JI)J");
+    if (m_addPoolMethodID == NULL) {
+        printf("#### Error loading m_addPoolMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
+
+    m_addFileSystemMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFileSystem", "(JJIJJJJJ)J");
+    if (m_addFileSystemMethodID == NULL) {
+        printf("#### Error loading m_addFileSystemMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
     printf("\n#### Yay found method IDs!\n");
     fflush(stdout);
     return TSK_OK;
@@ -137,9 +166,14 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     }
 
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addImageMethodID,
-        jint(type), jlong(ssize), tzj, jlong(size), md5j, sha1j, sha256j, devIdj, collj);
+        type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj);
     objId = (int64_t)objIdj;
+    printf("New image object ID: %lld\n", objId);
+    fflush(stdout);
 
+    if (objId < 0) {
+        return TSK_ERR;
+    }
     return TSK_OK;
 }
 
@@ -155,12 +189,14 @@ TskAutoDbJava::addImageName(int64_t objId, char const* imgName, int sequence) {
     jstring imgNamej = m_jniEnv->NewStringUTF(imgName);
 
     jint res = m_jniEnv->CallIntMethod(m_javaDbObj, m_addImageNameMethodID,
-        jlong(objId), imgNamej, jlong(sequence));
+        objId, imgNamej, (int64_t)sequence);
 
     if (res == 0) {
         return TSK_OK;
     }
     else {
+        printf("Error in addImageName...\n");
+        fflush(stdout);
         return TSK_ERR;
     }
 }
@@ -168,12 +204,58 @@ TskAutoDbJava::addImageName(int64_t objId, char const* imgName, int sequence) {
 TSK_RETVAL_ENUM
 TskAutoDbJava::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId) {
     printf("addVsInfo\n");
+
+
+    printf("addVsInfo - making JNI call\n");
+    fflush(stdout);
+
+    if (m_addVolumeSystemMethodID == NULL) {
+        printf("#### Yikes m_addVolumeSystemMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
+        parObjId, vs_info->vstype, vs_info->offset, (uint64_t)vs_info->block_size);
+    objId = (int64_t)objIdj;
+    printf("New volume system object ID: %lld\n", objId);
+    fflush(stdout);
+
+    if (objId < 0) {
+        return TSK_ERR;
+    }
     return TSK_OK;
 }
 
 TSK_RETVAL_ENUM
 TskAutoDbJava::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
-    printf("addPoolInfoAndVS\n");
+    if (m_addPoolMethodID == NULL) {
+        printf("#### Yikes m_addPoolMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jlong poolObjIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addPoolMethodID,
+        parObjId, pool_info->ctype);
+    long poolObjId = (int64_t)poolObjIdj;
+    printf("New pool object ID: %lld\n", objId);
+    fflush(stdout);
+
+    if (poolObjId < 0) {
+        return TSK_ERR;
+    }
+
+    // "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", 
+    // objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
+    if (m_addVolumeSystemMethodID == NULL) {
+        printf("#### Yikes m_addVolumeSystemMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
+        poolObjIdj, TSK_VS_TYPE_APFS, pool_info->img_offset, (uint64_t)pool_info->block_size);
+    objId = (int64_t)objIdj;
+    printf("New pool volume system object ID: %lld\n", objId);
+    fflush(stdout);
+
     return TSK_OK;
 }
 
@@ -181,6 +263,26 @@ TSK_RETVAL_ENUM
 TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     int64_t parObjId, int64_t& objId) {
     printf("addPoolVolumeInfo\n");
+
+    //objId, (int)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
+    //    pool_vol->desc, pool_vol->flags);
+    if (m_addVolumeMethodID == NULL) {
+        printf("#### Yikes m_addVolumeMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jstring descj = m_jniEnv->NewStringUTF(pool_vol->desc); // TODO free?
+
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeMethodID,
+        parObjId, (int64_t)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
+        descj, pool_vol->flags);
+    objId = (int64_t)objIdj;
+    printf("New volume object ID: %lld\n", objId);
+    fflush(stdout);
+
+    if (objId < 0) {
+        return TSK_ERR;
+    }
     return TSK_OK;
 }
 
@@ -189,6 +291,24 @@ TSK_RETVAL_ENUM
 TskAutoDbJava::addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
     int64_t parObjId, int64_t& objId) {
     printf("addVolumeInfo\n");
+
+    if (m_addVolumeMethodID == NULL) {
+        printf("#### Yikes m_addVolumeMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jstring descj = m_jniEnv->NewStringUTF(vs_part->desc); // TODO free?
+
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeMethodID,
+        parObjId, (uint64_t)vs_part->addr, vs_part->start, vs_part->len,
+        descj, vs_part->flags);
+    objId = (int64_t)objIdj;
+    printf("New volume object ID: %lld\n", objId);
+    fflush(stdout);
+
+    if (objId < 0) {
+        return TSK_ERR;
+    }
     return TSK_OK;
 }
 
@@ -196,6 +316,22 @@ TSK_RETVAL_ENUM
 TskAutoDbJava::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
     int64_t& objId) {
     printf("addFsInfo\n");
+
+    if (m_addFileSystemMethodID == NULL) {
+        printf("#### Yikes m_addFileSystemMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileSystemMethodID,
+        parObjId, fs_info->offset, (int)fs_info->ftype, (uint64_t)fs_info->block_size,
+        fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
+        fs_info->last_inum);
+    objId = (int64_t)objIdj;
+
+    if (objId < 0) {
+        return TSK_ERR;
+    }
+
     return TSK_OK;
 }
 
@@ -446,10 +582,8 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     }
     free(img_ptrs);
 #endif
-    printf("Returning error from end of addImageDetails\n"); // TODO TODO
-    fflush(stdout);
-    return 1;
-    //return 0;
+
+    return 0;
 }
 
 
@@ -567,6 +701,11 @@ TskAutoDbJava::filterFs(TSK_FS_INFO * fs_info)
     }
 
     setFileFilterFlags(filterFlags);
+
+
+    printf("Returning TSK_FILTER_STOP from the fs method\n"); // TODO TODO
+    fflush(stdout);
+    return TSK_FILTER_STOP;
 
     return TSK_FILTER_CONT;
 }

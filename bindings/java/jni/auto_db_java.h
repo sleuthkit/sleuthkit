@@ -143,6 +143,10 @@ class TskAutoDbJava :public TskAuto {
     jobject m_javaDbObj;
     jmethodID m_addImageMethodID = NULL;
     jmethodID m_addImageNameMethodID = NULL;
+    jmethodID m_addVolumeSystemMethodID = NULL;
+    jmethodID m_addVolumeMethodID = NULL;
+    jmethodID m_addPoolMethodID = NULL;
+    jmethodID m_addFileSystemMethodID = NULL;
 
 
     // prevent copying until we add proper logic to handle it

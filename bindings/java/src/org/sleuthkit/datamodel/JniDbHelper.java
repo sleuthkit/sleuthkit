@@ -53,7 +53,7 @@ class JniDbHelper {
 		System.out.println("\n@@@ In Java! addImageInfo");
 		System.out.flush();
 		try {
-			return caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size, "displayName",
+			return caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
 					timezone, md5, sha1, sha256, deviceId, trans);
 		} catch (TskCoreException ex) {
 			ex.printStackTrace();
@@ -65,6 +65,49 @@ class JniDbHelper {
 		try {
 			caseDb.addImageNameJNI(objId, name, sequence, trans);
 			return 0;
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+	
+	long addVsInfo(long parentObjId, int vsType, long imgOffset, long blockSize) {
+		try {
+			VolumeSystem vs = caseDb.addVolumeSystem(parentObjId, TskData.TSK_VS_TYPE_ENUM.valueOf(vsType), imgOffset, blockSize, trans);
+			return vs.getId();
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+	
+	long addVolume(long parentObjId, long addr, long start, long length, String desc,
+			long flags) {
+		try {
+			Volume vol = caseDb.addVolume(parentObjId, addr, start, length, desc, flags, trans);
+			return vol.getId();
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+	// TskData.TSK_POOL_TYPE_ENUM
+	long addPool(long parentObjId, int poolType) {
+		try {
+			Pool pool = caseDb.addPool(parentObjId, TskData.TSK_POOL_TYPE_ENUM.valueOf(poolType), trans);
+			return pool.getId();
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+
+	long addFileSystem(long parentObjId, long imgOffset, int fsType, long blockSize, long blockCount,
+			long rootInum, long firstInum, long lastInum) {
+		try {
+			FileSystem fs = caseDb.addFileSystem(parentObjId, imgOffset, TskData.TSK_FS_TYPE_ENUM.valueOf(fsType), blockSize, blockCount,
+					rootInum, firstInum, lastInum, "", trans);
+			return fs.getId();
 		} catch (TskCoreException ex) {
 			ex.printStackTrace();
 			return -1;
