@@ -31,7 +31,7 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil.Ge
  * Utility class for Translating TSK_GEO_WAYPOINTS attribute values to
  * GeoWaypointList objects and GeoWaypointList to BlackboardAttributes.
  */
-public final class TskGeoWaypointsUtil implements BlackboardAttributeTranslator<GeoWaypointList> {
+public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWaypointList> {
 
 	private final String moduleName;
 
@@ -88,8 +88,8 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeTranslator<
 	}
 
 	/**
-	 * Returns serializes this object to JSON. The JSON string can than be used
-	 * as the TSK_GEO_TRACKPOINTS attribute of the TSK_GPS_TRACK artifact.
+	 * Returns a JSON string can than be used as the TSK_GEO_TRACKPOINTS 
+	 * attribute of the TSK_GPS_TRACK artifact.
 	 *
 	 * @return JSON string
 	 */
@@ -117,7 +117,7 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeTranslator<
 		 * @param latitude  The latitude, required
 		 * @param longitude The longitude, required
 		 * @param altitude  The altitude, can be null
-		 * @param name		    A name for the point, can be null
+		 * @param name		A name for the point, can be null
 		 */
 		public void addPoint(Double latitude, Double longitude, Double altitude, String name) {
 			points.add(new GeoWaypoint(latitude, longitude, altitude, name));
@@ -143,13 +143,9 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeTranslator<
 		 */
 		public static class GeoWaypoint {
 
-			@SerializedName("TSK_GEO_LATITUDE")
 			private final Double latitude;
-			@SerializedName("TSK_GEO_LONGITUDE")
 			private final Double longitude;
-			@SerializedName("TSK_GEO_ALTITUDE")
 			private final Double altitude;
-			@SerializedName("TSK_NAME")
 			private final String name;
 
 			/**
@@ -158,6 +154,7 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeTranslator<
 			 * @param latitude  The latitude, required
 			 * @param longitude The longitude, required
 			 * @param altitude  The altitude, can be null
+			 * @param name		A name for the waypoint, optional
 			 */
 			public GeoWaypoint(Double latitude, Double longitude, Double altitude, String name) {
 				if (latitude == null || longitude == null) {
@@ -191,11 +188,20 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeTranslator<
 			/**
 			 * Get the altitude if available for this waypoint.
 			 *
-			 * @return Double altitude value, maybe null if not available or
+			 * @return Double altitude value, may be null if not available or
 			 *         applicable
 			 */
 			public Double getAltitude() {
 				return altitude;
+			}
+			
+			/**
+			 * Returns the name for this waypoint.  
+			 * @return	Returns waypoint name, may be null if not available or 
+			 *			applicable.
+			 */
+			public String getName() {
+				return name;
 			}
 		}
 	}

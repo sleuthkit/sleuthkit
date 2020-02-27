@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import com.google.common.net.InternetDomainName;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;

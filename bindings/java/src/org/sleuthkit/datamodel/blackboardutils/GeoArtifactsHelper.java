@@ -46,7 +46,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @param caseDb		Sleuthkit case db.
 	 * @param moduleName	Name of module using the helper.
-	 * @param programName
+	 * @param programName	Optional program name for TSK_PROG_NAME attribute, 
+	 *						nulls and empty string will be ignored.
 	 * @param srcFile		Source file being processed by the module.
 	 */
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcFile) {
@@ -57,12 +58,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Add a Track from a GPS device to the database. A Track represents a
-	 * series of points that the device has traveled on. This will create a
-	 * TSK_GPS_TRACK artifact and add it to the case.
+	 * Add a Track from a GPS device to the database. 
 	 *
-	 * @param trackName			Name of GPS track, not required. Pass in null if
-	 *							unknown.
+	 * @param trackName			Name of GPS track, not required.
 	 * @param points			List of GeoTrackPoints that the track traversed.
 	 *							Required.
 	 * @param moreAttributes	Optional list of other artifact attributes
@@ -73,6 +71,11 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 * @throws BlackboardException	If there is a problem posting the artifact
 	 */
 	public BlackboardArtifact addTrack(String trackName, GeoTrackPointList points, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
+		
+		if(points == null) {
+			throw new IllegalArgumentException(String.format("GeoTrackPointList is required to be non-null"));
+		}
+		
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 		if (trackName != null) {
@@ -99,10 +102,10 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	/**
 	 * Add a Route from a GPS device to the database.
 	 *
-	 * @param routeName
-	 * @param creationTime		Time the route was created
-	 * @param points			List of GeoWaypointList belonging to the route
-	 * @param moreAttributes	Optional list of other artifact attributes
+	 * @param routeName			Optional route name
+	 * @param creationTime		Time the route was created, optional.
+	 * @param points			List of GeoWaypointList belonging to the route, required
+	 * @param moreAttributes	Optional list of other artifact attributes.
 	 *
 	 * @return TSK_GPS_ROUTE artifact
 	 *
@@ -112,7 +115,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addRoute(String routeName, Long creationTime, GeoWaypointList points, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
 
 		if (points == null) {
-			throw new IllegalArgumentException(String.format("List of GeoWaypoints must be valid for route"));
+			throw new IllegalArgumentException(String.format("GeoWaypointList object be valid"));
 		}
 
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);

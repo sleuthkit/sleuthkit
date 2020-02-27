@@ -32,7 +32,7 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.
  * Utility class for Translating TSK_GEO_TRACKPOINTS attribute values to
  * GeoTrackPointList objects and GeoTrackPointList to BlackboardAttributes.
  */
-public final class TskGeoTrackpointsUtil implements BlackboardAttributeTranslator<GeoTrackPointList> {
+public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoTrackPointList> {
 
 	private final String moduleName;
 
@@ -99,9 +99,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeTranslato
 	}
 
 	/**
-	 * Helper class to make it easier to serialize and deserialize the
-	 * TSK_GEO_TRACKPOINTS attribute.
-	 *
+	 *	A list of GeoTrackPoints.
 	 */
 	public static class GeoTrackPointList implements Iterable<GeoTrackPointList.GeoTrackPoint> {
 
@@ -144,18 +142,18 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeTranslato
 		/**
 		 * Adds a new point with the given attributes.
 		 *
-		 * @param latitude			      Latitude of the trackpoint, required
-		 * @param longitude			     Longitude of the trackpoint, required
-		 * @param altitude			      Altitude of the trackpoint, maybe null
-		 * @param name				         Name of trackpoint, maybe null
-		 * @param velocity			      Velocity in meters/sec, maybe null
-		 * @param distanceFromHP		 Trackpoint distance from an established "home
-		 *                         point", maybe null if not applicable
+		 * @param latitude			Latitude of the trackpoint, required
+		 * @param longitude			Longitude of the trackpoint, required
+		 * @param altitude			Altitude of the trackpoint, maybe null
+		 * @param name				Name of trackpoint, maybe null
+		 * @param velocity			Velocity in meters/sec, maybe null
+		 * @param distanceFromHP	Trackpoint distance from an established "home
+		 *							point", maybe null if not applicable
 		 * @param distanceTraveled	Overall distance traveled in meters at the
-		 *                         time this trackpoint was created, maybe null
-		 *                         if not applicable
-		 * @param timestamp			     Trackpoint creation time, maybe null if not
-		 *                         applicable
+		 *							time this trackpoint was created, maybe null
+		 *							if not applicable
+		 * @param timestamp			Trackpoint creation time, maybe null if not
+		 *							applicable
 		 */
 		public void addPoint(Double latitude,
 				Double longitude,
@@ -245,12 +243,10 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeTranslato
 		 *
 		 */
 		public final static class GeoTrackPoint extends TskGeoWaypointsUtil.GeoWaypointList.GeoWaypoint implements Comparable<GeoTrackPointList.GeoTrackPoint> {
-
-			@SerializedName("TSK_GEO_VELOCITY")
+		
 			private final Double velocity;
 			private final Double distanceFromHP;
 			private final Double distanceTraveled;
-			@SerializedName("TSK_DATETIME")
 			private final Long timestamp;
 
 			/**

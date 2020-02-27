@@ -25,23 +25,23 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
  * to and from a particular format.  Initial use case is for BlackboardAttributes of
  * type SK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON.
  */
-public interface BlackboardAttributeTranslator<T> {
+public interface BlackboardAttributeUtil<T> {
 
 	/**
-	 * Translates the value of type T to a BlackboardAttribute.
+	 * Translates the value of type T to a attribute.
 	 * 
-	 * @param value Object to Translate to BlackboardAttribute.
+	 * @param value Object to Translate to attribute.
 	 * 
 	 * @return BlackboardAttribute created from value
 	 */
 	BlackboardAttribute toAttribute(T value);
 	
 	/**
-	 * Translates an BlackboardAttribute to an object of type T.
+	 * Translates a attribute to an object of type T.
 	 * 
-	 * @param attribute The Attribute to be translated to T
+	 * @param attribute The attribute to be translated to T
 	 * 
-	 * @return A new instance of T created from the BlackboardAttribute
+	 * @return A new instance of T created from the attribute
 	 */
 	T fromAttribute(BlackboardAttribute attribute);
 }
