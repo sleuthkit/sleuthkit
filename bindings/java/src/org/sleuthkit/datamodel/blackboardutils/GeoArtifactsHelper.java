@@ -58,7 +58,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Add a Track from a GPS device to the database. 
+	 * Add a Track from a GPS device to the database. A Track represents a 
+	 * series of points that the device has traveled on. This will create a 
+	 * TSK_GPS_TRACK artifact and add it to the case.
 	 *
 	 * @param trackName			Name of GPS track, not required.
 	 * @param points			List of GeoTrackPoints that the track traversed.
@@ -100,7 +102,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Add a Route from a GPS device to the database.
+	 * Add a Route from a GPS device to the database. This will create a 
+	 * TSK_GPS_ROUTE artifact and add it to the case.
 	 *
 	 * @param routeName			Optional route name
 	 * @param creationTime		Time the route was created, optional.
