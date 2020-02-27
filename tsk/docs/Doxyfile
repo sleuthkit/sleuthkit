@@ -32,7 +32,8 @@ PROJECT_NAME           = "The Sleuth Kit"
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = 4.6
+# This is automatically updated  at release time. 
+PROJECT_NUMBER         = 4.8.0
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer
@@ -881,7 +882,8 @@ GENERATE_HTML          = YES
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be
 # put in front of it. If left blank `html' will be used as the default path.
 
-HTML_OUTPUT            = api-docs/4.6/
+# NOTE: This is automatically updated at release time. 
+HTML_OUTPUT            = api-docs/4.8.0/
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for
 # each generated HTML page (for example: .htm,.php,.asp). If it is left blank
