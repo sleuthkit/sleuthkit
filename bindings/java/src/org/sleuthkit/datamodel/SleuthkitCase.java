@@ -10974,7 +10974,7 @@ public class SleuthkitCase {
 	 * @param deviceId    Device ID
 	 * @param transaction Case DB transaction
 	 *
-	 * @return the newly added Image
+	 * @return the newly added Image object ID
 	 *
 	 * @throws TskCoreException
 	 */
@@ -11040,6 +11040,59 @@ public class SleuthkitCase {
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	long addFileSystemFileJNI(long parentId, long dataSourceObjId, long fsObjId,
+			String fileName,
+			long metaAddr, int metaSeq,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime,
+			boolean isFile, String parentPath, CaseDbTransaction transaction) throws TskCoreException {
+
+		Statement queryStatement = null;
+		try {
+			transaction.acquireSingleUserCaseWriteLock();
+			CaseDbConnection connection = transaction.getConnection();
+
+			// Insert a row for the local/logical file into the tsk_objects table.
+			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+			long objectId = addObject(parentId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
+
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE);
+			statement.clearParameters();
+			statement.setLong(1, objectId);											// obj_is
+			statement.setLong(2, fsObjId);											// fs_obj_id 
+			statement.setLong(3, dataSourceObjId);									// data_source_obj_id 
+			statement.setShort(4, (short) attrType.getValue());						// attr_type
+			statement.setInt(5, attrId);											// attr_id
+			statement.setString(6, fileName);										// name
+			statement.setLong(7, metaAddr);											// meta_addr
+			statement.setInt(8, metaSeq);											// meta_addr
+			statement.setShort(9, TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType());	//type
+			statement.setShort(10, (short) 1);										// has_path
+			TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			statement.setShort(11, dirType.getValue());								// dir_type
+			TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			statement.setShort(12, metaType.getValue());							// meta_type
+			statement.setShort(13, dirFlag.getValue());								// dir_flags
+			statement.setShort(14, metaFlags);										// meta_flags
+			statement.setLong(15, size < 0 ? 0 : size);
+			statement.setLong(16, ctime);
+			statement.setLong(17, crtime);
+			statement.setLong(18, atime);
+			statement.setLong(19, mtime);
+			statement.setString(20, parentPath);
+			final String extension = extractExtension(fileName);
+			statement.setString(21, extension);
+			connection.executeUpdate(statement);
+
+			return objectId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to add file system file", ex);
+		} finally {
+			closeStatement(queryStatement);
 		}
 	}
 

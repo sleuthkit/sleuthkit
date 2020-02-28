@@ -113,4 +113,25 @@ class JniDbHelper {
 			return -1;
 		}
 	}
+
+	long addFile(long parentObjId, long dataSourceObjId, long fsObjId,
+			String fileName,
+			long metaAddr, int metaSeq,
+			int attrType, int attrId,
+			int dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime, boolean isFile, String parentPath) {
+		try {
+			return caseDb.addFileSystemFileJNI(parentObjId, dataSourceObjId, fsObjId,
+				fileName,
+				metaAddr, metaSeq,
+				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(attrType), attrId,
+				TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlag), metaFlags, size,
+				ctime, crtime, atime, mtime,
+				isFile, parentPath, trans);
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+	
 }

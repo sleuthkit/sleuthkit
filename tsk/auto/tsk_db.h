@@ -227,7 +227,8 @@ class TskDb {
 
 	  @param name A file name
 	  @param extension The file name extension will be extracted to extension.
-	  */void extractExtension(char *name, char *extension ) {
+	  */
+      void extractExtension(char *name, char *extension ) {
 		   char *ext = strrchr(name, '.');
 
 		   //if ext is not null and is not the entire filename...

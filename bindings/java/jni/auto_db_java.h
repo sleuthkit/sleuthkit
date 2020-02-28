@@ -17,6 +17,9 @@
 #ifndef _AUTO_DB_JAVA_H
 #define _AUTO_DB_JAVA_H
 
+#include <map>
+using std::map;
+
 #include <string>
 using std::string;
 
@@ -137,6 +140,14 @@ class TskAutoDbJava :public TskAuto {
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
+    // Used to look up object IDs for files
+    #define MAX_PATH_LENGTH_JAVA_DB_LOOKUP 2048
+    char parent_name[MAX_PATH_LENGTH_JAVA_DB_LOOKUP];
+    char parent_path[MAX_PATH_LENGTH_JAVA_DB_LOOKUP + 2]; // +2 is for leading slash and trailing slash
+    map<int64_t, map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to a map, which maps a sequence ID to a map, which maps a hash of a path to its object ID in the database
+    int64_t findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, const int64_t& fsObjId);
+    bool getParentPathAndName(const char *path, const char **ret_parent_path, const char **ret_name);
+
     // JNI data
     JNIEnv * m_jniEnv;
     jclass m_callbackClass;
@@ -175,9 +186,6 @@ class TskAutoDbJava :public TskAuto {
         const TSK_FS_ATTR *, const char *path);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
-    static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
-        TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
-        TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
@@ -199,6 +207,11 @@ class TskAutoDbJava :public TskAuto {
         const TSK_FS_ATTR* fs_attr, const char* path,
         const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
         int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addFile(TSK_FS_FILE* fs_file,
+        const TSK_FS_ATTR* fs_attr, const char* path,
+        const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+        int64_t fsObjId, int64_t parObjId,
+        int64_t& objId, int64_t dataSourceObjId);
     //TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
     //    const int64_t fsObjId, const uint64_t size,
     //    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,

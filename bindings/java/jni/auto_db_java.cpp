@@ -342,6 +342,300 @@ TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
     int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId) {
 
     printf("addFsFile\n");
+
+    int64_t parObjId = 0;
+
+    if (fs_file->name == NULL)
+        return TSK_ERR;
+
+    // Find the object id for the parent folder.
+
+    /* Root directory's parent should be the file system object.
+    * Make sure it doesn't have a name, so that we don't pick up ".." entries */
+    if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) &&
+        ((fs_file->name->name == NULL) || (strlen(fs_file->name->name) == 0)))
+    {
+        parObjId = fsObjId;
+    }
+    else
+    {
+        parObjId = findParObjId(fs_file, path, fsObjId);
+        if (parObjId == -1)
+        {
+            //error
+            return TSK_ERR;
+        }
+    }
+
+
+    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId, dataSourceObjId);
+}
+
+/**
+Extract the extension from the given file name and store it in the supplied string.
+
+@param name A file name
+@param extension The file name extension will be extracted to extension.
+*/
+void extractExtension(char *name, char *extension) {
+    char *ext = strrchr(name, '.');
+
+    //if ext is not null and is not the entire filename...
+    if (ext && (name != ext)) {
+        size_t extLen = strlen(ext);
+        //... and doesn't only contain the '.' and isn't too long to be a real extension.
+        if ((1 < extLen) && (extLen < 15)) {
+            strncpy(extension, ext + 1, extLen - 1);
+            //normalize to lower case, only works for ascii
+            for (int i = 0; extension[i]; i++) {
+                extension[i] = tolower(extension[i]);
+            }
+        }
+    }
+}
+
+/**
+* Add file data to the file table
+* @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
+* @param dataSourceObjId The object ID for the data source
+* Return 0 on success, 1 on error.
+*/
+TSK_RETVAL_ENUM
+TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
+    const TSK_FS_ATTR* fs_attr, const char* path,
+    const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+    int64_t fsObjId, int64_t parObjId,
+    int64_t& objId, int64_t dataSourceObjId)
+{
+    time_t mtime = 0;
+    time_t crtime = 0;
+    time_t ctime = 0;
+    time_t atime = 0;
+    TSK_OFF_T size = 0;
+    int meta_type = 0;
+    int meta_flags = 0;
+    int meta_mode = 0;
+    int gid = 0;
+    int uid = 0;
+    int type = TSK_FS_ATTR_TYPE_NOT_FOUND;
+    int idx = 0;
+    char* zSQL;
+
+    if (fs_file->name == NULL)
+        return TSK_OK;
+
+    if (fs_file->meta)
+    {
+        mtime = fs_file->meta->mtime;
+        atime = fs_file->meta->atime;
+        ctime = fs_file->meta->ctime;
+        crtime = fs_file->meta->crtime;
+        meta_type = fs_file->meta->type;
+        meta_flags = fs_file->meta->flags;
+        meta_mode = fs_file->meta->mode;
+        gid = fs_file->meta->gid;
+        uid = fs_file->meta->uid;
+    }
+
+    size_t attr_nlen = 0;
+    if (fs_attr)
+    {
+        type = fs_attr->type;
+        idx = fs_attr->id;
+        size = fs_attr->size;
+        if (fs_attr->name)
+        {
+            if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
+                (strcmp(fs_attr->name, "$I30") != 0))
+            {
+                attr_nlen = strlen(fs_attr->name);
+            }
+        }
+    }
+
+    // sanity check
+    if (size < 0) {
+        size = 0;
+    }
+
+    // combine name and attribute name
+    size_t len = strlen(fs_file->name->name);
+    char * name;
+    size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
+    if ((name = (char *)tsk_malloc(nlen)) == NULL) {
+        return TSK_ERR;
+    }
+
+    strncpy(name, fs_file->name->name, nlen);
+
+    char extension[24] = "";
+    extractExtension(name, extension);
+
+    // Add the attribute name
+    if (attr_nlen > 0)
+    {
+        strncat(name, ":", nlen - strlen(name));
+        strncat(name, fs_attr->name, nlen - strlen(name));
+    }
+
+    // clean up path
+    // +2 = space for leading slash and terminating null
+    size_t path_len = strlen(path) + 2;
+    char* escaped_path;
+    if ((escaped_path = (char *)tsk_malloc(path_len)) == NULL)
+    {
+        free(name);
+        return TSK_ERR;
+    }
+
+    strncpy(escaped_path, "/", path_len);
+    strncat(escaped_path, path, path_len - strlen(escaped_path));
+
+    char* md5TextPtr = NULL;
+    char md5Text[48];
+
+    // if md5 hashes are being used
+    if (md5 != NULL)
+    {
+        // copy the hash as hexidecimal into the buffer
+        for (int i = 0; i < 16; i++)
+        {
+            sprintf(&(md5Text[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
+                md5[i] & 0xf);
+        }
+        md5TextPtr = md5Text;
+    }
+
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
+    {
+        free(name);
+        free(escaped_path);
+        return 1;
+    }
+
+    zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+        "VALUES ("
+        "%" PRId64 ",%" PRId64 ","
+        "%" PRId64 ","
+        "%d,"
+        "%d,%d,'%q',"
+        "%" PRIuINUM ",%d,"
+        "%d,%d,%d,%d,"
+        "%" PRId64 ","
+        "%llu,%llu,%llu,%llu,"
+        "%d,%d,%d,%Q,%d,"
+        "'%q','%q')",
+        fsObjId, objId,
+        dataSourceObjId,
+        TSK_DB_FILES_TYPE_FS,
+        type, idx, name,
+        fs_file->name->meta_addr, fs_file->name->meta_seq,
+        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+        size,
+        (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
+        meta_mode, gid, uid, md5TextPtr, known,
+        escaped_path, extension);
+
+    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+        free(name);
+        free(escaped_path);
+        sqlite3_free(zSQL);
+        return 1;
+    }
+
+    if (!TSK_FS_ISDOT(name))
+    {
+        std::string full_description = std::string(escaped_path).append(name);
+
+        // map from time to event type ids
+        const std::map<int64_t, time_t> timeMap = {
+            { 4, mtime },
+            { 5, atime },
+            { 6, crtime },
+            { 7, ctime }
+        };
+
+        //insert MAC time events for the file
+        if (addMACTimeEvents(dataSourceObjId, objId, timeMap, full_description.c_str()))
+        {
+            free(name);
+            free(escaped_path);
+            sqlite3_free(zSQL);
+            return 1;
+        };
+    }
+
+    //if dir, update parent id cache (do this before objId may be changed creating the slack file)
+    if (TSK_FS_IS_DIR_META(meta_type))
+    {
+        std::string fullPath = std::string(path) + fs_file->name->name;
+        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
+    }
+
+    // Add entry for the slack space.
+    // Current conditions for creating a slack file:
+    //   - File name is not empty, "." or ".."
+    //   - Data is non-resident
+    //   - The allocated size is greater than the initialized file size
+    //     See github issue #756 on why initsize and not size.
+    //   - The data is not compressed
+    if ((fs_attr != NULL)
+        && ((strlen(name) > 0) && (!TSK_FS_ISDOT(name)))
+        && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
+        && (fs_attr->flags & TSK_FS_ATTR_NONRES)
+        && (fs_attr->nrd.allocsize > fs_attr->nrd.initsize)) {
+        strncat(name, "-slack", 6);
+        if (strlen(extension) > 0) {
+            strncat(extension, "-slack", 6);
+        }
+        TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
+
+        if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+            free(name);
+            free(escaped_path);
+            return 1;
+        }
+
+        // Run the same insert with the new name, size, and type
+        zSQL = sqlite3_mprintf(
+            "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
+            "VALUES ("
+            "%" PRId64 ",%" PRId64 ","
+            "%" PRId64 ","
+            "%d,"
+            "%d,%d,'%q',"
+            "%" PRIuINUM ",%d,"
+            "%d,%d,%d,%d,"
+            "%" PRId64 ","
+            "%llu,%llu,%llu,%llu,"
+            "%d,%d,%d,NULL,%d,"
+            "'%q','%q')",
+            fsObjId, objId,
+            dataSourceObjId,
+            TSK_DB_FILES_TYPE_SLACK,
+            type, idx, name,
+            fs_file->name->meta_addr, fs_file->name->meta_seq,
+            TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
+            slackSize,
+            (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
+            meta_mode, gid, uid, known,
+            escaped_path, extension);
+
+        if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+            free(name);
+            free(escaped_path);
+            sqlite3_free(zSQL);
+            return 1;
+        }
+    }
+
+    sqlite3_free(zSQL);
+
+    free(name);
+    free(escaped_path);
+
     return TSK_OK;
 }
 
@@ -381,6 +675,166 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
     return TSK_OK;
 }
 
+/**
+* return a hash of the passed in string. We use this
+* for full paths.
+* From: http://www.cse.yorku.ca/~oz/hash.html
+*/
+uint32_t hash(const unsigned char* str)
+{
+    uint32_t hash = 5381;
+    int c;
+
+    while ((c = *str++))
+    {
+        // skip slashes -> normalizes leading/ending/double slashes
+        if (c == '/')
+            continue;
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
+}
+
+/*
+* Utility method to break up path into parent folder and folder/file name.
+* @param path Path of folder that we want to analyze
+* @param ret_parent_path pointer to parent path (begins and ends with '/')
+* @param ret_name pointer to final folder/file name
+* @returns 0 on success, 1 on error
+*/
+bool 
+TskAutoDbJava::getParentPathAndName(const char *path, const char **ret_parent_path, const char **ret_name) {
+    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
+    // name to match with the 'name' column in tsk_files table
+
+    // reset all arrays
+    parent_name[0] = '\0';
+    parent_path[0] = '\0';
+
+    size_t path_len = strlen(path);
+    if (path_len >= MAX_PATH_LENGTH_JAVA_DB_LOOKUP) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDb::getParentPathAndName: Path is too long. Length = %zd, Max length = %d", path_len, MAX_PATH_LENGTH_JAVA_DB_LOOKUP);
+        // assign return values to pointers
+        *ret_parent_path = "";
+        *ret_name = "";
+        return 1;
+    }
+
+    // check if empty path or just "/" were passed in
+    if (path_len == 0 || (strcmp(path, "/") == 0)) {
+        *ret_name = "";
+        *ret_parent_path = "/";
+        return 0;
+    }
+
+
+    // step 1, copy everything into parent_path and clean it up
+    // add leading slash if its not in input.  
+    if (path[0] != '/') {
+        sprintf(parent_path, "%s", "/");
+    }
+
+    strncat(parent_path, path, MAX_PATH_LENGTH_JAVA_DB_LOOKUP);
+
+    // remove trailing slash
+    if (parent_path[strlen(parent_path) - 1] == '/') {
+        parent_path[strlen(parent_path) - 1] = '\0';
+    }
+
+    // replace all non-UTF8 characters
+    tsk_cleanupUTF8(parent_path, '^');
+
+    // Step 2, move the final folder/file to parent_file
+
+    // Find the last '/' 
+    char *chptr = strrchr(parent_path, '/');
+    if (chptr) {
+        // character found in the string
+        size_t position = chptr - parent_path;
+
+        sprintf(parent_name, "%s", chptr + 1);  // copy everything after slash into parent_name
+        *ret_name = parent_name;
+
+        parent_path[position + 1] = '\0';   // add terminating null after last "/"
+        *ret_parent_path = parent_path;
+    }
+    else {
+        // "/" character not found. the entire path is parent file name. parent path is "/"
+        *ret_name = parent_path;
+        *ret_parent_path = "/";
+    }
+    return 0;
+}
+
+
+/**
+* Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
+* @param fs_file file to find parent obj id for
+* @param parentPath Path of parent folder that we want to match
+* @param fsObjId fs id of this file
+* @returns parent obj id ( > 0), -1 on error
+*/
+int64_t 
+TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, const int64_t& fsObjId)
+{
+    uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)parentPath);
+
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+    * correct parent folder if there are two from the root dir that eventually point to
+    * the same folder (one deleted and one allocated) or two hard links. */
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
+    {
+        seq = fs_file->name->par_seq;
+    }
+    else
+    {
+        seq = path_hash;
+    }
+
+    //get from cache by parent meta addr, if available
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > >& fsMap = m_parentDirIdCache[fsObjId];
+    if (fsMap.count(fs_file->name->par_addr) > 0)
+    {
+        map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->par_addr];
+        if (fileMap.count(seq) > 0)
+        {
+            map<uint32_t, int64_t>& pathMap = fileMap[seq];
+            if (pathMap.count(path_hash) > 0)
+            {
+                return pathMap[path_hash];
+            }
+        }
+        else
+        {
+            printf("Miss: %zu\n", fileMap.count(seq));
+            fflush(stdout);
+        }
+    }
+
+    printf("Miss: %s (%" PRIu64  " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
+                   fs_file->name->par_addr);
+    fflush(stdout);
+
+    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
+    // name to match with the 'name' column in tsk_files table
+    const char *parent_name = "";
+    const char *parent_path = "";
+    if (getParentPathAndName(parentPath, &parent_path, &parent_name))
+    {
+        return -1;
+    }
+
+    // TODO TODO DATABASE CALL
+    printf("#### SKIPPING PAR OBJ ID DATABASE LOOKUP \n");
+    fflush(stdout);
+    int64_t parObjId = -1;
+
+    return parObjId;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////
