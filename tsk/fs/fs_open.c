@@ -129,6 +129,8 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         char* name;
         TSK_FS_INFO* (*open)(TSK_IMG_INFO*, TSK_OFF_T,
                                  TSK_FS_TYPE_ENUM, uint8_t);
+        // This type should be the _DETECT version because it used
+        // during autodetection
         TSK_FS_TYPE_ENUM type;
     } FS_OPENERS[] = {
         { "NTFS",     ntfs_open,    TSK_FS_TYPE_NTFS_DETECT    },
