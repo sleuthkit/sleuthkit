@@ -120,6 +120,13 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
+    m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;)J");
+    if (m_addFileMethodID == NULL) {
+        printf("#### Error loading m_addFileMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
     printf("\n#### Yay found method IDs!\n");
     fflush(stdout);
     return TSK_OK;
@@ -168,7 +175,7 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addImageMethodID,
         type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj);
     objId = (int64_t)objIdj;
-    printf("New image object ID: %lld\n", objId);
+    printf("#### New image object ID: %lld\n", objId);
     fflush(stdout);
 
     if (objId < 0) {
@@ -217,7 +224,7 @@ TskAutoDbJava::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& 
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
         parObjId, vs_info->vstype, vs_info->offset, (uint64_t)vs_info->block_size);
     objId = (int64_t)objIdj;
-    printf("New volume system object ID: %lld\n", objId);
+    printf("#### New volume system object ID: %lld\n", objId);
     fflush(stdout);
 
     if (objId < 0) {
@@ -327,6 +334,8 @@ TskAutoDbJava::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
         fs_info->last_inum);
     objId = (int64_t)objIdj;
+    printf("#### New file system object ID: %lld\n", objId);
+    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -393,6 +402,58 @@ void extractExtension(char *name, char *extension) {
         }
     }
 }
+
+/**
+* Store info about a directory in a complex map structure as a cache for the
+* files who are a child of this directory and want to know its object id.
+*
+* @param fsObjId fs id of this directory
+* @param fs_file File for the directory to store
+* @param path Full path (parent and this file) of the directory
+* @param objId object id of the directory
+*/
+void TskAutoDbJava::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_file, const char* path, const int64_t& objId)
+{
+    // skip the . and .. entries
+    if ((fs_file->name) && (fs_file->name->name) && (TSK_FS_ISDOT(fs_file->name->name)))
+    {
+        return;
+    }
+
+    uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)path);
+
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+    * correct parent folder if there are two from the root dir that eventually point to
+    * the same folder (one deleted and one allocated) or two hard links. */
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
+    {
+        /* Use the sequence stored in meta (which could be one larger than the name value
+        * if the directory is deleted. We do this because the par_seq gets added to the
+        * name structure when it is added to the directory based on teh value stored in
+        * meta. */
+        seq = fs_file->meta->seq;
+    }
+    else
+    {
+        seq = path_hash;
+    }
+
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > >& fsMap = m_parentDirIdCache[fsObjId];
+    if (fsMap.count(fs_file->name->meta_addr) == 0)
+    {
+        fsMap[fs_file->name->meta_addr][seq][path_hash] = objId;
+    }
+    else
+    {
+        map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->meta_addr];
+        if (fileMap.count(seq) == 0)
+        {
+            fileMap[seq][path_hash] = objId;
+        }
+    }
+}
+
 
 /**
 * Add file data to the file table
@@ -491,29 +552,40 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     strncpy(escaped_path, "/", path_len);
     strncat(escaped_path, path, path_len - strlen(escaped_path));
 
-    char* md5TextPtr = NULL;
-    char md5Text[48];
-
-    // if md5 hashes are being used
-    if (md5 != NULL)
-    {
-        // copy the hash as hexidecimal into the buffer
-        for (int i = 0; i < 16; i++)
-        {
-            sprintf(&(md5Text[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
-                md5[i] & 0xf);
-        }
-        md5TextPtr = md5Text;
+    printf("#### Finally adding file\n");
+    fflush(stdout);
+    if (m_addFileMethodID == NULL) {
+        printf("#### Yikes m_addFileMethodID is null...\n");
+        return TSK_ERR;
     }
 
+    jstring namej = m_jniEnv->NewStringUTF(name); // TODO free?
+    jstring pathj = m_jniEnv->NewStringUTF(escaped_path); // TODO free?
+    jstring extj = m_jniEnv->NewStringUTF(extension); // TODO free?
+ 
 
-    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
-    {
-        free(name);
-        free(escaped_path);
-        return 1;
+    // "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, 
+    // type, attr_type, attr_id, name, 
+    // meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, 
+    // size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
+        parObjId, fsObjId,
+        dataSourceObjId,
+        TSK_DB_FILES_TYPE_FS,
+        type, idx, namej,
+        fs_file->name->meta_addr, (uint64_t)fs_file->name->meta_seq,
+        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+        size,
+        (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
+        meta_mode, gid, uid, // md5TextPtr, known,
+        pathj, extj);
+    objId = (int64_t)objIdj;
+
+    if (objId < 0) {
+        return TSK_ERR;
     }
 
+    /*
     zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
         "VALUES ("
@@ -527,25 +599,21 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%Q,%d,"
         "'%q','%q')",
-        fsObjId, objId,
-        dataSourceObjId,
-        TSK_DB_FILES_TYPE_FS,
-        type, idx, name,
-        fs_file->name->meta_addr, fs_file->name->meta_seq,
-        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size,
+        fsObjId, objId, // done
+        dataSourceObjId, // done
+        TSK_DB_FILES_TYPE_FS, // dont' need type
+        type, idx, name, // attrType, attrId, name   done
+        fs_file->name->meta_addr, fs_file->name->meta_seq, // done
+        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags, // used meta_flags
+        size,  // done
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
         meta_mode, gid, uid, md5TextPtr, known,
         escaped_path, extension);
+        */
 
-    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
-        free(name);
-        free(escaped_path);
-        sqlite3_free(zSQL);
-        return 1;
-    }
 
-    if (!TSK_FS_ISDOT(name))
+/*
+if (!TSK_FS_ISDOT(name))
     {
         std::string full_description = std::string(escaped_path).append(name);
 
@@ -565,7 +633,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             sqlite3_free(zSQL);
             return 1;
         };
-    }
+    }*/
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
     if (TSK_FS_IS_DIR_META(meta_type))
@@ -574,6 +642,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
+    /*
     // Add entry for the slack space.
     // Current conditions for creating a slack file:
     //   - File name is not empty, "." or ".."
@@ -631,7 +700,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         }
     }
 
-    sqlite3_free(zSQL);
+    sqlite3_free(zSQL);*/
 
     free(name);
     free(escaped_path);
@@ -680,7 +749,8 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
 * for full paths.
 * From: http://www.cse.yorku.ca/~oz/hash.html
 */
-uint32_t hash(const unsigned char* str)
+uint32_t 
+TskAutoDbJava::hash(const unsigned char* str)
 {
     uint32_t hash = 5381;
     int c;
@@ -829,9 +899,9 @@ TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, 
     }
 
     // TODO TODO DATABASE CALL
-    printf("#### SKIPPING PAR OBJ ID DATABASE LOOKUP \n");
+    printf("#### SKIPPING PAR OBJ ID DATABASE LOOKUP TODO \n");
     fflush(stdout);
-    int64_t parObjId = -1;
+    int64_t parObjId = 2;
 
     return parObjId;
 }
@@ -979,7 +1049,7 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     } else {
         devId = "";
     }
-    if (TSK_ERR == addImageInfo(m_img_info->itype, m_img_info->sector_size,
+    if (TSK_OK != addImageInfo(m_img_info->itype, m_img_info->sector_size,
           m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails)) {
         registerError();
         return 1;
@@ -1023,7 +1093,7 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     for (int i = 0; i < m_img_info->num_img; i++) {
         const char *img_ptr = img_ptrs[i];
 
-        if (-1 == addImageName(m_curImgId, img_ptr, i)) {
+        if (TSK_OK != addImageName(m_curImgId, img_ptr, i)) {
             registerError();
             return 1;
         }
@@ -1044,7 +1114,7 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
 TSK_FILTER_ENUM TskAutoDbJava::filterVs(const TSK_VS_INFO * vs_info)
 {
     m_vsFound = true;
-    if (-1 == addVsInfo(vs_info, m_curImgId, m_curVsId)) {
+    if (TSK_OK != addVsInfo(vs_info, m_curImgId, m_curVsId)) {
         registerError();
         return TSK_FILTER_STOP;
     }
@@ -1059,14 +1129,14 @@ TskAutoDbJava::filterPool(const TSK_POOL_INFO * pool_info)
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
-        if (-1 == addPoolInfoAndVS(pool_info, m_curVolId, m_curPoolVs)) {
+        if (TSK_OK != addPoolInfoAndVS(pool_info, m_curVolId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // pool doesn't live in a volume, use image as parent
-        if (-1 == addPoolInfoAndVS(pool_info, m_curImgId, m_curPoolVs)) {
+        if (TSK_OK != addPoolInfoAndVS(pool_info, m_curImgId, m_curPoolVs)) {
             registerError();
             return TSK_FILTER_STOP;
         }
@@ -1081,7 +1151,7 @@ TSK_FILTER_ENUM
 TskAutoDbJava::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 {
 
-    if (-1 == addPoolVolumeInfo(pool_vol, m_curPoolVs, m_curPoolVol)) {
+    if (TSK_OK != addPoolVolumeInfo(pool_vol, m_curPoolVs, m_curPoolVol)) {
         registerError();
         return TSK_FILTER_STOP;
     }
@@ -1096,7 +1166,7 @@ TskAutoDbJava::filterVol(const TSK_VS_PART_INFO * vs_part)
     m_foundStructure = true;
     m_poolFound = false;
 
-    if (-1 == addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
+    if (TSK_OK != addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
         registerError();
         return TSK_FILTER_STOP;
     }
@@ -1113,21 +1183,21 @@ TskAutoDbJava::filterFs(TSK_FS_INFO * fs_info)
 
     if (m_poolFound) {
         // there's a pool
-        if (-1 != addFsInfo(fs_info, m_curPoolVol, m_curFsId)) {
+        if (TSK_OK != addFsInfo(fs_info, m_curPoolVol, m_curFsId)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else if (m_volFound && m_vsFound) {
         // there's a volume system and volume
-        if (-1 != addFsInfo(fs_info, m_curVolId, m_curFsId)) {
+        if (TSK_OK != addFsInfo(fs_info, m_curVolId, m_curFsId)) {
             registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // file system doesn't live in a volume, use image as parent
-        if (-1 != addFsInfo(fs_info, m_curImgId, m_curFsId)) {
+        if (TSK_OK != addFsInfo(fs_info, m_curImgId, m_curFsId)) {
             registerError();
             return TSK_FILTER_STOP;
         }
@@ -1156,11 +1226,6 @@ TskAutoDbJava::filterFs(TSK_FS_INFO * fs_info)
 
     setFileFilterFlags(filterFlags);
 
-
-    printf("Returning TSK_FILTER_STOP from the fs method\n"); // TODO TODO
-    fflush(stdout);
-    return TSK_FILTER_STOP;
-
     return TSK_FILTER_CONT;
 }
 
@@ -1172,6 +1237,8 @@ TSK_RETVAL_ENUM
     TskAutoDbJava::insertFileData(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
 {
+    printf("### insertFileData\n");
+    fflush(stdout);
 
     if (-1 == addFsFile(fs_file, fs_attr, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN, m_curFsId, m_curFileId,
             m_curImgId)) {
@@ -1373,7 +1440,8 @@ TskAutoDbJava::setTz(string tzone)
 TSK_RETVAL_ENUM
 TskAutoDbJava::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
-    
+    printf("#### processFile\n");
+    fflush(stdout);
     // Check if the process has been canceled
      if (m_stopped) {
         if (tsk_verbose)

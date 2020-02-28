@@ -114,20 +114,37 @@ class JniDbHelper {
 		}
 	}
 
-	long addFile(long parentObjId, long dataSourceObjId, long fsObjId,
-			String fileName,
-			long metaAddr, int metaSeq,
-			int attrType, int attrId,
-			int dirFlag, short metaFlags, long size,
-			long ctime, long crtime, long atime, long mtime, boolean isFile, String parentPath) {
+	// fs_obj_id, obj_id, data_source_obj_id, type, 
+	// attr_type, attr_id, 
+	// name, 
+	// meta_addr, meta_seq, 
+	// dir_type, 
+	// meta_type, dir_flags, meta_flags, 
+	// size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension)"
+	long addFile(long parentObjId, 
+        long fsObjId, long dataSourceObjId,
+        int fsType, // TSK_DB_FILES_TYPE_FS,
+        int attrType, int attrId, String name,
+        long metaAddr, long metaSeq,
+        int dirType, int metaType, int dirFlags, int metaFlags,
+        long size,
+        long crtime, long ctime, long atime, long mtime,
+        int meta_mode, int gid, int uid, /// md5TextPtr, known,
+        String escaped_path, String extension
+	
+	) {
 		try {
-			return caseDb.addFileSystemFileJNI(parentObjId, dataSourceObjId, fsObjId,
-				fileName,
+			return caseDb.addFileSystemFileJNI(parentObjId, 
+				fsObjId, dataSourceObjId,
+				fsType, // TSK_DB_FILES_TYPE_FS,
+				attrType, attrId, name,
 				metaAddr, metaSeq,
-				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(attrType), attrId,
-				TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlag), metaFlags, size,
-				ctime, crtime, atime, mtime,
-				isFile, parentPath, trans);
+				dirType, metaType, dirFlags, metaFlags,
+				size,
+				crtime, ctime, atime, mtime,
+				meta_mode, gid, uid, /// md5TextPtr, known,
+				"", TskData.FileKnown.UNKNOWN,
+				escaped_path, extension, trans);
 		} catch (TskCoreException ex) {
 			ex.printStackTrace();
 			return -1;

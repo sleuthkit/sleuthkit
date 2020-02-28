@@ -11043,13 +11043,17 @@ public class SleuthkitCase {
 		}
 	}
 	
-	long addFileSystemFileJNI(long parentId, long dataSourceObjId, long fsObjId,
-			String fileName,
-			long metaAddr, int metaSeq,
-			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
-			long ctime, long crtime, long atime, long mtime,
-			boolean isFile, String parentPath, CaseDbTransaction transaction) throws TskCoreException {
+	long addFileSystemFileJNI(long parentObjId, 
+			long fsObjId, long dataSourceObjId,
+			int fsType, // TSK_DB_FILES_TYPE_FS,
+			int attrType, int attrId, String name,
+			long metaAddr, long metaSeq,
+			int dirType, int metaType, int dirFlags, int metaFlags,
+			long size,
+			long crtime, long ctime, long atime, long mtime,
+			int meta_mode, int gid, int uid,
+			String md5, TskData.FileKnown known,
+			String escaped_path, String extension, CaseDbTransaction transaction) throws TskCoreException {
 
 		Statement queryStatement = null;
 		try {
@@ -11058,34 +11062,38 @@ public class SleuthkitCase {
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			long objectId = addObject(parentId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
+			long objectId = addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE);
+			// INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, 
+			//                        dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, 
+			//                        mode, gid, uid, md5, known, parent_path, extension
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE_All_FIELDS);
 			statement.clearParameters();
-			statement.setLong(1, objectId);											// obj_is
-			statement.setLong(2, fsObjId);											// fs_obj_id 
+			statement.setLong(1, fsObjId);											// fs_obj_id
+			statement.setLong(2, objectId);											// obj_id 
 			statement.setLong(3, dataSourceObjId);									// data_source_obj_id 
-			statement.setShort(4, (short) attrType.getValue());						// attr_type
-			statement.setInt(5, attrId);											// attr_id
-			statement.setString(6, fileName);										// name
-			statement.setLong(7, metaAddr);											// meta_addr
-			statement.setInt(8, metaSeq);											// meta_addr
-			statement.setShort(9, TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType());	//type
-			statement.setShort(10, (short) 1);										// has_path
-			TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
-			statement.setShort(11, dirType.getValue());								// dir_type
-			TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			statement.setShort(12, metaType.getValue());							// meta_type
-			statement.setShort(13, dirFlag.getValue());								// dir_flags
-			statement.setShort(14, metaFlags);										// meta_flags
-			statement.setLong(15, size < 0 ? 0 : size);
-			statement.setLong(16, ctime);
-			statement.setLong(17, crtime);
-			statement.setLong(18, atime);
-			statement.setLong(19, mtime);
-			statement.setString(20, parentPath);
-			final String extension = extractExtension(fileName);
-			statement.setString(21, extension);
+			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType());	// type
+			statement.setShort(5, (short) attrType);		// attr_type
+			statement.setInt(6, attrId);					// attr_id
+			statement.setString(7, name);					// name
+			statement.setLong(8, metaAddr);					// meta_addr
+			statement.setInt(9, (int)metaSeq);				// meta_seq
+			statement.setShort(10, (short)dirType);			// dir_type
+			statement.setShort(11, (short)metaType);		// meta_type
+			statement.setShort(12, (short)dirFlags);		// dir_flags
+			statement.setShort(13, (short)metaFlags);		// meta_flags
+			statement.setLong(14, size < 0 ? 0 : size);     // size
+			statement.setLong(15, ctime);                   // ctime
+			statement.setLong(16, crtime);                  // crtime
+			statement.setLong(17, atime);                   // atime
+			statement.setLong(18, mtime);                   // mtime
+			statement.setInt(19, meta_mode);                // mode
+			statement.setInt(20, gid);                      // gid
+			statement.setInt(21, uid);                      // uid
+			statement.setString(22, md5);                   // md5
+			statement.setInt(23, known.getFileKnownValue());// known
+			statement.setString(24, escaped_path);          // parent_path
+			statement.setString(25, extension);             // extension
 			connection.executeUpdate(statement);
 
 			return objectId;
@@ -11191,6 +11199,8 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, extension)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE_SYSTEM_FILE_All_FIELDS("INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
