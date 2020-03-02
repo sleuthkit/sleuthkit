@@ -127,6 +127,14 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
+    //(JJLjava/lang/String;Ljava/lang/String;)J
+    m_getParentIdMethodID = m_jniEnv->GetMethodID(m_callbackClass, "findParentObjId", "(JJLjava/lang/String;Ljava/lang/String;)J");
+    if (m_getParentIdMethodID == NULL) {
+        printf("#### Error loading m_getParentIdMethodID\n");
+        fflush(stdout);
+        return TSK_ERR;
+    }
+
     printf("\n#### Yay found method IDs!\n");
     fflush(stdout);
     return TSK_OK;
@@ -585,33 +593,6 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         return TSK_ERR;
     }
 
-    /*
-    zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
-        "VALUES ("
-        "%" PRId64 ",%" PRId64 ","
-        "%" PRId64 ","
-        "%d,"
-        "%d,%d,'%q',"
-        "%" PRIuINUM ",%d,"
-        "%d,%d,%d,%d,"
-        "%" PRId64 ","
-        "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,%Q,%d,"
-        "'%q','%q')",
-        fsObjId, objId, // done
-        dataSourceObjId, // done
-        TSK_DB_FILES_TYPE_FS, // dont' need type
-        type, idx, name, // attrType, attrId, name   done
-        fs_file->name->meta_addr, fs_file->name->meta_seq, // done
-        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags, // used meta_flags
-        size,  // done
-        (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-        meta_mode, gid, uid, md5TextPtr, known,
-        escaped_path, extension);
-        */
-
-
 /*
 if (!TSK_FS_ISDOT(name))
     {
@@ -642,7 +623,6 @@ if (!TSK_FS_ISDOT(name))
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
-    /*
     // Add entry for the slack space.
     // Current conditions for creating a slack file:
     //   - File name is not empty, "." or ".."
@@ -659,48 +639,31 @@ if (!TSK_FS_ISDOT(name))
         if (strlen(extension) > 0) {
             strncat(extension, "-slack", 6);
         }
+        jstring slackNamej = m_jniEnv->NewStringUTF(name); // TODO free?
+
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
-        if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-            free(name);
-            free(escaped_path);
-            return 1;
-        }
-
-        // Run the same insert with the new name, size, and type
-        zSQL = sqlite3_mprintf(
-            "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
-            "VALUES ("
-            "%" PRId64 ",%" PRId64 ","
-            "%" PRId64 ","
-            "%d,"
-            "%d,%d,'%q',"
-            "%" PRIuINUM ",%d,"
-            "%d,%d,%d,%d,"
-            "%" PRId64 ","
-            "%llu,%llu,%llu,%llu,"
-            "%d,%d,%d,NULL,%d,"
-            "'%q','%q')",
-            fsObjId, objId,
+        // "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, 
+        // type, attr_type, attr_id, name, 
+        // meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, 
+        // size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+        jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
+            parObjId, fsObjId,
             dataSourceObjId,
             TSK_DB_FILES_TYPE_SLACK,
-            type, idx, name,
-            fs_file->name->meta_addr, fs_file->name->meta_seq,
-            TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
+            type, idx, slackNamej,
+            fs_file->name->meta_addr, (uint64_t)fs_file->name->meta_seq,
+            fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
             slackSize,
             (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-            meta_mode, gid, uid, known,
-            escaped_path, extension);
+            meta_mode, gid, uid, // md5TextPtr, known,
+            pathj, extj);
+        int64_t slackObjId = (int64_t)objIdj;
 
-        if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
-            free(name);
-            free(escaped_path);
-            sqlite3_free(zSQL);
-            return 1;
+        if (slackObjId < 0) {
+            return TSK_ERR;
         }
     }
-
-    sqlite3_free(zSQL);*/
 
     free(name);
     free(escaped_path);
@@ -898,10 +861,25 @@ TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, 
         return -1;
     }
 
-    // TODO TODO DATABASE CALL
-    printf("#### SKIPPING PAR OBJ ID DATABASE LOOKUP TODO \n");
+    int64_t parObjId;
+
+    if (m_getParentIdMethodID == NULL) {
+        printf("#### Yikes m_addFileSystemMethodID is null...\n");
+        return TSK_ERR;
+    }
+
+    jstring jpath = m_jniEnv->NewStringUTF(parent_path); // TODO free?
+    jstring jname = m_jniEnv->NewStringUTF(parent_name); // TODO free?
+
+    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_getParentIdMethodID,
+        fs_file->name->par_addr, fsObjId, jpath, jname);
+    int64_t objId = (int64_t)objIdj;
+    printf("#### Looked up parent object ID: %lld\n", objId);
     fflush(stdout);
-    int64_t parObjId = 2;
+
+    if (objId < 0) {
+        return -1;
+    }
 
     return parObjId;
 }

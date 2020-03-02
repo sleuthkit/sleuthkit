@@ -161,6 +161,7 @@ class TskAutoDbJava :public TskAuto {
     jmethodID m_addPoolMethodID = NULL;
     jmethodID m_addFileSystemMethodID = NULL;
     jmethodID m_addFileMethodID = NULL;
+    jmethodID m_getParentIdMethodID = NULL;
 
 
     // prevent copying until we add proper logic to handle it

@@ -136,7 +136,7 @@ class JniDbHelper {
 		try {
 			return caseDb.addFileSystemFileJNI(parentObjId, 
 				fsObjId, dataSourceObjId,
-				fsType, // TSK_DB_FILES_TYPE_FS,
+				fsType,
 				attrType, attrId, name,
 				metaAddr, metaSeq,
 				dirType, metaType, dirFlags, metaFlags,
@@ -145,6 +145,15 @@ class JniDbHelper {
 				meta_mode, gid, uid, /// md5TextPtr, known,
 				"", TskData.FileKnown.UNKNOWN,
 				escaped_path, extension, trans);
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+	
+	long findParentObjId(long metaAddr, long fsobjId, String path, String name) {
+		try {
+			return caseDb.findParentObjIdJNI(metaAddr, fsobjId, path, name, trans);
 		} catch (TskCoreException ex) {
 			ex.printStackTrace();
 			return -1;
