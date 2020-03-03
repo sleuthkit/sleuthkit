@@ -99,7 +99,7 @@ public final class Account {
 		 * @param typeName    The type name.
 		 * @param displayName The display name for the type.
 		 */
-		Type(String typeName, String displayName) {
+		public Type(String typeName, String displayName) {
 			this.typeName = typeName;
 			this.displayName = displayName;
 		}
@@ -152,7 +152,7 @@ public final class Account {
 		}
 	}
 
-	Account(long account_id, Account.Type accountType, String typeSpecificId) throws TskCoreException {
+	public Account(long account_id, Account.Type accountType, String typeSpecificId) {
 		this.account_id = account_id;
 		this.accountType = accountType;
 		this.typeSpecificID = typeSpecificId;
