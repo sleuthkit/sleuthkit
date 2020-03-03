@@ -152,7 +152,7 @@ public final class Account {
 		}
 	}
 
-	public Account(long account_id, Account.Type accountType, String typeSpecificId) {
+	Account(long account_id, Account.Type accountType, String typeSpecificId) throws TskCoreException {
 		this.account_id = account_id;
 		this.accountType = accountType;
 		this.typeSpecificID = typeSpecificId;
