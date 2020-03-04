@@ -1373,16 +1373,12 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskattachments.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		
-		TSK_GEO_DISTANCE_FROM_HOME_POINT(142, "TSK_GEO_DISTANCE_FROM_HOME_POINT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskdronehpdistance.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
-	
-		TSK_GEO_DISTANCE_TRAVELED(143, "TSK_GEO_DISTANCE_TRAVELED", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskdronedistancetraveled.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
-		
-		TSK_GEO_TRACKPOINTS(144, "TSK_GEO_TRACKPOINTS",
+		TSK_GEO_TRACKPOINTS(142, "TSK_GEO_TRACKPOINTS",
 			bundle.getString("BlackboardAttribute.tskgeopath.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+		
+		TSK_GEO_WAYPOINTS(143, "TSK_GEO_WAYPOINTS",
+			bundle.getString("BlackboardAttribute.tskgeowaypoints.text"),
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 
 		;
