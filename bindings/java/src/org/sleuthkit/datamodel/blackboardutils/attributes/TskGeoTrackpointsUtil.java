@@ -29,15 +29,15 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.
 import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList.GeoTrackPoint;
 
 /**
- * Utility class for Translating TSK_GEO_TRACKPOINTS attribute values to
- * GeoTrackPointList objects and GeoTrackPointList to BlackboardAttributes.
+ * Utility class for translating TSK_GEO_TRACKPOINTS attributes to
+ * GeoTrackPointList objects and vice versa.
  */
 public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoTrackPointList> {
 
 	private final String moduleName;
 
 	/**
-	 * Constructs a new instance of the Translator Utility.
+	 * Constructs a new instance of the utility.
 	 *
 	 * @param moduleName Name of calling module.
 	 */
@@ -49,7 +49,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 	public BlackboardAttribute toAttribute(GeoTrackPointList value) {
 
 		if (value == null) {
-			throw new IllegalArgumentException("toAttribute was pass a null list.");
+			throw new IllegalArgumentException("Null GeoTrackPointList argument");
 		}
 
 		return new BlackboardAttribute(
@@ -61,7 +61,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 	@Override
 	public GeoTrackPointList fromAttribute(BlackboardAttribute attribute) {
 		if (attribute == null) {
-			throw new IllegalArgumentException("Null value passed to fromAttribute");
+			throw new IllegalArgumentException("Null BlackboardAttribute");
 		}
 
 		BlackboardAttribute.ATTRIBUTE_TYPE type = BlackboardAttribute.ATTRIBUTE_TYPE.fromID(attribute.getAttributeType().getTypeID());
@@ -113,14 +113,14 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		}
 
 		/**
-		 * Construct a new instance with the given list of GeoTrackPoint
+		 * Construct a GeoTrackPointList with the given list of GeoTrackPoint
 		 * objects.
 		 *
 		 * @param points List of track points, cannot be null.
 		 */
 		public GeoTrackPointList(List<GeoTrackPoint> points) {
 			if (points == null) {
-				throw new IllegalArgumentException("NULL list of trackpoints passed to constructor.");
+				throw new IllegalArgumentException("Null List<GeoTrackPoint> argument");
 			}
 
 			this.points = points;
@@ -133,7 +133,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 */
 		public void addPoint(GeoTrackPoint point) {
 			if (points == null) {
-				throw new IllegalArgumentException("Attempted to add NULL value to track point list.");
+				throw new IllegalArgumentException("Null GeoTrackPoint argument");
 			}
 
 			points.add(point);
@@ -240,7 +240,6 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		/**
 		 * A GeoTrackPoint is a Waypoint with more detailed information about
 		 * the point.
-		 *
 		 */
 		public final static class GeoTrackPoint extends TskGeoWaypointsUtil.GeoWaypointList.GeoWaypoint implements Comparable<GeoTrackPointList.GeoTrackPoint> {
 		
