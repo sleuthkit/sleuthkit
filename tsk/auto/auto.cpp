@@ -146,6 +146,10 @@ uint8_t TskAuto::openImageHandle(TSK_IMG_INFO * a_img_info)
 void
  TskAuto::closeImage()
 {
+    for (int i = 0; i < m_poolInfos.size(); i++) {
+        tsk_pool_close(m_poolInfos[i]);
+    }
+
     if ((m_img_info) && (m_internalOpen)) {
         tsk_img_close(m_img_info);
     }
@@ -493,7 +497,10 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         registerError();
         return TSK_ERR;
     }
-    pool->close(pool);
+
+    // Store the pool_info for later use. It will be closed at the end of the add image process.
+    m_poolInfos.push_back(pool);
+
     return TSK_OK;
 }
 
