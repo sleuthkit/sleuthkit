@@ -27,7 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS;
 import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil;
 import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList;
-import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList.GeoTrackPoint;
 
 /**
  * Container class for various types of timeline events

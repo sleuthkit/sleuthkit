@@ -75,7 +75,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addTrack(String trackName, GeoTrackPointList points, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
 		
 		if(points == null) {
-			throw new IllegalArgumentException(String.format("GeoTrackPointList is required to be non-null"));
+			throw new IllegalArgumentException(String.format("addTrack was passed a null list of track points"));
 		}
 		
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
@@ -118,7 +118,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addRoute(String routeName, Long creationTime, GeoWaypointList points, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
 
 		if (points == null) {
-			throw new IllegalArgumentException(String.format("GeoWaypointList object be valid"));
+			throw new IllegalArgumentException(String.format("addRoute was passed a null list of waypoints"));
 		}
 
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
