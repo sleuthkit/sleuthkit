@@ -19,7 +19,6 @@
 package org.sleuthkit.datamodel.blackboardutils.attributes;
 
 import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -33,22 +32,11 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil.Ge
  */
 public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWaypointList> {
 
-	private final String moduleName;
-
-	/**
-	 * Constructs a new instance of the Translator Utility.
-	 *
-	 * @param moduleName Name of calling module.
-	 */
-	public TskGeoWaypointsUtil(String moduleName) {
-		this.moduleName = moduleName;
-	}
-
 	@Override
-	public BlackboardAttribute toAttribute(GeoWaypointList value) {
+	public BlackboardAttribute toAttribute(String moduleName, GeoWaypointList value) {
 
 		if (value == null) {
-			throw new IllegalArgumentException("toAttribute was pass a null list.");
+			throw new IllegalArgumentException("toAttribute was pass a null list");
 		}
 
 		return new BlackboardAttribute(
@@ -60,7 +48,7 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 	@Override
 	public GeoWaypointList fromAttribute(BlackboardAttribute attribute) {
 		if (attribute == null) {
-			throw new IllegalArgumentException("Null value passed to fromAttribute");
+			throw new IllegalArgumentException("fromAttribute was pass a null list");
 		}
 
 		BlackboardAttribute.ATTRIBUTE_TYPE type = BlackboardAttribute.ATTRIBUTE_TYPE.fromID(attribute.getAttributeType().getTypeID());
@@ -88,7 +76,7 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 	}
 
 	/**
-	 * Returns a JSON string can than be used as the TSK_GEO_TRACKPOINTS 
+	 * Returns a JSON string can than be used as the TSK_GEO_TRACKPOINTS
 	 * attribute of the TSK_GPS_TRACK artifact.
 	 *
 	 * @return JSON string
@@ -158,7 +146,7 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 			 */
 			public GeoWaypoint(Double latitude, Double longitude, Double altitude, String name) {
 				if (latitude == null || longitude == null) {
-					throw new IllegalArgumentException("Null cordinate value passed to waypoint constructor");
+					throw new IllegalArgumentException("Constructor was passed null coordinate");
 				}
 
 				this.latitude = latitude;
@@ -194,11 +182,12 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 			public Double getAltitude() {
 				return altitude;
 			}
-			
+
 			/**
-			 * Returns the name for this waypoint.  
-			 * @return	Returns waypoint name, may be null if not available or 
-			 *			applicable.
+			 * Returns the name for this waypoint.
+			 *
+			 * @return	Returns waypoint name, may be null if not available or
+			 *         applicable.
 			 */
 			public String getName() {
 				return name;

@@ -21,29 +21,28 @@ package org.sleuthkit.datamodel.blackboardutils.attributes;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 
 /**
- * An interface for Utility classes to implement for translating BlackboardAttributes
- * to and from a particular format.  Initial use case is for BlackboardAttributes of
- * type SK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON.
+ * An interface for Utility classes to implement for translating
+ * BlackboardAttributes to and from a particular format. Initial use case is for
+ * BlackboardAttributes of type TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON.
  */
 public interface BlackboardAttributeUtil<T> {
 
 	/**
 	 * Translates the value of type T to a attribute.
-	 * 
-	 * @param value Object to Translate to attribute.
-	 * 
+	 *
+	 * @param moduleName	Name of module creating the artifact
+	 * @param value			Object to Translate to attribute
+	 *
 	 * @return BlackboardAttribute created from value
 	 */
-	BlackboardAttribute toAttribute(T value);
-	
+	BlackboardAttribute toAttribute(String moduleName, T value);
+
 	/**
 	 * Translates a attribute to an object of type T.
-	 * 
+	 *
 	 * @param attribute The attribute to be translated to T
-	 * 
+	 *
 	 * @return A new instance of T created from the attribute
 	 */
 	T fromAttribute(BlackboardAttribute attribute);
 }
-
-

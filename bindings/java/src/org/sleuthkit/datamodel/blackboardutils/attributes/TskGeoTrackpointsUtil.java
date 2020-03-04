@@ -19,7 +19,6 @@
 package org.sleuthkit.datamodel.blackboardutils.attributes;
 
 import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -29,27 +28,16 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.
 import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList.GeoTrackPoint;
 
 /**
- * Utility class for Translating TSK_GEO_TRACKPOINTS attribute values to
+ * Utility class for translating TSK_GEO_TRACKPOINTS attribute values to
  * GeoTrackPointList objects and GeoTrackPointList to BlackboardAttributes.
  */
 public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoTrackPointList> {
 
-	private final String moduleName;
-
-	/**
-	 * Constructs a new instance of the Translator Utility.
-	 *
-	 * @param moduleName Name of calling module.
-	 */
-	public TskGeoTrackpointsUtil(String moduleName) {
-		this.moduleName = moduleName;
-	}
-
 	@Override
-	public BlackboardAttribute toAttribute(GeoTrackPointList value) {
+	public BlackboardAttribute toAttribute(String moduleName, GeoTrackPointList value) {
 
 		if (value == null) {
-			throw new IllegalArgumentException("toAttribute was pass a null list.");
+			throw new IllegalArgumentException("toAttribute was passed a null list");
 		}
 
 		return new BlackboardAttribute(
@@ -61,7 +49,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 	@Override
 	public GeoTrackPointList fromAttribute(BlackboardAttribute attribute) {
 		if (attribute == null) {
-			throw new IllegalArgumentException("Null value passed to fromAttribute");
+			throw new IllegalArgumentException("fromAttribute was passed a null attribute");
 		}
 
 		BlackboardAttribute.ATTRIBUTE_TYPE type = BlackboardAttribute.ATTRIBUTE_TYPE.fromID(attribute.getAttributeType().getTypeID());
@@ -78,7 +66,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 	 * @param jsonString JSon string of track points.
 	 *
 	 * @return	Timestamp ordered list of GeoTrackPoints, empty list will be
-	 *         returned if jsonString is null or empty.
+	 *			returned if jsonString is null or empty.
 	 */
 	private static GeoTrackPointList fromJSON(String jsonString) {
 		if (jsonString == null || jsonString.isEmpty()) {
@@ -99,17 +87,17 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 	}
 
 	/**
-	 *	A list of GeoTrackPoints.
+	 * A list of GeoTrackPoints.
 	 */
 	public static class GeoTrackPointList implements Iterable<GeoTrackPointList.GeoTrackPoint> {
 
-		private final List<GeoTrackPoint> points;
+		private final List<GeoTrackPoint> pointList;
 
 		/**
 		 * Construct an empty GeoTrackPointList.
 		 */
 		public GeoTrackPointList() {
-			points = new ArrayList<>();
+			pointList = new ArrayList<>();
 		}
 
 		/**
@@ -120,10 +108,10 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 */
 		public GeoTrackPointList(List<GeoTrackPoint> points) {
 			if (points == null) {
-				throw new IllegalArgumentException("NULL list of trackpoints passed to constructor.");
+				throw new IllegalArgumentException("Constructor was passed a null list");
 			}
 
-			this.points = points;
+			pointList = points;
 		}
 
 		/**
@@ -132,44 +120,45 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 * @param point A point to add to the track point list, cannot be null.
 		 */
 		public void addPoint(GeoTrackPoint point) {
-			if (points == null) {
-				throw new IllegalArgumentException("Attempted to add NULL value to track point list.");
+			if (point == null) {
+				throw new IllegalArgumentException("addPoint was passed a null list");
 			}
 
-			points.add(point);
+			pointList.add(point);
 		}
 
 		/**
 		 * Adds a new point with the given attributes.
 		 *
-		 * @param latitude			Latitude of the trackpoint, required
-		 * @param longitude			Longitude of the trackpoint, required
-		 * @param altitude			Altitude of the trackpoint, maybe null
-		 * @param name				Name of trackpoint, maybe null
-		 * @param velocity			Velocity in meters/sec, maybe null
-		 * @param distanceFromHP	Trackpoint distance from an established "home
-		 *							point", maybe null if not applicable
-		 * @param distanceTraveled	Overall distance traveled in meters at the
-		 *							time this trackpoint was created, maybe null
-		 *							if not applicable
-		 * @param timestamp			Trackpoint creation time, maybe null if not
-		 *							applicable
+		 * @param latitude			    Latitude of the trackpoint, required
+		 * @param longitude			    Longitude of the trackpoint, required
+		 * @param altitude			    Altitude of the trackpoint, maybe null
+		 * @param name				    Name of trackpoint, maybe null
+		 * @param velocity				Velocity in meters/sec, maybe null
+		 * @param distanceFromHomePoint	Track point distance from an established
+		 *                              "home point", may be null if not
+		 *                              applicable
+		 * @param distanceTraveled			   Overall distance traveled in meters at
+		 *                              the time this trackpoint was created,
+		 *                              maybe null if not applicable
+		 * @param timestamp					        Trackpoint creation time, maybe null if
+		 *                              not applicable
 		 */
 		public void addPoint(Double latitude,
 				Double longitude,
 				Double altitude,
 				String name,
 				Double velocity,
-				Double distanceFromHP,
+				Double distanceFromHomePoint,
 				Double distanceTraveled,
 				Long timestamp) {
-			points.add(new GeoTrackPoint(
+			pointList.add(new GeoTrackPoint(
 					latitude,
 					longitude,
 					altitude,
 					name,
 					velocity,
-					distanceFromHP,
+					distanceFromHomePoint,
 					distanceTraveled,
 					timestamp));
 		}
@@ -181,7 +170,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 */
 		@Override
 		public Iterator<GeoTrackPoint> iterator() {
-			return points.iterator();
+			return pointList.iterator();
 		}
 
 		/**
@@ -190,7 +179,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 * @return True if this list contains no points.
 		 */
 		public boolean isEmpty() {
-			return points.isEmpty();
+			return pointList.isEmpty();
 		}
 
 		/**
@@ -234,7 +223,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 * @return List of points sorted by timestamps.
 		 */
 		private List<GeoTrackPoint> getTimeOrderedPoints() {
-			return points.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
+			return pointList.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
 		}
 
 		/**
@@ -243,40 +232,43 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 *
 		 */
 		public final static class GeoTrackPoint extends TskGeoWaypointsUtil.GeoWaypointList.GeoWaypoint implements Comparable<GeoTrackPointList.GeoTrackPoint> {
-		
+
 			private final Double velocity;
-			private final Double distanceFromHP;
+			private final Double distanceFromHomePoint;
 			private final Double distanceTraveled;
 			private final Long timestamp;
 
 			/**
 			 * Constructs a GeoTrackPoint with the given attributes.
 			 *
-			 * @param latitude			      Latitude of the trackpoint, required
-			 * @param longitude			     Longitude of the trackpoint, required
-			 * @param altitude			      Altitude of the trackpoint, maybe null
-			 * @param name				         Name of trackpoint, maybe null
-			 * @param velocity			      Velocity in meters/sec, maybe null
-			 * @param distanceFromHP	  Trackpoint distance from an established
-			 *                         "home point", maybe null if not
-			 *                         applicable
-			 * @param distanceTraveled	Overall distance traveled in meters at
-			 *                         the time this trackpoint was created,
-			 *                         maybe null if not applicable
-			 * @param timestamp			     Trackpoint creation time, maybe null if
-			 *                         not applicable
+			 * @param latitude				Latitude of the track point, required
+			 * @param longitude				Longitude of the track point,
+			 *                              required
+			 * @param altitude			    Altitude of the track point, may be
+			 *                              null
+			 * @param name				    Name of track point, may be null
+			 * @param velocity			    Velocity in meters/sec, may be null
+			 * @param distanceFromHomePoint	Track point distance from an
+			 *                              established "home point", maybe null
+			 *                              if not applicable
+			 * @param distanceTraveled	    Overall distance traveled in meters
+			 *                              at the time this track point was
+			 *                              created, maybe null if not
+			 *                              applicable
+			 * @param timestamp			    Track point creation time, maybe
+			 *                              null if not applicable
 			 */
 			public GeoTrackPoint(Double latitude,
 					Double longitude,
 					Double altitude,
 					String name,
 					Double velocity,
-					Double distanceFromHP,
+					Double distanceFromHomePoint,
 					Double distanceTraveled,
 					Long timestamp) {
 				super(latitude, longitude, altitude, name);
 				this.velocity = velocity;
-				this.distanceFromHP = distanceFromHP;
+				this.distanceFromHomePoint = distanceFromHomePoint;
 				this.distanceTraveled = distanceTraveled;
 				this.timestamp = timestamp;
 			}
@@ -297,8 +289,8 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 			 * @return Double velocity distance from home point, maybe null if
 			 *         not available or applicable
 			 */
-			public Double getDistanceFromHP() {
-				return distanceFromHP;
+			public Double getDistanceFromHomePoint() {
+				return distanceFromHomePoint;
 			}
 
 			/**

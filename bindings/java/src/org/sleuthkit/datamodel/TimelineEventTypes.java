@@ -126,7 +126,7 @@ class TimelineEventTypes {
 	 */
 	static class GPSTrackArtifactEventType extends TimelineEventArtifactTypeSingleDescription {
 		
-		private final TskGeoTrackpointsUtil trackpointUtil = new TskGeoTrackpointsUtil("");
+		private final TskGeoTrackpointsUtil trackpointUtil = new TskGeoTrackpointsUtil();
 		
 		GPSTrackArtifactEventType(int typeID, String displayName, TimelineEventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type descriptionAttribute) {
 			// Passing TSK_GEO_TRACKPOINTS as the "time attribute" as more of a place filler, to avoid any null issues
@@ -144,14 +144,7 @@ class TimelineEventTypes {
 			
 			// Get the waypoint list "start time"
 			GeoTrackPointList pointsList = trackpointUtil.fromAttribute(attribute);
-			Long startTime = null;
-			for(GeoTrackPoint point: pointsList) {
-				// Points are in time order so return the first non-null time stamp
-				startTime = point.getTimeStamp();
-				if (startTime != null) {
-					break;
-				}
-			}
+			Long startTime = pointsList.getStartTime();
 			
 			// If we didn't find a startime do not create an event.
 			if (startTime == null) {

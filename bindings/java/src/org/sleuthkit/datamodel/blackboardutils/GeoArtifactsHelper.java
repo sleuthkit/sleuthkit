@@ -53,8 +53,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcFile) {
 		super(caseDb, moduleName, srcFile);
 		this.programName = programName;
-		trackPointAttributeUtil = new TskGeoTrackpointsUtil(moduleName);
-		waypointsAttributeUtil = new TskGeoWaypointsUtil(moduleName);
+		trackPointAttributeUtil = new TskGeoTrackpointsUtil();
+		waypointsAttributeUtil = new TskGeoWaypointsUtil();
 	}
 
 	/**
@@ -84,7 +84,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), trackName));
 		}
 
-		attributes.add(trackPointAttributeUtil.toAttribute(points));
+		attributes.add(trackPointAttributeUtil.toAttribute(getModuleName(), points));
 
 		if (programName != null) {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
@@ -124,7 +124,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 
-		attributes.add(waypointsAttributeUtil.toAttribute(points));
+		attributes.add(waypointsAttributeUtil.toAttribute(getModuleName(), points));
 		
 		if (routeName != null) {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), routeName));
