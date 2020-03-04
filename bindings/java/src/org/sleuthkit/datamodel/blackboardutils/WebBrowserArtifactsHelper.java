@@ -25,10 +25,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.StringTokenizer;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.Account;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.CommunicationsManager;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -296,6 +297,15 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		BlackboardArtifact webFormAddressArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		
+		CommunicationsManager commManager = this.getSleuthkitCase().getCommunicationsManager();
+		if(StringUtils.isNotBlank(email)) {
+			commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent());
+		}
+
+		if(StringUtils.isNotBlank(phoneNumber)) {
+			commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent());
+		}
 
 		// create artifact
 		webFormAddressArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS);
