@@ -5,6 +5,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
@@ -12,8 +14,10 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  */
 class JniDbHelper {
 	
-	SleuthkitCase caseDb;
-	CaseDbTransaction trans;
+	private SleuthkitCase caseDb;
+	private CaseDbTransaction trans;
+	
+	private Map<Long, Long> fsIdToRootDir = new HashMap<>();
 	
 	JniDbHelper(SleuthkitCase caseDb) {
 		this.caseDb = caseDb;
@@ -91,7 +95,7 @@ class JniDbHelper {
 			return -1;
 		}
 	}
-	// TskData.TSK_POOL_TYPE_ENUM
+
 	long addPool(long parentObjId, int poolType) {
 		try {
 			Pool pool = caseDb.addPool(parentObjId, TskData.TSK_POOL_TYPE_ENUM.valueOf(poolType), trans);
@@ -106,7 +110,7 @@ class JniDbHelper {
 			long rootInum, long firstInum, long lastInum) {
 		try {
 			FileSystem fs = caseDb.addFileSystem(parentObjId, imgOffset, TskData.TSK_FS_TYPE_ENUM.valueOf(fsType), blockSize, blockCount,
-					rootInum, firstInum, lastInum, "", trans);
+					rootInum, firstInum, lastInum, null, trans);
 			return fs.getId();
 		} catch (TskCoreException ex) {
 			ex.printStackTrace();
@@ -114,27 +118,18 @@ class JniDbHelper {
 		}
 	}
 
-	// fs_obj_id, obj_id, data_source_obj_id, type, 
-	// attr_type, attr_id, 
-	// name, 
-	// meta_addr, meta_seq, 
-	// dir_type, 
-	// meta_type, dir_flags, meta_flags, 
-	// size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension)"
 	long addFile(long parentObjId, 
         long fsObjId, long dataSourceObjId,
-        int fsType, // TSK_DB_FILES_TYPE_FS,
+        int fsType,
         int attrType, int attrId, String name,
         long metaAddr, long metaSeq,
         int dirType, int metaType, int dirFlags, int metaFlags,
         long size,
         long crtime, long ctime, long atime, long mtime,
         int meta_mode, int gid, int uid, /// md5TextPtr, known,
-        String escaped_path, String extension
-	
-	) {
+        String escaped_path, String extension) {
 		try {
-			return caseDb.addFileSystemFileJNI(parentObjId, 
+			long objId = caseDb.addFileSystemFileJNI(parentObjId, 
 				fsObjId, dataSourceObjId,
 				fsType,
 				attrType, attrId, name,
@@ -142,18 +137,83 @@ class JniDbHelper {
 				dirType, metaType, dirFlags, metaFlags,
 				size,
 				crtime, ctime, atime, mtime,
-				meta_mode, gid, uid, /// md5TextPtr, known,
-				"", TskData.FileKnown.UNKNOWN,
-				escaped_path, extension, trans);
+				meta_mode, gid, uid,
+				null, TskData.FileKnown.UNKNOWN,
+				escaped_path, extension, 
+				false, trans);
+			
+			if (parentObjId == fsObjId) {
+				fsIdToRootDir.put(fsObjId, objId);
+			}
+			return objId;
 		} catch (TskCoreException ex) {
 			ex.printStackTrace();
 			return -1;
 		}
 	}
 	
-	long findParentObjId(long metaAddr, long fsobjId, String path, String name) {
+	long addLayoutFile(long parentObjId, 
+        long fsObjId, long dataSourceObjId,
+        int fileType,
+		String name, long size) {
 		try {
-			return caseDb.findParentObjIdJNI(metaAddr, fsobjId, path, name, trans);
+			// The file system may be null for layout files
+			Long fsObjIdForDb = fsObjId;
+			if (fsObjId == 0) {
+				fsObjIdForDb = null;
+			}
+			
+			System.out.println("@@@ addLayoutFile: parentObjId: " + parentObjId + ", fsObjId: " + fsObjId + ", dsObjId: " + dataSourceObjId);
+			long objId = caseDb.addFileSystemFileJNI(parentObjId, 
+				fsObjIdForDb, dataSourceObjId,
+				fileType,
+				null, null, name,
+				null, null,
+				TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue(), 
+				TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue(), 
+				TskData.TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue(), 
+				TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
+				size,
+				null, null, null, null,
+				null, null, null,
+				null, TskData.FileKnown.UNKNOWN,
+				null, null, 
+				true, trans);
+			return objId;
+		} catch (TskCoreException ex) {
+			System.out.println("\n@@@ Error in addLayoutFile");
+			ex.printStackTrace();
+			return -1;
+		}
+	}	
+	
+	long addLayoutFileRange(long objId, long byteStart, long byteLen, long seq) {
+		try {
+			caseDb.addLayoutFileRangeJNI(objId, byteStart, byteLen, seq, trans);
+			return 0;
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+	
+	long findParentObjId(long metaAddr, long fsObjId, String path, String name) {
+		try {
+			return caseDb.findParentObjIdJNI(metaAddr, fsObjId, path, name, trans);
+		} catch (TskCoreException ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+	}
+	
+	long addUnallocFsBlockFilesParent(long fsObjId, String name) {
+		try {
+			if (! fsIdToRootDir.containsKey(fsObjId)) {
+				System.out.println("Argh no fs id...");
+				return -1;
+			}
+			VirtualDirectory dir = caseDb.addVirtualDirectory(fsIdToRootDir.get(fsObjId), name, trans);
+			return dir.getId();
 		} catch (TskCoreException ex) {
 			ex.printStackTrace();
 			return -1;

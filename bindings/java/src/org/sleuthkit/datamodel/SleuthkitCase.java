@@ -11002,14 +11002,15 @@ public class SleuthkitCase {
 			preparedStatement.setString(6, md5);
 			preparedStatement.setString(7, sha1);
 			preparedStatement.setString(8, sha256);
-			preparedStatement.setString(9, "");
+			preparedStatement.setString(9, null);
 			connection.executeUpdate(preparedStatement);
 
 			// Add a row to data_source_info
-			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO);
+			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO_WITH_ACQ_DETAIL);
 			preparedStatement.setLong(1, newObjId);
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
+			preparedStatement.setString(4, "");
 			connection.executeUpdate(preparedStatement);
 
 			return newObjId;
@@ -11064,16 +11065,17 @@ public class SleuthkitCase {
 	}
 	
 	long addFileSystemFileJNI(long parentObjId, 
-			long fsObjId, long dataSourceObjId,
+			Long fsObjId, long dataSourceObjId,
 			int fsType,
-			int attrType, int attrId, String name,
-			long metaAddr, long metaSeq,
+			Integer attrType, Integer attrId, String name,
+			Long metaAddr, Long metaSeq,
 			int dirType, int metaType, int dirFlags, int metaFlags,
 			long size,
-			long crtime, long ctime, long atime, long mtime,
-			int meta_mode, int gid, int uid,
+			Long crtime, Long ctime, Long atime, Long mtime,
+			Integer meta_mode, Integer gid, Integer uid,
 			String md5, TskData.FileKnown known,
-			String escaped_path, String extension, CaseDbTransaction transaction) throws TskCoreException {
+			String escaped_path, String extension, 
+			boolean hasLayout, CaseDbTransaction transaction) throws TskCoreException {
 
 		Statement queryStatement = null;
 		try {
@@ -11089,34 +11091,88 @@ public class SleuthkitCase {
 			//                        mode, gid, uid, md5, known, parent_path, extension)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE_All_FIELDS);
 			statement.clearParameters();
-			statement.setLong(1, fsObjId);					// fs_obj_id
+			if (fsObjId != null) {
+				statement.setLong(1, fsObjId);					// fs_obj_id
+			} else {
+				statement.setNull(1, java.sql.Types.BIGINT);
+			}
 			statement.setLong(2, objectId);					// obj_id 
 			statement.setLong(3, dataSourceObjId);			// data_source_obj_id 
 			statement.setShort(4, (short)fsType);	        // type
-			statement.setShort(5, (short)attrType);		    // attr_type
-			statement.setInt(6, attrId);					// attr_id
+			if (attrType != null) {
+				statement.setShort(5, attrType.shortValue());  // attr_type
+			} else {
+				statement.setNull(5, java.sql.Types.SMALLINT);
+			}
+			if (attrId != null) {
+				statement.setInt(6, attrId);				// attr_id
+			} else {
+				statement.setNull(6, java.sql.Types.INTEGER);
+			}
 			statement.setString(7, name);					// name
-			statement.setLong(8, metaAddr);					// meta_addr
-			statement.setInt(9, (int)metaSeq);				// meta_seq
+			if (metaAddr != null) {
+				statement.setLong(8, metaAddr);				// meta_addr
+			} else {
+				statement.setNull(8, java.sql.Types.BIGINT);
+			}
+			if (metaSeq != null) {
+				statement.setInt(9, metaSeq.intValue());	// meta_seq
+			} else {
+				statement.setNull(9, java.sql.Types.INTEGER);
+			}
 			statement.setShort(10, (short)dirType);			// dir_type
 			statement.setShort(11, (short)metaType);		// meta_type
 			statement.setShort(12, (short)dirFlags);		// dir_flags
 			statement.setShort(13, (short)metaFlags);		// meta_flags
 			statement.setLong(14, size < 0 ? 0 : size);     // size
-			statement.setLong(15, ctime);                   // ctime
-			statement.setLong(16, crtime);                  // crtime
-			statement.setLong(17, atime);                   // atime
-			statement.setLong(18, mtime);                   // mtime
-			statement.setInt(19, meta_mode);                // mode
-			statement.setInt(20, gid);                      // gid
-			statement.setInt(21, uid);                      // uid
+			if (ctime != null) {
+				statement.setLong(15, ctime);               // ctime
+			} else {
+				statement.setNull(15, java.sql.Types.BIGINT);
+			}
+			if (crtime != null) {
+				statement.setLong(16, crtime);              // crtime
+			} else {
+				statement.setNull(16, java.sql.Types.BIGINT);
+			}
+			if (atime != null) {
+				statement.setLong(17, atime);               // atime
+			} else {
+				statement.setNull(17, java.sql.Types.BIGINT);
+			}
+			if (mtime != null) {
+				statement.setLong(18, mtime);               // mtime
+			} else {
+				statement.setNull(18, java.sql.Types.BIGINT);
+			}
+			if (meta_mode != null) {
+				statement.setLong(19, meta_mode);               // mode
+			} else {
+				statement.setNull(19, java.sql.Types.BIGINT);
+			}
+			if (gid != null) {
+				statement.setLong(20, gid);               // gid
+			} else {
+				statement.setNull(20, java.sql.Types.BIGINT);
+			}
+			if (uid != null) {
+				statement.setLong(21, uid);               // uid
+			} else {
+				statement.setNull(21, java.sql.Types.BIGINT);
+			}
 			statement.setString(22, md5);                   // md5
 			statement.setInt(23, known.getFileKnownValue());// known
 			statement.setString(24, escaped_path);          // parent_path
 			statement.setString(25, extension);             // extension
+			if (hasLayout) {
+				statement.setInt(26, 1);                    // has_layout
+			} else {
+				statement.setNull(26, java.sql.Types.INTEGER);
+			}
 			connection.executeUpdate(statement);
 
-			if (TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType() != fsType
+			if (! hasLayout
+					&& TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType() != fsType
 					&& (!name.equals(".")) && (!name.equals(".."))) {
 				TimelineManager timelineManager = getTimelineManager();
 				DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, name, 
@@ -11134,6 +11190,24 @@ public class SleuthkitCase {
 			throw new TskCoreException("Failed to add file system file", ex);
 		} finally {
 			closeStatement(queryStatement);
+		}
+	}
+	
+	void addLayoutFileRangeJNI(long objId, long byteStart, long byteLen, 
+			long seq, CaseDbTransaction transaction) throws TskCoreException {
+		try {
+			transaction.acquireSingleUserCaseWriteLock();
+			CaseDbConnection connection = transaction.getConnection();
+			
+			PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+			prepStmt.clearParameters();
+			prepStmt.setLong(1, objId); 
+			prepStmt.setLong(2, byteStart);
+			prepStmt.setLong(3, byteLen);
+			prepStmt.setLong(4, seq);
+			connection.executeUpdate(prepStmt);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding layout range to file with obj ID " + objId, ex);
 		}
 	}
 
@@ -11232,8 +11306,8 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, extension)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
-		INSERT_FILE_SYSTEM_FILE_All_FIELDS("INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE_SYSTEM_FILE_All_FIELDS("INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
@@ -11346,6 +11420,7 @@ public class SleuthkitCase {
 		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (?, ?, ?)"),
+		INSERT_DATA_SOURCE_INFO_WITH_ACQ_DETAIL("INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),

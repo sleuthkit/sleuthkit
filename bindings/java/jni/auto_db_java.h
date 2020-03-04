@@ -162,7 +162,16 @@ class TskAutoDbJava :public TskAuto {
     jmethodID m_addFileSystemMethodID = NULL;
     jmethodID m_addFileMethodID = NULL;
     jmethodID m_getParentIdMethodID = NULL;
+    jmethodID m_addUnallocParentMethodID = NULL;
+    jmethodID m_addLayoutFileMethodID = NULL;
+    jmethodID m_addLayoutFileRangeMethodID = NULL;
 
+    vector<TSK_DB_FS_INFO> m_savedFsInfo;
+    vector<TSK_DB_VS_INFO> m_savedVsInfo;
+    vector<TSK_DB_VS_PART_INFO> m_savedVsPartInfo;
+    vector<TSK_DB_OBJECT> m_savedObjects;
+    void saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_TYPE_ENUM type);
+    TSK_RETVAL_ENUM getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info);
 
     // prevent copying until we add proper logic to handle it
     TskAutoDbJava(const TskAutoDbJava&);
@@ -170,9 +179,9 @@ class TskAutoDbJava :public TskAuto {
 
     //internal structure to keep track of temp. unalloc block range
     typedef struct _UNALLOC_BLOCK_WLK_TRACK {
-        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDbJava & tskAutoDbJava, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t minChunkSize, int64_t maxChunkSize)
+        _UNALLOC_BLOCK_WLK_TRACK(TskAutoDbJava & tskAutoDbJava, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t minChunkSize, int64_t maxChunkSize)
             : tskAutoDbJava(tskAutoDbJava),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), minChunkSize(minChunkSize), maxChunkSize(maxChunkSize), prevBlock(0), isStart(true), nextSequenceNo(0) {}
-        const TskAutoDbJava & tskAutoDbJava;
+        TskAutoDbJava & tskAutoDbJava;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
@@ -216,16 +225,16 @@ class TskAutoDbJava :public TskAuto {
         const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
         int64_t fsObjId, int64_t parObjId,
         int64_t& objId, int64_t dataSourceObjId);
-    //TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
-    //    const int64_t fsObjId, const uint64_t size,
-    //    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
-    //    int64_t dataSourceObjId);
-    //TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
-    //    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
-    //    int64_t dataSourceObjId);
-    //TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
-    //    vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
-    //    int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
+        const int64_t fsObjId, const uint64_t size,
+        vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+        int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
+        vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+        int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
+        vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
+        int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
 
 };
