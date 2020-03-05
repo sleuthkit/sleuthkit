@@ -140,222 +140,147 @@ class CaseDatabaseFactory {
 	 */
 	private void addTables(Connection conn) throws TskCoreException {
 		try (Statement stmt = conn.createStatement()) {
-			// The UNIQUE here on the object ID is to create an index
-			stmt.execute("CREATE TABLE tsk_objects (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, par_obj_id " + dbQueryHelper.getBigIntType() 
-					+ ", type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) REFERENCES tsk_objects (obj_id) ON DELETE CASCADE)");
-			
-			stmt.execute("CREATE TABLE tsk_image_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, type INTEGER, ssize INTEGER, " 
-					+ "tzone TEXT, size " + dbQueryHelper.getBigIntType() + ", md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE tsk_image_names (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, name TEXT NOT NULL, "
-					+ "sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE tsk_vs_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, vs_type INTEGER NOT NULL, "
-					+ "img_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, block_size " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE data_source_info (obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, device_id TEXT NOT NULL, "
-					+ "time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE tsk_fs_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "img_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, fs_type INTEGER NOT NULL, "
-					+ "block_size " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "block_count " + dbQueryHelper.getBigIntType() + " NOT NULL, root_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "first_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, last_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE tsk_files (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "fs_obj_id " + dbQueryHelper.getBigIntType() + ", data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "attr_type INTEGER, attr_id INTEGER, " 
-					+ "name TEXT NOT NULL, meta_addr " + dbQueryHelper.getBigIntType() + ", meta_seq " + dbQueryHelper.getBigIntType() + ", "
-					+ "type INTEGER, has_layout INTEGER, has_path INTEGER, "
-					+ "dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size " + dbQueryHelper.getBigIntType() + ", "
-					+ "ctime " + dbQueryHelper.getBigIntType() + ", "
-					+ "crtime " + dbQueryHelper.getBigIntType() + ", atime " + dbQueryHelper.getBigIntType() + ", "
-					+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, "
-					+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
-            
-			stmt.execute("CREATE TABLE tsk_files_path (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, path TEXT NOT NULL, "
-					+ "encoding_type INTEGER NOT NULL, FOREIGN KEY(encoding_type) references file_encoding_types(encoding_type), "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE tsk_files_derived (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "derived_id " + dbQueryHelper.getBigIntType() + " NOT NULL, rederive TEXT, "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-			
-			stmt.execute("CREATE TABLE tsk_files_derived_method (derived_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ "tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)");
-       
-			stmt.execute("CREATE TABLE tag_names (tag_name_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, display_name TEXT UNIQUE, "
-					+ "description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)");
-
-			stmt.execute("CREATE TABLE blackboard_artifact_types (artifact_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "type_name TEXT NOT NULL, display_name TEXT)");
- 
-			stmt.execute("CREATE TABLE blackboard_attribute_types (attribute_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)");
-			
-			stmt.execute("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
-					+ "review_status_name TEXT NOT NULL, "
-					+ "display_name TEXT NOT NULL)");
-            
-			stmt.execute("CREATE TABLE blackboard_artifacts (artifact_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "artifact_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "review_status_id INTEGER NOT NULL, "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
-					+ "FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))");
-			
-			/* Binary representation of BYTEA is a bunch of bytes, which could
-			* include embedded nulls so we have to pay attention to field length.
-			* http://www.postgresql.org/docs/9.4/static/libpq-example.html
-			*/
-			stmt.execute("CREATE TABLE blackboard_attributes (artifact_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "artifact_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "source TEXT, context TEXT, attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "value_type INTEGER NOT NULL, value_byte " + dbQueryHelper.getBlobType() + ", "
-					+ "value_text TEXT, value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", value_double NUMERIC(20, 10), "
-					+ "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
-					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
-            
-			stmt.execute("CREATE TABLE tsk_vs_parts (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "addr " + dbQueryHelper.getBigIntType() + " NOT NULL, start " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "length " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ dbQueryHelper.getVSDescColName() + " TEXT, "
-					+ "flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");
-            
-			stmt.execute("CREATE TABLE tsk_pool_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");
-            
-			stmt.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
-            
-			stmt.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
-            
-			stmt.execute("CREATE TABLE ingest_modules (ingest_module_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, "
-					+ "version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id) ON DELETE CASCADE);");
-            
-			stmt.execute("CREATE TABLE ingest_jobs (ingest_job_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, host_name TEXT NOT NULL, "
-					+ "start_date_time " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "end_date_time " + dbQueryHelper.getBigIntType() + " NOT NULL, status_id INTEGER NOT NULL, "
-					+ "settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id) ON DELETE CASCADE);");
-            
-			stmt.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, "
-					+ "pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), "
-					+ "FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id) ON DELETE CASCADE);");
-            
-			stmt.execute("CREATE TABLE reports (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, path TEXT NOT NULL, "
-					+ "crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");
-			
-			stmt.execute("CREATE TABLE account_types (account_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
-            
-			stmt.execute("CREATE TABLE accounts (account_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL, "
-					+ "UNIQUE(account_type_id, account_unique_identifier), "
-					+ "FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))");
-            
-			stmt.execute("CREATE TABLE account_relationships (relationship_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, "
-					+ "relationship_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "date_time " + dbQueryHelper.getBigIntType() + ", relationship_type INTEGER NOT NULL, "
-					+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "UNIQUE(account1_id, account2_id, relationship_source_obj_id), "
-					+ "FOREIGN KEY(account1_id) REFERENCES accounts(account_id), "
-					+ "FOREIGN KEY(account2_id) REFERENCES accounts(account_id), "
-					+ "FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE tsk_event_types ("
-					+ " event_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY,"
-					+ " display_name TEXT UNIQUE NOT NULL , "
-					+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
-             
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(0, 'Event Types', null)");
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(1, 'File System', 0)");
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(2, 'Web Activity', 0)");
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(3, 'Misc Types', 0)");
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(4, 'Modified', 1)");
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(5, 'Accessed', 1)");
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(6, 'Created', 1)");
-			stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(7, 'Changed', 1)");
-			/*
-			* Regarding the timeline event tables schema, note that several columns
-			* in the tsk_event_descriptions table seem, at first glance, to be
-			* attributes of events rather than their descriptions and would appear
-			* to belong in tsk_events table instead. The rationale for putting the
-			* data source object ID, content object ID, artifact ID and the flags
-			* indicating whether or not the event source has a hash set hit or is
-			* tagged were motivated by the fact that these attributes are identical
-			* for each event in a set of file system file MAC time events. The
-			* decision was made to avoid duplication and save space by placing this
-			* data in the tsk_event-descriptions table.
-			*/			
-			stmt.execute(
-				"CREATE TABLE tsk_event_descriptions ( "
-				+ " event_description_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ " full_description TEXT NOT NULL, "
-				+ " med_description TEXT, "
-				+ " short_description TEXT,"
-				+ " data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ " content_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ " artifact_id " + dbQueryHelper.getBigIntType() + ", "
-				+ " hash_hit INTEGER NOT NULL, " //boolean 
-				+ " tagged INTEGER NOT NULL, " //boolean 
-				+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
-				+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-				+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE,"
-				+ " UNIQUE (full_description, content_obj_id, artifact_id))");
-            
-			stmt.execute(
-				"CREATE TABLE tsk_events ("
-				+ " event_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ " event_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
-				+ " event_description_id " + dbQueryHelper.getBigIntType() + " NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ON DELETE CASCADE ,"
-				+ " time " + dbQueryHelper.getBigIntType() + " NOT NULL , "
-				+ " UNIQUE (event_type_id, event_description_id, time))");
-				
-			stmt.execute("CREATE TABLE tsk_examiners (examiner_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
-            
-			stmt.execute("CREATE TABLE content_tags (tag_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, tag_name_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "comment TEXT NOT NULL, begin_byte_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "end_byte_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "examiner_id " + dbQueryHelper.getBigIntType() + ", "
-					+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE blackboard_artifact_tags (tag_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-					+ "artifact_id " + dbQueryHelper.getBigIntType() + " NOT NULL, tag_name_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "comment TEXT NOT NULL,  examiner_id " + dbQueryHelper.getBigIntType() + ", "
-					+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)");
-            
-			stmt.execute("CREATE TABLE tsk_file_layout (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "byte_start " + dbQueryHelper.getBigIntType() + " NOT NULL, byte_len " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-					+ "sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");
+			createFileTables(stmt);
+			createArtifactTables(stmt);
+			createTagTables(stmt);
+			createIngestTables(stmt);
+			createAccountTables(stmt);
+			createEventTables(stmt);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing tables", ex);
 		}
+	}
+	
+	private void createFileTables(Statement stmt) throws SQLException {
+		// The UNIQUE here on the object ID is to create an index
+		stmt.execute("CREATE TABLE tsk_objects (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, par_obj_id " + dbQueryHelper.getBigIntType() 
+				+ ", type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) REFERENCES tsk_objects (obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_image_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, type INTEGER, ssize INTEGER, " 
+				+ "tzone TEXT, size " + dbQueryHelper.getBigIntType() + ", md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_image_names (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, name TEXT NOT NULL, "
+				+ "sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_vs_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, vs_type INTEGER NOT NULL, "
+				+ "img_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, block_size " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_vs_parts (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "addr " + dbQueryHelper.getBigIntType() + " NOT NULL, start " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "length " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ dbQueryHelper.getVSDescColName() + " TEXT, "
+				+ "flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");		
+		
+		stmt.execute("CREATE TABLE tsk_pool_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "pool_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");
+
+		stmt.execute("CREATE TABLE data_source_info (obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, device_id TEXT NOT NULL, "
+				+ "time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_fs_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "img_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, fs_type INTEGER NOT NULL, "
+				+ "block_size " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "block_count " + dbQueryHelper.getBigIntType() + " NOT NULL, root_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "first_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, last_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_files (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "fs_obj_id " + dbQueryHelper.getBigIntType() + ", data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "attr_type INTEGER, attr_id INTEGER, " 
+				+ "name TEXT NOT NULL, meta_addr " + dbQueryHelper.getBigIntType() + ", meta_seq " + dbQueryHelper.getBigIntType() + ", "
+				+ "type INTEGER, has_layout INTEGER, has_path INTEGER, "
+				+ "dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size " + dbQueryHelper.getBigIntType() + ", "
+				+ "ctime " + dbQueryHelper.getBigIntType() + ", "
+				+ "crtime " + dbQueryHelper.getBigIntType() + ", atime " + dbQueryHelper.getBigIntType() + ", "
+				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, "
+				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
+
+		stmt.execute("CREATE TABLE tsk_files_path (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, path TEXT NOT NULL, "
+				+ "encoding_type INTEGER NOT NULL, FOREIGN KEY(encoding_type) references file_encoding_types(encoding_type), "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_files_derived (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "derived_id " + dbQueryHelper.getBigIntType() + " NOT NULL, rederive TEXT, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE tsk_files_derived_method (derived_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)");		
+		
+		stmt.execute("CREATE TABLE tsk_file_layout (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "byte_start " + dbQueryHelper.getBigIntType() + " NOT NULL, byte_len " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");
+		
+		stmt.execute("CREATE TABLE reports (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, path TEXT NOT NULL, "
+				+ "crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE);");		
+	}
+	
+	private void createArtifactTables(Statement stmt) throws SQLException {
+		stmt.execute("CREATE TABLE blackboard_artifact_types (artifact_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "type_name TEXT NOT NULL, display_name TEXT)");
+
+		stmt.execute("CREATE TABLE blackboard_attribute_types (attribute_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)");
+
+		stmt.execute("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
+				+ "review_status_name TEXT NOT NULL, "
+				+ "display_name TEXT NOT NULL)");
+
+		stmt.execute("CREATE TABLE blackboard_artifacts (artifact_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "artifact_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "review_status_id INTEGER NOT NULL, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
+				+ "FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))");
+
+		/* Binary representation of BYTEA is a bunch of bytes, which could
+		* include embedded nulls so we have to pay attention to field length.
+		* http://www.postgresql.org/docs/9.4/static/libpq-example.html
+		*/
+		stmt.execute("CREATE TABLE blackboard_attributes (artifact_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "artifact_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "source TEXT, context TEXT, attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "value_type INTEGER NOT NULL, value_byte " + dbQueryHelper.getBlobType() + ", "
+				+ "value_text TEXT, value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", value_double NUMERIC(20, 10), "
+				+ "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
+				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");		
+	}
+	
+	private void createTagTables(Statement stmt) throws SQLException {
+		stmt.execute("CREATE TABLE tag_names (tag_name_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, display_name TEXT UNIQUE, "
+				+ "description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)");
+		
+		stmt.execute("CREATE TABLE tsk_examiners (examiner_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
+
+		stmt.execute("CREATE TABLE content_tags (tag_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, tag_name_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "comment TEXT NOT NULL, begin_byte_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "end_byte_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "examiner_id " + dbQueryHelper.getBigIntType() + ", "
+				+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)");
+
+		stmt.execute("CREATE TABLE blackboard_artifact_tags (tag_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "artifact_id " + dbQueryHelper.getBigIntType() + " NOT NULL, tag_name_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "comment TEXT NOT NULL,  examiner_id " + dbQueryHelper.getBigIntType() + ", "
+				+ "FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id) ON DELETE CASCADE)");
 	}
 	
 	/**
@@ -399,6 +324,100 @@ class CaseDatabaseFactory {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);
 		}
+	}
+	
+	private void createIngestTables(Statement stmt) throws SQLException {
+		stmt.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
+            
+		stmt.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
+
+		stmt.execute("CREATE TABLE ingest_modules (ingest_module_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, "
+				+ "version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id) ON DELETE CASCADE);");
+
+		stmt.execute("CREATE TABLE ingest_jobs (ingest_job_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, host_name TEXT NOT NULL, "
+				+ "start_date_time " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "end_date_time " + dbQueryHelper.getBigIntType() + " NOT NULL, status_id INTEGER NOT NULL, "
+				+ "settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id) ON DELETE CASCADE);");
+
+		stmt.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, "
+				+ "pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), "
+				+ "FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id) ON DELETE CASCADE);");
+	}
+	
+	private void createAccountTables(Statement stmt) throws SQLException {
+		stmt.execute("CREATE TABLE account_types (account_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
+
+		stmt.execute("CREATE TABLE accounts (account_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL, "
+				+ "UNIQUE(account_type_id, account_unique_identifier), "
+				+ "FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))");
+
+		stmt.execute("CREATE TABLE account_relationships (relationship_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, "
+				+ "relationship_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "date_time " + dbQueryHelper.getBigIntType() + ", relationship_type INTEGER NOT NULL, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "UNIQUE(account1_id, account2_id, relationship_source_obj_id), "
+				+ "FOREIGN KEY(account1_id) REFERENCES accounts(account_id), "
+				+ "FOREIGN KEY(account2_id) REFERENCES accounts(account_id), "
+				+ "FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+	}
+	
+	private void createEventTables(Statement stmt) throws SQLException {
+		stmt.execute("CREATE TABLE tsk_event_types ("
+				+ " event_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY,"
+				+ " display_name TEXT UNIQUE NOT NULL , "
+				+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
+
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(0, 'Event Types', null)");
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(1, 'File System', 0)");
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(2, 'Web Activity', 0)");
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(3, 'Misc Types', 0)");
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(4, 'Modified', 1)");
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(5, 'Accessed', 1)");
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(6, 'Created', 1)");
+		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(7, 'Changed', 1)");
+		/*
+		* Regarding the timeline event tables schema, note that several columns
+		* in the tsk_event_descriptions table seem, at first glance, to be
+		* attributes of events rather than their descriptions and would appear
+		* to belong in tsk_events table instead. The rationale for putting the
+		* data source object ID, content object ID, artifact ID and the flags
+		* indicating whether or not the event source has a hash set hit or is
+		* tagged were motivated by the fact that these attributes are identical
+		* for each event in a set of file system file MAC time events. The
+		* decision was made to avoid duplication and save space by placing this
+		* data in the tsk_event-descriptions table.
+		*/			
+		stmt.execute(
+			"CREATE TABLE tsk_event_descriptions ( "
+			+ " event_description_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+			+ " full_description TEXT NOT NULL, "
+			+ " med_description TEXT, "
+			+ " short_description TEXT,"
+			+ " data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+			+ " content_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+			+ " artifact_id " + dbQueryHelper.getBigIntType() + ", "
+			+ " hash_hit INTEGER NOT NULL, " //boolean 
+			+ " tagged INTEGER NOT NULL, " //boolean 
+			+ " FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
+			+ " FOREIGN KEY(content_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+			+ " FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE,"
+			+ " UNIQUE (full_description, content_obj_id, artifact_id))");
+
+		stmt.execute(
+			"CREATE TABLE tsk_events ("
+			+ " event_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+			+ " event_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL REFERENCES tsk_event_types(event_type_id) ,"
+			+ " event_description_id " + dbQueryHelper.getBigIntType() + " NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ON DELETE CASCADE ,"
+			+ " time " + dbQueryHelper.getBigIntType() + " NOT NULL , "
+			+ " UNIQUE (event_type_id, event_description_id, time))");			
 	}
 	
 	/**
