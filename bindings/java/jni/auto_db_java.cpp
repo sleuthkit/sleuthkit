@@ -739,6 +739,7 @@ if (!TSK_FS_ISDOT(name))
             strncat(extension, "-slack", 6);
         }
         jstring slackNamej = m_jniEnv->NewStringUTF(name); // TODO free?
+        jstring slackExtJ = m_jniEnv->NewStringUTF(extension); // TODO free?
 
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
@@ -752,11 +753,11 @@ if (!TSK_FS_ISDOT(name))
             TSK_DB_FILES_TYPE_SLACK,
             type, idx, slackNamej,
             fs_file->name->meta_addr, (uint64_t)fs_file->name->meta_seq,
-            fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+            TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
             slackSize,
             (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
             meta_mode, gid, uid, // md5TextPtr, known,
-            pathj, extj);
+            pathj, slackExtJ);
         int64_t slackObjId = (int64_t)objIdj;
 
         if (slackObjId < 0) {

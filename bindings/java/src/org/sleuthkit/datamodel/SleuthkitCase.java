@@ -11125,13 +11125,13 @@ public class SleuthkitCase {
 			statement.setShort(12, (short)dirFlags);		// dir_flags
 			statement.setShort(13, (short)metaFlags);		// meta_flags
 			statement.setLong(14, size < 0 ? 0 : size);     // size
-			if (ctime != null) {
-				statement.setLong(15, ctime);               // ctime
+			if (crtime != null) {
+				statement.setLong(15, crtime);              // crtime
 			} else {
 				statement.setNull(15, java.sql.Types.BIGINT);
 			}
-			if (crtime != null) {
-				statement.setLong(16, crtime);              // crtime
+			if (ctime != null) {
+				statement.setLong(16, ctime);               // ctime
 			} else {
 				statement.setNull(16, java.sql.Types.BIGINT);
 			}
