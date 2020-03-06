@@ -52,8 +52,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *                    null. If a program name is supplied, it will be added
 	 *                    to each artifact that is created as a TSK_PROG_NAME
 	 *                    attribute.
-	 * @param srcContent  The source content for the artifacts, i.e., a file
-	 *                    within a data source or a data source.
+	 * @param srcContent  The source content for the artifacts, i.e., either a
+	 *                    file within a data source or a data source.
 	 */
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcContent) {
 		super(caseDb, moduleName, srcContent);
@@ -66,9 +66,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 * Adds a TSK_GPS_TRACK artifact to the case database. A Global Positioning
 	 * System (GPS) track artifact records the track, or path, of a GPS-enabled
 	 * device as a connected series of track points. A track point is a location
-	 * in a geographic coordinate system (see
-	 * https://en.wikipedia.org/wiki/Geographic_coordinate_system) where the
-	 * coordinates are latitude, longitude and altitude (elevation).
+	 * in a geographic coordinate system with latitude, longitude and altitude
+	 * (elevation) axes.
 	 *
 	 * @param trackName      The name of the GPS track, may be null.
 	 * @param trackPoints    The track points that make up the track.
@@ -82,7 +81,6 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *                             the blackboard.
 	 */
 	public BlackboardArtifact addTrack(String trackName, GeoTrackPointList trackPoints, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
-
 		if (trackPoints == null) {
 			throw new IllegalArgumentException(String.format("addTrack was passed a null list of track points"));
 		}
@@ -114,10 +112,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	/**
 	 * Adds a TSK_GPS_ROUTE artifact to the case database. A Global Positioning
 	 * System (GPS) route artifact records one or more waypoints entered into a
-	 * GPS-enabled navigation device as a route by a user. A waypoint is a
-	 * location in a geographic coordinate system (see
-	 * https://en.wikipedia.org/wiki/Geographic_coordinate_system) where the
-	 * coordinates are latitude, longitude and altitude (elevation).
+	 * GPS-enabled device as a route as a route to be navigated from waypoint to
+	 * waypoint. A waypoint is a location in a geographic coordinate system with
+	 * latitude, longitude and altitude (elevation) axes.
 	 *
 	 * @param routeName      The name of the GPS route, may be null.
 	 * @param creationTime   The time at which the route was created as
@@ -134,7 +131,6 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *                             the blackboard.
 	 */
 	public BlackboardArtifact addRoute(String routeName, Long creationTime, GeoWaypointList wayPoints, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
-
 		if (wayPoints == null) {
 			throw new IllegalArgumentException(String.format("addRoute was passed a null list of waypoints"));
 		}
@@ -166,5 +162,4 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 		return artifact;
 	}
-
 }

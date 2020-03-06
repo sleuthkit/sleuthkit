@@ -28,22 +28,19 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.
 import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList.GeoTrackPoint;
 
 /**
- * A utility class for converting between a JSON-valued TSK_GEO_TRACKPOINTS
- * attribute and a GeoTrackPointList object. A GeoTrackPointList is a collection
- * of GeoTrackPoint objects. A GeoTrackPoint object represents a track point,
- * which is a location in a geographic coordinate system (see
- * https://en.wikipedia.org/wiki/Geographic_coordinate_system) where the
- * coordinates are latitude, longitude and altitude (elevation).
+ * A utility class for converting between a TSK_GEO_TRACKPOINTS attribute and a
+ * GeoTrackPointList. A GeoTrackPointList is a collection of GeoTrackPoints. A
+ * GeoTrackPoint represents a track point, which is a location in a geographic
+ * coordinate system with latitude, longitude and altitude (elevation) axes.
  *
- * A TSK_GEO_TRACKPOINTS atrribute is typically attached to a TSK_GPS_TRACK
- * artifact. A TSK_GPS_TRACK artifact records a track, or path, of a GPS-enabled
- * device as a connected series of track points.
+ * A TSK_GPS_TRACK artifact uses a TSK_GEO_TRACKPOINTS attribute to record a
+ * track, or path, of a GPS-enabled device as a connected series of track points
+ * .
  */
 public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskGeoTrackpointsUtil.GeoTrackPointList> {
 
 	@Override
 	public BlackboardAttribute toAttribute(String moduleName, GeoTrackPointList value) {
-
 		if (value == null) {
 			throw new IllegalArgumentException("toAttribute was passed a null list");
 		}
@@ -69,27 +66,26 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 	}
 
 	/**
-	 * Constructs a GeoTrackPointList object from a GeoTrackPointList serailized
-	 * as JSON.
+	 * Constructs a GeoTrackPointList object from its JSON representation.
 	 *
-	 * @param trackPointsJson A JSON representation of a GeoTrackPointList.
+	 * @param json A JSON representation of a GeoTrackPointList.
 	 *
 	 * @return	The GeoTrackPointList object.
 	 */
-	private static GeoTrackPointList fromJSON(String trackPointsJson) {
-		if (trackPointsJson == null || trackPointsJson.isEmpty()) {
+	private static GeoTrackPointList fromJSON(String json) {
+		if (json == null || json.isEmpty()) {
 			throw new IllegalArgumentException("fromJSON was passed a empty or null JSON string");
 		}
 
-		return (new Gson()).fromJson(trackPointsJson, GeoTrackPointList.class);
+		return (new Gson()).fromJson(json, GeoTrackPointList.class);
 	}
 
 	/**
-	 * Serializes a GeoTrackPointList object as JSON.
+	 * Creates a JSON representation of a GeoTrackPointList object.
 	 *
 	 * @param trackPoints A GeoTrackPointList object.
 	 *
-	 * @return The JSON serialization of the GeoTrackPointList.
+	 * @return The JSON representation of the GeoTrackPointList object.
 	 */
 	private static String toJSON(GeoTrackPointList trackPoints) {
 		if (trackPoints == null) {
@@ -101,10 +97,9 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 	}
 
 	/**
-	 * A collection of GeoTrackPoint objects. A GeoTrackPoint object represents
-	 * a track point, which is a location in a geographic coordinate system (see
-	 * https://en.wikipedia.org/wiki/Geographic_coordinate_system) where the
-	 * coordinates are latitude, longitude and altitude (elevation).
+	 * A list of GeoTrackPoints. A GeoTrackPoint represents a track point, which
+	 * is a location in a geographic coordinate system with latitude, longitude
+	 * and altitude (elevation) axes.
 	 */
 	public static class GeoTrackPointList implements Iterable<GeoTrackPointList.GeoTrackPoint> {
 
@@ -115,22 +110,6 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 		 */
 		public GeoTrackPointList() {
 			pointList = new ArrayList<>();
-		}
-
-		/**
-		 * Constructs a GeoTrackPointList from a list of GeoTrackPoint objects.
-		 *
-		 * @param trackPoints A list of GeoTrackPoint objects.
-		 */
-		public GeoTrackPointList(List<GeoTrackPoint> trackPoints) {
-			if (trackPoints == null) {
-				throw new IllegalArgumentException("Constructor was passed a null list");
-			}
-
-			pointList = new ArrayList<>();
-			for (GeoTrackPoint point : trackPoints) {
-				pointList.add(new GeoTrackPoint(point));
-			}
 		}
 
 		/**
@@ -146,50 +125,6 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 			pointList.add(trackPoint);
 		}
 
-//		/**
-//		 * Adds a track point to this list of track points.
-//		 *
-//		 * @param latitude              The latitude of the track point.
-//		 * @param longitude             The longitude of the trac kpoint.
-//		 * @param altitude              The altitude of the track point, may be
-//		 *                              null.
-//		 * @param name                  The name of the track point, may be
-//		 *                              null.
-//		 * @param velocity              The velocity of the device at the track
-//		 *                              point in meters/sec, may be null.
-//		 * @param distanceFromHomePoint	The distance of the track point from an
-//		 *                              established home point, may be null.
-//		 * @param distanceTraveled      The distance the device has traveled in
-//		 *                              meters at the time this track point was
-//		 *                              created, may be null
-//		 * @param timestamp             The creation time of the track point as
-//		 *                              milliseconds from the Java epoch of
-//		 *                              1970-01-01T00:00:00Z, may be null.
-//		 */
-//		public void addPoint(Double latitude,
-//				Double longitude,
-//				Double altitude,
-//				String name,
-//				Double velocity,
-//				Double distanceFromHomePoint,
-//				Double distanceTraveled,
-//				Long timestamp) {
-//			pointList.add(new GeoTrackPoint(
-//					latitude,
-//					longitude,
-//					altitude,
-//					name,
-//					velocity,
-//					distanceFromHomePoint,
-//					distanceTraveled,
-//					timestamp));
-//		}
-
-		/**
-		 * Gets an iterator for the track points in this list of track points.
-		 *
-		 * @return The iterator.
-		 */
 		@Override
 		public Iterator<GeoTrackPoint> iterator() {
 			return pointList.iterator();
@@ -205,11 +140,11 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 		}
 
 		/**
-		 * Get the nominal start time for the track represented by this list of
-		 * track points, if available.
+		 * Gets the earliest track point timestamp in this list of track points,
+		 * if timestamps are present.
 		 *
-		 * @return The earliest timestamp of a track point in this list of track
-		 *         points, may be null.
+		 * @return The timestamp in milliseconds from the Java epoch of
+		 *         1970-01-01T00:00:00Z, may be null or zero.
 		 */
 		public Long getStartTime() {
 			List<GeoTrackPoint> orderedPoints = getTimeOrderedPoints();
@@ -224,11 +159,11 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 		}
 
 		/**
-		 * Get the nominal end time for the track represented by this list of
-		 * track points, if available.
+		 * Gets the latest track point timestamp in this list of track points,
+		 * if timestamps are present.
 		 *
-		 * @return The latest timestamp of a track point in this list of track
-		 *         points, may be null.
+		 * @return The timestamp in milliseconds from the Java epoch of
+		 *         1970-01-01T00:00:00Z, may be null or zero.
 		 */
 		public Long getEndTime() {
 			List<GeoTrackPoint> orderedPoints = getTimeOrderedPoints();
@@ -244,8 +179,8 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 		}
 
 		/**
-		 * Gets the list of track points in this object as a list ordered by
-		 * tarck point timestamp.
+		 * Gets this list of track points as a list ordered by track point
+		 * timestamp.
 		 *
 		 * @return The ordered list of track points.
 		 */
@@ -255,9 +190,8 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 
 		/**
 		 * A representation of a track point, which is a location in a
-		 * geographic coordinate system (see
-		 * https://en.wikipedia.org/wiki/Geographic_coordinate_system) where the
-		 * coordinates are latitude, longitude and altitude (elevation).
+		 * geographic coordinate system with latitude, longitude and altitude
+		 * (elevation) axes.
 		 */
 		public final static class GeoTrackPoint extends TskGeoWaypointsUtil.GeoWaypointList.GeoWaypoint implements Comparable<GeoTrackPoint> {
 
@@ -268,29 +202,27 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 
 			/**
 			 * Constructs a representation of a track point, which is a location
-			 * in a geographic coordinate system (see
-			 * https://en.wikipedia.org/wiki/Geographic_coordinate_system) where
-			 * the coordinates are latitude, longitude and altitude (elevation).
+			 * in a geographic coordinate system with latitude, longitude and
+			 * altitude (elevation) axes.
 			 *
 			 * @param latitude              The latitude of the track point.
-			 * @param longitude             The longitude of the trac kpoint.
+			 * @param longitude             The longitude of the track point.
 			 * @param altitude              The altitude of the track point, may
 			 *                              be null.
 			 * @param name                  The name of the track point, may be
 			 *                              null.
 			 * @param velocity              The velocity of the device at the
-			 *                              track point in meters/sec, may be
-			 *                              null.
+			 *                              track point in meters per second,
+			 *                              may be null.
 			 * @param distanceFromHomePoint	The distance of the track point in
 			 *                              meters from an established home
 			 *                              point, may be null.
 			 * @param distanceTraveled      The distance the device has traveled
 			 *                              in meters at the time this track
 			 *                              point was created, may be null.
-			 * @param timestamp             The creation time of the track point
-			 *                              as milliseconds from the Java epoch
-			 *                              of 1970-01-01T00:00:00Z, may be
-			 *                              null.
+			 * @param timestamp             The timestamp of the track point as
+			 *                              milliseconds from the Java epoch of
+			 *                              1970-01-01T00:00:00Z, may be null.
 			 */
 			public GeoTrackPoint(Double latitude,
 					Double longitude,
@@ -308,26 +240,10 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 			}
 
 			/**
-			 * Constructs a copy of a representation of a track point, which is
-			 * a location in a geographic coordinate system (see
-			 * https://en.wikipedia.org/wiki/Geographic_coordinate_system) where
-			 * the coordinates are latitude, longitude and altitude (elevation).
+			 * Gets the velocity of the device at this track point in meters per
+			 * second, if known.
 			 *
-			 * @param other A GeoTrackPoint to be copied.
-			 */
-			private GeoTrackPoint(GeoTrackPoint other) {
-				super(other.getLatitude(), other.getLongitude(), other.getAltitude(), other.getName());
-				this.velocity = other.getVelocity();
-				this.distanceFromHomePoint = other.getDistanceFromHomePoint();
-				this.distanceTraveled = other.getDistanceTraveled();
-				this.timestamp = other.getTimeStamp();
-			}
-
-			/**
-			 * Gets the velocity of the device at this track point in
-			 * meters/sec, if known.
-			 *
-			 * @return The velocity in meters/sec, may be null.
+			 * @return The velocity in meters/sec, may be null or zero.
 			 */
 			public Double getVelocity() {
 				return velocity;
@@ -337,7 +253,7 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 			 * Gets the distance of this track point from an established home
 			 * point, if known.
 			 *
-			 * @return The distance in meters, may be null.
+			 * @return The distance in meters, may be null or zero.
 			 */
 			public Double getDistanceFromHomePoint() {
 				return distanceFromHomePoint;
@@ -348,17 +264,17 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 			 * this track point was created, if known.
 			 *
 			 *
-			 * @return The distance traveled in meters, may be null.
+			 * @return The distance traveled in meters, may be null or zero.
 			 */
 			public Double getDistanceTraveled() {
 				return distanceTraveled;
 			}
 
 			/**
-			 * Gets the creation time of this track point as milliseconds from
-			 * the Java epoch of 1970-01-01T00:00:00Z, if known.
+			 * Gets the timestamp of this track point as milliseconds from the
+			 * Java epoch of 1970-01-01T00:00:00Z, if known.
 			 *
-			 * @return The creation timestamp, may be null.
+			 * @return The timestamp, may be null or zero.
 			 */
 			public Long getTimeStamp() {
 				return timestamp;
@@ -377,7 +293,5 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 				}
 			}
 		}
-		
 	}
-
 }
