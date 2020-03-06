@@ -6000,7 +6000,7 @@ public class SleuthkitCase {
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
 			preparedStatement.setLong(2, imgOffset);
-			preparedStatement.setShort(3, (short) type.getValue());
+			preparedStatement.setInt(3, type.getValue());
 			preparedStatement.setLong(4, blockSize);
 			preparedStatement.setLong(5, blockCount);
 			preparedStatement.setLong(6, rootInum);

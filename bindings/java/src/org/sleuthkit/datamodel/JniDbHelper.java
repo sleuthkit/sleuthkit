@@ -219,5 +219,4 @@ class JniDbHelper {
 			return -1;
 		}
 	}
-	
 }

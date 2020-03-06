@@ -140,6 +140,12 @@ class TskAutoDbJava :public TskAuto {
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
+    // These are used to write unallocated blocks for pools at the end of the add image
+    // process. We can't load the pool_info objects directly from the database so we will
+    // store info about them here.
+    std::map<int64_t, int64_t> m_poolOffsetToParentId;
+    std::map<int64_t, int64_t> m_poolOffsetToVsId;
+
     // Used to look up object IDs for files
     #define MAX_PATH_LENGTH_JAVA_DB_LOOKUP 2048
     char parent_name[MAX_PATH_LENGTH_JAVA_DB_LOOKUP];
@@ -200,6 +206,7 @@ class TskAutoDbJava :public TskAuto {
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
 
+    TSK_RETVAL_ENUM addUnallocatedPoolBlocksToDb(size_t & numPool);
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
     TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);
@@ -236,6 +243,7 @@ class TskAutoDbJava :public TskAuto {
         vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
         int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId);
 
 };
 
