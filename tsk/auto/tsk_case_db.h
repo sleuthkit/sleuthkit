@@ -154,6 +154,12 @@ class TskAutoDb:public TskAuto {
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
+    // These are used to write unallocated blocks for pools at the end of the add image
+    // process. We can't load the pool_info objects directly from the database so we will
+    // store info about them here.
+    std::map<int64_t, int64_t> m_poolOffsetToParentId;
+    std::map<int64_t, int64_t> m_poolOffsetToVsId;
+
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
     TskAutoDb & operator=(const TskAutoDb&);
@@ -186,7 +192,7 @@ class TskAutoDb:public TskAuto {
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
-
+    TSK_RETVAL_ENUM addUnallocatedPoolBlocksToDb(size_t & numPool);
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
     TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);

@@ -34,6 +34,9 @@ typedef struct {
 /** \internal
  * The table used to parse input strings - supports
  * legacy strings - in order of expected usage
+ *
+ * All unique TSK_FS_TYPE_ENUM values should be in here with a unique 
+ * name so that we can map between values and names. 
  */
 static FS_TYPES fs_type_table[] = {
     {"ntfs", TSK_FS_TYPE_NTFS_DETECT, "NTFS"},

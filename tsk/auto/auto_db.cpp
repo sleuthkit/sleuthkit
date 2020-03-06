@@ -315,6 +315,8 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
             registerError();
             return TSK_FILTER_STOP;
         }
+        // Save the parent obj ID for the pool
+        m_poolOffsetToParentId[pool_info->img_offset] = m_curVolId;
     }
     else {
         // pool doesn't live in a volume, use image as parent
@@ -322,11 +324,79 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
             registerError();
             return TSK_FILTER_STOP;
         }
+        // Save the parent obj ID for the pool
+        m_poolOffsetToParentId[pool_info->img_offset] = m_curImgId;
     }
 
-    
+    // Store the volume system object ID for later use
+    m_poolOffsetToVsId[pool_info->img_offset] = m_curPoolVs;
 
     return TSK_FILTER_CONT;
+}
+
+/**
+* Adds unallocated pool blocks to a new volume.
+*
+* @param numPool Will be updated with the number of pools processed
+*
+* @return Returns 0 for success, 1 for failure
+*/
+TSK_RETVAL_ENUM
+TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
+
+    for (int i = 0; i < m_poolInfos.size(); i++) {
+        const TSK_POOL_INFO * pool_info = m_poolInfos[i];
+        if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %lld", pool_info->img_offset);
+            return TSK_ERR;
+        }
+        int64_t curPoolVs = m_poolOffsetToVsId[pool_info->img_offset];
+
+        /* Make sure  the pool_info is still allocated */
+        if (pool_info->tag != TSK_POOL_INFO_TAG) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - pool_info is not allocated");
+            return TSK_ERR;
+        }
+
+        /* Only APFS pools are currently supported */
+        if (pool_info->ctype != TSK_POOL_TYPE_APFS) {
+            continue;
+        }
+
+        /* Increment the count of pools found */
+        numPool++;
+
+        /* Create the volume */
+        int64_t unallocVolObjId;
+        m_db->addUnallocatedPoolVolume(pool_info->num_vols, curPoolVs, unallocVolObjId);
+
+        /* Create the unallocated space files */
+        TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
+        TSK_FS_ATTR_RUN * current_run = unalloc_runs;
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        while (current_run != NULL) {
+
+            TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
+
+            ranges.push_back(tempRange);
+            int64_t fileObjId = 0;
+            if (m_db->addUnallocBlockFile(unallocVolObjId, NULL, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+                registerError();
+                tsk_fs_attr_run_free(unalloc_runs);
+                return TSK_ERR;
+            }
+
+            current_run = current_run->next;
+            ranges.clear();
+        }
+        tsk_fs_attr_run_free(unalloc_runs);
+    }
+
+    return TSK_OK;
 }
 
 TSK_FILTER_ENUM
@@ -1032,7 +1102,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 */
 TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
-    // Unalloc space is not yet implemented for APFS
+    // Unalloc space is handled separately for APFS
     if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
         return TSK_OK;
     }
@@ -1103,18 +1173,20 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocSpaceToDb() {
 
     size_t numVsP = 0;
     size_t numFs = 0;
+    size_t numPool = 0;
 
     TSK_RETVAL_ENUM retFsSpace = addUnallocFsSpaceToDb(numFs);
     TSK_RETVAL_ENUM retVsSpace = addUnallocVsSpaceToDb(numVsP);
+    TSK_RETVAL_ENUM retPoolSpace = addUnallocatedPoolBlocksToDb(numPool);
 
-    //handle case when no fs and no vs partitions
+    //handle case when no fs and no vs partitions or pools
     TSK_RETVAL_ENUM retImgFile = TSK_OK;
-    if (numVsP == 0 && numFs == 0) {
+    if (numVsP == 0 && numFs == 0 && numPool == 0) {
         retImgFile = addUnallocImageSpaceToDb();
     }
     
     
-    if (retFsSpace == TSK_ERR || retVsSpace == TSK_ERR || retImgFile == TSK_ERR)
+    if (retFsSpace == TSK_ERR || retVsSpace == TSK_ERR || retPoolSpace == TSK_ERR || retImgFile == TSK_ERR)
         return TSK_ERR;
     else
         return TSK_OK;
@@ -1217,6 +1289,19 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
                 //skip processing this vspart
                 continue;
             }
+
+            // Check if the volume contains a pool
+            bool hasPool = false;
+            for (std::map<int64_t, int64_t>::iterator iter = m_poolOffsetToParentId.begin(); iter != m_poolOffsetToParentId.end(); ++iter) {
+                if (iter->second == vsPart.objId) {
+                    hasPool = true;
+                }
+            }
+            if (hasPool) {
+                // Skip processing this vspart
+                continue;
+            }
+
         } //end checking vspart flags
 
         //get sector size and image offset from parent vs info
