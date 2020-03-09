@@ -1225,21 +1225,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
         }
 
         if (ret == 1) {
-            //fatal error
+            // Fatal error
             setThrowTskCoreError(env, msgss.str().c_str());
         }
         else if (ret == 2) {
-            // TODO TODO
-            setThrowTskCoreError(env, msgss.str().c_str());
-            /*
-            if (tskAuto->isDbOpen()) {
-                // if we can still talk to the database, it's a non-fatal error
-                setThrowTskDataError(env, msgss.str().c_str());
-            }
-            else {
-                // we cannot talk to the database, fatal error
-                setThrowTskCoreError(env, msgss.str().c_str());
-            }*/
+            // Non-fatal error
+            setThrowTskDataError(env, msgss.str().c_str());
         }
     }
 
