@@ -63,13 +63,15 @@ TskAutoDbJava::~TskAutoDbJava()
     tsk_deinit_lock(&m_curDirPathLock);
 }
 
+/**
+* Look up all callback method IDs
+* @param jniEnv pointer to java environment this was called from
+* @param jobj the JniDbHelper object this was called from
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
     m_jniEnv = jniEnv;
     m_javaDbObj = m_jniEnv->NewGlobalRef(jobj); // TODO free this
-
-    printf("\n#### initializeJni\n");
-    fflush(stdout);
 
     jclass localCallbackClass = m_jniEnv->FindClass("org/sleuthkit/datamodel/JniDbHelper");
     if (localCallbackClass == NULL) {
@@ -79,91 +81,69 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
 
     m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)J");
     if (m_addImageMethodID == NULL) {
-        printf("#### Error loading m_addImageMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_addImageNameMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageName", "(JLjava/lang/String;J)I");
     if (m_addImageNameMethodID == NULL) {
-        printf("#### Error loading m_addImageNameMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_addVolumeSystemMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addVsInfo", "(JIJJ)J");
     if (m_addVolumeSystemMethodID == NULL) {
-        printf("#### Error loading m_addVolumeSystemMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_addVolumeMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addVolume", "(JJJJLjava/lang/String;J)J");
     if (m_addVolumeMethodID == NULL) {
-        printf("#### Error loading m_addVolumeMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_addPoolMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addPool", "(JI)J");
     if (m_addPoolMethodID == NULL) {
-        printf("#### Error loading m_addPoolMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
 
     m_addFileSystemMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFileSystem", "(JJIJJJJJ)J");
     if (m_addFileSystemMethodID == NULL) {
-        printf("#### Error loading m_addFileSystemMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;)J");
     if (m_addFileMethodID == NULL) {
-        printf("#### Error loading m_addFileMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_getParentIdMethodID = m_jniEnv->GetMethodID(m_callbackClass, "findParentObjId", "(JJLjava/lang/String;Ljava/lang/String;)J");
     if (m_getParentIdMethodID == NULL) {
-        printf("#### Error loading m_getParentIdMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_addUnallocParentMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addUnallocFsBlockFilesParent", "(JLjava/lang/String;)J");
     if (m_addUnallocParentMethodID == NULL) {
-        printf("#### Error loading m_addUnallocParentMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 
     m_addLayoutFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addLayoutFile", "(JJJILjava/lang/String;J)J");
     if (m_addLayoutFileMethodID == NULL) {
-        printf("#### Error loading m_addLayoutFileMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
     
     m_addLayoutFileRangeMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addLayoutFileRange", "(JJJJ)J");
     if (m_addLayoutFileRangeMethodID == NULL) {
-        printf("#### Error loading m_addLayoutFileRangeMethodID\n");
-        fflush(stdout);
         return TSK_ERR;
     }
-
-    printf("\n#### Yay found method IDs!\n");
-    fflush(stdout);
     return TSK_OK;
 }
 
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-
-
+/**
+* Cache a database object for later use. Should be called on image, volume system, volume,
+* pool, and file system.
+* @param objId    The object ID of the new object
+* @param parObjId The object ID of the new object's parent
+* @param type     The type of object
+*/
 void 
 TskAutoDbJava::saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_TYPE_ENUM type) {
     TSK_DB_OBJECT objectInfo;
@@ -173,35 +153,43 @@ TskAutoDbJava::saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_T
     m_savedObjects.push_back(objectInfo);
 }
 
+/**
+* Get a previously cached database object.
+* @param objId The object ID of the object being loaded
+*/
 TSK_RETVAL_ENUM 
 TskAutoDbJava::getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info) {
-    printf("In getObjectInfo for obj id %lld\n", objId);
-    fflush(stdout);
     for (vector<TSK_DB_OBJECT>::iterator itObjs = m_savedObjects.begin();
             itObjs != m_savedObjects.end(); ++itObjs) {
         TSK_DB_OBJECT* tskDbObj = &(*itObjs);
         if (tskDbObj->objId == objId) {
-            printf("  Found it = tskDbObj = 0x%x\n", tskDbObj);
-            fflush(stdout);
             *obj_info = tskDbObj;
-            printf("  Returning from getObjectInfo - obj_info = 0x%x\n", *obj_info);
-            fflush(stdout);
             return TSK_OK;
         }
     }
 
     // Object not found
-    printf("\n#### OH NO!!!!! Couldn't find object with id %lld\n", objId);
-    fflush(stdout);
     return TSK_ERR;
 }
 
+/**
+* Adds image details to the existing database tables. Object ID for new image stored in objId.
+*
+* @param type Image type
+* @param ssize Size of device sector in bytes (or 0 for default)
+* @param objId The object id assigned to the image (out param)
+* @param timeZone The timezone the image is from
+* @param size The size of the image in bytes.
+* @param md5 MD5 hash of the image
+* @param sha1 SHA1 hash of the image
+* @param sha256 SHA256 hash of the image
+* @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
+* @param collectionDetails collection details
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
     const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails) {
-
-    printf("addImageInfo - preparing all the jstrings\n");
-    fflush(stdout);
 
     const char *tz_cstr = timezone.c_str();
     jstring tzj = m_jniEnv->NewStringUTF(tz_cstr);
@@ -222,19 +210,9 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     jstring collj = m_jniEnv->NewStringUTF(coll_cstr);
     // TODO TODO free strings?
 
-    printf("addImageInfo - making JNI call\n");
-    fflush(stdout);
-
-    if (m_addImageMethodID == NULL) {
-        printf("#### Yikes addImageMethodID is null...\n");
-        return TSK_ERR;
-    }
-
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addImageMethodID,
         type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj);
     objId = (int64_t)objIdj;
-    printf("#### New image object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -244,14 +222,15 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     return TSK_OK;
 }
 
+/**
+* Adds one image name
+* @param objId    The object ID of the image
+* @param imgName  The image name
+* @param sequence The sequence number for this image name
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addImageName(int64_t objId, char const* imgName, int sequence) {
-    printf("addImageName\n");
-
-    if (m_addImageNameMethodID == NULL) {
-        printf("#### Yikes m_addImageNameMethodID is null...\n");
-        return TSK_ERR;
-    }
 
     jstring imgNamej = m_jniEnv->NewStringUTF(imgName);
 
@@ -262,30 +241,24 @@ TskAutoDbJava::addImageName(int64_t objId, char const* imgName, int sequence) {
         return TSK_OK;
     }
     else {
-        printf("Error in addImageName...\n");
-        fflush(stdout);
         return TSK_ERR;
     }
 }
 
+/**
+* Adds volume system to database. Object ID for new vs stored in objId.
+*
+* @param vs_info  Struct containing info for this volume system
+* @param parObjId Parent object ID for the volume system
+* @param objId    Object ID of new volume system
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId) {
-    printf("addVsInfo\n");
-
-
-    printf("addVsInfo - making JNI call\n");
-    fflush(stdout);
-
-    if (m_addVolumeSystemMethodID == NULL) {
-        printf("#### Yikes m_addVolumeSystemMethodID is null...\n");
-        return TSK_ERR;
-    }
 
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
         parObjId, vs_info->vstype, vs_info->offset, (uint64_t)vs_info->block_size);
     objId = (int64_t)objIdj;
-    printf("#### New volume system object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -303,60 +276,47 @@ TskAutoDbJava::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& 
     return TSK_OK;
 }
 
+/**
+* Adds pool and pool volume system to database. Object ID for new pool vs stored in objId.
+*
+* @param pool_info  Struct containing info for this pool
+* @param parObjId   Parent object ID for the pool
+* @param objId      Object ID of new pool volume system
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
-    if (m_addPoolMethodID == NULL) {
-        printf("#### Yikes m_addPoolMethodID is null...\n");
-        return TSK_ERR;
-    }
 
+    // Add the pool
     jlong poolObjIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addPoolMethodID,
         parObjId, pool_info->ctype);
     long poolObjId = (int64_t)poolObjIdj;
-    printf("New pool object ID: %lld\n", poolObjId);
-    fflush(stdout);
 
     if (poolObjId < 0) {
         return TSK_ERR;
     }
     saveObjectInfo(poolObjId, parObjId, TSK_DB_OBJECT_TYPE_POOL);
 
-    // "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", 
-    // objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
-    if (m_addVolumeSystemMethodID == NULL) {
-        printf("#### Yikes m_addVolumeSystemMethodID is null...\n");
-        return TSK_ERR;
-    }
-
+    // Add the pool volume
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
         poolObjIdj, TSK_VS_TYPE_APFS, pool_info->img_offset, (uint64_t)pool_info->block_size);
     objId = (int64_t)objIdj;
-    printf("New pool volume system object ID: %lld\n", objId);
-    fflush(stdout);
-
-    // Save the vs info to use for unallocated blocks later - TODO do we need this?
-    //TSK_DB_VS_INFO vs_db;
-    //vs_db.objId = objId;
-    //vs_db.offset = pool_info->img_offset;
-    //vs_db.vstype = TSK_VS_TYPE_APFS;
-    //vs_db.block_size = (uint64_t)pool_info->block_size;
-    //m_savedVsInfo.push_back(vs_db);
 
     saveObjectInfo(objId, poolObjId, TSK_DB_OBJECT_TYPE_VS);
     return TSK_OK;
 }
 
+/**
+* Adds a pool volume to database. Object ID for new pool volume stored in objId.
+*
+* @param pool_vol  Struct containing info for this pool volume
+* @param parObjId  Parent object ID
+* @param objId     Object ID of new pool volume
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     int64_t parObjId, int64_t& objId) {
-    printf("addPoolVolumeInfo\n");
-
-    //objId, (int)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
-    //    pool_vol->desc, pool_vol->flags);
-    if (m_addVolumeMethodID == NULL) {
-        printf("#### Yikes m_addVolumeMethodID is null...\n");
-        return TSK_ERR;
-    }
 
     jstring descj = m_jniEnv->NewStringUTF(pool_vol->desc); // TODO free?
 
@@ -364,8 +324,6 @@ TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         parObjId, (int64_t)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
         descj, pool_vol->flags);
     objId = (int64_t)objIdj;
-    printf("New volume object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -375,16 +333,17 @@ TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
     return TSK_OK;
 }
 
-
+/**
+* Adds a volume to database. Object ID for new volume stored in objId.
+*
+* @param vs_part   Struct containing info for this volume
+* @param parObjId  Parent object ID
+* @param objId     Object ID of new volume
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
     int64_t parObjId, int64_t& objId) {
-    printf("addVolumeInfo\n");
-
-    if (m_addVolumeMethodID == NULL) {
-        printf("#### Yikes m_addVolumeMethodID is null...\n");
-        return TSK_ERR;
-    }
 
     jstring descj = m_jniEnv->NewStringUTF(vs_part->desc); // TODO free?
 
@@ -392,8 +351,6 @@ TskAutoDbJava::addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
         parObjId, (uint64_t)vs_part->addr, vs_part->start, vs_part->len,
         descj, vs_part->flags);
     objId = (int64_t)objIdj;
-    printf("New volume object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -413,23 +370,23 @@ TskAutoDbJava::addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
     return TSK_OK;
 }
 
+/**
+* Adds a file system to database. Object ID for new file system stored in objId.
+*
+* @param fs_info   Struct containing info for this file system
+* @param parObjId  Parent object ID
+* @param objId     Object ID of new file system
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
     int64_t& objId) {
-    printf("addFsInfo\n");
-
-    if (m_addFileSystemMethodID == NULL) {
-        printf("#### Yikes m_addFileSystemMethodID is null...\n");
-        return TSK_ERR;
-    }
 
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileSystemMethodID,
         parObjId, fs_info->offset, (int)fs_info->ftype, (uint64_t)fs_info->block_size,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
         fs_info->last_inum);
     objId = (int64_t)objIdj;
-    printf("#### New file system object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -451,47 +408,51 @@ TskAutoDbJava::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
     return TSK_OK;
 }
 
+/**
+* Adds a file to database. Object ID for new file stored in objId.
+*
+* @param fs_file
+* @param fs_attr
+* @param path      File path
+* @param parObjId  Parent object ID
+* @param fsObjId   Object ID of the file system
+* @param objId     Object ID of new file
+* @param dataSourceObjId  Object ID of the data source
+* @returns TSK_ERR on error, TSK_OK on success
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
     const TSK_FS_ATTR* fs_attr, const char* path,
-    const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId) {
-
-    printf("addFsFile\n");
-
-    int64_t parObjId = 0;
 
     if (fs_file->name == NULL)
         return TSK_ERR;
 
     // Find the object id for the parent folder.
+    int64_t parObjId = 0;
 
-    /* Root directory's parent should be the file system object.
-    * Make sure it doesn't have a name, so that we don't pick up ".." entries */
+    // Root directory's parent should be the file system object.
+    // Make sure it doesn't have a name, so that we don't pick up ".." entries
     if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) &&
-        ((fs_file->name->name == NULL) || (strlen(fs_file->name->name) == 0)))
-    {
+        ((fs_file->name->name == NULL) || (strlen(fs_file->name->name) == 0))) {
+        // File is in the root directory
         parObjId = fsObjId;
-    }
-    else
-    {
+    } else {
+        // Look up parent object ID
         parObjId = findParObjId(fs_file, path, fsObjId);
-        if (parObjId == -1)
-        {
-            //error
+        if (parObjId == -1) {
             return TSK_ERR;
         }
     }
 
-
-    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId, dataSourceObjId);
+    // Add the file to the database
+    return addFile(fs_file, fs_attr, path, fsObjId, parObjId, objId, dataSourceObjId);
 }
 
 /**
-Extract the extension from the given file name and store it in the supplied string.
-
-@param name A file name
-@param extension The file name extension will be extracted to extension.
+* Extract the extension from the given file name and store it in the supplied string.
+* @param name A file name
+* @param extension The file name extension will be extracted to extension.
 */
 void extractExtension(char *name, char *extension) {
     char *ext = strrchr(name, '.');
@@ -533,29 +494,24 @@ void TskAutoDbJava::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_fil
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
     * the same folder (one deleted and one allocated) or two hard links. */
-    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
-    {
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
         /* Use the sequence stored in meta (which could be one larger than the name value
         * if the directory is deleted. We do this because the par_seq gets added to the
         * name structure when it is added to the directory based on teh value stored in
         * meta. */
         seq = fs_file->meta->seq;
     }
-    else
-    {
+    else {
         seq = path_hash;
     }
 
     map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > >& fsMap = m_parentDirIdCache[fsObjId];
-    if (fsMap.count(fs_file->name->meta_addr) == 0)
-    {
+    if (fsMap.count(fs_file->name->meta_addr) == 0) {
         fsMap[fs_file->name->meta_addr][seq][path_hash] = objId;
     }
-    else
-    {
+    else {
         map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->meta_addr];
-        if (fileMap.count(seq) == 0)
-        {
+        if (fileMap.count(seq) == 0) {
             fileMap[seq][path_hash] = objId;
         }
     }
@@ -563,15 +519,20 @@ void TskAutoDbJava::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_fil
 
 
 /**
-* Add file data to the file table
-* @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
-* @param dataSourceObjId The object ID for the data source
-* Return 0 on success, 1 on error.
+* Adds a file and its associated slack file to database. Object ID for new file stored in objId.
+*
+* @param fs_file
+* @param fs_attr
+* @param path      File path
+* @param fsObjId   Object ID of the file system
+* @param parObjId  Parent object ID
+* @param objId     Object ID of new file
+* @param dataSourceObjId  Object ID of the data source
+* @returns TSK_ERR on error, TSK_OK on success
 */
 TSK_RETVAL_ENUM
 TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     const TSK_FS_ATTR* fs_attr, const char* path,
-    const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t parObjId,
     int64_t& objId, int64_t dataSourceObjId)
 {
@@ -592,8 +553,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     if (fs_file->name == NULL)
         return TSK_OK;
 
-    if (fs_file->meta)
-    {
+    if (fs_file->meta) {
         mtime = fs_file->meta->mtime;
         atime = fs_file->meta->atime;
         ctime = fs_file->meta->ctime;
@@ -606,16 +566,13 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     }
 
     size_t attr_nlen = 0;
-    if (fs_attr)
-    {
+    if (fs_attr) {
         type = fs_attr->type;
         idx = fs_attr->id;
         size = fs_attr->size;
-        if (fs_attr->name)
-        {
+        if (fs_attr->name) {
             if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
-                (strcmp(fs_attr->name, "$I30") != 0))
-            {
+                (strcmp(fs_attr->name, "$I30") != 0)) {
                 attr_nlen = strlen(fs_attr->name);
             }
         }
@@ -640,8 +597,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     extractExtension(name, extension);
 
     // Add the attribute name
-    if (attr_nlen > 0)
-    {
+    if (attr_nlen > 0) {
         strncat(name, ":", nlen - strlen(name));
         strncat(name, fs_attr->name, nlen - strlen(name));
     }
@@ -650,31 +606,18 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     // +2 = space for leading slash and terminating null
     size_t path_len = strlen(path) + 2;
     char* escaped_path;
-    if ((escaped_path = (char *)tsk_malloc(path_len)) == NULL)
-    {
+    if ((escaped_path = (char *)tsk_malloc(path_len)) == NULL) {
         free(name);
         return TSK_ERR;
     }
-
     strncpy(escaped_path, "/", path_len);
     strncat(escaped_path, path, path_len - strlen(escaped_path));
-
-    printf("#### Finally adding file\n");
-    fflush(stdout);
-    if (m_addFileMethodID == NULL) {
-        printf("#### Yikes m_addFileMethodID is null...\n");
-        return TSK_ERR;
-    }
 
     jstring namej = m_jniEnv->NewStringUTF(name); // TODO free?
     jstring pathj = m_jniEnv->NewStringUTF(escaped_path); // TODO free?
     jstring extj = m_jniEnv->NewStringUTF(extension); // TODO free?
  
-
-    // "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, 
-    // type, attr_type, attr_id, name, 
-    // meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, 
-    // size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+    // Add the file to the database
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
         parObjId, fsObjId,
         dataSourceObjId,
@@ -692,32 +635,8 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         return TSK_ERR;
     }
 
-/*
-if (!TSK_FS_ISDOT(name))
-    {
-        std::string full_description = std::string(escaped_path).append(name);
-
-        // map from time to event type ids
-        const std::map<int64_t, time_t> timeMap = {
-            { 4, mtime },
-            { 5, atime },
-            { 6, crtime },
-            { 7, ctime }
-        };
-
-        //insert MAC time events for the file
-        if (addMACTimeEvents(dataSourceObjId, objId, timeMap, full_description.c_str()))
-        {
-            free(name);
-            free(escaped_path);
-            sqlite3_free(zSQL);
-            return 1;
-        };
-    }*/
-
-    //if dir, update parent id cache (do this before objId may be changed creating the slack file)
-    if (TSK_FS_IS_DIR_META(meta_type))
-    {
+    // If dir, update parent ID cache
+    if (TSK_FS_IS_DIR_META(meta_type)){
         std::string fullPath = std::string(path) + fs_file->name->name;
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
@@ -743,10 +662,7 @@ if (!TSK_FS_ISDOT(name))
 
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
-        // "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, 
-        // type, attr_type, attr_id, name, 
-        // meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, 
-        // size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+        // Add slack file to database
         jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
             parObjId, fsObjId,
             dataSourceObjId,
@@ -771,7 +687,7 @@ if (!TSK_FS_ISDOT(name))
     return TSK_OK;
 }
 
-//internal function object to check for range overlap
+// Internal function object to check for range overlap
 typedef struct _checkFileLayoutRangeOverlap {
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
@@ -803,12 +719,24 @@ typedef struct _checkFileLayoutRangeOverlap {
 
 } checkFileLayoutRangeOverlap;
 
+/**
+* Internal helper method to add unalloc, unused and carved files with layout ranges to db
+* Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param dbFileType  Type of file
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId     parent fs, or NULL if the file is not associated with fs
+* @param size        Number of bytes in file
+* @param ranges      vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId       object id of the file object created (output)
+* @param dataSourceObjId  The object ID for the data source
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
     const int64_t fsObjId, const uint64_t size,
     vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
     int64_t dataSourceObjId) {
-    printf("addFileWithLayoutRange\n");
 
     const size_t numRanges = ranges.size();
 
@@ -860,32 +788,18 @@ TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, c
     fileNameSs << "_" << parentObjId << "_" << ranges[0].byteStart;
     fileNameSs << "_" << (ranges[numRanges - 1].byteStart + ranges[numRanges - 1].byteLen);
 
-    //insert into tsk files and tsk objects
-
-    //m_addLayoutFileMethodID
-    printf("Calling addLayoutFile in Java\n");
-    fflush(stdout);
-
-    if (m_addLayoutFileMethodID == NULL) {
-        printf("#### Yikes m_addLayoutFileMethodID is null...\n");
-        return TSK_ERR;
-    }
-
     jstring namej = m_jniEnv->NewStringUTF(fileNameSs.str().c_str()); // TODO free?
 
+    // Insert into tsk files and tsk objects
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addLayoutFileMethodID,
         parentObjId, fsObjId, dataSourceObjId, dbFileType, namej, size);
     objId = (int64_t)objIdj;
-    printf("New layout file object ID: %lld\n", objId);
-    fflush(stdout);
+
     if (objId < 0) {
-        printf("#### Oh no layout file ID is invalid");
-        fflush(stdout);
         return TSK_ERR;
     }
 
-    //fill in fileObjId and insert ranges
-    printf("Adding layout file ranges for file ID: %lld\n", objId);
+    // Fill in fileObjId and insert ranges
     for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
         it != ranges.end(); ++it) {
         TSK_DB_FILE_LAYOUT_RANGE & range = *it;
@@ -899,34 +813,55 @@ TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, c
     return TSK_OK;
 }
 
+/**
+* Adds information about a unallocated file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId parent fs, or NULL if the file is not associated with fs
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
     vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
     int64_t dataSourceObjId) {
-    printf("addUnallocBlockFile\n");
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId,
         dataSourceObjId);
 }
 
+/**
+* Adds information about a unused file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId parent fs, or NULL if the file is not associated with fs
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
     vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,
     int64_t dataSourceObjId) {
-    printf("addUnusedBlockFile\n");
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId,
         dataSourceObjId);
 }
 
 
 
+/**
+* Add a virtual dir to hold unallocated block files for this file system.
+* @param fsObjId  Object ID of the file system
+* @param objId    Object ID of the created virtual dir
+* @param dataSourceObjId  Object ID of the data source
+*/
 TSK_RETVAL_ENUM
 TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId,
     int64_t dataSourceObjId) {
-
-    if (m_addUnallocParentMethodID == NULL) {
-        printf("#### Yikes m_addUnallocParentMethodID is null...\n");
-        return TSK_ERR;
-    }
 
     const char * const unallocDirName = "$Unalloc";
     jstring namej = m_jniEnv->NewStringUTF(unallocDirName); // TODO free?
@@ -934,8 +869,6 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addUnallocParentMethodID,
         fsObjId, namej);
     objId = (int64_t)objIdj;
-    printf("#### New unalloc dir object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -944,7 +877,7 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
 }
 
 /**
-* return a hash of the passed in string. We use this
+* Return a hash of the passed in string. We use this
 * for full paths.
 * From: http://www.cse.yorku.ca/~oz/hash.html
 */
@@ -954,8 +887,7 @@ TskAutoDbJava::hash(const unsigned char* str)
     uint32_t hash = 5381;
     int c;
 
-    while ((c = *str++))
-    {
+    while ((c = *str++)) {
         // skip slashes -> normalizes leading/ending/double slashes
         if (c == '/')
             continue;
@@ -1038,7 +970,6 @@ TskAutoDbJava::getParentPathAndName(const char *path, const char **ret_parent_pa
     return 0;
 }
 
-
 /**
 * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
 * @param fs_file file to find parent obj id for
@@ -1069,47 +1000,29 @@ TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, 
     if (fsMap.count(fs_file->name->par_addr) > 0)
     {
         map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->par_addr];
-        if (fileMap.count(seq) > 0)
-        {
+        if (fileMap.count(seq) > 0) {
             map<uint32_t, int64_t>& pathMap = fileMap[seq];
-            if (pathMap.count(path_hash) > 0)
-            {
+            if (pathMap.count(path_hash) > 0) {
                 return pathMap[path_hash];
             }
         }
-        else
-        {
-            printf("Miss: %zu\n", fileMap.count(seq));
-            fflush(stdout);
-        }
     }
-
-    printf("Miss: %s (%" PRIu64  " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
-                   fs_file->name->par_addr);
-    fflush(stdout);
 
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
     // name to match with the 'name' column in tsk_files table
     const char *parent_name = "";
     const char *parent_path = "";
-    if (getParentPathAndName(parentPath, &parent_path, &parent_name))
-    {
+    if (getParentPathAndName(parentPath, &parent_path, &parent_name)) {
         return -1;
-    }
-
-    if (m_getParentIdMethodID == NULL) {
-        printf("#### Yikes m_addFileSystemMethodID is null...\n");
-        return TSK_ERR;
     }
 
     jstring jpath = m_jniEnv->NewStringUTF(parent_path); // TODO free?
     jstring jname = m_jniEnv->NewStringUTF(parent_name); // TODO free?
 
+    // Look up in the database
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_getParentIdMethodID,
         fs_file->name->par_addr, fsObjId, jpath, jname);
     int64_t objId = (int64_t)objIdj;
-    printf("#### Looked up parent object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return -1;
@@ -1119,7 +1032,7 @@ TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, 
 }
 
 /**
-* Adds a fake volume that will hold the unallocated blocks for the pool.
+* Adds a new volume that will hold the unallocated blocks for the pool.
 *
 * @param vol_index The index for the new volume (should be one higher than the number of pool volumes)
 * @param parObjId  The object ID of the parent volume system
@@ -1130,15 +1043,6 @@ TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, 
 TSK_RETVAL_ENUM
 TskAutoDbJava::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId)
 {
-
-    printf("addUnallocatedPoolVolume\n");
-    fflush(stdout);
-
-    if (m_addVolumeMethodID == NULL) {
-        printf("#### Yikes m_addVolumeMethodID is null...\n");
-        return TSK_ERR;
-    }
-
     char *desc = "Unallocated Blocks";
     jstring descj = m_jniEnv->NewStringUTF(desc); // TODO free?
 
@@ -1146,69 +1050,40 @@ TskAutoDbJava::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t
         parObjId, vol_index, 0, 0,
         descj, 0);
     objId = (int64_t)objIdj;
-    printf("New unalloc pool volume object ID: %lld\n", objId);
-    fflush(stdout);
 
     if (objId < 0) {
         return TSK_ERR;
     }
-    /*
-    char stmt[1024];
-
-    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
-        return 1;
-
-    char *desc = "Unallocated Blocks";
-    char *desc_sql = PQescapeLiteral(conn, desc, strlen(desc));
-
-    snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
-        "VALUES (%lld, %" PRIuPNUM ",%d, %d, %s, %d)",
-        objId, vol_index, 0, 0, desc_sql, 0);
-
-    if (attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n")) {
-        PQfreemem(desc_sql);
-        return TSK_ERR;
-    }
-
-    PQfreemem(desc_sql);*/
     return TSK_OK;
 }
 
+int64_t TskAutoDbJava::getImageID() {
+    return m_curImgId;
+}
 
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-
-void
- TskAutoDbJava::closeImage()
-{
+void TskAutoDbJava::closeImage() {
     TskAuto::closeImage();
 }
 
-void TskAutoDbJava::setAddFileSystems(bool addFileSystems)
-{
+void TskAutoDbJava::setAddFileSystems(bool addFileSystems) {
     m_addFileSystems = addFileSystems;
 }
 
-void TskAutoDbJava::setNoFatFsOrphans(bool noFatFsOrphans)
-{
+void TskAutoDbJava::setNoFatFsOrphans(bool noFatFsOrphans) {
     m_noFatFsOrphans = noFatFsOrphans;
 }
 
-void TskAutoDbJava::setAddUnallocSpace(bool addUnallocSpace)
-{
+void TskAutoDbJava::setAddUnallocSpace(bool addUnallocSpace) {
     setAddUnallocSpace(addUnallocSpace, -1);
 }
 
-void TskAutoDbJava::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize)
-{
+void TskAutoDbJava::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize) {
     m_addUnallocSpace = addUnallocSpace;
     m_minChunkSize = minChunkSize;
     m_maxChunkSize = -1;
 }
 
-void TskAutoDbJava::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize)
-{
+void TskAutoDbJava::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize) {
     m_addUnallocSpace = true;
     m_minChunkSize = minChunkSize;
     m_maxChunkSize = maxChunkSize;
@@ -1380,7 +1255,8 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
 }
 
 
-TSK_FILTER_ENUM TskAutoDbJava::filterVs(const TSK_VS_INFO * vs_info)
+TSK_FILTER_ENUM 
+TskAutoDbJava::filterVs(const TSK_VS_INFO * vs_info)
 {
     m_vsFound = true;
     if (TSK_OK != addVsInfo(vs_info, m_curImgId, m_curVsId)) {
@@ -1574,17 +1450,16 @@ TskAutoDbJava::filterFs(TSK_FS_INFO * fs_info)
 }
 
 /* Insert the file data into the file table.
- * @param md5 Binary MD5 value (i.e. 16 bytes) or NULL
+ * @param fs_file
+ * @param fs_attr
+ * @param path
  * Returns TSK_ERR on error.
  */
 TSK_RETVAL_ENUM
     TskAutoDbJava::insertFileData(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
 {
-    printf("### insertFileData\n");
-    fflush(stdout);
-
-    if (-1 == addFsFile(fs_file, fs_attr, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN, m_curFsId, m_curFileId,
+    if (-1 == addFsFile(fs_file, fs_attr, path, m_curFsId, m_curFileId,
             m_curImgId)) {
         registerError();
         return TSK_ERR;
@@ -1601,9 +1476,6 @@ TSK_RETVAL_ENUM
  */
 uint8_t TskAutoDbJava::addFilesInImgToDb()
 {
-    printf("\n#### addFilesInImgToDb...\n");
-    fflush(stdout);
-
     // @@@ This seems bad because we are overriding what the user may
     // have set. We should remove the public API if we are going to 
     // override it -- presumably this was added so that we always have
@@ -1784,8 +1656,6 @@ TskAutoDbJava::setTz(string tzone)
 TSK_RETVAL_ENUM
 TskAutoDbJava::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
-    printf("#### processFile\n");
-    fflush(stdout);
     // Check if the process has been canceled
      if (m_stopped) {
         if (tsk_verbose)
@@ -2051,10 +1921,6 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
         return TSK_OK;
     }
 
-    //m_savedFsInfo
-    printf("In addUnallocFsSpaceToDb!!!! Have %d file systems\n", m_savedFsInfo.size()); // TODO TODO
-    fflush(stdout);
-
     numFs = m_savedFsInfo.size();
     TSK_RETVAL_ENUM allFsProcessRet = TSK_OK;
     for (vector<TSK_DB_FS_INFO>::iterator it = m_savedFsInfo.begin(); it!= m_savedFsInfo.end(); ++it) {
@@ -2078,7 +1944,6 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
 */
 TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
 
-    printf("\n#### addUnallocVsSpaceToDb!!!! Have %d volumes\n", m_savedVsPartInfo.size());
     numVsP = m_savedVsPartInfo.size();
 
     //get fs infos to see if this vspart has fs
@@ -2088,8 +1953,6 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
             break;
         }
         const TSK_DB_VS_PART_INFO &vsPart = *it;
-        printf("Looking at volume with obj ID %lld\n", vsPart.objId);
-        fflush(stdout);
 
         //interested in unalloc, meta, or alloc and no fs
         if ( (vsPart.flags & (TSK_VS_PART_FLAG_UNALLOC | TSK_VS_PART_FLAG_META)) == 0 ) {
@@ -2131,14 +1994,10 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
                 continue;
             }
 
-        } //end checking vspart flags
+        }
 
-        //get sector size and image offset from parent vs info
-
-        //get parent id of this vs part
-        printf("Trying to get parent ID of volume...\n");
-        printf("Loading vsPartObj\n");
-        fflush(stdout);
+        // Get sector size and image offset from parent vs info
+        // Get parent id of this vs part
         TSK_DB_OBJECT* vsPartObj = NULL;     
         if (getObjectInfo(vsPart.objId, &vsPartObj) == TSK_ERR) {
             stringstream errss;
@@ -2148,24 +2007,18 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
             return TSK_ERR;
         }
         if (vsPartObj == NULL) {
-            printf("ARGH vsPartObj is null\n");
             return TSK_ERR;
         }
 
-        printf("Loading vsInfo\n");
-        fflush(stdout);
         TSK_DB_VS_INFO* vsInfo = NULL;
         for (vector<TSK_DB_VS_INFO>::iterator itVs = m_savedVsInfo.begin();
                 itVs != m_savedVsInfo.end(); ++itVs) {
             TSK_DB_VS_INFO* temp_vs_info = &(*itVs);
-            printf("Looking at vs with obj ID %lld\n", temp_vs_info->objId);
             if (temp_vs_info->objId == vsPartObj->parObjId) {
                 vsInfo = temp_vs_info;
             }
         }
 
-        printf("Checking if vsInfo is null\n");
-        fflush(stdout);
         if (vsInfo == NULL ) {
             stringstream errss;
             errss << "addUnallocVsSpaceToDb: error getting volume system info from db, objId: " << vsPartObj->parObjId;
@@ -2174,9 +2027,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
             return TSK_ERR;
         }
 
-        //create an unalloc file with unalloc part, with vs part as parent
-        printf("About to call addUnallocBlockFile");
-        fflush(stdout);
+        // Create an unalloc file with unalloc part, with vs part as parent
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         const uint64_t byteStart = vsInfo->offset + vsInfo->block_size * vsPart.start;
         const uint64_t byteLen = vsInfo->block_size * vsPart.len; 

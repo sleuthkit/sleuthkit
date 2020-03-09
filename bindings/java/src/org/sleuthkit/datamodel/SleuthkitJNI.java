@@ -414,13 +414,9 @@ public class SleuthkitJNI {
 			JniDbHelper dbHelper = new JniDbHelper(skCase);
 			try {
 				dbHelper.beginTransaction();
-				System.out.println("@@@ About to call initAddImgNat from CaseDbHandle.addImageInfo()");
-				System.out.flush();
 				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, dbHelper, timezoneLongToShort(timeZone), false, false, false);
-				System.out.println("@@@ About to call runOpenAndAddImgNat from CaseDbHandle.addImageInfo()");
-				System.out.flush();
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
-				long id = commitAddImgNat(tskAutoDbPointer);
+				long id = finishAddImgNat(tskAutoDbPointer);
 				skCase.addDataSourceToHasChildrenMap();
 				return id;
 			} catch (TskDataException ex) {
@@ -518,8 +514,6 @@ public class SleuthkitJNI {
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
 							imageHandle = openImage(imageFilePaths, sectorSize, false, caseDbPointer);
-							System.out.println("@@@ About to call initAddImgNat from AddImageProcess.run()");
-							System.out.flush();
 							dbHelper.beginTransaction();
 							tskAutoDbPointer = initAddImgNat(caseDbPointer, dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 						}
@@ -528,16 +522,11 @@ public class SleuthkitJNI {
 						}
 					}
 					if (imageHandle != 0) {
-						System.out.println("@@@ About to call runAddImgNat from AddImageProcess.run()");
-						System.out.flush();
 						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
 					}
 				} finally {
-					dbHelper.commitTransaction(); // TODO TODO
 					releaseTSKReadLock();
 				}
-				System.out.println("@@@ Done with AddImageProcess.run()");
-				System.out.flush();
 			}
 
 			/**
@@ -554,7 +543,7 @@ public class SleuthkitJNI {
 				try {
 					isCanceled = true;
 					if (tskAutoDbPointer != 0) {
-						//stopAddImgNat(tskAutoDbPointer); // TODO TODO
+						stopAddImgNat(tskAutoDbPointer);
 					}
 				} finally {
 					releaseTSKReadLock();
@@ -574,9 +563,11 @@ public class SleuthkitJNI {
 					if (tskAutoDbPointer == 0) {
 						throw new TskCoreException("AddImgProcess::revert: AutoDB pointer is NULL");
 					}
-
-					//revertAddImgNat(tskAutoDbPointer); // TODO
-					// the native code deleted the object
+					
+					dbHelper.revertTransaction();
+					
+					// Delete the object in the native code
+					finishAddImgNat(tskAutoDbPointer);
 					tskAutoDbPointer = 0;
 				} finally {
 					releaseTSKReadLock();
@@ -599,14 +590,14 @@ public class SleuthkitJNI {
 						throw new TskCoreException("AddImgProcess::commit: AutoDB pointer is NULL");
 					}
 
-					//long id = commitAddImgNat(tskAutoDbPointer); // TODO
+					dbHelper.commitTransaction();
 
-					skCase.addDataSourceToHasChildrenMap();
-
-					// the native code deleted the object
+					// Get the image ID and delete the object in the native code
+					long id = finishAddImgNat(tskAutoDbPointer);
 					tskAutoDbPointer = 0;
-					//return id; // TODO
-					return 1;
+					
+					skCase.addDataSourceToHasChildrenMap();
+					return id;
 				} finally {
 					releaseTSKReadLock();
 				}
@@ -1962,9 +1953,7 @@ public class SleuthkitJNI {
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
-	private static native void revertAddImgNat(long process) throws TskCoreException;
-
-	private static native long commitAddImgNat(long process) throws TskCoreException;
+	private static native long finishAddImgNat(long process) throws TskCoreException;
 
 	private static native long openImgNat(String[] imgPath, int splits, int sSize) throws TskCoreException;
 

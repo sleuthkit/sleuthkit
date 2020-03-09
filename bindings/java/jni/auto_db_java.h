@@ -113,6 +113,8 @@ class TskAutoDbJava :public TskAuto {
 #endif
     void stopAddImage();
 
+    int64_t getImageID();
+
     TSK_RETVAL_ENUM initializeJni(JNIEnv *, jobject);
 
   private:
@@ -225,11 +227,9 @@ class TskAutoDbJava :public TskAuto {
     TSK_RETVAL_ENUM addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId, int64_t& objId);
     TSK_RETVAL_ENUM addFsFile(TSK_FS_FILE* fs_file,
         const TSK_FS_ATTR* fs_attr, const char* path,
-        const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
         int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addFile(TSK_FS_FILE* fs_file,
         const TSK_FS_ATTR* fs_attr, const char* path,
-        const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
         int64_t fsObjId, int64_t parObjId,
         int64_t& objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,

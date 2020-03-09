@@ -249,18 +249,10 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    revertAddImgNat
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    commitAddImgNat
+ * Method:    finishAddImgNat
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNat
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishAddImgNat
   (JNIEnv *, jclass, jlong);
 
 /*

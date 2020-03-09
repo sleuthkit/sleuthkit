@@ -33,29 +33,14 @@ class JniDbHelper {
 		trans = null;
 	}
 	
-	void test(int x) {
-		System.out.println("\n@@@ Java test method");
-	}
-	
-	long testLong(int x) {
-		System.out.println("\n@@@ Java testLong method");
-		return 10;
-	}
-	
-	void testStringArg(String str) {
-		System.out.println("\n@@@ Got string: " + str);
-	}
-	
-	void testStringArg2(String str, int x) {
-		System.out.println("\n@@@ Got string: " + str + " and int: " + x);
-	}
-	
+	void revertTransaction() throws TskCoreException {
+		trans.rollback();
+		trans = null;
+	}		
 	
 	long addImageInfo(int type, long ssize, String timezone, 
 			long size, String md5, String sha1, String sha256, String deviceId, 
 			String collectionDetails) {
-		System.out.println("\n@@@ In Java! addImageInfo");
-		System.out.flush();
 		try {
 			return caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
 					timezone, md5, sha1, sha256, deviceId, trans);
@@ -163,7 +148,6 @@ class JniDbHelper {
 				fsObjIdForDb = null;
 			}
 			
-			System.out.println("@@@ addLayoutFile: parentObjId: " + parentObjId + ", fsObjId: " + fsObjId + ", dsObjId: " + dataSourceObjId);
 			long objId = caseDb.addFileSystemFileJNI(parentObjId, 
 				fsObjIdForDb, dataSourceObjId,
 				fileType,
@@ -181,7 +165,6 @@ class JniDbHelper {
 				true, trans);
 			return objId;
 		} catch (TskCoreException ex) {
-			System.out.println("\n@@@ Error in addLayoutFile");
 			ex.printStackTrace();
 			return -1;
 		}

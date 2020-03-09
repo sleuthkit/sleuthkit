@@ -984,12 +984,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
     jlong caseHandle, jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
     jboolean isCopy;
 
-    //TskCaseDb *tskCase = castCaseDb(env, caseHandle);
-    //if (tskCase == 0) {
-        //exception already set
-    //    return 0;
-    //}
-
     if (env->GetStringUTFLength(timeZone) > 0) {
         const char *tzstr = env->GetStringUTFChars(timeZone, &isCopy);
 
@@ -1041,12 +1035,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
 
     // Set up the callbacks
     if (TSK_ERR == tskAutoJava->initializeJni(env, callbackObj)) {
-        setThrowTskCoreError(env, "Error creating TskAutoDbJava");
+        setThrowTskCoreError(env, "Error initializing JNI callbacks");
         return 0;
     }
-
-    printf("\n#### initializeAddImgNat is returning TskAutoDbJava pointer 0x%x\n", tskAutoJava);
-    fflush(stdout);
 
     return (jlong)tskAutoJava;
 }
@@ -1179,8 +1170,6 @@ JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
     jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone, jstring imageWriterPathJ) {
     
-    printf("\n#### runAddImgNat has TskAutoDbJava pointer 0x%x\n", process);
-    fflush(stdout);
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *)process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env,
@@ -1226,15 +1215,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
     // Add the data source.
     uint8_t ret = 0;
     if ((ret = tskAuto->startAddImage(img_info, device_id)) != 0) {
-        printf("runAddImgNat - startAddImage finished with errors\n");
-        fflush(stdout);
         stringstream msgss;
         msgss << "Errors occurred while ingesting image " << std::endl;
-        printf("runAddImgNat - calling getErrorList\n");
-        fflush(stdout);
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
-        printf("runAddImgNat - error list has size %d\n", errors.size());
-        fflush(stdout);
         for (size_t i = 0; i < errors.size(); i++) {
             msgss << (i + 1) << ". ";
             msgss << (TskAuto::errorRecordToString(errors[i]));
@@ -1262,18 +1245,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
 
     // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     //close image first before freeing the image paths
-    printf("runAddImgNat - closing image\n");
-    fflush(stdout);
     tskAuto->closeImage();
 
     // Cleanup
-    printf("runAddImgNat - cleanup\n");
-    fflush(stdout);
     env->ReleaseStringUTFChars(deviceId, (const char *)device_id);
 
-    // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
-    printf("runAddImgNat - returning\n");
-    fflush(stdout);
+    // Must call finishAddImgNat to free the TskAutoDb
 }
 
 
@@ -1286,10 +1263,10 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat(JNIEnv * env,
     jclass obj, jlong process) {
-    TskAutoDb *tskAuto = ((TskAutoDb *) process);
+    TskAutoDbJava *tskAuto = ((TskAutoDbJava *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env,
-            "stopAddImgNat: Invalid TskAutoDb object passed in");
+            "stopAddImgNat: Invalid TskAutoDbJava object passed in");
         return;
     }
     tskAuto->stopAddImage();
@@ -1297,45 +1274,22 @@ JNIEXPORT void JNICALL
 
 
 /*
- * Revert the given add-image process.  Deletes the 'process' handle.
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param process the add-image process created by initAddImgNat
- */
-JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat(JNIEnv * env,
-    jclass obj, jlong process) {
-    TskAutoDb *tskAuto = ((TskAutoDb *) process);
-    if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
-        setThrowTskCoreError(env,
-            "revertAddImgNat: Invalid TskAutoDb object passed in");
-        return;
-    }
-    if (tskAuto->revertAddImage()) {
-        setThrowTskCoreError(env);
-        return;
-    }
-    delete tskAuto;
-    tskAuto = 0;
-}
-
-
-/*
- * Commit the given add-image process. Deletes the 'process' handle.
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param process the add-image process created by initAddImgNat
- */
+* Completes the given add-image process. Deletes the 'process' handle and
+* returns the ID of the added image.
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param process the add-image process created by initAddImgNat
+*/
 JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNat(JNIEnv * env,
+Java_org_sleuthkit_datamodel_SleuthkitJNI_finishAddImgNat(JNIEnv * env,
     jclass obj, jlong process) {
-    TskAutoDb *tskAuto = ((TskAutoDb *) process);
+    TskAutoDbJava *tskAuto = ((TskAutoDbJava *)process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env,
-             "commitAddImgNat: Invalid TskAutoDb object passed in");
+            "commitAddImgNat: Invalid TskAutoDb object passed in");
         return -1;
     }
-    int64_t imgId = tskAuto->commitAddImage();
+    int64_t imgId = tskAuto->getImageID();
     delete tskAuto;
     tskAuto = 0;
     if (imgId == -1) {
