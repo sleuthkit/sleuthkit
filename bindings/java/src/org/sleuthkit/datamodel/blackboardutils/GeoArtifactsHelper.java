@@ -112,9 +112,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	/**
 	 * Adds a TSK_GPS_ROUTE artifact to the case database. A Global Positioning
 	 * System (GPS) route artifact records one or more waypoints entered into a
-	 * GPS-enabled device as a route as a route to be navigated from waypoint to
-	 * waypoint. A waypoint is a location in a geographic coordinate system with
-	 * latitude, longitude and altitude (elevation) axes.
+	 * GPS-enabled device as a route to be navigated from waypoint to waypoint.
+	 * A waypoint is a location in a geographic coordinate system with latitude,
+	 * longitude and altitude (elevation) axes.
 	 *
 	 * @param routeName      The name of the GPS route, may be null.
 	 * @param creationTime   The time at which the route was created as

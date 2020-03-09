@@ -33,9 +33,9 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.
  * GeoTrackPoint represents a track point, which is a location in a geographic
  * coordinate system with latitude, longitude and altitude (elevation) axes.
  *
- * A TSK_GPS_TRACK artifact uses a TSK_GEO_TRACKPOINTS attribute to record a
- * track, or path, of a GPS-enabled device as a connected series of track points
- * .
+ * TSK_GEO_TRACKPOINTS attributes are used by TSK_GPS_TRACK artifacts to record
+ * a track, or path, of a GPS-enabled device as a connected series of track
+ * points.
  */
 public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskGeoTrackpointsUtil.GeoTrackPointList> {
 
@@ -262,7 +262,6 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskG
 			/**
 			 * Gets the distance the device has traveled in meters at the time
 			 * this track point was created, if known.
-			 *
 			 *
 			 * @return The distance traveled in meters, may be null or zero.
 			 */

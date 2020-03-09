@@ -28,13 +28,15 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil.Ge
 
 /**
  * A utility class for converting between a TSK_GEO_WAYPOINTS attribute and a
- * GeoWaypointList. A GeoWaypointList is a collection of GeoWaypoints. A
- * GeoWaypoint represents a waypoint, which is a location in a geographic
- * coordinate system with latitude, longitude and altitude (elevation) axes.
+ * GeoWaypointList object. A GeoWaypointList is a collection of GeoWaypoints
+ * objects. A GeoWaypoint represents a waypoint for a GPS-enabled device with a
+ * navigation capability. Every waypoint is a location, possibly named, in a
+ * geographic coordinate system with latitude, longitude and altitude
+ * (elevation) axes.
  *
- * A TSK_GPS_ROUTE artifact uses a TSK_GEO_WAYPOINTS attribute to record one or
- * more waypoints entered into a GPS-enabled device as a route to be navigated
- * from waypoint to waypoint.
+ * TSK_GEO_WAYPOINTS attributes are used by TSK_GPS_ROUTE artifacts to record
+ * one or more waypoints linked together as a route to be navigated from
+ * waypoint to waypoint.
  */
 public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWaypointList> {
 
@@ -92,9 +94,9 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 	}
 
 	/**
-	 * A list of GeoWaypoints. A GeoWaypoint represents a waypoint, which is a
-	 * location in a geographic coordinate system with latitude, longitude and
-	 * altitude (elevation) axes.
+	 * A list of GeoWaypoints. A GeoWaypoint represents a waypoint, which is a a
+	 * location, possibly named, in a geographic coordinate system with
+	 * latitude, longitude and altitude (elevation) axes.
 	 */
 	public static final class GeoWaypointList implements Iterable<GeoWaypointList.GeoWaypoint> {
 
@@ -107,17 +109,6 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 			points = new ArrayList<>();
 		}
 
-//		/**
-//		 * Adds a point to the list of waypoints.
-//		 *
-//		 * @param latitude  The latitude, required
-//		 * @param longitude The longitude, required
-//		 * @param altitude  The altitude, can be null
-//		 * @param name		    A name for the point, can be null
-//		 */
-//		public void addPoint(Double latitude, Double longitude, Double altitude, String name) {
-//			points.add(new GeoWaypoint(latitude, longitude, altitude, name));
-//		}
 		/**
 		 * Adds a waypoint to this list of waypoints.
 		 *
@@ -146,9 +137,9 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 		}
 
 		/**
-		 * A representation of a waypoint, which is a location in a geographic
-		 * coordinate system with latitude, longitude and altitude (elevation)
-		 * axes.
+		 * A representation of a waypoint, which is a a location, possibly
+		 * named, in a geographic coordinate system with latitude, longitude and
+		 * altitude (elevation) axes.
 		 */
 		public static class GeoWaypoint {
 
@@ -158,9 +149,9 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 			private final String name;
 
 			/**
-			 * Constructs a representation of a track point, which is a location
-			 * in a geographic coordinate system with latitude, longitude and
-			 * altitude (elevation) axes.
+			 * Constructs a representation of a waypoint, which is a a location,
+			 * possibly named, in a geographic coordinate system with latitude,
+			 * longitude and altitude (elevation) axes.
 			 *
 			 * @param latitude  The latitude of the waypoint.
 			 * @param longitude The longitude of the waypoint.
