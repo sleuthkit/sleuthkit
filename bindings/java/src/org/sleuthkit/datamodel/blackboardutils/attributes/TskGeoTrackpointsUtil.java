@@ -37,7 +37,7 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.
  * a track, or path, of a GPS-enabled device as a connected series of track
  * points.
  */
-public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<TskGeoTrackpointsUtil.GeoTrackPointList> {
+public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoTrackPointList> {
 
 	@Override
 	public BlackboardAttribute toAttribute(String moduleName, GeoTrackPointList value) {
