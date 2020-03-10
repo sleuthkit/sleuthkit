@@ -27,14 +27,21 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil.Ge
 import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil.GeoWaypointList.GeoWaypoint;
 
 /**
- * Utility class for Translating TSK_GEO_WAYPOINTS attribute values to
- * GeoWaypointList objects and GeoWaypointList to BlackboardAttributes.
+ * A utility class for converting between a TSK_GEO_WAYPOINTS attribute and a
+ * GeoWaypointList object. A GeoWaypointList is a collection of GeoWaypoints
+ * objects. A GeoWaypoint represents a waypoint for a GPS-enabled device with a
+ * navigation capability. Every waypoint is a location, possibly named, in a
+ * geographic coordinate system with latitude, longitude and altitude
+ * (elevation) axes.
+ *
+ * TSK_GEO_WAYPOINTS attributes are used by TSK_GPS_ROUTE artifacts to record
+ * one or more waypoints linked together as a route to be navigated from
+ * waypoint to waypoint.
  */
 public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWaypointList> {
 
 	@Override
 	public BlackboardAttribute toAttribute(String moduleName, GeoWaypointList value) {
-
 		if (value == null) {
 			throw new IllegalArgumentException("toAttribute was pass a null list");
 		}
@@ -60,61 +67,65 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 	}
 
 	/**
-	 * Deserialize the given list of GeoTrackPoints.
+	 * Constructs a GeoWaypointList object from its JSON representation.
 	 *
-	 * @param jsonString JSon string of track points.
+	 * @param json A JSON representation of a GeoWaypointList.
 	 *
-	 * @return	Timestamp ordered list of GeoTrackPoints, empty list will be
-	 *         returned if jsonString is null or empty.
+	 * @return	The GeoWaypointList object.
 	 */
-	private static GeoWaypointList fromJSON(String jsonString) {
-		if (jsonString == null || jsonString.isEmpty()) {
+	private static GeoWaypointList fromJSON(String json) {
+		if (json == null || json.isEmpty()) {
 			return null;
 		}
 
-		return (new Gson()).fromJson(jsonString, GeoWaypointList.class);
+		return (new Gson()).fromJson(json, GeoWaypointList.class);
 	}
 
 	/**
-	 * Returns a JSON string can than be used as the TSK_GEO_TRACKPOINTS
-	 * attribute of the TSK_GPS_TRACK artifact.
+	 * Creates a JSON representation of a GeoWaypointList object.
 	 *
-	 * @return JSON string
+	 * @param waypoints A GeoWaypointList object.
+	 *
+	 * @return The JSON representation of the GeoWaypointList object.
 	 */
-	private static String toJSON(GeoWaypointList pointList) {
+	private static String toJSON(GeoWaypointList waypoints) {
 		Gson gson = new Gson();
-		return gson.toJson(pointList);
+		return gson.toJson(waypoints);
 	}
 
 	/**
-	 * Helper class to make it easier to serialize and deserialize the list of
-	 * waypoints points with json.
-	 *
+	 * A list of GeoWaypoints. A GeoWaypoint represents a waypoint, which is a a
+	 * location, possibly named, in a geographic coordinate system with
+	 * latitude, longitude and altitude (elevation) axes.
 	 */
 	public static final class GeoWaypointList implements Iterable<GeoWaypointList.GeoWaypoint> {
 
 		private final List<GeoWaypoint> points;
 
+		/**
+		 * Constructs an empty GeoWaypointList.
+		 */
 		public GeoWaypointList() {
 			points = new ArrayList<>();
 		}
 
 		/**
-		 * Adds a point to the list of waypoints.
+		 * Adds a waypoint to this list of waypoints.
 		 *
-		 * @param latitude  The latitude, required
-		 * @param longitude The longitude, required
-		 * @param altitude  The altitude, can be null
-		 * @param name		A name for the point, can be null
+		 * @param wayPoint A waypoint.
 		 */
-		public void addPoint(Double latitude, Double longitude, Double altitude, String name) {
-			points.add(new GeoWaypoint(latitude, longitude, altitude, name));
+		public void addPoint(GeoWaypoint wayPoint) {
+			if (wayPoint == null) {
+				throw new IllegalArgumentException("addPoint was passed a null waypoint");
+			}
+
+			points.add(wayPoint);
 		}
 
 		/**
-		 * Returns true if this list contains no points.
+		 * Returns whether or not this list of waypoints is empty.
 		 *
-		 * @return True if this list contains no points.
+		 * @return True or false.
 		 */
 		public boolean isEmpty() {
 			return points.isEmpty();
@@ -126,8 +137,9 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 		}
 
 		/**
-		 * Class that represents a single waypoint made up of longitude,
-		 * latitude, and altitude.
+		 * A representation of a waypoint, which is a a location, possibly
+		 * named, in a geographic coordinate system with latitude, longitude and
+		 * altitude (elevation) axes.
 		 */
 		public static class GeoWaypoint {
 
@@ -137,16 +149,22 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 			private final String name;
 
 			/**
-			 * Creates a GeoWaypoint instance.
+			 * Constructs a representation of a waypoint, which is a a location,
+			 * possibly named, in a geographic coordinate system with latitude,
+			 * longitude and altitude (elevation) axes.
 			 *
-			 * @param latitude  The latitude, required
-			 * @param longitude The longitude, required
-			 * @param altitude  The altitude, can be null
-			 * @param name		A name for the waypoint, optional
+			 * @param latitude  The latitude of the waypoint.
+			 * @param longitude The longitude of the waypoint.
+			 * @param altitude  The altitude of the waypoint, may be null.
+			 * @param name      The name of the waypoint, may be null.
 			 */
 			public GeoWaypoint(Double latitude, Double longitude, Double altitude, String name) {
-				if (latitude == null || longitude == null) {
-					throw new IllegalArgumentException("Constructor was passed null coordinate");
+				if (latitude == null) {
+					throw new IllegalArgumentException("Constructor was passed null latitude");
+				}
+
+				if (longitude == null) {
+					throw new IllegalArgumentException("Constructor was passed null longitude");
 				}
 
 				this.latitude = latitude;
@@ -156,38 +174,36 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 			}
 
 			/**
-			 * Returns latitude of the waypoint.
+			 * Gets the latitude of this waypoint.
 			 *
-			 * @return Double latitude value
+			 * @return The latitude.
 			 */
 			public Double getLatitude() {
 				return latitude;
 			}
 
 			/**
-			 * Returns longitude of the waypoint.
+			 * Gets the longitude of this waypoint.
 			 *
-			 * @return Double longitude value
+			 * @return The longitude.
 			 */
 			public Double getLongitude() {
 				return longitude;
 			}
 
 			/**
-			 * Get the altitude if available for this waypoint.
+			 * Get the altitude of this waypoint, if available.
 			 *
-			 * @return Double altitude value, may be null if not available or
-			 *         applicable
+			 * @return The altitude, may be null or zero.
 			 */
 			public Double getAltitude() {
 				return altitude;
 			}
 
 			/**
-			 * Returns the name for this waypoint.
+			 * Get the name of this waypoint, if available.
 			 *
-			 * @return	Returns waypoint name, may be null if not available or
-			 *         applicable.
+			 * @return	The name, may be null or empty.
 			 */
 			public String getName() {
 				return name;
