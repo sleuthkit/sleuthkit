@@ -2,11 +2,19 @@
 
 
 # Introduction
-This document reflects current standard usage of artifacts and attributes for posting analysis results to the case blackboard.
-
-Note that "TSK" is an abbreviation of "The SleuthKit." Artifact type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
+This document reflects current standard usage of artifact and attribute types for posting analysis results to the case blackboard in Autopsy.  Refer to \ref mod_bbpage for more background on the blackboard and how to make artifacts. 
 
 The catalog section below has one entry for each standard artifact type. Each entry lists the required and optional attributes of artifacts of the type.
+
+NOTE:
+- While we have listed some attributes as "Required", nothing will enforce that they exist. Modules that use artifacts from the blackboard should assume that some of the attributes may not actually exist. 
+- You are not limited to the attributes listed below for each artifact.  Attributes are listed below as "Optional" if at least one, but not all, Autopsy modules create them.  If you want to store data that is not listed below, use an existing attribute type or make your own.  
+
+For the full list of types, refer to:
+- org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE
+- org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE
+
+
 <h1>Artifacts Catalog</h1>
 
 In alphabetical order.
@@ -26,6 +34,8 @@ TSK_CARD_NUMBER (Credit card number)
 - TSK_SET_NAME (The keyword list name, i.e., "Credit Card Numbers", when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
 
 ---
+
+
 ## TSK_ASSOCIATED_OBJECT
 Provides a backwards link to an artifact that references the parent file of this artifact.  Example usage is that a downloaded file will have this artifact and it will point back to the TSK_WEB_DOWNLOAD artifact that is associated with a browser's SQLite database. See \ref jni_bb_associated_object.
 

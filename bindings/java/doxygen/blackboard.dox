@@ -8,11 +8,17 @@ The blackboard allows modules (in Autopsy or other frameworks) to communicate an
 
 The blackboard is a collection of <em>artifacts</em>.  Each artifact has a type, such as web browser history, EXIF, or GPS track points. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE and the \ref artifact_catalog_page "artifact catalog") and you can also \ref jni_bb_artifact2 "create your own". 
 
-Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, Created Date, or Device Make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also create your own.  See the \ref artifact_catalog_page "artifact catalog" for a list of artifacts and the attributes that should be associated with each.
+Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, Created Date, or Device Make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also create your own.  
+
+See the \ref artifact_catalog_page "artifact catalog" for a list of artifacts and the attributes that should be associated with each.
 
 When a module wants to store its results in the blackboard, it makes an artifact of the correct type and then adds attributes to it. Other modules can then query the blackboard for artifacts of a given type or artifacts associated with a given file. 
 
-There are two special types of artifacts that are used a bit differently than the rest. The first is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store single attributes that are not related to each other and that do not need their own artifact. There are special methods to access this artifact to ensure that only a single TSK_GEN_INFO artifact is created per Content object and that you get a cached version of the artifact. These methods will be given in the relevant sections below.
+\subsection jni_bb_specialart Special Artifact Types
+
+There are two special types of artifacts that are used a bit differently than the rest. 
+
+The first is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store a single, independent attribute that will not be displayed in the UI. Autopsy used to store the MD5 hash and MIME type in TSK_GEN_INFO, but they are now in the files table of the database. There are special methods to access this artifact to ensure that only a single TSK_GEN_INFO artifact is created per Content object and that you get a cached version of the artifact. These methods will be given in the relevant sections below.
 
 The second special type of artifact is the TSK_ASSOCIATED_OBJECT. All artifacts are created as the child of a file or artifact. This TSK_ASSOCIATED_OBJECT is used to make additional relationships with files and artifacts apart from this parent-child relationship. See the \ref jni_bb_associated_object section below.
 
@@ -94,15 +100,21 @@ You can find artifacts using a variety of ways:
 \section jni_bb_custom_types Custom Artifacts and Attributes
 
 This section outlines how to create artifact and attribute types because the standard ones do not meet your needs. These custom artifacts will be displayed
-in the Autopsy UI alongside the built in artifacts and will also appear in the reports. However, before you make a custom type, you should consider the 
+in the Autopsy UI alongside the built in artifacts and will also appear in the reports. 
+
+However, before you make a custom type, you should consider the 
 TSK_INTERESTING_FILE_HIT artifact.  It is very generic and we have used it 
 in the past when we did not want to make a new artifact type. You create the artifact, use the TSK_SET_NAME attribute to define the equivalent name of the custom artifact that you wanted to create, and then add whatever attributes  you want. 
 
 
 \subsection jni_bb_custom_make Making Custom Artifacts and Attributes
+
+
 org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
 
 To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the type and get its ID. Like artifacts, you must create the type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). 
+
+Note that "TSK" is an abbreviation of "The Sleuth Kit." Artifact and attribute type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
 
 
 */

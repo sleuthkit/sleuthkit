@@ -1232,6 +1232,12 @@ public class BlackboardArtifact implements Content {
 		
 		TSK_GPS_TRACK(58, "TSK_GPS_TRACK",
 				bundle.getString("BlackboardArtifact.tskTrack.text"));
+        /* To developers: For each new artifact, ensure that:
+         * - The enum value has 1-line JavaDoc description
+         * - The artifact catalog (artifact_catalog.dox) is updated to reflect the attributes it uses
+         */
+
+
 
 		private final String label;
 		private final int typeId;
