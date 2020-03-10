@@ -42,6 +42,7 @@ class TskAutoDbJava :public TskAuto {
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual void closeImage();
+    void close();
     virtual void setTz(string tzone);
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
@@ -52,12 +53,6 @@ class TskAutoDbJava :public TskAuto {
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path);
     const std::string getCurDir();
-    
-    /**
-    * Check if we can talk to the database.
-    * Returns true if the database is reachable with current credentials, false otherwise.
-    */
-    bool isDbOpen();
 
     /**
      * Sets whether or not the file systems for an image should be added when 
@@ -159,9 +154,9 @@ class TskAutoDbJava :public TskAuto {
     uint32_t hash(const unsigned char* str);
 
     // JNI data
-    JNIEnv * m_jniEnv;
-    jclass m_callbackClass;
-    jobject m_javaDbObj;
+    JNIEnv * m_jniEnv = NULL;
+    jclass m_callbackClass = NULL;
+    jobject m_javaDbObj = NULL;
     jmethodID m_addImageMethodID = NULL;
     jmethodID m_addImageNameMethodID = NULL;
     jmethodID m_addVolumeSystemMethodID = NULL;

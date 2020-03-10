@@ -1119,20 +1119,12 @@ JNIEXPORT void JNICALL
         }
 
         if (ret == 1) {
-            //fatal error
+            // Fatal error
             setThrowTskCoreError(env, msgss.str().c_str());
         }
         else if (ret == 2) {
-            // TODO TODO
-            setThrowTskCoreError(env, msgss.str().c_str());
-            /*if(tskAuto->isDbOpen()) {
-                // if we can still talk to the database, it's a non-fatal error
-                setThrowTskDataError(env, msgss.str().c_str());
-            }
-            else {
-                // we cannot talk to the database, fatal error
-                setThrowTskCoreError(env, msgss.str().c_str());
-            }*/
+            // Non-fatal error
+            setThrowTskDataError(env, msgss.str().c_str());
         }
     }
 
@@ -1151,7 +1143,7 @@ JNIEXPORT void JNICALL
     free(imagepaths8);
     env->ReleaseStringUTFChars(deviceId, (const char *) device_id);
 
-    // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
+    // // Must call finishAddImgNat to free the TskAutoDb
 }
 
 /*
@@ -1281,6 +1273,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_finishAddImgNat(JNIEnv * env,
         return -1;
     }
     int64_t imgId = tskAuto->getImageID();
+    tskAuto->close();
     delete tskAuto;
     tskAuto = 0;
     if (imgId == -1) {
