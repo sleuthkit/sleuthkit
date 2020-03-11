@@ -213,13 +213,6 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
         type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj);
     objId = (int64_t)objIdj;
 
-   // m_jniEnv->ReleaseStringUTFChars(tzj, tz_cstr);
-  //  m_jniEnv->ReleaseStringUTFChars(md5j, md5_cstr);
-  //  m_jniEnv->ReleaseStringUTFChars(sha1j, sha1_cstr);
-  ////  m_jniEnv->ReleaseStringUTFChars(sha256j, sha256_cstr);
-  //  m_jniEnv->ReleaseStringUTFChars(devIdj, devId_cstr);
-  //  m_jniEnv->ReleaseStringUTFChars(collj, coll_cstr);
-
     if (objId < 0) {
         return TSK_ERR;
     }
@@ -331,8 +324,6 @@ TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         descj, pool_vol->flags);
     objId = (int64_t)objIdj;
 
-    //m_jniEnv->ReleaseStringUTFChars(descj, pool_vol->desc);
-
     if (objId < 0) {
         return TSK_ERR;
     }
@@ -359,8 +350,6 @@ TskAutoDbJava::addVolumeInfo(const TSK_VS_PART_INFO* vs_part,
         parObjId, (uint64_t)vs_part->addr, vs_part->start, vs_part->len,
         descj, vs_part->flags);
     objId = (int64_t)objIdj;
-
-    //m_jniEnv->ReleaseStringUTFChars(descj, vs_part->desc);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -640,10 +629,6 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         pathj, extj);
     objId = (int64_t)objIdj;
 
-   // m_jniEnv->ReleaseStringUTFChars(namej, name);
-   // m_jniEnv->ReleaseStringUTFChars(pathj, escaped_path);
-   // m_jniEnv->ReleaseStringUTFChars(extj, extension);
-
     if (objId < 0) {
         return TSK_ERR;
     }
@@ -687,9 +672,6 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             meta_mode, gid, uid, // md5TextPtr, known,
             pathj, slackExtj);
         int64_t slackObjId = (int64_t)objIdj;
-
-      //  m_jniEnv->ReleaseStringUTFChars(slackNamej, name);
-      //  m_jniEnv->ReleaseStringUTFChars(slackExtj, extension);
 
         if (slackObjId < 0) {
             return TSK_ERR;
@@ -810,8 +792,6 @@ TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, c
         parentObjId, fsObjId, dataSourceObjId, dbFileType, namej, size);
     objId = (int64_t)objIdj;
 
-  //  m_jniEnv->ReleaseStringUTFChars(namej, fileNameSs.str().c_str());
-
     if (objId < 0) {
         return TSK_ERR;
     }
@@ -886,8 +866,6 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addUnallocParentMethodID,
         fsObjId, namej);
     objId = (int64_t)objIdj;
-
-   // m_jniEnv->ReleaseStringUTFChars(namej, unallocDirName);
 
     if (objId < 0) {
         return TSK_ERR;
@@ -1043,9 +1021,6 @@ TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, 
         fs_file->name->par_addr, fsObjId, jpath, jname);
     int64_t objId = (int64_t)objIdj;
 
-  //  m_jniEnv->ReleaseStringUTFChars(jpath, parent_path);
-   // m_jniEnv->ReleaseStringUTFChars(jname, parent_name);
-
     if (objId < 0) {
         return -1;
     }
@@ -1072,8 +1047,6 @@ TskAutoDbJava::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t
         parObjId, vol_index, 0, 0,
         descj, 0);
     objId = (int64_t)objIdj;
-
-   // m_jniEnv->ReleaseStringUTFChars(descj, desc);
 
     if (objId < 0) {
         return TSK_ERR;
