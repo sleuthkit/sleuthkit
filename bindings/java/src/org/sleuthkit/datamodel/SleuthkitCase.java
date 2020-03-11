@@ -96,7 +96,7 @@ public class SleuthkitCase {
 	 * This must be the same as TSK_SCHEMA_VER and TSK_SCHEMA_MINOR_VER in
 	 * tsk/auto/tsk_db.h.
 	 */
-	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
+	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
 			= new CaseDbSchemaVersionNumber(8, 4);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
@@ -2338,7 +2338,10 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase newCase(String dbPath) throws TskCoreException {
 		try {
-			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
+			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
+			factory.createCaseDatabase();
+
+			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
@@ -2375,7 +2378,10 @@ public class SleuthkitCase {
 			 * the case. In this way, we obtain more detailed information if we
 			 * are able, but do not lose any information if unable.
 			 */
-			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(databaseName, info);
+			CaseDatabaseFactory factory = new CaseDatabaseFactory(databaseName, info);
+			factory.createCaseDatabase();
+
+			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
 					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType());
 		} catch (PropertyVetoException exp) {
