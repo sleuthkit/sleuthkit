@@ -77,15 +77,15 @@ class JniDbHelper {
 	 * Add a new image to the database.
 	 * Intended to be called from the native code during the add image process.
 	 * 
-	 * @param type
-	 * @param ssize
-	 * @param timezone
-	 * @param size
-	 * @param md5
-	 * @param sha1
-	 * @param sha256
-	 * @param deviceId
-	 * @param collectionDetails
+     * @param type        Type of image.
+	 * @param ssize       Sector size.
+	 * @param timezone    Time zone.
+	 * @param size        Image size.
+	 * @param md5         MD5 hash.
+	 * @param sha1        SHA1 hash.
+	 * @param sha256      SHA256 hash.
+	 * @param deviceId    Device ID.
+	 * @param collectionDetails  The collection details.
 	 * 
 	 * @return The object ID of the new image or -1 if an error occurred
 	 */
@@ -94,7 +94,7 @@ class JniDbHelper {
 			String collectionDetails) {
 		try {
 			return caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
-					timezone, md5, sha1, sha256, deviceId, trans);
+					timezone, md5, sha1, sha256, deviceId, collectionDetails, trans);
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Error adding image to the database", ex);
 			return -1;
@@ -105,9 +105,9 @@ class JniDbHelper {
 	 * Add an image name to the database. 
 	 * Intended to be called from the native code during the add image process.
 	 * 
-	 * @param objId
-	 * @param name
-	 * @param sequence
+	 * @param objId    The object id of the image.
+	 * @param name     The file name for the image
+	 * @param sequence The sequence number of this file.
 	 * 
 	 * @return 0 if successful, -1 if not
 	 */
@@ -220,29 +220,35 @@ class JniDbHelper {
 	 * Add a file to the database. 
 	 * Intended to be called from the native code during the add image process.
 	 * 
-	 * @param parentObjId
-	 * @param fsObjId
-	 * @param dataSourceObjId
-	 * @param fsType
-	 * @param attrType
-	 * @param attrId
-	 * @param name
-	 * @param metaAddr
-	 * @param metaSeq
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlags
-	 * @param metaFlags
-	 * @param size
-	 * @param crtime
-	 * @param ctime
-	 * @param atime
-	 * @param mtime
-	 * @param meta_mode
-	 * @param gid
-	 * @param uid
-	 * @param escaped_path
-	 * @param extension
+	 * @param parentObjId     The parent of the file.
+	 * @param fsObjId         The object ID of the file system.
+	 * @param dataSourceObjId The data source object ID.
+	 * @param fsType    The type.
+	 * @param attrType  The type attribute given to the file by the file system.
+	 * @param attrId    The type id given to the file by the file  system.
+	 * @param name      The name of the file.
+	 * @param metaAddr  The meta address of the file.
+	 * @param metaSeq   The meta sequence number of the file.
+	 * @param dirType   The type of the file, usually as reported in
+	 *                     the name structure of the file system. 
+	 * @param metaType  The type of the file, usually as reported in
+	 *                     the metadata structure of the file system.
+	 * @param dirFlags  The allocated status of the file, usually as
+	 *                     reported in the name structure of the file system.
+	 * @param metaFlags The allocated status of the file, usually as
+	 *                     reported in the metadata structure of the file system.
+	 * @param size      The file size.
+	 * @param crtime    The created time.
+	 * @param ctime     The last changed time
+	 * @param atime     The last accessed time.
+	 * @param mtime     The last modified time.
+	 * @param meta_mode The modes for the file.
+	 * @param gid       The group identifier.
+	 * @param uid       The user identifier.
+	 * @param md5       The MD5 hash.
+	 * @param known     The file known status.
+	 * @param escaped_path The escaped path to the file.
+	 * @param extension    The file extension.
 	 * 
 	 * @return The object ID of the new file or -1 if an error occurred
 	 */
@@ -257,7 +263,7 @@ class JniDbHelper {
         int meta_mode, int gid, int uid,
         String escaped_path, String extension) {
 		try {
-			long objId = caseDb.addFileSystemFileJNI(parentObjId, 
+			long objId = caseDb.addFileJNI(parentObjId, 
 				fsObjId, dataSourceObjId,
 				fsType,
 				attrType, attrId, name,
@@ -286,12 +292,12 @@ class JniDbHelper {
 	 * Add a layout file to the database. 
 	 * Intended to be called from the native code during the add image process.
 	 * 
-	 * @param parentObjId
-	 * @param fsObjId
-	 * @param dataSourceObjId
-	 * @param fileType
-	 * @param name
-	 * @param size
+	 * @param parentObjId     The parent object ID of the layout file.
+	 * @param fsObjId         The file system object ID.
+	 * @param dataSourceObjId The data source object ID.
+	 * @param fileType        The file type.
+	 * @param name            The file name.
+	 * @param size            The file size.
 	 * 
 	 * @return The object ID of the new file or -1 if an error occurred
 	 */
@@ -306,7 +312,7 @@ class JniDbHelper {
 				fsObjIdForDb = null;
 			}
 			
-			long objId = caseDb.addFileSystemFileJNI(parentObjId, 
+			long objId = caseDb.addFileJNI(parentObjId, 
 				fsObjIdForDb, dataSourceObjId,
 				fileType,
 				null, null, name,
@@ -333,10 +339,10 @@ class JniDbHelper {
 	 * Add a layout file range to the database. 
 	 * Intended to be called from the native code during the add image process.
 	 * 
-	 * @param objId
-	 * @param byteStart
-	 * @param byteLen
-	 * @param seq
+	 * @param objId     Object ID of the layout file.
+	 * @param byteStart Start byte.
+	 * @param byteLen   Length in bytes.
+	 * @param seq       Sequence number of this range.
 	 * 
 	 * @return 0 if successful, -1 if not
 	 */

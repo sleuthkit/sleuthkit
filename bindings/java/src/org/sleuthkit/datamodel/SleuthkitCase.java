@@ -10960,28 +10960,28 @@ public class SleuthkitCase {
 		}
 	}
 	
-		/**
+	/**
 	 * Add an image to the database.
+	 * For use with the JNI callbacks associated with the add image process.
 	 *
-	 * @param type        Type of image
-	 * @param sectorSize  Sector size
-	 * @param size        Image size
-	 * @param displayName Display name for the image
-	 * @param imagePaths  Image path(s)
-	 * @param timezone    Time zone
-	 * @param md5         MD5 hash
-	 * @param sha1        SHA1 hash
-	 * @param sha256      SHA256 hash
-	 * @param deviceId    Device ID
-	 * @param transaction Case DB transaction
+	 * @param type        Type of image.
+	 * @param sectorSize  Sector size.
+	 * @param size        Image size.
+	 * @param timezone    Time zone.
+	 * @param md5         MD5 hash.
+	 * @param sha1        SHA1 hash.
+	 * @param sha256      SHA256 hash.
+	 * @param deviceId    Device ID.
+	 * @param collectionDetails Collection details.
+	 * @param transaction Case DB transaction.
 	 *
-	 * @return the newly added Image object ID
+	 * @return The newly added Image object ID.
 	 *
 	 * @throws TskCoreException
 	 */
 	long addImageJNI(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size,
 			String timezone, String md5, String sha1, String sha256,
-			String deviceId,
+			String deviceId, String collectionDetails,
 			CaseDbTransaction transaction) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
 		try {
@@ -11011,7 +11011,7 @@ public class SleuthkitCase {
 			preparedStatement.setLong(1, newObjId);
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
-			preparedStatement.setString(4, "");
+			preparedStatement.setString(4, collectionDetails);
 			connection.executeUpdate(preparedStatement);
 
 			return newObjId;
@@ -11022,6 +11022,17 @@ public class SleuthkitCase {
 		}
 	}
 	
+	/**
+	 * Add an image name to the database.
+	 * For use with the JNI callbacks associated with the add image process.
+	 * 
+	 * @param objId    The object id of the image.
+	 * @param name     The file name for the image
+	 * @param sequence The sequence number of this file.
+	 * @param transaction The open transaction.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	void addImageNameJNI(long objId, String name, long sequence,
 			CaseDbTransaction transaction) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
@@ -11040,8 +11051,22 @@ public class SleuthkitCase {
 		}
 	}
 	
+	/**
+	 * Looks up a parent file object ID.
+	 * The calling thread is expected to have a case read lock.
+	 * For use with the JNI callbacks associated with the add image process.
+	 * 
+	 * @param metaAddr  The metadata address.
+	 * @param fsObjId   The file system object ID.
+	 * @param path      The file path.
+	 * @param name      The file name.
+	 * @param transaction The open transaction.
+	 * 
+	 * @return The object ID if found, -1 otherwise.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	long findParentObjIdJNI(long metaAddr, long fsObjId, String path, String name, CaseDbTransaction transaction) throws TskCoreException {
-		acquireSingleUserCaseReadLock();
 		ResultSet resultSet = null;
 		try {
 			CaseDbConnection connection = transaction.getConnection();
@@ -11061,11 +11086,50 @@ public class SleuthkitCase {
 			throw new TskCoreException(String.format("Error looking up parent meta addr %d", metaAddr), ex);
 		} finally {
 			closeResultSet(resultSet);
-			releaseSingleUserCaseReadLock();
 		}
 	}
 	
-	long addFileSystemFileJNI(long parentObjId, 
+	/**
+	 * Add a file system file to the database.
+	 * For use with the JNI callbacks associated with the add image process.
+	 * 
+	 * @param parentObjId     The parent of the file.
+	 * @param fsObjId         The object ID of the file system.
+	 * @param dataSourceObjId The data source object ID.
+	 * @param fsType    The type.
+	 * @param attrType  The type attribute given to the file by the file system.
+	 * @param attrId    The type id given to the file by the file  system.
+	 * @param name      The name of the file.
+	 * @param metaAddr  The meta address of the file.
+	 * @param metaSeq   The meta sequence number of the file.
+	 * @param dirType   The type of the file, usually as reported in
+	 *                     the name structure of the file system. 
+	 * @param metaType  The type of the file, usually as reported in
+	 *                     the metadata structure of the file system.
+	 * @param dirFlags  The allocated status of the file, usually as
+	 *                     reported in the name structure of the file system.
+	 * @param metaFlags The allocated status of the file, usually as
+	 *                     reported in the metadata structure of the file system.
+	 * @param size      The file size.
+	 * @param crtime    The created time.
+	 * @param ctime     The last changed time
+	 * @param atime     The last accessed time.
+	 * @param mtime     The last modified time.
+	 * @param meta_mode The modes for the file.
+	 * @param gid       The group identifier.
+	 * @param uid       The user identifier.
+	 * @param md5       The MD5 hash.
+	 * @param known     The file known status.
+	 * @param escaped_path The escaped path to the file.
+	 * @param extension    The file extension.
+	 * @param hasLayout    True if this is a layout file, false otherwise.
+	 * @param transaction  The open transaction.
+	 * 
+	 * @return The object ID of the new file system
+	 * 
+	 * @throws TskCoreException 
+	 */
+	long addFileJNI(long parentObjId, 
 			Long fsObjId, long dataSourceObjId,
 			int fsType,
 			Integer attrType, Integer attrId, String name,
@@ -11093,7 +11157,7 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE_All_FIELDS);
 			statement.clearParameters();
 			if (fsObjId != null) {
-				statement.setLong(1, fsObjId);					// fs_obj_id
+				statement.setLong(1, fsObjId);			    // fs_obj_id
 			} else {
 				statement.setNull(1, java.sql.Types.BIGINT);
 			}
@@ -11147,17 +11211,17 @@ public class SleuthkitCase {
 				statement.setNull(18, java.sql.Types.BIGINT);
 			}
 			if (meta_mode != null) {
-				statement.setLong(19, meta_mode);               // mode
+				statement.setLong(19, meta_mode);           // mode
 			} else {
 				statement.setNull(19, java.sql.Types.BIGINT);
 			}
 			if (gid != null) {
-				statement.setLong(20, gid);               // gid
+				statement.setLong(20, gid);                 // gid
 			} else {
 				statement.setNull(20, java.sql.Types.BIGINT);
 			}
 			if (uid != null) {
-				statement.setLong(21, uid);               // uid
+				statement.setLong(21, uid);                 // uid
 			} else {
 				statement.setNull(21, java.sql.Types.BIGINT);
 			}
@@ -11172,6 +11236,7 @@ public class SleuthkitCase {
 			}
 			connection.executeUpdate(statement);
 
+			// If this is not a slack file create the timeline events
 			if (! hasLayout
 					&& TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType() != fsType
 					&& (!name.equals(".")) && (!name.equals(".."))) {
@@ -11194,6 +11259,18 @@ public class SleuthkitCase {
 		}
 	}
 	
+	/**
+	 * Add a layout file range to the database.
+	 * For use with the JNI callbacks associated with the add image process.
+	 * 
+	 * @param objId     Object ID of the layout file.
+	 * @param byteStart Start byte.
+	 * @param byteLen   Length in bytes.
+	 * @param seq       Sequence number of this range.
+	 * @param transaction The open transaction.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	void addLayoutFileRangeJNI(long objId, long byteStart, long byteLen, 
 			long seq, CaseDbTransaction transaction) throws TskCoreException {
 		try {
