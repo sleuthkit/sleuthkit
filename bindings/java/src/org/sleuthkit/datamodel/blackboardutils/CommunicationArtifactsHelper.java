@@ -551,16 +551,16 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, recipientsStr, attributes);
 				break;
 			default:  // direction UNKNOWN
-				
-				// if no sender, selfAccount substitutes caller.
 				if (StringUtils.isEmpty(senderId)) {
+					// if no sender, selfAccount substitutes caller.
 					senderAccountInstance = getSelfAccountInstance();
-				}	
-				// if no recipient specified, selfAccount substitutes recipient
-				if (isEffectivelyEmpty(recipientIdsList)) {
+				}
+				else if (isEffectivelyEmpty(recipientIdsList)) {
+					// else if no recipient specified, selfAccount substitutes recipient
 					recipientsStr = getSelfAccountInstance().getAccount().getTypeSpecificID();
 					recipientAccountsList.add(getSelfAccountInstance());
 				}	
+				
 				// save phone numbers in direction agnostic attributes
 				if (senderAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, senderAccountInstance.getAccount().getTypeSpecificID(), attributes);
