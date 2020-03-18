@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.blackboardutils.attributes;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -143,9 +144,13 @@ public final class TskGeoWaypointsUtil implements BlackboardAttributeUtil<GeoWay
 		 */
 		public static class GeoWaypoint {
 
+			@SerializedName("TSK_GEO_LATITUDE")
 			private final Double latitude;
+			@SerializedName("TSK_GEO_LONGITUDE")
 			private final Double longitude;
+			@SerializedName("TSK_GEO_ALTITUDE")
 			private final Double altitude;
+			@SerializedName("TSK_NAME")
 			private final String name;
 
 			/**

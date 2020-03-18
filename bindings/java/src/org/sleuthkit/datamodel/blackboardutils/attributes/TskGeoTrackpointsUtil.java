@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.blackboardutils.attributes;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -195,9 +196,13 @@ public final class TskGeoTrackpointsUtil implements BlackboardAttributeUtil<GeoT
 		 */
 		public final static class GeoTrackPoint extends TskGeoWaypointsUtil.GeoWaypointList.GeoWaypoint implements Comparable<GeoTrackPoint> {
 
+			@SerializedName("TSK_GEO_VELOCITY")
 			private final Double velocity;
+			@SerializedName("TSK_DISTANCE_FROM_HOMEPOINT")
 			private final Double distanceFromHomePoint;
+			@SerializedName("TSK_DISTANCE_TRAVELED")
 			private final Double distanceTraveled;
+			@SerializedName("TSK_DATETIME")
 			private final Long timestamp;
 
 			/**
