@@ -159,13 +159,6 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
             if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
                 (GetLastError() != NO_ERROR)) {
-                printf("### FAIL: 0x%llx\n", offset_to_read);
-                fflush(stdout);
-                //printf("\n### Error seeking in raw read\n");
-                //printf("  offset: 0x%llx\n", offset_to_read);
-                //printf("  sector size: 0x%x\n", raw_info->img_info.sector_size);
-                //printf("  path: %S\n", raw_info->img_info.images[idx]);
-                //fflush(stdout);
                 if (sector_aligned_buf != NULL) {
                     free(sector_aligned_buf);
                 }
@@ -178,8 +171,6 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                     lastError);
                 return -1;
             }
-            printf("### PASS: 0x%llx\n", offset_to_read);
-            fflush(stdout);
             cimg->seek_pos = offset_to_read;
         }
 
@@ -644,13 +635,11 @@ get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
 #ifdef TSK_WIN32
 /**
 * \internal
-* Test seeking to the given offset and then reading.
-* @return 1 if the read is successful, 0 if not
+* Test seeking to the given offset and then reading a sector.
+* @return 1 if the seek/read is successful, 0 if not
 */
 static int
 test_sector_read(HANDLE file_handle, TSK_OFF_T offset, DWORD len, char * buf) {
-    printf("### test_sector_read - offset: 0x%llx\n", offset);
-    fflush(stdout);
     LARGE_INTEGER li;
     li.QuadPart = offset;
 
@@ -659,24 +648,19 @@ test_sector_read(HANDLE file_handle, TSK_OFF_T offset, DWORD len, char * buf) {
         &li.HighPart, FILE_BEGIN);
     if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
         (GetLastError() != NO_ERROR)) {
-        printf("###   failed seek\n");
-        fflush(stdout);
         return 0;
     }
 
     // Read a byte at the given offset
     DWORD nread;
     if (FALSE == ReadFile(file_handle, buf, len, &nread, NULL)) {
-        printf("###   failed read (read returned FALSE) %d\n", GetLastError());
         return 0;
     }
-    if (nread != offset) {
-        printf("###   failed read (nread incorrect - 0x%x bytes read)\n", nread);
-        fflush(stdout);
+    if (nread != len) {
         return 0;
     }
-    printf("###   success\n");
-    fflush(stdout);
+
+    // Success
     return 1;
 }
 
@@ -698,8 +682,6 @@ find_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TSK_OFF_
         }
         return;
     }
-    printf("Opened image file\n");
-    fflush(stdout);
 
     // First test whether we need to align on sector boundaries
     char * buf = malloc(max_sector_size);
@@ -716,26 +698,20 @@ find_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TSK_OFF_
     // If reading a sector starting at offset 1 failed, the assumption is that we have a device
     // that requires reads to be sector-aligned. 
     if (needs_sector_alignment) {
-        printf("### Attempting to find sector size...\n");
         // Start at 512 and double up to max_sector_size (4096)
         unsigned int sector_size = 512;
         if (raw_info->img_info.sector_size > 512) {
             sector_size = raw_info->img_info.sector_size;
         }
-        printf("   Starting sector size: 0x%x\n", sector_size);
-        fflush(stdout);
 
         while (sector_size <= max_sector_size) {
-            // If we don't have enough data to do the test just leave it as the last value
+            // If we don't have enough data to do the test just stop
             if (first_seg_size < sector_size * 2) {
-                printf("   Not enough data to test sector size 0x%x\n", sector_size);
-                fflush(stdout);
                 break;
             }
 
             if (test_sector_read(file_handle, sector_size, sector_size, buf)) {
                 // Found a valid sector size
-                printf("  Sector size 0x%x looks good!\n", sector_size);
                 if (tsk_verbose) {
                     tsk_fprintf(stderr,
                         "find_sector_size: using sector size %d\n", sector_size);
@@ -816,15 +792,11 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     img_info->sector_size = 512;
 #ifdef TSK_WIN32
     /* On Windows, figure out the actual sector size if one was not given.
-    * This is to prevent problems reading from devices later. */
+     * This is to prevent problems reading from devices later. */
     if (a_ssize) {
-        printf("Using given sector size %d\n", a_ssize);
-        fflush(stdout);
         img_info->sector_size = a_ssize;
     }
     else {
-        printf("Calculating sector size\n");
-        fflush(stdout);
         find_sector_size(raw_info, a_images[0], first_seg_size);
     }
 #else
