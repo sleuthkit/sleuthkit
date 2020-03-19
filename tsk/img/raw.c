@@ -39,6 +39,17 @@
 #define S_IFDIR __S_IFDIR
 #endif
 
+/**
+ * \internal
+ * Test if the image is a Windows device
+ * @param The path to test
+ *
+ * Return 1 if the path represents a Windows device, 0 otherwise
+ */
+static int
+is_windows_device_path(const TSK_TCHAR * image_name) {
+    return (TSTRNCMP(image_name, _TSK_T("\\\\.\\"), 4) == 0);
+}
 
 /** 
  * \internal
@@ -133,7 +144,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // If the offset to seek to isn't sector-aligned and this is a device, we need to start at the previous sector boundary and
         // read some extra data.
         if ((offset_to_read % raw_info->img_info.sector_size != 0)
-                && (TSTRNCMP(raw_info->img_info.images[idx], _TSK_T("\\\\.\\"), 4) == 0)) {
+                && is_windows_device_path(raw_info->img_info.images[idx])) {
             offset_to_read = (offset_to_read / raw_info->img_info.sector_size) * raw_info->img_info.sector_size;
             len_to_read += raw_info->img_info.sector_size; // this length will already be a multiple of sector size
             sector_aligned_buf = (char *)tsk_malloc(len_to_read);
@@ -634,6 +645,11 @@ get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
 /**
 * \internal
 * Test seeking to the given offset and then reading a sector.
+* @param file_handle The open file handle to the image
+* @param offset      The offset to seek to (in bytes)
+* @param len         The length to read (in bytes). Should be a multiple of the sector size.
+* @param buf         An allocated buffer large enough to hold len bytes
+*
 * @return 1 if the seek/read is successful, 0 if not
 */
 static int
@@ -666,10 +682,15 @@ test_sector_read(HANDLE file_handle, TSK_OFF_T offset, DWORD len, char * buf) {
  * Attempts to calculate the actual sector size needed for reading the image.
  * If successful, the calculated sector size will be stored in raw_info. If it
  * fails the sector_size field will not be updated.
+ * @param raw_info    The incomplete IMG_RAW_INFO object. The sector_size field may be updated by this method.
+ * @param image_name  Image file name
+ * @param image_size  Image size
 */
-void
-find_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TSK_OFF_T first_seg_size) {
+static void
+set_device_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TSK_OFF_T image_size) {
+    unsigned int min_sector_size = 512;
     unsigned int max_sector_size = 4096;
+
     HANDLE file_handle = CreateFile(image_name, FILE_READ_DATA,
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
         NULL);
@@ -682,9 +703,9 @@ find_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TSK_OFF_
     }
 
     // First test whether we need to align on sector boundaries
-    char * buf = malloc(max_sector_size);
+    char* buf = malloc(max_sector_size);
     int needs_sector_alignment = 0;
-    if (first_seg_size > raw_info->img_info.sector_size) {
+    if (image_size > raw_info->img_info.sector_size) {
         if (test_sector_read(file_handle, 1, raw_info->img_info.sector_size, buf)) {
             needs_sector_alignment = 0;
         }
@@ -696,15 +717,12 @@ find_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TSK_OFF_
     // If reading a sector starting at offset 1 failed, the assumption is that we have a device
     // that requires reads to be sector-aligned. 
     if (needs_sector_alignment) {
-        // Start at 512 and double up to max_sector_size (4096)
-        unsigned int sector_size = 512;
-        if (raw_info->img_info.sector_size > 512) {
-            sector_size = raw_info->img_info.sector_size;
-        }
+        // Start at the minimum (512) and double up to max_sector_size (4096)
+        unsigned int sector_size = min_sector_size;
 
         while (sector_size <= max_sector_size) {
             // If we don't have enough data to do the test just stop
-            if (first_seg_size < sector_size * 2) {
+            if (image_size < sector_size * 2) {
                 break;
             }
 
@@ -786,20 +804,17 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
         return NULL;
     }
 
-    /* Set the sector size using the first image file or the given parameter*/
+    /* Set the sector size */
     img_info->sector_size = 512;
-#ifdef TSK_WIN32
-    /* On Windows, figure out the actual sector size if one was not given.
-     * This is to prevent problems reading from devices later. */
     if (a_ssize) {
         img_info->sector_size = a_ssize;
     }
-    else {
-        find_sector_size(raw_info, a_images[0], first_seg_size);
+#ifdef TSK_WIN32
+    else if (is_windows_device_path(a_images[0])) {
+        /* On Windows, figure out the actual sector size if one was not given and this is a device.
+         * This is to prevent problems reading later. */
+        set_device_sector_size(raw_info, a_images[0], first_seg_size);
     }
-#else
-    if (a_ssize)
-        img_info->sector_size = a_ssize;
 #endif
 
 
