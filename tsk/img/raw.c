@@ -39,6 +39,7 @@
 #define S_IFDIR __S_IFDIR
 #endif
 
+
 /** 
  * \internal
  * Read from one of the multiple files in a split set of disk images.
@@ -123,7 +124,6 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
 #ifdef TSK_WIN32
     {
-
         // Default to the values that were passed in
         TSK_OFF_T offset_to_read = rel_offset;
         size_t len_to_read = len;
@@ -134,7 +134,6 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // read some extra data.
         if ((offset_to_read % raw_info->img_info.sector_size != 0)
                 && (TSTRNCMP(raw_info->img_info.images[idx], _TSK_T("\\\\.\\"), 4) == 0)) {
-            //printf("\n#### Adjusting read offset: original 0x%llx\n", offset_to_read);
             offset_to_read = (offset_to_read / raw_info->img_info.sector_size) * raw_info->img_info.sector_size;
             len_to_read += raw_info->img_info.sector_size; // this length will already be a multiple of sector size
             sector_aligned_buf = (char *)tsk_malloc(len_to_read);
@@ -173,7 +172,6 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             }
             cimg->seek_pos = offset_to_read;
         }
-
 
         //For physical drive when the buffer is larger than remaining data,
         // WinAPI ReadFile call returns -1
