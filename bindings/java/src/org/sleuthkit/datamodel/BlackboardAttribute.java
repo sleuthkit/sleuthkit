@@ -1381,6 +1381,14 @@ public class BlackboardAttribute {
 			bundle.getString("BlackboardAttribute.tskgeowaypoints.text"),
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 
+		TSK_DISTANCE_TRAVELED(144, "TSK_DISTANCE_TRAVELED",
+			bundle.getString("BlackboardAttribute.tskdistancetraveled.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
+		
+		TSK_DISTANCE_FROM_HOMEPOINT(145, "TSK_DISTANCE_FROM_HOMEPOINT",
+			bundle.getString("BlackboardAttribute.tskdistancefromhome.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE)
+		
 		;
 
 		private final int typeID;
