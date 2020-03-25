@@ -26,6 +26,11 @@ import org.apache.commons.validator.routines.EmailValidator;
  */
 public final class CommunicationsUtils {
 	
+	/**
+     * Empty private constructor.
+     */
+    private CommunicationsUtils() {
+    }
 	
 	/**
 	 * Checks if the given string may be a phone number.
