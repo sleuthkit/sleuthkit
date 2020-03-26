@@ -1387,7 +1387,11 @@ public class BlackboardAttribute {
 		
 		TSK_DISTANCE_FROM_HOMEPOINT(145, "TSK_DISTANCE_FROM_HOMEPOINT",
 			bundle.getString("BlackboardAttribute.tskdistancefromhome.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE)
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
+		
+		TSK_HASH_PHOTODNA(146, "TSK_HASH_PHOTODNA",
+			bundle.getString("BlackboardAttribute.tskhashphotodna.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
 		
 		;
 
