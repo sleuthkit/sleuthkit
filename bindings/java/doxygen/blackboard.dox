@@ -116,5 +116,97 @@ To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifa
 
 Note that "TSK" is an abbreviation of "The Sleuth Kit." Artifact and attribute type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
 
+\subsection jni_bb_jni_attr JSON Attribute Tutorial
+
+The following describes an example of when you might need a JSON-type attribute and the different methods for creating one. It also shows generally how to create custom artifacts and attributes so may be useful even if you do not need a JSON-type attribute.
+
+Suppose we had a module that could record the last few times an app was accessed and which user opened it. The data we'd like to store for one app could have the form:
+
+\verbatim
+App name: Sample App
+Logins:   user1, 2020-03-27 12:36:42 EDT
+          user2, 2020-03-27 12:16:08 EDT
+          user1, 2020-03-26 20:31:44 EDT
+\endverbatim
+
+We could make a separate artifact for each of those logins (each with the app name, user name, and timestamp) it might be nicer to have them all under one. This is where the JSON-type attribute comes into play. We can store all the login data in a single blackboard attribute.
+
+To start, we'll need to create our new artifact and attribute types. We'll need a new artifact type to hold our login data and a new attribute type to hold the logins themselves (this will be our JSON attribute). We'll use a standard attribute later for the app name. This part should only be done once, possibly in the startUp() method of your ingest module.
+
+\verbatim
+SleuthkitCase skCase = Case.getCurrentCaseThrows().getSleuthkitCase();
+
+// Add the new artifact type to the case if it does not already exist
+String artifactName = "APP_LOG";
+String artifactDisplayName = "Application Logins";
+BlackboardArtifact.Type artifactType = skCase.getArtifactType(artifactName);
+if (artifactType == null) {
+	artifactType = skCase.addBlackboardArtifactType(artifactName, artifactDisplayName);
+}
+
+// Add the new attribute type to the case if it does not already exist
+String attributeName = "LOGIN_DATA";
+String attributeDisplayName = "Login Data";
+BlackboardAttribute.Type loginDataAttributeType = skCase.getAttributeType(attributeName);
+if (loginDataAttributeType == null) {
+	loginDataAttributeType = skCase.addArtifactAttributeType(attributeName, 
+			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON, attributeDisplayName);
+}
+\endverbatim
+
+You'll want to save the new artifact and attribute type objects to use later.
+
+Now our ingest module can create artifacts for the data it extracts. In the code below, we create our new "APP_LOG" artifact, add a standard attribute for the user name, and then create and store a JSON-formatted string which will contain each entry from the "loginData" list.
+
+\verbatim
+BlackboardArtifact art = content.newArtifact(artifactType.getTypeID());
+List<BlackboardAttribute> attributes = new ArrayList<>();
+attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, moduleName, appName));
+
+String jsonLoginStr = "{ LoginData : [ ";
+String dataStr = "";
+for(LoginData data : loginData) {
+	if (!dataStr.isEmpty()) {
+		dataStr += ", ";
+	}
+	dataStr += "{\"TSK_USER_NAME\" : \"" + data.getUserName() + "\", "
+			+ "\"TSK_DATATIME\" : \"" + data.getTimestamp() + "\"} ";
+	
+}
+jsonLoginStr += dataStr + " ] }";
+
+attributes.add(new BlackboardAttribute(loginDataAttributeType, moduleName, jsonLoginStr));
+art.addAttributes(attributes);
+\endverbatim
+
+It is important that each of the name-value pairs starts with an existing blackboard attribute name. This will allow Autopsy to use the corresponding value, such as to extract out a timestamp to show this artifact in the <a href="http://sleuthkit.org/autopsy/docs/user-docs/latest/timeline_page.html">Timeline viewer</a>. Here's what our newly-created artifact will look like in Autopsy:
+
+\image html json_attribute.png
+
+The above method for storing the data works but formatting the JSON attribute manually is prone to errors. Luckily, in most cases instead of writing the JSON ourselves we can serialize a Java object. If the data that will go into the JSON attribute is contained in plain old Java objects (POJOs), then we can add annotations to that class to produce the JSON automatically. Here they've been added to the LoginData class:
+
+\verbatim
+// Requires package com.google.gson.annotations.SerializedName;
+private class LoginData {
+	@SerializedName("TSK_USER_NAME")
+	String userName;
+	
+	@SerializedName("TSK_DATETIME")
+	long timestamp;
+	
+	LoginData(String userName, long timestamp) {
+		this.userName = userName;
+		this.timestamp = timestamp;
+	}
+}
+\endverbatim
+
+Now it is much easier to create our JSON-formatted string:
+\verbatim
+String jsonLoginStr = "{ LoginData : " + (new Gson()).toJson(loginData) + "}";
+\endverbatim
+
+Note that this can be made even simpler using a class to hold the list. See org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil for an example.
+
 
 */
