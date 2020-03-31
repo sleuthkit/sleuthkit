@@ -35,7 +35,7 @@ With either of these approaches, the artifact is created in the database immedia
 
 If you want to create an attribute in the TSK_GEN_INFO artifact, use org.sleuthkit.datamodel.Content.getGenInfoArtifact() to ensure that you do not create a second TSK_GEN_INFO artifact for the file and to ensure that you used the cached version (which will be faster for you). 
 
-Next, you need to make attributes and add them to the artifact.  Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. After you create one with the correct type and value, you add it to the artifact using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). 
+Next, you need to make attributes and add them to the artifact.  Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. After you create one with the correct type and value, you add it to the artifact using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). Note that you should not manually add attributes of type JSON for standard attribute types such as TSK_ATTACHMENTS or TSK_GEO_TRACKPOINTS. Instead, you should use the helper classes in org.sleuthkit.datamodel.blackboardutils.attributes to create your artifacts.
 
 \subsubsection jni_bb_artifact2 Creating Multiple Artifacts or Multiple Attributes
 
@@ -112,11 +112,11 @@ in the past when we did not want to make a new artifact type. You create the art
 
 org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
 
-To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the type and get its ID. Like artifacts, you must create the type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). 
+To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the artifact type and get its ID. Like artifacts, you must create the attribute type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). Your attribute will be a name-value pair where the value is of the type you specified when creating it. The current types are: String, Integer, Long, Double, Byte, Datetime, and JSON. If you believe you need to create an attribute with type JSON, please read the \ref jni_bb_jni_json_attr "tutorial" below. 
 
 Note that "TSK" is an abbreviation of "The Sleuth Kit." Artifact and attribute type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
 
-\subsection jni_bb_jni_attr JSON Attribute Tutorial
+\subsection jni_bb_jni_json_attr JSON Attribute Tutorial
 
 The following describes an example of when you might need a JSON-type attribute and the different methods for creating one. It also shows generally how to create custom artifacts and attributes so may be useful even if you do not need a JSON-type attribute.
 

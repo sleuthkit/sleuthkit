@@ -1369,14 +1369,26 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskgroups.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments to create and
+		 * process TSK_ATTACHMENTS attributes.
+		 */
 		TSK_ATTACHMENTS (141, "TSK_ATTACHMENTS", 
 				bundle.getString("BlackboardAttribute.tskattachments.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil to create and
+		 * process TSK_GEO_TRACKPOINTS attributes.
+		 */
 		TSK_GEO_TRACKPOINTS(142, "TSK_GEO_TRACKPOINTS",
 			bundle.getString("BlackboardAttribute.tskgeopath.text"),
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil to create and
+		 * process TSK_GEO_WAYPOINTS attributes.
+		 */
 		TSK_GEO_WAYPOINTS(143, "TSK_GEO_WAYPOINTS",
 			bundle.getString("BlackboardAttribute.tskgeowaypoints.text"),
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
