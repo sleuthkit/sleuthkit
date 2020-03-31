@@ -124,9 +124,9 @@ Suppose we had a module that could record the last few times an app was accessed
 
 \verbatim
 App name: Sample App
-Logins:   user1, 2020-03-27 12:36:42 EDT
-          user2, 2020-03-27 12:16:08 EDT
-          user1, 2020-03-26 20:31:44 EDT
+Logins:   user1, 2020-03-31 10:06:37 EDT
+          user2, 2020-03-30 06:19:57 EDT
+          user1, 2020-03-26 18:59:57 EDT
 \endverbatim
 
 We could make a separate artifact for each of those logins (each with the app name, user name, and timestamp) it might be nicer to have them all under one. This is where the JSON-type attribute comes into play. We can store all the login data in a single blackboard attribute.
