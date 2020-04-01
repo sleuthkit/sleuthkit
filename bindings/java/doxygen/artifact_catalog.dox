@@ -241,7 +241,8 @@ A generic information artifact.
 ### REQUIRED ATTRIBUTES
 None
 
-
+### OPTIONAL ATTRIBUTES
+- TSK_PHOTODNA_HASH (The PhotoDNA hash of an image)
 
 ---
 ## TSK_GPS_BOOKMARK
