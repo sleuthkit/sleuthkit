@@ -281,10 +281,7 @@ The last known location of a GPS connected device. This may be from a perspectiv
 A GPS route.
 
 ### REQUIRED ATTRIBUTES
-- TSK_GEO_LATITUDE_START (The latitude value of the starting point)
-- TSK_GEO_LATITUDE_END (The latitude value of the ending point)
-- TSK_GEO_LONGITUDE_START (The longitude value of the ending point)
-- TSK_GEO_LONGITUDE_END (The longitude value of the ending point)
+- TSK_GEO_WAYPOINTS (JSON list of waypoints. Use org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil to create/process)
 
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (Timestamp of the GPS route, in seconds since 1970-01-01T00:00:00Z)
@@ -311,18 +308,15 @@ A GPS location that was known to have been searched by the device or user.
 
 
 ---
-## TSK_GPS_TRACKPOINT
-A GPS trackpoint found in an application, file or database.
+## TSK_GPS_TRACK
+A Global Positioning System (GPS) track artifact records the track, or path, of a GPS-enabled dvice as a connected series of track points. A track point is a location in a geographic coordinate system with latitude, longitude and altitude (elevation) axes.
 
 ### REQUIRED ATTRIBUTES
-- TSK_GEO_LATITUDE (The GPS latitude value that was tracked)
-- TSK_GEO_LONGITUDE (The GPS longitude value that was tracked)
+- TSK_GEO_TRACKPOINTS (JSON list of trackpoints. Use org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil to create/process)
 
 ### OPTIONAL ATTRIBUTES
-- TSK_DATETIME (Timestamp of the GPS trackpoint, in seconds since 1970-01-01T00:00:00Z)
-- TSK_GEO_ALTITUDE (Altitude of the latitude and longitude values)
-- TSK_NAME (The name of the trackpoint. Ex: Boston)
-- TSK_PROG_NAME (Name of application containing the GPS trackpoint)
+- TSK_NAME (The name of the trackpoint set. Ex: Boston)
+- TSK_PROG_NAME (Name of application containing the GPS trackpoint set)
 
 
 
@@ -406,6 +400,7 @@ A message that is found in some content.
 - TSK_MESSAGE_TYPE (E.g., WhatsApp Message, Skype Message, etc.)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_ATTACHMENTS (Attachments - use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper class to add an attachment)
 - TSK_DATETIME (Timestamp the message was sent or received, in seconds since 1970-01-01T00:00:00Z) 
 - TSK_DIRECTION (Direction of the message, e.g., incoming or outgoing)
 - TSK_EMAIL_FROM (Email address of the sender)
