@@ -72,8 +72,7 @@ public final class BlackboardJsonAttrUtil {
 			throw new InvalidJsonException("The string value (JSON) of the attribute is null or empty");
 		}
 		try {
-			T object = (new Gson()).fromJson(json, clazz);
-			return object;
+			return (new Gson()).fromJson(json, clazz);
 		} catch (JsonSyntaxException ex) {
 			throw new InvalidJsonException("The string value (JSON) of the attribute is of an unexpected type", ex);
 		}
