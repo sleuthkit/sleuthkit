@@ -142,7 +142,7 @@ class TimelineEventTypes {
 			// Get the waypoint list "start time"
             GeoTrackPoints pointsList;
 			try {
-			pointsList = BlackboardJsonAttrUtil.fromAttribute(attribute, GeoTrackPoints.class);;
+			pointsList = BlackboardJsonAttrUtil.fromAttribute(attribute, GeoTrackPoints.class);
             } catch (BlackboardJsonAttrUtil.InvalidJsonException ex) {
                 throw new TskCoreException("Unable to parse track points in TSK_GEO_TRACKPOINTS attribute", ex);
             }			
