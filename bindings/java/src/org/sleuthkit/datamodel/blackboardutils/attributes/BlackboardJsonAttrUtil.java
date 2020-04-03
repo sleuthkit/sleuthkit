@@ -33,7 +33,7 @@ public final class BlackboardJsonAttrUtil {
 	 * object of type T serialized to JSON.
 	 *
 	 * @param <T>        The type of the attribute value object to be
-	 *                   serailized.
+	 *                   serialized.
 	 * @param attrType   The type of attribute to create.
 	 * @param moduleName The name of the module creating the attribute.
 	 * @param attrValue  The attribute value object.
@@ -54,7 +54,7 @@ public final class BlackboardJsonAttrUtil {
 	 *
 	 * @param <T>   The type of the object to be created from the JSON.
 	 * @param attr  The attribute.
-	 * @param clazz the class object for class T.
+	 * @param clazz The class object for class T.
 	 *
 	 * @return The T object from the attribute.
 	 *
@@ -74,7 +74,7 @@ public final class BlackboardJsonAttrUtil {
 		try {
 			return (new Gson()).fromJson(json, clazz);
 		} catch (JsonSyntaxException ex) {
-			throw new InvalidJsonException("The string value (JSON) of the attribute is of an unexpected type", ex);
+			throw new InvalidJsonException(String.format("The string value (JSON) could not be deserialized as a %s", clazz.getName()), ex);
 		}
 	}
 
