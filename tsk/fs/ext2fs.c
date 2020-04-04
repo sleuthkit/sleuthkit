@@ -1644,7 +1644,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     
     if (depth == 0) {       /* leaf node */
         if (num_entries >
-            (fs_info->block_size -
+            (fs_meta->content_len -
              sizeof(ext2fs_extent_header)) /
             sizeof(ext2fs_extent)) {
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
