@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS;
-import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil;
-import org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil.GeoTrackPointList;
+import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 
 /**
  * Container class for various types of timeline events
@@ -124,9 +124,7 @@ class TimelineEventTypes {
 	 * JSON list of waypoints from which a start time can be extracted.
 	 */
 	static class GPSTrackArtifactEventType extends TimelineEventArtifactTypeSingleDescription {
-		
-		private final TskGeoTrackpointsUtil trackpointUtil = new TskGeoTrackpointsUtil();
-		
+				
 		GPSTrackArtifactEventType(int typeID, String displayName, TimelineEventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type descriptionAttribute) {
 			// Passing TSK_GEO_TRACKPOINTS as the "time attribute" as more of a place filler, to avoid any null issues
 			super(typeID, displayName, superType, artifactType, new BlackboardAttribute.Type(TSK_GEO_TRACKPOINTS), descriptionAttribute);
@@ -142,7 +140,12 @@ class TimelineEventTypes {
 			}
 			
 			// Get the waypoint list "start time"
-			GeoTrackPointList pointsList = trackpointUtil.fromAttribute(attribute);
+            GeoTrackPoints pointsList;
+			try {
+			pointsList = BlackboardJsonAttrUtil.fromAttribute(attribute, GeoTrackPoints.class);
+            } catch (BlackboardJsonAttrUtil.InvalidJsonException ex) {
+                throw new TskCoreException("Unable to parse track points in TSK_GEO_TRACKPOINTS attribute", ex);
+            }			
 			Long startTime = pointsList.getStartTime();
 			
 			// If we didn't find a startime do not create an event.

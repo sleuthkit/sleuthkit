@@ -333,7 +333,6 @@ public final class MessageAttachments {
 		}
 	}
 
-
 	private final Collection<FileAttachment> fileAttachments;
 	private final Collection<URLAttachment> urlAttachments;
 
