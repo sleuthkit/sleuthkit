@@ -45,7 +45,7 @@ public final class CommunicationsUtils {
 	 * 
 	 */
 	public static String normalizePhoneNum(String phoneNum) throws TskCoreException {
-		if (phoneNum.matches("\\+?[0-9()\\-\\s]+")) {
+		if (isValidPhoneNumber(phoneNum)) {
            return phoneNum.replaceAll("[^0-9\\+]", "");
         } else {
             throw new TskCoreException(String.format("Input string is not a valid phone number: %s", phoneNum));
