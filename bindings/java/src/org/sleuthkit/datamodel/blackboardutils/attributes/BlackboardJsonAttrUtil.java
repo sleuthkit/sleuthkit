@@ -32,8 +32,9 @@ public final class BlackboardJsonAttrUtil {
 	 * Creates an attribute of a given type with the string value set to an
 	 * object of type T serialized to JSON.
 	 *
-	 * @param <T>        The type of the attribute value object to be
+	 * T                 The type of the attribute value object to be
 	 *                   serialized.
+	 * 
 	 * @param attrType   The type of attribute to create.
 	 * @param moduleName The name of the module creating the attribute.
 	 * @param attrValue  The attribute value object.
@@ -52,7 +53,8 @@ public final class BlackboardJsonAttrUtil {
 	 * BlackboardAttribute with a value type of
 	 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON.
 	 *
-	 * @param <T>   The type of the object to be created from the JSON.
+	 * T The type of the object to be created from the JSON.
+	 * 
 	 * @param attr  The attribute.
 	 * @param clazz The class object for class T.
 	 *
