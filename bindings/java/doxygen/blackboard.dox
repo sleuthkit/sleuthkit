@@ -108,10 +108,6 @@ You can find artifacts  using a variety of ways:
 This section outlines how to create artifact and attribute types because the standard ones do not meet your needs. These custom artifacts will be displayed
 in the Autopsy UI alongside the built in artifacts and will also appear in the reports. 
 
-However, before you make a custom type, you should consider the 
-TSK_INTERESTING_FILE_HIT artifact.  It is very generic and we have used it 
-in the past when we did not want to make a new artifact type. You create the artifact, use the TSK_SET_NAME attribute to define the equivalent name of the custom artifact that you wanted to create, and then add whatever attributes  you want. 
-
 
 \subsection jni_bb_custom_make Making Custom Artifacts and Attributes
 
