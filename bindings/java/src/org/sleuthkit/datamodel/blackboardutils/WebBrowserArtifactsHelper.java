@@ -30,6 +30,7 @@ import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.CommunicationsManager;
+import org.sleuthkit.datamodel.CommunicationsUtils;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -299,11 +300,11 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 		
 		CommunicationsManager commManager = this.getSleuthkitCase().getCommunicationsManager();
-		if(StringUtils.isNotBlank(email)) {
+		if (CommunicationsUtils.isValidEmailAddress(email)) {
 			commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent());
 		}
 
-		if(StringUtils.isNotBlank(phoneNumber)) {
+		if(CommunicationsUtils.isValidPhoneNumber(phoneNumber)) {
 			commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent());
 		}
 

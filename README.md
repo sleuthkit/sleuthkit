@@ -147,12 +147,21 @@ file for more details.
 
 
 ## LICENSE
-The file system tools (in the [tools/fstools](https://github.com/sleuthkit/sleuthkit/tree/develop/tools/fstools)
- directory) are released under the IBM open source license and Common Public License, both
-are located in the [licenses directory](https://github.com/sleuthkit/sleuthkit/tree/develop/licenses).  
-The modifications to 'mactime' from the original 'mactime' in TCT and 'mac-daddy' are released
-under the Common Public License.  Other tools in the tools directory
-are either Common Public License or the GNU Public License.
+There are a variety of licenses used in TSK based on where they
+were first developed.  The licenses are located in the [licenses
+directory](https://github.com/sleuthkit/sleuthkit/tree/develop/licenses).
+
+- The file system tools (in the
+[tools/fstools](https://github.com/sleuthkit/sleuthkit/tree/develop/tools/fstools)
+directory) are released under the IBM open source license and Common
+Public License.
+- srch_strings and fiwalk are released under the GNU Public License
+- Other tools in the tools directory are Common Public License
+- The modifications to 'mactime' from the original 'mactime' in TCT
+and 'mac-daddy' are released under the Common Public License.
+
+The library uses utilities that were released under MIT and BSD 3-clause. 
+
 
 ## INSTALL
 For installation instructions, refer to the INSTALL.txt document.

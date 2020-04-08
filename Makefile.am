@@ -1,6 +1,7 @@
 # File that we want to include in the dist
 EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-CHANGES.txt \
-    licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
+    licenses/GNU-COPYING licenses/IBM-LICENSE \
+    licenses/cpl1.0.txt licenses/bsd.txt licenses/mit.txt \
     m4/*.m4 \
     docs/README.txt \
     packages/sleuthkit.spec \
