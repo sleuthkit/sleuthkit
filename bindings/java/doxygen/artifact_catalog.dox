@@ -236,7 +236,7 @@ None
 
 ---
 ## TSK_GEN_INFO
-A generic information artifact.
+A generic information artifact. Each content object will have at most one TSK_GEN_INFO artifact, which is easily accessed through org.sleuthkit.datamodel.AbstractContent.getGenInfoArtifact() and related methods. The TSK_GEN_INFO object is useful for storing values related to the content object without making a new artifact type.
 
 ### REQUIRED ATTRIBUTES
 None
