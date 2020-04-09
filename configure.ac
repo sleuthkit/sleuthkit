@@ -81,19 +81,6 @@ AC_ARG_ENABLE([multithreading],
 dnl Enable multithreading by default in the presence of pthread
 AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno"], [ax_multithread=yes], [ax_multithread=no])
 
-case "$host" in
-*-*-mingw*)
-  dnl Adding the native /usr/local is wrong for cross-compiling
-  ;;
-*)
-  dnl Not all compilers include /usr/local in the include and link path
-  if test -d /usr/local/include; then
-    CPPFLAGS="$CPPFLAGS -I/usr/local/include"
-    LDFLAGS="$LDFLAGS -L/usr/local/lib"
-  fi
-  ;;
-esac
-
 dnl Add enable/disable option
 AC_ARG_ENABLE([java],
     [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
