@@ -114,11 +114,73 @@ in the Autopsy UI alongside the built in artifacts and will also appear in the r
 
 org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
 
-To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the artifact type and get its ID. Like artifacts, you must create the attribute type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). Your attribute will be a name-value pair where the value is of the type you specified when creating it. The current types are: String, Integer, Long, Double, Byte, Datetime, and JSON. If you believe you need to create an attribute with type JSON, please read the \ref jni_bb_jni_json_attr "tutorial" below. 
+To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the artifact type and get its ID. Like artifacts, you must create the attribute type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). Your attribute will be a name-value pair where the value is of the type you specified when creating it. The current types are: String, Integer, Long, Double, Byte, Datetime, and JSON. If you believe you need to create an attribute with type JSON, please read the 
+ref jni_bb_json_attr_overview "overview" and \ref jni_bb_json_attr "tutorial" sections below. 
 
 Note that "TSK" is an abbreviation of "The Sleuth Kit." Artifact and attribute type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
 
-\subsection jni_bb_jni_json_attr JSON Attribute Tutorial
+\subsection jni_bb_json_attr_overview JSON Attribute Overview
+
+This section will give a quick overview of how to use JSON attributes. If this is your first time using JSON attributes please read the \ref jni_bb_json_attr below as well.
+
+\subsubsection jni_bb_json_attr_overview_usage JSON Attribute Usage
+
+Attributes with values of type JSON should be used only when the data can't be stored as an unordered set of attributes. To date, the most common need for this has been where an artifact needs to store multiple ordered instances of the same type of data in a single artifact. For example, one of the standard JSON attributes is TSK_GEO_TRACKPOINTS which stores an ordered list of track points, each containing coordinates, a timestamp, and other data. 
+
+\subsubsection jni_bb_json_attr_overview_format JSON Attribute Format
+
+The underlying data in a JSON attribute will be either an array of individual attributes or an array of maps of attributes. For example, an artifact containing two track points could look similar to this (some attributes have been removed for brevity):
+
+\verbatim
+{"pointList":
+  [
+    {"TSK_DATETIME":1255822646,
+     "TSK_GEO_LATITUDE":47.644548,
+     "TSK_GEO_LONGITUDE":-122.326897},
+    {"TSK_DATETIME":1255822651,
+     "TSK_GEO_LATITUDE":47.644548,
+     "TSK_GEO_LONGITUDE":-122.326897}
+  ]
+}
+\endverbatim
+
+In practice you will not be required to deal with the raw JSON, but it is important to note that in the name/value pairs, the name should always be the name of a blackboard artifact type. This allows Autopsy to better process each attribute, for example by displaying timestamps in human-readable format.
+
+\subsubsection jni_bb_json_attr_overview_create Saving JSON Attributes
+
+To start, follow the instructions in the \ref jni_bb_custom_make section above to create your custom attribute of type JSON. Next you'll need to put your data into the new attribute. There are two general methods:
+
+<ol><li>Manually create the JSON string. This is not recommended as the code will be hard to read and prone to errors.
+<li> Create a helper plain old Java object (POJO) to hold the data you want to serialize.
+</ol>
+
+Assuming you go the POJO route (highly recommended), there are two options for creating your class. As discussed above, each field name should match an attribute name (either built-in or custom). You could create a class like this:
+
+\verbatim
+class WebLogEntry {
+   long TSK_DATETIME;
+   String TSK_URL;
+\endverbatim
+
+The downside here is that your code will likely be a bit less readable like this. The other option is to use annotations specifying which attribute type goes with each of your fields, like this:
+
+\verbatim
+class WebLogEntry {
+   @SerializedName("TSK_DATETIME")
+   long accessDate;
+   @SerializedName("TSK_URL")
+   String urlVisited;
+\endverbatim
+
+You may need to make multiple POJOs to hold the data you need to serialize. This would most commonly happen if you want to store a list of values. In our example above, we would likely need to create a WebLog class to hold our list of WebLogEntry objects.
+
+Now we need to convert our object into a JSON attribute. The easiest way to do this using the method org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.toAttribute(). This method will return a BlackboardAttribute serialized from your object. You can then add this new attribute to your BlackboardArtifact.
+
+\subsubsection jni_bb_json_attr_overview_load Loading JSON Attributes
+
+If you need to process JSON attributes you created and created your own POJO as discussed in the previous section, you can use the method org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.fromAttribute(). It will return an instance of your class containing the data from a given BlackboardAttribute.
+
+\subsection jni_bb_json_attr JSON Attribute Tutorial
 
 The following describes an example of when you might need a JSON-type attribute and the different methods for creating one. It also shows generally how to create custom artifacts and attributes so may be useful even if you do not need a JSON-type attribute.
 
@@ -131,7 +193,7 @@ Logins:   user1, 2020-03-31 10:06:37 EDT
           user1, 2020-03-26 18:59:57 EDT
 \endverbatim
 
-We could make a separate artifact for each of those logins (each with the app name, user name, and timestamp) it might be nicer to have them all under one. This is where the JSON-type attribute comes into play. We can store all the login data in a single blackboard attribute.
+We could make a separate artifact for each of those logins (each with the app name, user name, and timestamp) it might be nicer to have them all under one and keep them in order. This is where the JSON-type attribute comes into play. We can store all the login data in a single blackboard attribute.
 
 To start, we'll need to create our new artifact and attribute types. We'll need a new artifact type to hold our login data and a new attribute type to hold the logins themselves (this will be our JSON attribute). We'll use a standard attribute later for the app name. This part should only be done once, possibly in the startUp() method of your ingest module.
 
@@ -158,7 +220,7 @@ if (loginDataAttributeType == null) {
 
 You'll want to save the new artifact and attribute type objects to use later.
 
-Now our ingest module can create artifacts for the data it extracts. In the code below, we create our new "APP_LOG" artifact, add a standard attribute for the user name, and then create and store a JSON-formatted string which will contain each entry from the "loginData" list.
+Now our ingest module can create artifacts for the data it extracts. In the code below, we create our new "APP_LOG" artifact, add a standard attribute for the user name, and then create and store a JSON-formatted string which will contain each entry from the "loginData" list. Note that manually creating the JSON as shown below is not recommeded and is just for illustrative purposes - an easier method will be given afterward.
 
 \verbatim
 BlackboardArtifact art = content.newArtifact(artifactType.getTypeID());
@@ -203,12 +265,31 @@ private class LoginData {
 }
 \endverbatim
 
-Now it is much easier to create our JSON-formatted string:
+We want our JSON attribute to store a list of these LoginData objects, so we'll create another POJO for that:
+
 \verbatim
-String jsonLoginStr = "{ LoginData : " + (new Gson()).toJson(loginData) + "}";
+private class LoginDataLog {
+	List<LoginData> dataLog;
+	
+	LoginDataLog() {
+		dataLog = new ArrayList<>();
+	}
+	
+	void addData(LoginData data) {
+		dataLog.add(data);
+	}
+}
 \endverbatim
 
-Note that this can be made even simpler using a class to hold the list. See org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil for an example.
+Now we use org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.toAttribute() to convert our LoginDataLog object into a BlackboardAttribute, greatly simplifying the code. Here, "dataLog" is an instance of a LoginDataLog object that contains all of the login data.
+
+\verbatim
+BlackboardArtifact art = content.newArtifact(artifactType.getTypeID());
+List<BlackboardAttribute> attributes = new ArrayList<>();
+attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, moduleName, appName));
+attributes.add(BlackboardJsonAttrUtil.toAttribute(loginDataAttributeType, moduleName, dataLog));
+art.addAttributes(attributes);
+\endverbatim
 
 
 */

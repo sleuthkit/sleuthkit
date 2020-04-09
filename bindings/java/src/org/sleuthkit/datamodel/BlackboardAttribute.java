@@ -1378,7 +1378,7 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		
 		/*
-		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoTrackpointsUtil to create and
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints to create and
 		 * process TSK_GEO_TRACKPOINTS attributes.
 		 */
 		TSK_GEO_TRACKPOINTS(142, "TSK_GEO_TRACKPOINTS",
@@ -1386,7 +1386,7 @@ public class BlackboardAttribute {
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		
 		/*
-		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.TskGeoWaypointsUtil to create and
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints to create and
 		 * process TSK_GEO_WAYPOINTS attributes.
 		 */
 		TSK_GEO_WAYPOINTS(143, "TSK_GEO_WAYPOINTS",
