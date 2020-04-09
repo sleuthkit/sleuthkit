@@ -87,7 +87,6 @@ AC_ARG_ENABLE([java],
 
 dnl Checks for libraries.
 
-
 dnl Some platforms will complain about missing included functions if libstdc++ is not included.
 AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++]))
 AC_CHECK_HEADERS(list, , , AC_MSG_ERROR([missing STL list class header]))
@@ -183,7 +182,6 @@ AS_IF([test "x$enable_cppunit" != "xno"], [
 AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
 
 dnl check for user online input
-
 AC_ARG_ENABLE([offline],
     [ AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
     [case "${enableval}" in
