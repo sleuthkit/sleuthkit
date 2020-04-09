@@ -337,14 +337,15 @@ dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
-   libewf support:                        $ax_libewf
-   zlib support:                          $ax_zlib
-
    libbfio support:                       $ax_libbfio
+   libewf support:                        $ax_libewf
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
    libvslvm support:                      $ax_libvslvm
+
+   zlib support:                          $ax_zlib
+
 Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
-]);
+])
