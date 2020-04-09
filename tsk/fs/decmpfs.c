@@ -34,7 +34,7 @@
  * @param bytesConsumed  -- return of the number of input bytes of compressed data used.
  * @return 0 on success, a negative number on error
  */
-static int
+int
 zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uint64_t * uncompressedLength, unsigned long *bytesConsumed)       // this is unsigned long because that's what zlib uses.
 {
 

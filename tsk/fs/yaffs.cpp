@@ -2439,7 +2439,7 @@ static uint8_t
     YAFFSFS_INFO *yfs = (YAFFSFS_INFO *)fs;
     char ls[12];
     YAFFSFS_PRINT_ADDR print;
-    char timeBuf[32];
+    char timeBuf[128];
     YaffsCacheObject * obj = NULL;
     YaffsCacheVersion * version = NULL;
     YaffsHeader * header = NULL;

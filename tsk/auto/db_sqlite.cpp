@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
+** Copyright (c) 2010-2020 Brian Carrier.  All Rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 **
@@ -754,17 +754,17 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
 }
 
 /**
-* Creats a new tsk_pool_info database entry and a new tsk_vs_info 
+* Creates a new tsk_pool_info database entry and a new tsk_vs_info 
 * entry with the tsk_pool_info as its parent.
 *
 * @ param pool_info The pool to save to the database
 * @ param parObjId The ID of the parent of the pool object
-* @ param objId Will be set to the object ID of the new volume system created as a child of 
+* @ param vsObjId Will be set to the object ID of the new volume system created as a child of 
 *               the new pool.
 * @returns 1 on error, 0 on success
 */
 int
-TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& vsObjId) {
 
     char
         stmt[1024];
@@ -784,22 +784,54 @@ TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, 
     }
 
     // Add volume system
-    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, vsObjId))
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", vsObjId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");
 }
 
 /**
-* Adds the sector addresses of the pool volumes into the db.
+* Adds a fake volume that will hold the unallocated blocks for the pool.
+*
+* @param vol_index The index for the new volume (should be one higher than the number of pool volumes)
+* @param parObjId  The object ID of the parent volume system
+* @param objId     Will be set to the object ID of the new volume
+*
+* @returns 1 on error, 0 on success
+*/
+int
+TskDbSqlite::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId)
+{
+    char* zSQL;
+    int ret;
 
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    char* desc = "Unallocated Blocks";
+    zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
+        objId, vol_index, 0, 0,
+        desc, 0);
+
+    ret = attempt_exec(zSQL,
+        "Error adding data to tsk_vs_parts table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
+}
+
+/**
+* Adds the sector addresses of the pool volumes into the db.
+*
 * @param pool_vol The pool volume to save to the DB
 * @param parObjId The ID of the parent of the pool volume (should be a volume system)
-* @param objId Will be set to the object ID of the new volume
+* @param objId    Will be set to the object ID of the new volume
+*
 * @returns 1 on error, 0 on success
 */
 int
@@ -1092,6 +1124,7 @@ int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_
                                   std::map<int64_t, time_t> timeMap, const char* full_description)
 {
     int64_t event_description_id = -1;
+	int64_t future_epoch_time = std::time(0) + 394200000;
 
     //for each  entry (type ->time)
     for (const auto entry : timeMap)
@@ -1099,9 +1132,10 @@ int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_
         const time_t time = entry.second;
 
 
-        if (time <= 0)
+        if ((time <= 0) || (time > future_epoch_time))
         {
-            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull. time can't be negative either. 
+            //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull. time can't be negative either.
+			//Also skip any time that is more then 12 years in the future.
             continue;
         }
         if (event_description_id == -1)

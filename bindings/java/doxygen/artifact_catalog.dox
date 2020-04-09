@@ -1,14 +1,23 @@
-/*! \page artifact_catalog_page Autopsy Standard Artifacts Catalog
+/*! \page artifact_catalog_page Standard Artifacts Catalog
 
 
 # Introduction
-This document reflects current standard usage of artifacts and attributes for posting analysis results to the case blackboard.
-
-Note that "TSK" is an abbreviation of "The SleuthKit." Artifact type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
+This document reflects current standard usage of artifact and attribute types for posting analysis results to the case blackboard in Autopsy.  Refer to \ref mod_bbpage for more background on the blackboard and how to make artifacts. 
 
 The catalog section below has one entry for each standard artifact type. Each entry lists the required and optional attributes of artifacts of the type.
+
+NOTE:
+- While we have listed some attributes as "Required", nothing will enforce that they exist. Modules that use artifacts from the blackboard should assume that some of the attributes may not actually exist. 
+- You are not limited to the attributes listed below for each artifact.  Attributes are listed below as "Optional" if at least one, but not all, Autopsy modules create them.  If you want to store data that is not listed below, use an existing attribute type or make your own.  
+
+For the full list of types, refer to:
+- org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE
+- org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE
+
+
 <h1>Artifacts Catalog</h1>
 
+In alphabetical order.
 
 ---
 ## TSK_ACCOUNT
@@ -24,6 +33,14 @@ TSK_CARD_NUMBER (Credit card number)
 - TSK_KEYWORD_SEARCH_DOCUMENT_ID (Document ID of the Solr document that contains the TSK_CARD_NUMBER when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
 - TSK_SET_NAME (The keyword list name, i.e., "Credit Card Numbers", when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
 
+---
+
+
+## TSK_ASSOCIATED_OBJECT
+Provides a backwards link to an artifact that references the parent file of this artifact.  Example usage is that a downloaded file will have this artifact and it will point back to the TSK_WEB_DOWNLOAD artifact that is associated with a browser's SQLite database. See \ref jni_bb_associated_object.
+
+### REQUIRED ATTRIBUTES
+- TSK_ASSOCIATED_ARTIFACT (Artifact ID of associated artifact)
 
 
 ---
@@ -219,16 +236,17 @@ None
 
 ---
 ## TSK_GEN_INFO
-A generic information artifact.
+A generic information artifact. Each content object will have at most one TSK_GEN_INFO artifact, which is easily accessed through org.sleuthkit.datamodel.AbstractContent.getGenInfoArtifact() and related methods. The TSK_GEN_INFO object is useful for storing values related to the content object without making a new artifact type.
 
 ### REQUIRED ATTRIBUTES
 None
 
-
+### OPTIONAL ATTRIBUTES
+- TSK_PHOTODNA_HASH (The PhotoDNA hash of an image)
 
 ---
 ## TSK_GPS_BOOKMARK
-A bookmarked GPS location.
+A bookmarked GPS location or saved waypoint.
 
 ### REQUIRED ATTRIBUTES
 - TSK_GEO_LATITUDE (The latitude value of the bookmark)
@@ -512,7 +530,8 @@ Indicates recently accessed content. Examples: Recent Documents or Recent Downlo
 - TSK_PROG_NAME (Application or application extractor that stored this object as recent)
 - TSK_DATETIME (A timestamp associated with the content, in seconds since 1970-01-01T00:00:00Z. Ex: creation time)
 - TSK_NAME (If found in the registry, the name of the attribute)
-- TSK_VALUE(If found in the registry, the value of the attribute)
+- TSK_VALUE (If found in the registry, the value of the attribute)
+- TSK_COMMENT (What the source of the attribute may be)
 
 
 

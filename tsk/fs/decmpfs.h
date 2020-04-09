@@ -45,6 +45,13 @@ typedef enum {
 
 #define COMPRESSION_UNIT_SIZE 65536U
 
+extern int zlib_inflate(char* source,
+                        uint64_t sourceLen,
+                        char* dest,
+                        uint64_t destLen,
+                        uint64_t* uncompressedLength,
+                        unsigned long* bytesConsumed);
+
 extern int decmpfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
                             TSK_OFF_T attributeLength,

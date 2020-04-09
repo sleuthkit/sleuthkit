@@ -99,7 +99,7 @@ public final class Account {
 		 * @param typeName    The type name.
 		 * @param displayName The display name for the type.
 		 */
-		Type(String typeName, String displayName) {
+		public Type(String typeName, String displayName) {
 			this.typeName = typeName;
 			this.displayName = displayName;
 		}

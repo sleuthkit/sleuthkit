@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
+** Copyright (c) 2010-2020 Brian Carrier.  All Rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 **
@@ -1012,8 +1012,18 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
     return ret;
 }
 
+/**
+* Creates a new tsk_pool_info database entry and a new tsk_vs_info
+* entry with the tsk_pool_info as its parent.
+*
+* @ param pool_info The pool to save to the database
+* @ param parObjId The ID of the parent of the pool object
+* @ param vsObjId Will be set to the object ID of the new volume system created as a child of
+*               the new pool.
+* @returns 1 on error, 0 on success
+*/
 int
-TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId) {
+TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& vsObjId) {
 
     char stmt[1024];
 
@@ -1032,11 +1042,11 @@ TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObj
     }
 
     // Add volume system
-    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, vsObjId))
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", objId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size);
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", vsObjId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size);
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");
@@ -1044,6 +1054,11 @@ TskDbPostgreSQL::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObj
 
 /**
 * Adds the sector addresses of the pool volumes into the db.
+*
+* @param pool_vol The pool volume to save to the DB
+* @param parObjId The ID of the parent of the pool volume (should be a volume system)
+* @param objId    Will be set to the object ID of the new volume
+*
 * @returns 1 on error, 0 on success
 */
 int
@@ -1063,6 +1078,41 @@ TskDbPostgreSQL::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",%s,%d)",
         objId, (int)pool_vol->index, pool_vol->block, pool_vol->num_blocks,
         desc_sql, pool_vol->flags);
+
+    if (attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n")) {
+        PQfreemem(desc_sql);
+        return TSK_ERR;
+    }
+
+    PQfreemem(desc_sql);
+    return TSK_OK;
+}
+
+/**
+* Adds a fake volume that will hold the unallocated blocks for the pool.
+*
+* @param vol_index The index for the new volume (should be one higher than the number of pool volumes)
+* @param parObjId  The object ID of the parent volume system
+* @param objId     Will be set to the object ID of the new volume
+*
+* @returns 1 on error, 0 on success
+*/
+int
+TskDbPostgreSQL::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId)
+{
+
+    char stmt[1024];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    char *desc = "Unallocated Blocks";
+    char *desc_sql = PQescapeLiteral(conn, desc, strlen(desc));
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%d, %d, %s, %d)",
+        objId, vol_index, 0, 0, desc_sql, 0);
 
     if (attempt_exec(stmt, "Error adding data to tsk_vs_parts table: %s\n")) {
         PQfreemem(desc_sql);
@@ -1144,6 +1194,7 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
                                       std::map<int64_t, time_t> timeMap, const char* full_description)
 {
     int64_t event_description_id = -1;
+	int64_t future_epoch_time = std::time(0) + 394200000;
 
     //for each  entry (type ->time)
     for (const auto entry : timeMap)
@@ -1151,9 +1202,10 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
         const time_t time = entry.second;
 
 
-        if (time <= 0)
+        if ((time <= 0) || (time >= future_epoch_time))
         {
             //we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull. time can't be negative either.
+            //Also skip any time that is more then 12 years in the future.
             continue;
         }
         if (event_description_id == -1)

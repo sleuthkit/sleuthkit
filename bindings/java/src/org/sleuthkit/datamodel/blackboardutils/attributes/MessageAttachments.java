@@ -168,10 +168,12 @@ public final class MessageAttachments {
 		 * corresponding DerivedFile object.
 		 *
 		 * @param derivedFile Derived file for the attachment.
+		 * 
+		 * @throws TskCoreException
 		 */
-		public FileAttachment(DerivedFile derivedFile) {
+		public FileAttachment(DerivedFile derivedFile) throws TskCoreException {
 			objectID = derivedFile.getId();
-			path = derivedFile.getLocalAbsPath() + "/" + derivedFile.getName();
+			path = derivedFile.getUniquePath();
 		}
 
 		/**
@@ -330,7 +332,6 @@ public final class MessageAttachments {
 			return this.objectID;
 		}
 	}
-
 
 	private final Collection<FileAttachment> fileAttachments;
 	private final Collection<URLAttachment> urlAttachments;

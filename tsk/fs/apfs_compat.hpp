@@ -33,10 +33,17 @@ class APFSFSCompat : public APFSJObjTree {
   }
 
   uint8_t file_add_meta(TSK_FS_FILE*, TSK_INUM_T) const noexcept;
+  uint8_t inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
+      TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB action,
+      void* ptr);
   uint8_t fsstat(FILE*) const noexcept;
   uint8_t load_attrs(TSK_FS_FILE*) const noexcept;
   uint8_t istat(TSK_FS_ISTAT_FLAG_ENUM, FILE*, TSK_INUM_T, TSK_DADDR_T,
                 int32_t) const noexcept;
+  uint8_t block_walk(TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T,
+      TSK_FS_BLOCK_WALK_FLAG_ENUM, TSK_FS_BLOCK_WALK_CB,
+      void *);
+  TSK_FS_BLOCK_FLAG_ENUM block_getflags(TSK_FS_INFO*, TSK_DADDR_T);
   uint8_t decrypt_block(TSK_DADDR_T, void*) noexcept;
   int name_cmp(const char*, const char*) const noexcept;
 

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2019 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,13 +35,15 @@ import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
- * An artifact that has been posted to the blackboard. An artifact is a typed
+ * An artifact that has been posted to the blackboard. Artifacts store 
+ * analysis results (such as hash set hits) and extracted data (such as 
+ * a web bookmark). An artifact is a typed
  * collection of name value pairs (attributes) that is associated with its
- * source content (either a data source, or file within a data source). Both
+ * source content (A data source, a file, or another artifact).   Both
  * standard artifact types and custom artifact types are supported.
  *
  * IMPORTANT NOTE: No more than one attribute of a given type should be added to
- * an artifact.
+ * an artifact.  It is undefined about which will be used. 
  */
 public class BlackboardArtifact implements Content {
 
@@ -769,12 +771,7 @@ public class BlackboardArtifact implements Content {
 
 	@Override
 	public Content getDataSource() throws TskCoreException {
-		Content myParent = getParent();
-		if (myParent == null) {
-			return null;
-		}
-
-		return myParent.getDataSource();
+		return getSleuthkitCase().getContentById(dataSourceObjId);
 	}
 
 	/**
@@ -922,8 +919,8 @@ public class BlackboardArtifact implements Content {
 
 	/**
 	 * Enum for the standard artifact types. Refer to
-	 * http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for details
-	 * on the standard attributes for each standard artifact type.
+	 * http://sleuthkit.org/sleuthkit/docs/jni-docs/latest/artifact_catalog_page.html 
+	 * for details on the standard attributes for each artifact type.
 	 */
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
@@ -959,7 +956,10 @@ public class BlackboardArtifact implements Content {
 				bundle.getString("BlackboardArtifact.tsk.recentObject.text")),
 		/**
 		 * A GPS track point (geolocation data).
+		 * 
+		 * @deprecated Use TSK_GPS_TRACK instead
 		 */
+		@Deprecated
 		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGpsTrackpoint.text")),
 		/**
@@ -1080,7 +1080,7 @@ public class BlackboardArtifact implements Content {
 		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskBluetoothPairing.text")),
 		/**
-		 * A GPS bookmark.
+		 * A GPS bookmark / way point that the user saved. 
 		 */
 		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGpsBookmark.text")),
@@ -1228,7 +1228,16 @@ public class BlackboardArtifact implements Content {
 		 * Stores metadata about an object.
 		 */
 		TSK_METADATA(57, "TSK_METADATA", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskMetadata.text"));
+				bundle.getString("BlackboardArtifact.tskMetadata.text")),
+		
+		TSK_GPS_TRACK(58, "TSK_GPS_TRACK",
+				bundle.getString("BlackboardArtifact.tskTrack.text"));
+        /* To developers: For each new artifact, ensure that:
+         * - The enum value has 1-line JavaDoc description
+         * - The artifact catalog (artifact_catalog.dox) is updated to reflect the attributes it uses
+         */
+
+
 
 		private final String label;
 		private final int typeId;

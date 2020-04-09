@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.8.0)
+AC_INIT(sleuthkit, 4.9.0)
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AC_CONFIG_AUX_DIR([config])
@@ -383,7 +383,7 @@ AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 
-dnl OpenSSL support for encryption
+dnl OpenSSL support for encryption - currently disabled due to automatic test failures
 dnl AX_CHECK_OPENSSL(
 dnl  [ax_openssl=yes]
 dnl  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS",
@@ -436,6 +436,7 @@ AC_CONFIG_FILES([
 AC_OUTPUT
 
 dnl Print a summary
+dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
