@@ -115,7 +115,7 @@ in the Autopsy UI alongside the built in artifacts and will also appear in the r
 org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
 
 To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the artifact type and get its ID. Like artifacts, you must create the attribute type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). Your attribute will be a name-value pair where the value is of the type you specified when creating it. The current types are: String, Integer, Long, Double, Byte, Datetime, and JSON. If you believe you need to create an attribute with type JSON, please read the 
-ref jni_bb_json_attr_overview "overview" and \ref jni_bb_json_attr "tutorial" sections below. 
+\ref jni_bb_json_attr_overview "overview" and \ref jni_bb_json_attr "tutorial" sections below. 
 
 Note that "TSK" is an abbreviation of "The Sleuth Kit." Artifact and attribute type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
 
@@ -148,7 +148,7 @@ In practice you will not be required to deal with the raw JSON, but it is import
 
 \subsubsection jni_bb_json_attr_overview_create Saving JSON Attributes
 
-To start, follow the instructions in the \ref jni_bb_custom_make section above to create your custom attribute of type JSON. Next you'll need to put your data into the new attribute. There are two general methods:
+To start, follow the instructions in the \ref jni_bb_custom_make section above to create your custom attribute with value type JSON. Next you'll need to put your data into the new attribute. There are two general methods:
 
 <ol><li>Manually create the JSON string. This is not recommended as the code will be hard to read and prone to errors.
 <li> Create a helper plain old Java object (POJO) to hold the data you want to serialize.
@@ -178,11 +178,11 @@ Now we need to convert our object into a JSON attribute. The easiest way to do t
 
 \subsubsection jni_bb_json_attr_overview_load Loading JSON Attributes
 
-If you need to process JSON attributes you created and created your own POJO as discussed in the previous section, you can use the method org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.fromAttribute(). It will return an instance of your class containing the data from a given BlackboardAttribute.
+If you need to process JSON attributes you created and you created your own POJO as discussed in the previous section, you can use the method org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.fromAttribute(). It will return an instance of your class containing the data from a given BlackboardAttribute.
 
 \subsection jni_bb_json_attr JSON Attribute Tutorial
 
-The following describes an example of when you might need a JSON-type attribute and the different methods for creating one. It also shows generally how to create custom artifacts and attributes so may be useful even if you do not need a JSON-type attribute.
+The following describes an example of when you might need a JSON-valued attribute and the different methods for creating one. It also shows generally how to create custom artifacts and attributes so may be useful even if you do not need a JSON-type attribute.
 
 Suppose we had a module that could record the last few times an app was accessed and which user opened it. The data we'd like to store for one app could have the form:
 
@@ -243,7 +243,7 @@ attributes.add(new BlackboardAttribute(loginDataAttributeType, moduleName, jsonL
 art.addAttributes(attributes);
 \endverbatim
 
-It is important that each of the name-value pairs starts with an existing blackboard attribute name. This will allow Autopsy to use the corresponding value, such as to extract out a timestamp to show this artifact in the <a href="http://sleuthkit.org/autopsy/docs/user-docs/latest/timeline_page.html">Timeline viewer</a>. Here's what our newly-created artifact will look like in Autopsy:
+It is important that each of the name-value pairs starts with an existing blackboard attribute name. This will allow Autopsy to use the corresponding value, for example, to extract out a timestamp to show this artifact in the <a href="http://sleuthkit.org/autopsy/docs/user-docs/latest/timeline_page.html">Timeline viewer</a>. Here's what our newly-created artifact will look like in Autopsy:
 
 \image html json_attribute.png
 
