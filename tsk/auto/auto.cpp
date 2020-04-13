@@ -149,6 +149,7 @@ void
     for (int i = 0; i < m_poolInfos.size(); i++) {
         tsk_pool_close(m_poolInfos[i]);
     }
+    m_poolInfos.clear();
 
     if ((m_img_info) && (m_internalOpen)) {
         tsk_img_close(m_img_info);

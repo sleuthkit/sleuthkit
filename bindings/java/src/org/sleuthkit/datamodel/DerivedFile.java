@@ -258,7 +258,6 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	/**
-	 * /**
 	 * Constructs a representation of a file or directory that has been derived
 	 * from another file and is stored outside of the data source (e.g., on a
 	 * user's machine). A typical example of a derived file is a file extracted

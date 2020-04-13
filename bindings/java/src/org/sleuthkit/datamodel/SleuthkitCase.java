@@ -5930,15 +5930,15 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Add a pool to the database
-	 *
+	 * Add a pool to the database.
+	 * 
 	 * @param parentObjId Object ID of the pool's parent
-     * @param type        Type of pool
+	 * @param type        Type of pool
 	 * @param transaction Case DB transaction
-	 *
+	 * 
 	 * @return the newly created Pool
-	 *
-	 * @throws TskCoreException
+	 * 
+	 * @throws TskCoreException 
 	 */
 	public Pool addPool(long parentObjId, TskData.TSK_POOL_TYPE_ENUM type, CaseDbTransaction transaction) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();

@@ -375,7 +375,9 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             ("dinode_lookup: More Update Sequence Entries than MFT size");
         return TSK_COR;
     }
-    if (tsk_getu16(fs->endian, mft->upd_off) + sizeof(ntfs_upd) > a_ntfs->mft_rsize_b) {
+    if (tsk_getu16(fs->endian, mft->upd_off) + 
+            sizeof(ntfs_upd) + 
+            2*(tsk_getu16(fs->endian, mft->upd_cnt) - 1) > a_ntfs->mft_rsize_b) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
