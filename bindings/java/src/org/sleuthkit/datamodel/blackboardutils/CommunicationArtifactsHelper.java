@@ -33,6 +33,7 @@ import org.sleuthkit.datamodel.AccountFileInstance;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.CommunicationsUtils;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.Relationship;
@@ -311,7 +312,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 	/**
 	 * Creates a contact's account instance of specified account type, if the
-	 * account id is not null/empty.
+	 * account id is not null/empty and is a valid account id for the account type.
 	 *
 	 * Also creates a CONTACT relationship between the self account and the new
 	 * contact account.
@@ -322,7 +323,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// Find/Create an account instance for each of the contact method
 		// Create a relationship between selfAccount and contactAccount
-		if (!StringUtils.isEmpty(accountUniqueID)) {
+		if (CommunicationsUtils.isValidAccountId(accountType, accountUniqueID)) {
 			AccountFileInstance contactAccountInstance = createAccountInstance(accountType, accountUniqueID);
 
 			// Create a relationship between self account and the contact account
@@ -506,7 +507,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// set sender attribute and create sender account
 		AccountFileInstance senderAccountInstance = null;
-		if (!StringUtils.isEmpty(senderId)) {
+		if (CommunicationsUtils.isValidAccountId(moduleAccountsType, senderId)) {
 			senderAccountInstance = createAccountInstance(moduleAccountsType, senderId);
 		} 
 
@@ -515,7 +516,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		String recipientsStr = "";
 		if (!isEffectivelyEmpty(recipientIdsList)) {
 			for (String recipient : recipientIdsList) {
-				if (!StringUtils.isEmpty(recipient)) {
+				if (CommunicationsUtils.isValidAccountId(moduleAccountsType, recipient)) {
 					recipientAccountsList.add(createAccountInstance(moduleAccountsType, recipient));
 				}
 			}
@@ -551,16 +552,16 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, recipientsStr, attributes);
 				break;
 			default:  // direction UNKNOWN
-				
-				// if no sender, selfAccount substitutes caller.
 				if (StringUtils.isEmpty(senderId)) {
+					// if no sender, selfAccount substitutes caller.
 					senderAccountInstance = getSelfAccountInstance();
-				}	
-				// if no recipient specified, selfAccount substitutes recipient
-				if (isEffectivelyEmpty(recipientIdsList)) {
+				}
+				else if (isEffectivelyEmpty(recipientIdsList)) {
+					// else if no recipient specified, selfAccount substitutes recipient
 					recipientsStr = getSelfAccountInstance().getAccount().getTypeSpecificID();
 					recipientAccountsList.add(getSelfAccountInstance());
 				}	
+				
 				// save phone numbers in direction agnostic attributes
 				if (senderAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, senderAccountInstance.getAccount().getTypeSpecificID(), attributes);
@@ -741,7 +742,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		addCommDirectionIfKnown(direction, attributes);
 
 		AccountFileInstance callerAccountInstance = null;
-		if (!StringUtils.isEmpty(callerId)) {
+		if (CommunicationsUtils.isValidAccountId(moduleAccountsType, callerId)) {
 			callerAccountInstance = createAccountInstance(moduleAccountsType, callerId);
 		}
 		
@@ -751,7 +752,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		if (!isEffectivelyEmpty(calleeIdsList)) {
 			calleesStr = addressListToString(calleeIdsList);
 			for (String callee : calleeIdsList) {
-				if (!StringUtils.isEmpty(callee)) {
+				if (CommunicationsUtils.isValidAccountId(moduleAccountsType, callee)) {
 					recipientAccountsList.add(createAccountInstance(moduleAccountsType, callee));
 				}
 			}

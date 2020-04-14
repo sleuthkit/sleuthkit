@@ -6,30 +6,35 @@ The blackboard allows modules (in Autopsy or other frameworks) to communicate an
 
 \subsection jni_bb_concepts Concepts
 
-The blackboard is a collection of <em>artifacts</em>.  Each artifact has a type, such as web browser history, EXIF, or GPS track points. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE and the \ref artifact_catalog_page "artifact catalog") and you can also \ref jni_bb_artifact2 "create your own". 
+The blackboard is a collection of <em>artifacts</em>.  Each artifact has a type, such as web browser history, EXIF, or GPS route. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE and the \ref artifact_catalog_page "artifact catalog") and you can also \ref jni_bb_artifact2 "create your own". 
 
-Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, Created Date, or Device Make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also create your own.  See the \ref artifact_catalog_page "artifact catalog" for a list of artifacts and the attributes that should be associated with each.
+Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, created date, or device make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also \ref jni_bb_artifact2 "create your own".  
 
-When a module wants to store its results in the blackboard, it makes an artifact of the correct type and then adds attributes to it. Other modules can then query the blackboard for artifacts of a given type or artifacts associated with a given file. 
+See the \ref artifact_catalog_page "artifact catalog" for a list of artifacts and the attributes that should be associated with each.
 
-There are two special types of artifacts that are used a bit differently than the rest. The first is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store single attributes that are not related to each other and that do not need their own artifact. There are special methods to access this artifact to ensure that only a single TSK_GEN_INFO artifact is created per Content object and that you get a cached version of the artifact. These methods will be given in the relevant sections below.
+\subsection jni_bb_specialart Special Artifact Types
+
+There are two special types of artifacts that are used a bit differently than the rest. 
+
+The first is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store a independent attributes that will not be displayed in the UI. Autopsy used to store the MD5 hash and MIME type in TSK_GEN_INFO, but they are now in the files table of the database. There are special methods to access this artifact to ensure that only a single TSK_GEN_INFO artifact is created per Content object and that you get a cached version of the artifact. These methods will be given in the relevant sections below.
 
 The second special type of artifact is the TSK_ASSOCIATED_OBJECT. All artifacts are created as the child of a file or artifact. This TSK_ASSOCIATED_OBJECT is used to make additional relationships with files and artifacts apart from this parent-child relationship. See the \ref jni_bb_associated_object section below.
 
 \section jni_bb_access Accessing the Blackboard
 
-Java modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.
+Modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.
 
 \subsection jni_bb_access_post Posting to the Blackboard
 
 The first thing you need to do is create the artifact.  All artifacts must be associated with a Content object.  You can do this by creating an instance of org.sleuthkit.datamodel.BlackboardArtifact by calling either:
 - org.sleuthkit.datamodel.Content.newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) on the Content object you are adding the artifact to
-- org.sleuthkit.datamodel.SleuthkitCase.newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) or a variation.  This approach is usually taken if you don’t have a Content object already and don’t want to create one just to make an artifact. 
+- org.sleuthkit.datamodel.SleuthkitCase.newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) or a variation.
+
 With either of these approaches, the artifact is created in the database immediately. 
 
 If you want to create an attribute in the TSK_GEN_INFO artifact, use org.sleuthkit.datamodel.Content.getGenInfoArtifact() to ensure that you do not create a second TSK_GEN_INFO artifact for the file and to ensure that you used the cached version (which will be faster for you). 
 
-Next, you need to make attributes and add them to the artifact.  Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. After you create one with the correct type and value, you add it to the artifact using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). 
+Next, you need to make attributes and add them to the artifact.  Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. After you create one with the correct type and value, you add it to the artifact using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). Note that you should not manually add attributes of type JSON for standard attribute types such as TSK_ATTACHMENTS or TSK_GEO_TRACKPOINTS. Instead, you should use the helper classes in org.sleuthkit.datamodel.blackboardutils.attributes or org.sleuthkit.datamodel.blackboardutils to create your artifacts.
 
 \subsubsection jni_bb_artifact2 Creating Multiple Artifacts or Multiple Attributes
 
@@ -47,14 +52,13 @@ These classes provide methods that abstract the details of artifacts and attribu
 The following helpers are available:
 
 <ul>
-<li>org.sleuthkit.datamodel.blackboardutils.ArtifactsHelper - provides methods for some creating some general artifacts
+<li>org.sleuthkit.datamodel.blackboardutils.ArtifactsHelper - provides methods for creating general artifacts
 <ul>
-<li>addGPSLocation(): creates TSK_GPS_TRACKPOINT artifact
 <li>addInstalledPrograms(): creates TSK_INSTALLED_PROG artifact
 </ul></ul>
 
 <ul>
-<li>org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper - provides methods for some creating web browser related artifacts
+<li>org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper - provides methods for creating web browser related artifacts
 <ul>
 <li>addWebBookmark(): creates TSK_WEB_BOOKMARK artifact for browser bookmarks
 <li>addWebCookie(): creates TSK_WEB_COOKIE artifact for browser cookies
@@ -73,36 +77,219 @@ The following helpers are available:
 <li>addAttachments() adds attachments to a message.
 </ul></ul>
 
+<ul>
+<li>org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper - provides methods for GPS related artifacts
+<ul>
+<li>addRoute(): creates TSK_ROUTE artifact for GPS routes.
+<li>addContact() creates TSK_CONTACT artifact for contacts.
+<li>addMessage() creates a TSK_MESSAGE artifact for messages.
+<li>addAttachments() adds attachments to a message.
+</ul></ul>
+
 \subsubsection jni_bb_associated_object Associated Objects
 
 Artifacts should be created as children of the file that they were derived or parsed from. For example, a TSK_WEB_DOWNLOAD artifact would be a child of the browser's SQLite database that was parsed. This creates a relationship between the source file and the artifact. But, sometimes you also want to make a relationship between the artifact and another file (or artifact). This is where the TSK_ASSOCIATED_OBJECT artifact comes in.
 
-For example, suppose you have a module that parses a SQLite database that has a log of downloaded files. Each entry might contain the URL the file was downloaded from, timestamp information, and the location the file was saved to on disk. This data would be saved in a TSK_WEB_DOWNLOAD artifact that would be a child of the SQLite database. But suppose the downloaded file also exists in our image. It would be helpful to link that file to our TSK_WEB_DOWNLOAD artifact to show when and where it was download from.
+For example, suppose you have a module that parses a SQLite database that has a log of downloaded files. Each entry might contain the URL the file was downloaded from, timestamp information, and the location the file was saved to on disk. This data would be saved in a TSK_WEB_DOWNLOAD artifact that would be a child of the SQLite database. But suppose the downloaded file also exists in our image. It would be helpful to link that file to our TSK_WEB_DOWNLOAD artifact to show when and where it was downloaded from.
 
-We achieve this relationship by creating a TSK_ASSOCIATED_OBJECT artifact on the downloaded file. This artifact stores the ID of the TSK_WEB_DOWNLOAD artifact in TSK_ASSOCIATED_ARTIFACT attribute so we have a direct link from the file to the artifact that shows where it came from.
+We achieve this relationship by creating a TSK_ASSOCIATED_OBJECT artifact on the downloaded file. This artifact stores the ID of the TSK_WEB_DOWNLOAD artifact in a TSK_ASSOCIATED_ARTIFACT attribute so we have a direct link from the file to the artifact that shows where it came from.
  
 \image html associated_object.png
  
 \subsection jni_bb_query  Querying the Blackboard
 
-You can find artifacts using a variety of ways:
+You can find artifacts  using a variety of ways:
 - org.sleuthkit.datamodel.Content.getArtifacts() in its various forms to get a specific type of artifact for a specific Content object. 
-- org.sleuthkit.datamodel.Content.getGenInfoArtifact() to get the TSK_GEN_INFO artifact.
-- org.sleuthkit.datamodel.SleuthkitCase.getBlackboardArtifacts() in its various forms to get all artifacts of a given type (regardless of file it is associated with) or for a given file.  
-
+- org.sleuthkit.datamodel.Content.getGenInfoArtifact() to get the TSK_GEN_INFO artifact for a specific content object.
+- org.sleuthkit.datamodel.SleuthkitCase.getBlackboardArtifacts() in its various forms to get artifacts based on some combination of artifact type, attribute type and value, and content object.
 
 \section jni_bb_custom_types Custom Artifacts and Attributes
 
 This section outlines how to create artifact and attribute types because the standard ones do not meet your needs. These custom artifacts will be displayed
-in the Autopsy UI alongside the built in artifacts and will also appear in the reports. However, before you make a custom type, you should consider the 
-TSK_INTERESTING_FILE_HIT artifact.  It is very generic and we have used it 
-in the past when we did not want to make a new artifact type. You create the artifact, use the TSK_SET_NAME attribute to define the equivalent name of the custom artifact that you wanted to create, and then add whatever attributes  you want. 
+in the Autopsy UI alongside the built in artifacts and will also appear in the reports. 
 
 
 \subsection jni_bb_custom_make Making Custom Artifacts and Attributes
+
+
 org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
 
-To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the type and get its ID. Like artifacts, you must create the type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). 
+To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the artifact type and get its ID. Like artifacts, you must create the attribute type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). Your attribute will be a name-value pair where the value is of the type you specified when creating it. The current types are: String, Integer, Long, Double, Byte, Datetime, and JSON. If you believe you need to create an attribute with type JSON, please read the 
+\ref jni_bb_json_attr_overview "overview" and \ref jni_bb_json_attr "tutorial" sections below. 
+
+Note that "TSK" is an abbreviation of "The Sleuth Kit." Artifact and attribute type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
+
+\subsection jni_bb_json_attr_overview JSON Attribute Overview
+
+This section will give a quick overview of how to use JSON attributes. If this is your first time using JSON attributes please read the \ref jni_bb_json_attr below as well.
+
+\subsubsection jni_bb_json_attr_overview_usage JSON Attribute Usage
+
+Attributes with values of type JSON should be used only when the data can't be stored as an unordered set of attributes. To date, the most common need for this has been where an artifact needs to store multiple ordered instances of the same type of data in a single artifact. For example, one of the standard JSON attributes is TSK_GEO_TRACKPOINTS which stores an ordered list of track points, each containing coordinates, a timestamp, and other data. 
+
+\subsubsection jni_bb_json_attr_overview_format JSON Attribute Format
+
+The underlying data in a JSON attribute will be either an array of individual attributes or an array of maps of attributes. For example, an artifact containing two track points could look similar to this (some attributes have been removed for brevity):
+
+\verbatim
+{"pointList":
+  [
+    {"TSK_DATETIME":1255822646,
+     "TSK_GEO_LATITUDE":47.644548,
+     "TSK_GEO_LONGITUDE":-122.326897},
+    {"TSK_DATETIME":1255822651,
+     "TSK_GEO_LATITUDE":47.644548,
+     "TSK_GEO_LONGITUDE":-122.326897}
+  ]
+}
+\endverbatim
+
+In practice you will not be required to deal with the raw JSON, but it is important to note that in the name/value pairs, the name should always be the name of a blackboard artifact type. This allows Autopsy to better process each attribute, for example by displaying timestamps in human-readable format.
+
+\subsubsection jni_bb_json_attr_overview_create Saving JSON Attributes
+
+To start, follow the instructions in the \ref jni_bb_custom_make section above to create your custom attribute with value type JSON. Next you'll need to put your data into the new attribute. There are two general methods:
+
+<ol><li>Manually create the JSON string. This is not recommended as the code will be hard to read and prone to errors.
+<li> Create a helper plain old Java object (POJO) to hold the data you want to serialize.
+</ol>
+
+Assuming you go the POJO route (highly recommended), there are two options for creating your class. As discussed above, each field name should match an attribute name (either built-in or custom). You could create a class like this:
+
+\verbatim
+class WebLogEntry {
+   long TSK_DATETIME;
+   String TSK_URL;
+\endverbatim
+
+The downside here is that your code will likely be a bit less readable like this. The other option is to use annotations specifying which attribute type goes with each of your fields, like this:
+
+\verbatim
+class WebLogEntry {
+   @SerializedName("TSK_DATETIME")
+   long accessDate;
+   @SerializedName("TSK_URL")
+   String urlVisited;
+\endverbatim
+
+You may need to make multiple POJOs to hold the data you need to serialize. This would most commonly happen if you want to store a list of values. In our example above, we would likely need to create a WebLog class to hold our list of WebLogEntry objects.
+
+Now we need to convert our object into a JSON attribute. The easiest way to do this using the method org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.toAttribute(). This method will return a BlackboardAttribute serialized from your object. You can then add this new attribute to your BlackboardArtifact.
+
+\subsubsection jni_bb_json_attr_overview_load Loading JSON Attributes
+
+If you need to process JSON attributes you created and you created your own POJO as discussed in the previous section, you can use the method org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.fromAttribute(). It will return an instance of your class containing the data from a given BlackboardAttribute.
+
+\subsection jni_bb_json_attr JSON Attribute Tutorial
+
+The following describes an example of when you might need a JSON-valued attribute and the different methods for creating one. It also shows generally how to create custom artifacts and attributes so may be useful even if you do not need a JSON-type attribute.
+
+Suppose we had a module that could record the last few times an app was accessed and which user opened it. The data we'd like to store for one app could have the form:
+
+\verbatim
+App name: Sample App
+Logins:   user1, 2020-03-31 10:06:37 EDT
+          user2, 2020-03-30 06:19:57 EDT
+          user1, 2020-03-26 18:59:57 EDT
+\endverbatim
+
+We could make a separate artifact for each of those logins (each with the app name, user name, and timestamp) it might be nicer to have them all under one and keep them in order. This is where the JSON-type attribute comes into play. We can store all the login data in a single blackboard attribute.
+
+To start, we'll need to create our new artifact and attribute types. We'll need a new artifact type to hold our login data and a new attribute type to hold the logins themselves (this will be our JSON attribute). We'll use a standard attribute later for the app name. This part should only be done once, possibly in the startUp() method of your ingest module.
+
+\verbatim
+SleuthkitCase skCase = Case.getCurrentCaseThrows().getSleuthkitCase();
+
+// Add the new artifact type to the case if it does not already exist
+String artifactName = "APP_LOG";
+String artifactDisplayName = "Application Logins";
+BlackboardArtifact.Type artifactType = skCase.getArtifactType(artifactName);
+if (artifactType == null) {
+	artifactType = skCase.addBlackboardArtifactType(artifactName, artifactDisplayName);
+}
+
+// Add the new attribute type to the case if it does not already exist
+String attributeName = "LOGIN_DATA";
+String attributeDisplayName = "Login Data";
+BlackboardAttribute.Type loginDataAttributeType = skCase.getAttributeType(attributeName);
+if (loginDataAttributeType == null) {
+	loginDataAttributeType = skCase.addArtifactAttributeType(attributeName, 
+			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON, attributeDisplayName);
+}
+\endverbatim
+
+You'll want to save the new artifact and attribute type objects to use later.
+
+Now our ingest module can create artifacts for the data it extracts. In the code below, we create our new "APP_LOG" artifact, add a standard attribute for the user name, and then create and store a JSON-formatted string which will contain each entry from the "loginData" list. Note that manually creating the JSON as shown below is not recommeded and is just for illustrative purposes - an easier method will be given afterward.
+
+\verbatim
+BlackboardArtifact art = content.newArtifact(artifactType.getTypeID());
+List<BlackboardAttribute> attributes = new ArrayList<>();
+attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, moduleName, appName));
+
+String jsonLoginStr = "{ LoginData : [ ";
+String dataStr = "";
+for(LoginData data : loginData) {
+	if (!dataStr.isEmpty()) {
+		dataStr += ", ";
+	}
+	dataStr += "{\"TSK_USER_NAME\" : \"" + data.getUserName() + "\", "
+			+ "\"TSK_DATATIME\" : \"" + data.getTimestamp() + "\"} ";
+	
+}
+jsonLoginStr += dataStr + " ] }";
+
+attributes.add(new BlackboardAttribute(loginDataAttributeType, moduleName, jsonLoginStr));
+art.addAttributes(attributes);
+\endverbatim
+
+It is important that each of the name-value pairs starts with an existing blackboard attribute name. This will allow Autopsy to use the corresponding value, for example, to extract out a timestamp to show this artifact in the <a href="http://sleuthkit.org/autopsy/docs/user-docs/latest/timeline_page.html">Timeline viewer</a>. Here's what our newly-created artifact will look like in Autopsy:
+
+\image html json_attribute.png
+
+The above method for storing the data works but formatting the JSON attribute manually is prone to errors. Luckily, in most cases instead of writing the JSON ourselves we can serialize a Java object. If the data that will go into the JSON attribute is contained in plain old Java objects (POJOs), then we can add annotations to that class to produce the JSON automatically. Here they've been added to the LoginData class:
+
+\verbatim
+// Requires package com.google.gson.annotations.SerializedName;
+private class LoginData {
+	@SerializedName("TSK_USER_NAME")
+	String userName;
+	
+	@SerializedName("TSK_DATETIME")
+	long timestamp;
+	
+	LoginData(String userName, long timestamp) {
+		this.userName = userName;
+		this.timestamp = timestamp;
+	}
+}
+\endverbatim
+
+We want our JSON attribute to store a list of these LoginData objects, so we'll create another POJO for that:
+
+\verbatim
+private class LoginDataLog {
+	List<LoginData> dataLog;
+	
+	LoginDataLog() {
+		dataLog = new ArrayList<>();
+	}
+	
+	void addData(LoginData data) {
+		dataLog.add(data);
+	}
+}
+\endverbatim
+
+Now we use org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil.toAttribute() to convert our LoginDataLog object into a BlackboardAttribute, greatly simplifying the code. Here, "dataLog" is an instance of a LoginDataLog object that contains all of the login data.
+
+\verbatim
+BlackboardArtifact art = content.newArtifact(artifactType.getTypeID());
+List<BlackboardAttribute> attributes = new ArrayList<>();
+attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, moduleName, appName));
+attributes.add(BlackboardJsonAttrUtil.toAttribute(loginDataAttributeType, moduleName, dataLog));
+art.addAttributes(attributes);
+\endverbatim
 
 
 */
