@@ -543,6 +543,63 @@ public final class TimelineManager {
 
 		return events;
 	}
+	
+	void addEventsForNewFileJNI(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
+		//gather time stamps into map
+		Map<TimelineEventType, Long> timeMap = ImmutableMap.of(TimelineEventType.FILE_CREATED, file.getCrtime(),
+				TimelineEventType.FILE_ACCESSED, file.getAtime(),
+				TimelineEventType.FILE_CHANGED, file.getCtime(),
+				TimelineEventType.FILE_MODIFIED, file.getMtime());
+		List<TimelineEventType> tempList = ImmutableList.of(TimelineEventType.FILE_MODIFIED,
+				TimelineEventType.FILE_ACCESSED, TimelineEventType.FILE_CREATED, TimelineEventType.FILE_CHANGED);
+
+		/*
+		 * If there are no legitimate ( greater than zero ) time stamps skip the
+		 * rest of the event generation.
+		 */
+		if (Collections.max(timeMap.values()) <= 0) {
+			return;
+		}
+
+		String description = file.getParentPath() + file.getName();
+		long fileObjId = file.getId();
+		caseDB.acquireSingleUserCaseWriteLock();
+		try {
+			long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
+					description, null, null, false, false, connection);
+
+			//for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
+			for (TimelineEventType type : tempList) {
+				//Map.Entry<TimelineEventType, Long> timeEntry = timeMap.get(type);
+				Long time = timeMap.get(type);
+				//Long time = timeEntry.getValue();
+				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
+					//TimelineEventType type = timeEntry.getKey();
+					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
+
+					/*
+					 * Last two flags indicating hasTags and hasHashHits are
+					 * both set to false with the assumption that this is not
+					 * possible for a new file. See JIRA-5407
+					 */
+					//events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
+				//			description, null, null, false, false));
+				} else {
+					if (time >= MAX_TIMESTAMP_TO_ADD) {
+						//logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
+					}
+				}
+			}
+
+		} finally {
+			caseDB.releaseSingleUserCaseWriteLock();
+		}
+		//events.stream()
+		//		.map(TimelineEventAddedEvent::new)
+		//		.forEach(caseDB::fireTSKEvent);
+
+		//return events;
+	}	
 
 	/**
 	 * Add any events that can be created from the given Artifact. If the

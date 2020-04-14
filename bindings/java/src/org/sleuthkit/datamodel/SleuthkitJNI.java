@@ -414,18 +414,15 @@ public class SleuthkitJNI {
 			JniDbHelper dbHelper = new JniDbHelper(skCase);
 			try {
 				dbHelper.beginTransaction();
-				long startTime = System.currentTimeMillis();
 				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, dbHelper, timezoneLongToShort(timeZone), false, false, false);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
 				long id = finishAddImgNat(tskAutoDbPointer);
-				long endTime = System.currentTimeMillis();
-				System.out.println("### addImage time: " + (endTime - startTime) + " ms");
+				dbHelper.commitTransaction();
 				skCase.addDataSourceToHasChildrenMap();
 				return id;
 			} catch (TskDataException ex) {
+				dbHelper.revertTransaction();
 				throw new TskCoreException("Error adding image to case database", ex);
-			} finally {
-				dbHelper.commitTransaction(); // TODO - is this right?
 			}
 		}
 
@@ -510,7 +507,6 @@ public class SleuthkitJNI {
 				getTSKReadLock();
 				try {
 					long imageHandle = 0;
-					long startTime = System.currentTimeMillis();
 					synchronized (this) {
 						if (0 != tskAutoDbPointer) {
 							throw new TskCoreException("Add image process already started");
@@ -527,8 +523,6 @@ public class SleuthkitJNI {
 					if (imageHandle != 0) {
 						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
 					}
-					long endTime = System.currentTimeMillis();
-					System.out.println("### addImage time: " + (endTime - startTime) + " ms");
 				} finally {
 					releaseTSKReadLock();
 				}

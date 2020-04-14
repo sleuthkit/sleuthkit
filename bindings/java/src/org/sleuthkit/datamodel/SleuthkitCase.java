@@ -11248,7 +11248,7 @@ public class SleuthkitCase {
 						(short)metaFlags,
 						size, ctime, crtime, atime, mtime, null, null, escaped_path, null, parentObjId, null, null, extension);
 
-				timelineManager.addEventsForNewFile(derivedFile, connection);	
+				timelineManager.addEventsForNewFileJNI(derivedFile, connection);	
 			}
 			
 			return objectId;
