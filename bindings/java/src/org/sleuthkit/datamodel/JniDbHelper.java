@@ -392,7 +392,7 @@ class JniDbHelper {
 				logger.log(Level.SEVERE, "Error - root directory for file system ID {0} not found", fsObjId);
 				return -1;
 			}
-			VirtualDirectory dir = caseDb.addVirtualDirectory(fsIdToRootDir.get(fsObjId), name, trans);
+			VirtualDirectory dir = caseDb.addVirtualDirectoryJNI(fsIdToRootDir.get(fsObjId), name, trans);
 			return dir.getId();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Error creating virtual directory " + name + " under file system ID " + fsObjId, ex);
