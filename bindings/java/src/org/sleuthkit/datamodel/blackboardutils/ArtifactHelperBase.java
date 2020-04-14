@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2019 Basis Technology Corp.
+ * Copyright 2019-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,11 +75,11 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds an attribute of specified type to the given list, if the
+	 * Creates and adds a string attribute of specified type to the given list, if the
 	 * attribute value is not empty or null.
 	 *
 	 * @param attributeType Attribute type.
-	 * @param attrValue     Attribute value.
+	 * @param attrValue     String attribute value.
 	 * @param attributes    List of attributes to add to.
 	 *
 	 */
@@ -90,14 +90,28 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds an attribute of specified type to the given list, if the
+	 * Creates and adds a long attribute of specified type to the given list, if the
 	 * attribute value is not 0.
 	 *
 	 * @param attributeType Attribute type.
-	 * @param attrValue     Attribute value.
+	 * @param attrValue     Long attribute value.
 	 * @param attributes    List of attributes to add to.
 	 */
 	void addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, long attrValue, Collection<BlackboardAttribute> attributes) {
+		if (attrValue > 0) {
+			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
+		}
+	}
+	
+	/**
+	 * Creates and adds an integer attribute of specified type to the given list, if the
+	 * attribute value is not 0.
+	 *
+	 * @param attributeType Attribute type.
+	 * @param attrValue     Integer attribute value.
+	 * @param attributes    List of attributes to add to.
+	 */
+	void addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, int attrValue, Collection<BlackboardAttribute> attributes) {
 		if (attrValue > 0) {
 			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
 		}

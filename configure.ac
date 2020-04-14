@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.8.0)
+AC_INIT(sleuthkit, 4.9.0)
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for
 m4_include([m4/cppunit.m4])
@@ -388,7 +388,7 @@ AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 
-dnl OpenSSL support for encryption
+dnl OpenSSL support for encryption - currently disabled due to automatic test failures
 dnl AX_CHECK_OPENSSL(
 dnl  [ax_openssl=yes]
 dnl  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS",
@@ -441,12 +441,12 @@ AC_CONFIG_FILES([
 AC_OUTPUT
 
 dnl Print a summary
+dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
    zlib support:                          $ax_zlib
-   openssl support:                       $ax_openssl
 
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
