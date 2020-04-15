@@ -391,7 +391,7 @@ TskAutoDbJava::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
         return TSK_ERR;
     }
 
-    // Save the file system info for created unallocated blocks later
+    // Save the file system info for creating unallocated blocks later
     TSK_DB_FS_INFO fs_info_db;
     fs_info_db.objId = objId;
     fs_info_db.imgOffset = fs_info->offset;
@@ -625,7 +625,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-        meta_mode, gid, uid, // md5TextPtr, known,
+        meta_mode, gid, uid, 
         pathj, extj);
     objId = (int64_t)objIdj;
 

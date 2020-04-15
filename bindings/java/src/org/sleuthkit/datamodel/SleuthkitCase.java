@@ -11295,25 +11295,18 @@ public class SleuthkitCase {
 	/**
 	 * Adds a virtual directory to the database and returns a VirtualDirectory
 	 * object representing it.
-	 *
-	 * Make sure the connection in transaction is used for all database
-	 * interactions called by this method
+	 * For use with the JNI callbacks associated with the add image process.
 	 *
 	 * @param parentId      the ID of the parent, or 0 if NULL
 	 * @param directoryName the name of the virtual directory to create
 	 * @param transaction   the transaction in the scope of which the operation
 	 *                      is to be performed, managed by the caller
 	 *
-	 * @return a VirtualDirectory object representing the one added to the
-	 *         database.
-	 *
+	 * @return The object ID of the new virtual directory
+	 * 
 	 * @throws TskCoreException
 	 */
-	public VirtualDirectory addVirtualDirectoryJNI(long parentId, String directoryName, CaseDbTransaction transaction) throws TskCoreException {
-		if (transaction == null) {
-			throw new TskCoreException("Passed null CaseDbTransaction");
-		}
-
+	long addVirtualDirectoryJNI(long parentId, String directoryName, CaseDbTransaction transaction) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
 		ResultSet resultSet = null;
 		try {
@@ -11404,10 +11397,8 @@ public class SleuthkitCase {
 			//extension, since this is not really file we just set it to null
 			statement.setString(20, null);
 			connection.executeUpdate(statement);
-
-			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
-					metaType, dirFlag, metaFlags, null, FileKnown.UNKNOWN,
-					parentPath);
+			
+			return newObjId;
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {

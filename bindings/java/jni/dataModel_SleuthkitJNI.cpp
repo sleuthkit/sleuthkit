@@ -1107,8 +1107,6 @@ JNIEXPORT void JNICALL
     uint8_t ret = 0;
     if ( (ret = tskAuto->startAddImage((int) numImgs, imagepaths8,
         TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
-        printf("runOpenAndAddImgNat - startAddImage finished with errors\n");
-        fflush(stdout);
         stringstream msgss;
         msgss << "Errors occurred while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
