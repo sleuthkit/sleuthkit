@@ -80,14 +80,20 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String description;
 	private final HTML_COLOR color;
 	private final TskData.FileKnown knownStatus;
+	private final TagSet tagSet;
 		
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
 	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus) {
+		this(id, displayName, description, color, knownStatus, null);
+	}
+	
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, TagSet tagSet) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
 		this.color = color;
 		this.knownStatus = knownStatus;
+		this.tagSet = tagSet;
 	}
 
 	public long getId() {
@@ -108,6 +114,10 @@ public class TagName implements Comparable<TagName>, Serializable {
 
 	public TskData.FileKnown getKnownStatus() {
 		return knownStatus;
+	}
+	
+	public TagSet getTagSet() {
+		return tagSet; 
 	}
 
 	/**

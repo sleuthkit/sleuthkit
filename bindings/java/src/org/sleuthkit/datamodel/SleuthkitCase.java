@@ -207,6 +207,7 @@ public class SleuthkitCase {
 	private TimelineManager timelineMgr;
 	private Blackboard blackboard;
 	private CaseDbAccessManager dbAccessManager;
+	private Tags tagsMgr;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -375,6 +376,7 @@ public class SleuthkitCase {
 		communicationsMgr = new CommunicationsManager(this);
 		timelineMgr = new TimelineManager(this);
 		dbAccessManager = new CaseDbAccessManager(this);
+		tagsMgr = new Tags(this);
 	}
 
 	/**
@@ -476,6 +478,10 @@ public class SleuthkitCase {
 	 */
 	public synchronized CaseDbAccessManager getCaseDbAccessManager() throws TskCoreException {
 		return dbAccessManager;
+	}
+	
+	public synchronized Tags getTagsManager() {
+		return tagsMgr;
 	}
 
 	/**
@@ -2083,6 +2089,38 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}		
+	}
+	
+	private CaseDbSchemaVersionNumber updateFromSchema8dot4toSchema8dot5(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 4) {
+			return schemaVersion;
+		}
+		
+		Statement statement = connection.createStatement();
+		ResultSet results = null;
+
+		acquireSingleUserCaseWriteLock();				
+		try {
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					statement.execute("CREATE TABLE tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE)");
+					break;
+				case SQLITE:
+					statement.execute("CREATE TABLE tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEST UNIQUE)");
+					statement.execute("ALTER TABLE tag_names ADD COLUMN tag_set_id INTEGER REFERENCES tag_sets(tag_set_id) ON DELETE CASCADE");
+					break;
+			}
+		} finally {
+			closeResultSet(results);
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}		
+		
+		return null;
 	}
 
 	/**
