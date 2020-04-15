@@ -169,10 +169,12 @@ class TskAutoDbJava :public TskAuto {
     jmethodID m_addLayoutFileMethodID = NULL;
     jmethodID m_addLayoutFileRangeMethodID = NULL;
 
+    // Cached objects
     vector<TSK_DB_FS_INFO> m_savedFsInfo;
     vector<TSK_DB_VS_INFO> m_savedVsInfo;
     vector<TSK_DB_VS_PART_INFO> m_savedVsPartInfo;
     vector<TSK_DB_OBJECT> m_savedObjects;
+
     void saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_TYPE_ENUM type);
     TSK_RETVAL_ENUM getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info);
 
