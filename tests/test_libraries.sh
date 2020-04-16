@@ -8,10 +8,12 @@ echo "Testing libs"
 # Currently, tests mmls on image files.  Will need to be refactored as we add more tests.
 
 EXIT_FAILURE=1
-pwd
-ls ../tools/vstools
-MMLS_CMD=$INSTALL/bin/mmls
+MMLS_CMD=$(realpath ../tools/vstools/mmls)
 TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
+
+if [ "$Target" = 'windows' ]; then
+  MMLS_CMD+='.exe'
+fi
 
 # exits with FAILURE status if the command failed
 _check_exit_status() {
