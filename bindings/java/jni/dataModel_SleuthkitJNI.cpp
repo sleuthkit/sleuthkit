@@ -1232,7 +1232,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
     env->ReleaseStringUTFChars(deviceId, (const char *)device_id);
 
     // Must call finishAddImgNat to free the TskAutoDb
-    setThrowTskDataError(env, "Just verifying that this is the Java DB build");
 }
 
 
