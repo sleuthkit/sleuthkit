@@ -515,8 +515,6 @@ public final class TimelineManager {
 				TimelineEventType.FILE_ACCESSED, file.getAtime(),
 				TimelineEventType.FILE_CHANGED, file.getCtime(),
 				TimelineEventType.FILE_MODIFIED, file.getMtime());
-		List<TimelineEventType> tempList = ImmutableList.of(TimelineEventType.FILE_MODIFIED,
-				TimelineEventType.FILE_ACCESSED, TimelineEventType.FILE_CREATED, TimelineEventType.FILE_CHANGED);
 
 		/*
 		 * If there are no legitimate ( greater than zero ) time stamps skip the
@@ -534,9 +532,10 @@ public final class TimelineManager {
 			long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
 					description, null, null, false, false, connection);
 
-			for (TimelineEventType type : tempList) {
-				Long time = timeMap.get(type);
+			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
+				Long time = timeEntry.getValue();
 				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
+					TimelineEventType type = timeEntry.getKey();
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
 					/*
@@ -548,7 +547,7 @@ public final class TimelineManager {
 							description, null, null, false, false));
 				} else {
 					if (time >= MAX_TIMESTAMP_TO_ADD) {
-						//logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
+						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
 					}
 				}
 			}
@@ -558,7 +557,7 @@ public final class TimelineManager {
 		}
 
 		return events;
-	}	
+	}
 
 	/**
 	 * Add any events that can be created from the given Artifact. If the
