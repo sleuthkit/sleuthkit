@@ -8,6 +8,7 @@ echo "Testing libs"
 # Currently, tests mmls on image files.  Will need to be refactored as we add more tests.
 
 EXIT_FAILURE=1
+env
 MMLS_CMD=$(realpath ../tools/vstools/mmls"$EXE_EXT")
 TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
 
