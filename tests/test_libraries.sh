@@ -7,12 +7,14 @@ echo "Testing libs"
 #
 # Currently, tests mmls on image files.  Will need to be refactored as we add more tests.
 
+ls "$bindir"
 EXIT_FAILURE=1
-MMLS_CMD=$(realpath ../tools/vstools/mmls)
+MMLS_CMD=$bindir/mmls
 TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
 
-if [ -n "$WINEARCH" ]; then 
+if [ -n "$WINEARCH" ]; then
   MMLS_CMD+='.exe'
+  wine "$MMLS_CMD -i list"
 fi
 
 # exits with FAILURE status if the command failed
