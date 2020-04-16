@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -o pipefail
+echo "Testing libs"
 
 # Test script to run command line tools against disk images
 #
@@ -23,8 +24,10 @@ _check_exit_status() {
 # save list of supported images
 imgFormatList="$($MMLS_CMD -i list 2>&1 >/dev/null | sed '1d' | awk '{print $1}')"
 # mmls returns 1 on successful list. How neat
-if [ $? -ne 1 ]; then
-  echo "Failed to get image list"
+err=$?
+if [ $err -ne 1 ]; then
+  echo "Failed to get image list with error $err"
+  $MMLS_CMD -i list
   exit $EXIT_FAILURE
 fi
 
