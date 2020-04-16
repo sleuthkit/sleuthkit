@@ -8,12 +8,19 @@ echo "Testing libs"
 # Currently, tests mmls on image files.  Will need to be refactored as we add more tests.
 
 EXIT_FAILURE=1
+EXIT_SKIP=77
+
 MMLS_CMD=$(realpath ../tools/vstools/mmls)
 TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
 
 if [ -n "$WINEARCH" ]; then
+  linkage=${STAGE_NAME#*/*/}
+  if [ $linkage = 'shared' ]; then 
+    echo "Skipping test on windows $linkage"
+    exit $EXIT_SKIP
+  fi
+
   MMLS_CMD+='.exe'
-  wine "$MMLS_CMD -i list"
 fi
 
 # exits with FAILURE status if the command failed
