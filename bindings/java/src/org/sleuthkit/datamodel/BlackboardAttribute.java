@@ -1411,11 +1411,7 @@ public class BlackboardAttribute {
 		
 		TSK_BYTES_RECEIVED(148, "TSK_BYTES_RECEIVED",
 	        bundle.getString("BlackboardAttribute.tskbytesreceived.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
-
-		TSK_EXECUTE_DATETIME(149, "TSK_EXECUTE_DATETIME",
-	        bundle.getString("BlackboardAttribute.tskexecutedatetime.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG)
 		
 		;
 
