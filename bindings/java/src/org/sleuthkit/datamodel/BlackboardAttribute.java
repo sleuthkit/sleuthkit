@@ -1403,7 +1403,19 @@ public class BlackboardAttribute {
 		
 		TSK_HASH_PHOTODNA(146, "TSK_HASH_PHOTODNA",
 			bundle.getString("BlackboardAttribute.tskhashphotodna.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_BYTES_SENT(147, "TSK_BYTES_SENT",
+	        bundle.getString("BlackboardAttribute.tskbytessent.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+		
+		TSK_BYTES_RECEIVED(148, "TSK_BYTES_RECEIVED",
+	        bundle.getString("BlackboardAttribute.tskbytesreceived.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+
+		TSK_EXECUTE_DATETIME(149, "TSK_EXECUTE_DATETIME",
+	        bundle.getString("BlackboardAttribute.tskexecutedatetime.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		
 		;
 
