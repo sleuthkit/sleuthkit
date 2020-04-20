@@ -80,22 +80,18 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String description;
 	private final HTML_COLOR color;
 	private final TskData.FileKnown knownStatus;
-	private final TagSet tagSet;
+	private final int tagSetId;
 		
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus) {
-		this(id, displayName, description, color, knownStatus, null);
-	}
-	
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, TagSet tagSet) {
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, int tagSetId) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
 		this.color = color;
 		this.knownStatus = knownStatus;
-		this.tagSet = tagSet;
+		this.tagSetId = tagSetId;
 	}
-
+	
 	public long getId() {
 		return id;
 	}
@@ -116,8 +112,8 @@ public class TagName implements Comparable<TagName>, Serializable {
 		return knownStatus;
 	}
 	
-	public TagSet getTagSet() {
-		return tagSet; 
+	int getTagSetId() {
+		return tagSetId;
 	}
 
 	/**
@@ -140,6 +136,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
 		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
 		hash = 89 * hash + (this.knownStatus != null ? this.knownStatus.hashCode() : 0);
+		hash = 89 * hash + tagSetId;
 		return hash;
 	}
 
@@ -156,6 +153,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 				&& Objects.equals(this.displayName, other.displayName)
 				&& Objects.equals(this.description, other.description)
 				&& Objects.equals(this.color, other.color)
-				&& Objects.equals(this.knownStatus, other.knownStatus));
+				&& Objects.equals(this.knownStatus, other.knownStatus)
+				&& this.tagSetId == other.tagSetId);
 	}
 }

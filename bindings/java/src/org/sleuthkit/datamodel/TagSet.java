@@ -24,21 +24,22 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- *
- * 
+ * A TagSet is a name group of TagNames.
  */
 public class TagSet {
 	private final String setName;
-	private final List<TagName> tagNameList = new ArrayList<>();
 	private final int id;
+	private final List<TagName> tagNameList = new ArrayList<>();
 
-	public TagSet(int id, String setName) {
+	/**
+	 * Construct a TagSet.
+	 * 
+	 * @param id		Tag set id value.
+	 * @param setName	Name of tag set.
+	 */
+	TagSet(int id, String setName) {
 		this.id = id;
 		this.setName = setName;
-	}
-
-	public int getId() {
-		return id;
 	}
 	
 	public String getName() {
@@ -48,9 +49,17 @@ public class TagSet {
 	public List<TagName> getTagNames() {
 		return Collections.unmodifiableList(tagNameList);
 	}
-	
-	public void addTagName(TagName tagName) {
+
+	void addTagName(TagName tagName) {
 		tagNameList.add(tagName);
+	}
+	
+	void addTagNames(List<TagName> tagNameList) {
+		tagNameList.addAll(tagNameList);
+	}
+	
+	int getId() {
+		return id;
 	}
 	
 	@Override
