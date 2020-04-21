@@ -219,7 +219,7 @@ public class TaggingManager {
 					}
 				}
 
-				if (removedTags.size() > 0) {
+				if (!removedTags.isEmpty()) {
 					// Remove the tags.
 					String removeQuery = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (SELECT tag_id FROM blackboard_artifact_tags JOIN tag_names ON tag_names.tag_name_id = blackboard_artifact_tags.tag_name_id WHERE artifact_id = %d AND tag_names.tag_set_id = %d)", artifact.getId(), tagSetId);
 					try (Statement stmt = connection.createStatement()) {
