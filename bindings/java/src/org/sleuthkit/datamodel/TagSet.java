@@ -35,21 +35,21 @@ public class TagSet {
 	/**
 	 * Construct a TagSet.
 	 *
-	 * @param id		    Tag set id value.
+	 * @param id		Tag set id value.
 	 * @param setName	Name of tag set.
 	 */
 	TagSet(long id, String setName) {
-		if(setName == null || setName.isEmpty()) {
+		if (setName == null || setName.isEmpty()) {
 			throw new IllegalArgumentException("TagSet name must be a non-empty string");
 		}
-		
+
 		this.id = id;
 		this.setName = setName;
 	}
-	
+
 	/**
 	 * Returns the name of the tag set.
-	 * 
+	 *
 	 * @return Tag set name.
 	 */
 	public String getName() {
@@ -58,8 +58,8 @@ public class TagSet {
 
 	/**
 	 * Returns a list of the TagName objects that belong to the tag set.
-	 * 
-	 * @return An unmodifiable list of TagName objects. 
+	 *
+	 * @return An unmodifiable list of TagName objects.
 	 */
 	public List<TagName> getTagNames() {
 		return Collections.unmodifiableList(tagNameList);
@@ -67,33 +67,34 @@ public class TagSet {
 
 	/**
 	 * Adds a TagName to the tag set.
-	 * 
-	 * @param tagName 
+	 *
+	 * @param tagName
 	 */
 	void addTagName(TagName tagName) {
-		if(tagName == null) {
+		if (tagName == null) {
 			throw new IllegalArgumentException("Cannot add NULL value to TagSet");
 		}
-		
+
 		tagNameList.add(tagName);
 	}
 
 	/**
 	 * Add a list of TagName objects to the tag set.
-	 * 
-	 * @param tagNameList 
+	 *
+	 * @param tagNameList
 	 */
 	void addTagNames(List<TagName> tagNameList) {
-		if(tagNameList == null) {
+		if (tagNameList == null) {
 			throw new IllegalArgumentException("Cannot add a NULL list to TagSet");
 		}
-		
+
 		tagNameList.addAll(tagNameList);
 	}
 
 	/**
+	 * Return the TagSet id.
 	 * 
-	 * @return 
+	 * @return TagSet id value.
 	 */
 	long getId() {
 		return id;
@@ -122,7 +123,7 @@ public class TagSet {
 		hash = 89 * hash + (int) (this.id ^ (this.id >>> 32));
 		hash = 89 * hash + Objects.hashCode(this.setName);
 		hash = 89 * hash + Objects.hashCode(this.tagNameList);
-		
+
 		return hash;
 	}
 

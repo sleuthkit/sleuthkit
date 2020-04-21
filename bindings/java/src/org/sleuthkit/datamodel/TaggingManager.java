@@ -30,6 +30,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
  * Provides an API to manage Tags.
  */
 public class TaggingManager {
+
 	private final SleuthkitCase skCase;
 
 	/**
