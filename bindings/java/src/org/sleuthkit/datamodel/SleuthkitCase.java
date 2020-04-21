@@ -480,6 +480,11 @@ public class SleuthkitCase {
 		return dbAccessManager;
 	}
 	
+	/**
+	 * Get the case database TaggingManager object.
+	 * 
+	 * @return The per case TaggingManager object. 
+	 */
 	public synchronized TaggingManager getTaggingManager() {
 		return taggingMgr;
 	}
