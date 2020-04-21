@@ -97,7 +97,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 4);
+			= new CaseDbSchemaVersionNumber(8, 5);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -898,6 +898,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot3toSchema8dot4(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot4toSchema8dot5(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -2099,11 +2100,11 @@ public class SleuthkitCase {
 		if (schemaVersion.getMinor() != 4) {
 			return schemaVersion;
 		}
-		
+
 		Statement statement = connection.createStatement();
 		ResultSet results = null;
 
-		acquireSingleUserCaseWriteLock();				
+		acquireSingleUserCaseWriteLock();
 		try {
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -2113,35 +2114,31 @@ public class SleuthkitCase {
 					statement.execute("CREATE TABLE tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEST UNIQUE)");
 					break;
 			}
-			
+
 			statement.execute("ALTER TABLE tag_names ADD COLUMN tag_set_id INTEGER REFERENCES tag_sets(tag_set_id)");
-			if(statement.execute("INSERT INTO tag_sets (name) VALUES ('Project VIC (United States)')", Statement.RETURN_GENERATED_KEYS )) {
-				try(ResultSet resultSet = statement.getResultSet()){
-					if(resultSet != null && resultSet.next()) {
-						int tagSetId = resultSet.getInt(1);
-						
-						String updateQuery = "UPDATE tag_names SET tag_set_id = %d, color = '%s' WHERE display_name = '%s'";
-						statement.executeUpdate(String.format(updateQuery, tagSetId, "Red", "CAT-1: Child Exploitation (Illegal)"));
-						statement.executeUpdate(String.format(updateQuery, tagSetId, "Lime", "CAT-2: Child Exploitation (Non-Illegal/Age Difficult)"));
-						statement.executeUpdate(String.format(updateQuery, tagSetId, "Yellow", "CAT-3: CGI/Animation (Child Exploitive)"));
-						statement.executeUpdate(String.format(updateQuery, tagSetId, "Purple", "CAT-4: Exemplar/Comparison (Internal Use Only)"));
-						statement.executeUpdate(String.format(updateQuery, tagSetId, "Green", "CAT-5: Non-pertinent"));
-						statement.executeUpdate(String.format(updateQuery, tagSetId, "Silver", "CAT-0: Uncategorized"));
-					} else {
-						throw new TskCoreException("Failed to retrieve the default tag_set_id from DB");
-					}
+			statement.execute("INSERT INTO tag_sets (name) VALUES ('Project VIC (United States)')");
+			try (ResultSet resultSet = statement.getGeneratedKeys()) {
+				if (resultSet != null && resultSet.next()) {
+					int tagSetId = resultSet.getInt(1);
+
+					String updateQuery = "UPDATE tag_names SET tag_set_id = %d, color = '%s' WHERE display_name = '%s'";
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Red", "CAT-1: Child Exploitation (Illegal)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Lime", "CAT-2: Child Exploitation (Non-Illegal/Age Difficult)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Yellow", "CAT-3: CGI/Animation (Child Exploitive)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Purple", "CAT-4: Exemplar/Comparison (Internal Use Only)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Green", "CAT-5: Non-pertinent"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Silver", "CAT-0: Uncategorized"));
+				} else {
+					throw new TskCoreException("Failed to retrieve the default tag_set_id from DB");
 				}
-			} else {
-				throw new TskCoreException("Failed to retrieve the default tag_set_id from DB");
 			}
-			
 			return new CaseDbSchemaVersionNumber(8, 5);
-			
+
 		} finally {
 			closeResultSet(results);
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
-		}		
+		}	
 	}
 
 	/**
