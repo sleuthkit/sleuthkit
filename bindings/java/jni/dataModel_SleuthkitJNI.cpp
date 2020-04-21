@@ -316,9 +316,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMulti
     const char* port_utf8 = env->GetStringUTFChars(port, NULL);
     const char* user_utf8 = env->GetStringUTFChars(user, NULL);
     const char* pass_utf8 = env->GetStringUTFChars(pass, NULL);
-    CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
+    //CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
 
-    TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
+   // TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
 
     // free memory allocated by env->GetStringUTFChars()
     env->ReleaseStringUTFChars(host, host_utf8);
@@ -326,12 +326,13 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMulti
     env->ReleaseStringUTFChars(user, user_utf8);
     env->ReleaseStringUTFChars(pass, pass_utf8);
 
-    if (tskCase == NULL) {
-        setThrowTskCoreError(env);
-        return 0;
-    }
+    //if (tskCase == NULL) {
+    //    setThrowTskCoreError(env);
+    //    return 0;
+    //}
 
-    return (jlong) tskCase;
+    //return (jlong) tskCase;
+    return (jlong)1;
 }
 
 
@@ -353,6 +354,8 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMult
     TSK_TCHAR dbPathT[1024];
     toTCHAR(env, dbPathT, 1024, dbName);
 
+    return 2;
+    /*
     const char* host_utf8 = env->GetStringUTFChars(host, NULL);
     const char* port_utf8 = env->GetStringUTFChars(port, NULL);
     const char* user_utf8 = env->GetStringUTFChars(user, NULL);
@@ -372,7 +375,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMult
         return 0;
     }
 
-    return (jlong) tskCase;
+    return (jlong) tskCase;*/
 }
 
 /*

@@ -381,7 +381,7 @@ public class SleuthkitJNI {
 			tskLock.writeLock().lock();
 			try {
 				HandleCache.closeHandlesAndClearCache(caseDbPointer);
-				SleuthkitJNI.closeCaseDbNat(caseDbPointer);
+				//SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 			} finally {
 				tskLock.writeLock().unlock();
 			}
@@ -668,7 +668,8 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	static CaseDbHandle newCaseDb(String path) throws TskCoreException {
-		return new CaseDbHandle(newCaseDbNat(path));
+		return new CaseDbHandle(2468);
+		//return new CaseDbHandle(newCaseDbNat(path));
 	}
 
 	/**
@@ -684,7 +685,8 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	static CaseDbHandle newCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-		return new CaseDbHandle(newCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
+		return new CaseDbHandle(13579);
+		//return new CaseDbHandle(newCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
 	}
 
 	/**
@@ -699,7 +701,8 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	static CaseDbHandle openCaseDb(String path) throws TskCoreException {
-		return new CaseDbHandle(openCaseDbNat(path));
+		return new CaseDbHandle(45678);
+		//return new CaseDbHandle(openCaseDbNat(path));
 	}
 
 	/**
@@ -715,7 +718,8 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	static CaseDbHandle openCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-		return new CaseDbHandle(openCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
+		return new CaseDbHandle(12345);
+		//return new CaseDbHandle(openCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
 	}
 
 	/**

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <project name="TSKTestTargets">
-	<property name="dlls" value="../../win32/x64/Release_PostgreSQL"/>
+	<property name="dlls" value="../../win32/x64/Release"/>
 	<property environment="env"/>
 
 	<target name="test" description="Performs regression tests." depends="compile-test, copyTSKLibs">
@@ -94,10 +94,8 @@
 		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so" overwrite="true"/>
 	</target>
 
-	<target name="copyLibs-SQLite" depends="copyLinuxLibs,copyMacLibs"/>
-	<target name="copyLibs-PostgreSQL" depends="copyLinuxLibs,copyMacLibs"/>
-	<target name="copyLibs-SQLiteDebug" depends="copyLinuxLibs,copyMacLibs"/>
-	<target name="copyLibs-PostgreSQLDebug" depends="copyLinuxLibs,copyMacLibs"/>
+	<target name="copyLibs" depends="copyLinuxLibs,copyMacLibs"/>
+	<target name="copyLibs-Debug" depends="copyLinuxLibs,copyMacLibs"/>
 
 	<target name="copyTSKLibs" depends="copyTskLibs_so,copyTskLibs_dylib">
 		<!-- depends targets take care of the actual copying since the file differs on OS X and Linux -->
