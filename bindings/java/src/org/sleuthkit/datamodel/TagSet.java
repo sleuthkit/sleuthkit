@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A TagSet is a name group of TagNames.
+ * A TagSet is a named group of TagNames.
  */
 public class TagSet {
 
 	private final String setName;
-	private final int id;
+	private final long id;
 	private final List<TagName> tagNameList = new ArrayList<>();
 
 	/**
@@ -38,7 +38,7 @@ public class TagSet {
 	 * @param id		    Tag set id value.
 	 * @param setName	Name of tag set.
 	 */
-	TagSet(int id, String setName) {
+	TagSet(long id, String setName) {
 		if(setName == null || setName.isEmpty()) {
 			throw new IllegalArgumentException("TagSet name must be a non-empty string");
 		}
@@ -57,9 +57,9 @@ public class TagSet {
 	}
 
 	/**
-	 * Returns a list of the TagName object that belong to the tag set.
+	 * Returns a list of the TagName objects that belong to the tag set.
 	 * 
-	 * @return A unmodifiable list of TagName objects. 
+	 * @return An unmodifiable list of TagName objects. 
 	 */
 	public List<TagName> getTagNames() {
 		return Collections.unmodifiableList(tagNameList);
@@ -95,7 +95,7 @@ public class TagSet {
 	 * 
 	 * @return 
 	 */
-	int getId() {
+	long getId() {
 		return id;
 	}
 
@@ -119,9 +119,10 @@ public class TagSet {
 	@Override
 	public int hashCode() {
 		int hash = 5;
+		hash = 89 * hash + (int) (this.id ^ (this.id >>> 32));
 		hash = 89 * hash + Objects.hashCode(this.setName);
 		hash = 89 * hash + Objects.hashCode(this.tagNameList);
-		hash = 89 * hash + this.id;
+		
 		return hash;
 	}
 

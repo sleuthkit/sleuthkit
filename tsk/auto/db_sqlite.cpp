@@ -285,7 +285,7 @@ TskDbSqlite::initialize()
 	}
 
 	if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) references tsk_objects(obj_id) ON DELETE CASCADE);",
+        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) references tsk_objects(obj_id) ON DELETE SET NULL);",
         "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
@@ -342,7 +342,7 @@ TskDbSqlite::initialize()
 		("CREATE TABLE tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEST UNIQUE)", "Error creating tag_sets table: %s\n")
 		||
         attempt_exec
-        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL, tag_set_id INTEGER, FOREIGN KEY(tag_set_id) REFERENCES tag_sets(tag_set_id) ON DELETE CASCADE)",
+        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL, tag_set_id INTEGER, FOREIGN KEY(tag_set_id) REFERENCES tag_sets(tag_set_id) ON DELETE SET NULL)",
             "Error creating tag_names table: %s\n")
         ||
         attempt_exec("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "

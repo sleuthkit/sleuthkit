@@ -23,21 +23,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 
 /**
  * Provides an API to manage Tags.
  */
 public class TaggingManager {
-
-	private static final Logger LOGGER = Logger.getLogger(TaggingManager.class.getName());
-
-	private static final String INSERT_TAG_SET = "INSERT INTO tag_sets (name) VALUES('%s')";
-
 	private final SleuthkitCase skCase;
 
 	/**
@@ -58,28 +50,19 @@ public class TaggingManager {
 	 */
 	public List<TagSet> getTagSets() throws TskCoreException {
 		List<TagSet> tagSetList = new ArrayList<>();
-
-		Map<String, TagSet> setMap = new HashMap<>();
-
 		CaseDbConnection connection = skCase.getConnection();
 		skCase.acquireSingleUserCaseWriteLock();
-
 		String getAllTagSetsQuery = "SELECT * FROM tag_sets";
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(getAllTagSetsQuery);) {
 			while (resultSet.next()) {
 				int setID = resultSet.getInt("tag_set_id");
 				String setName = resultSet.getString("name");
-
-				TagSet set = setMap.get(setName);
-				if (set == null) {
-					set = new TagSet(setID, setName);
-					setMap.put(setName, set);
-				}
-
+				TagSet set = new TagSet(setID, setName);
 				set.addTagNames(getTagNamesByTagSetID(setID));
+				tagSetList.add(set);
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("", ex);
+			throw new TskCoreException("Error occurred getting TagSet list.", ex);
 		} finally {
 			connection.close();
 			skCase.releaseSingleUserCaseWriteLock();
@@ -316,7 +299,7 @@ public class TaggingManager {
 					}
 				}
 
-				if (removedTags.size() > 0) {
+				if (!removedTags.isEmpty()) {
 					String removeQuery = String.format("DELETE FROM content_tags WHERE tag_id IN (SELECT tag_id FROM content_tags JOIN tag_names ON tag_names.tag_name_id = content_tags.tag_name_id WHERE obj_id = %d AND tag_names.tag_set_id = %d)", content.getId(), tagSetId);
 					try (Statement stmt = connection.createStatement()) {
 						stmt.executeUpdate(removeQuery);

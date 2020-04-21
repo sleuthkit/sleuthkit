@@ -480,7 +480,7 @@ public class SleuthkitCase {
 		return dbAccessManager;
 	}
 	
-	public synchronized TaggingManager getTagsManager() {
+	public synchronized TaggingManager getTaggingManager() {
 		return taggingMgr;
 	}
 
@@ -9767,6 +9767,7 @@ public class SleuthkitCase {
 	 * @return A ContentTag data transfer object (DTO) for the new row.
 	 *
 	 * @throws TskCoreException
+	 * @deprecated Use TaggingManager.addContentTag 
 	 */
 	@Deprecated
 	public ContentTag addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
@@ -10111,6 +10112,7 @@ public class SleuthkitCase {
 	 *         row.
 	 *
 	 * @throws TskCoreException
+	 * @Deprecated User TaggingManager.addArtifactTag instead.
 	 */
 	@Deprecated
 	public BlackboardArtifactTag addBlackboardArtifactTag(BlackboardArtifact artifact, TagName tagName, String comment) throws TskCoreException {
