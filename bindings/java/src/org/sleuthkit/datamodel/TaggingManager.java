@@ -43,7 +43,7 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Returns a list of all the TagSet that exist in the case.
+	 * Returns a list of all the TagSets that exist in the case.
 	 *
 	 * @return A List of TagSet objects or an empty list if none were found.
 	 *
@@ -72,7 +72,7 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Inserts a row into the reports table in the case database.
+	 * Inserts a row into the tag_sets table in the case database.
 	 *
 	 * @param name The tag set name.
 	 *
@@ -104,7 +104,7 @@ public class TaggingManager {
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
-			throw new TskCoreException(String.format("Error adding report %s", name), ex);
+			throw new TskCoreException(String.format("Error adding tag set %s", name), ex);
 		} finally {
 			connection.close();
 			skCase.releaseSingleUserCaseWriteLock();
@@ -114,20 +114,23 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Remove a row from the tag set table. All tags belonging to the given tag
-	 * set will also be removed.
+	 * Remove a row from the tag set table. The TagNames in the TagSet will not 
+	 * be deleted, nor will any tags with the TagNames from the deleted tag set 
+	 * be deleted.
 	 *
 	 * @param name	Name of tag set to be deleted.
 	 *
 	 * @throws TskCoreException
 	 */
-	public void deletedTagSet(String name) throws TskCoreException {
+	public void deletedTagSet(String name) throws TskCoreException, SQLException {
 		if (name == null || name.isEmpty()) {
 			throw new IllegalArgumentException("Error adding deleting TagSet, TagSet name must be non-empty string.");
 		}
 
 		CaseDbConnection connection = skCase.getConnection();
 		skCase.acquireSingleUserCaseWriteLock();
+		
+		java.sql.PreparedStatement stmt2 = connection.prepareStatement("statement", 0);
 
 		try (Statement stmt = connection.createStatement()) {
 			connection.beginTransaction();
@@ -196,6 +199,7 @@ public class TaggingManager {
 		CaseDbConnection connection = skCase.getConnection();
 		skCase.acquireSingleUserCaseWriteLock();
 		List<BlackboardArtifactTag> removedTags = new ArrayList<>();
+		List<String> removedTagIds = new ArrayList<>();
 		try {
 			connection.beginTransaction();
 			// If a TagName is part of a TagSet remove any existing tags from the
@@ -217,12 +221,13 @@ public class TaggingManager {
 										resultSet.getString("login_name"));
 
 						removedTags.add(bat);
+						removedTagIds.add(Long.toString(bat.getId()));	
 					}
 				}
 
 				if (!removedTags.isEmpty()) {
 					// Remove the tags.
-					String removeQuery = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (SELECT tag_id FROM blackboard_artifact_tags JOIN tag_names ON tag_names.tag_name_id = blackboard_artifact_tags.tag_name_id WHERE artifact_id = %d AND tag_names.tag_set_id = %d)", artifact.getId(), tagSetId);
+					String removeQuery = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (%s)", String.join(",", removedTagIds));
 					try (Statement stmt = connection.createStatement()) {
 						stmt.executeUpdate(removeQuery);
 					}
@@ -277,6 +282,7 @@ public class TaggingManager {
 	public ContentTagChange addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
 		CaseDbConnection connection = skCase.getConnection();
 		List<ContentTag> removedTags = new ArrayList<>();
+		List<String> removedTagIds = new ArrayList<>();
 		skCase.acquireSingleUserCaseWriteLock();
 		try {
 			connection.beginTransaction();
@@ -295,13 +301,14 @@ public class TaggingManager {
 										resultSet.getLong("begin_byte_offset"),
 										resultSet.getLong("end_byte_offset"),
 										resultSet.getString("login_name"));
-
+						
+						removedTagIds.add(Long.toString(bat.getId()));					
 						removedTags.add(bat);
 					}
 				}
 
 				if (!removedTags.isEmpty()) {
-					String removeQuery = String.format("DELETE FROM content_tags WHERE tag_id IN (SELECT tag_id FROM content_tags JOIN tag_names ON tag_names.tag_name_id = content_tags.tag_name_id WHERE obj_id = %d AND tag_names.tag_set_id = %d)", content.getId(), tagSetId);
+					String removeQuery = String.format("DELETE FROM content_tags WHERE tag_id IN (%s)", String.join(",", removedTagIds));
 					try (Statement stmt = connection.createStatement()) {
 						stmt.executeUpdate(removeQuery);
 					}
@@ -349,7 +356,7 @@ public class TaggingManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	List<TagName> getTagNamesByTagSetID(int tagSetId) throws TskCoreException {
+	private List<TagName> getTagNamesByTagSetID(int tagSetId) throws TskCoreException {
 
 		if (tagSetId <= 0) {
 			throw new IllegalArgumentException("Invalid tagSetID passed to getTagNameByTagSetID");
