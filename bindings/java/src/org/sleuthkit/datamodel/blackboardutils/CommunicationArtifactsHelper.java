@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,6 +39,7 @@ import org.sleuthkit.datamodel.Relationship;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskDataException;
+import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments.FileAttachment;
 
@@ -122,6 +122,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			return typeStr;
 		}
 	}
+	
+	private static final BlackboardAttribute.Type ATTACHMENTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS);
+
 
 	// 'self' account for the application being processed by the module. 
 	private final Account.Type selfAccountType;
@@ -822,6 +825,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		// return the artifact
 		return callLogArtifact;
 	}
+	
 
 	/**
 	 * Adds attachments to a message.
@@ -832,13 +836,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException If there is an error in adding attachments
 	 */
 	public void addAttachments(BlackboardArtifact message, MessageAttachments attachments) throws TskCoreException {
-
-		// Convert the MessageAttachments object to JSON string
-		Gson gson = new Gson();
-		String attachmentsJson = gson.toJson(attachments);
-
 		// Create attribute 
-		message.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS, getModuleName(), attachmentsJson));
+		BlackboardAttribute blackboardAttribute = BlackboardJsonAttrUtil.toAttribute(ATTACHMENTS_ATTR_TYPE, getModuleName(), attachments);
+		message.addAttribute(blackboardAttribute);
 
 		// Associate each attachment file with the message.
 		Collection<FileAttachment> fileAttachments = attachments.getFileAttachments();
