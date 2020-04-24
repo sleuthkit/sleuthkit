@@ -14,9 +14,15 @@
     <ClCompile Include="..\..\bindings\java\jni\dataModel_SleuthkitJNI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\bindings\java\jni\auto_db_java.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bindings\java\jni\dataModel_SleuthkitJNI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\bindings\java\jni\auto_db_java.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
