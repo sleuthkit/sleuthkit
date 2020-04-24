@@ -597,7 +597,9 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     // Add the attribute name
     if (attr_nlen > 0) {
         strncat(name, ":", nlen - strlen(name));
-        strncat(name, fs_attr->name, nlen - strlen(name));
+        if (fs_attr != NULL) {
+            strncat(name, fs_attr->name, nlen - strlen(name));
+        }
     }
 
     // clean up path
@@ -1945,7 +1947,6 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
     //TODO set parent_path for newly created virt dir/file hierarchy for consistency
 
     return allFsProcessRet;
-    return TSK_OK;
 }
 
 /**

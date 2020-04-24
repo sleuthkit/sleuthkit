@@ -312,7 +312,7 @@ class JniDbHelper {
                 fsObjIdForDb = null;
             }
             
-            long objId = caseDb.addFileJNI(parentObjId, 
+            return caseDb.addFileJNI(parentObjId, 
                 fsObjIdForDb, dataSourceObjId,
                 fileType,
                 null, null, name,
@@ -327,7 +327,6 @@ class JniDbHelper {
                 null, TskData.FileKnown.UNKNOWN,
                 null, null, 
                 true, trans);
-            return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding layout file to the database - parent object ID: " + parentObjId
                     + ", file system object ID: " + fsObjId + ", name: " + name, ex);
