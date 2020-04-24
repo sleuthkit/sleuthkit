@@ -149,9 +149,6 @@ public class TaggingManager {
 
 		CaseDbConnection connection = skCase.getConnection();
 		skCase.acquireSingleUserCaseWriteLock();
-		
-		java.sql.PreparedStatement stmt2 = connection.prepareStatement("statement", 0);
-
 		try (Statement stmt = connection.createStatement()) {
 			connection.beginTransaction();
 			String queryTemplate = "DELETE FROM tag_sets WHERE name = '%s'";
