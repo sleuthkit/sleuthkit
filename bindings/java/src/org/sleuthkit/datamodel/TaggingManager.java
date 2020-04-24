@@ -52,21 +52,20 @@ public class TaggingManager {
 	public List<TagSet> getTagSets() throws TskCoreException {
 		List<TagSet> tagSetList = new ArrayList<>();
 		CaseDbConnection connection = skCase.getConnection();
-		skCase.acquireSingleUserCaseWriteLock();
+		skCase.acquireSingleUserCaseReadLock();
 		String getAllTagSetsQuery = "SELECT * FROM tag_sets";
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(getAllTagSetsQuery);) {
 			while (resultSet.next()) {
 				int setID = resultSet.getInt("tag_set_id");
 				String setName = resultSet.getString("name");
-				TagSet set = new TagSet(setID, setName);
-				set.addTagNames(getTagNamesByTagSetID(setID));
+				TagSet set = new TagSet(setID, setName, getTagNamesByTagSetID(setID));
 				tagSetList.add(set);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error occurred getting TagSet list.", ex);
 		} finally {
 			connection.close();
-			skCase.releaseSingleUserCaseWriteLock();
+			skCase.releaseSingleUserCaseReadLock();
 		}
 		return tagSetList;
 	}
@@ -75,12 +74,13 @@ public class TaggingManager {
 	 * Inserts a row into the tag_sets table in the case database.
 	 *
 	 * @param name The tag set name.
+	 * @param tagNames
 	 *
 	 * @return A TagSet object for the new row.
 	 *
 	 * @throws TskCoreException
 	 */
-	public TagSet addTagSet(String name) throws TskCoreException {
+	public TagSet addTagSet(String name, List<TagName> tagNames) throws TskCoreException {
 		if (name == null || name.isEmpty()) {
 			throw new IllegalArgumentException("Error adding TagSet, TagSet name must be non-empty string.");
 		}
@@ -99,7 +99,27 @@ public class TaggingManager {
 				resultSet.next();
 				int setID = resultSet.getInt(1);
 
-				tagSet = new TagSet(setID, name);
+				List<TagName> updatedTags = new ArrayList<>();
+				if (tagNames != null) {
+					// Get all of the TagName ids they can be updated in one
+					// SQL call.
+					List<String> idList = new ArrayList<>();
+					for (TagName tagName : tagNames) {
+						idList.add(Long.toString(tagName.getId()));
+					}
+
+					stmt.executeUpdate(String.format("UPDATE tag_names SET tag_set_id = %d WHERE tag_name_id IN (%s)", setID, String.join(",", idList)));
+
+					for (TagName tagName : tagNames) {
+						updatedTags.add(new TagName(tagName.getId(),
+								tagName.getDisplayName(),
+								tagName.getDescription(),
+								tagName.getColor(),
+								tagName.getKnownStatus(),
+								setID));
+					}
+				}
+				tagSet = new TagSet(setID, name, updatedTags);
 			}
 			connection.commitTransaction();
 		} catch (SQLException ex) {
@@ -204,7 +224,7 @@ public class TaggingManager {
 			connection.beginTransaction();
 			// If a TagName is part of a TagSet remove any existing tags from the
 			// set that are currenctly on the artifact
-			int tagSetId = tagName.getTagSetId();
+			long tagSetId = tagName.getTagSetId();
 			if (tagSetId > 0) {
 				// Get the list of all of the blackboardArtifactTags that use
 				// TagName for the given artifact.
@@ -286,7 +306,7 @@ public class TaggingManager {
 		skCase.acquireSingleUserCaseWriteLock();
 		try {
 			connection.beginTransaction();
-			int tagSetId = tagName.getTagSetId();
+			long tagSetId = tagName.getTagSetId();
 
 			if (tagSetId > 0) {
 				String selectQuery = String.format("SELECT * from content_tags JOIN tag_names ON tag_names.tag_name_id = content_tags.tag_name_id JOIN tsk_examiners on tsk_examiners.examiner_id = content_tags.examiner_id WHERE obj_id = %d AND tag_names.tag_set_id = %d", content.getId(), tagSetId);
