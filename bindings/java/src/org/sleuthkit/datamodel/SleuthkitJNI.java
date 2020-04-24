@@ -411,13 +411,17 @@ public class SleuthkitJNI {
 		 *                          case database.
 		 */
 		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, SleuthkitCase skCase) throws TskCoreException {
+			JniDbHelper dbHelper = new JniDbHelper(skCase);
 			try {
-				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), false, false, false);
-				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);
-				long id = commitAddImgNat(tskAutoDbPointer);
+				dbHelper.beginTransaction();
+				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, dbHelper, timezoneLongToShort(timeZone), false, false, false);
+				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
+				long id = finishAddImgNat(tskAutoDbPointer);
+				dbHelper.commitTransaction();
 				skCase.addDataSourceToHasChildrenMap();
 				return id;
 			} catch (TskDataException ex) {
+				dbHelper.revertTransaction();
 				throw new TskCoreException("Error adding image to case database", ex);
 			}
 		}
@@ -455,6 +459,7 @@ public class SleuthkitJNI {
 			private volatile long tskAutoDbPointer;
 			private boolean isCanceled;
 			private final SleuthkitCase skCase;
+			private final JniDbHelper dbHelper;
 
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
@@ -477,6 +482,7 @@ public class SleuthkitJNI {
 				tskAutoDbPointer = 0;
 				this.isCanceled = false;
 				this.skCase = skCase;
+				this.dbHelper = new JniDbHelper(skCase);
 			}
 
 			/**
@@ -501,14 +507,14 @@ public class SleuthkitJNI {
 				getTSKReadLock();
 				try {
 					long imageHandle = 0;
-
 					synchronized (this) {
 						if (0 != tskAutoDbPointer) {
 							throw new TskCoreException("Add image process already started");
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
 							imageHandle = openImage(imageFilePaths, sectorSize, false, caseDbPointer);
-							tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
+							dbHelper.beginTransaction();
+							tskAutoDbPointer = initAddImgNat(caseDbPointer, dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 						}
 						if (0 == tskAutoDbPointer) {
 							throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
@@ -556,9 +562,11 @@ public class SleuthkitJNI {
 					if (tskAutoDbPointer == 0) {
 						throw new TskCoreException("AddImgProcess::revert: AutoDB pointer is NULL");
 					}
-
-					revertAddImgNat(tskAutoDbPointer);
-					// the native code deleted the object
+					
+					dbHelper.revertTransaction();
+					
+					// Delete the object in the native code
+					finishAddImgNat(tskAutoDbPointer);
 					tskAutoDbPointer = 0;
 				} finally {
 					releaseTSKReadLock();
@@ -581,12 +589,13 @@ public class SleuthkitJNI {
 						throw new TskCoreException("AddImgProcess::commit: AutoDB pointer is NULL");
 					}
 
-					long id = commitAddImgNat(tskAutoDbPointer);
+					dbHelper.commitTransaction();
 
-					skCase.addDataSourceToHasChildrenMap();
-
-					// the native code deleted the object
+					// Get the image ID and delete the object in the native code
+					long id = finishAddImgNat(tskAutoDbPointer);
 					tskAutoDbPointer = 0;
+					
+					skCase.addDataSourceToHasChildrenMap();
 					return id;
 				} finally {
 					releaseTSKReadLock();
@@ -1742,6 +1751,23 @@ public class SleuthkitJNI {
 	public static boolean isImageSupported(String imagePath) {
 		return isImageSupportedNat(imagePath);
 	}
+	
+	/** Get the version of the Sleuthkit code in number form.
+	 * Upper byte is A, next is B, and next byte is C in version A.B.C.
+	 * Lowest byte is 0xff, except in beta releases, in which case it
+	 * increments from 1.  Nightly snapshots will have upper byte as
+	 * 0xff and next bytes with year, month, and date, respectively.
+	 * Note that you will not be able to differentiate between snapshots
+	 * from the trunk or branches with this method...
+	 * For example, 3.1.2 would be stored as 0x030102FF.
+	 * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
+	 * 0xFF030102.
+	 * 
+	 * @return the current Sleuthkit version
+     */
+	static long getSleuthkitVersion() {
+		return getSleuthkitVersionNat();
+	}
 
 	/**
 	 * Get a read lock for the C++ layer. Do not get this lock after obtaining
@@ -1933,9 +1959,9 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initAddImgNat(long db, JniDbHelper dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
-	private static native long initializeAddImgNat(long db, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initializeAddImgNat(long db, JniDbHelper dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
@@ -1943,9 +1969,7 @@ public class SleuthkitJNI {
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
-	private static native void revertAddImgNat(long process) throws TskCoreException;
-
-	private static native long commitAddImgNat(long process) throws TskCoreException;
+	private static native long finishAddImgNat(long process) throws TskCoreException;
 
 	private static native long openImgNat(String[] imgPath, int splits, int sSize) throws TskCoreException;
 
@@ -1990,6 +2014,8 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 
 	private static native boolean isImageSupportedNat(String imagePath);
+	
+	private static native long getSleuthkitVersionNat();
 
 	private static native int finishImageWriterNat(long a_img_info);
 
