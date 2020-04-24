@@ -285,7 +285,7 @@ TskDbSqlite::initialize()
 	}
 
 	if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) references tsk_objects(obj_id) ON DELETE SET NULL);",
+        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) references tsk_objects(obj_id) ON DELETE CASCASE);",
         "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec

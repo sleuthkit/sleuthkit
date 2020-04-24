@@ -2116,7 +2116,7 @@ public class SleuthkitCase {
 					statement.execute("CREATE TABLE tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE)");
 					break;
 				case SQLITE:
-					statement.execute("CREATE TABLE tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEST UNIQUE)");
+					statement.execute("CREATE TABLE tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEXT UNIQUE)");
 					break;
 			}
 
