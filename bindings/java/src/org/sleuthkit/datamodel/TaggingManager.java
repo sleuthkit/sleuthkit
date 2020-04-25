@@ -53,7 +53,7 @@ public class TaggingManager {
 		List<TagSet> tagSetList = new ArrayList<>();
 		CaseDbConnection connection = skCase.getConnection();
 		skCase.acquireSingleUserCaseReadLock();
-		String getAllTagSetsQuery = "SELECT * FROM tag_sets";
+		String getAllTagSetsQuery = "SELECT * FROM tsk_tag_sets";
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(getAllTagSetsQuery);) {
 			while (resultSet.next()) {
 				int setID = resultSet.getInt("tag_set_id");
@@ -73,7 +73,7 @@ public class TaggingManager {
 	/**
 	 * Inserts a row into the tag_sets table in the case database.
 	 *
-	 * @param name The tag set name.
+	 * @param name     The tag set name.
 	 * @param tagNames
 	 *
 	 * @return A TagSet object for the new row.
@@ -91,8 +91,8 @@ public class TaggingManager {
 		skCase.acquireSingleUserCaseWriteLock();
 		try (Statement stmt = connection.createStatement()) {
 			connection.beginTransaction();
-			// INSERT INTO tag_sets (name) VALUES('%s')
-			stmt.execute(String.format("INSERT INTO tag_sets (name) VALUES('%s')", name));
+			// INSERT INTO tsk_tag_sets (name) VALUES('%s')
+			stmt.execute(String.format("INSERT INTO tsk_tag_sets (name) VALUES('%s')", name));
 
 			try (ResultSet resultSet = stmt.getGeneratedKeys()) {
 
@@ -134,29 +134,29 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Remove a row from the tag set table. The TagNames in the TagSet will not 
-	 * be deleted, nor will any tags with the TagNames from the deleted tag set 
+	 * Remove a row from the tag set table. The TagNames in the TagSet will not
+	 * be deleted, nor will any tags with the TagNames from the deleted tag set
 	 * be deleted.
 	 *
-	 * @param name	Name of tag set to be deleted.
+	 * @param tagSet TagSet to be deleted
 	 *
 	 * @throws TskCoreException
 	 */
-	public void deletedTagSet(String name) throws TskCoreException, SQLException {
-		if (name == null || name.isEmpty()) {
-			throw new IllegalArgumentException("Error adding deleting TagSet, TagSet name must be non-empty string.");
+	public void deletedTagSet(TagSet tagSet) throws TskCoreException {
+		if (tagSet == null) {
+			throw new IllegalArgumentException("Error adding deleting TagSet, TagSet object was null");
 		}
 
 		CaseDbConnection connection = skCase.getConnection();
 		skCase.acquireSingleUserCaseWriteLock();
 		try (Statement stmt = connection.createStatement()) {
 			connection.beginTransaction();
-			String queryTemplate = "DELETE FROM tag_sets WHERE name = '%s'";
-			stmt.execute(String.format(queryTemplate, name));
+			String queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
+			stmt.execute(String.format(queryTemplate, tagSet.getId()));
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
-			throw new TskCoreException(String.format("Error deleting tag set %s.", name), ex);
+			throw new TskCoreException(String.format("Error deleting tag set where id = %d.", tagSet.getId()), ex);
 		} finally {
 			connection.close();
 			skCase.releaseSingleUserCaseWriteLock();
@@ -169,11 +169,21 @@ public class TaggingManager {
 	 * @param tagSet	 The tag set being added to.
 	 * @param tagName	The tag name to add to the set.
 	 *
+	 * @return TagSet	TagSet object with newly added TagName.
+	 *
 	 * @throws TskCoreException
 	 */
-	public void addTagNameToTagSet(TagSet tagSet, TagName tagName) throws TskCoreException {
+	public TagSet addTagNameToTagSet(TagSet tagSet, TagName tagName) throws TskCoreException {
 		if (tagSet == null || tagName == null) {
 			throw new IllegalArgumentException("NULL value passed to addTagToTagSet");
+		}
+
+		// Make sure the tagName is not already in the list.
+		List<TagName> setTagNameList = tagSet.getTagNames();
+		for (TagName tag : setTagNameList) {
+			if (tagName.getId() == tag.getId()) {
+				return tagSet;
+			}
 		}
 
 		CaseDbConnection connection = skCase.getConnection();
@@ -186,6 +196,13 @@ public class TaggingManager {
 			stmt.executeUpdate(String.format(queryTemplate, tagSet.getId(), tagName.getId()));
 
 			connection.commitTransaction();
+
+			List<TagName> newTagNameList = new ArrayList<>();
+			newTagNameList.addAll(setTagNameList);
+			newTagNameList.add(new TagName(tagName.getId(), tagName.getDisplayName(), tagName.getDescription(), tagName.getColor(), tagName.getKnownStatus(), tagSet.getId()));
+
+			return new TagSet(tagSet.getId(), tagSet.getName(), newTagNameList);
+
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException(String.format("Error adding TagName (id=%d) to TagSet (id=%s)", tagName.getId(), tagSet.getId()), ex);
@@ -225,7 +242,7 @@ public class TaggingManager {
 			if (tagSetId > 0) {
 				// Get the list of all of the blackboardArtifactTags that use
 				// TagName for the given artifact.
-				String selectQuery = String.format("SELECT * from blackboard_artifact_tags JOIN tag_names ON tag_names.tag_name_id = blackboard_artifact_tags.tag_name_id JOIN tsk_examiners on tsk_examiners.examiner_id = blackboard_artifact_tags.examiner_id WHERE artifact_id = %d AND tag_names.tag_set_id = %d", artifact.getId(), tagSetId);
+				String selectQuery = String.format("SELECT * from blackboard_artifact_tags JOIN tag_names ON tag_names.tag_name_id = blackboard_artifact_tags.tag_name_id JOIN tsk_examiners on tsk_examiners.examiner_id = blackboard_artifact_tags.examiner_id WHERE artifact_id = %d AND tag_names.tag_set_id = %d", artifact.getArtifactID(), tagSetId);
 
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
@@ -238,7 +255,7 @@ public class TaggingManager {
 										resultSet.getString("login_name"));
 
 						removedTags.add(bat);
-						removedTagIds.add(Long.toString(bat.getId()));	
+						removedTagIds.add(Long.toString(bat.getId()));
 					}
 				}
 
@@ -318,8 +335,8 @@ public class TaggingManager {
 										resultSet.getLong("begin_byte_offset"),
 										resultSet.getLong("end_byte_offset"),
 										resultSet.getString("login_name"));
-						
-						removedTagIds.add(Long.toString(bat.getId()));					
+
+						removedTagIds.add(Long.toString(bat.getId()));
 						removedTags.add(bat);
 					}
 				}

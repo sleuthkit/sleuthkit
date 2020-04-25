@@ -563,9 +563,9 @@ int TskDbPostgreSQL::initialize() {
         ||
         attempt_exec("CREATE TABLE tsk_files_derived_method (derived_id BIGSERIAL PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)", "Error creating tsk_files_derived_method table: %s\n")
 		||
-		attempt_exec("CREATE TABLE tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE);", "Error creating tag_sets table: %s\n")
+		attempt_exec("CREATE TABLE tsk_tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE);", "Error creating tsk_tag_sets table: %s\n")
 		||
-        attempt_exec("CREATE TABLE tag_names (tag_name_id BIGSERIAL PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL, tag_set_id INTEGER, FOREIGN KEY(tag_set_id) REFERENCES tag_sets(tag_set_id) ON DELETE SET NULL)", "Error creating tag_names table: %s\n")
+        attempt_exec("CREATE TABLE tag_names (tag_name_id BIGSERIAL PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL, tag_set_id INTEGER, FOREIGN KEY(tag_set_id) REFERENCES tsk_tag_sets(tag_set_id) ON DELETE SET NULL)", "Error creating tag_names table: %s\n")
         ||
         attempt_exec("CREATE TABLE blackboard_artifact_types (artifact_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)", "Error creating blackboard_artifact_types table: %s\n")
         ||

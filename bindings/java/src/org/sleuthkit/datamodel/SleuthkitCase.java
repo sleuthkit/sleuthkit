@@ -2107,21 +2107,19 @@ public class SleuthkitCase {
 		}
 
 		Statement statement = connection.createStatement();
-		ResultSet results = null;
-
 		acquireSingleUserCaseWriteLock();
 		try {
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
-					statement.execute("CREATE TABLE tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE)");
+					statement.execute("CREATE TABLE tsk_tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE)");
 					break;
 				case SQLITE:
-					statement.execute("CREATE TABLE tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEXT UNIQUE)");
+					statement.execute("CREATE TABLE tsk_tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEXT UNIQUE)");
 					break;
 			}
 
-			statement.execute("ALTER TABLE tag_names ADD COLUMN tag_set_id INTEGER REFERENCES tag_sets(tag_set_id)");
-			statement.execute("INSERT INTO tag_sets (name) VALUES ('Project VIC (United States)')");
+			statement.execute("ALTER TABLE tag_names ADD COLUMN tag_set_id INTEGER REFERENCES tsk_tag_sets(tag_set_id)");
+			statement.execute("INSERT INTO tsk_tag_sets (name) VALUES ('Project VIC (United States)')");
 			try (ResultSet resultSet = statement.getGeneratedKeys()) {
 				if (resultSet != null && resultSet.next()) {
 					int tagSetId = resultSet.getInt(1);
@@ -2140,10 +2138,9 @@ public class SleuthkitCase {
 			return new CaseDbSchemaVersionNumber(8, 5);
 
 		} finally {
-			closeResultSet(results);
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
-		}	
+		}
 	}
 
 	/**
