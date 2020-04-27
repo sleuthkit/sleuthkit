@@ -578,9 +578,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\bindings\java\jni\auto_db_java.cpp" />
     <ClCompile Include="..\..\bindings\java\jni\dataModel_SleuthkitJNI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\bindings\java\jni\auto_db_java.h" />
     <ClInclude Include="..\..\bindings\java\jni\dataModel_SleuthkitJNI.h" />
   </ItemGroup>
   <ItemGroup>
