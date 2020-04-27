@@ -487,6 +487,29 @@ public final class TimelineManager {
 	}
 
 	Collection<TimelineEvent> addEventsForNewFile(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
+		Set<TimelineEvent> events = addEventsForNewFileQuiet(file, connection);
+		events.stream()
+				.map(TimelineEventAddedEvent::new)
+				.forEach(caseDB::fireTSKEvent);
+
+		return events;
+	}
+	
+	/**
+	 * Adds timeline events for the new file to the database.
+	 * Does not fire TSKEvents for each addition. This method should only be used if an 
+	 * update event will be sent later. For example, a data source processor may
+	 * send out a single event that a data source has been added rather than an event
+	 * for each timeline event.
+	 * 
+	 * @param file        The new file
+	 * @param connection  Database connection to use
+	 * 
+	 * @return Set of new events
+	 * 
+	 * @throws TskCoreException 
+	 */
+	Set<TimelineEvent> addEventsForNewFileQuiet(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
 		//gather time stamps into map
 		Map<TimelineEventType, Long> timeMap = ImmutableMap.of(TimelineEventType.FILE_CREATED, file.getCrtime(),
 				TimelineEventType.FILE_ACCESSED, file.getAtime(),
@@ -532,9 +555,6 @@ public final class TimelineManager {
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
-		events.stream()
-				.map(TimelineEventAddedEvent::new)
-				.forEach(caseDB::fireTSKEvent);
 
 		return events;
 	}
