@@ -148,7 +148,7 @@ public class TaggingManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public void deletedTagSet(TagSet tagSet) throws TskCoreException {
+	public void deleteTagSet(TagSet tagSet) throws TskCoreException {
 		if (tagSet == null) {
 			throw new IllegalArgumentException("Error adding deleting TagSet, TagSet object was null");
 		}
@@ -419,11 +419,11 @@ public class TaggingManager {
 		String query = String.format("SELECT * FROM tag_names WHERE tag_set_id = %d", tagSetId);
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(query)) {
 			while (resultSet.next()) {
-				long tagId = resultSet.getLong("tag)name_id");
+				long tagId = resultSet.getLong("tag_name_id");
 				String tagName = resultSet.getString("display_name");
 				String description = resultSet.getString("description");
-				String color = resultSet.getString("Color");
-				byte knownStatus = resultSet.getByte("knowStatus");
+				String color = resultSet.getString("color");
+				byte knownStatus = resultSet.getByte("knownStatus");
 
 				tagNameList.add(new TagName(tagId, tagName, description, TagName.HTML_COLOR.getColorByName(color), TskData.FileKnown.valueOf(knownStatus), tagSetId));
 			}
