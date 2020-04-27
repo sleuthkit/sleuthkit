@@ -34,7 +34,7 @@ public class TagSet {
 	/**
 	 * Construct a TagSet.
 	 *
-	 * @param id		Tag set id value.
+	 * @param id		    Tag set id value.
 	 * @param setName	Name of tag set.
 	 */
 	TagSet(long id, String setName, List<TagName> tagNameList) {
@@ -66,7 +66,7 @@ public class TagSet {
 
 	/**
 	 * Return the TagSet id.
-	 * 
+	 *
 	 * @return TagSet id value.
 	 */
 	long getId() {

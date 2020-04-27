@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
 
 /**
  * Provides an API to manage Tags.
@@ -91,8 +92,13 @@ public class TaggingManager {
 		skCase.acquireSingleUserCaseWriteLock();
 		try (Statement stmt = connection.createStatement()) {
 			connection.beginTransaction();
-			// INSERT INTO tsk_tag_sets (name) VALUES('%s')
-			stmt.execute(String.format("INSERT INTO tsk_tag_sets (name) VALUES('%s')", name));
+			String query = String.format("INSERT INTO tsk_tag_sets (name) VALUES('%s')", name);
+
+			if (skCase.getDatabaseType() == POSTGRESQL) {
+				stmt.execute(query, Statement.RETURN_GENERATED_KEYS);
+			} else {
+				stmt.execute(query);
+			}
 
 			try (ResultSet resultSet = stmt.getGeneratedKeys()) {
 
@@ -272,13 +278,18 @@ public class TaggingManager {
 			BlackboardArtifactTag artifactTag = null;
 			try (Statement stmt = connection.createStatement()) {
 				Examiner currentExaminer = skCase.getCurrentExaminer();
-				String queryTemplate = "INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, examiner_id) VALUES (%d, %d, '%s', %d)";
-
-				stmt.executeUpdate(String.format(queryTemplate,
+				String query = String.format(
+						"INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, examiner_id) VALUES (%d, %d, '%s', %d)",
 						artifact.getArtifactID(),
 						tagName.getId(),
 						comment,
-						currentExaminer.getId()));
+						currentExaminer.getId());
+
+				if (skCase.getDatabaseType() == POSTGRESQL) {
+					stmt.execute(query, Statement.RETURN_GENERATED_KEYS);
+				} else {
+					stmt.execute(query);
+				}
 
 				try (ResultSet resultSet = stmt.getGeneratedKeys()) {
 					resultSet.next();
@@ -361,7 +372,11 @@ public class TaggingManager {
 						endByteOffset,
 						currentExaminer.getId());
 
-				stmt.executeUpdate(query);
+				if (skCase.getDatabaseType() == POSTGRESQL) {
+					stmt.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
+				} else {
+					stmt.executeUpdate(query);
+				}
 
 				try (ResultSet resultSet = stmt.getGeneratedKeys()) {
 					resultSet.next();
