@@ -2107,21 +2107,25 @@ public class SleuthkitCase {
 		}
 
 		Statement statement = connection.createStatement();
-		ResultSet results = null;
-
 		acquireSingleUserCaseWriteLock();
 		try {
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
-					statement.execute("CREATE TABLE tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE)");
+					statement.execute("CREATE TABLE tsk_tag_sets (tag_set_id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE)");
 					break;
 				case SQLITE:
-					statement.execute("CREATE TABLE tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEST UNIQUE)");
+					statement.execute("CREATE TABLE tsk_tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEXT UNIQUE)");
 					break;
 			}
 
-			statement.execute("ALTER TABLE tag_names ADD COLUMN tag_set_id INTEGER REFERENCES tag_sets(tag_set_id)");
-			statement.execute("INSERT INTO tag_sets (name) VALUES ('Project VIC (United States)')");
+			statement.execute("ALTER TABLE tag_names ADD COLUMN tag_set_id INTEGER REFERENCES tsk_tag_sets(tag_set_id)");
+
+			String insertStmt = "INSERT INTO tsk_tag_sets (name) VALUES ('Project VIC (United States)')";
+			if (getDatabaseType() == DbType.POSTGRESQL) {
+				statement.execute(insertStmt, Statement.RETURN_GENERATED_KEYS);
+			} else {
+				statement.execute(insertStmt);
+			}
 			try (ResultSet resultSet = statement.getGeneratedKeys()) {
 				if (resultSet != null && resultSet.next()) {
 					int tagSetId = resultSet.getInt(1);
@@ -2140,10 +2144,9 @@ public class SleuthkitCase {
 			return new CaseDbSchemaVersionNumber(8, 5);
 
 		} finally {
-			closeResultSet(results);
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
-		}	
+		}
 	}
 
 	/**
@@ -9642,7 +9645,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"))); //NON-NLS
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"))); //NON-NLS
 			}
 			return tagNames;
 		} catch (SQLException ex) {
@@ -9686,7 +9689,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"))); //NON-NLS
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"))); //NON-NLS
 			}
 			return tagNames;
 		} catch (SQLException ex) {
@@ -9824,7 +9827,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"));  //NON-NLS
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"));  //NON-NLS
 				Content content = getContentById(resultSet.getLong("obj_id")); //NON-NLS
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"),
 						resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name")));  //NON-NLS
@@ -9954,7 +9957,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"));
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"));
 				tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName,
 						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name"));
 			}
@@ -10090,7 +10093,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"));  //NON-NLS
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"));  //NON-NLS
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName,
 						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name"));  //NON-NLS
 				tags.add(tag);
@@ -10166,11 +10169,11 @@ public class SleuthkitCase {
 			//	LEFT OUTER JOIN tsk_examiners ON blackboard_artifact_tags.examiner_id = tsk_examiners.examiner_id
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS);
 			resultSet = connection.executeQuery(statement);
-			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"));  //NON-NLS
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"));  //NON-NLS
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
@@ -10400,7 +10403,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"));
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"));
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
@@ -10444,11 +10447,11 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
 			resultSet = connection.executeQuery(statement);
-			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getInt("tag_set_id"));  //NON-NLS
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"));  //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
 						artifact, content, tagName, resultSet.getString("comment"), resultSet.getString("login_name"));  //NON-NLS

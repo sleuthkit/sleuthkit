@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -30,19 +29,19 @@ public class TagSet {
 
 	private final String setName;
 	private final long id;
-	private final List<TagName> tagNameList = new ArrayList<>();
+	private final List<TagName> tagNameList;
 
 	/**
 	 * Construct a TagSet.
 	 *
-	 * @param id		Tag set id value.
+	 * @param id		    Tag set id value.
 	 * @param setName	Name of tag set.
 	 */
-	TagSet(long id, String setName) {
+	TagSet(long id, String setName, List<TagName> tagNameList) {
 		if (setName == null || setName.isEmpty()) {
 			throw new IllegalArgumentException("TagSet name must be a non-empty string");
 		}
-
+		this.tagNameList = tagNameList;
 		this.id = id;
 		this.setName = setName;
 	}
@@ -66,34 +65,8 @@ public class TagSet {
 	}
 
 	/**
-	 * Adds a TagName to the tag set.
-	 *
-	 * @param tagName
-	 */
-	void addTagName(TagName tagName) {
-		if (tagName == null) {
-			throw new IllegalArgumentException("Cannot add NULL value to TagSet");
-		}
-
-		tagNameList.add(tagName);
-	}
-
-	/**
-	 * Add a list of TagName objects to the tag set.
-	 *
-	 * @param tagNameList
-	 */
-	void addTagNames(List<TagName> tagNameList) {
-		if (tagNameList == null) {
-			throw new IllegalArgumentException("Cannot add a NULL list to TagSet");
-		}
-
-		tagNameList.addAll(tagNameList);
-	}
-
-	/**
 	 * Return the TagSet id.
-	 * 
+	 *
 	 * @return TagSet id value.
 	 */
 	long getId() {

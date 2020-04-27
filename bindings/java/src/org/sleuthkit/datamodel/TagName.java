@@ -86,10 +86,10 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String description;
 	private final HTML_COLOR color;
 	private final TskData.FileKnown knownStatus;
-	private final int tagSetId;
-		
+	private final long tagSetId;
+
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, int tagSetId) {
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
@@ -97,7 +97,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		this.knownStatus = knownStatus;
 		this.tagSetId = tagSetId;
 	}
-	
+
 	public long getId() {
 		return id;
 	}
@@ -117,8 +117,8 @@ public class TagName implements Comparable<TagName>, Serializable {
 	public TskData.FileKnown getKnownStatus() {
 		return knownStatus;
 	}
-	
-	int getTagSetId() {
+
+	long getTagSetId() {
 		return tagSetId;
 	}
 
@@ -142,7 +142,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
 		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
 		hash = 89 * hash + (this.knownStatus != null ? this.knownStatus.hashCode() : 0);
-		hash = 89 * hash + tagSetId;
+		hash = 89 * hash + (int) (this.id ^ (this.tagSetId >>> 32));
 		return hash;
 	}
 
