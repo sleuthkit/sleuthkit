@@ -265,164 +265,6 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
     return 0;
 }
 
-
-/*
- * Open a TskCaseDb with an associated database
- * @return the pointer to the case
- * @param env pointer to java environment this was called from
- * @param dbPath location for the database
- * @rerurns 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
- */
-JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat(JNIEnv * env,
-    jclass obj, jstring dbPathJ) {
-
-    TSK_TCHAR dbPathT[1024];
-    int retval = toTCHAR(env, dbPathT, 1024, dbPathJ);
-    if (retval)
-        return retval;
-
-    TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT);
-
-    if (tskCase == NULL) {
-        setThrowTskCoreError(env);
-        return 0;               
-    }
-
-    return (jlong) tskCase;
-}
-
-
-/*
- * Create a TskCaseDb with an associated database
- * @return the pointer to the case
- * @param env pointer to java environment this was called from
- * @param env pointer to java environment this was called from
- * @param cls the java class
- * @param host the hostname or IP address
- * @param port the port number as a string
- * @param user the user name for the database
- * @param pass the password for the database
- * @param dbType the ordinal value of the enum for the database type
- * @param dbName the name of the database to create
- * @return 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
-{
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbName);
-
-    const char* host_utf8 = env->GetStringUTFChars(host, NULL);
-    const char* port_utf8 = env->GetStringUTFChars(port, NULL);
-    const char* user_utf8 = env->GetStringUTFChars(user, NULL);
-    const char* pass_utf8 = env->GetStringUTFChars(pass, NULL);
-    //CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
-
-   // TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
-
-    // free memory allocated by env->GetStringUTFChars()
-    env->ReleaseStringUTFChars(host, host_utf8);
-    env->ReleaseStringUTFChars(port, port_utf8);
-    env->ReleaseStringUTFChars(user, user_utf8);
-    env->ReleaseStringUTFChars(pass, pass_utf8);
-
-    //if (tskCase == NULL) {
-    //    setThrowTskCoreError(env);
-    //    return 0;
-    //}
-
-    //return (jlong) tskCase;
-    return (jlong)1;
-}
-
-
-/*
- * Open a TskCaseDb with an associated database
- * @return the pointer to the case
- * @param env pointer to java environment this was called from
- * @param cls the java class
- * @param host the hostname or IP address
- * @param port the port number as a string
- * @param user the user name for the database
- * @param pass the password for the database
- * @param dbType the ordinal value of the enum for the database type
- * @param dbName the name of the database to open
- * @return Returns pointer to object or exception on error
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
-{
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbName);
-
-    return 2;
-    /*
-    const char* host_utf8 = env->GetStringUTFChars(host, NULL);
-    const char* port_utf8 = env->GetStringUTFChars(port, NULL);
-    const char* user_utf8 = env->GetStringUTFChars(user, NULL);
-    const char* pass_utf8 = env->GetStringUTFChars(pass, NULL);
-    CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
-
-    TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT, &info);
-
-    // free memory allocated by env->GetStringUTFChars()
-    env->ReleaseStringUTFChars(host, host_utf8);
-    env->ReleaseStringUTFChars(port, port_utf8);
-    env->ReleaseStringUTFChars(user, user_utf8);
-    env->ReleaseStringUTFChars(pass, pass_utf8);
-
-    if (tskCase == NULL) {
-        setThrowTskCoreError(env);
-        return 0;
-    }
-
-    return (jlong) tskCase;*/
-}
-
-/*
- * Open a TskCaseDb with an associated database
- * @return the pointer to the case
- * @param env pointer to java environment this was called from
- * @param dbPath location for the database
- * @return Returns pointer to object or exception on error
- */
-JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat(JNIEnv * env,
-    jclass obj, jstring dbPathJ) {
-
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
-
-    TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT);
-
-    if (tskCase == NULL) {
-        setThrowTskCoreError(env);
-        return 0;
-    }
-
-    return (jlong) tskCase;
-}
-
-
-/*
- * Close (cleanup) a case
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param caseHandle the pointer to the case
- */
-JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat(JNIEnv * env,
-    jclass obj, jlong caseHandle) {
-
-    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
-    if (tskCase == 0) {
-        //exception already set
-        return;
-    }
-
-    delete tskCase;
-    return;
-}
-
 /**
  * Opens an existing hash database.
  * @param env Pointer to Java environment from which this method was called.
@@ -956,7 +798,6 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  *
  * @param env Pointer to java environment.
  * @param obj Pointer the Java class object.
- * @partam caseHandle Pointer to a TskCaseDb object.
  * @param timeZone The time zone for the image.
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
  * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
@@ -965,8 +806,8 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
-    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(env, obj, caseHandle, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans);
+    jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans);
 }
 
 /*
@@ -974,7 +815,6 @@ JNIEXPORT jlong JNICALL
  *
  * @param env Pointer to java environment.
  * @param obj Pointer the Java class object.
- * @partam caseHandle Pointer to a TskCaseDb object.
  * @param timeZone The time zone for the image.
  * @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
@@ -984,7 +824,7 @@ JNIEXPORT jlong JNICALL
  */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj,
-    jlong caseHandle, jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+    jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
     jboolean isCopy;
 
     if (env->GetStringUTFLength(timeZone) > 0) {
