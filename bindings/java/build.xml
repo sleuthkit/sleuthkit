@@ -160,14 +160,6 @@
 		</condition>
 	</target>
 
-	<!--<target name="dist" depends="check-build" unless="up-to-date">
-		<antcall target="dist"/>
-	</target>
-
-	<target name="Debug" depends="check-build" unless="up-to-date">
-		<antcall target="Debug"/>
-	</target>-->
-
 	<target name="Debug" depends="check-build, init-ivy, compile, copyLibs-Debug" unless="up-to-date" description="generate the debug distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
