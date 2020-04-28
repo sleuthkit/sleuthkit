@@ -56,7 +56,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 
 		static {
 			for (HTML_COLOR color : HTML_COLOR.values()) {
-				colorMap.put(color.name(), color);
+				colorMap.put(color.getName(), color);
 			}
 		}
 
