@@ -18,8 +18,10 @@
  */
 package org.sleuthkit.datamodel;
 
+import org.apache.commons.lang3.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -38,6 +40,8 @@ class JniDbHelper {
     private CaseDbTransaction trans = null;
     
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
+	private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
+	private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
     
     JniDbHelper(SleuthkitCase caseDb) {
         this.caseDb = caseDb;
@@ -61,6 +65,7 @@ class JniDbHelper {
     void commitTransaction() throws TskCoreException {
         trans.commit();
         trans = null;
+		parentDirCache.clear();
     }
     
     /**
@@ -71,6 +76,7 @@ class JniDbHelper {
     void revertTransaction() throws TskCoreException {
         trans.rollback();
         trans = null;
+		parentDirCache.clear();
     }        
     
     /**
@@ -208,6 +214,7 @@ class JniDbHelper {
         try {
             FileSystem fs = caseDb.addFileSystem(parentObjId, imgOffset, TskData.TSK_FS_TYPE_ENUM.valueOf(fsType), blockSize, blockCount,
                     rootInum, firstInum, lastInum, null, trans);
+			fsIdToFsType.put(fs.getId(), TskData.TSK_FS_TYPE_ENUM.valueOf(fsType));
             return fs.getId();
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding file system to the database - parent object ID: " + parentObjId
@@ -228,7 +235,7 @@ class JniDbHelper {
      * @param attrId    The type id given to the file by the file  system.
      * @param name      The name of the file.
      * @param metaAddr  The meta address of the file.
-     * @param metaSeq   The meta sequence number of the file.
+     * @param metaSeq   The meta sequence number of the file from fs_file->name->meta_seq.
      * @param dirType   The type of the file, usually as reported in
      *                     the name structure of the file system. 
      * @param metaType  The type of the file, usually as reported in
@@ -249,6 +256,9 @@ class JniDbHelper {
      * @param known     The file known status.
      * @param escaped_path The escaped path to the file.
      * @param extension    The file extension.
+	 * @param seq         The sequence number from fs_file->meta->seq. 
+	 * @param parMetaAddr The metadata address of the parent
+	 * @param parSeq      The parent sequence number if NTFS, -1 otherwise.
      * 
      * @return The object ID of the new file or -1 if an error occurred
      */
@@ -261,7 +271,8 @@ class JniDbHelper {
         long size,
         long crtime, long ctime, long atime, long mtime,
         int meta_mode, int gid, int uid,
-        String escaped_path, String extension) {
+        String escaped_path, String extension, 
+		long seq, long parMetaAddr, long parSeq) {
         try {
             long objId = caseDb.addFileJNI(parentObjId, 
                 fsObjId, dataSourceObjId,
@@ -280,6 +291,39 @@ class JniDbHelper {
             if (parentObjId == fsObjId) {
                 fsIdToRootDir.put(fsObjId, objId);
             }
+			
+			
+			// Testing!
+			if (metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
+					&& (name != null)
+					&& ! name.equals(".")
+					&& ! name.equals("..")) {
+				String dirName = escaped_path + name;
+				ParentCacheKey key = new ParentCacheKey(fsObjId, metaAddr, seq, dirName);
+				parentDirCache.put(key, objId);
+				//System.out.println("### Saving: " + objId + " : " + metaAddr + " " + seq + " " + dirName);
+			}
+			
+			// Let's see if the parent lookup matches - skip for root folder
+			if (fsObjId != parentObjId) {
+				String parentPath = escaped_path;
+				if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
+					parentPath =  parentPath.substring(0, parentPath.lastIndexOf("/"));
+				}
+				ParentCacheKey key = new ParentCacheKey(fsObjId, parMetaAddr, parSeq, parentPath);
+				String keyStr = parMetaAddr + " " + parSeq + " " + parentPath;
+				if (parentDirCache.containsKey(key)) {
+					long cachedId = parentDirCache.get(key);
+					if (cachedId == parentObjId) {
+						//System.out.println("### Found match! " + cachedId + " : " + keyStr);
+					} else {
+						System.out.println("### Mismatch : cached: " + cachedId + ", given: " + parentObjId + " : " + keyStr);
+					}
+				} else {
+					System.out.println("### Did not find " + parentObjId + " : " + keyStr + " - orig parent_path: <" + escaped_path + ">");
+				}
+			}
+			
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + parentObjId
@@ -369,6 +413,7 @@ class JniDbHelper {
      */
     long findParentObjId(long metaAddr, long fsObjId, String path, String name) {
         try {
+			System.out.println("### Had to do lookup for meta addr: " + metaAddr + " and path: " + path + " " + name);
             return caseDb.findParentObjIdJNI(metaAddr, fsObjId, path, name, trans);
         } catch (TskCoreException ex) {
             logger.log(Level.WARNING, "Error looking up parent with meta addr: " + metaAddr + " and name " + name, ex);
@@ -397,4 +442,62 @@ class JniDbHelper {
             return -1;
         }
     }
+	
+	/**
+	 * Class to use as a key into the parent object ID map
+	 */
+	private class ParentCacheKey {
+		long fsObjId;
+		long metaAddr;
+		long seqNum;
+		String path;
+		
+		/**
+		 * Create the key into the parent dir cache.
+		 * Only NTFS uses the seqNum of the parent. For all file systems set to zero.
+		 * 
+		 * @param fsObjId  The file system object ID.
+		 * @param metaAddr The metadata address of the directory.
+		 * @param seqNum   The sequence number of the directory. Unused unless file system is NTFS.
+		 * @param path     The path to the directory (should not include final slash unless root dir).
+		 */
+		ParentCacheKey(long fsObjId, long metaAddr, long seqNum, String path) {
+			this.fsObjId = fsObjId;
+			this.metaAddr = metaAddr;
+			if (fsIdToFsType.containsKey(fsObjId) 
+					&& (fsIdToFsType.get(fsObjId).equals(TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS)
+						|| fsIdToFsType.get(fsObjId).equals(TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS_DETECT))) {
+				this.seqNum = seqNum;
+			} else {
+				this.seqNum = 0;
+			}
+			this.path = path;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || ! (obj instanceof ParentCacheKey)) {
+				return false;
+			}
+		  
+			ParentCacheKey otherKey = (ParentCacheKey) obj;
+			if (this.fsObjId != otherKey.fsObjId 
+					|| this.metaAddr != otherKey.metaAddr
+					|| this.seqNum != otherKey.seqNum) {
+				return false;
+			}
+			
+			return StringUtils.equals(this.path, otherKey.path);
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 3;
+			hash = 31 * hash + (int) (this.fsObjId ^ (this.fsObjId >>> 32));
+			hash = 31 * hash + (int) (this.metaAddr ^ (this.metaAddr >>> 32));
+			hash = 31 * hash + (int) (this.seqNum ^ (this.seqNum >>> 32));
+			hash = 31 * hash + Objects.hashCode(this.path);
+			return hash;
+		}
+	}
 }

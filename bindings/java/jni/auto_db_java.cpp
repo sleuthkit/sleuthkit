@@ -110,7 +110,7 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
-    m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;)J");
+    m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;JJJ)J");
     if (m_addFileMethodID == NULL) {
         return TSK_ERR;
     }
@@ -543,6 +543,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     int meta_type = 0;
     int meta_flags = 0;
     int meta_mode = 0;
+    int meta_seq = 0;
     int gid = 0;
     int uid = 0;
     int type = TSK_FS_ATTR_TYPE_NOT_FOUND;
@@ -561,6 +562,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         meta_mode = fs_file->meta->mode;
         gid = fs_file->meta->gid;
         uid = fs_file->meta->uid;
+        meta_seq = fs_file->meta->seq;
     }
 
     size_t attr_nlen = 0;
@@ -616,6 +618,19 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     jstring namej = m_jniEnv->NewStringUTF(name);
     jstring pathj = m_jniEnv->NewStringUTF(escaped_path);
     jstring extj = m_jniEnv->NewStringUTF(extension);
+
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+    * correct parent folder if there are two from the root dir that eventually point to
+    * the same folder (one deleted and one allocated) or two hard links. */
+    jlong par_seqj;
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
+    {
+        par_seqj = fs_file->name->par_seq;
+    }
+    else {
+        par_seqj = -1;
+    }
+    TSK_INUM_T par_meta_addr = fs_file->name->par_addr;
  
     // Add the file to the database
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
@@ -628,7 +643,8 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
         meta_mode, gid, uid, 
-        pathj, extj);
+        pathj, extj, 
+        (uint64_t)meta_seq, par_meta_addr, par_seqj);
     objId = (int64_t)objIdj;
 
     if (objId < 0) {
@@ -672,7 +688,8 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             slackSize,
             (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
             meta_mode, gid, uid, // md5TextPtr, known,
-            pathj, slackExtj);
+            pathj, slackExtj, 
+            (uint64_t)meta_seq, par_meta_addr, par_seqj);
         int64_t slackObjId = (int64_t)objIdj;
 
         if (slackObjId < 0) {
