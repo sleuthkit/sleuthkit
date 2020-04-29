@@ -80,14 +80,16 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String description;
 	private final HTML_COLOR color;
 	private final TskData.FileKnown knownStatus;
-		
+	private final long tagSetId;
+
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus) {
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
 		this.color = color;
 		this.knownStatus = knownStatus;
+		this.tagSetId = tagSetId;
 	}
 
 	public long getId() {
@@ -110,6 +112,10 @@ public class TagName implements Comparable<TagName>, Serializable {
 		return knownStatus;
 	}
 
+	long getTagSetId() {
+		return tagSetId;
+	}
+
 	/**
 	 * Compares two TagName objects by comparing their display names.
 	 *
@@ -130,6 +136,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
 		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
 		hash = 89 * hash + (this.knownStatus != null ? this.knownStatus.hashCode() : 0);
+		hash = 89 * hash + (int) (this.id ^ (this.tagSetId >>> 32));
 		return hash;
 	}
 
@@ -146,6 +153,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 				&& Objects.equals(this.displayName, other.displayName)
 				&& Objects.equals(this.description, other.description)
 				&& Objects.equals(this.color, other.color)
-				&& Objects.equals(this.knownStatus, other.knownStatus));
+				&& Objects.equals(this.knownStatus, other.knownStatus)
+				&& this.tagSetId == other.tagSetId);
 	}
 }

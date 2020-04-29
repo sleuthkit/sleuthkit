@@ -260,8 +260,10 @@ class CaseDatabaseFactory {
 	}
 	
 	private void createTagTables(Statement stmt) throws SQLException {
+		stmt.execute("CREATE TABLE tsk_tag_sets (tag_set_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, name TEXT UNIQUE)");
 		stmt.execute("CREATE TABLE tag_names (tag_name_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, display_name TEXT UNIQUE, "
-				+ "description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)");
+				+ "description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL,"
+				+ " tag_set_id INTEGER, FOREIGN KEY(tag_set_id) REFERENCES tsk_tag_sets(tag_set_id) ON DELETE SET NULL)");
 		
 		stmt.execute("CREATE TABLE tsk_examiners (examiner_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
