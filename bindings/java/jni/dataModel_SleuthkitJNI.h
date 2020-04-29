@@ -25,46 +25,6 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLog
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    newCaseDbNat
- * Signature: (Ljava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat
-  (JNIEnv *, jclass, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    newCaseDbMultiNat
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat
-  (JNIEnv *, jclass, jstring, jstring, jstring, jstring, jint, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    openCaseDbMultiNat
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat
-  (JNIEnv *, jclass, jstring, jstring, jstring, jstring, jint, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    openCaseDbNat
- * Signature: (Ljava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat
-  (JNIEnv *, jclass, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    closeCaseDbNat
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    hashDbOpenNat
  * Signature: (Ljava/lang/String;)I
  */
@@ -210,18 +170,18 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initAddImgNat
- * Signature: (JLorg/sleuthkit/datamodel/JniDbHelper;Ljava/lang/String;ZZ)J
+ * Signature: (Lorg/sleuthkit/datamodel/JniDbHelper;Ljava/lang/String;ZZ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
-  (JNIEnv *, jclass, jlong, jobject, jstring, jboolean, jboolean);
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initializeAddImgNat
- * Signature: (JLorg/sleuthkit/datamodel/JniDbHelper;Ljava/lang/String;ZZZ)J
+ * Signature: (Lorg/sleuthkit/datamodel/JniDbHelper;Ljava/lang/String;ZZZ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat
-  (JNIEnv *, jclass, jlong, jobject, jstring, jboolean, jboolean, jboolean);
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jboolean);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

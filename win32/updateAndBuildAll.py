@@ -78,17 +78,13 @@ def buildTSKAll():
         if(passed):
             buildTSK(32, "Release")
         if(passed):
-            buildTSK(32, "Release_PostgreSQL")
-        if(passed):
-            buildTSK(64, "Release")
-        if(passed):
             buildTSK(64, "Release_NoLibs")
 
     # MINIMAL is 64-bit for Autopsy and 32-bit with no deps for logical imager et al.
     if(passed):
         buildTSK(32, "Release_NoLibs")
     if(passed):
-        buildTSK(64, "Release_PostgreSQL")
+        buildTSK(64, "Release")
 
 def checkPathExist(path):
     global passed
@@ -259,7 +255,7 @@ def usage():
     '''
     print('Usage: python3 updateAndBuildLibs.py [[-h | --help, -b <branch> | --branch=<branch>, -m | --minimal]')
     print('branch: Branch for dependencies (master is default)')
-    print('-m,--minimal: Build 64-bit PostgreSQL only')
+    print('-m,--minimal: Build 64-bit Release only')
     sys.stdout.flush()
     sys.exit(1)
 

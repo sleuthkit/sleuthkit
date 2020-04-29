@@ -8960,9 +8960,9 @@ public class SleuthkitCase {
 		return connections.getConnection();
 	}
 
-	synchronized long getCaseDbPointer() throws TskCoreException {
+	synchronized String getUniqueCaseIdentifier() throws TskCoreException {
 		if (caseHandle != null) {
-			return caseHandle.getCaseDbPointer();
+			return caseHandle.getCaseDbIdentifier();
 		}
 		throw new TskCoreException("Case has been closed");
 	}
