@@ -22,7 +22,6 @@ Building
 There are six build targets: 
     - Debug_NoLibs and Release_NoLibs do not depend on any third-party libraries. 
     - Debug and Release depend on libewf, libvmdk, libvhdi, and zlib to be built so that E01 images as well as VMDK and VHD virtual machine formats are supported. 
-    - Debug_PostgreSQL and Release_PostgreSQL depend on libewf, zlib, libvmdk, livhdi, and PostgreSQL libraries so that E01 images as well as VMDK and VHD virtual machine formats are supported. This target is needed by collaborative Autopsy and other programs that rely on TSK that need to write database results to a central PostgreSQL database instead of just SQLite.
 
 
 Note: The following instructions are for 64 bit versions to TSK only.
@@ -72,52 +71,6 @@ The OPENSSL_HOME environment variable should look something like this: C:\Progra
 
 12) Note that the libraries and executables will depend on the libewf, libvmdk, libvhdi, and zlib DLL files (which are copied to the TSK build directories).
 
-
-
-------------------------------------------------------------------------
-PostgreSQL Targets
-
-The steps below outline the process required to compile the
-Debug_PostgreSQL and Release_PostgreSQL targets.
-
-1) Follow all of the steps outlined above that are required to build the
-Release and Debug targets.
-
-2) Download and install PostgreSQL 9.4 or above. You can either download
-the full installer or just the ZIP file. The official releases are from:
-http://www.postgresql.org/download/ 
-
-You will need a 32-bit version to create the 32-bit targets, and a 64-bit
-version to create the 64-bit targets. Autopsy relies on TSK, so if you
-are going to build Autopsy, match the version of PostgreSQL to the
-version of Autopsy you intend to create. If you intend to create both
-32-bit and 64-bit Autopsy builds, install both 32-bit and 64-bit
-PostgreSQL.
-
-3) Set the POSTGRESQL_HOME_32 and/or POSTGRESQL_HOME_64 environment
-variable to point to the PostgreSQL folder containing, but not including,
-the bin folder. 
-    32-bit Example: POSTGRESQL_HOME_32=C:\Program Files (x86)\PostgreSQL\9.4 
-    64-bit Example: POSTGRESQL_HOME_64=C:\Program Files\PostgreSQL\9.4
-    
-4) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32
-directory.
-
-5) Compile a Debug_PostgreSQL Win32 or x64, or a Release_PostgreSQL Win32
-or x64 version of the libraries and executables. The resulting libraries
-and executables will be put in win32/x64/Debug_PostgreSQL and
-win32/x64/Release_PostgreSQL folders as appropriate. You can change the
-type of build using the pulldown in Visual Studio.
-
-6) Note that the libraries and executables will depend on the libewf,
-zlib, libpq, libintl-8, libeay32, and ssleay32 DLL files (which are
-copied to the TSK build directories).
-
-7) If you are using JNI along with the PostgreSQL build, in NetBeans
-build the DataModel PostgreSQL target or in ant 'ant dist-PostgreSQL'.
-
-Refer to the API docs at http://sleuthkit.org/sleuthkit/docs/api-docs/
-for details on how to use the library in an application.
 
 -------------------------------------------------------------------
 carrier <at> sleuthkit <dot> org 

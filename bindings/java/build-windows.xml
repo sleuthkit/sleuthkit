@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <project name="TSKTestTargets">
 
-	<property name="dlls" value="../../win32/x64/Release_PostgreSQL"/>
+	<property name="dlls" value="../../win32/x64/Release"/>
 	<property environment="env"/>
 
 	<target name="test"
@@ -42,24 +42,14 @@
 				  targetfile="${amd64}/win/libtsk_jni.dll"/>
 	</target>
 
-	<target name="copyLibs-SQLite" description="Copy native libs to the correct folder">
+	<target name="copyLibs" description="Copy native libs to the correct folder">
 		<property name="tsk.config" value="Release"/>
 		<antcall target="copyWinTskLibsToBuildSQLite" />
 	</target>
 
-	<target name="copyLibs-SQLiteDebug" description="Copy native libs to the correct folder">
+	<target name="copyLibs-Debug" description="Copy native libs to the correct folder">
 		<property name="tsk.config" value="Debug"/>
 		<antcall target="copyWinTskLibsToBuildSQLite" />
-	</target>
-
-	<target name="copyLibs-PostgreSQL" description="Copy native libs to the correct folder, PostgreSQL build">
-		<property name="tsk.config" value="Release_PostgreSQL"/>
-		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
-	</target>
-
-	<target name="copyLibs-PostgreSQLDebug" description="Copy native libs to the correct folder, PostgreSQL build">
-		<property name="tsk.config" value="Debug_PostgreSQL"/>
-		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
 	</target>
 
 	<target name="copyWinTskLibsToBuildSQLite" depends="copyWinTskLibs64ToBuildSQLite, copyWinTskLibs32ToBuild-SQLite" description="Copy Windows DLLs to the correct location, SQLite build." />
