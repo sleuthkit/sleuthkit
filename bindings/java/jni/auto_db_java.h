@@ -228,7 +228,7 @@ class TskAutoDbJava :public TskAuto {
     TSK_RETVAL_ENUM addFile(TSK_FS_FILE* fs_file,
         const TSK_FS_ATTR* fs_attr, const char* path,
         int64_t fsObjId, int64_t parObjId,
-        int64_t& objId, int64_t dataSourceObjId);
+        int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId,
         const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE>& ranges, int64_t& objId,

@@ -427,7 +427,7 @@ TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
     if (fs_file->name == NULL)
         return TSK_ERR;
 
-    // Find the object id for the parent folder.
+    // The object id for the parent folder. Will stay as zero if not the root folder
     int64_t parObjId = 0;
 
     // Root directory's parent should be the file system object.
@@ -436,16 +436,10 @@ TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
         ((fs_file->name->name == NULL) || (strlen(fs_file->name->name) == 0))) {
         // File is in the root directory
         parObjId = fsObjId;
-    } else {
-        // Look up parent object ID
-        parObjId = findParObjId(fs_file, path, fsObjId);
-        if (parObjId == -1) {
-            return TSK_ERR;
-        }
     }
 
     // Add the file to the database
-    return addFile(fs_file, fs_attr, path, fsObjId, parObjId, objId, dataSourceObjId);
+    return addFile(fs_file, fs_attr, path, fsObjId, parObjId, dataSourceObjId);
 }
 
 /**
@@ -518,14 +512,14 @@ void TskAutoDbJava::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_fil
 
 
 /**
-* Adds a file and its associated slack file to database. Object ID for new file stored in objId.
+* Adds a file and its associated slack file to database.
+* Does not learn object ID for new files.
 *
 * @param fs_file
 * @param fs_attr
 * @param path      File path
 * @param fsObjId   Object ID of the file system
-* @param parObjId  Parent object ID
-* @param objId     Object ID of new file
+* @param parObjId  Parent object ID if known, 0 otherwise
 * @param dataSourceObjId  Object ID of the data source
 * @returns TSK_ERR on error, TSK_OK on success
 */
@@ -533,7 +527,7 @@ TSK_RETVAL_ENUM
 TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     const TSK_FS_ATTR* fs_attr, const char* path,
     int64_t fsObjId, int64_t parObjId,
-    int64_t& objId, int64_t dataSourceObjId)
+    int64_t dataSourceObjId)
 {
     time_t mtime = 0;
     time_t crtime = 0;
@@ -633,7 +627,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     TSK_INUM_T par_meta_addr = fs_file->name->par_addr;
  
     // Add the file to the database
-    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
+    jlong ret_val = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
         parObjId, fsObjId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
@@ -645,16 +639,9 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         meta_mode, gid, uid, 
         pathj, extj, 
         (uint64_t)meta_seq, par_meta_addr, par_seqj);
-    objId = (int64_t)objIdj;
 
-    if (objId < 0) {
+    if (ret_val < 0) {
         return TSK_ERR;
-    }
-
-    // If dir, update parent ID cache
-    if (TSK_FS_IS_DIR_META(meta_type)){
-        std::string fullPath = std::string(path) + fs_file->name->name;
-        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
     // Add entry for the slack space.
@@ -678,7 +665,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
         // Add slack file to database
-        jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
+        jlong ret_val = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
             parObjId, fsObjId,
             dataSourceObjId,
             TSK_DB_FILES_TYPE_SLACK,
@@ -690,9 +677,8 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             meta_mode, gid, uid, // md5TextPtr, known,
             pathj, slackExtj, 
             (uint64_t)meta_seq, par_meta_addr, par_seqj);
-        int64_t slackObjId = (int64_t)objIdj;
 
-        if (slackObjId < 0) {
+        if (ret_val < 0) {
             return TSK_ERR;
         }
     }

@@ -44,7 +44,9 @@ class JniDbHelper {
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
 	private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
 	private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
-	private final List<ParentCacheKey> tempDidNotFind = new ArrayList<>();
+	
+	private final long BATCH_FILE_THRESHOLD = 5;
+	private final List<FileInfo> batchedFiles = new ArrayList<>();
     
     JniDbHelper(SleuthkitCase caseDb) {
         this.caseDb = caseDb;
@@ -66,6 +68,7 @@ class JniDbHelper {
      * @throws TskCoreException 
      */
     void commitTransaction() throws TskCoreException {
+		addBatchedFilesToDb(); // Temp
         trans.commit();
         trans = null;
 		parentDirCache.clear();
@@ -227,10 +230,11 @@ class JniDbHelper {
     }
 
     /**
-     * Add a file to the database. 
+     * Add a file to the database.
+	 * File inserts are batched so the file may not be added immediately.
      * Intended to be called from the native code during the add image process.
      * 
-     * @param parentObjId     The parent of the file.
+     * @param parentObjId     The parent of the file if known or 0 if unknown.
      * @param fsObjId         The object ID of the file system.
      * @param dataSourceObjId The data source object ID.
      * @param fsType    The type.
@@ -263,7 +267,7 @@ class JniDbHelper {
 	 * @param parMetaAddr The metadata address of the parent
 	 * @param parSeq      The parent sequence number if NTFS, -1 otherwise.
      * 
-     * @return The object ID of the new file or -1 if an error occurred
+     * @return 0 if successful, -1 if not
      */
     long addFile(long parentObjId, 
         long fsObjId, long dataSourceObjId,
@@ -276,69 +280,89 @@ class JniDbHelper {
         int meta_mode, int gid, int uid,
         String escaped_path, String extension, 
 		long seq, long parMetaAddr, long parSeq) {
-        try {
-            long objId = caseDb.addFileJNI(parentObjId, 
-                fsObjId, dataSourceObjId,
-                fsType,
-                attrType, attrId, name,
-                metaAddr, metaSeq,
-                dirType, metaType, dirFlags, metaFlags,
-                size,
-                crtime, ctime, atime, mtime,
-                meta_mode, gid, uid,
-                null, TskData.FileKnown.UNKNOWN,
-                escaped_path, extension, 
-                false, trans);
-            
-            // If we're adding the root directory for the file system, cache it
-            if (parentObjId == fsObjId) {
-                fsIdToRootDir.put(fsObjId, objId);
-            }
-			
-			
-			// Testing!
-			if ((metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
-					|| (metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
-					&& (name != null)
-					&& ! name.equals(".")
-					&& ! name.equals("..")) {
-				String dirName = escaped_path + name;
-				ParentCacheKey key = new ParentCacheKey(fsObjId, metaAddr, seq, dirName);
-				parentDirCache.put(key, objId);
-				if (metaAddr == 34064 || dirName.contains("$Orphan")) {
-					//System.out.println("### Saving: " + objId + " : " + metaAddr + " " + seq + " " + dirName);
-				}
-			}
-			
-			// Let's see if the parent lookup matches - skip for root folder
-			if (fsObjId != parentObjId) {
-				String parentPath = escaped_path;
-				if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
-					parentPath =  parentPath.substring(0, parentPath.lastIndexOf("/"));
-				}
-				ParentCacheKey key = new ParentCacheKey(fsObjId, parMetaAddr, parSeq, parentPath);
-				String keyStr = parMetaAddr + " " + parSeq + " " + parentPath;
-				if (parentDirCache.containsKey(key)) {
-					long cachedId = parentDirCache.get(key);
-					if (cachedId == parentObjId) {
-						//System.out.println("### Found match! " + cachedId + " : " + keyStr);
+		
+		// Add the new file to the list
+		batchedFiles.add(new FileInfo(parentObjId,
+				fsObjId, dataSourceObjId,
+				fsType,
+				attrType, attrId, name,
+				metaAddr, metaSeq,
+				dirType, metaType, dirFlags, metaFlags,
+				size,
+				crtime, ctime, atime, mtime,
+				meta_mode, gid, uid,
+				escaped_path, extension,
+				seq, parMetaAddr, parSeq));
+		
+		// Add the current files to the database if we've exceeded the threshold or if we
+		// have the root folder.
+		if ((fsObjId == parentObjId)
+				|| (batchedFiles.size() > BATCH_FILE_THRESHOLD)) {
+			return addBatchedFilesToDb();
+		}
+		return 0;
+	}
+	
+	private long addBatchedFilesToDb() {
+		for (FileInfo fileInfo : batchedFiles) {
+			long computedParentObjId = fileInfo.parentObjId;
+			try {
+				// If we weren't given the parent object ID, look it up
+				if (fileInfo.parentObjId == 0) {
+					// Remove the final slash from the path unless we're in the root folder
+					String parentPath = fileInfo.escaped_path;
+					if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
+						parentPath =  parentPath.substring(0, parentPath.lastIndexOf("/"));
+					}
+
+					// Look up the parent
+					ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
+					if (parentDirCache.containsKey(key)) {
+						computedParentObjId = parentDirCache.get(key);
 					} else {
-						System.out.println("### Mismatch : cached: " + cachedId + ", given: " + parentObjId + " : " + keyStr);
-					}
-				} else {
-					if (!tempDidNotFind.contains(key)) {
-						System.out.println("### Did not find " + parentObjId + " : " + keyStr + " - orig parent_path: <" + escaped_path + ">");
-						tempDidNotFind.add(key);
+						// The parent wasn't found in the cache so do a database query
+						java.io.File parentAsFile = new java.io.File(parentPath);
+						computedParentObjId = findParentObjId(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName());
+						// TODO - error checking. findParentObjId might throw exception if not needed from native code TODO
 					}
 				}
+
+				long objId = caseDb.addFileJNI(computedParentObjId, 
+					fileInfo.fsObjId, fileInfo.dataSourceObjId,
+					fileInfo.fsType,
+					fileInfo.attrType, fileInfo.attrId, fileInfo.name,
+					fileInfo.metaAddr, fileInfo.metaSeq,
+					fileInfo.dirType, fileInfo.metaType, fileInfo.dirFlags, fileInfo.metaFlags,
+					fileInfo.size,
+					fileInfo.crtime, fileInfo.ctime, fileInfo.atime, fileInfo.mtime,
+					fileInfo.meta_mode, fileInfo.gid, fileInfo.uid,
+					null, TskData.FileKnown.UNKNOWN,
+					fileInfo.escaped_path, fileInfo.extension, 
+					false, trans);
+
+				// If we're adding the root directory for the file system, cache it
+				if (fileInfo.parentObjId == fileInfo.fsObjId) {
+					fsIdToRootDir.put(fileInfo.fsObjId, objId);
+				}
+
+				// If the file is a directory, cache the object ID
+				if ((fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
+						|| (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
+						&& (fileInfo.name != null)
+						&& ! fileInfo.name.equals(".")
+						&& ! fileInfo.name.equals("..")) {
+					String dirName = fileInfo.escaped_path + fileInfo.name;
+					ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.metaAddr, fileInfo.seq, dirName);
+					parentDirCache.put(key, objId);
+				}
+			} catch (TskCoreException ex) {
+				logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
+						+ ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
+				return -1;
 			}
-			
-            return objId;
-        } catch (TskCoreException ex) {
-            logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + parentObjId
-                    + ", file system object ID: " + fsObjId + ", name: " + name, ex);
-            return -1;
-        }
+		}
+		batchedFiles.clear();
+		return 0;
     }
     
     /**
@@ -412,6 +436,7 @@ class JniDbHelper {
     /**
      * Look up the parent of a file based on metadata address and name/path.
      * Intended to be called from the native code during the add image process.
+	 * // TODO is this still needed from native code?????
      * 
      * @param metaAddr
      * @param fsObjId
@@ -422,7 +447,7 @@ class JniDbHelper {
      */
     long findParentObjId(long metaAddr, long fsObjId, String path, String name) {
         try {
-			//System.out.println("### Had to do lookup for meta addr: " + metaAddr + " and path: " + path + " " + name);
+			System.out.println("### Had to do lookup for meta addr: " + metaAddr + " and path: " + path + " " + name);
             return caseDb.findParentObjIdJNI(metaAddr, fsObjId, path, name, trans);
         } catch (TskCoreException ex) {
             logger.log(Level.WARNING, "Error looking up parent with meta addr: " + metaAddr + " and name " + name, ex);
@@ -507,6 +532,79 @@ class JniDbHelper {
 			hash = 31 * hash + (int) (this.seqNum ^ (this.seqNum >>> 32));
 			hash = 31 * hash + Objects.hashCode(this.path);
 			return hash;
+		}
+	}
+	
+	/**
+	 * Utility class to hold data for files waiting to be
+	 * added to the database.
+	 */
+	private class FileInfo {
+		long parentObjId; 
+        long fsObjId;
+		long dataSourceObjId;
+        int fsType;
+        int attrType;
+		int attrId;
+		String name;
+        long metaAddr; 
+		long metaSeq;
+        int dirType;
+		int metaType;
+		int dirFlags;
+		int metaFlags;
+        long size;
+        long crtime;
+		long ctime;
+		long atime;
+		long mtime;
+        int meta_mode;
+		int gid;
+		int uid;
+        String escaped_path;
+		String extension;
+		long seq;
+		long parMetaAddr;
+		long parSeq;
+		
+		FileInfo(long parentObjId, 
+			long fsObjId, long dataSourceObjId,
+			int fsType,
+			int attrType, int attrId, String name,
+			long metaAddr, long metaSeq,
+			int dirType, int metaType, int dirFlags, int metaFlags,
+			long size,
+			long crtime, long ctime, long atime, long mtime,
+			int meta_mode, int gid, int uid,
+			String escaped_path, String extension, 
+			long seq, long parMetaAddr, long parSeq) {
+			
+			this.parentObjId = parentObjId;
+			this.fsObjId = fsObjId;
+			this.dataSourceObjId = dataSourceObjId;
+			this.fsType = fsType;
+			this.attrType = attrType;
+			this.attrId = attrId;
+			this.name = name;
+			this.metaAddr = metaAddr; 
+			this.metaSeq = metaSeq;
+			this.dirType = dirType;
+			this.metaType = metaType;
+			this.dirFlags = dirFlags;
+			this.metaFlags = metaFlags;
+			this.size = size;
+			this.crtime = crtime;
+			this.ctime = ctime;
+			this.atime = atime;
+			this.mtime = mtime;
+			this.meta_mode = meta_mode;
+			this.gid = gid;
+			this.uid = uid;
+			this.escaped_path = escaped_path;
+			this.extension = extension;
+			this.seq = seq;
+			this.parMetaAddr = parMetaAddr;
+			this.parSeq = parSeq;
 		}
 	}
 }
