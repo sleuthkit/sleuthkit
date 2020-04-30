@@ -19,6 +19,8 @@
 package org.sleuthkit.datamodel;
 
 import org.apache.commons.lang3.StringUtils;
+import java.util.List; // TEMP
+import java.util.ArrayList; // TEMP
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +44,7 @@ class JniDbHelper {
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
 	private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
 	private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
+	private final List<ParentCacheKey> tempDidNotFind = new ArrayList<>();
     
     JniDbHelper(SleuthkitCase caseDb) {
         this.caseDb = caseDb;
@@ -294,14 +297,17 @@ class JniDbHelper {
 			
 			
 			// Testing!
-			if (metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
+			if ((metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
+					|| (metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
 					&& (name != null)
 					&& ! name.equals(".")
 					&& ! name.equals("..")) {
 				String dirName = escaped_path + name;
 				ParentCacheKey key = new ParentCacheKey(fsObjId, metaAddr, seq, dirName);
 				parentDirCache.put(key, objId);
-				//System.out.println("### Saving: " + objId + " : " + metaAddr + " " + seq + " " + dirName);
+				if (metaAddr == 34064 || dirName.contains("$Orphan")) {
+					//System.out.println("### Saving: " + objId + " : " + metaAddr + " " + seq + " " + dirName);
+				}
 			}
 			
 			// Let's see if the parent lookup matches - skip for root folder
@@ -320,7 +326,10 @@ class JniDbHelper {
 						System.out.println("### Mismatch : cached: " + cachedId + ", given: " + parentObjId + " : " + keyStr);
 					}
 				} else {
-					System.out.println("### Did not find " + parentObjId + " : " + keyStr + " - orig parent_path: <" + escaped_path + ">");
+					if (!tempDidNotFind.contains(key)) {
+						System.out.println("### Did not find " + parentObjId + " : " + keyStr + " - orig parent_path: <" + escaped_path + ">");
+						tempDidNotFind.add(key);
+					}
 				}
 			}
 			
@@ -413,7 +422,7 @@ class JniDbHelper {
      */
     long findParentObjId(long metaAddr, long fsObjId, String path, String name) {
         try {
-			System.out.println("### Had to do lookup for meta addr: " + metaAddr + " and path: " + path + " " + name);
+			//System.out.println("### Had to do lookup for meta addr: " + metaAddr + " and path: " + path + " " + name);
             return caseDb.findParentObjIdJNI(metaAddr, fsObjId, path, name, trans);
         } catch (TskCoreException ex) {
             logger.log(Level.WARNING, "Error looking up parent with meta addr: " + metaAddr + " and name " + name, ex);
