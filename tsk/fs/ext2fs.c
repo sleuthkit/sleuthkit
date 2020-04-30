@@ -841,6 +841,20 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
         grp_num * tsk_getu32(fs->endian,
         ext2fs->fs->s_inodes_per_group) + fs->first_inum;
 
+
+    /*
+     * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
+     */
+    if ((inum - ibase) > fs->block_size*8) {
+        tsk_release_lock(&ext2fs->lock);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("ext2fs_dinode_copy: Invalid offset into imap_buf (inum %" PRIuINUM " - ibase %" PRIuINUM ")",
+            inum, ibase);
+        return 1;
+    }
+
+
     /*
      * Apply the allocated/unallocated restriction.
      */
@@ -1052,9 +1066,9 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             ext2fs->fs->s_inodes_per_group) + 1;
 
         /*
-         * Ensure that inum - ibase refers to a valid offset in imap_buf.
+         * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
          */
-        if ((inum - ibase) > fs->block_size) {
+        if ((inum - ibase) > fs->block_size*8) {
             tsk_release_lock(&ext2fs->lock);
             free(dino_buf);
             tsk_error_reset();
