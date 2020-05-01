@@ -45,7 +45,7 @@ class JniDbHelper {
 	private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
 	private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
 	
-	private final long BATCH_FILE_THRESHOLD = 5;
+	private final long BATCH_FILE_THRESHOLD = 500;
 	private final List<FileInfo> batchedFiles = new ArrayList<>();
     
     JniDbHelper(SleuthkitCase caseDb) {
@@ -54,12 +54,13 @@ class JniDbHelper {
     }
     
     /**
-     * Start the add image transaction
+     * Start a transaction
      * 
      * @throws TskCoreException 
      */
-    void beginTransaction() throws TskCoreException {
+    private void beginTransaction() throws TskCoreException {
         trans = caseDb.beginTransaction();
+		trans.acquireSingleUserCaseWriteLock();
     }
     
     /**
@@ -67,23 +68,31 @@ class JniDbHelper {
      * 
      * @throws TskCoreException 
      */
-    void commitTransaction() throws TskCoreException {
-		addBatchedFilesToDb(); // Temp
+    private void commitTransaction() throws TskCoreException {
         trans.commit();
         trans = null;
-		parentDirCache.clear();
     }
     
     /**
      * Revert the add image transaction
-     * 
-     * @throws TskCoreException 
      */
-    void revertTransaction() throws TskCoreException {
-        trans.rollback();
-        trans = null;
-		parentDirCache.clear();
+    private void revertTransaction() {
+		try {
+			if (trans != null) {
+				trans.rollback();
+				trans = null;
+			}
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error rolling back transaction", ex);
+		}
     }        
+	
+	/**
+	 * Add any remaining files to the database.
+	 */
+	void finish() {
+		addBatchedFilesToDb();
+	}
     
     /**
      * Add a new image to the database.
@@ -103,14 +112,18 @@ class JniDbHelper {
      */
     long addImageInfo(int type, long ssize, String timezone, 
             long size, String md5, String sha1, String sha256, String deviceId, 
-            String collectionDetails) {
+            String collectionDetails) {	
         try {
-            return caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
+			beginTransaction();
+            long objId = caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
                     timezone, md5, sha1, sha256, deviceId, collectionDetails, trans);
+			commitTransaction();
+			return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image to the database", ex);
+			revertTransaction();
             return -1;
-        }
+        } 
     }
     
     /**
@@ -125,11 +138,14 @@ class JniDbHelper {
      */
     int addImageName(long objId, String name, long sequence) {
         try {
+			beginTransaction();
             caseDb.addImageNameJNI(objId, name, sequence, trans);
+			commitTransaction();
             return 0;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image name to the database - image obj ID: " + objId + ", image name: " + name
                     + ", sequence: " + sequence, ex);
+			revertTransaction();
             return -1;
         }
     }
@@ -147,11 +163,14 @@ class JniDbHelper {
      */
     long addVsInfo(long parentObjId, int vsType, long imgOffset, long blockSize) {
         try {
+			beginTransaction();
             VolumeSystem vs = caseDb.addVolumeSystem(parentObjId, TskData.TSK_VS_TYPE_ENUM.valueOf(vsType), imgOffset, blockSize, trans);
+			commitTransaction();
             return vs.getId();
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding volume system to the database - parent obj ID: " + parentObjId 
                     + ", image offset: " + imgOffset, ex);
+			revertTransaction();
             return -1;
         }
     }
@@ -172,11 +191,14 @@ class JniDbHelper {
     long addVolume(long parentObjId, long addr, long start, long length, String desc,
             long flags) {
         try {
+			beginTransaction();
             Volume vol = caseDb.addVolume(parentObjId, addr, start, length, desc, flags, trans);
+			commitTransaction();
             return vol.getId();
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding volume to the database - parent object ID: " + parentObjId
                 + ", addr: " + addr, ex);
+			revertTransaction();
             return -1;
         }
     }
@@ -192,10 +214,13 @@ class JniDbHelper {
      */
     long addPool(long parentObjId, int poolType) {
         try {
+			beginTransaction();
             Pool pool = caseDb.addPool(parentObjId, TskData.TSK_POOL_TYPE_ENUM.valueOf(poolType), trans);
+			commitTransaction();
             return pool.getId();
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding pool to the database - parent object ID: " + parentObjId, ex);
+			revertTransaction();
             return -1;
         }
     }
@@ -218,13 +243,16 @@ class JniDbHelper {
     long addFileSystem(long parentObjId, long imgOffset, int fsType, long blockSize, long blockCount,
             long rootInum, long firstInum, long lastInum) {
         try {
+			beginTransaction();
             FileSystem fs = caseDb.addFileSystem(parentObjId, imgOffset, TskData.TSK_FS_TYPE_ENUM.valueOf(fsType), blockSize, blockCount,
                     rootInum, firstInum, lastInum, null, trans);
+			commitTransaction();
 			fsIdToFsType.put(fs.getId(), TskData.TSK_FS_TYPE_ENUM.valueOf(fsType));
             return fs.getId();
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding file system to the database - parent object ID: " + parentObjId
                     + ", offset: " + imgOffset, ex);
+			revertTransaction();
             return -1;
         }
     }
@@ -304,62 +332,73 @@ class JniDbHelper {
 	}
 	
 	private long addBatchedFilesToDb() {
-		for (FileInfo fileInfo : batchedFiles) {
-			long computedParentObjId = fileInfo.parentObjId;
-			try {
-				// If we weren't given the parent object ID, look it up
-				if (fileInfo.parentObjId == 0) {
-					// Remove the final slash from the path unless we're in the root folder
-					String parentPath = fileInfo.escaped_path;
-					if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
-						parentPath =  parentPath.substring(0, parentPath.lastIndexOf("/"));
+		try {
+			beginTransaction();
+			//System.out.println("### Adding batch of files to database\n");
+			//System.out.flush();
+			for (FileInfo fileInfo : batchedFiles) {
+				long computedParentObjId = fileInfo.parentObjId;
+				try {
+					// If we weren't given the parent object ID, look it up
+					if (fileInfo.parentObjId == 0) {
+						// Remove the final slash from the path unless we're in the root folder
+						String parentPath = fileInfo.escaped_path;
+						if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
+							parentPath =  parentPath.substring(0, parentPath.lastIndexOf("/"));
+						}
+
+						// Look up the parent
+						ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
+						if (parentDirCache.containsKey(key)) {
+							computedParentObjId = parentDirCache.get(key);
+						} else {
+							// The parent wasn't found in the cache so do a database query
+							java.io.File parentAsFile = new java.io.File(parentPath);
+							computedParentObjId = findParentObjId(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName());
+							// TODO - error checking. findParentObjId might throw exception if not needed from native code TODO
+						}
 					}
 
-					// Look up the parent
-					ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
-					if (parentDirCache.containsKey(key)) {
-						computedParentObjId = parentDirCache.get(key);
-					} else {
-						// The parent wasn't found in the cache so do a database query
-						java.io.File parentAsFile = new java.io.File(parentPath);
-						computedParentObjId = findParentObjId(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName());
-						// TODO - error checking. findParentObjId might throw exception if not needed from native code TODO
+					long objId = caseDb.addFileJNI(computedParentObjId, 
+						fileInfo.fsObjId, fileInfo.dataSourceObjId,
+						fileInfo.fsType,
+						fileInfo.attrType, fileInfo.attrId, fileInfo.name,
+						fileInfo.metaAddr, fileInfo.metaSeq,
+						fileInfo.dirType, fileInfo.metaType, fileInfo.dirFlags, fileInfo.metaFlags,
+						fileInfo.size,
+						fileInfo.crtime, fileInfo.ctime, fileInfo.atime, fileInfo.mtime,
+						fileInfo.meta_mode, fileInfo.gid, fileInfo.uid,
+						null, TskData.FileKnown.UNKNOWN,
+						fileInfo.escaped_path, fileInfo.extension, 
+						false, trans);
+
+					// If we're adding the root directory for the file system, cache it
+					if (fileInfo.parentObjId == fileInfo.fsObjId) {
+						fsIdToRootDir.put(fileInfo.fsObjId, objId);
 					}
-				}
 
-				long objId = caseDb.addFileJNI(computedParentObjId, 
-					fileInfo.fsObjId, fileInfo.dataSourceObjId,
-					fileInfo.fsType,
-					fileInfo.attrType, fileInfo.attrId, fileInfo.name,
-					fileInfo.metaAddr, fileInfo.metaSeq,
-					fileInfo.dirType, fileInfo.metaType, fileInfo.dirFlags, fileInfo.metaFlags,
-					fileInfo.size,
-					fileInfo.crtime, fileInfo.ctime, fileInfo.atime, fileInfo.mtime,
-					fileInfo.meta_mode, fileInfo.gid, fileInfo.uid,
-					null, TskData.FileKnown.UNKNOWN,
-					fileInfo.escaped_path, fileInfo.extension, 
-					false, trans);
-
-				// If we're adding the root directory for the file system, cache it
-				if (fileInfo.parentObjId == fileInfo.fsObjId) {
-					fsIdToRootDir.put(fileInfo.fsObjId, objId);
+					// If the file is a directory, cache the object ID
+					if ((fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
+							|| (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
+							&& (fileInfo.name != null)
+							&& ! fileInfo.name.equals(".")
+							&& ! fileInfo.name.equals("..")) {
+						String dirName = fileInfo.escaped_path + fileInfo.name;
+						ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.metaAddr, fileInfo.seq, dirName);
+						parentDirCache.put(key, objId);
+					}
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
+							+ ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
+					revertTransaction();
+					return -1;
 				}
-
-				// If the file is a directory, cache the object ID
-				if ((fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
-						|| (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
-						&& (fileInfo.name != null)
-						&& ! fileInfo.name.equals(".")
-						&& ! fileInfo.name.equals("..")) {
-					String dirName = fileInfo.escaped_path + fileInfo.name;
-					ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.metaAddr, fileInfo.seq, dirName);
-					parentDirCache.put(key, objId);
-				}
-			} catch (TskCoreException ex) {
-				logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
-						+ ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
-				return -1;
 			}
+			commitTransaction();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error adding batched files to database", ex);
+			revertTransaction();
+			return -1;
 		}
 		batchedFiles.clear();
 		return 0;
@@ -383,13 +422,15 @@ class JniDbHelper {
         int fileType,
         String name, long size) {
         try {
+			
             // The file system may be null for layout files
             Long fsObjIdForDb = fsObjId;
             if (fsObjId == 0) {
                 fsObjIdForDb = null;
             }
             
-            return caseDb.addFileJNI(parentObjId, 
+			beginTransaction();
+            long objId = caseDb.addFileJNI(parentObjId, 
                 fsObjIdForDb, dataSourceObjId,
                 fileType,
                 null, null, name,
@@ -404,9 +445,12 @@ class JniDbHelper {
                 null, TskData.FileKnown.UNKNOWN,
                 null, null, 
                 true, trans);
+			commitTransaction();
+			return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding layout file to the database - parent object ID: " + parentObjId
                     + ", file system object ID: " + fsObjId + ", name: " + name, ex);
+			revertTransaction();
             return -1;
         }
     }    
@@ -424,11 +468,14 @@ class JniDbHelper {
      */
     long addLayoutFileRange(long objId, long byteStart, long byteLen, long seq) {
         try {
+			beginTransaction();
             caseDb.addLayoutFileRangeJNI(objId, byteStart, byteLen, seq, trans);
+			commitTransaction();
             return 0;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding layout file range to the database - layout file ID: " + objId 
                 + ", byte start: " + byteStart, ex);
+			revertTransaction();
             return -1;
         }
     }
@@ -437,6 +484,7 @@ class JniDbHelper {
      * Look up the parent of a file based on metadata address and name/path.
      * Intended to be called from the native code during the add image process.
 	 * // TODO is this still needed from native code?????
+	 * // TODO note that transaction should be open
      * 
      * @param metaAddr
      * @param fsObjId
@@ -470,9 +518,13 @@ class JniDbHelper {
                 logger.log(Level.SEVERE, "Error - root directory for file system ID {0} not found", fsObjId);
                 return -1;
             }
-            return caseDb.addVirtualDirectoryJNI(fsIdToRootDir.get(fsObjId), name, trans);
+			beginTransaction();
+            long objId = caseDb.addVirtualDirectoryJNI(fsIdToRootDir.get(fsObjId), name, trans);
+			commitTransaction();
+			return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error creating virtual directory " + name + " under file system ID " + fsObjId, ex);
+			revertTransaction();
             return -1;
         }
     }
