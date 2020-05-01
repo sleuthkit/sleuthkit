@@ -47,6 +47,7 @@ class JniDbHelper {
 	
 	private final long BATCH_FILE_THRESHOLD = 500;
 	private final List<FileInfo> batchedFiles = new ArrayList<>();
+	private final List<LayoutRangeInfo> batchedLayoutRanges = new ArrayList<>();
     
     JniDbHelper(SleuthkitCase caseDb) {
         this.caseDb = caseDb;
@@ -92,6 +93,7 @@ class JniDbHelper {
 	 */
 	void finish() {
 		addBatchedFilesToDb();
+		addBatchedLayoutRangesToDb();
 	}
     
     /**
@@ -331,11 +333,14 @@ class JniDbHelper {
 		return 0;
 	}
 	
+	/**
+	 * Add the current set of files to the database.
+	 * 
+	 * @return 0 if successful, -1 if not
+	 */
 	private long addBatchedFilesToDb() {
 		try {
 			beginTransaction();
-			//System.out.println("### Adding batch of files to database\n");
-			//System.out.flush();
 			for (FileInfo fileInfo : batchedFiles) {
 				long computedParentObjId = fileInfo.parentObjId;
 				try {
@@ -467,18 +472,42 @@ class JniDbHelper {
      * @return 0 if successful, -1 if not
      */
     long addLayoutFileRange(long objId, long byteStart, long byteLen, long seq) {
-        try {
-			beginTransaction();
-            caseDb.addLayoutFileRangeJNI(objId, byteStart, byteLen, seq, trans);
-			commitTransaction();
-            return 0;
-        } catch (TskCoreException ex) {
-            logger.log(Level.SEVERE, "Error adding layout file range to the database - layout file ID: " + objId 
-                + ", byte start: " + byteStart, ex);
-			revertTransaction();
-            return -1;
-        }
+		batchedLayoutRanges.add(new LayoutRangeInfo(objId, byteStart, byteLen, seq));
+		
+		if (batchedLayoutRanges.size() > BATCH_FILE_THRESHOLD) {
+			return addBatchedLayoutRangesToDb();
+		}
+		return 0;
     }
+	
+	/**
+	 * Add the current set of layout ranges to the database.
+	 * 
+	 * @return 0 if successful, -1 if not
+	 */
+	private long addBatchedLayoutRangesToDb() {
+		try {
+			beginTransaction();
+	
+			for (LayoutRangeInfo range : batchedLayoutRanges) {
+				try {
+					caseDb.addLayoutFileRangeJNI(range.objId, range.byteStart, range.byteLen, range.seq, trans);
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Error adding layout file range to the database - layout file ID: " + range.objId 
+						+ ", byte start: " + range.byteStart, ex);
+					revertTransaction();
+					return -1;
+				}
+			}
+			commitTransaction();
+			batchedLayoutRanges.clear();
+			return 0;
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error adding batched files to database", ex);
+			revertTransaction();
+			return -1;
+		}
+	}
     
     /**
      * Look up the parent of a file based on metadata address and name/path.
@@ -584,6 +613,24 @@ class JniDbHelper {
 			hash = 31 * hash + (int) (this.seqNum ^ (this.seqNum >>> 32));
 			hash = 31 * hash + Objects.hashCode(this.path);
 			return hash;
+		}
+	}
+	
+	/**
+	 * Utility class to hold data for layout ranges waiting
+	 * to be added to the database.
+	 */
+	private class LayoutRangeInfo {
+		long objId;
+		long byteStart;
+		long byteLen;
+		long seq;
+		
+		LayoutRangeInfo(long objId, long byteStart, long byteLen, long seq) {
+			this.objId = objId;
+			this.byteStart = byteStart;
+			this.byteLen = byteLen;
+			this.seq = seq;
 		}
 	}
 	
