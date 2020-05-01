@@ -60,7 +60,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 			}
 		}
 
-		private HTML_COLOR(String name, String hexString) {
+		HTML_COLOR(String name, String hexString) {
 			this.hexString = hexString;
 			this.name = name;
 		}
