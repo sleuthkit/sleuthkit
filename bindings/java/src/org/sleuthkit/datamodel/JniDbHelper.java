@@ -48,7 +48,7 @@ class JniDbHelper {
 	private final long BATCH_FILE_THRESHOLD = 500;
 	private final List<FileInfo> batchedFiles = new ArrayList<>();
 	private final List<LayoutRangeInfo> batchedLayoutRanges = new ArrayList<>();
-    
+	
     JniDbHelper(SleuthkitCase caseDb) {
         this.caseDb = caseDb;
         trans = null;
@@ -524,7 +524,6 @@ class JniDbHelper {
      */
     long findParentObjId(long metaAddr, long fsObjId, String path, String name) {
         try {
-			System.out.println("### Had to do lookup for meta addr: " + metaAddr + " and path: " + path + " " + name);
             return caseDb.findParentObjIdJNI(metaAddr, fsObjId, path, name, trans);
         } catch (TskCoreException ex) {
             logger.log(Level.WARNING, "Error looking up parent with meta addr: " + metaAddr + " and name " + name, ex);
