@@ -359,8 +359,7 @@ class JniDbHelper {
 						} else {
 							// The parent wasn't found in the cache so do a database query
 							java.io.File parentAsFile = new java.io.File(parentPath);
-							computedParentObjId = findParentObjId(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName());
-							// TODO - error checking. findParentObjId might throw exception if not needed from native code TODO
+							computedParentObjId = caseDb.findParentObjIdJNI(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName(), trans);
 						}
 					}
 
@@ -510,28 +509,6 @@ class JniDbHelper {
 	}
     
     /**
-     * Look up the parent of a file based on metadata address and name/path.
-     * Intended to be called from the native code during the add image process.
-	 * // TODO is this still needed from native code?????
-	 * // TODO note that transaction should be open
-     * 
-     * @param metaAddr
-     * @param fsObjId
-     * @param path
-     * @param name
-     * 
-     * @return The object ID of the parent or -1 if not found
-     */
-    long findParentObjId(long metaAddr, long fsObjId, String path, String name) {
-        try {
-            return caseDb.findParentObjIdJNI(metaAddr, fsObjId, path, name, trans);
-        } catch (TskCoreException ex) {
-            logger.log(Level.WARNING, "Error looking up parent with meta addr: " + metaAddr + " and name " + name, ex);
-            return -1;
-        }
-    }
-    
-    /**
      * Add a virtual directory to hold unallocated file system blocks.
      * Intended to be called from the native code during the add image process.
      * 
@@ -547,9 +524,9 @@ class JniDbHelper {
                 return -1;
             }
 			beginTransaction();
-            long objId = caseDb.addVirtualDirectoryJNI(fsIdToRootDir.get(fsObjId), name, trans);
+            VirtualDirectory dir = caseDb.addVirtualDirectory(fsIdToRootDir.get(fsObjId), name, trans);
 			commitTransaction();
-			return objId;
+			return dir.getId();
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error creating virtual directory " + name + " under file system ID " + fsObjId, ex);
 			revertTransaction();

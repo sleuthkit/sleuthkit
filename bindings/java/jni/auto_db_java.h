@@ -143,16 +143,6 @@ class TskAutoDbJava :public TskAuto {
     std::map<int64_t, int64_t> m_poolOffsetToParentId;
     std::map<int64_t, int64_t> m_poolOffsetToVsId;
 
-    // Used to look up object IDs for files
-    #define MAX_PATH_LENGTH_JAVA_DB_LOOKUP 2048
-    char parent_name[MAX_PATH_LENGTH_JAVA_DB_LOOKUP];
-    char parent_path[MAX_PATH_LENGTH_JAVA_DB_LOOKUP + 2]; // +2 is for leading slash and trailing slash
-    map<int64_t, map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to a map, which maps a sequence ID to a map, which maps a hash of a path to its object ID in the database
-    int64_t findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, const int64_t& fsObjId);
-    bool getParentPathAndName(const char *path, const char **ret_parent_path, const char **ret_name);
-    void storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_file, const char* path, const int64_t& objId);
-    uint32_t hash(const unsigned char* str);
-
     // JNI data
     JNIEnv * m_jniEnv = NULL;
     jclass m_callbackClass = NULL;
@@ -164,7 +154,6 @@ class TskAutoDbJava :public TskAuto {
     jmethodID m_addPoolMethodID = NULL;
     jmethodID m_addFileSystemMethodID = NULL;
     jmethodID m_addFileMethodID = NULL;
-    jmethodID m_getParentIdMethodID = NULL;
     jmethodID m_addUnallocParentMethodID = NULL;
     jmethodID m_addLayoutFileMethodID = NULL;
     jmethodID m_addLayoutFileRangeMethodID = NULL;

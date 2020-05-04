@@ -531,11 +531,7 @@ public class SleuthkitJNI {
 						}
 					}
 					if (imageHandle != 0) {
-						long startTime = System.currentTimeMillis();
 						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
-						long endTime = System.currentTimeMillis();
-						long elapsed = endTime - startTime;
-						System.out.println("\n### runAddImgNat time: " + elapsed + " ms\n");
 					}
 				} finally {
 					releaseTSKReadLock();
