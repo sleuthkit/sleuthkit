@@ -69,7 +69,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 			return name;
 		}
 		
-		public String getHexColorCode() {
+		public String getRgbValue() {
 			return hexString;
 		}
 
