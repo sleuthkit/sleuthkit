@@ -83,7 +83,7 @@ public final class CommunicationsUtils {
 			return isValidPhoneNumber(accountUniqueID);
 		}
 		if (accountType == Account.Type.EMAIL) {
-			return isValidPhoneNumber(accountUniqueID);
+			return isValidEmailAddress(accountUniqueID);
 		}
 		
 		return !StringUtils.isEmpty(accountUniqueID);

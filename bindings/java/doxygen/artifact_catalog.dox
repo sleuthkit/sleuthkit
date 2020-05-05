@@ -509,6 +509,11 @@ The number of times a program/application was run.
 
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (Timestamp that application was run last, in seconds since 1970-01-01T00:00:00Z)
+- TSK_BYTES_SENT (Number of bytes sent)
+- TSK_BYTES_RECEIVED (Number of bytes received)
+- TSK_USER_NAME (User who executed the program)
+- TSK_COMMENT (Source of the attribute)
+
 
 
 
