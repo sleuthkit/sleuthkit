@@ -140,9 +140,10 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Remove a row from the tag set table. The TagNames in the TagSet will not
-	 * be deleted, nor will any tags with the TagNames from the deleted tag set
-	 * be deleted.
+	 * Remove a row from the tag set table. If the given TagSet has a valid list
+	 * of TagNames the TagNames will be removed from the tag_name table if there
+	 * are not references to the TagNames in the content_tag or blackboard_artifact_tag
+	 * table.
 	 *
 	 * @param tagSet TagSet to be deleted
 	 *
@@ -153,19 +154,29 @@ public class TaggingManager {
 			throw new IllegalArgumentException("Error adding deleting TagSet, TagSet object was null");
 		}
 
-		CaseDbConnection connection = skCase.getConnection();
-		skCase.acquireSingleUserCaseWriteLock();
-		try (Statement stmt = connection.createStatement()) {
-			connection.beginTransaction();
-			String queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
-			stmt.execute(String.format(queryTemplate, tagSet.getId()));
-			connection.commitTransaction();
-		} catch (SQLException ex) {
-			connection.rollbackTransaction();
-			throw new TskCoreException(String.format("Error deleting tag set where id = %d.", tagSet.getId()), ex);
-		} finally {
-			connection.close();
-			skCase.releaseSingleUserCaseWriteLock();
+		if(isTagSetInUse(tagSet)) {
+			throw new TskCoreException("Unable to delete TagSet (%d). TagSet TagName list contains TagNames that are currently in use.");
+		}
+
+		try(CaseDbConnection connection = skCase.getConnection()){
+			skCase.acquireSingleUserCaseWriteLock();
+			try (Statement stmt = connection.createStatement()) {
+				connection.beginTransaction();
+				String queryTemplate = "DELETE FROM tag_names WHERE tag_name_id IN (%s)";
+				List<TagName> tagNameList = tagSet.getTagNames();
+				if(tagNameList != null && !tagNameList.isEmpty()) {
+					stmt.execute(String.format(queryTemplate, getTagNameListAsString(tagSet)));
+				}
+				
+				queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
+				stmt.execute(String.format(queryTemplate, tagSet.getId()));
+				connection.commitTransaction();
+			} catch (SQLException ex) {
+				connection.rollbackTransaction();
+				throw new TskCoreException(String.format("Error deleting tag set where id = %d.", tagSet.getId()), ex);
+			} finally {
+				skCase.releaseSingleUserCaseWriteLock();
+			}
 		}
 	}
 
@@ -394,6 +405,69 @@ public class TaggingManager {
 			connection.close();
 			skCase.releaseSingleUserCaseWriteLock();
 		}
+	}
+	
+	/**
+	 * Determine if the given TagSet contains TagNames that are currently in
+	 * use, ie there is an existing ContentTag or ArtifactTag that uses TagName.
+	 *
+	 * @param tagSet The Tagset to check.
+	 *
+	 * @return Return true if the TagSet is in use.
+	 *
+	 * @throws TskCoreException
+	 */
+	private boolean isTagSetInUse(TagSet tagSet) throws TskCoreException {
+		try (CaseDbConnection connection = skCase.getConnection()) {
+			List<TagName> tagNameList = tagSet.getTagNames();
+			if (tagNameList != null && !tagNameList.isEmpty()) {
+				skCase.acquireSingleUserCaseReadLock();
+				try {
+					String idList = getTagNameListAsString(tagSet);
+					String statement = String.format("SELECT tag_id FROM content_tags WHERE tag_name_id IN (%s)", String.join(",", idList));
+					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
+						if (resultSet.next()) {
+							return true;
+						}
+					} catch (SQLException ex) {
+						throw new TskCoreException(String.format("Failed to determine if TagSet is in use (%s)", tagSet.getId()), ex);
+					}
+
+					statement = String.format("SELECT tag_id FROM blackboard_artifact_tags WHERE tag_name_id IN (%s)", String.join(",", idList));
+					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
+						if (resultSet.next()) {
+							return true;
+						}
+					} catch (SQLException ex) {
+						throw new TskCoreException(String.format("Failed to determine if TagSet is in use (%s)", tagSet.getId()), ex);
+					}
+				} finally {
+					skCase.releaseSingleUserCaseReadLock();
+				}
+			}
+		}
+
+		return false;
+	}
+	
+	/**
+	 * Returns a string comma separated list of the TagSet TagName ids.
+	 * 
+	 * @param tagSet Set to get TagName ids from.
+	 * 
+	 * @return Returns list of TagName ids or null, if TagSet does not have ids.
+	 */
+	private String getTagNameListAsString(TagSet tagSet) {
+		List<TagName> tagNameList = tagSet.getTagNames();
+		if (tagNameList != null && !tagNameList.isEmpty()) {
+			List<String> idList = new ArrayList<>();
+			for (TagName tag : tagNameList) {
+				idList.add(Long.toString(tag.getId()));
+			}
+			
+			return String.join(",", idList);
+		}
+		return null;
 	}
 
 	/**
