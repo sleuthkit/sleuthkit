@@ -263,11 +263,20 @@ public class TaggingManager {
 
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
+						TagName removedTag = new TagName(
+								resultSet.getLong("tag_name_id"),
+								resultSet.getString("display_name"),
+								resultSet.getString("description"),
+								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
+								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
+								tagSetId
+						);
+						
 						BlackboardArtifactTag bat
 								= new BlackboardArtifactTag(resultSet.getLong("tag_id"),
 										artifact,
 										skCase.getContentById(artifact.getObjectID()),
-										tagName,
+										removedTag,
 										resultSet.getString("comment"),
 										resultSet.getString("login_name"));
 
@@ -349,10 +358,19 @@ public class TaggingManager {
 
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
+						TagName removedTag = new TagName(
+								resultSet.getLong("tag_name_id"),
+								resultSet.getString("display_name"),
+								resultSet.getString("description"),
+								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
+								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
+								tagSetId
+						);
+						
 						ContentTag bat
 								= new ContentTag(resultSet.getLong("tag_id"),
 										content,
-										tagName,
+										removedTag,
 										resultSet.getString("comment"),
 										resultSet.getLong("begin_byte_offset"),
 										resultSet.getLong("end_byte_offset"),

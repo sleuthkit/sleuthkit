@@ -98,6 +98,7 @@ public class SleuthkitCase {
 	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
 			= new CaseDbSchemaVersionNumber(8, 5);
+	
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -749,25 +750,24 @@ public class SleuthkitCase {
 		}
 
 		acquireSingleUserCaseWriteLock();
-		Statement statement = connection.createStatement();
 		try {
-			String query = "INTO tsk_examiners (login_name) VALUES ('" + loginName + "')";
+			PreparedStatement statement;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
-					query = "INSERT " + query + " ON CONFLICT DO NOTHING"; //NON-NLS
+					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_EXAMINER_POSTGRESQL);
 					break;
 				case SQLITE:
-					query = "INSERT OR IGNORE " + query;
+					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_EXAMINER_SQLITE);
 					break;
 				default:
 					throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
 			}
-
-			statement.execute(query); //NON-NLS
+			statement.clearParameters();
+			statement.setString(1, loginName);
+			connection.executeUpdate(statement);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error inserting row in tsk_examiners", ex);
+			throw new TskCoreException("Error inserting row in tsk_examiners. login name: " + loginName, ex);
 		} finally {
-			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -11635,6 +11635,8 @@ public class SleuthkitCase {
 		INSERT_OR_UPDATE_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
 		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?"),
+		INSERT_EXAMINER_POSTGRESQL("INSERT INTO tsk_examiners (login_name) VALUES (?) ON CONFLICT DO NOTHING"),
+		INSERT_EXAMINER_SQLITE("INSERT OR IGNORE INTO tsk_examiners (login_name) VALUES (?)"),
 		UPDATE_FILE_NAME("UPDATE tsk_files SET name = ? WHERE obj_id = ?"),
 		UPDATE_IMAGE_NAME("UPDATE tsk_image_info SET display_name = ? WHERE obj_id = ?"),
 		DELETE_IMAGE_NAME("DELETE FROM tsk_image_names WHERE obj_id = ?"),
