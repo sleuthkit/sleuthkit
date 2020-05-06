@@ -98,6 +98,7 @@ public class SleuthkitCase {
 	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
 			= new CaseDbSchemaVersionNumber(8, 5);
+	
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());

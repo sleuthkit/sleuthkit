@@ -33,38 +33,44 @@ public class TagName implements Comparable<TagName>, Serializable {
 
 	public enum HTML_COLOR {
 
-		NONE("None"), //NON-NLS
-		WHITE("White"), //NON-NLS
-		SILVER("Silver"), //NON-NLS
-		GRAY("Gray"), //NON-NLS
-		BLACK("Black"), //NON-NLS
-		RED("Red"), //NON-NLS
-		MAROON("Maron"), //NON-NLS
-		YELLOW("Yellow"), //NON-NLS
-		OLIVE("Olive"), //NON-NLS
-		LIME("Lime"), //NON-NLS
-		GREEN("Green"), //NON-NLS
-		AQUA("Aqua"), //NON-NLS
-		TEAL("Teal"), //NON-NLS
-		BLUE("Blue"), //NON-NLS
-		NAVY("Navy"), //NON-NLS
-		FUCHSIA("Fuchsia"), //NON-NLS
-		PURPLE("Purple"); //NON-NLS
+		NONE	("None",	""), //NON-NLS
+		WHITE	("White",	"#FFFFFF"), //NON-NLS
+		SILVER	("Silver",	"#C0C0C0"), //NON-NLS
+		GRAY	("Gray",	"#808080"), //NON-NLS
+		BLACK	("Black",	"#000000"), //NON-NLS
+		RED		("Red",		"#FF0000"), //NON-NLS
+		MAROON	("Maron",	"#800000"), //NON-NLS
+		YELLOW	("Yellow",	"#FFFF00"), //NON-NLS
+		OLIVE	("Olive",	"#808000"), //NON-NLS
+		LIME	("Lime",	"#00FF00"), //NON-NLS
+		GREEN	("Green",	"#008000"), //NON-NLS
+		AQUA	("Aqua",	"#00FFFF"), //NON-NLS
+		TEAL	("Teal",	"#008080"), //NON-NLS
+		BLUE	("Blue",	"#0000FF"), //NON-NLS
+		NAVY	("Navy",	"#000080"), //NON-NLS
+		FUCHSIA	("Fuchsia", "#FF00FF"), //NON-NLS
+		PURPLE	("Purple",	"#800080"); //NON-NLS
 		private final static HashMap<String, HTML_COLOR> colorMap = new HashMap<String, HTML_COLOR>();
 		private final String name;
+		private final String hexString;
 
 		static {
 			for (HTML_COLOR color : HTML_COLOR.values()) {
-				colorMap.put(color.name(), color);
+				colorMap.put(color.getName(), color);
 			}
 		}
 
-		private HTML_COLOR(String name) {
+		HTML_COLOR(String name, String hexString) {
+			this.hexString = hexString;
 			this.name = name;
 		}
 
 		String getName() {
 			return name;
+		}
+		
+		public String getRgbValue() {
+			return hexString;
 		}
 
 		public static HTML_COLOR getColorByName(String colorName) {
