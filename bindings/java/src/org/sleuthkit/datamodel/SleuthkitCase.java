@@ -7863,6 +7863,44 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Helper to return all FileSystems in the case.
+	 *
+	 * @return Collection of FileSystems.
+	 * 
+	 * @throws TskCoreException
+	 */
+	public Collection<FileSystem> getFileSystems() throws TskCoreException {
+		List<FileSystem> fileSystems = new ArrayList<>();
+		CaseDbConnection connection = connections.getConnection();
+		
+		acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+		String query = "SELECT * FROM tsk_fs_info";
+		try {
+			// Get all the file systems.
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, query); //NON-NLS
+			while (rs.next()) {
+				TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
+				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
+						fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
+						rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
+				fs.setParent(null);
+				fileSystems.add(fs);
+			}
+			return fileSystems;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error executing query " + query, ex); //NON-NLS
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}	
+	}
 
 	/**
 	 * Helper to return FileSystems in an Image
@@ -7872,7 +7910,7 @@ public class SleuthkitCase {
 	 * @return Collection of FileSystems in the image
 	 */
 	public Collection<FileSystem> getFileSystems(Image image) {
-		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
+		List<FileSystem> fileSystems = new ArrayList<>();
 		CaseDbConnection connection;
 		try {
 			connection = connections.getConnection();
@@ -7887,7 +7925,7 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 
 			// Get all the file systems.
-			List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
+			List<FileSystem> allFileSystems = new ArrayList<>();
 			try {
 				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info"); //NON-NLS
 				while (rs.next()) {
@@ -7900,6 +7938,7 @@ public class SleuthkitCase {
 				}
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "There was a problem while trying to obtain all file systems", ex); //NON-NLS
+				return fileSystems;
 			} finally {
 				closeResultSet(rs);
 				rs = null;
@@ -7921,6 +7960,7 @@ public class SleuthkitCase {
 						}
 					} catch (SQLException ex) {
 						logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems", ex); //NON-NLS
+						return fileSystems;
 					} finally {
 						closeResultSet(rs);
 						rs = null;
