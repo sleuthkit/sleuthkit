@@ -165,7 +165,7 @@ public class TaggingManager {
 				String queryTemplate = "DELETE FROM tag_names WHERE tag_name_id IN (%s)";
 				List<TagName> tagNameList = tagSet.getTagNames();
 				if (tagNameList != null && !tagNameList.isEmpty()) {
-					stmt.execute(String.format(queryTemplate, getTagNameListAsString(tagSet)));
+					stmt.execute(String.format(queryTemplate, getTagNameIdListAsString(tagSet)));
 				}
 
 				queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
@@ -442,6 +442,10 @@ public class TaggingManager {
 				skCase.acquireSingleUserCaseReadLock();
 				try {
 					String idList = getTagNameIdListAsString(tagSet);
+					if(idList == null) {
+						return false;
+					}
+					
 					String statement = String.format("SELECT tag_id FROM content_tags WHERE tag_name_id IN (%s)", String.join(",", idList));
 					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
 						if (resultSet.next()) {
