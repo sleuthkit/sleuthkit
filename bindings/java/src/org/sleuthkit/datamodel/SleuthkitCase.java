@@ -2141,6 +2141,30 @@ public class SleuthkitCase {
 					throw new TskCoreException("Failed to retrieve the default tag_set_id from DB");
 				}
 			}
+			
+			// Add data_source_obj_id column to the tsk_files table. For newly created cases
+			// this column will have a foreign key constraint on the data_source_info table.
+			// There does not seem to be a reasonable way to do this in an upgrade,
+			// so upgraded cases will be missing the foreign key.
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN data_source_obj_id BIGINT NOT NULL DEFAULT -1;");
+					break;
+				case SQLITE:
+					statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN data_source_obj_id INTEGER NOT NULL DEFAULT -1;");
+					break;
+			}
+			Statement updateStatement = connection.createStatement();
+			try (ResultSet resultSet = statement.executeQuery("SELECT obj_id FROM tsk_fs_info")) {
+				while (resultSet.next()) {
+					long fsId = resultSet.getLong("obj_id");
+					long dataSourceId = getDataSourceObjectId(connection, fsId);
+					updateStatement.executeUpdate("UPDATE tsk_fs_info SET data_source_obj_id = " + dataSourceId + " WHERE obj_id = " + fsId + ";");
+				}
+			} finally {
+				closeStatement(updateStatement);
+			}
+			
 			return new CaseDbSchemaVersionNumber(8, 5);
 
 		} finally {
@@ -6064,23 +6088,27 @@ public class SleuthkitCase {
 			CaseDbConnection connection = transaction.getConnection();
 			long newObjId = addObject(parentObjId, TskData.ObjectType.FS.getObjectType(), connection);
 
+			// Get the data source object ID
+			long dataSourceId = getDataSourceObjectId(connection, newObjId);
+			
 			// Add a row to tsk_fs_info
-			// INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)
+			// INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)
 			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FS_INFO);
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
-			preparedStatement.setLong(2, imgOffset);
-			preparedStatement.setInt(3, type.getValue());
-			preparedStatement.setLong(4, blockSize);
-			preparedStatement.setLong(5, blockCount);
-			preparedStatement.setLong(6, rootInum);
-			preparedStatement.setLong(7, firstInum);
-			preparedStatement.setLong(8, lastInum);
-			preparedStatement.setString(9, displayName);
+			preparedStatement.setLong(2, dataSourceId);
+			preparedStatement.setLong(3, imgOffset);
+			preparedStatement.setInt(4, type.getValue());
+			preparedStatement.setLong(5, blockSize);
+			preparedStatement.setLong(6, blockCount);
+			preparedStatement.setLong(7, rootInum);
+			preparedStatement.setLong(8, firstInum);
+			preparedStatement.setLong(9, lastInum);
+			preparedStatement.setString(10, displayName);
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new FileSystem object
-			return new FileSystem(this, newObjId, displayName, imgOffset, type, blockSize, blockCount, rootInum,
+			return new FileSystem(this, newObjId, displayName, dataSourceId, imgOffset, type, blockSize, blockCount, rootInum,
 					firstInum, lastInum);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating file system with image offset %d and parent ID %d",
@@ -7731,7 +7759,7 @@ public class SleuthkitCase {
 					+ "where obj_id = " + id); //NON-NLS
 			if (rs.next()) {
 				TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
-				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
+				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("data_source_obj_id"), rs.getLong("img_offset"), //NON-NLS
 						fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
 						rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
 				fs.setParent(parent);
@@ -7872,68 +7900,32 @@ public class SleuthkitCase {
 	 * @return Collection of FileSystems in the image
 	 */
 	public Collection<FileSystem> getFileSystems(Image image) {
-		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
+		List<FileSystem> fileSystems = new ArrayList<>();
 		CaseDbConnection connection;
 		try {
 			connection = connections.getConnection();
 		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting file systems for image " + image.getId(), ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error getting database connection", ex); //NON-NLS
 			return fileSystems;
 		}
+		
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
+		String queryStr = "SELECT * FROM tsk_fs_info WHERE data_source_obj_id = " + image.getId();
 		try {
 			s = connection.createStatement();
-
-			// Get all the file systems.
-			List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
-			try {
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info"); //NON-NLS
-				while (rs.next()) {
-					TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
-					FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
-							fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
-							rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
-					fs.setParent(null);
-					allFileSystems.add(fs);
-				}
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "There was a problem while trying to obtain all file systems", ex); //NON-NLS
-			} finally {
-				closeResultSet(rs);
-				rs = null;
-			}
-
-			// For each file system, find the image to which it belongs by iteratively
-			// climbing the tsk_ojbects hierarchy only taking those file systems
-			// that belong to this image.
-			for (FileSystem fs : allFileSystems) {
-				Long imageID = null;
-				Long currentObjID = fs.getId();
-				while (imageID == null) {
-					try {
-						rs = connection.executeQuery(s, "SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID); //NON-NLS
-						rs.next();
-						currentObjID = rs.getLong("par_obj_id"); //NON-NLS
-						if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) { //NON-NLS
-							imageID = rs.getLong("obj_id"); //NON-NLS
-						}
-					} catch (SQLException ex) {
-						logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems", ex); //NON-NLS
-					} finally {
-						closeResultSet(rs);
-						rs = null;
-					}
-				}
-
-				// see if imageID is this image's ID
-				if (imageID == image.getId()) {
-					fileSystems.add(fs);
-				}
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
+			while (rs.next()) {
+				TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
+				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("data_source_obj_id"), rs.getLong("img_offset"), //NON-NLS
+						fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
+						rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
+				fs.setParent(null);
+				fileSystems.add(fs);
 			}
 		} catch (SQLException ex) {
-			logger.log(Level.SEVERE, "Error getting case database connection", ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error looking up files systems. Query: " + queryStr, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -11649,8 +11641,8 @@ public class SleuthkitCase {
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
-		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		SELECT_OBJ_ID_BY_META_ADDR_AND_PATH("SELECT obj_id FROM tsk_files WHERE meta_addr = ? AND fs_obj_id = ? AND parent_path = ? AND name = ?");
 
 		private final String sql;
