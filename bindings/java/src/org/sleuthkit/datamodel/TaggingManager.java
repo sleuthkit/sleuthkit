@@ -142,8 +142,8 @@ public class TaggingManager {
 	/**
 	 * Remove a row from the tag set table. If the given TagSet has a valid list
 	 * of TagNames the TagNames will be removed from the tag_name table if there
-	 * are not references to the TagNames in the content_tag or blackboard_artifact_tag
-	 * table.
+	 * are not references to the TagNames in the content_tag or
+	 * blackboard_artifact_tag table.
 	 *
 	 * @param tagSet TagSet to be deleted
 	 *
@@ -154,20 +154,20 @@ public class TaggingManager {
 			throw new IllegalArgumentException("Error adding deleting TagSet, TagSet object was null");
 		}
 
-		if(isTagSetInUse(tagSet)) {
+		if (isTagSetInUse(tagSet)) {
 			throw new TskCoreException("Unable to delete TagSet (%d). TagSet TagName list contains TagNames that are currently in use.");
 		}
 
-		try(CaseDbConnection connection = skCase.getConnection()){
+		try (CaseDbConnection connection = skCase.getConnection()) {
 			skCase.acquireSingleUserCaseWriteLock();
 			try (Statement stmt = connection.createStatement()) {
 				connection.beginTransaction();
 				String queryTemplate = "DELETE FROM tag_names WHERE tag_name_id IN (%s)";
 				List<TagName> tagNameList = tagSet.getTagNames();
-				if(tagNameList != null && !tagNameList.isEmpty()) {
+				if (tagNameList != null && !tagNameList.isEmpty()) {
 					stmt.execute(String.format(queryTemplate, getTagNameListAsString(tagSet)));
 				}
-				
+
 				queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
 				stmt.execute(String.format(queryTemplate, tagSet.getId()));
 				connection.commitTransaction();
@@ -271,7 +271,7 @@ public class TaggingManager {
 								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
 								tagSetId
 						);
-						
+
 						BlackboardArtifactTag bat
 								= new BlackboardArtifactTag(resultSet.getLong("tag_id"),
 										artifact,
@@ -366,7 +366,7 @@ public class TaggingManager {
 								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
 								tagSetId
 						);
-						
+
 						ContentTag bat
 								= new ContentTag(resultSet.getLong("tag_id"),
 										content,
@@ -424,7 +424,7 @@ public class TaggingManager {
 			skCase.releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Determine if the given TagSet contains TagNames that are currently in
 	 * use, ie there is an existing ContentTag or ArtifactTag that uses TagName.
@@ -441,7 +441,7 @@ public class TaggingManager {
 			if (tagNameList != null && !tagNameList.isEmpty()) {
 				skCase.acquireSingleUserCaseReadLock();
 				try {
-					String idList = getTagNameListAsString(tagSet);
+					String idList = getTagNameIdListAsString(tagSet);
 					String statement = String.format("SELECT tag_id FROM content_tags WHERE tag_name_id IN (%s)", String.join(",", idList));
 					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
 						if (resultSet.next()) {
@@ -467,22 +467,22 @@ public class TaggingManager {
 
 		return false;
 	}
-	
+
 	/**
 	 * Returns a string comma separated list of the TagSet TagName ids.
-	 * 
+	 *
 	 * @param tagSet Set to get TagName ids from.
-	 * 
+	 *
 	 * @return Returns list of TagName ids or null, if TagSet does not have ids.
 	 */
-	private String getTagNameListAsString(TagSet tagSet) {
+	private String getTagNameIdListAsString(TagSet tagSet) {
 		List<TagName> tagNameList = tagSet.getTagNames();
 		if (tagNameList != null && !tagNameList.isEmpty()) {
 			List<String> idList = new ArrayList<>();
 			for (TagName tag : tagNameList) {
 				idList.add(Long.toString(tag.getId()));
 			}
-			
+
 			return String.join(",", idList);
 		}
 		return null;
