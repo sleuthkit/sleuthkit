@@ -7898,16 +7898,12 @@ public class SleuthkitCase {
 	 * @param image Image to lookup FileSystem for
 	 *
 	 * @return Collection of FileSystems in the image
+	 * 
+	 * @throws TskCoreException
 	 */
-	public Collection<FileSystem> getFileSystems(Image image) {
+	public Collection<FileSystem> getImageFileSystems(Image image) throws TskCoreException {		
 		List<FileSystem> fileSystems = new ArrayList<>();
-		CaseDbConnection connection;
-		try {
-			connection = connections.getConnection();
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting database connection", ex); //NON-NLS
-			return fileSystems;
-		}
+		CaseDbConnection connection = connections.getConnection();
 		
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -7925,7 +7921,7 @@ public class SleuthkitCase {
 				fileSystems.add(fs);
 			}
 		} catch (SQLException ex) {
-			logger.log(Level.SEVERE, "Error looking up files systems. Query: " + queryStr, ex); //NON-NLS
+			throw new TskCoreException("Error looking up files systems. Query: " + queryStr, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -12994,6 +12990,25 @@ public class SleuthkitCase {
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
 		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
+	}
+	
+	/**
+	 * Helper to return FileSystems in an Image
+	 *
+	 * @param image Image to lookup FileSystem for
+	 *
+	 * @return Collection of FileSystems in the image
+	 * 
+	 * @deprecated Use getImageFileSystems which throws an exception if an error occurs.
+	 */
+	@Deprecated
+	public Collection<FileSystem> getFileSystems(Image image) {
+		try {
+			return getImageFileSystems(image);
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error loading all file systems for image with ID {0}", image.getId());
+			return new ArrayList<>();
+		}
 	}
 
 	/**
