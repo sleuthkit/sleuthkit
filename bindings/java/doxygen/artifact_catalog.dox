@@ -645,7 +645,7 @@ A web bookmark entry.
 A web cache entry. The resource that was cached may or may not be present in the data source.
 
 ### REQUIRED ATTRIBUTES
-- TSK_PATH (Path to the source cache file. There are typically many cache files which each contain many cached resources)
+- TSK_PATH (Path to the cached file. This could point to a container file that has smaller cached data in it.) 
 - TSK_URL (URL of the resource cached in this entry)
 
 ### OPTIONAL ATTRIBUTES
