@@ -45,7 +45,7 @@ class JniDbHelper {
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
     private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
     
-    private final long BATCH_FILE_THRESHOLD = 500;
+    private static final long BATCH_FILE_THRESHOLD = 500;
     private final List<FileInfo> batchedFiles = new ArrayList<>();
     private final List<LayoutRangeInfo> batchedLayoutRanges = new ArrayList<>();
     
@@ -346,21 +346,7 @@ class JniDbHelper {
                 try {
                     // If we weren't given the parent object ID, look it up
                     if (fileInfo.parentObjId == 0) {
-                        // Remove the final slash from the path unless we're in the root folder
-                        String parentPath = fileInfo.escaped_path;
-                        if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
-                            parentPath =  parentPath.substring(0, parentPath.lastIndexOf("/"));
-                        }
-
-                        // Look up the parent
-                        ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
-                        if (parentDirCache.containsKey(key)) {
-                            computedParentObjId = parentDirCache.get(key);
-                        } else {
-                            // The parent wasn't found in the cache so do a database query
-                            java.io.File parentAsFile = new java.io.File(parentPath);
-                            computedParentObjId = caseDb.findParentObjIdJNI(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName(), trans);
-                        }
+                        computedParentObjId = getParentObjId(fileInfo);
                     }
 
                     long objId = caseDb.addFileJNI(computedParentObjId, 
@@ -407,6 +393,33 @@ class JniDbHelper {
         batchedFiles.clear();
         return 0;
     }
+	
+	/**
+	 * Look up the parent object ID for a file using the cache or the database.
+	 * 
+	 * @param fileInfo The file to find the parent of
+	 * 
+	 * @return Parent object ID
+	 * 
+	 * @throws TskCoreException 
+	 */
+	private long getParentObjId(FileInfo fileInfo) throws TskCoreException {
+		// Remove the final slash from the path unless we're in the root folder
+		String parentPath = fileInfo.escaped_path;
+		if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
+			parentPath =  parentPath.substring(0, parentPath.lastIndexOf('/'));
+		}
+
+		// Look up the parent
+		ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
+		if (parentDirCache.containsKey(key)) {
+			return parentDirCache.get(key);
+		} else {
+			// The parent wasn't found in the cache so do a database query
+			java.io.File parentAsFile = new java.io.File(parentPath);
+			return caseDb.findParentObjIdJNI(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName(), trans);
+		}
+	}
     
     /**
      * Add a layout file to the database. 
@@ -567,7 +580,7 @@ class JniDbHelper {
         
         @Override
         public boolean equals(Object obj) {
-            if (obj == null || ! (obj instanceof ParentCacheKey)) {
+            if (! (obj instanceof ParentCacheKey)) {
                 return false;
             }
           
