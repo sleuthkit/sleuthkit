@@ -18,6 +18,10 @@
 #include "tsk_fatfs.h"
 
 
+#ifdef TSK_WIN32
+#define strncasecmp _strnicmp
+#endif
+
 /** \internal
 * Allocate a FS_DIR structure to load names into.
 *
@@ -541,6 +545,61 @@ save_inum_named(TSK_FS_INFO *a_fs, DENT_DINFO *dinfo) {
     tsk_release_lock(&a_fs->list_inum_named_lock);
 }
 
+void 
+prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * orderedNames) {
+    const int HIGH = 0;
+    const int MED = 1;
+    const int LOW = 2;
+    const int LAST = 3;
+    int * scores;
+    int i;
+
+    for (i = 0; i < count; i++) {
+        orderedNames[i] = i;
+    }
+
+    scores = (int *)malloc(count * sizeof(int));
+    if (scores == NULL) {
+        return;
+    }
+    for (i = 0; i < count; i++) {
+        scores[i] = MED;
+    }
+
+    // Get the score for each name
+    for (i = 0; i < count; i++) {
+        TSK_FS_NAME* name = &(names[i]);
+        if (name->name != NULL) {
+            //fprintf(stderr, "Name[%d]: %s\n", i, name->name);
+            if (0 == strcasecmp(name->name, "Users")) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "Documents and Settings", strlen("Documents and Settings"))) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "home", strlen("home"))) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "ProgramData", strlen("ProgramData"))) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "Windows", strlen("Windows"))) {
+                scores[i] = LOW;
+            }
+            else if (0 == strncasecmp(name->name, "pagefile", strlen("pagefile"))) {
+                scores[i] = LAST;
+            }
+            else if (0 == strncasecmp(name->name, "hiberfil", strlen("hiberfil"))) {
+                scores[i] = LAST;
+            }
+            else if (0 == strncasecmp(name->name, "$Orphan", strlen("$Orphan"))) {
+                scores[i] = LAST;
+            }
+            fprintf(stderr, "%d : %s\n", scores[i], name->name);
+        }
+    }
+}
+
 /* dir_walk local function that is used for recursive calls.  Callers
  * should initially call the non-local version. */
 static TSK_WALK_RET_ENUM
@@ -551,10 +610,30 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_FS_DIR *fs_dir;
     TSK_FS_FILE *fs_file;
     size_t i;
+    int isRootDir = 0;
+    int* orderedNames;
 
     // get the list of entries in the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs, a_addr)) == NULL) {
         return TSK_WALK_ERROR;
+    }
+
+    // Set the order to process the directory contents
+    orderedNames = (int *)malloc(fs_dir->names_used * sizeof(int)); // TODO FREE TODO
+    if (orderedNames == NULL) {
+        tsk_fs_dir_close(fs_dir);
+        return TSK_WALK_ERROR;
+    }
+
+    if (a_addr == a_fs->root_inum) {
+
+        fprintf(stderr, "\nPrioritizing folders...\n");
+        prioritizeDirNames(fs_dir->names, fs_dir->names_used, orderedNames);
+    }
+    else {
+        for (i = 0; i < fs_dir->names_used; i++) {
+            orderedNames[i] = i;
+        }
     }
 
     /* Allocate a file structure for the callbacks.  We
