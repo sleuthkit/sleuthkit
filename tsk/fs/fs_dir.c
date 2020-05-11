@@ -546,19 +546,19 @@ save_inum_named(TSK_FS_INFO *a_fs, DENT_DINFO *dinfo) {
 }
 
 void 
-prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * orderedNames) {
+prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex) {
     const int HIGH = 0;
     const int MED = 1;
     const int LOW = 2;
     const int LAST = 3;
     int * scores;
-    int i;
+    int i, currentScore;
 
-    for (i = 0; i < count; i++) {
-        orderedNames[i] = i;
+    for (i = 0; i < count; i++) { // TODO move
+        indexToOrderedIndex[i] = i;
     }
 
-    scores = (int *)malloc(count * sizeof(int));
+    scores = (int *)malloc(count * sizeof(int)); // TODO free
     if (scores == NULL) {
         return;
     }
@@ -566,12 +566,12 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * orderedNames) {
         scores[i] = MED;
     }
 
-    // Get the score for each name
+    // Get the score for each name. Currnetly all patterns match the beginning of the name.
     for (i = 0; i < count; i++) {
         TSK_FS_NAME* name = &(names[i]);
         if (name->name != NULL) {
             //fprintf(stderr, "Name[%d]: %s\n", i, name->name);
-            if (0 == strcasecmp(name->name, "Users")) {
+            if (0 == strncasecmp(name->name, "Users", strlen("Users"))) {
                 scores[i] = HIGH;
             }
             else if (0 == strncasecmp(name->name, "Documents and Settings", strlen("Documents and Settings"))) {
@@ -586,18 +586,35 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * orderedNames) {
             else if (0 == strncasecmp(name->name, "Windows", strlen("Windows"))) {
                 scores[i] = LOW;
             }
+            else if (0 == strncasecmp(name->name, "$Orphan", strlen("$Orphan"))) {
+                scores[i] = LOW;
+            }
             else if (0 == strncasecmp(name->name, "pagefile", strlen("pagefile"))) {
                 scores[i] = LAST;
             }
             else if (0 == strncasecmp(name->name, "hiberfil", strlen("hiberfil"))) {
                 scores[i] = LAST;
             }
-            else if (0 == strncasecmp(name->name, "$Orphan", strlen("$Orphan"))) {
-                scores[i] = LAST;
-            }
             fprintf(stderr, "%d : %s\n", scores[i], name->name);
         }
     }
+
+    // Order the name entries based on the scores
+    int orderedIndex = 0;
+    for (currentScore = HIGH; currentScore <= LAST; currentScore++) {
+        for (i = 0; i < count; i++) {
+            if (scores[i] == currentScore) {
+                indexToOrderedIndex[orderedIndex] = i;
+                orderedIndex++;
+            }
+        }
+    }
+
+    fprintf(stderr, "\nOrdered list: \n");
+    for (i = 0; i < count; i++) {
+        fprintf(stderr, "%d: %s\n", i, names[indexToOrderedIndex[i]].name);
+    }
+
 }
 
 /* dir_walk local function that is used for recursive calls.  Callers
@@ -611,7 +628,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_FS_FILE *fs_file;
     size_t i;
     int isRootDir = 0;
-    int* orderedNames;
+    int* indexToOrderedIndex;
 
     // get the list of entries in the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs, a_addr)) == NULL) {
@@ -619,8 +636,8 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     }
 
     // Set the order to process the directory contents
-    orderedNames = (int *)malloc(fs_dir->names_used * sizeof(int)); // TODO FREE TODO
-    if (orderedNames == NULL) {
+    indexToOrderedIndex = (int *)malloc(fs_dir->names_used * sizeof(int)); // TODO FREE TODO
+    if (indexToOrderedIndex == NULL) {
         tsk_fs_dir_close(fs_dir);
         return TSK_WALK_ERROR;
     }
@@ -628,11 +645,11 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     if (a_addr == a_fs->root_inum) {
 
         fprintf(stderr, "\nPrioritizing folders...\n");
-        prioritizeDirNames(fs_dir->names, fs_dir->names_used, orderedNames);
+        prioritizeDirNames(fs_dir->names, fs_dir->names_used, indexToOrderedIndex);
     }
     else {
         for (i = 0; i < fs_dir->names_used; i++) {
-            orderedNames[i] = i;
+            indexToOrderedIndex[i] = i;
         }
     }
 
@@ -649,7 +666,8 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
         /* Point name to the buffer of names.  We need to be
          * careful about resetting this before we free fs_file */
-        fs_file->name = (TSK_FS_NAME *) & fs_dir->names[i];
+        fs_file->name = (TSK_FS_NAME *) & fs_dir->names[indexToOrderedIndex[i]];
+        fprintf(stderr, "Processing %s\n", fs_file->name->name);
 
         /* load the fs_meta structure if possible.
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
