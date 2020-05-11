@@ -639,7 +639,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
     // If we're in the root folder, sort the files/folders to prioritize user content
     if (a_addr == a_fs->root_inum) {
-        indexToOrderedIndex = (int *)tsk_malloc(fs_dir->names_used * sizeof(int)); // TODO FREE TODO
+        indexToOrderedIndex = (int *)tsk_malloc(fs_dir->names_used * sizeof(int));
         if (indexToOrderedIndex == NULL) {
             tsk_fs_dir_close(fs_dir);
             return TSK_WALK_ERROR;
@@ -671,7 +671,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         else {
             fs_file->name = (TSK_FS_NAME *)& fs_dir->names[i];
         }
-        fprintf(stderr, "Processing %s\n", fs_file->name->name);
 
         /* load the fs_meta structure if possible.
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
