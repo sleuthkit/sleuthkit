@@ -645,7 +645,7 @@ A web bookmark entry.
 A web cache entry. The resource that was cached may or may not be present in the data source.
 
 ### REQUIRED ATTRIBUTES
-- TSK_PATH (Path to the cached file. This could point to a container file that has smaller cached data in it.) 
+- TSK_PATH (Path to the source cache file. There are typically many cache files which each contain many cached resources)
 - TSK_URL (URL of the resource cached in this entry)
 
 ### OPTIONAL ATTRIBUTES
@@ -670,7 +670,6 @@ A Web cookie found.
 - TSK_DATETIME_END (Expiration datetime of the Web cookie, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DOMAIN (The domain the Web cookie serves)
 - TSK_PROG_NAME (Name of the application or application extractor that stored the Web cookie)
-- TSK_PATH (Path to the file containing the Web cookie in the data source)
 
 
 
