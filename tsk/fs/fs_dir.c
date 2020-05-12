@@ -548,7 +548,7 @@ save_inum_named(TSK_FS_INFO *a_fs, DENT_DINFO *dinfo) {
 /**
  * Prioritize folders in the root directory based on which are expected to contain user content.
  */
-static void 
+static TSK_RETVAL_ENUM 
 prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex) {
     const int HIGH = 0;
     const int MED = 1;
@@ -559,11 +559,9 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
 
     scores = (int *)tsk_malloc(count * sizeof(int));
     if (scores == NULL) {
-        for (i = 0; i < count; i++) {
-            indexToOrderedIndex[i] = i;
-        }
-        return;
+        return TSK_ERR;
     }
+
     for (i = 0; i < count; i++) {
         scores[i] = MED;
     }
@@ -611,6 +609,7 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
         }
     }
     free(scores);
+    return TSK_OK;
 }
 
 /* dir_walk local function that is used for recursive calls.  Callers
@@ -623,7 +622,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_FS_DIR *fs_dir;
     TSK_FS_FILE *fs_file;
     size_t i;
-    int isRootDir = 0;
     int* indexToOrderedIndex = NULL;
 
     // get the list of entries in the directory
@@ -638,7 +636,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
             tsk_fs_dir_close(fs_dir);
             return TSK_WALK_ERROR;
         }
-        prioritizeDirNames(fs_dir->names, fs_dir->names_used, indexToOrderedIndex);
+        if (TSK_OK != prioritizeDirNames(fs_dir->names, fs_dir->names_used, indexToOrderedIndex)) {
+            tsk_fs_dir_close(fs_dir);
+            return TSK_WALK_ERROR;
+        }
     }
 
     /* Allocate a file structure for the callbacks.  We
