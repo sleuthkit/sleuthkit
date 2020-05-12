@@ -546,9 +546,9 @@ save_inum_named(TSK_FS_INFO *a_fs, DENT_DINFO *dinfo) {
 }
 
 /**
- * Prioritized folders in the root directory based on which are expected to contain user content.
+ * Prioritize folders in the root directory based on which are expected to contain user content.
  */
-void 
+static void 
 prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex) {
     const int HIGH = 0;
     const int MED = 1;
@@ -597,7 +597,6 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
             else if (0 == strncasecmp(name->name, "hiberfil", strlen("hiberfil"))) {
                 scores[i] = LAST;
             }
-            fprintf(stderr, "%d : %s\n", scores[i], name->name);
         }
     }
 
@@ -610,11 +609,6 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
                 orderedIndex++;
             }
         }
-    }
-
-    fprintf(stderr, "\nOrdered list: \n");
-    for (i = 0; i < count; i++) {
-        fprintf(stderr, "%d: %s\n", i, names[indexToOrderedIndex[i]].name);
     }
     free(scores);
 }
@@ -644,7 +638,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
             tsk_fs_dir_close(fs_dir);
             return TSK_WALK_ERROR;
         }
-        fprintf(stderr, "\nPrioritizing folders...\n");
         prioritizeDirNames(fs_dir->names, fs_dir->names_used, indexToOrderedIndex);
     }
 
