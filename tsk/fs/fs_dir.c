@@ -17,11 +17,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-
-#ifdef TSK_WIN32
-#define strncasecmp _strnicmp
-#endif
-
 /** \internal
 * Allocate a FS_DIR structure to load names into.
 *
@@ -562,6 +557,8 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
         return TSK_ERR;
     }
 
+    // Default level is medium for any files/folders that do not match one of the patterns below.
+    // This includes the Program Files and Applications folders.
     for (i = 0; i < count; i++) {
         scores[i] = MED;
     }
@@ -570,7 +567,6 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
     for (i = 0; i < count; i++) {
         TSK_FS_NAME* name = &(names[i]);
         if (name->name != NULL) {
-            //fprintf(stderr, "Name[%d]: %s\n", i, name->name);
             if (0 == strncasecmp(name->name, "Users", strlen("Users"))) {
                 scores[i] = HIGH;
             }
