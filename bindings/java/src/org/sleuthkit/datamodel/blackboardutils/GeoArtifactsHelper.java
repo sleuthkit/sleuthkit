@@ -82,13 +82,13 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			throw new IllegalArgumentException(String.format("addTrack was passed a null list of track points"));
 		}
 
-		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 
 		if (trackName != null) {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), trackName));
 		}
 
+		// acquire necessary attribute.  If 'toAttribute' call throws an exception, an artifact will not be created for this instance.
 		attributes.add(BlackboardJsonAttrUtil.toAttribute(TRACKPOINTS_ATTR_TYPE, getModuleName(), trackPoints));
 
 		if (programName != null) {
@@ -99,6 +99,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			attributes.addAll(moreAttributes);
 		}
 
+		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 		artifact.addAttributes(attributes);
 
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
