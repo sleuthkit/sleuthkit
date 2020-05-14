@@ -670,7 +670,6 @@ A Web cookie found.
 - TSK_DATETIME_END (Expiration datetime of the Web cookie, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DOMAIN (The domain the Web cookie serves)
 - TSK_PROG_NAME (Name of the application or application extractor that stored the Web cookie)
-- TSK_PATH (Path to the file containing the Web cookie in the data source)
 
 
 
