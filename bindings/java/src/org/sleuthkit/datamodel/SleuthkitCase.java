@@ -6108,7 +6108,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new FileSystem object
-			return new FileSystem(this, newObjId, displayName, dataSourceId, imgOffset, type, blockSize, blockCount, rootInum,
+			return new FileSystem(this, newObjId, displayName, imgOffset, type, blockSize, blockCount, rootInum,
 					firstInum, lastInum);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating file system with image offset %d and parent ID %d",
@@ -7759,7 +7759,7 @@ public class SleuthkitCase {
 					+ "where obj_id = " + id); //NON-NLS
 			if (rs.next()) {
 				TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
-				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("data_source_obj_id"), rs.getLong("img_offset"), //NON-NLS
+				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
 						fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
 						rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
 				fs.setParent(parent);
@@ -7914,7 +7914,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			while (rs.next()) {
 				TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
-				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("data_source_obj_id"), rs.getLong("img_offset"), //NON-NLS
+				FileSystem fs = new FileSystem(this, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
 						fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
 						rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
 				fs.setParent(null);
