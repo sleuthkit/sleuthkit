@@ -18,7 +18,9 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,7 +43,8 @@ public class TagSet {
 		if (setName == null || setName.isEmpty()) {
 			throw new IllegalArgumentException("TagSet name must be a non-empty string");
 		}
-		this.tagNameList = tagNameList;
+		this.tagNameList = new ArrayList<>(tagNameList);
+		this.tagNameList.sort(new TagNameComparator());
 		this.id = id;
 		this.setName = setName;
 	}
@@ -99,5 +102,18 @@ public class TagSet {
 
 		return hash;
 	}
-
+	
+	/**
+	 * Comparator for TagNames. TagNames will sort by rank, then TagName.getName().
+	 */
+	private class TagNameComparator implements Comparator<TagName> {
+		@Override
+		public int compare(TagName tagName1, TagName tagName2) {
+			int result = ((Integer)tagName1.getRank()).compareTo(tagName2.getRank());
+			if(result == 0) {
+				result =  tagName1.getName().compareTo(tagName2.getName());
+			} 
+			return result;
+		}
+	}
 }

@@ -20,7 +20,10 @@ package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Instances of this class are data transfer objects (DTOs) that represent the
@@ -82,29 +85,59 @@ public class TagName implements Comparable<TagName>, Serializable {
 		}
 	}
 	private final long id;
-	private final String displayName;
+	private final String name;
 	private final String description;
 	private final HTML_COLOR color;
 	private final TskData.FileKnown knownStatus;
 	private final long tagSetId;
 	private final int rank;
+	private final SleuthkitCase skCase;
+	
+	// Build this when needed
+	private String displayName = null;
 
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
+	TagName(SleuthkitCase sleuthkitCase, long id, String name, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
 		this.id = id;
-		this.displayName = displayName;
+		this.name = name;
 		this.description = description;
 		this.color = color;
 		this.knownStatus = knownStatus;
 		this.tagSetId = tagSetId;
 		this.rank = rank;
+		this.skCase = sleuthkitCase;
 	}
 
 	public long getId() {
 		return id;
 	}
 
+	/**
+	 * Returns a formatted TagName display name that includes the TagName's
+	 * TagSet name notable status.
+	 * 
+	 * @return Returns TagName display name.
+	 */
 	public String getDisplayName() {
+		if(displayName == null) {
+			try {
+				TagSet set = getTagSet();
+				displayName = new String();
+				
+				if(set != null) {
+					displayName += set.getName() + " ";
+				}				
+			} catch (TskCoreException ex) {
+				Logger.getLogger(TagName.class.getName()).log(Level.SEVERE, "Unable to add TagSet name to TagName displayName", ex);
+			}
+			
+			displayName += name;
+				
+			if(knownStatus == TskData.FileKnown.BAD) {
+				displayName += "(Notable)";
+			}
+		}
+		
 		return displayName;
 	}
 
@@ -127,6 +160,35 @@ public class TagName implements Comparable<TagName>, Serializable {
 	public int getRank() {
 		return rank;
 	}
+	
+	/**
+	 * Returns the TagName name.  A TagName name is not unique.
+	 * 
+	 * @return The TagName name.
+	 */
+	public String getName() {
+		return name;
+	}
+	
+	/**
+	 * Returns the TagName TagSet object.
+	 * 
+	 * @return TagName TagSet object or null if the TagName is not a part of a TagSet.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public TagSet getTagSet() throws TskCoreException {
+		if(tagSetId != 0) {
+			List<TagSet> tagSets = skCase.getTaggingManager().getTagSets();
+			for(TagSet set: tagSets) {
+				if(tagSetId == set.getId()) {
+					return set;
+				}
+			}
+		}
+		
+		return null;
+	}
 
 	/**
 	 * Compares two TagName objects by comparing their display names.
@@ -144,7 +206,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 	public int hashCode() {
 		int hash = 5;
 		hash = 89 * hash + (int) (this.id ^ (this.id >>> 32));
-		hash = 89 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
+		hash = 89 * hash + (this.name != null ? this.name.hashCode() : 0);
 		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
 		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
 		hash = 89 * hash + (this.knownStatus != null ? this.knownStatus.hashCode() : 0);
@@ -162,7 +224,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		}
 		final TagName other = (TagName) obj;
 		return (this.id == other.id
-				&& Objects.equals(this.displayName, other.displayName)
+				&& Objects.equals(this.name, other.name)
 				&& Objects.equals(this.description, other.description)
 				&& Objects.equals(this.color, other.color)
 				&& Objects.equals(this.knownStatus, other.knownStatus)

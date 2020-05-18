@@ -112,7 +112,7 @@ public class TaggingManager {
 					for (int index = 0; index < tagNames.size(); index++) {
 						TagName tagName = tagNames.get(index);
 						stmt.executeUpdate(String.format("UPDATE tag_names SET tag_set_id = %d, rank = %d WHERE tag_name_id = %d", setID, index, tagName.getId()));
-						updatedTags.add(new TagName(tagName.getId(),
+						updatedTags.add(new TagName(skCase, tagName.getId(),
 								tagName.getDisplayName(),
 								tagName.getDescription(),
 								tagName.getColor(),
@@ -201,7 +201,7 @@ public class TaggingManager {
 
 			List<TagName> newTagNameList = new ArrayList<>();
 			newTagNameList.addAll(setTagNameList);
-			newTagNameList.add(new TagName(tagName.getId(), tagName.getDisplayName(), tagName.getDescription(), tagName.getColor(), tagName.getKnownStatus(), tagSet.getId(), tagName.getRank()));
+			newTagNameList.add(new TagName(skCase, tagName.getId(), tagName.getDisplayName(), tagName.getDescription(), tagName.getColor(), tagName.getKnownStatus(), tagSet.getId(), tagName.getRank()));
 
 			return new TagSet(tagSet.getId(), tagSet.getName(), newTagNameList);
 
@@ -249,6 +249,7 @@ public class TaggingManager {
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
+								skCase,
 								resultSet.getLong("tag_name_id"),
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
@@ -345,6 +346,7 @@ public class TaggingManager {
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
+								skCase,
 								resultSet.getLong("tag_name_id"),
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
@@ -435,7 +437,7 @@ public class TaggingManager {
 		String query = String.format("SELECT * FROM tag_names WHERE tag_set_id = %d", tagSetId);
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(query)) {
 			while (resultSet.next()) {
-				tagNameList.add(new TagName(resultSet.getLong("tag_name_id"),
+				tagNameList.add(new TagName(skCase, resultSet.getLong("tag_name_id"),
 						resultSet.getString("display_name"),
 						resultSet.getString("description"),
 						TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
