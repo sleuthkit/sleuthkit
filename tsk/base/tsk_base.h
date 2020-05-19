@@ -56,6 +56,10 @@
 // get some other TSK / OS settings
 #include "tsk_os.h"
 
+#ifdef TSK_WIN32
+#define strncasecmp _strnicmp
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
