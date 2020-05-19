@@ -134,7 +134,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 			displayName += name;
 				
 			if(knownStatus == TskData.FileKnown.BAD) {
-				displayName += "(Notable)";
+				displayName += " (Notable)";
 			}
 		}
 		
