@@ -11094,10 +11094,10 @@ public class SleuthkitCase {
 			if (resultSet.next()) {
 				return resultSet.getLong("obj_id");
 			} else {
-				throw new TskCoreException(String.format("Error looking up parent meta addr %d", metaAddr));
+				throw new TskCoreException(String.format("Error looking up parent - meta addr: %d, path: %s, name: %s", metaAddr, path, name));
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error looking up parent meta addr %d", metaAddr), ex);
+			throw new TskCoreException(String.format("Error looking up parent - meta addr: %d, path: %s, name: %s", metaAddr, path, name), ex);
 		} finally {
 			closeResultSet(resultSet);
 		}
@@ -11305,121 +11305,6 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
-	/**
-	 * Adds a virtual directory to the database and returns a VirtualDirectory
-	 * object representing it.
-	 * For use with the JNI callbacks associated with the add image process.
-	 *
-	 * @param parentId      the ID of the parent, or 0 if NULL
-	 * @param directoryName the name of the virtual directory to create
-	 * @param transaction   the transaction in the scope of which the operation
-	 *                      is to be performed, managed by the caller
-	 *
-	 * @return The object ID of the new virtual directory
-	 * 
-	 * @throws TskCoreException
-	 */
-	long addVirtualDirectoryJNI(long parentId, String directoryName, CaseDbTransaction transaction) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		ResultSet resultSet = null;
-		try {
-			// Get the parent path.
-			CaseDbConnection connection = transaction.getConnection();
-
-			String parentPath;
-			Content parent = this.getAbstractFileById(parentId, connection);
-			if (parent instanceof AbstractFile) {
-				if (isRootDirectory((AbstractFile) parent, transaction)) {
-					parentPath = "/";
-				} else {
-					parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + "/"; //NON-NLS
-				}
-			} else {
-				// The parent was either null or not an abstract file
-				parentPath = "/";
-			}
-
-			// Insert a row for the virtual directory into the tsk_objects table.
-			long newObjId = addObject(parentId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-
-			// Insert a row for the virtual directory into the tsk_files table.
-			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id,extension)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
-			statement.clearParameters();
-			statement.setLong(1, newObjId);
-
-			// If the parent is part of a file system, grab its file system ID
-			if (0 != parentId) {
-				long parentFs = this.getFileSystemId(parentId, connection);
-				if (parentFs != -1) {
-					statement.setLong(2, parentFs);
-				} else {
-					statement.setNull(2, java.sql.Types.BIGINT);
-				}
-			} else {
-				statement.setNull(2, java.sql.Types.BIGINT);
-			}
-
-			// name
-			statement.setString(3, directoryName);
-
-			//type
-			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
-			statement.setShort(5, (short) 1);
-
-			//flags
-			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
-			statement.setShort(6, dirType.getValue());
-			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			statement.setShort(7, metaType.getValue());
-
-			//allocated
-			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			statement.setShort(8, dirFlag.getValue());
-			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
-					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			statement.setShort(9, metaFlags);
-
-			//size
-			statement.setLong(10, 0);
-
-			//  nulls for params 11-14
-			statement.setNull(11, java.sql.Types.BIGINT);
-			statement.setNull(12, java.sql.Types.BIGINT);
-			statement.setNull(13, java.sql.Types.BIGINT);
-			statement.setNull(14, java.sql.Types.BIGINT);
-
-			statement.setNull(15, java.sql.Types.VARCHAR); // MD5
-			statement.setByte(16, FileKnown.UNKNOWN.getFileKnownValue()); // Known
-			statement.setNull(17, java.sql.Types.VARCHAR); // MIME type	
-
-			// parent path
-			statement.setString(18, parentPath);
-
-			// data source object id (same as object id if this is a data source)
-			long dataSourceObjectId;
-			if (0 == parentId) {
-				dataSourceObjectId = newObjId;
-			} else {
-				dataSourceObjectId = getDataSourceObjectId(connection, parentId);
-			}
-			statement.setLong(19, dataSourceObjectId);
-
-			//extension, since this is not really file we just set it to null
-			statement.setString(20, null);
-			connection.executeUpdate(statement);
-			
-			return newObjId;
-		} catch (SQLException e) {
-			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
-		} finally {
-			closeResultSet(resultSet);
-			releaseSingleUserCaseWriteLock();
-		}
-	}	
 
 	/**
 	 * Stores a pair of object ID and its type
