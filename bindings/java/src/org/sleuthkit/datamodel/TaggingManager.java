@@ -145,7 +145,7 @@ public class TaggingManager {
 	 * are not references to the TagNames in the content_tag or
 	 * blackboard_artifact_tag table.
 	 *
-	 * @param tagSet TagSet to be deleted
+	 * @param tagSet TagSet to be deleted.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -162,11 +162,8 @@ public class TaggingManager {
 			skCase.acquireSingleUserCaseWriteLock();
 			try (Statement stmt = connection.createStatement()) {
 				connection.beginTransaction();
-				String queryTemplate = "DELETE FROM tag_names WHERE tag_name_id IN (%s)";
-				List<TagName> tagNameList = tagSet.getTagNames();
-				if (tagNameList != null && !tagNameList.isEmpty()) {
-					stmt.execute(String.format(queryTemplate, getTagNameIdListAsString(tagSet)));
-				}
+				String queryTemplate = "DELETE FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)";
+				stmt.execute(String.format(queryTemplate, tagSet.getId()));
 
 				queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
 				stmt.execute(String.format(queryTemplate, tagSet.getId()));
@@ -441,12 +438,7 @@ public class TaggingManager {
 			if (tagNameList != null && !tagNameList.isEmpty()) {
 				skCase.acquireSingleUserCaseReadLock();
 				try {
-					String idList = getTagNameIdListAsString(tagSet);
-					if(idList == null) {
-						return false;
-					}
-					
-					String statement = String.format("SELECT tag_id FROM content_tags WHERE tag_name_id IN (%s)", String.join(",", idList));
+					String statement = String.format("SELECT tag_id FROM content_tags WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)", tagSet.getId());
 					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
 						if (resultSet.next()) {
 							return true;
@@ -455,7 +447,7 @@ public class TaggingManager {
 						throw new TskCoreException(String.format("Failed to determine if TagSet is in use (%s)", tagSet.getId()), ex);
 					}
 
-					statement = String.format("SELECT tag_id FROM blackboard_artifact_tags WHERE tag_name_id IN (%s)", String.join(",", idList));
+					statement = String.format("SELECT tag_id FROM blackboard_artifact_tags WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)", tagSet.getId());
 					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
 						if (resultSet.next()) {
 							return true;
@@ -470,26 +462,6 @@ public class TaggingManager {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Returns a string comma separated list of the TagSet TagName ids.
-	 *
-	 * @param tagSet Set to get TagName ids from.
-	 *
-	 * @return Returns list of TagName ids or null, if TagSet does not have ids.
-	 */
-	private String getTagNameIdListAsString(TagSet tagSet) {
-		List<TagName> tagNameList = tagSet.getTagNames();
-		if (tagNameList != null && !tagNameList.isEmpty()) {
-			List<String> idList = new ArrayList<>();
-			for (TagName tag : tagNameList) {
-				idList.add(Long.toString(tag.getId()));
-			}
-
-			return String.join(",", idList);
-		}
-		return null;
 	}
 
 	/**

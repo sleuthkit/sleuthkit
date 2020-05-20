@@ -2120,7 +2120,7 @@ public class SleuthkitCase {
 
 			statement.execute("ALTER TABLE tag_names ADD COLUMN tag_set_id INTEGER REFERENCES tsk_tag_sets(tag_set_id)");
 
-			String insertStmt = "INSERT INTO tsk_tag_sets (name) VALUES ('Project VIC (United States)')";
+			String insertStmt = "INSERT INTO tsk_tag_sets (name) VALUES ('Project VIC')";
 			if (getDatabaseType() == DbType.POSTGRESQL) {
 				statement.execute(insertStmt, Statement.RETURN_GENERATED_KEYS);
 			} else {
