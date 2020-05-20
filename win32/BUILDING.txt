@@ -19,7 +19,7 @@ XP executables.
 
 Building
 
-There are six build targets: 
+There are four build targets: 
     - Debug_NoLibs and Release_NoLibs do not depend on any third-party libraries. 
     - Debug and Release depend on libewf, libvmdk, libvhdi, and zlib to be built so that E01 images as well as VMDK and VHD virtual machine formats are supported. 
 
