@@ -180,11 +180,14 @@ class CaseDatabaseFactory {
 				+ "time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 
 		stmt.execute("CREATE TABLE tsk_fs_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "img_offset " + dbQueryHelper.getBigIntType() + " NOT NULL, fs_type INTEGER NOT NULL, "
 				+ "block_size " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "block_count " + dbQueryHelper.getBigIntType() + " NOT NULL, root_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "first_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, last_inum " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+				+ "display_name TEXT, " 
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 
 		stmt.execute("CREATE TABLE tsk_files (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "fs_obj_id " + dbQueryHelper.getBigIntType() + ", data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "

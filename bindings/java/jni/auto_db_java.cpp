@@ -110,13 +110,8 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
-    m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;)J");
+    m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;JJJ)J");
     if (m_addFileMethodID == NULL) {
-        return TSK_ERR;
-    }
-
-    m_getParentIdMethodID = m_jniEnv->GetMethodID(m_callbackClass, "findParentObjId", "(JJLjava/lang/String;Ljava/lang/String;)J");
-    if (m_getParentIdMethodID == NULL) {
         return TSK_ERR;
     }
 
@@ -427,7 +422,7 @@ TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
     if (fs_file->name == NULL)
         return TSK_ERR;
 
-    // Find the object id for the parent folder.
+    // The object id for the parent folder. Will stay as zero if not the root folder
     int64_t parObjId = 0;
 
     // Root directory's parent should be the file system object.
@@ -436,16 +431,10 @@ TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
         ((fs_file->name->name == NULL) || (strlen(fs_file->name->name) == 0))) {
         // File is in the root directory
         parObjId = fsObjId;
-    } else {
-        // Look up parent object ID
-        parObjId = findParObjId(fs_file, path, fsObjId);
-        if (parObjId == -1) {
-            return TSK_ERR;
-        }
     }
 
     // Add the file to the database
-    return addFile(fs_file, fs_attr, path, fsObjId, parObjId, objId, dataSourceObjId);
+    return addFile(fs_file, fs_attr, path, fsObjId, parObjId, dataSourceObjId);
 }
 
 /**
@@ -471,61 +460,15 @@ void extractExtension(char *name, char *extension) {
 }
 
 /**
-* Store info about a directory in a complex map structure as a cache for the
-* files who are a child of this directory and want to know its object id.
-*
-* @param fsObjId fs id of this directory
-* @param fs_file File for the directory to store
-* @param path Full path (parent and this file) of the directory
-* @param objId object id of the directory
-*/
-void TskAutoDbJava::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_file, const char* path, const int64_t& objId)
-{
-    // skip the . and .. entries
-    if ((fs_file->name) && (fs_file->name->name) && (TSK_FS_ISDOT(fs_file->name->name)))
-    {
-        return;
-    }
-
-    uint32_t seq;
-    uint32_t path_hash = hash((const unsigned char *)path);
-
-    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
-    * correct parent folder if there are two from the root dir that eventually point to
-    * the same folder (one deleted and one allocated) or two hard links. */
-    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
-        /* Use the sequence stored in meta (which could be one larger than the name value
-        * if the directory is deleted. We do this because the par_seq gets added to the
-        * name structure when it is added to the directory based on teh value stored in
-        * meta. */
-        seq = fs_file->meta->seq;
-    }
-    else {
-        seq = path_hash;
-    }
-
-    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > >& fsMap = m_parentDirIdCache[fsObjId];
-    if (fsMap.count(fs_file->name->meta_addr) == 0) {
-        fsMap[fs_file->name->meta_addr][seq][path_hash] = objId;
-    }
-    else {
-        map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->meta_addr];
-        if (fileMap.count(seq) == 0) {
-            fileMap[seq][path_hash] = objId;
-        }
-    }
-}
-
-
-/**
-* Adds a file and its associated slack file to database. Object ID for new file stored in objId.
+* Adds a file and its associated slack file to database.
+* Does not learn object ID for new files, and files may 
+* not be added to the database immediately.
 *
 * @param fs_file
 * @param fs_attr
 * @param path      File path
 * @param fsObjId   Object ID of the file system
-* @param parObjId  Parent object ID
-* @param objId     Object ID of new file
+* @param parObjId  Parent object ID if known, 0 otherwise
 * @param dataSourceObjId  Object ID of the data source
 * @returns TSK_ERR on error, TSK_OK on success
 */
@@ -533,7 +476,7 @@ TSK_RETVAL_ENUM
 TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     const TSK_FS_ATTR* fs_attr, const char* path,
     int64_t fsObjId, int64_t parObjId,
-    int64_t& objId, int64_t dataSourceObjId)
+    int64_t dataSourceObjId)
 {
     time_t mtime = 0;
     time_t crtime = 0;
@@ -543,6 +486,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     int meta_type = 0;
     int meta_flags = 0;
     int meta_mode = 0;
+    int meta_seq = 0;
     int gid = 0;
     int uid = 0;
     int type = TSK_FS_ATTR_TYPE_NOT_FOUND;
@@ -561,6 +505,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         meta_mode = fs_file->meta->mode;
         gid = fs_file->meta->gid;
         uid = fs_file->meta->uid;
+        meta_seq = fs_file->meta->seq;
     }
 
     size_t attr_nlen = 0;
@@ -616,9 +561,22 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     jstring namej = m_jniEnv->NewStringUTF(name);
     jstring pathj = m_jniEnv->NewStringUTF(escaped_path);
     jstring extj = m_jniEnv->NewStringUTF(extension);
+
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+    * correct parent folder if there are two from the root dir that eventually point to
+    * the same folder (one deleted and one allocated) or two hard links. */
+    jlong par_seqj;
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
+    {
+        par_seqj = fs_file->name->par_seq;
+    }
+    else {
+        par_seqj = -1;
+    }
+    TSK_INUM_T par_meta_addr = fs_file->name->par_addr;
  
     // Add the file to the database
-    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
+    jlong ret_val = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
         parObjId, fsObjId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
@@ -628,17 +586,11 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
         meta_mode, gid, uid, 
-        pathj, extj);
-    objId = (int64_t)objIdj;
+        pathj, extj, 
+        (uint64_t)meta_seq, par_meta_addr, par_seqj);
 
-    if (objId < 0) {
+    if (ret_val < 0) {
         return TSK_ERR;
-    }
-
-    // If dir, update parent ID cache
-    if (TSK_FS_IS_DIR_META(meta_type)){
-        std::string fullPath = std::string(path) + fs_file->name->name;
-        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
     // Add entry for the slack space.
@@ -662,7 +614,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
         // Add slack file to database
-        jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
+        jlong ret_val = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
             parObjId, fsObjId,
             dataSourceObjId,
             TSK_DB_FILES_TYPE_SLACK,
@@ -672,10 +624,10 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             slackSize,
             (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
             meta_mode, gid, uid, // md5TextPtr, known,
-            pathj, slackExtj);
-        int64_t slackObjId = (int64_t)objIdj;
+            pathj, slackExtj, 
+            (uint64_t)meta_seq, par_meta_addr, par_seqj);
 
-        if (slackObjId < 0) {
+        if (ret_val < 0) {
             return TSK_ERR;
         }
     }
@@ -873,161 +825,6 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
         return TSK_ERR;
     }
     return TSK_OK;
-}
-
-/**
-* Return a hash of the passed in string. We use this
-* for full paths.
-* From: http://www.cse.yorku.ca/~oz/hash.html
-*/
-uint32_t 
-TskAutoDbJava::hash(const unsigned char* str)
-{
-    uint32_t hash = 5381;
-    int c;
-
-    while ((c = *str++)) {
-        // skip slashes -> normalizes leading/ending/double slashes
-        if (c == '/')
-            continue;
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-    }
-
-    return hash;
-}
-
-/*
-* Utility method to break up path into parent folder and folder/file name.
-* @param path Path of folder that we want to analyze
-* @param ret_parent_path pointer to parent path (begins and ends with '/')
-* @param ret_name pointer to final folder/file name
-* @returns 0 on success, 1 on error
-*/
-bool 
-TskAutoDbJava::getParentPathAndName(const char *path, const char **ret_parent_path, const char **ret_name) {
-    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
-    // name to match with the 'name' column in tsk_files table
-
-    // reset all arrays
-    parent_name[0] = '\0';
-    parent_path[0] = '\0';
-
-    size_t path_len = strlen(path);
-    if (path_len >= MAX_PATH_LENGTH_JAVA_DB_LOOKUP) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDb::getParentPathAndName: Path is too long. Length = %zd, Max length = %d", path_len, MAX_PATH_LENGTH_JAVA_DB_LOOKUP);
-        // assign return values to pointers
-        *ret_parent_path = "";
-        *ret_name = "";
-        return 1;
-    }
-
-    // check if empty path or just "/" were passed in
-    if (path_len == 0 || (strcmp(path, "/") == 0)) {
-        *ret_name = "";
-        *ret_parent_path = "/";
-        return 0;
-    }
-
-
-    // step 1, copy everything into parent_path and clean it up
-    // add leading slash if its not in input.  
-    if (path[0] != '/') {
-        sprintf(parent_path, "%s", "/");
-    }
-
-    strncat(parent_path, path, MAX_PATH_LENGTH_JAVA_DB_LOOKUP);
-
-    // remove trailing slash
-    if (parent_path[strlen(parent_path) - 1] == '/') {
-        parent_path[strlen(parent_path) - 1] = '\0';
-    }
-
-    // replace all non-UTF8 characters
-    tsk_cleanupUTF8(parent_path, '^');
-
-    // Step 2, move the final folder/file to parent_file
-
-    // Find the last '/' 
-    char *chptr = strrchr(parent_path, '/');
-    if (chptr) {
-        // character found in the string
-        size_t position = chptr - parent_path;
-
-        sprintf(parent_name, "%s", chptr + 1);  // copy everything after slash into parent_name
-        *ret_name = parent_name;
-
-        parent_path[position + 1] = '\0';   // add terminating null after last "/"
-        *ret_parent_path = parent_path;
-    }
-    else {
-        // "/" character not found. the entire path is parent file name. parent path is "/"
-        *ret_name = parent_path;
-        *ret_parent_path = "/";
-    }
-    return 0;
-}
-
-/**
-* Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
-* @param fs_file file to find parent obj id for
-* @param parentPath Path of parent folder that we want to match
-* @param fsObjId fs id of this file
-* @returns parent obj id ( > 0), -1 on error
-*/
-int64_t 
-TskAutoDbJava::findParObjId(const TSK_FS_FILE* fs_file, const char* parentPath, const int64_t& fsObjId)
-{
-    uint32_t seq;
-    uint32_t path_hash = hash((const unsigned char *)parentPath);
-
-    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
-    * correct parent folder if there are two from the root dir that eventually point to
-    * the same folder (one deleted and one allocated) or two hard links. */
-    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
-    {
-        seq = fs_file->name->par_seq;
-    }
-    else
-    {
-        seq = path_hash;
-    }
-
-    //get from cache by parent meta addr, if available
-    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > >& fsMap = m_parentDirIdCache[fsObjId];
-    if (fsMap.count(fs_file->name->par_addr) > 0)
-    {
-        map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->par_addr];
-        if (fileMap.count(seq) > 0) {
-            map<uint32_t, int64_t>& pathMap = fileMap[seq];
-            if (pathMap.count(path_hash) > 0) {
-                return pathMap[path_hash];
-            }
-        }
-    }
-
-    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
-    // name to match with the 'name' column in tsk_files table
-    const char *parent_name = "";
-    const char *parent_path = "";
-    if (getParentPathAndName(parentPath, &parent_path, &parent_name)) {
-        return -1;
-    }
-
-    jstring jpath = m_jniEnv->NewStringUTF(parent_path);
-    jstring jname = m_jniEnv->NewStringUTF(parent_name);
-
-    // Look up in the database
-    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_getParentIdMethodID,
-        fs_file->name->par_addr, fsObjId, jpath, jname);
-    int64_t objId = (int64_t)objIdj;
-
-    if (objId < 0) {
-        return -1;
-    }
-
-    return objId;
 }
 
 /**
