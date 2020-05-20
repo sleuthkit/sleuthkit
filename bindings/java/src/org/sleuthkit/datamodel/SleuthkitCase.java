@@ -2130,13 +2130,20 @@ public class SleuthkitCase {
 				if (resultSet != null && resultSet.next()) {
 					int tagSetId = resultSet.getInt(1);
 
-					String updateQuery = "UPDATE tag_names SET tag_set_id = %d, color = '%s' WHERE display_name = '%s'";
-					statement.executeUpdate(String.format(updateQuery, tagSetId, "Red", "CAT-1: Child Exploitation (Illegal)"));
-					statement.executeUpdate(String.format(updateQuery, tagSetId, "Lime", "CAT-2: Child Exploitation (Non-Illegal/Age Difficult)"));
-					statement.executeUpdate(String.format(updateQuery, tagSetId, "Yellow", "CAT-3: CGI/Animation (Child Exploitive)"));
-					statement.executeUpdate(String.format(updateQuery, tagSetId, "Purple", "CAT-4: Exemplar/Comparison (Internal Use Only)"));
-					statement.executeUpdate(String.format(updateQuery, tagSetId, "Green", "CAT-5: Non-pertinent"));
-					statement.executeUpdate(String.format(updateQuery, tagSetId, "Silver", "CAT-0: Uncategorized"));
+					String updateQuery = "UPDATE tag_names SET tag_set_id = %d, color = '%s', display_name = '%s' WHERE display_name = '%s'";
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Red", "Child Exploitation (Illegal)", "CAT-1: Child Exploitation (Illegal)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Lime", "Child Exploitation (Non-Illegal/Age Difficult)", "CAT-2: Child Exploitation (Non-Illegal/Age Difficult)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Yellow", "CGI/Animation (Child Exploitive)", "CAT-3: CGI/Animation (Child Exploitive)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Purple", "Exemplar/Comparison (Internal Use Only)", "CAT-4: Exemplar/Comparison (Internal Use Only)"));
+					statement.executeUpdate(String.format(updateQuery, tagSetId, "Fuchsia", "Non-pertinent", "CAT-5: Non-pertinent"));
+
+					String deleteContentTag = "DELETE FROM content_tags WHERE tag_name_id IN (SELECT tag_name_id from tag_names WHERE display_name LIKE 'CAT-0: Uncategorized')";
+					String deleteArtifactTag = "DELETE FROM blackboard_artifact_tags WHERE tag_name_id IN (SELECT tag_name_id from tag_names WHERE display_name LIKE 'CAT-0: Uncategorized')";
+					String deleteCat0 = "DELETE FROM tag_names WHERE display_name = 'CAT-0: Uncategorized'";
+					statement.executeUpdate(deleteContentTag);
+					statement.executeUpdate(deleteArtifactTag);
+					statement.executeUpdate(deleteCat0);
+					
 				} else {
 					throw new TskCoreException("Failed to retrieve the default tag_set_id from DB");
 				}
