@@ -21,13 +21,13 @@ package org.sleuthkit.datamodel;
 /**
  *
  */
-public class AddDataSourceCallbackException extends TskException {
+public class AddDataSourceCallbacksException extends TskException {
 		private static final long serialVersionUID = 123049876L;
 
 	/**
 	 * Default constructor when error message is not available
 	 */
-	public AddDataSourceCallbackException() {
+	public AddDataSourceCallbacksException() {
 		super("No error message available.");
 	}
 
@@ -36,7 +36,7 @@ public class AddDataSourceCallbackException extends TskException {
 	 *
 	 * @param msg the message
 	 */
-	public AddDataSourceCallbackException(String msg) {
+	public AddDataSourceCallbacksException(String msg) {
 		super(msg);
 	}
 
@@ -46,7 +46,7 @@ public class AddDataSourceCallbackException extends TskException {
 	 * @param msg the message
 	 * @param ex  cause exception
 	 */
-	public AddDataSourceCallbackException(String msg, Exception ex) {
+	public AddDataSourceCallbacksException(String msg, Exception ex) {
 		super(msg, ex);
 	}
 }

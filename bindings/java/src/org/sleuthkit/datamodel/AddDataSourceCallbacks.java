@@ -24,9 +24,9 @@ import java.util.List;
  *
  */
 public interface AddDataSourceCallbacks {
-	void onDataSourceAdded(long dataSourceObjectId) throws AddDataSourceCallbackException;
+	void onDataSourceAdded(long dataSourceObjectId) throws AddDataSourceCallbacksException;
 	
-	void onFilesAdded(List<Long> fileObjectIds) throws AddDataSourceCallbackException;
+	void onFilesAdded(List<Long> fileObjectIds) throws AddDataSourceCallbacksException;
 	
-	void onCompleted() throws AddDataSourceCallbackException;
+	void onCompleted() throws AddDataSourceCallbacksException;
 }

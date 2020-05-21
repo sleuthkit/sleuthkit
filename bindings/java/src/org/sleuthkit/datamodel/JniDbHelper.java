@@ -40,6 +40,7 @@ class JniDbHelper {
     
     private final SleuthkitCase caseDb;
     private CaseDbTransaction trans = null;
+	AddDataSourceCallbacks addDataSourceCallbacks;
     
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
@@ -51,6 +52,13 @@ class JniDbHelper {
     
     JniDbHelper(SleuthkitCase caseDb) {
         this.caseDb = caseDb;
+        trans = null;
+		addDataSourceCallbacks = null;
+    }
+	
+	JniDbHelper(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
+        this.caseDb = caseDb;
+		this.addDataSourceCallbacks = addDataSourceCallbacks;
         trans = null;
     }
     
@@ -114,18 +122,30 @@ class JniDbHelper {
      */
     long addImageInfo(int type, long ssize, String timezone, 
             long size, String md5, String sha1, String sha256, String deviceId, 
-            String collectionDetails) {    
+            String collectionDetails, String[] paths) {    
         try {
             beginTransaction();
             long objId = caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
                     timezone, md5, sha1, sha256, deviceId, collectionDetails, trans);
+			for (int i = 0;i < paths.length;i++) {
+				caseDb.addImageNameJNI(objId, paths[i], i, trans);
+			}
             commitTransaction();
+			
+			if (addDataSourceCallbacks != null) {
+				try {
+					addDataSourceCallbacks.onDataSourceAdded(objId); 
+				} catch (AddDataSourceCallbacksException ex) {
+					logger.log(Level.SEVERE, "Error adding data source to ingest stream");
+					return -1;
+				}
+			}
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image to the database", ex);
             revertTransaction();
             return -1;
-        } 
+        }
     }
     
     /**
@@ -339,6 +359,7 @@ class JniDbHelper {
      * @return 0 if successful, -1 if not
      */
     private long addBatchedFilesToDb() {
+		List<Long> newObjIds = new ArrayList<>();
         try {
             beginTransaction();
             for (FileInfo fileInfo : batchedFiles) {
@@ -361,6 +382,7 @@ class JniDbHelper {
                         null, TskData.FileKnown.UNKNOWN,
                         fileInfo.escaped_path, fileInfo.extension, 
                         false, trans);
+					newObjIds.add(objId);
 
                     // If we're adding the root directory for the file system, cache it
                     if (fileInfo.parentObjId == fileInfo.fsObjId) {
@@ -385,6 +407,15 @@ class JniDbHelper {
                 }
             }
             commitTransaction();
+			
+			if (addDataSourceCallbacks != null) {
+				try {
+					addDataSourceCallbacks.onFilesAdded(newObjIds);
+				} catch (AddDataSourceCallbacksException ex) {
+					logger.log(Level.SEVERE, "Error adding files to ingest stream");
+					return -1;
+				}
+			}
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
