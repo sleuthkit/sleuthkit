@@ -111,7 +111,7 @@ public class TagSet {
 		public int compare(TagName tagName1, TagName tagName2) {
 			int result = ((Integer)tagName1.getRank()).compareTo(tagName2.getRank());
 			if(result == 0) {
-				result =  tagName1.getName().compareTo(tagName2.getName());
+				result =  tagName1.getDisplayName().compareTo(tagName2.getDisplayName());
 			} 
 			return result;
 		}
