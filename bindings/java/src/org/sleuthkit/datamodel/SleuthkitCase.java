@@ -2290,6 +2290,10 @@ public class SleuthkitCase {
 	 * that is returned can be passed to methods that take a CaseDbTransaction.
 	 * The caller is responsible for calling either commit() or rollback() on
 	 * the transaction object.
+	 * 
+	 * Note that this beginning the transaction also acquires the single user
+	 * case write lock, which will be automatically released when the transaction
+	 * is closed.
 	 *
 	 * @return A CaseDbTransaction object.
 	 *
@@ -5457,14 +5461,12 @@ public class SleuthkitCase {
 	 */
 	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {
 		CaseDbTransaction localTrans = beginTransaction();
-		localTrans.acquireSingleUserCaseWriteLock();
 		try {
 			VirtualDirectory newVD = addVirtualDirectory(parentId, directoryName, localTrans);
 			localTrans.commit();
 			localTrans = null;
 			return newVD;
 		} finally {
-			// NOTE: write lock will be released by transaction
 			if (null != localTrans) {
 				try {
 					localTrans.rollback();
@@ -5539,7 +5541,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
 
-		transaction.acquireSingleUserCaseWriteLock();
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
@@ -5637,7 +5638,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {
 			closeResultSet(resultSet);
-			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -5654,7 +5654,6 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public LocalDirectory addLocalDirectory(long parentId, String directoryName) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
 		CaseDbTransaction localTrans = beginTransaction();
 		try {
 			LocalDirectory newLD = addLocalDirectory(parentId, directoryName, localTrans);
@@ -5667,8 +5666,6 @@ public class SleuthkitCase {
 				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
 			}
 			throw ex;
-		} finally {
-			releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -5694,7 +5691,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
 
-		transaction.acquireSingleUserCaseWriteLock();
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
@@ -5773,7 +5769,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating local directory '" + directoryName + "'", e);
 		} finally {
 			closeResultSet(resultSet);
-			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -6165,7 +6160,6 @@ public class SleuthkitCase {
 		Statement queryStatement = null;
 		try {
 			CaseDbConnection connection = transaction.getConnection();
-			transaction.acquireSingleUserCaseWriteLock();
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
@@ -6306,7 +6300,6 @@ public class SleuthkitCase {
 
 		try {
 			transaction = beginTransaction();
-			transaction.acquireSingleUserCaseWriteLock();
 			CaseDbConnection connection = transaction.getConnection();
 
 			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
@@ -6395,7 +6388,6 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 
-			// NOTE: write lock will be released by transaction
 			if (null != transaction) {
 				try {
 					transaction.rollback();
@@ -6436,7 +6428,6 @@ public class SleuthkitCase {
 		long newCacheKey = 0; // Used to roll back cache if transaction is rolled back.
 		try {
 			transaction = beginTransaction();
-			transaction.acquireSingleUserCaseWriteLock();
 			CaseDbConnection connection = transaction.getConnection();
 
 			/*
@@ -6581,7 +6572,6 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 
-			// NOTE: write lock will be released by transaction
 			if (null != transaction) {
 				try {
 					transaction.rollback();
@@ -6633,7 +6623,6 @@ public class SleuthkitCase {
 		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
 		localPath = localPath.replaceAll("^[/\\\\]+", "");
 
-		acquireSingleUserCaseWriteLock();
 		TimelineManager timelineManager = getTimelineManager();
 
 		CaseDbTransaction transaction = beginTransaction();
@@ -6729,7 +6718,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Failed to add derived file to case database", ex);
 		} finally {
 			connection.close();
-			releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -6950,7 +6938,6 @@ public class SleuthkitCase {
 			boolean isFile, TskData.EncodingType encodingType,
 			Content parent, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
-		transaction.acquireSingleUserCaseWriteLock();
 		Statement queryStatement = null;
 		try {
 
@@ -7036,7 +7023,6 @@ public class SleuthkitCase {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
 		} finally {
 			closeStatement(queryStatement);
-			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -7054,7 +7040,6 @@ public class SleuthkitCase {
 	 */
 	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
-		transaction.acquireSingleUserCaseWriteLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
 
@@ -7084,7 +7069,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -7130,7 +7114,6 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			transaction = beginTransaction();
-			transaction.acquireSingleUserCaseWriteLock();
 			CaseDbConnection connection = transaction.getConnection();
 
 			/*
@@ -7229,7 +7212,6 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 
-			// NOTE: write lock will be released by transaction
 			if (null != transaction) {
 				try {
 					transaction.rollback();
@@ -12090,11 +12072,16 @@ public class SleuthkitCase {
 	 * Transaction interface because that sort of flexibility and its associated
 	 * complexity is not needed. Also, TskCoreExceptions are thrown to be
 	 * consistent with the outer SleuthkitCase class.
+	 * 
+	 * This class will automatically acquire the single user case write lock
+	 * and release it when the transaction is closed. Otherwise we risk deadlock 
+	 * because this transaction can lock up SQLite and make it "busy" and
+	 * another thread may get a write lock to the DB, but not
+	 * be able to do anything because the DB is busy.
 	 */
 	public static final class CaseDbTransaction {
 
 		private final CaseDbConnection connection;
-		private boolean hasWriteLock = false;
 		private SleuthkitCase sleuthkitCase;
 
 		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
@@ -12105,6 +12092,7 @@ public class SleuthkitCase {
 			} catch (SQLException ex) {
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
+			sleuthkitCase.acquireSingleUserCaseWriteLock();
 		}
 
 		/**
@@ -12116,23 +12104,6 @@ public class SleuthkitCase {
 		 */
 		CaseDbConnection getConnection() {
 			return this.connection;
-		}
-
-		/**
-		 * Obtain a write lock for this transaction. Only one will be obtained
-		 * (no matter how many times it is called) and will be released when
-		 * commit or rollback is called.
-		 *
-		 * If this is not used, you risk deadlock because this transaction can
-		 * lock up SQLite and make it "busy" and another thread may get a write
-		 * lock to the DB, but not be able to do anything because the DB is
-		 * busy.
-		 */
-		void acquireSingleUserCaseWriteLock() {
-			if (!hasWriteLock) {
-				hasWriteLock = true;
-				sleuthkitCase.acquireSingleUserCaseWriteLock();
-			}
 		}
 
 		/**
@@ -12173,10 +12144,7 @@ public class SleuthkitCase {
 		 */
 		void close() {
 			this.connection.close();
-			if (hasWriteLock) {
-				sleuthkitCase.releaseSingleUserCaseWriteLock();
-				hasWriteLock = false;
-			}
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
 	}
 
