@@ -109,20 +109,16 @@ public class TaggingManager {
 				if (tagNames != null) {
 					// Get all of the TagName ids they can be updated in one
 					// SQL call.
-					List<String> idList = new ArrayList<>();
-					for (TagName tagName : tagNames) {
-						idList.add(Long.toString(tagName.getId()));
-					}
-
-					stmt.executeUpdate(String.format("UPDATE tag_names SET tag_set_id = %d WHERE tag_name_id IN (%s)", setID, String.join(",", idList)));
-
-					for (TagName tagName : tagNames) {
+					for (int index = 0; index < tagNames.size(); index++) {
+						TagName tagName = tagNames.get(index);
+						stmt.executeUpdate(String.format("UPDATE tag_names SET tag_set_id = %d, rank = %d WHERE tag_name_id = %d", setID, index, tagName.getId()));
 						updatedTags.add(new TagName(tagName.getId(),
 								tagName.getDisplayName(),
 								tagName.getDescription(),
 								tagName.getColor(),
 								tagName.getKnownStatus(),
-								setID));
+								setID,
+								index));
 					}
 				}
 				tagSet = new TagSet(setID, name, updatedTags);
@@ -213,7 +209,7 @@ public class TaggingManager {
 
 			List<TagName> newTagNameList = new ArrayList<>();
 			newTagNameList.addAll(setTagNameList);
-			newTagNameList.add(new TagName(tagName.getId(), tagName.getDisplayName(), tagName.getDescription(), tagName.getColor(), tagName.getKnownStatus(), tagSet.getId()));
+			newTagNameList.add(new TagName(tagName.getId(), tagName.getDisplayName(), tagName.getDescription(), tagName.getColor(), tagName.getKnownStatus(), tagSet.getId(), tagName.getRank()));
 
 			return new TagSet(tagSet.getId(), tagSet.getName(), newTagNameList);
 
@@ -266,7 +262,8 @@ public class TaggingManager {
 								resultSet.getString("description"),
 								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
-								tagSetId
+								tagSetId,
+								resultSet.getInt("rank")
 						);
 
 						BlackboardArtifactTag bat
@@ -361,7 +358,8 @@ public class TaggingManager {
 								resultSet.getString("description"),
 								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
-								tagSetId
+								tagSetId,
+								resultSet.getInt("rank")
 						);
 
 						ContentTag bat
@@ -487,13 +485,13 @@ public class TaggingManager {
 		String query = String.format("SELECT * FROM tag_names WHERE tag_set_id = %d", tagSetId);
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(query)) {
 			while (resultSet.next()) {
-				long tagId = resultSet.getLong("tag_name_id");
-				String tagName = resultSet.getString("display_name");
-				String description = resultSet.getString("description");
-				String color = resultSet.getString("color");
-				byte knownStatus = resultSet.getByte("knownStatus");
-
-				tagNameList.add(new TagName(tagId, tagName, description, TagName.HTML_COLOR.getColorByName(color), TskData.FileKnown.valueOf(knownStatus), tagSetId));
+				tagNameList.add(new TagName(resultSet.getLong("tag_name_id"),
+						resultSet.getString("display_name"),
+						resultSet.getString("description"),
+						TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
+						tagSetId,
+						resultSet.getInt("rank")));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting tag names for tag set (%d)", tagSetId), ex);
