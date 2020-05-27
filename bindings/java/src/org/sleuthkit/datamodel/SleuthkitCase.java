@@ -9739,10 +9739,12 @@ public class SleuthkitCase {
 
 			long tagId = resultSet.getLong(1);
 
+			resultSet.close();
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_TAG_NAME_BY_ID);
 			statement.clearParameters();
 			statement.setLong(1, tagId);
 			resultSet = connection.executeQuery(statement);
+			resultSet.next();
 
 			return new TagName(tagId,
 					displayName, description, color, knownStatus, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
