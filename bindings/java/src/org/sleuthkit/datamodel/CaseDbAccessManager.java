@@ -307,7 +307,6 @@ public final class CaseDbAccessManager {
 		validateSQL(alterSQL);
 
 		CaseDbConnection connection = transaction.getConnection();
-		transaction.acquireSingleUserCaseWriteLock();
 
 		Statement statement = null;
 		String sql = "ALTER TABLE " + tableName + " " + alterSQL;
@@ -328,7 +327,6 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException(String.format("Error altering table  %s with SQL = %s", tableName, sql), ex);
 		} finally {
 			closeStatement(statement);
-			// NOTE: write lock will be released by transaction
 		}
 	}
 	
@@ -422,7 +420,6 @@ public final class CaseDbAccessManager {
 		validateSQL(sql);
 
 		CaseDbConnection connection = transaction.getConnection();
-		transaction.acquireSingleUserCaseWriteLock();
 
 		PreparedStatement statement = null;
 		ResultSet resultSet;
@@ -444,7 +441,6 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
 		} finally {
 			closeStatement(statement);
-			// NOTE: write lock will be released by transaction
 		}
 
 		return rowId;
@@ -507,7 +503,6 @@ public final class CaseDbAccessManager {
 		validateSQL(sql);
 
 		CaseDbConnection connection = transaction.getConnection();
-		transaction.acquireSingleUserCaseWriteLock();
 
 		PreparedStatement statement = null;
 		ResultSet resultSet;
@@ -528,7 +523,6 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
 		} finally {
 			closeStatement(statement);
-			// NOTE: write lock will be released by transaction
 		}
 
 		return rowId;
@@ -576,7 +570,6 @@ public final class CaseDbAccessManager {
 		validateSQL(sql);
 
 		CaseDbConnection connection = transaction.getConnection();
-		transaction.acquireSingleUserCaseWriteLock();
 
 		Statement statement = null;
 		String updateSQL = "UPDATE " + tableName + " " + sql; // NON-NLS
@@ -588,7 +581,6 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error Updating table " + tableName, ex);
 		} finally {
 			closeStatement(statement);
-			// NOTE: write lock will be released by transaction
 		}
 	}
 	
