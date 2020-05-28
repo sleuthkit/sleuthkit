@@ -40,7 +40,7 @@ class JniDbHelper {
     
     private final SleuthkitCase caseDb;
     private CaseDbTransaction trans = null;
-	AddDataSourceCallbacks addDataSourceCallbacks;
+    AddDataSourceCallbacks addDataSourceCallbacks;
     
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
@@ -53,12 +53,12 @@ class JniDbHelper {
     JniDbHelper(SleuthkitCase caseDb) {
         this.caseDb = caseDb;
         trans = null;
-		addDataSourceCallbacks = null;
+        addDataSourceCallbacks = null;
     }
-	
-	JniDbHelper(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
+    
+    JniDbHelper(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
         this.caseDb = caseDb;
-		this.addDataSourceCallbacks = addDataSourceCallbacks;
+        this.addDataSourceCallbacks = addDataSourceCallbacks;
         trans = null;
     }
     
@@ -126,19 +126,19 @@ class JniDbHelper {
             beginTransaction();
             long objId = caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
                     timezone, md5, sha1, sha256, deviceId, collectionDetails, trans);
-			for (int i = 0;i < paths.length;i++) {
-				caseDb.addImageNameJNI(objId, paths[i], i, trans);
-			}
+            for (int i = 0;i < paths.length;i++) {
+                caseDb.addImageNameJNI(objId, paths[i], i, trans);
+            }
             commitTransaction();
-			
-			if (addDataSourceCallbacks != null) {
-				try {
-					addDataSourceCallbacks.onDataSourceAdded(objId); 
-				} catch (AddDataSourceCallbacksException ex) {
-					logger.log(Level.SEVERE, "Error adding data source to ingest stream");
-					return -1;
-				}
-			}
+            
+            if (addDataSourceCallbacks != null) {
+                try {
+                    addDataSourceCallbacks.onDataSourceAdded(objId); 
+                } catch (AddDataSourceCallbacksException ex) {
+                    logger.log(Level.SEVERE, "Error adding data source to ingest stream");
+                    return -1;
+                }
+            }
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image to the database", ex);
@@ -358,7 +358,7 @@ class JniDbHelper {
      * @return 0 if successful, -1 if not
      */
     private long addBatchedFilesToDb() {
-		List<Long> newObjIds = new ArrayList<>();
+        List<Long> newObjIds = new ArrayList<>();
         try {
             beginTransaction();
             for (FileInfo fileInfo : batchedFiles) {
@@ -381,7 +381,7 @@ class JniDbHelper {
                         null, TskData.FileKnown.UNKNOWN,
                         fileInfo.escaped_path, fileInfo.extension, 
                         false, trans);
-					newObjIds.add(objId);
+                    newObjIds.add(objId);
 
                     // If we're adding the root directory for the file system, cache it
                     if (fileInfo.parentObjId == fileInfo.fsObjId) {
@@ -402,57 +402,57 @@ class JniDbHelper {
                     logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
                             + ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
                     revertTransaction();
-					batchedFiles.clear();
+                    batchedFiles.clear();
                     return -1;
                 }
             }
             commitTransaction();
-			
-			if (addDataSourceCallbacks != null) {
-				try {
-					addDataSourceCallbacks.onFilesAdded(newObjIds);
-				} catch (AddDataSourceCallbacksException ex) {
-					logger.log(Level.SEVERE, "Error adding files to ingest stream");
-					batchedFiles.clear();
-					return -1;
-				}
-			}
+            
+            if (addDataSourceCallbacks != null) {
+                try {
+                    addDataSourceCallbacks.onFilesAdded(newObjIds);
+                } catch (AddDataSourceCallbacksException ex) {
+                    logger.log(Level.SEVERE, "Error adding files to ingest stream");
+                    batchedFiles.clear();
+                    return -1;
+                }
+            }
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
-			batchedFiles.clear();
+            batchedFiles.clear();
             return -1;
         }
         batchedFiles.clear();
         return 0;
     }
-	
-	/**
-	 * Look up the parent object ID for a file using the cache or the database.
-	 * 
-	 * @param fileInfo The file to find the parent of
-	 * 
-	 * @return Parent object ID
-	 * 
-	 * @throws TskCoreException 
-	 */
-	private long getParentObjId(FileInfo fileInfo) throws TskCoreException {
-		// Remove the final slash from the path unless we're in the root folder
-		String parentPath = fileInfo.escaped_path;
-		if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
-			parentPath =  parentPath.substring(0, parentPath.lastIndexOf('/'));
-		}
+    
+    /**
+     * Look up the parent object ID for a file using the cache or the database.
+     * 
+     * @param fileInfo The file to find the parent of
+     * 
+     * @return Parent object ID
+     * 
+     * @throws TskCoreException 
+     */
+    private long getParentObjId(FileInfo fileInfo) throws TskCoreException {
+        // Remove the final slash from the path unless we're in the root folder
+        String parentPath = fileInfo.escaped_path;
+        if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
+            parentPath =  parentPath.substring(0, parentPath.lastIndexOf('/'));
+        }
 
-		// Look up the parent
-		ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
-		if (parentDirCache.containsKey(key)) {
-			return parentDirCache.get(key);
-		} else {
-			// The parent wasn't found in the cache so do a database query
-			java.io.File parentAsFile = new java.io.File(parentPath);
-			return caseDb.findParentObjIdJNI(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName(), trans);
-		}
-	}
+        // Look up the parent
+        ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
+        if (parentDirCache.containsKey(key)) {
+            return parentDirCache.get(key);
+        } else {
+            // The parent wasn't found in the cache so do a database query
+            java.io.File parentAsFile = new java.io.File(parentPath);
+            return caseDb.findParentObjIdJNI(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName(), trans);
+        }
+    }
     
     /**
      * Add a layout file to the database. 

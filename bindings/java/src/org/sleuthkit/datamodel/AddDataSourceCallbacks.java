@@ -25,21 +25,21 @@ import java.util.List;
  * to the ingest pipeline.
  */
 public interface AddDataSourceCallbacks {
-	/**
-	 * Call when the data source has been completely added to the case database.
-	 * 
-	 * @param dataSourceObjectId The object ID of the new data source
-	 * 
-	 * @throws AddDataSourceCallbacksException 
-	 */
-	void onDataSourceAdded(long dataSourceObjectId) throws AddDataSourceCallbacksException;
-	
-	/**
-	 * Call to add a set of file object IDs that are ready for ingest.
-	 * 
-	 * @param fileObjectIds List of file object IDs.
-	 * 
-	 * @throws AddDataSourceCallbacksException 
-	 */
-	void onFilesAdded(List<Long> fileObjectIds) throws AddDataSourceCallbacksException;
+    /**
+     * Call when the data source has been completely added to the case database.
+     * 
+     * @param dataSourceObjectId The object ID of the new data source
+     * 
+     * @throws AddDataSourceCallbacksException 
+     */
+    void onDataSourceAdded(long dataSourceObjectId) throws AddDataSourceCallbacksException;
+    
+    /**
+     * Call to add a set of file object IDs that are ready for ingest.
+     * 
+     * @param fileObjectIds List of file object IDs.
+     * 
+     * @throws AddDataSourceCallbacksException 
+     */
+    void onFilesAdded(List<Long> fileObjectIds) throws AddDataSourceCallbacksException;
 }
