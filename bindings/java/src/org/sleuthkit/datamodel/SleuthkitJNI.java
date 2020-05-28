@@ -424,7 +424,7 @@ public class SleuthkitJNI {
 		 *                          case database.
 		 */
 		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, SleuthkitCase skCase) throws TskCoreException {
-			JniDbHelper dbHelper = new JniDbHelper(skCase);
+			JniDbHelper dbHelper = new JniDbHelper(skCase, new DefaultAddDataSourceCallbacks());
 			try {
 				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
@@ -515,28 +515,7 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
-				dbHelper = new JniDbHelper(skCase);
-				getTSKReadLock();
-				try {
-					long imageHandle = 0;
-					synchronized (this) {
-						if (0 != tskAutoDbPointer) {
-							throw new TskCoreException("Add image process already started");
-						}
-						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
-							imageHandle = openImage(imageFilePaths, sectorSize, false, caseDbIdentifier);
-							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
-						}
-						if (0 == tskAutoDbPointer) {
-							throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
-						}
-					}
-					if (imageHandle != 0) {
-						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
-					}
-				} finally {
-					releaseTSKReadLock();
-				}
+				run(deviceId, imageFilePaths, sectorSize, new DefaultAddDataSourceCallbacks());
 			}
 			
 			/**

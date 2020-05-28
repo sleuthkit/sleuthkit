@@ -21,20 +21,18 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * Provides callbacks at key points during the process of adding a data source to a case database.
+ * Do-nothing version of AddDataSourceCallbacks
  */
-public interface AddDataSourceCallbacks {
-    /**
-     * Call when the data source has been completely added to the case database.
-     * 
-     * @param dataSourceObjectId The object ID of the new data source
-     */
-    void onDataSourceAdded(long dataSourceObjectId);
-    
-    /**
-     * Call to add a set of file object IDs that are ready for ingest.
-     * 
-     * @param fileObjectIds List of file object IDs.
-     */
-    void onFilesAdded(List<Long> fileObjectIds);
+public class DefaultAddDataSourceCallbacks implements AddDataSourceCallbacks {
+
+	@Override
+	public void onDataSourceAdded(long dataSourceObjectId) {
+		// Do nothing
+	}
+
+	@Override
+	public void onFilesAdded(List<Long> fileObjectIds) {
+		// Do nothing
+	}
+	
 }

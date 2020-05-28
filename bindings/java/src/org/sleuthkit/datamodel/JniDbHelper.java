@@ -50,12 +50,6 @@ class JniDbHelper {
     private final List<FileInfo> batchedFiles = new ArrayList<>();
     private final List<LayoutRangeInfo> batchedLayoutRanges = new ArrayList<>();
     
-    JniDbHelper(SleuthkitCase caseDb) {
-        this.caseDb = caseDb;
-        trans = null;
-        addDataSourceCallbacks = null;
-    }
-    
     JniDbHelper(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
         this.caseDb = caseDb;
         this.addDataSourceCallbacks = addDataSourceCallbacks;
@@ -132,12 +126,7 @@ class JniDbHelper {
             commitTransaction();
             
             if (addDataSourceCallbacks != null) {
-                try {
-                    addDataSourceCallbacks.onDataSourceAdded(objId); 
-                } catch (AddDataSourceCallbacksException ex) {
-                    logger.log(Level.SEVERE, "Error adding data source to ingest stream");
-                    return -1;
-                }
+                addDataSourceCallbacks.onDataSourceAdded(objId); 
             }
             return objId;
         } catch (TskCoreException ex) {
@@ -409,13 +398,7 @@ class JniDbHelper {
             commitTransaction();
             
             if (addDataSourceCallbacks != null) {
-                try {
-                    addDataSourceCallbacks.onFilesAdded(newObjIds);
-                } catch (AddDataSourceCallbacksException ex) {
-                    logger.log(Level.SEVERE, "Error adding files to ingest stream");
-                    batchedFiles.clear();
-                    return -1;
-                }
+                addDataSourceCallbacks.onFilesAdded(newObjIds);
             }
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
