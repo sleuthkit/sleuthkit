@@ -220,7 +220,7 @@ TSK_FILTER_ENUM
 TskAuto::filterPool(const TSK_POOL_INFO * /*pool_info*/) {
     /* Most of our tools can't handle pool volumes yet */
     if (tsk_verbose)
-        fprintf(stderr, "filterPoolVol: Pool handling is not yet implemented for this tool\n");
+        fprintf(stderr, "filterPool: Pool handling is not yet implemented for this tool\n");
     return TSK_FILTER_SKIP;
 }
 
