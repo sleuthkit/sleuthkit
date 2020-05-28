@@ -42,11 +42,4 @@ public interface AddDataSourceCallbacks {
 	 * @throws AddDataSourceCallbacksException 
 	 */
 	void onFilesAdded(List<Long> fileObjectIds) throws AddDataSourceCallbacksException;
-	
-	/**
-	 * Call when the data source processing is complete.
-	 * 
-	 * @throws AddDataSourceCallbacksException 
-	 */
-	void onCompleted() throws AddDataSourceCallbacksException;
 }

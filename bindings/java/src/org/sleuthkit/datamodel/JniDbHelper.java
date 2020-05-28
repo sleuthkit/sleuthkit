@@ -403,6 +403,7 @@ class JniDbHelper {
                     logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
                             + ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
                     revertTransaction();
+					batchedFiles.clear();
                     return -1;
                 }
             }
@@ -413,12 +414,14 @@ class JniDbHelper {
 					addDataSourceCallbacks.onFilesAdded(newObjIds);
 				} catch (AddDataSourceCallbacksException ex) {
 					logger.log(Level.SEVERE, "Error adding files to ingest stream");
+					batchedFiles.clear();
 					return -1;
 				}
 			}
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
+			batchedFiles.clear();
             return -1;
         }
         batchedFiles.clear();

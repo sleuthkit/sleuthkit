@@ -550,6 +550,7 @@ public class SleuthkitJNI {
 			 *                       (e.g., a UUID).
 			 * @param imageFilePaths Full path(s) to the image file(s).
 			 * @param sectorSize     The sector size (use '0' for autodetect).
+			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
