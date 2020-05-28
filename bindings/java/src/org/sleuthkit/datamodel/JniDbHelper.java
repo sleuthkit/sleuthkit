@@ -69,7 +69,6 @@ class JniDbHelper {
      */
     private void beginTransaction() throws TskCoreException {
         trans = caseDb.beginTransaction();
-        trans.acquireSingleUserCaseWriteLock();
     }
     
     /**
