@@ -394,10 +394,7 @@ class JniDbHelper {
                 }
             }
             commitTransaction();
-            
-            if (addDataSourceCallbacks != null) {
-                addDataSourceCallbacks.onFilesAdded(newObjIds);
-            }
+            addDataSourceCallbacks.onFilesAdded(newObjIds);
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
