@@ -40,7 +40,7 @@ class JniDbHelper {
     
     private final SleuthkitCase caseDb;
     private CaseDbTransaction trans = null;
-    AddDataSourceCallbacks addDataSourceCallbacks;
+    private final AddDataSourceCallbacks addDataSourceCallbacks;
     
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
@@ -125,9 +125,7 @@ class JniDbHelper {
             }
             commitTransaction();
             
-            if (addDataSourceCallbacks != null) {
-                addDataSourceCallbacks.onDataSourceAdded(objId); 
-            }
+			addDataSourceCallbacks.onDataSourceAdded(objId);
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image to the database", ex);

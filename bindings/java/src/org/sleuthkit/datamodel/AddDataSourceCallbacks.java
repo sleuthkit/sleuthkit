@@ -32,7 +32,7 @@ public interface AddDataSourceCallbacks {
     void onDataSourceAdded(long dataSourceObjectId);
     
     /**
-     * Call to add a set of file object IDs that are ready for ingest.
+     * Call to add a set of file object IDs that have been added to the database.
      * 
      * @param fileObjectIds List of file object IDs.
      */
