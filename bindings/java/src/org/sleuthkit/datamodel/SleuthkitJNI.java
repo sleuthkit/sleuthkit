@@ -424,7 +424,7 @@ public class SleuthkitJNI {
 		 *                          case database.
 		 */
 		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, SleuthkitCase skCase) throws TskCoreException {
-			JniDbHelper dbHelper = new JniDbHelper(skCase);
+			JniDbHelper dbHelper = new JniDbHelper(skCase, new DefaultAddDataSourceCallbacks());
 			try {
 				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
@@ -470,7 +470,7 @@ public class SleuthkitJNI {
 			private volatile long tskAutoDbPointer;
 			private boolean isCanceled;
 			private final SleuthkitCase skCase;
-			private final JniDbHelper dbHelper;
+			private JniDbHelper dbHelper;
 
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
@@ -493,7 +493,7 @@ public class SleuthkitJNI {
 				tskAutoDbPointer = 0;
 				this.isCanceled = false;
 				this.skCase = skCase;
-				this.dbHelper = new JniDbHelper(skCase);
+				
 			}
 
 			/**
@@ -515,6 +515,31 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
+				run(deviceId, imageFilePaths, sectorSize, new DefaultAddDataSourceCallbacks());
+			}
+			
+			/**
+			 * Starts the process of adding an image to the case database.
+			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
+			 * called after calling AddImageProcess.run.
+			 *
+			 * @param deviceId       An ASCII-printable identifier for the
+			 *                       device associated with the image that
+			 *                       should be unique across multiple cases
+			 *                       (e.g., a UUID).
+			 * @param imageFilePaths Full path(s) to the image file(s).
+			 * @param sectorSize     The sector size (use '0' for autodetect).
+			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
+			 *
+			 * @throws TskCoreException if a critical error occurs within the
+			 *                          SleuthKit.
+			 * @throws TskDataException if a non-critical error occurs within
+			 *                          the SleuthKit (should be OK to continue
+			 *                          the process)
+			 */
+			public void run(String deviceId, String[] imageFilePaths, int sectorSize, 
+					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {
+				dbHelper = new JniDbHelper(skCase, addDataSourceCallbacks);
 				getTSKReadLock();
 				try {
 					long imageHandle = 0;
@@ -536,7 +561,7 @@ public class SleuthkitJNI {
 				} finally {
 					releaseTSKReadLock();
 				}
-			}
+			}			
 
 			/**
 			 * Stops the process of adding the image to the case database that
@@ -597,7 +622,9 @@ public class SleuthkitJNI {
 						throw new TskCoreException("AddImgProcess::commit: AutoDB pointer is NULL");
 					}
 
-					dbHelper.finish();
+					if (dbHelper != null) {
+						dbHelper.finish();
+					}
 
 					// Get the image ID and delete the object in the native code
 					long id = finishAddImgNat(tskAutoDbPointer);

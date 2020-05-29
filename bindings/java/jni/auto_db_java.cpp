@@ -79,7 +79,7 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
     }
     m_callbackClass = (jclass)m_jniEnv->NewGlobalRef(localCallbackClass);
 
-    m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)J");
+    m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)J");
     if (m_addImageMethodID == NULL) {
         return TSK_ERR;
     }
@@ -184,7 +184,8 @@ TskAutoDbJava::getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info) {
 */
 TSK_RETVAL_ENUM
 TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
-    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails) {
+    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails,
+    char** img_ptrs, int num_imgs) {
 
     const char *tz_cstr = timezone.c_str();
     jstring tzj = m_jniEnv->NewStringUTF(tz_cstr);
@@ -204,8 +205,18 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     const char *coll_cstr = collectionDetails.c_str();
     jstring collj = m_jniEnv->NewStringUTF(coll_cstr);
 
+    jobjectArray imgNamesj = (jobjectArray)m_jniEnv->NewObjectArray(
+        num_imgs,
+        m_jniEnv->FindClass("java/lang/String"),
+        m_jniEnv->NewStringUTF(""));
+
+    for (int i = 0; i < num_imgs; i++) {
+        m_jniEnv->SetObjectArrayElement(
+            imgNamesj, i, m_jniEnv->NewStringUTF(img_ptrs[i]));
+    }
+
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addImageMethodID,
-        type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj);
+        type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj, imgNamesj);
     objId = (int64_t)objIdj;
 
     if (objId < 0) {
@@ -1003,13 +1014,6 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     } else {
         devId = "";
     }
-    if (TSK_OK != addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails)) {
-        registerError();
-        return 1;
-    }
-
-
 
     char **img_ptrs;
 #ifdef TSK_WIN32
@@ -1043,14 +1047,12 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     img_ptrs = m_img_info->images;
 #endif
 
-    // Add the image names
-    for (int i = 0; i < m_img_info->num_img; i++) {
-        const char *img_ptr = img_ptrs[i];
 
-        if (TSK_OK != addImageName(m_curImgId, img_ptr, i)) {
-            registerError();
-            return 1;
-        }
+    if (TSK_OK != addImageInfo(m_img_info->itype, m_img_info->sector_size,
+        m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails,
+        img_ptrs, m_img_info->num_img)) {
+        registerError();
+        return 1;
     }
 
 #ifdef TSK_WIN32
