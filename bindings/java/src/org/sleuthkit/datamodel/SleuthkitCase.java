@@ -2148,7 +2148,7 @@ public class SleuthkitCase {
 					throw new TskCoreException("Failed to retrieve the default tag_set_id from DB");
 				}
 			}
-			
+
 			// Add data_source_obj_id column to the tsk_files table. For newly created cases
 			// this column will have a foreign key constraint on the data_source_info table.
 			// There does not seem to be a reasonable way to do this in an upgrade,
@@ -2171,7 +2171,7 @@ public class SleuthkitCase {
 			} finally {
 				closeStatement(updateStatement);
 			}
-			
+
 			return new CaseDbSchemaVersionNumber(8, 5);
 
 		} finally {
@@ -6093,7 +6093,7 @@ public class SleuthkitCase {
 
 			// Get the data source object ID
 			long dataSourceId = getDataSourceObjectId(connection, newObjId);
-			
+
 			// Add a row to tsk_fs_info
 			// INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)
 			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FS_INFO);
@@ -7888,13 +7888,13 @@ public class SleuthkitCase {
 	 * @param image Image to lookup FileSystem for
 	 *
 	 * @return Collection of FileSystems in the image
-	 * 
+	 *
 	 * @throws TskCoreException
 	 */
-	public Collection<FileSystem> getImageFileSystems(Image image) throws TskCoreException {		
+	public Collection<FileSystem> getImageFileSystems(Image image) throws TskCoreException {
 		List<FileSystem> fileSystems = new ArrayList<>();
 		CaseDbConnection connection = connections.getConnection();
-		
+
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
@@ -11307,7 +11307,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Stores a pair of object ID and its type
 	 */
@@ -11507,7 +11507,7 @@ public class SleuthkitCase {
 				+ "FROM tsk_objects INNER JOIN blackboard_artifacts " //NON-NLS
 				+ "ON tsk_objects.obj_id=blackboard_artifacts.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ?)"),
-		INSERT_OR_UPDATE_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name, tag_set_id) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
+		INSERT_OR_UPDATE_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
 		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?"),
 		INSERT_EXAMINER_POSTGRESQL("INSERT INTO tsk_examiners (login_name) VALUES (?) ON CONFLICT DO NOTHING"),
@@ -12865,15 +12865,16 @@ public class SleuthkitCase {
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
 		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
 	}
-	
+
 	/**
 	 * Helper to return FileSystems in an Image
 	 *
 	 * @param image Image to lookup FileSystem for
 	 *
 	 * @return Collection of FileSystems in the image
-	 * 
-	 * @deprecated Use getImageFileSystems which throws an exception if an error occurs.
+	 *
+	 * @deprecated Use getImageFileSystems which throws an exception if an error
+	 * occurs.
 	 */
 	@Deprecated
 	public Collection<FileSystem> getFileSystems(Image image) {
