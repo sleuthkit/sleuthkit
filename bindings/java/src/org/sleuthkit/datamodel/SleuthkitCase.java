@@ -10114,7 +10114,7 @@ public class SleuthkitCase {
 	 *         row.
 	 *
 	 * @throws TskCoreException
-	 * @Deprecated User TaggingManager.addArtifactTag instead.
+	 * @deprecated User TaggingManager.addArtifactTag instead.
 	 */
 	@Deprecated
 	public BlackboardArtifactTag addBlackboardArtifactTag(BlackboardArtifact artifact, TagName tagName, String comment) throws TskCoreException {
