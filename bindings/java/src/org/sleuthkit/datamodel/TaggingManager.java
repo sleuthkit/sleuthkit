@@ -112,7 +112,7 @@ public class TaggingManager {
 					for (int index = 0; index < tagNames.size(); index++) {
 						TagName tagName = tagNames.get(index);
 						stmt.executeUpdate(String.format("UPDATE tag_names SET tag_set_id = %d, rank = %d WHERE tag_name_id = %d", setID, index, tagName.getId()));
-						updatedTags.add(new TagName(tagName.getId(),
+						updatedTags.add(new TagName(skCase, tagName.getId(),
 								tagName.getDisplayName(),
 								tagName.getDescription(),
 								tagName.getColor(),
@@ -174,55 +174,6 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Add the given TagName to the TagSet.
-	 *
-	 * @param tagSet	 The tag set being added to.
-	 * @param tagName	The tag name to add to the set.
-	 *
-	 * @return TagSet	TagSet object with newly added TagName.
-	 *
-	 * @throws TskCoreException
-	 */
-	public TagSet addTagNameToTagSet(TagSet tagSet, TagName tagName) throws TskCoreException {
-		if (tagSet == null || tagName == null) {
-			throw new IllegalArgumentException("NULL value passed to addTagToTagSet");
-		}
-
-		// Make sure the tagName is not already in the list.
-		List<TagName> setTagNameList = tagSet.getTagNames();
-		for (TagName tag : setTagNameList) {
-			if (tagName.getId() == tag.getId()) {
-				return tagSet;
-			}
-		}
-
-		CaseDbConnection connection = skCase.getConnection();
-		skCase.acquireSingleUserCaseWriteLock();
-
-		try (Statement stmt = connection.createStatement()) {
-			connection.beginTransaction();
-
-			String queryTemplate = "UPDATE tag_names SET tag_set_id = %d where tag_name_id = %d";
-			stmt.executeUpdate(String.format(queryTemplate, tagSet.getId(), tagName.getId()));
-
-			connection.commitTransaction();
-
-			List<TagName> newTagNameList = new ArrayList<>();
-			newTagNameList.addAll(setTagNameList);
-			newTagNameList.add(new TagName(tagName.getId(), tagName.getDisplayName(), tagName.getDescription(), tagName.getColor(), tagName.getKnownStatus(), tagSet.getId(), tagName.getRank()));
-
-			return new TagSet(tagSet.getId(), tagSet.getName(), newTagNameList);
-
-		} catch (SQLException ex) {
-			connection.rollbackTransaction();
-			throw new TskCoreException(String.format("Error adding TagName (id=%d) to TagSet (id=%s)", tagName.getId(), tagSet.getId()), ex);
-		} finally {
-			connection.close();
-			skCase.releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
 	 * Inserts a row into the blackboard_artifact_tags table in the case
 	 * database.
 	 *
@@ -257,6 +208,7 @@ public class TaggingManager {
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
+								skCase,
 								resultSet.getLong("tag_name_id"),
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
@@ -353,6 +305,7 @@ public class TaggingManager {
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
+								skCase,
 								resultSet.getLong("tag_name_id"),
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
@@ -485,7 +438,7 @@ public class TaggingManager {
 		String query = String.format("SELECT * FROM tag_names WHERE tag_set_id = %d", tagSetId);
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(query)) {
 			while (resultSet.next()) {
-				tagNameList.add(new TagName(resultSet.getLong("tag_name_id"),
+				tagNameList.add(new TagName(skCase, resultSet.getLong("tag_name_id"),
 						resultSet.getString("display_name"),
 						resultSet.getString("description"),
 						TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),

@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -33,23 +34,23 @@ public class TagName implements Comparable<TagName>, Serializable {
 
 	public enum HTML_COLOR {
 
-		NONE	("None",	""), //NON-NLS
-		WHITE	("White",	"#FFFFFF"), //NON-NLS
-		SILVER	("Silver",	"#C0C0C0"), //NON-NLS
-		GRAY	("Gray",	"#808080"), //NON-NLS
-		BLACK	("Black",	"#000000"), //NON-NLS
-		RED		("Red",		"#FF0000"), //NON-NLS
-		MAROON	("Maron",	"#800000"), //NON-NLS
-		YELLOW	("Yellow",	"#FFFF00"), //NON-NLS
-		OLIVE	("Olive",	"#808000"), //NON-NLS
-		LIME	("Lime",	"#00FF00"), //NON-NLS
-		GREEN	("Green",	"#008000"), //NON-NLS
-		AQUA	("Aqua",	"#00FFFF"), //NON-NLS
-		TEAL	("Teal",	"#008080"), //NON-NLS
-		BLUE	("Blue",	"#0000FF"), //NON-NLS
-		NAVY	("Navy",	"#000080"), //NON-NLS
-		FUCHSIA	("Fuchsia", "#FF00FF"), //NON-NLS
-		PURPLE	("Purple",	"#800080"); //NON-NLS
+		NONE("None", ""), //NON-NLS
+		WHITE("White", "#FFFFFF"), //NON-NLS
+		SILVER("Silver", "#C0C0C0"), //NON-NLS
+		GRAY("Gray", "#808080"), //NON-NLS
+		BLACK("Black", "#000000"), //NON-NLS
+		RED("Red", "#FF0000"), //NON-NLS
+		MAROON("Maron", "#800000"), //NON-NLS
+		YELLOW("Yellow", "#FFFF00"), //NON-NLS
+		OLIVE("Olive", "#808000"), //NON-NLS
+		LIME("Lime", "#00FF00"), //NON-NLS
+		GREEN("Green", "#008000"), //NON-NLS
+		AQUA("Aqua", "#00FFFF"), //NON-NLS
+		TEAL("Teal", "#008080"), //NON-NLS
+		BLUE("Blue", "#0000FF"), //NON-NLS
+		NAVY("Navy", "#000080"), //NON-NLS
+		FUCHSIA("Fuchsia", "#FF00FF"), //NON-NLS
+		PURPLE("Purple", "#800080"); //NON-NLS
 		private final static HashMap<String, HTML_COLOR> colorMap = new HashMap<String, HTML_COLOR>();
 		private final String name;
 		private final String hexString;
@@ -68,7 +69,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		String getName() {
 			return name;
 		}
-		
+
 		public String getRgbValue() {
 			return hexString;
 		}
@@ -88,9 +89,10 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final TskData.FileKnown knownStatus;
 	private final long tagSetId;
 	private final int rank;
+	private final SleuthkitCase skCase;
 
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
+	TagName(SleuthkitCase sleuthkitCase, long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
@@ -98,6 +100,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		this.knownStatus = knownStatus;
 		this.tagSetId = tagSetId;
 		this.rank = rank;
+		this.skCase = sleuthkitCase;
 	}
 
 	public long getId() {
@@ -123,9 +126,30 @@ public class TagName implements Comparable<TagName>, Serializable {
 	long getTagSetId() {
 		return tagSetId;
 	}
-	
+
 	public int getRank() {
 		return rank;
+	}
+
+	/**
+	 * Returns the TagName TagSet object.
+	 *
+	 * @return TagName TagSet object or null if the TagName is not a part of a
+	 *         TagSet.
+	 *
+	 * @throws TskCoreException
+	 */
+	public TagSet getTagSet() throws TskCoreException {
+		if (tagSetId != 0) {
+			List<TagSet> tagSets = skCase.getTaggingManager().getTagSets();
+			for (TagSet set : tagSets) {
+				if (tagSetId == set.getId()) {
+					return set;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
