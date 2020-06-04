@@ -531,28 +531,29 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			getBundle().getString("MiscTypes.metadataLastPrinted.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA),
-			new Type(TSK_LAST_PRINTED_DATETIME),
-			new EmptyExtractor(),
-			new EmptyExtractor(),
-			new EmptyExtractor());
+			new BlackboardAttribute.Type(TSK_LAST_PRINTED_DATETIME),
+            artf -> {return getBundle().getString("MiscTypes.metadataLastPrinted.name");},
+	        new EmptyExtractor(),
+	        new EmptyExtractor());
+
 
 	TimelineEventType METADATA_LAST_SAVED = new TimelineEventArtifactTypeImpl(34,
 			getBundle().getString("MiscTypes.metadataLastSaved.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA),
-			new Type(TSK_DATETIME_MODIFIED),
-			new EmptyExtractor(),
-			new EmptyExtractor(),
-			new EmptyExtractor());
+			new BlackboardAttribute.Type(TSK_DATETIME_MODIFIED),
+            artf -> {return getBundle().getString("MiscTypes.metadataLastSaved.name");},
+	        new EmptyExtractor(),
+	        new EmptyExtractor());
 
 	TimelineEventType METADATA_CREATED = new TimelineEventArtifactTypeImpl(35,
 			getBundle().getString("MiscTypes.metadataCreated.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA),
-			new Type(TSK_DATETIME_CREATED),
-			new EmptyExtractor(),
-			new EmptyExtractor(),
-			new EmptyExtractor());
+			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
+            artf -> {return getBundle().getString("MiscTypes.metadataCreated.name");},
+	        new EmptyExtractor(),
+	        new EmptyExtractor());
 			
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();
