@@ -135,30 +135,6 @@ class JniDbHelper {
     }
     
     /**
-     * Add an image name to the database. 
-     * Intended to be called from the native code during the add image process.
-     * 
-     * @param objId    The object id of the image.
-     * @param name     The file name for the image
-     * @param sequence The sequence number of this file.
-     * 
-     * @return 0 if successful, -1 if not
-     */
-    int addImageName(long objId, String name, long sequence) {
-        try {
-            beginTransaction();
-            caseDb.addImageNameJNI(objId, name, sequence, trans);
-            commitTransaction();
-            return 0;
-        } catch (TskCoreException ex) {
-            logger.log(Level.SEVERE, "Error adding image name to the database - image obj ID: " + objId + ", image name: " + name
-                    + ", sequence: " + sequence, ex);
-            revertTransaction();
-            return -1;
-        }
-    }
-    
-    /**
      * Add a volume system to the database. 
      * Intended to be called from the native code during the add image process.
      * 
