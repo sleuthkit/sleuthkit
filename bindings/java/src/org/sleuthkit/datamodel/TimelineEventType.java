@@ -224,7 +224,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			builder.add(CALL_LOG, DEVICES_ATTACHED, EMAIL,
 					EXIF, GPS_BOOKMARK, GPS_LAST_KNOWN_LOCATION, GPS_TRACKPOINT,
 					GPS_ROUTE, GPS_SEARCH, GPS_TRACK, INSTALLED_PROGRAM, LOG_ENTRY, MESSAGE,
-					RECENT_DOCUMENTS, REGISTRY);
+					METADATA_LAST_PRINTED, METADATA_LAST_SAVED, METADATA_CREATED, RECENT_DOCUMENTS, REGISTRY);
 
 			return builder.build();
 		}
@@ -526,7 +526,35 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_TRACK),
 			new Type(TSK_NAME));
+	
+	TimelineEventType METADATA_LAST_PRINTED = new TimelineEventArtifactTypeImpl(33,
+			getBundle().getString("MiscTypes.metadataLastPrinted.name"),// NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_METADATA),
+			new BlackboardAttribute.Type(TSK_LAST_PRINTED_DATETIME),
+            artf -> {return getBundle().getString("MiscTypes.metadataLastPrinted.name");},
+	        new EmptyExtractor(),
+	        new EmptyExtractor());
 
+
+	TimelineEventType METADATA_LAST_SAVED = new TimelineEventArtifactTypeImpl(34,
+			getBundle().getString("MiscTypes.metadataLastSaved.name"),// NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_METADATA),
+			new BlackboardAttribute.Type(TSK_DATETIME_MODIFIED),
+            artf -> {return getBundle().getString("MiscTypes.metadataLastSaved.name");},
+	        new EmptyExtractor(),
+	        new EmptyExtractor());
+
+	TimelineEventType METADATA_CREATED = new TimelineEventArtifactTypeImpl(35,
+			getBundle().getString("MiscTypes.metadataCreated.name"),// NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_METADATA),
+			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
+            artf -> {return getBundle().getString("MiscTypes.metadataCreated.name");},
+	        new EmptyExtractor(),
+	        new EmptyExtractor());
+			
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();
 	}

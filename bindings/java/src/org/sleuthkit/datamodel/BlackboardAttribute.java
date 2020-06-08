@@ -1411,7 +1411,12 @@ public class BlackboardAttribute {
 		
 		TSK_BYTES_RECEIVED(148, "TSK_BYTES_RECEIVED",
 	        bundle.getString("BlackboardAttribute.tskbytesreceived.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG)
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+		
+		TSK_LAST_PRINTED_DATETIME(149, "TSK_LAST_PRINTED_DATETIME",
+	        bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
+		
 		
 		;
 
