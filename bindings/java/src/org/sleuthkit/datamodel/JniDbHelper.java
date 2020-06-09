@@ -125,7 +125,13 @@ class JniDbHelper {
             }
             commitTransaction();
             
-			addDataSourceCallbacks.onDataSourceAdded(objId);
+			try {
+				addDataSourceCallbacks.onDataSourceAdded(objId);
+			} catch (Exception ex) {
+				// Exception firewall - we do not want to return to the native code without
+				// passing it the data source ID
+				logger.log(Level.SEVERE, "Unexpected error from data source added callback", ex);
+			}
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image to the database", ex);
@@ -370,7 +376,12 @@ class JniDbHelper {
                 }
             }
             commitTransaction();
-            addDataSourceCallbacks.onFilesAdded(newObjIds);
+			try {
+				addDataSourceCallbacks.onFilesAdded(newObjIds);
+			} catch (Exception ex) {
+				// Exception firewall to prevent unexpected return to the native code
+				logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
+			}
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
