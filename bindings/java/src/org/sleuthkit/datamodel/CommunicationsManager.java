@@ -1319,7 +1319,7 @@ public final class CommunicationsManager {
 		String normalizedAccountID = accountUniqueID;
 
 		if (accountType.equals(Account.Type.PHONE)) {
-			normalizedAccountID = normalizePhoneNum(accountUniqueID);
+			normalizedAccountID = normalizePhoneNumber(accountUniqueID);
 		} else if (accountType.equals(Account.Type.EMAIL)) {
 			normalizedAccountID = normalizeEmailAddress(accountUniqueID);
 		}
@@ -1328,38 +1328,35 @@ public final class CommunicationsManager {
 	}
 	
 	/**
-	 * Normalize the phone number by removing all non numeric characters, except
-	 * for leading +.
+	 * Normalize the given phone number to be suitable for storage.
 	 *
 	 * @param phoneNum The phone number to normalize
 	 *
 	 * @return The normalized phone number.
 	 */
-	private String normalizePhoneNum(String phoneNum) {
-		String normailzedPhoneNum = phoneNum.replaceAll("\\D", "");
+	private String normalizePhoneNumber(String phoneNumber) {
+		String strippedOfNonDigits = phoneNumber.replaceAll("\\D", "");
 
-		if (phoneNum.startsWith("+")) {
-			normailzedPhoneNum = "+" + normailzedPhoneNum;
+		if (strippedOfNonDigits.isEmpty()) {
+			return phoneNumber;
 		}
-
-		if (normailzedPhoneNum.isEmpty()) {
-			normailzedPhoneNum = phoneNum;
-		}
-
-		return normailzedPhoneNum;
+		
+		if (phoneNumber.startsWith("+")) {
+			return "+" + strippedOfNonDigits;
+		} else {
+			return strippedOfNonDigits;
+		}			
 	}
 
 	/**
-	 * Normalize the given email address by converting it to lowercase.
+	 * Normalize the given email address to be suitable for storage.
 	 *
 	 * @param emailAddress The email address tot normalize
 	 *
 	 * @return The normalized email address.
 	 */
 	private String normalizeEmailAddress(String emailAddress) {
-		String normailzedEmailAddr = emailAddress.toLowerCase();
-
-		return normailzedEmailAddr;
+		return emailAddress.toLowerCase();
 	}
 
 	/**
