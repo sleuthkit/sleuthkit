@@ -1,0 +1,9 @@
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="CASE Json Exporter" default="dist" basedir=".">
+    <description>
+        Sleuthkit CASE Json Exporter
+    </description>
+
+    <target name="compile"/>
+    <target name="run"/>
+    <target name="clean"/>
+</project>
