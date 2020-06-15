@@ -84,11 +84,6 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
-    m_addImageNameMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageName", "(JLjava/lang/String;J)I");
-    if (m_addImageNameMethodID == NULL) {
-        return TSK_ERR;
-    }
-
     m_addVolumeSystemMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addVsInfo", "(JIJJ)J");
     if (m_addVolumeSystemMethodID == NULL) {
         return TSK_ERR;
@@ -225,29 +220,6 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
 
     saveObjectInfo(objId, 0, TSK_DB_OBJECT_TYPE_IMG);
     return TSK_OK;
-}
-
-/**
-* Adds one image name
-* @param objId    The object ID of the image
-* @param imgName  The image name
-* @param sequence The sequence number for this image name
-* @returns TSK_ERR on error, TSK_OK on success
-*/
-TSK_RETVAL_ENUM
-TskAutoDbJava::addImageName(int64_t objId, char const* imgName, int sequence) {
-
-    jstring imgNamej = m_jniEnv->NewStringUTF(imgName);
-
-    jint res = m_jniEnv->CallIntMethod(m_javaDbObj, m_addImageNameMethodID,
-        objId, imgNamej, (int64_t)sequence);
-
-    if (res == 0) {
-        return TSK_OK;
-    }
-    else {
-        return TSK_ERR;
-    }
 }
 
 /**
