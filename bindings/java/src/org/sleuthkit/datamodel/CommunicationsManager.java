@@ -1316,18 +1316,51 @@ public final class CommunicationsManager {
 	 * @return The normalized account id.
 	 */
 	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) throws TskCoreException {
-		String normailzeAccountID = accountUniqueID;
+		String normalizedAccountID = accountUniqueID;
 
 		if (accountType.equals(Account.Type.PHONE)) {
-			normailzeAccountID = CommunicationsUtils.normalizePhoneNum(accountUniqueID);
+			normalizedAccountID = normalizePhoneNum(accountUniqueID);
 		} else if (accountType.equals(Account.Type.EMAIL)) {
-			normailzeAccountID = CommunicationsUtils.normalizeEmailAddress(accountUniqueID);
+			normalizedAccountID = normalizeEmailAddress(accountUniqueID);
 		}
 
-		return normailzeAccountID;
+		return normalizedAccountID;
+	}
+	
+	/**
+	 * Normalize the phone number by removing all non numeric characters, except
+	 * for leading +.
+	 *
+	 * @param phoneNum The phone number to normalize
+	 *
+	 * @return The normalized phone number.
+	 */
+	private String normalizePhoneNum(String phoneNum) {
+		String normailzedPhoneNum = phoneNum.replaceAll("\\D", "");
+
+		if (phoneNum.startsWith("+")) {
+			normailzedPhoneNum = "+" + normailzedPhoneNum;
+		}
+
+		if (normailzedPhoneNum.isEmpty()) {
+			normailzedPhoneNum = phoneNum;
+		}
+
+		return normailzedPhoneNum;
 	}
 
-	
+	/**
+	 * Normalize the given email address by converting it to lowercase.
+	 *
+	 * @param emailAddress The email address tot normalize
+	 *
+	 * @return The normalized email address.
+	 */
+	private String normalizeEmailAddress(String emailAddress) {
+		String normailzedEmailAddr = emailAddress.toLowerCase();
+
+		return normailzedEmailAddr;
+	}
 
 	/**
 	 * Builds the SQL for the given CommunicationsFilter.

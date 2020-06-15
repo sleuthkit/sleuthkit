@@ -32,7 +32,6 @@ import org.sleuthkit.datamodel.AccountFileInstance;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.CommunicationsUtils;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.Relationship;
@@ -326,7 +325,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// Find/Create an account instance for each of the contact method
 		// Create a relationship between selfAccount and contactAccount
-		if (CommunicationsUtils.isValidAccountId(accountType, accountUniqueID)) {
+		if (!StringUtils.isEmpty(accountUniqueID)) {
 			AccountFileInstance contactAccountInstance = createAccountInstance(accountType, accountUniqueID);
 
 			// Create a relationship between self account and the contact account
@@ -510,7 +509,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// set sender attribute and create sender account
 		AccountFileInstance senderAccountInstance = null;
-		if (CommunicationsUtils.isValidAccountId(moduleAccountsType, senderId)) {
+		if (!StringUtils.isEmpty(senderId)) {
 			senderAccountInstance = createAccountInstance(moduleAccountsType, senderId);
 		} 
 
@@ -519,7 +518,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		String recipientsStr = "";
 		if (!isEffectivelyEmpty(recipientIdsList)) {
 			for (String recipient : recipientIdsList) {
-				if (CommunicationsUtils.isValidAccountId(moduleAccountsType, recipient)) {
+				if (!StringUtils.isEmpty(recipient)) {
 					recipientAccountsList.add(createAccountInstance(moduleAccountsType, recipient));
 				}
 			}
@@ -745,7 +744,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		addCommDirectionIfKnown(direction, attributes);
 
 		AccountFileInstance callerAccountInstance = null;
-		if (CommunicationsUtils.isValidAccountId(moduleAccountsType, callerId)) {
+		if (!StringUtils.isEmpty(callerId)) {
 			callerAccountInstance = createAccountInstance(moduleAccountsType, callerId);
 		}
 		
@@ -755,7 +754,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		if (!isEffectivelyEmpty(calleeIdsList)) {
 			calleesStr = addressListToString(calleeIdsList);
 			for (String callee : calleeIdsList) {
-				if (CommunicationsUtils.isValidAccountId(moduleAccountsType, callee)) {
+				if (!StringUtils.isEmpty(callee)) {
 					recipientAccountsList.add(createAccountInstance(moduleAccountsType, callee));
 				}
 			}
