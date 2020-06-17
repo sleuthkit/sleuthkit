@@ -1125,7 +1125,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_finishAddImgNat(JNIEnv * env,
 }
 
 
-
 /*
  * Open an image pointer for the given image.
  * @return the created TSK_IMG_INFO pointer
@@ -1142,23 +1141,23 @@ JNIEXPORT jlong JNICALL
     jboolean isCopy;
 
     // get pointers to each of the file names
-    char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
+    char **imagepaths8 = (char **)tsk_malloc(num_imgs * sizeof(char *));
     if (imagepaths8 == NULL) {
         setThrowTskCoreError(env);
         return 0;
     }
     for (int i = 0; i < num_imgs; i++) {
         imagepaths8[i] =
-            (char *) env->
-            GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
+            (char *)env->
+            GetStringUTFChars((jstring)env->GetObjectArrayElement(paths,
                 i), &isCopy);
         // @@@ Error check
     }
 
     // open the image
     img_info =
-        tsk_img_open_utf8((int) num_imgs, imagepaths8, TSK_IMG_TYPE_DETECT,
-        sector_size);
+        tsk_img_open_utf8((int)num_imgs, imagepaths8, TSK_IMG_TYPE_DETECT,
+            sector_size);
     if (img_info == NULL) {
         setThrowTskCoreError(env, tsk_error_get());
     }
@@ -1167,13 +1166,116 @@ JNIEXPORT jlong JNICALL
     for (int i = 0; i < num_imgs; i++) {
         env->
             ReleaseStringUTFChars((jstring)
-            env->GetObjectArrayElement(paths, i), imagepaths8[i]);
+                env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
 
     return (jlong) img_info;
 }
 
+/*
+ * Get the full list of paths associated with an image.
+ */
+JNIEXPORT jobjectArray JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getPathsForImageNat(JNIEnv * env,
+    jclass obj, jlong a_img_info) {
+
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    char **img_ptrs;
+#ifdef TSK_WIN32
+    // convert image paths to UTF-8
+    img_ptrs = (char **)tsk_malloc(img_info->num_img * sizeof(char *));
+    if (img_ptrs == NULL) {
+        return (jobjectArray)env->NewObjectArray(0, env->FindClass("java/lang/String"), env->NewStringUTF(""));
+    }
+
+    for (int i = 0; i < img_info->num_img; i++) {
+        char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
+        UTF8 *ptr8;
+        UTF16 *ptr16;
+
+        ptr8 = (UTF8 *)img2;
+        ptr16 = (UTF16 *)img_info->images[i];
+
+        uint8_t retval =
+            tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
+                & ptr16[TSTRLEN(img_info->images[i]) + 1], &ptr8,
+                (UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
+        if (retval != TSKconversionOK) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
+            tsk_error_set_errstr("Error converting image to UTF-8\n");
+            return (jobjectArray)env->NewObjectArray(0, env->FindClass("java/lang/String"), env->NewStringUTF(""));
+        }
+        img_ptrs[i] = img2;
+    }
+#else 
+    img_ptrs = img_info->images;
+#endif
+
+    jobjectArray path_list = (jobjectArray)env->NewObjectArray(img_info->num_img, env->FindClass("java/lang/String"), env->NewStringUTF(""));
+    for (int i = 0; i < img_info->num_img; i++) {
+        env->SetObjectArrayElement(path_list, i, env->NewStringUTF(img_ptrs[i]));
+    }
+
+    return path_list;
+}
+
+
+/*
+ * Get the size of an image.
+ */
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getSizeForImageNat(JNIEnv * env,
+    jclass obj, jlong a_img_info) {
+
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    return img_info->size;
+}
+
+
+/*
+ * Get the type of an image.
+ */
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getTypeForImageNat(JNIEnv * env,
+    jclass obj, jlong a_img_info) {
+
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    return img_info->itype;
+}
+
+
+/*
+* Get the computed sector size of an image.
+*/
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getSectorSizeForImageNat(JNIEnv * env,
+    jclass obj, jlong a_img_info) {
+
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    return img_info->sector_size;
+}
 
 
 /*

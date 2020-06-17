@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
  * A utility class that provides a interface to the SleuthKit via JNI. Supports
@@ -872,6 +873,37 @@ public class SleuthkitJNI {
 			return imageHandle;
 		} finally {
 			releaseTSKReadLock();
+		}
+	}
+	
+	public static Image addImageToDatabase(SleuthkitCase skCase, String imagePath, int sectorSize,
+		String timeZone, String md5, String sha1, String sha256, String deviceId) throws TskCoreException {
+		
+		// Open the image
+		long imageHandle = openImgNat(new String[]{imagePath}, 1, sectorSize);
+		
+		// Get the fields stored in the native code
+		List<String> paths = Arrays.asList(getPathsForImageNat(imageHandle));
+		long size = getSizeForImageNat(imageHandle);
+		long type = getTypeForImageNat(imageHandle);
+		long computedSectorSize = getSectorSizeForImageNat(imageHandle);
+		
+		//  Now save to database
+		CaseDbTransaction transaction = skCase.beginTransaction();
+		try {
+			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize, 
+				size, null, paths, 
+				timeZone, md5, sha1, sha256, 
+				deviceId, transaction);
+			transaction.commit();
+			
+		    // TODO may keep open - would need to add to cache here
+		    closeImgNat(imageHandle);
+			
+			return img;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw(ex);
 		}
 	}
 
@@ -2023,6 +2055,14 @@ public class SleuthkitJNI {
 	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, int offset_type, long len) throws TskCoreException;
 
 	private static native int saveFileMetaDataTextNat(long fileHandle, String fileName) throws TskCoreException;
+	
+	private static native String[] getPathsForImageNat(long imgHandle);
+	
+	private static native long getSizeForImageNat(long imgHandle);
+	
+	private static native long getTypeForImageNat(long imgHandle);
+	
+	private static native long getSectorSizeForImageNat(long imgHandle);
 
 	private static native void closeImgNat(long imgHandle);
 	
