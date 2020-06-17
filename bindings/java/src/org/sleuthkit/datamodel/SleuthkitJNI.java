@@ -35,6 +35,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
@@ -887,6 +888,9 @@ public class SleuthkitJNI {
 		long size = getSizeForImageNat(imageHandle);
 		long type = getTypeForImageNat(imageHandle);
 		long computedSectorSize = getSectorSizeForImageNat(imageHandle);
+		if (StringUtils.isEmpty(md5)) {
+			md5 = getMD5HashForImageNat(imageHandle);
+		}
 		
 		//  Now save to database
 		CaseDbTransaction transaction = skCase.beginTransaction();
@@ -906,6 +910,8 @@ public class SleuthkitJNI {
 			throw(ex);
 		}
 	}
+	
+	
 
 	/**
 	 * Get volume system Handle
@@ -2063,6 +2069,8 @@ public class SleuthkitJNI {
 	private static native long getTypeForImageNat(long imgHandle);
 	
 	private static native long getSectorSizeForImageNat(long imgHandle);
+	
+	private static native String getMD5HashForImageNat(long imgHandle);
 
 	private static native void closeImgNat(long imgHandle);
 	

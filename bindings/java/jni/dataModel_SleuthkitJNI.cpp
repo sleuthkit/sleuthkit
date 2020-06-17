@@ -1277,6 +1277,30 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getSectorSizeForImageNat(JNIEnv * env,
     return img_info->sector_size;
 }
 
+/*
+* Get the md5 hash of an image.
+*/
+JNIEXPORT jstring JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getMD5HashForImageNat(JNIEnv * env,
+    jclass obj, jlong a_img_info) {
+
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+    // env->NewStringUTF(img_ptrs[i])
+#if HAVE_LIBEWF 
+    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
+        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
+        if (ewf_info->md5hash_isset) {
+            return env->NewStringUTF(ewf_info->md5hash);
+        }
+    }
+#endif
+    return env->NewStringUTF("");
+}
+
 
 /*
  * Open the volume system at the given offset
