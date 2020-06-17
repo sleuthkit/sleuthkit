@@ -1292,6 +1292,64 @@ public final class CommunicationsManager {
 	}
 
 	/**
+	 * Gets a list of accounts that are related to the given artifact.
+	 *
+	 * @param artifact
+	 *
+	 * @return A list of distinct accounts or an empty list if none where found.
+	 *
+	 * @throws TskCoreException
+	 */
+	public List<Account> getAccountsRelatedToArtifact(BlackboardArtifact artifact) throws TskCoreException {
+		if (artifact == null) {
+			throw new IllegalArgumentException("null arugment passed to getAccountsRelatedToArtifact");
+		}
+
+		List<Account> accountList = new ArrayList<>();
+		try (CaseDbConnection connection = db.getConnection()) {
+			db.acquireSingleUserCaseReadLock();
+			try {
+				// In order to get a list of all the unique accounts in a relationship with the given aritfact
+				// we must first union a list of the unique account1_id in the relationship with artifact
+				// then the unique account2_id (inner select with union).  The outter select assures the list
+				// of the inner select only contains unique accounts.
+				String query = String.format("SELECT DISTINCT (account_id), account_type_id, account_unique_identifier"
+						+ "	FROM ("
+						+ " SELECT DISTINCT (account_id), account_type_id, account_unique_identifier"
+						+ " FROM accounts"
+						+ " JOIN account_relationships ON account1_id = account_id"
+						+ " WHERE relationship_source_obj_id = %d"
+						+ " UNION "
+						+ " SELECT DISTINCT (account_id), account_type_id, account_unique_identifier"
+						+ " FROM accounts"
+						+ " JOIN account_relationships ON account2_id = account_id"
+						+ " WHERE relationship_source_obj_id = %d)", artifact.getId(), artifact.getId());
+				try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
+					while (rs.next()) {
+						Account.Type accountType = null;
+						int accountTypeId = rs.getInt("account_type_id");
+						for (Map.Entry<Account.Type, Integer> entry : accountTypeToTypeIdMap.entrySet()) {
+							if (entry.getValue() == accountTypeId) {
+								accountType = entry.getKey();
+								break;
+							}
+						}
+
+						accountList.add(new Account(rs.getInt("account_id"), accountType, rs.getString("account_unique_identifier")));
+					}
+				} catch (SQLException ex) {
+					throw new TskCoreException("Unable to get account list for give artifact " + artifact.getId(), ex);
+				}
+
+			} finally {
+				db.releaseSingleUserCaseReadLock();
+			}
+		}
+
+		return accountList;
+	}
+
+	/**
 	 * Get account_type_id for the given account type.
 	 *
 	 * @param accountType account type to lookup.
@@ -1326,8 +1384,6 @@ public final class CommunicationsManager {
 
 		return normailzeAccountID;
 	}
-
-	
 
 	/**
 	 * Builds the SQL for the given CommunicationsFilter.
