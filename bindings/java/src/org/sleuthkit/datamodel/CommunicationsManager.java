@@ -1316,15 +1316,18 @@ public final class CommunicationsManager {
 	 * @return The normalized account id.
 	 */
 	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) throws TskCoreException {
-		String normailzeAccountID = accountUniqueID;
+		String normailzedAccountID = accountUniqueID;
 
 		if (accountType.equals(Account.Type.PHONE)) {
-			normailzeAccountID = CommunicationsUtils.normalizePhoneNum(accountUniqueID);
+			normailzedAccountID = CommunicationsUtils.normalizePhoneNum(accountUniqueID);
 		} else if (accountType.equals(Account.Type.EMAIL)) {
-			normailzeAccountID = CommunicationsUtils.normalizeEmailAddress(accountUniqueID);
+			normailzedAccountID = CommunicationsUtils.normalizeEmailAddress(accountUniqueID);
+		} else {
+			// remove blanks and convert to lowercase
+            normailzedAccountID = accountUniqueID.toLowerCase().replaceAll("\\s","");
 		}
 
-		return normailzeAccountID;
+		return normailzedAccountID;
 	}
 
 	
