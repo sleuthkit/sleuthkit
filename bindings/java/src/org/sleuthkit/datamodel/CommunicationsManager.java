@@ -1319,44 +1319,12 @@ public final class CommunicationsManager {
 		String normalizedAccountID = accountUniqueID;
 
 		if (accountType.equals(Account.Type.PHONE)) {
-			normalizedAccountID = normalizePhoneNumber(accountUniqueID);
+			normalizedAccountID = CommunicationsUtils.normalizePhoneNum(accountUniqueID);
 		} else if (accountType.equals(Account.Type.EMAIL)) {
-			normalizedAccountID = normalizeEmailAddress(accountUniqueID);
+			normalizedAccountID = CommunicationsUtils.normalizeEmailAddress(accountUniqueID);
 		}
 
 		return normalizedAccountID;
-	}
-	
-	/**
-	 * Normalize the given phone number to be suitable for storage.
-	 *
-	 * @param phoneNum The phone number to normalize
-	 *
-	 * @return The normalized phone number.
-	 */
-	private String normalizePhoneNumber(String phoneNumber) {
-		String strippedOfNonDigits = phoneNumber.replaceAll("\\D", "");
-
-		if (strippedOfNonDigits.isEmpty()) {
-			return phoneNumber;
-		}
-		
-		if (phoneNumber.startsWith("+")) {
-			return "+" + strippedOfNonDigits;
-		} else {
-			return strippedOfNonDigits;
-		}			
-	}
-
-	/**
-	 * Normalize the given email address to be suitable for storage.
-	 *
-	 * @param emailAddress The email address tot normalize
-	 *
-	 * @return The normalized email address.
-	 */
-	private String normalizeEmailAddress(String emailAddress) {
-		return emailAddress.toLowerCase();
 	}
 
 	/**

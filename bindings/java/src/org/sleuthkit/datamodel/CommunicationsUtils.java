@@ -23,33 +23,43 @@ import org.apache.commons.validator.routines.EmailValidator;
 
 /**
  * Provides general utility methods related to communications artifacts.
- * 
  */
 public final class CommunicationsUtils {
-	
+
+	private static final String NON_DIGITS = "[^0-9]";
+	private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance(true, true);
+
 	/**
-     * Empty private constructor.
-     */
-    private CommunicationsUtils() {
-    }
-	
+	 * Empty private constructor.
+	 */
+	private CommunicationsUtils() {
+	}
+
 	/**
-	 * Normalize the given phone number by removing all non numeric characters, 
+	 * Normalize the given phone number by removing all non numeric characters,
 	 * except for a leading +.
 	 *
-	 * @param phoneNum The string to normalize.
+	 * @param phoneNumber The phone number to normalize.
 	 *
 	 * @return The normalized phone number.
-	 * 
+	 *
 	 * @throws TskCoreException If the given string is not a valid phone number.
-	 * 
+	 *
 	 */
-	public static String normalizePhoneNum(String phoneNum) throws TskCoreException {
-		if (isValidPhoneNumber(phoneNum)) {
-           return phoneNum.replaceAll("[^0-9\\+]", "");
-        } else {
-            throw new TskCoreException(String.format("Input string is not a valid phone number: %s", phoneNum));
-        }	
+	public static String normalizePhoneNum(String phoneNumber) throws TskCoreException {
+		if(StringUtils.isBlank(phoneNumber)) {
+			return phoneNumber;
+		}
+		
+		String phoneNumberWithOnlyDigits = phoneNumber.replaceAll(NON_DIGITS, "");
+
+		if (phoneNumberWithOnlyDigits.isEmpty()) {
+			return phoneNumber;
+		} else if (phoneNumber.startsWith("+")) {
+			return "+" + phoneNumberWithOnlyDigits;
+		} else {
+			return phoneNumberWithOnlyDigits;
+		}
 	}
 
 	/**
@@ -58,64 +68,65 @@ public final class CommunicationsUtils {
 	 * @param emailAddress The email address string to be normalized.
 	 *
 	 * @return The normalized email address.
-	 * @throws TskCoreException If the given string is not a valid email address.
+	 *
+	 * @throws TskCoreException If the given string is not a valid email
+	 *                          address.
 	 */
 	public static String normalizeEmailAddress(String emailAddress) throws TskCoreException {
-		
-        if (isValidEmailAddress(emailAddress)) {
-            return emailAddress.toLowerCase();
-        } else {
-            throw new TskCoreException(String.format("Input string is not a valid email address: %s", emailAddress));
-        }
+		if(!StringUtils.isBlank(emailAddress)) {
+			return emailAddress.toLowerCase();
+		} else {
+			return emailAddress;
+		}
 	}
-	
+
 	/**
-	 * Checks if the given accountId is a valid id for 
-	 * the specified account type.
-	 * 
-	 * @param accountType Account type.
+	 * Checks if the given accountId is a valid id for the specified account
+	 * type.
+	 *
+	 * @param accountType     Account type.
 	 * @param accountUniqueID Id to check.
-	 * 
-	 * @return True, if the id is a valid id for the given account type, False otherwise.
+	 *
+	 * @return True, if the id is a valid id for the given account type, False
+	 *         otherwise.
 	 */
 	public static boolean isValidAccountId(Account.Type accountType, String accountUniqueID) {
 		if (accountType == Account.Type.PHONE) {
 			return isValidPhoneNumber(accountUniqueID);
-		}
-		if (accountType == Account.Type.EMAIL) {
+		} else if (accountType == Account.Type.EMAIL) {
 			return isValidEmailAddress(accountUniqueID);
+		} else {
+			return !StringUtils.isEmpty(accountUniqueID);
 		}
-		
-		return !StringUtils.isEmpty(accountUniqueID);
 	}
-	
+
 	/**
-	 * Checks if the given string is a valid phone number.
+	 * Checks if the given string is a valid phone number. A valid phone number
+	 * is one that has a non-zero number of digits in it.
 	 *
 	 * @param phoneNum Phone number string to check.
 	 *
-	 * @return True if the given string is a valid phone number, false otherwise.
+	 * @return True if the given string is a valid phone number, false
+	 *         otherwise.
 	 */
 	public static boolean isValidPhoneNumber(String phoneNum) {
-		if (!StringUtils.isEmpty(phoneNum)) {
-			return phoneNum.matches("\\+?[0-9()\\-\\s]+");
+		if (!StringUtils.isBlank(phoneNum)) {
+			// Any number of digits is good enough.
+			return !phoneNum.replaceAll(NON_DIGITS, "").isEmpty();
+		} else {
+			return false;
 		}
-		return false;
 	}
-	
+
 	/**
 	 * Checks if the given string is a valid email address.
 	 *
 	 * @param emailAddress String to check.
 	 *
-	 * @return True if the given string is a valid email address, false otherwise.
+	 * @return True if the given string is a valid email address, false
+	 *         otherwise.
 	 */
 	public static boolean isValidEmailAddress(String emailAddress) {
-		if (!StringUtils.isEmpty(emailAddress)) {
-			EmailValidator validator = EmailValidator.getInstance(true, true);
-			return validator.isValid(emailAddress);
-		}
-
-		return false;
+		return EMAIL_VALIDATOR.isValid(emailAddress);
 	}
 }
