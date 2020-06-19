@@ -37,7 +37,7 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 	private static final BlackboardAttribute.Type WAYPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS);
-	private static final BlackboardAttribute.Type TRACKPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS);	
+	private static final BlackboardAttribute.Type TRACKPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS);
 	private final String programName;
 
 	/**
@@ -67,28 +67,32 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 * (elevation) axes.
 	 *
 	 * @param trackName      The name of the GPS track, may be null.
-	 * @param trackPoints    The track points that make up the track.
+	 * @param trackPoints    The track points that make up the track. This list
+	 *                       should be non-null and non-empty.
 	 * @param moreAttributes Additional attributes for the TSK_GPS_TRACK
 	 *                       artifact, may be null.
 	 *
 	 * @return	The TSK_GPS_TRACK artifact that was added to the case database.
 	 *
-	 * @throws TskCoreException	   If there is an error creating the artifact.
-	 * @throws BlackboardException If there is a error posting the artifact to
-	 *                             the blackboard.
+	 * @throws TskCoreException	        If there is an error creating the
+	 *                                  artifact.
+	 * @throws BlackboardException      If there is a error posting the artifact
+	 *                                  to the blackboard.
+	 * @throws IllegalArgumentException If the trackpoints provided are null or
+	 *                                  empty.
 	 */
 	public BlackboardArtifact addTrack(String trackName, GeoTrackPoints trackPoints, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
-		if (trackPoints == null) {
-			throw new IllegalArgumentException(String.format("addTrack was passed a null list of track points"));
+		if (trackPoints == null || trackPoints.isEmpty()) {
+			throw new IllegalArgumentException(String.format("addTrack was passed a null or empty list of track points"));
 		}
 
-		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 
 		if (trackName != null) {
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), trackName));
 		}
 
+		// acquire necessary attribute.  If 'toAttribute' call throws an exception, an artifact will not be created for this instance.
 		attributes.add(BlackboardJsonAttrUtil.toAttribute(TRACKPOINTS_ATTR_TYPE, getModuleName(), trackPoints));
 
 		if (programName != null) {
@@ -99,13 +103,14 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			attributes.addAll(moreAttributes);
 		}
 
+		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 		artifact.addAttributes(attributes);
 
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
 		return artifact;
-	}	
-	
+	}
+
 	/**
 	 * Adds a TSK_GPS_ROUTE artifact to the case database. A Global Positioning
 	 * System (GPS) route artifact records one or more waypoints entered into a
@@ -117,19 +122,23 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 * @param creationTime   The time at which the route was created as
 	 *                       milliseconds from the Java epoch of
 	 *                       1970-01-01T00:00:00Z, may be null.
-	 * @param wayPoints      The waypoints that make up the route.
+	 * @param wayPoints      The waypoints that make up the route.  This list
+	 *                       should be non-null and non-empty.
 	 * @param moreAttributes Additional attributes for the TSK_GPS_ROUTE
 	 *                       artifact, may be null.
 	 *
 	 * @return	The TSK_GPS_ROUTE artifact that was added to the case database.
 	 *
-	 * @throws TskCoreException	   If there is an error creating the artifact.
-	 * @throws BlackboardException If there is a error posting the artifact to
-	 *                             the blackboard.
+	 * @throws TskCoreException	        If there is an error creating the
+	 *                                  artifact.
+	 * @throws BlackboardException      If there is a error posting the artifact
+	 *                                  to the blackboard.
+	 * @throws IllegalArgumentException If the waypoints provided are null or
+	 *                                  empty.
 	 */
 	public BlackboardArtifact addRoute(String routeName, Long creationTime, GeoWaypoints wayPoints, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
-		if (wayPoints == null) {
-			throw new IllegalArgumentException(String.format("addRoute was passed a null list of waypoints"));
+		if (wayPoints == null || wayPoints.isEmpty()) {
+			throw new IllegalArgumentException(String.format("addRoute was passed a null or empty list of waypoints"));
 		}
 
 		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
@@ -159,5 +168,5 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 		return artifact;
 	}
-	
+
 }
