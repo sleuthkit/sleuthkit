@@ -541,6 +541,31 @@ public class SleuthkitJNI {
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize, 
 					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {
+				Image img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId);
+				run(deviceId, img, sectorSize, addDataSourceCallbacks);		
+			}
+			
+			/**
+			 * Starts the process of adding an image to the case database.
+			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
+			 * called after calling AddImageProcess.run.
+			 *
+			 * @param deviceId       An ASCII-printable identifier for the
+			 *                       device associated with the image that
+			 *                       should be unique across multiple cases
+			 *                       (e.g., a UUID).
+			 * @param image          The image object (has already been added to the database)
+			 * @param sectorSize     The sector size (use '0' for autodetect).
+			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
+			 *
+			 * @throws TskCoreException if a critical error occurs within the
+			 *                          SleuthKit.
+			 * @throws TskDataException if a non-critical error occurs within
+			 *                          the SleuthKit (should be OK to continue
+			 *                          the process)
+			 */
+			public void run(String deviceId, Image image, int sectorSize, 
+					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {			
 				dbHelper = new JniDbHelper(skCase, addDataSourceCallbacks);
 				getTSKReadLock();
 				try {
@@ -550,7 +575,8 @@ public class SleuthkitJNI {
 							throw new TskCoreException("Add image process already started");
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
-							imageHandle = openImage(imageFilePaths, sectorSize, false, caseDbIdentifier);
+							//imageHandle = openImage(imageFilePaths, sectorSize, false, caseDbIdentifier);
+							imageHandle = image.getImageHandle();
 							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 						}
 						if (0 == tskAutoDbPointer) {
@@ -558,7 +584,7 @@ public class SleuthkitJNI {
 						}
 					}
 					if (imageHandle != 0) {
-						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
+						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, image.getId(), timeZone, imageWriterPath);
 					}
 				} finally {
 					releaseTSKReadLock();
@@ -877,33 +903,43 @@ public class SleuthkitJNI {
 		}
 	}
 	
-	public static Image addImageToDatabase(SleuthkitCase skCase, String imagePath, int sectorSize,
+	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
 		String timeZone, String md5, String sha1, String sha256, String deviceId) throws TskCoreException {
 		
 		// Open the image
-		long imageHandle = openImgNat(new String[]{imagePath}, 1, sectorSize);
+		long imageHandle = openImgNat(imagePaths, 1, sectorSize);
 		
 		// Get the fields stored in the native code
-		List<String> paths = Arrays.asList(getPathsForImageNat(imageHandle));
+		List<String> computedPaths = Arrays.asList(getPathsForImageNat(imageHandle));
 		long size = getSizeForImageNat(imageHandle);
 		long type = getTypeForImageNat(imageHandle);
 		long computedSectorSize = getSectorSizeForImageNat(imageHandle);
 		if (StringUtils.isEmpty(md5)) {
 			md5 = getMD5HashForImageNat(imageHandle);
 		}
+		if (StringUtils.isEmpty(sha1)) {
+			sha1 = getSha1HashForImageNat(imageHandle);
+		}
+		// Sleuthkit does not currently generate any SHA256 hashes. Set to empty
+		// string for consistency.
+		if (sha256 == null) {
+			sha256 = "";
+		}
+		String collectionDetails = getCollectionDetailsForImageNat(imageHandle);
 		
 		//  Now save to database
 		CaseDbTransaction transaction = skCase.beginTransaction();
 		try {
 			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize, 
-				size, null, paths, 
+				size, null, computedPaths, 
 				timeZone, md5, sha1, sha256, 
 				deviceId, transaction);
+			if (!StringUtils.isEmpty(collectionDetails)) {
+				skCase.setAcquisitionDetails(img, collectionDetails);
+			}
 			transaction.commit();
 			
-		    // TODO may keep open - would need to add to cache here
-		    closeImgNat(imageHandle);
-			
+		    img.setImageHandle(imageHandle); // TODO cache this so we can close it
 			return img;
 		} catch (TskCoreException ex) {
 			transaction.rollback();
@@ -2028,7 +2064,7 @@ public class SleuthkitJNI {
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
-	private static native void runAddImgNat(long process, String deviceId, long a_img_info, String timeZone, String imageWriterPath) throws TskCoreException, TskDataException;
+	private static native void runAddImgNat(long process, String deviceId, long a_img_info, long image_id, String timeZone, String imageWriterPath) throws TskCoreException, TskDataException;
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -2071,6 +2107,10 @@ public class SleuthkitJNI {
 	private static native long getSectorSizeForImageNat(long imgHandle);
 	
 	private static native String getMD5HashForImageNat(long imgHandle);
+	
+	private static native String getSha1HashForImageNat(long imgHandle);
+	
+	private static native String getCollectionDetailsForImageNat(long imgHandle);
 
 	private static native void closeImgNat(long imgHandle);
 	

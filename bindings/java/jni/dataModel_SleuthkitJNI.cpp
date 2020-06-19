@@ -15,6 +15,10 @@
 #include "tsk/img/img_writer.h"
 #include "tsk/img/raw.h"
 #include "auto_db_java.h"
+#if HAVE_LIBEWF
+#include "tsk/img/ewf.h"
+#include "tsk/img/tsk_img_i.h"
+#endif
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -905,7 +909,7 @@ JNIEXPORT void JNICALL
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env, 
-            "runAddImgNat: Invalid TskAutoDbJava object passed in");
+            "runOpenAndAddImgNat: Invalid TskAutoDbJava object passed in");
         return;
     }
 
@@ -914,7 +918,7 @@ JNIEXPORT void JNICALL
     if (NULL != deviceId) {    
         device_id = (const char *) env->GetStringUTFChars(deviceId, &isCopy);
         if (NULL == device_id) {
-            setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
+            setThrowTskCoreError(env, "runOpenAndAddImgNat: Can't convert data source id string");
             return;
         }
     }
@@ -933,7 +937,7 @@ JNIEXPORT void JNICALL
             GetStringUTFChars(jsPath, &isCopy);
         if (imagepaths8[i] == NULL) {
             setThrowTskCoreError(env,
-                "runAddImgNat: Can't convert path strings.");
+                "runOpenAndAddImgNat: Can't convert path strings.");
             // @@@ should cleanup here paths that have been converted in imagepaths8[i]
             return;
         }
@@ -997,11 +1001,12 @@ JNIEXPORT void JNICALL
 * @param process the add-image process created by initAddImgNat
 * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
 * @param a_img_info image info object
+* @param img_id The object ID of the image in the database
 * @param timeZone the timezone the image is from
 */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone, jstring imageWriterPathJ) {
+    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jlong img_id, jstring timeZone, jstring imageWriterPathJ) {
     
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *)process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
@@ -1019,6 +1024,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
             return;
         }
     }
+
+    // Set the data source object ID
+    tskAuto->setDatasourceObjId(img_id);
 
     // Set the time zone.
     if (env->GetStringLength(timeZone) > 0) {
@@ -1291,8 +1299,8 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getMD5HashForImageNat(JNIEnv * env,
     }
     // env->NewStringUTF(img_ptrs[i])
 #if HAVE_LIBEWF 
-    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
-        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
+    if (img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
+        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)img_info;
         if (ewf_info->md5hash_isset) {
             return env->NewStringUTF(ewf_info->md5hash);
         }
@@ -1301,6 +1309,51 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getMD5HashForImageNat(JNIEnv * env,
     return env->NewStringUTF("");
 }
 
+/*
+* Get the sha1 hash of an image.
+*/
+JNIEXPORT jstring JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getSha1HashForImageNat(JNIEnv * env,
+    jclass obj, jlong a_img_info) {
+
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+    // env->NewStringUTF(img_ptrs[i])
+#if HAVE_LIBEWF 
+    if (img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
+        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)img_info;
+        if (ewf_info->sha1hash_isset) {
+            return env->NewStringUTF(ewf_info->sha1hash);
+        }
+    }
+#endif
+    return env->NewStringUTF("");
+}
+
+/*
+* Get the collection details of an image.
+*/
+JNIEXPORT jstring JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getCollectionDetailsForImageNat(JNIEnv * env,
+    jclass obj, jlong a_img_info) {
+
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+    // env->NewStringUTF(img_ptrs[i])
+#if HAVE_LIBEWF 
+    if (img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
+        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)img_info;
+        ewf_get_details(ewf_info);
+    }
+#endif
+    return env->NewStringUTF("");
+}
 
 /*
  * Open the volume system at the given offset

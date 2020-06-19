@@ -990,6 +990,11 @@ TskAutoDbJava::openImage(const char* a_deviceId)
 uint8_t
 TskAutoDbJava::addImageDetails(const char* deviceId)
 {
+    // The image has already been added to the database
+    if (m_curImgId > 0) {
+        return 0;
+    }
+
    string md5 = "";
    string sha1 = "";
    string collectionDetails = "";
@@ -1463,6 +1468,15 @@ void
 TskAutoDbJava::setTz(string tzone)
 {
     m_curImgTZone = tzone;
+}
+
+/**
+ * Set the object ID for the data source
+ */
+void 
+TskAutoDbJava::setDatasourceObjId(int64_t img_id)
+{
+    m_curImgId = img_id;
 }
 
 TSK_RETVAL_ENUM
