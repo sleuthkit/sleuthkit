@@ -605,8 +605,6 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         return TSK_ERR;
     }
 
-    const jchar * foo = m_jniEnv->GetStringChars(pathj, 0);
-
     // Escaped path is not needed beyond this point so free it.
     free(escaped_path);
 
