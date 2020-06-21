@@ -468,6 +468,7 @@ void extractExtension(char *name, char *extension) {
 * method does not handle 4 byte UTF8 encoding.
 *
 * @param input The sequence of characters to be turned into a jstring.
+* @param input_len The number of chars in the input.
 * @param newJString The new jstring object created from the input.
 * @returns TSK_ERR on error, TSK_OK on success
 */
