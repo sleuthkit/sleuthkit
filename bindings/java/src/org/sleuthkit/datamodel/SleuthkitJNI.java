@@ -35,6 +35,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -855,7 +856,6 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	private static long openImage(String[] imageFiles, int sSize, boolean useCache, String caseIdentifer) throws TskCoreException {
-
 		getTSKReadLock();
 		try {
 			long imageHandle;
@@ -903,6 +903,55 @@ public class SleuthkitJNI {
 		}
 	}
 	
+	/**
+	 * This is a temporary measure to support opening an image at the beginning
+	 * of the add image process. The open image handle is put into the normal image cache so
+	 * it won't be opened a second time and it will be closed during case closing.
+	 * 
+	 * This will change when all image opens are done by object ID and not paths.
+	 * 
+	 * @param skCase      The case the image belongs to.
+	 * @param imagePaths  The complete list of paths for the image.
+	 * @param imageHandle The open image handle from TSK.
+	 */
+	private static void cacheImageHandle(SleuthkitCase skCase, List<String> imagePaths, long imageHandle) {
+		
+		// Construct the hash key from the image paths
+		StringBuilder keyBuilder = new StringBuilder();
+		for (int i = 0; i < imagePaths.size(); ++i) {
+			keyBuilder.append(imagePaths.get(i));
+		}
+		final String imageKey = keyBuilder.toString();
+		
+		// Get the case identifier
+		try {
+			String caseIdentifier = skCase.getUniqueCaseIdentifier();
+		
+			synchronized (HandleCache.cacheLock) {
+				HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.put(imageHandle, new HashMap<>());
+				HandleCache.getCaseHandles(caseIdentifier).imageHandleCache.put(imageKey, imageHandle);
+			}
+		} catch (TskCoreException ex) {
+			// getUniqueCaseIdentfier() will only fail if the case is closed
+		}
+	}
+	
+	/**
+	 * Add an image to the database and return the open image.
+	 * 
+	 * @param skCase     The current case.
+	 * @param imagePaths The path(s) to the image (will just be the first for .e01, .001, etc).
+	 * @param sectorSize The sector size (0 for auto-detect).
+	 * @param timeZone   The time zone.
+	 * @param md5        MD5 hash (if known).
+	 * @param sha1       SHA1 hash (if known).
+	 * @param sha256     SHA256 hash (if known).
+	 * @param deviceId   Device ID.
+	 * 
+	 * @return The Image object.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
 		String timeZone, String md5, String sha1, String sha256, String deviceId) throws TskCoreException {
 		
@@ -939,7 +988,8 @@ public class SleuthkitJNI {
 			}
 			transaction.commit();
 			
-		    img.setImageHandle(imageHandle); // TODO cache this so we can close it
+		    img.setImageHandle(imageHandle);
+			cacheImageHandle(skCase, computedPaths, imageHandle);
 			return img;
 		} catch (TskCoreException ex) {
 			transaction.rollback();
