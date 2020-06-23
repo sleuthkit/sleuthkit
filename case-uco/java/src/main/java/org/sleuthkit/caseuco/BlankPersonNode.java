@@ -20,6 +20,9 @@ package org.sleuthkit.caseuco;
 
 import java.util.UUID;
 
+/**
+ * Represents a blank node version of a person.
+ */
 class BlankPersonNode extends Person {
     
     BlankPersonNode() {

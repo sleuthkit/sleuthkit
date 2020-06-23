@@ -22,5 +22,5 @@ package org.sleuthkit.caseuco;
  * Indicates that the content could not be exported, even in part, to CASE.
  */
 public class ContentNotExportableException extends Exception {
-    
+    private static final long serialVersionUID = 1L;
 }

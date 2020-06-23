@@ -20,6 +20,9 @@ package org.sleuthkit.caseuco;
 
 import java.util.UUID;
 
+/**
+ * Represents a blank node version of a location object.
+ */
 class BlankLocationNode extends Location {
     
     BlankLocationNode() {

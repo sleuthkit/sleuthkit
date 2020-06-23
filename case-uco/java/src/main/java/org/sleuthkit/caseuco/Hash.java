@@ -41,6 +41,10 @@ class Hash extends UcoObject {
         return this;
     }
 
+    /**
+     * Describes the type of hash method that is represented by this Hash
+     * instance.
+     */
     enum HashMethod {
         MD5;
     }
