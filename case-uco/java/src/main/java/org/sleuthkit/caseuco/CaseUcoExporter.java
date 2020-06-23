@@ -151,7 +151,7 @@ import org.sleuthkit.uco.types.Hash;
 /**
  * Exports Sleuthkit DataModel objects to CASE. UcoObject is the base class for
  * all CASE constructs. The export objects are configured to be serialized with
- * Jackson.
+ * Gson.
  */
 public class CaseUcoExporter {
 
