@@ -21,18 +21,22 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the PhoneCall observable described in the UCO
+ * ontology.
+ */
 class PhoneCall extends Facet {
-    
+
     private String to;
-    
+
     private String from;
-    
+
     private String startTime;
-    
+
     private String endTime;
-    
+
     private String callType;
-    
+
     PhoneCall() {
         super(PhoneCall.class.getSimpleName());
     }
@@ -46,21 +50,21 @@ class PhoneCall extends Facet {
         this.from = from.getId();
         return this;
     }
-    
+
     PhoneCall setStartTime(Long startTime) {
-        if(startTime != null) {
+        if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
-    
+
     PhoneCall setEndTime(Long endTime) {
-        if(endTime != null) {
+        if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
-    
+
     PhoneCall setCallType(String callType) {
         this.callType = callType;
         return this;

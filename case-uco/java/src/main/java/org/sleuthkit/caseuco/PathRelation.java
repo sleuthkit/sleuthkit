@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the PathRelation observable described in the
+ * UCO ontology.
+ */
 class PathRelation extends Facet {
-    
+
     private String path;
-   
+
     PathRelation() {
         super(PathRelation.class.getSimpleName());
     }
-    
+
     PathRelation setPath(String path) {
         this.path = path;
         return this;

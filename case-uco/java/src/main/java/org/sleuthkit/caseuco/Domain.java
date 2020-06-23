@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Domain observable described in the UCO
+ * ontology.
+ */
 class Domain extends Facet {
-    
+
     private String value;
-    
+
     Domain() {
         super(Domain.class.getSimpleName());
     }
-    
+
     Domain setValue(String value) {
         this.value = value;
         return this;

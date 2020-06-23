@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the PhoneAccount observable described in the
+ * UCO ontology.
+ */
 class PhoneAccount extends Facet {
-    
+
     private String phoneNumber;
-    
+
     PhoneAccount() {
         super(PhoneAccount.class.getSimpleName());
     }

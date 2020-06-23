@@ -18,21 +18,24 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Hash type described in the UCO ontology.
+ */
 class Hash extends UcoObject {
-    
+
     private HashMethod hashMethod;
 
     private final String hashValue;
-    
+
     Hash(String hashValue) {
         this(null, hashValue);
     }
-    
+
     Hash(String id, String hashValue) {
         super(id, "Hash");
         this.hashValue = hashValue;
     }
-    
+
     Hash setHashMethod(HashMethod method) {
         this.hashMethod = method;
         return this;

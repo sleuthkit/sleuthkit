@@ -18,8 +18,12 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Software observable described in the UCO
+ * ontology.
+ */
 class Software extends Facet {
-    
+
     Software() {
         super(Software.class.getSimpleName());
     }

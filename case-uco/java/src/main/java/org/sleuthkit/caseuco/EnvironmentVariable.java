@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the EnvironmentVariable observable described in
+ * the UCO ontology.
+ */
 class EnvironmentVariable extends Facet {
-    
+
     private String value;
-    
+
     EnvironmentVariable() {
         super(EnvironmentVariable.class.getSimpleName());
     }
-    
+
     EnvironmentVariable setValue(String value) {
         this.value = value;
         return this;

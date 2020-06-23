@@ -21,6 +21,10 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the BrowserCookie observable described in the
+ * UCO ontology.
+ */
 class BrowserCookie extends Facet {
 
     private String cookieName;
@@ -45,14 +49,14 @@ class BrowserCookie extends Facet {
     }
 
     BrowserCookie setAccessedTime(Long accessedTime) {
-        if(accessedTime != null) {
+        if (accessedTime != null) {
             this.accessedTime = Instant.ofEpochSecond(accessedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
     BrowserCookie setExpirationTime(Long expirationTime) {
-        if(expirationTime != null) {
+        if (expirationTime != null) {
             this.expirationTime = Instant.ofEpochSecond(expirationTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;

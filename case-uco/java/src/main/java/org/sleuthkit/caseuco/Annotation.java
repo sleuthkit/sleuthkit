@@ -21,23 +21,27 @@ package org.sleuthkit.caseuco;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class definition mirrors the core Annotation object described in the UCO
+ * ontology.
+ */
 class Annotation extends UcoObject {
 
     private final List<String> tag;
 
     private final List<String> object;
-    
+
     Annotation(String uuid) {
         super(uuid, "Annotation");
         tag = new ArrayList<>();
         object = new ArrayList<>();
     }
-    
+
     Annotation addTag(String tag) {
         this.tag.add(tag);
         return this;
     }
-    
+
     Annotation addObject(String object) {
         this.object.add(object);
         return this;

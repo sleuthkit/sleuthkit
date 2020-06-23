@@ -24,6 +24,10 @@ import java.util.List;
 
 import org.sleuthkit.caseuco.Hash.HashMethod;
 
+/**
+ * This class definition mirrors the ContentData observable described in the UCO
+ * ontology.
+ */
 class ContentData extends Facet {
 
     private Long sizeInBytes;
@@ -32,9 +36,9 @@ class ContentData extends Facet {
 
     @SerializedName("hash")
     private final List<Hash> hashes;
-    
+
     private String dataPayload;
-    
+
     private String owner;
 
     ContentData() {
@@ -63,7 +67,7 @@ class ContentData extends Facet {
         this.dataPayload = dataPayload;
         return this;
     }
-    
+
     ContentData setOwner(Identity owner) {
         this.owner = owner.getId();
         return this;

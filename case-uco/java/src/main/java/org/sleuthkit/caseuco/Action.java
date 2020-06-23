@@ -21,19 +21,23 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the core Action object described in the UCO
+ * ontology.
+ */
 class Action extends UcoObject {
-    
+
     private String startTime;
-    
+
     Action(String id) {
         super(id, Action.class.getSimpleName());
     }
-    
+
     Action setStartTime(Long startTime) {
-        if(startTime != null) {
+        if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
-        
+
         return this;
     }
 }

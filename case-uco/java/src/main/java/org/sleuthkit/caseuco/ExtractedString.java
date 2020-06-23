@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the ExtractedString observable described in the
+ * UCO ontology.
+ */
 class ExtractedString extends Facet {
-    
+
     private String stringValue;
-    
+
     ExtractedString() {
         super(ExtractedString.class.getSimpleName());
     }
-    
+
     ExtractedString setStringValue(String stringValue) {
         this.stringValue = stringValue;
         return this;

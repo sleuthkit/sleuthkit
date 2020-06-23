@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Application observable described in the UCO
+ * ontology.
+ */
 class Application extends Facet {
-    
+
     private String applicationIdentifier;
-    
+
     private String operatingSystem;
-    
+
     private Integer numberOfLaunches;
-    
+
     private String version;
 
     Application() {
@@ -36,17 +40,17 @@ class Application extends Facet {
         this.applicationIdentifier = applicationIdentifier;
         return this;
     }
-    
+
     Application setOperatingSystem(CyberItem operatingSystem) {
         this.operatingSystem = operatingSystem.getId();
         return this;
     }
-    
+
     Application setNumberOfLaunches(Integer numberOfLaunches) {
         this.numberOfLaunches = numberOfLaunches;
         return this;
     }
-    
+
     Application setVersion(String version) {
         this.version = version;
         return this;

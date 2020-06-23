@@ -25,6 +25,10 @@ import static org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_EXT4;
 import static org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_HFS;
 import static org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS;
 
+/**
+ * This class definition mirrors the FileSystem observable described in the UCO
+ * ontology.
+ */
 class FileSystem extends Facet {
 
     private FileSystemType fileSystemType;

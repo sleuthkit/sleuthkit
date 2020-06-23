@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Core Identity object described in the UCO
+ * ontology.
+ */
 class Identity extends UcoObject {
-    
+
     Identity(String id) {
         super(id, Identity.class.getSimpleName());
     }
-    
+
 }

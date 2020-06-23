@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the ApplicationAccount observable described in
+ * the UCO ontology.
+ */
 class ApplicationAccount extends Facet {
-    
+
     private String application;
-    
+
     ApplicationAccount() {
         super(ApplicationAccount.class.getSimpleName());
     }
-    
+
     ApplicationAccount setApplication(CyberItem application) {
         this.application = application.getId();
         return this;

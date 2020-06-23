@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the WindowsComputerSpecification observable
+ * described in the UCO ontology.
+ */
 class WindowsComputerSpecification extends Facet {
-    
+
     private String registeredOrganization;
-    
+
     private String registeredOwner;
-    
+
     private String windowsTempDirectory;
-    
+
     WindowsComputerSpecification() {
         super(WindowsComputerSpecification.class.getSimpleName());
     }

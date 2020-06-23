@@ -18,6 +18,10 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Volume observable described in the UCO
+ * ontology.
+ */
 class Volume extends Facet {
 
     private String volumeType;

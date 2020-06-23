@@ -21,37 +21,41 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the CalendarEntry observable described in the
+ * UCO ontology.
+ */
 class CalendarEntry extends Facet {
-    
+
     private String eventType;
-    
+
     private String startTime;
-    
+
     private String endTime;
-    
+
     private String location;
-    
+
     CalendarEntry() {
         super(CalendarEntry.class.getSimpleName());
     }
-    
+
     CalendarEntry setEventType(String eventType) {
         this.eventType = eventType;
         return this;
     }
-    
+
     CalendarEntry setLocation(Location location) {
         this.location = location.getId();
         return this;
     }
-    
+
     CalendarEntry setEndTime(Long endTime) {
         if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
-    
+
     CalendarEntry setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();

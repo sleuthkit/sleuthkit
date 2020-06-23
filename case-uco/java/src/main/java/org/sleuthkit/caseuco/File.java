@@ -21,6 +21,10 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the File observable described in the UCO
+ * ontology.
+ */
 class File extends Facet {
 
     private String accessedTime;
@@ -40,7 +44,7 @@ class File extends Facet {
     }
 
     File setAccessedTime(Long accessedTime) {
-        if(accessedTime != null) {
+        if (accessedTime != null) {
             this.accessedTime = Instant.ofEpochSecond(accessedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;

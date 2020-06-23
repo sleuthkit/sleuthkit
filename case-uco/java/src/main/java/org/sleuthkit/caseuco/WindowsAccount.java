@@ -18,6 +18,10 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the WindowsAccount observable described in the UCO
+ * ontology.
+ */
 class WindowsAccount extends Facet {
     
     private String groups;

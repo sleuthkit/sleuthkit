@@ -18,12 +18,16 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the LatLongCoordinates observable described in
+ * the UCO ontology.
+ */
 class LatLongCoordinates extends Facet {
-    
+
     private Double altitude;
-    
+
     private Double latitude;
-    
+
     private Double longitude;
 
     LatLongCoordinates() {

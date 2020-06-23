@@ -18,17 +18,21 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Note observable described in the UCO
+ * ontology.
+ */
 class Note extends Facet {
-    
+
     private String text;
-    
+
     Note() {
         super(Note.class.getSimpleName());
     }
-    
+
     Note setText(String text) {
         this.text = text;
         return this;
     }
-    
+
 }

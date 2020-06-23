@@ -18,8 +18,12 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Organization object described in the UCO
+ * ontology.
+ */
 class Organization extends UcoObject {
-    
+
     Organization(String id) {
         super(id, Organization.class.getSimpleName());
     }

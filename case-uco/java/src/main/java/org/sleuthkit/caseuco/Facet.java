@@ -17,7 +17,11 @@
  * limitations under the License.
  */
 package org.sleuthkit.caseuco;
-    
+
+/**
+ * This class definition mirrors the core Facet object described in the UCO
+ * ontology.
+ */
 abstract class Facet extends UcoObject {
 
     Facet(String type) {

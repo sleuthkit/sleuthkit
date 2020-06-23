@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the core Assertion object described in the UCO
+ * ontology.
+ */
 class Assertion extends UcoObject {
-    
+
     private String statement;
-    
+
     Assertion(String uuid) {
         super(uuid, "Assertion");
     }

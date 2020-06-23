@@ -21,16 +21,20 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the Message observable described in the UCO
+ * ontology.
+ */
 class Message extends Facet {
-    
+
     private String messageText;
-    
+
     private String application;
-    
+
     String sentTime;
-    
+
     private String messageType;
-    
+
     Message() {
         super(Message.class.getSimpleName());
     }
@@ -56,7 +60,7 @@ class Message extends Facet {
         this.messageType = messageType;
         return this;
     }
-    
+
     @Override
     Message setId(String id) {
         super.setId("_:" + id);

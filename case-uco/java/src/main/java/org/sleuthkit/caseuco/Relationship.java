@@ -18,12 +18,16 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the core Relationship object described in the
+ * UCO ontology.
+ */
 class Relationship extends UcoObject {
-    
+
     private String source;
-    
+
     private String target;
-    
+
     Relationship(String id) {
         super(id, "Relationship");
     }

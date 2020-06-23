@@ -18,12 +18,16 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the URL observable described in the UCO
+ * ontology.
+ */
 class URL extends Facet {
-    
+
     private String fullValue;
-    
+
     private String userName;
-    
+
     URL() {
         super(URL.class.getSimpleName());
     }
@@ -32,7 +36,7 @@ class URL extends Facet {
         this.fullValue = fullValue;
         return this;
     }
-    
+
     URL setUserName(CyberItem userName) {
         this.userName = userName.getId();
         return this;

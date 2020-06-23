@@ -21,18 +21,22 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the OperatingSystem observable described in the
+ * UCO ontology.
+ */
 class OperatingSystem extends Facet {
-    
+
     private String installDate;
-    
+
     private String version;
-    
+
     OperatingSystem() {
         super(OperatingSystem.class.getSimpleName());
     }
 
     OperatingSystem setInstallDate(Long installDate) {
-        if(installDate != null) {
+        if (installDate != null) {
             this.installDate = Instant.ofEpochSecond(installDate).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
@@ -41,5 +45,5 @@ class OperatingSystem extends Facet {
     OperatingSystem setVersion(String version) {
         this.version = version;
         return this;
-    }  
+    }
 }

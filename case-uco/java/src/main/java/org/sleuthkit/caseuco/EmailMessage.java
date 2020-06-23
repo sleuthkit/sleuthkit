@@ -21,32 +21,36 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the EmailMessage observable described in the
+ * UCO ontology.
+ */
 class EmailMessage extends Facet {
-    
+
     private String receivedTime;
-    
+
     private String sentTime;
-    
+
     private String bcc;
-    
+
     private String cc;
-    
+
     private String from;
-    
+
     private String headerRaw;
-    
+
     private String messageID;
-    
+
     private String subject;
-    
+
     private String sender;
-    
+
     private String inReplyTo;
-    
+
     private String body;
-    
+
     private String contentType;
-    
+
     EmailMessage() {
         super(EmailMessage.class.getSimpleName());
     }
@@ -55,21 +59,21 @@ class EmailMessage extends Facet {
         this.body = body;
         return this;
     }
-    
+
     EmailMessage setContentType(String contentType) {
         this.contentType = contentType;
         return this;
     }
 
     EmailMessage setReceivedTime(Long receivedTime) {
-        if(receivedTime != null) {
+        if (receivedTime != null) {
             this.receivedTime = Instant.ofEpochSecond(receivedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
     EmailMessage setSentTime(Long sentTime) {
-        if(sentTime != null) {
+        if (sentTime != null) {
             this.sentTime = Instant.ofEpochSecond(sentTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
@@ -104,12 +108,12 @@ class EmailMessage extends Facet {
         this.subject = subject;
         return this;
     }
-    
+
     EmailMessage setSender(CyberItem sender) {
         this.sender = sender.getId();
         return this;
     }
-    
+
     EmailMessage setInReplyTo(CyberItem replyTo) {
         this.inReplyTo = replyTo.getId();
         return this;

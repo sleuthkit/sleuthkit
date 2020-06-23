@@ -21,23 +21,27 @@ package org.sleuthkit.caseuco;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * This class definition mirrors the DigitalAccount observable described in the
+ * UCO ontology.
+ */
 class DigitalAccount extends Facet {
-    
+
     private String displayName;
-    
+
     private String lastLoginTime;
-    
+
     DigitalAccount() {
         super(DigitalAccount.class.getSimpleName());
     }
-    
+
     DigitalAccount setDisplayName(String displayName) {
         this.displayName = displayName;
         return this;
     }
-    
+
     DigitalAccount setLastLoginTime(Long time) {
-        if(time != null) {
+        if (time != null) {
             this.lastLoginTime = Instant.ofEpochSecond(time).atOffset(ZoneOffset.UTC).toString();
         }
         return this;

@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Contact observable described in the UCO
+ * ontology.
+ */
 class Contact extends Facet {
-    
+
     private String contactName;
-    
+
     Contact() {
         super(Contact.class.getSimpleName());
     }
-    
+
     Contact setContactName(String contactName) {
         this.contactName = contactName;
         return this;

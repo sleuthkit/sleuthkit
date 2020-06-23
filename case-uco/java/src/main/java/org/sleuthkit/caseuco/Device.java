@@ -18,12 +18,16 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Device observable described in the UCO
+ * ontology.
+ */
 class Device extends Facet {
 
     private String manufacturer;
 
     private String model;
-    
+
     private String serialNumber;
 
     Device() {
@@ -42,10 +46,10 @@ class Device extends Facet {
 
     @Override
     Device setId(String id) {
-        super.setId("_:" +id);
+        super.setId("_:" + id);
         return this;
     }
-    
+
     Device setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
         return this;

@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the DomainName observable described in the UCO
+ * ontology.
+ */
 class DomainName extends Facet {
-    
+
     private String value;
-    
+
     DomainName() {
         super(DomainName.class.getSimpleName());
     }

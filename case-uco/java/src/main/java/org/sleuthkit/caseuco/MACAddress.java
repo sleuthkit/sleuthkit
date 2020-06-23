@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the MACAddress observable described in the UCO
+ * ontology.
+ */
 class MACAddress extends Facet {
-    
+
     private String value;
-    
+
     MACAddress() {
         super(MACAddress.class.getSimpleName());
     }

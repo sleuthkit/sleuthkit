@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Person object described in the UCO
+ * ontology.
+ */
 class Person extends UcoObject {
-    
+
     Person(String id) {
         super(id, Person.class.getSimpleName());
     }
-    
+
 }

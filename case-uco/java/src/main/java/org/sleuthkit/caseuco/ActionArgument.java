@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the ActionArgument observable described in the
+ * UCO ontology.
+ */
 class ActionArgument extends Facet {
-    
+
     private String argumentName;
-    
+
     ActionArgument() {
         super(ActionArgument.class.getSimpleName());
     }
-    
+
     ActionArgument setArgumentName(String argumentName) {
         this.argumentName = argumentName;
         return this;

@@ -18,12 +18,16 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the BrowserBookmark observable described in the
+ * UCO ontology.
+ */
 class BrowserBookmark extends Facet {
-    
+
     private String urlTargeted;
-    
+
     private String createdTime;
-    
+
     private String application;
 
     BrowserBookmark() {

@@ -20,13 +20,17 @@ package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the ComupterSpecification observable described
+ * in the UCO ontology.
+ */
 class ComputerSpecification extends Facet {
-    
+
     @SerializedName("hostname")
     private String hostName;
-    
+
     private String processorArchitecture;
-    
+
     ComputerSpecification() {
         super(ComputerSpecification.class.getSimpleName());
     }
@@ -39,5 +43,5 @@ class ComputerSpecification extends Facet {
     ComputerSpecification setProcessorArchitecture(String processorArchitecture) {
         this.processorArchitecture = processorArchitecture;
         return this;
-    }  
+    }
 }

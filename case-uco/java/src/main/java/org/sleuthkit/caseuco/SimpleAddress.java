@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the SimpleAddress observable described in the
+ * UCO ontology.
+ */
 class SimpleAddress extends Facet {
-    
+
     SimpleAddress() {
         super(SimpleAddress.class.getSimpleName());
     }
-    
+
 }

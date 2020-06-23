@@ -18,14 +18,18 @@
  */
 package org.sleuthkit.caseuco;
 
+/**
+ * This class definition mirrors the Attachment observable described in the UCO
+ * ontology.
+ */
 class Attachment extends Facet {
-    
+
     private String url;
-    
+
     Attachment() {
         super(Attachment.class.getSimpleName());
     }
-    
+
     Attachment setUrl(String url) {
         this.url = url;
         return this;
