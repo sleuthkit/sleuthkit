@@ -88,65 +88,7 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 
-import org.sleuthkit.caseontology.BlankTraceNode;
-import org.sleuthkit.caseontology.Trace;
 import org.sleuthkit.datamodel.SleuthkitCase;
-import org.sleuthkit.uco.action.Action;
-import org.sleuthkit.uco.action.ActionArgument;
-import org.sleuthkit.uco.core.Annotation;
-import org.sleuthkit.uco.core.Assertion;
-import org.sleuthkit.uco.core.BlankAssertionNode;
-import org.sleuthkit.uco.core.BlankRelationshipNode;
-import org.sleuthkit.uco.core.UcoObject;
-import org.sleuthkit.uco.identity.BlankIdentityNode;
-import org.sleuthkit.uco.identity.BlankOrganizationNode;
-import org.sleuthkit.uco.identity.BlankPersonNode;
-import org.sleuthkit.uco.identity.Identity;
-import org.sleuthkit.uco.identity.IdentityFacet;
-import org.sleuthkit.uco.identity.Organization;
-import org.sleuthkit.uco.identity.Person;
-import org.sleuthkit.uco.location.BlankLocationNode;
-import org.sleuthkit.uco.location.LatLongCoordinates;
-import org.sleuthkit.uco.location.Location;
-import org.sleuthkit.uco.location.SimpleAddress;
-import org.sleuthkit.uco.observable.Account;
-import org.sleuthkit.uco.observable.AccountAuthentication;
-import org.sleuthkit.uco.observable.Application;
-import org.sleuthkit.uco.observable.ApplicationAccount;
-import org.sleuthkit.uco.observable.Attachment;
-import org.sleuthkit.uco.observable.BrowserBookmark;
-import org.sleuthkit.uco.observable.BrowserCookie;
-import org.sleuthkit.uco.observable.CalendarEntry;
-import org.sleuthkit.uco.observable.ComputerSpecification;
-import org.sleuthkit.uco.observable.Contact;
-import org.sleuthkit.uco.observable.ContentData;
-import org.sleuthkit.uco.observable.Device;
-import org.sleuthkit.uco.observable.DigitalAccount;
-import org.sleuthkit.uco.observable.Domain;
-import org.sleuthkit.uco.observable.DomainName;
-import org.sleuthkit.uco.observable.EmailAddress;
-import org.sleuthkit.uco.observable.EmailMessage;
-import org.sleuthkit.uco.observable.EnvironmentVariable;
-import org.sleuthkit.uco.observable.ExtractedString;
-import org.sleuthkit.uco.observable.File;
-import org.sleuthkit.uco.observable.HTTPConnection;
-import org.sleuthkit.uco.observable.MACAddress;
-import org.sleuthkit.uco.observable.Message;
-import org.sleuthkit.uco.observable.MobileDevice;
-import org.sleuthkit.uco.observable.Note;
-import org.sleuthkit.uco.observable.OperatingSystem;
-import org.sleuthkit.uco.observable.PathRelation;
-import org.sleuthkit.uco.observable.PhoneAccount;
-import org.sleuthkit.uco.observable.PhoneCall;
-import org.sleuthkit.uco.observable.SIMCard;
-import org.sleuthkit.uco.observable.SMSMessage;
-import org.sleuthkit.uco.observable.Software;
-import org.sleuthkit.uco.observable.URL;
-import org.sleuthkit.uco.observable.WindowsAccount;
-import org.sleuthkit.uco.observable.WindowsComputerSpecification;
-import org.sleuthkit.uco.observable.WindowsRegistryValue;
-import org.sleuthkit.uco.observable.WirelessNetworkConnection;
-import org.sleuthkit.uco.types.Hash;
 
 /**
  * Exports Sleuthkit DataModel objects to CASE. UcoObject is the base class for
@@ -263,7 +205,7 @@ public class CaseUcoExporter {
      */
     public UcoObject exportFileSystem(FileSystem fileSystem) {
         Trace export = new Trace(this.uuidService.createUUID(fileSystem))
-                .addBundle(new org.sleuthkit.uco.observable.FileSystem()
+                .addBundle(new org.sleuthkit.caseuco.FileSystem()
                         .setFileSystemType(fileSystem.getFsType())
                         .setCluserSize(fileSystem.getBlock_size()));
 
@@ -292,7 +234,7 @@ public class CaseUcoExporter {
      */
     public UcoObject exportVolume(Volume volume) {
         Trace export = new Trace(this.uuidService.createUUID(volume));
-        org.sleuthkit.uco.observable.Volume volumeFacet = new org.sleuthkit.uco.observable.Volume();
+        org.sleuthkit.caseuco.Volume volumeFacet = new org.sleuthkit.caseuco.Volume();
         if (volume.getLength() > 0) {
             volumeFacet.setSectorSize(volume.getSize() / volume.getLength());
         }

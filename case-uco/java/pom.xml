@@ -33,19 +33,4 @@
         </dependency>
     </dependencies>
     
-    <!-- Only include the class files needed by the client -->
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <includes>
-                      <include>**/caseuco/*.class</include>
-                      <include>**/core/UcoObject.class</include>
-                    </includes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
