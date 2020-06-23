@@ -52,36 +52,36 @@ public abstract class UcoObject {
         return this.id;
     }
 
-    protected UcoObject setCreatedTime(Long createdTime) {
+    UcoObject setCreatedTime(Long createdTime) {
         if (createdTime != null) {
             this.createdTime = Instant.ofEpochSecond(createdTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    protected UcoObject setModifiedTime(Long modifiedTime) {
+    UcoObject setModifiedTime(Long modifiedTime) {
         if (modifiedTime != null) {
             this.modifiedTime = Instant.ofEpochSecond(modifiedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    protected UcoObject setId(String id) {
+    UcoObject setId(String id) {
         this.id = id;
         return this;
     }
 
-    protected UcoObject setDescription(String description) {
+    UcoObject setDescription(String description) {
         this.description = description;
         return this;
     }
 
-    protected UcoObject setName(String name) {
+    UcoObject setName(String name) {
         this.name = name;
         return this;
     }
 
-    protected UcoObject setTag(String tag) {
+    UcoObject setTag(String tag) {
         this.tag = tag;
         return this;
     }

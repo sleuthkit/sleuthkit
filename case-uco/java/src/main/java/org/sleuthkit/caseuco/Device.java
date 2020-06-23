@@ -41,7 +41,7 @@ class Device extends Facet {
     }
 
     @Override
-    protected Device setId(String id) {
+    Device setId(String id) {
         super.setId("_:" +id);
         return this;
     }

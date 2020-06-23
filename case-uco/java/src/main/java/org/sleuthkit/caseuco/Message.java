@@ -58,7 +58,7 @@ class Message extends Facet {
     }
     
     @Override
-    protected Message setId(String id) {
+    Message setId(String id) {
         super.setId("_:" + id);
         return this;
     }
