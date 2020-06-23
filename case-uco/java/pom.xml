@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.sleuthkit</groupId>
+    <artifactId>sleuthkit-caseuco</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+    <name>SleuthkitCaseUco</name>
+    
+    <properties>
+        <!-- This project depends on the DataModel. Ensure you have built DataModel attempting a build. -->
+        <sleuthkit.version>4.9.0</sleuthkit.version>
+        <sleuthkit.path>${env.TSK_HOME}/bindings/java/dist/sleuthkit-${sleuthkit.version}.jar</sleuthkit.path>
+        
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.sleuthkit</groupId>
+            <artifactId>sleuthkit-postgresql</artifactId>
+            <version>${sleuthkit.version}</version>
+            <scope>system</scope>
+            <systemPath>${sleuthkit.path}</systemPath>
+        </dependency>
+    </dependencies>
+    
+    <!-- Only include the class files needed by the client -->
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <includes>
+                      <include>**/caseuco/*.class</include>
+                      <include>**/core/UcoObject.class</include>
+                    </includes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
