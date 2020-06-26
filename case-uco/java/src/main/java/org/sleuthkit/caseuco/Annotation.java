@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,18 +28,19 @@ import java.util.List;
  */
 class Annotation extends UcoObject {
 
-    private final List<String> tag;
+    @SerializedName("tag")
+    private final List<String> tags;
 
     private final List<String> object;
 
     Annotation(String uuid) {
         super(uuid, "Annotation");
-        tag = new ArrayList<>();
+        tags = new ArrayList<>();
         object = new ArrayList<>();
     }
 
     Annotation addTag(String tag) {
-        this.tag.add(tag);
+        this.tags.add(tag);
         return this;
     }
 

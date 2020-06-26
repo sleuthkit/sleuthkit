@@ -20,6 +20,7 @@ package org.sleuthkit.caseuco;
 
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.ContentTag;
+import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
  * Providing a way to customize UUIDs is a necessary feature to promote the
@@ -38,4 +39,5 @@ public interface CaseUcoUUIDService {
 
     public String createUUID(Content content);
     public String createUUID(ContentTag contentTag);
+    public String createUUID(SleuthkitCase sleuthkitCase);
 }

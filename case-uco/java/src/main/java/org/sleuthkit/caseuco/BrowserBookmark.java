@@ -26,8 +26,6 @@ class BrowserBookmark extends Facet {
 
     private String urlTargeted;
 
-    private String createdTime;
-
     private String application;
 
     BrowserBookmark() {

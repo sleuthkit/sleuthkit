@@ -40,6 +40,8 @@ class ContentData extends Facet {
     private String dataPayload;
 
     private String owner;
+    
+    private String dataPayloadReferenceUrl;
 
     ContentData() {
         super(ContentData.class.getSimpleName());
@@ -70,6 +72,11 @@ class ContentData extends Facet {
 
     ContentData setOwner(Identity owner) {
         this.owner = owner.getId();
+        return this;
+    }
+    
+    ContentData setDataPayloadReferenceUrl(UcoObject url) {
+        this.dataPayloadReferenceUrl = url.getId();
         return this;
     }
 }
