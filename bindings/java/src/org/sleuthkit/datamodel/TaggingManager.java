@@ -182,7 +182,7 @@ public class TaggingManager {
 	 *
 	 * @throws TskCoreException If there is an error querying the case database.
 	 */
-	public TagSet getTagSetForTagName(TagName tagName) throws TskCoreException {
+	public TagSet getTagSet(TagName tagName) throws TskCoreException {
 		if (tagName == null) {
 			throw new IllegalArgumentException("Null tagName argument");
 		}
