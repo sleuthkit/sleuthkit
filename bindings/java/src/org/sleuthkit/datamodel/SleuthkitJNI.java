@@ -557,6 +557,7 @@ public class SleuthkitJNI {
 					}
 					if (imageHandle != 0) {
 						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
+						dbHelper.finish();
 					}
 				} finally {
 					releaseTSKReadLock();
@@ -583,6 +584,42 @@ public class SleuthkitJNI {
 					releaseTSKReadLock();
 				}
 			}
+			
+			/**
+			 * Call at the end of the add image process regardless of the error/canceled state.
+			 * 
+			 * Note that the new image is no longer deleted on error/cancellation
+			 * 
+			 * If the process was not canceled, will add the final batch of files to the database
+			 * and submit for any further processing through the callback. 
+			 * 
+			 * @return The object ID of the newly added image
+			 * 
+			 * @throws TskCoreException 
+			 */
+			public synchronized long finishAddImageProcess() throws TskCoreException {
+				getTSKReadLock();
+				try {
+					if (tskAutoDbPointer == 0) {
+						throw new TskCoreException("AddImgProcess::finishAddImageProcess: AutoDB pointer is NULL");
+					}
+
+					// If the process wasn't cancelled, finish up processing the
+					// remaining files.
+					if (! this.isCanceled && dbHelper != null) {
+						dbHelper.finish();
+					}
+
+					// Free the auto DB pointer and get the image ID
+					long id = finishAddImgNat(tskAutoDbPointer);
+					tskAutoDbPointer = 0;
+					
+					skCase.addDataSourceToHasChildrenMap();
+					return id;
+				} finally {
+					releaseTSKReadLock();
+				}
+			}			
 
 			/**
 			 * Rolls back the process of adding an image to the case database
@@ -590,7 +627,9 @@ public class SleuthkitJNI {
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
+			 * @deprecated Use finishAddImageProcess() instead
 			 */
+			@Deprecated
 			public synchronized void revert() throws TskCoreException {
 				getTSKReadLock();
 				try {
@@ -614,7 +653,9 @@ public class SleuthkitJNI {
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
+			 * @deprecated Use finishAddImageProcess() instead
 			 */
+			@Deprecated
 			public synchronized long commit() throws TskCoreException {
 				getTSKReadLock();
 				try {
