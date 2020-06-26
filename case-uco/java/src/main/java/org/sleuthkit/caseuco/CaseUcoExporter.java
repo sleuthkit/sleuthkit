@@ -95,13 +95,12 @@ import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
- * Exports Sleuthkit DataModel objects to CASE. UcoObject is the base class for
- * all CASE constructs. The export objects are configured to be serialized with
- * Gson.
+ * Exports Sleuth Kit DataModel objects to CASE. The CASE JSON output is
+ * configured to be serialized with GSON.
  *
- * The exporter behavior can be configured by passing configuration parameters
- * in a custom Properties instance. A list of available configuration properties
- * can be found in the README.md file.
+ * NOTE: The exporter behavior can be configured by passing configuration
+ * parameters in a custom Properties instance. A list of available configuration
+ * properties can be found in the README.md file.
  */
 public class CaseUcoExporter {
 
@@ -161,8 +160,7 @@ public class CaseUcoExporter {
     }
 
     /**
-     * Exports to CASE the SleuthkitCase instance passed in during
-     * initialization.
+     * Exports the SleuthkitCase instance passed during initialization to CASE.
      *
      * @return A collection of CASE JSON elements
      *
