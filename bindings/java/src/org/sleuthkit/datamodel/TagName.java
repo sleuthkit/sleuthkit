@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2013-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -89,10 +88,9 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final TskData.FileKnown knownStatus;
 	private final long tagSetId;
 	private final int rank;
-	private final SleuthkitCase skCase;
 
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(SleuthkitCase sleuthkitCase, long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
@@ -100,7 +98,6 @@ public class TagName implements Comparable<TagName>, Serializable {
 		this.knownStatus = knownStatus;
 		this.tagSetId = tagSetId;
 		this.rank = rank;
-		this.skCase = sleuthkitCase;
 	}
 
 	public long getId() {
@@ -129,27 +126,6 @@ public class TagName implements Comparable<TagName>, Serializable {
 
 	public int getRank() {
 		return rank;
-	}
-
-	/**
-	 * Returns the TagName TagSet object.
-	 *
-	 * @return TagName TagSet object or null if the TagName is not a part of a
-	 *         TagSet.
-	 *
-	 * @throws TskCoreException
-	 */
-	public TagSet getTagSet() throws TskCoreException {
-		if (tagSetId != 0) {
-			List<TagSet> tagSets = skCase.getTaggingManager().getTagSets();
-			for (TagSet set : tagSets) {
-				if (tagSetId == set.getId()) {
-					return set;
-				}
-			}
-		}
-
-		return null;
 	}
 
 	/**
@@ -185,11 +161,11 @@ public class TagName implements Comparable<TagName>, Serializable {
 			return false;
 		}
 		final TagName other = (TagName) obj;
-		return (this.id == other.id
-				&& Objects.equals(this.displayName, other.displayName)
-				&& Objects.equals(this.description, other.description)
-				&& Objects.equals(this.color, other.color)
-				&& Objects.equals(this.knownStatus, other.knownStatus)
-				&& this.tagSetId == other.tagSetId);
+		return (this.id == other.getId()
+				&& Objects.equals(this.displayName, other.getDisplayName())
+				&& Objects.equals(this.description, other.getDescription())
+				&& Objects.equals(this.color, other.getColor())
+				&& Objects.equals(this.knownStatus, other.getKnownStatus())
+				&& this.tagSetId == other.getTagSetId());
 	}
 }
