@@ -422,7 +422,16 @@ General metadata for some content.
 ### REQUIRED ATTRIBUTES
 None
 
-
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_CREATED  (Timestamp the document was created)
+- TSK_DATETIME_MODIFIED (Timestamp the document was modified)
+- TSK_DESCRIPTION (Title of the document)
+- TSK_LAST_PRINTED_DATETIME (Timestamp when document was last printed)
+- TSK_ORGANIZATION (Organization/Company who owns the document)
+- TSK_OWNER (Author of the document)
+- TSK_PROG_NAME (Program used to create the document)
+- TSK_USER_ID (Last author of the document)
+- TSK_VERSION (Version number of the program used to create the document)
 
 ---
 ## TSK_METADATA_EXIF
