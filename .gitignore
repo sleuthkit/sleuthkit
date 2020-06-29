@@ -26,7 +26,9 @@
 !/bindings/java/nbproject/project.properties
 
 # CASE-UCO build and release folder
-/case-uco/java/target/
+/case-uco/java/build/
+/case-uco/java/dist/
+/case-uco/java/nbproject/private/
 
 # Windows build folders
 /win32/Debug_NoLibs/
