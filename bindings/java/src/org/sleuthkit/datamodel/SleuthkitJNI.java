@@ -468,6 +468,7 @@ public class SleuthkitJNI {
 			private final boolean skipFatFsOrphans;
 			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
+			private long imageId = 0;
 			private boolean isCanceled;
 			private final SleuthkitCase skCase;
 			private JniDbHelper dbHelper;
@@ -498,8 +499,6 @@ public class SleuthkitJNI {
 
 			/**
 			 * Starts the process of adding an image to the case database.
-			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
-			 * called after calling AddImageProcess.run.
 			 *
 			 * @param deviceId       An ASCII-printable identifier for the
 			 *                       device associated with the image that
@@ -531,13 +530,15 @@ public class SleuthkitJNI {
 			 * @param sectorSize     The sector size (use '0' for autodetect).
 			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
 			 *
+			 * @return The object ID of the new image.
+			 * 
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
 			 * @throws TskDataException if a non-critical error occurs within
 			 *                          the SleuthKit (should be OK to continue
 			 *                          the process)
 			 */
-			public void run(String deviceId, String[] imageFilePaths, int sectorSize, 
+			public long run(String deviceId, String[] imageFilePaths, int sectorSize, 
 					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {
 				dbHelper = new JniDbHelper(skCase, addDataSourceCallbacks);
 				getTSKReadLock();
@@ -557,10 +558,14 @@ public class SleuthkitJNI {
 					}
 					if (imageHandle != 0) {
 						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
-						dbHelper.finish();
+						
 					}
 				} finally {
+					finishAddImageProcess();
 					releaseTSKReadLock();
+				}
+				synchronized (this) {
+					return imageId;
 				}
 			}			
 
@@ -593,89 +598,53 @@ public class SleuthkitJNI {
 			 * If the process was not canceled, will add the final batch of files to the database
 			 * and submit for any further processing through the callback. 
 			 * 
-			 * @return The object ID of the newly added image
-			 * 
 			 * @throws TskCoreException 
 			 */
-			public synchronized long finishAddImageProcess() throws TskCoreException {
-				getTSKReadLock();
-				try {
-					if (tskAutoDbPointer == 0) {
-						throw new TskCoreException("AddImgProcess::finishAddImageProcess: AutoDB pointer is NULL");
-					}
-
-					// If the process wasn't cancelled, finish up processing the
-					// remaining files.
-					if (! this.isCanceled && dbHelper != null) {
-						dbHelper.finish();
-					}
-
-					// Free the auto DB pointer and get the image ID
-					long id = finishAddImgNat(tskAutoDbPointer);
-					tskAutoDbPointer = 0;
-					
-					skCase.addDataSourceToHasChildrenMap();
-					return id;
-				} finally {
-					releaseTSKReadLock();
+			private synchronized void finishAddImageProcess() throws TskCoreException {
+				if (tskAutoDbPointer == 0) {
+					return;
 				}
+
+				// If the process wasn't cancelled, finish up processing the
+				// remaining files.
+				if (! this.isCanceled && dbHelper != null) {
+					dbHelper.finish();
+				}
+
+				// Free the auto DB pointer and get the image ID
+				imageId = finishAddImgNat(tskAutoDbPointer);
+				tskAutoDbPointer = 0;
+
+				skCase.addDataSourceToHasChildrenMap();
 			}			
 
 			/**
-			 * Rolls back the process of adding an image to the case database
-			 * that was started by calling AddImageProcess.run.
+			 * This no longer needs to be called.
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
-			 * @deprecated Use finishAddImageProcess() instead
+			 * 
+			 * @deprecated No longer necessary
 			 */
 			@Deprecated
 			public synchronized void revert() throws TskCoreException {
-				getTSKReadLock();
-				try {
-					if (tskAutoDbPointer == 0) {
-						throw new TskCoreException("AddImgProcess::revert: AutoDB pointer is NULL");
-					}
-					
-					// Delete the object in the native code
-					finishAddImgNat(tskAutoDbPointer);
-					tskAutoDbPointer = 0;
-				} finally {
-					releaseTSKReadLock();
-				}
+				// No-op
 			}
 
 			/**
-			 * Completes the process of adding an image to the case database
-			 * that was started by calling AddImageProcess.run.
+			 * This no longer needs to be called. Will simply return the 
+			 * object ID of the new image.
 			 *
 			 * @return The object id of the image that was added.
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
-			 * @deprecated Use finishAddImageProcess() instead
+			 * 
+			 * @deprecated No longer necessary
 			 */
 			@Deprecated
 			public synchronized long commit() throws TskCoreException {
-				getTSKReadLock();
-				try {
-					if (tskAutoDbPointer == 0) {
-						throw new TskCoreException("AddImgProcess::commit: AutoDB pointer is NULL");
-					}
-
-					if (dbHelper != null) {
-						dbHelper.finish();
-					}
-
-					// Get the image ID and delete the object in the native code
-					long id = finishAddImgNat(tskAutoDbPointer);
-					tskAutoDbPointer = 0;
-					
-					skCase.addDataSourceToHasChildrenMap();
-					return id;
-				} finally {
-					releaseTSKReadLock();
-				}
+				return imageId;
 			}
 
 			/**
