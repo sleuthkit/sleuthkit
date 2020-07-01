@@ -167,7 +167,7 @@ class TskAutoDbJava :public TskAuto {
     void saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_TYPE_ENUM type);
     TSK_RETVAL_ENUM getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info);
 
-    TSK_RETVAL_ENUM createJString(const char * inputString, size_t input_len, jstring & newJString);
+    TSK_RETVAL_ENUM createJString(const char * inputString, jstring & newJString);
 
     // prevent copying until we add proper logic to handle it
     TskAutoDbJava(const TskAutoDbJava&);
