@@ -505,7 +505,7 @@ class JniDbHelper {
                     caseDb.addLayoutFileRangeJNI(range.objId, range.byteStart, range.byteLen, range.seq, trans);
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, "Error adding layout file range to the database - layout file ID: " + range.objId 
-                        + ", byte start: " + range.byteStart, ex);
+                        + ", byte start: " + range.byteStart + ", length: " + range.byteLen + ", seq: " + range.seq, ex);
                     revertTransaction();
                     return -1;
                 }

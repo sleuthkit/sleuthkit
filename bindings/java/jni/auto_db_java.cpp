@@ -823,7 +823,7 @@ TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, c
         TSK_DB_FILE_LAYOUT_RANGE & range = *it;
         range.fileObjId = objId;
         if (-1 == m_jniEnv->CallLongMethod(m_javaDbObj, m_addLayoutFileRangeMethodID,
-            objId, range.byteStart, range.byteLen, range.sequence)) {
+            objId, range.byteStart, range.byteLen, (uint64_t)range.sequence)) {
             return TSK_ERR;
         }
     }
