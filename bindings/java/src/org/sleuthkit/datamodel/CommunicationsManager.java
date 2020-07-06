@@ -259,11 +259,12 @@ public final class CommunicationsManager {
 	 *
 	 * @return AccountFileInstance
 	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 * @throws TskCoreException          If a critical error occurs within TSK
+	 *                                   core
+	 * @throws InvalidAccountIDException If the account identifier is not valid.
 	 */
 	// NOTE: Full name given for Type for doxygen linking
-	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException, InvalidAccountIDException {
 
 		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
@@ -294,11 +295,12 @@ public final class CommunicationsManager {
 	 *
 	 * @return Account, returns NULL is no matching account found
 	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 * @throws TskCoreException          If a critical error occurs within TSK
+	 *                                   core.
+	 * @throws InvalidAccountIDException If the account identifier is not valid.
 	 */
 	// NOTE: Full name given for Type for doxygen linking
-	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID) throws TskCoreException {
+	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID) throws TskCoreException, InvalidAccountIDException {
 		Account account = null;
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
@@ -402,10 +404,12 @@ public final class CommunicationsManager {
 	 *
 	 * @return A matching account, either existing or newly created.
 	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 * @throws TskCoreException          exception thrown if a critical error
+	 *                                   occurs within TSK core
+	 * @throws InvalidAccountIDException If the account identifier is not valid.
+	 *
 	 */
-	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException {
+	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException, InvalidAccountIDException {
 		Account account = getAccount(accountType, accountUniqueID);
 		if (null == account) {
 			String query = " INTO accounts (account_type_id, account_unique_identifier) "
@@ -1372,17 +1376,25 @@ public final class CommunicationsManager {
 	 * @param accountUniqueID The account id to normalize
 	 *
 	 * @return The normalized account id.
+	 *
+	 * @throws InvalidAccountIDException If the account identifier is not valid.
 	 */
-	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) throws TskCoreException {
-		String normailzeAccountID = accountUniqueID;
+	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) throws InvalidAccountIDException {
 
-		if (accountType.equals(Account.Type.PHONE)) {
-			normailzeAccountID = CommunicationsUtils.normalizePhoneNum(accountUniqueID);
-		} else if (accountType.equals(Account.Type.EMAIL)) {
-			normailzeAccountID = CommunicationsUtils.normalizeEmailAddress(accountUniqueID);
+		if (accountUniqueID == null || accountUniqueID.isEmpty()) {
+			throw new InvalidAccountIDException("Account id is null or empty.");
 		}
 
-		return normailzeAccountID;
+		String normalizedAccountID;
+		if (accountType.equals(Account.Type.PHONE)) {
+			normalizedAccountID = CommunicationsUtils.normalizePhoneNum(accountUniqueID);
+		} else if (accountType.equals(Account.Type.EMAIL)) {
+			normalizedAccountID = CommunicationsUtils.normalizeEmailAddress(accountUniqueID);
+		} else {
+			normalizedAccountID = accountUniqueID.toLowerCase().trim();
+		}
+
+		return normalizedAccountID;
 	}
 
 	/**
