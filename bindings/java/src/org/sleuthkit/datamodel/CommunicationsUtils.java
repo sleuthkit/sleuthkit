@@ -35,6 +35,8 @@ public final class CommunicationsUtils {
 			"-", "(", ")", "#", "*", ","
 	));
 
+	private static final int MIN_PHONENUMBER_LEN = 3;
+
 	/**
 	 * Empty private constructor.
 	 */
@@ -59,29 +61,19 @@ public final class CommunicationsUtils {
 	public static String normalizePhoneNum(String phoneNumber) throws InvalidAccountIDException {
 
 		if (StringUtils.isEmpty(phoneNumber)) {
-			throw new InvalidAccountIDException("Input phone number is null or empty.");
+			throw new InvalidAccountIDException(String.format("Input phone number is empty or null."));
+		}
+
+		if (isValidPhoneNumber(phoneNumber) == false) {
+			throw new InvalidAccountIDException(String.format("Input string is not a valid phone number: %s", phoneNumber));
 		}
 
 		String normalizedNumber = phoneNumber.trim();
-
-		// A phone number may have a leading '+', special telephony chars, or digits.
-		// Anything else implies an invalid phone number.
-		for (int i = 0; i < phoneNumber.length(); i++) {
-			if ((i == 0 && phoneNumber.charAt(i) == '+')
-					|| Character.isSpaceChar(phoneNumber.charAt(i))
-					|| Character.isDigit(phoneNumber.charAt(i))
-					|| TELEPHONY_CHARS.contains(String.valueOf(phoneNumber.charAt(i)))) {
-				// continue
-			} else {
-				throw new InvalidAccountIDException("Invalid phone number string " + phoneNumber);
-			}
-		}
-
 		normalizedNumber = normalizedNumber.replaceAll("\\s+", ""); // remove spaces.	
 		normalizedNumber = normalizedNumber.replaceAll("[\\-()]", ""); // remove parens & dashes.
 
 		// ensure a min length
-		if (normalizedNumber.length() < 3) {
+		if (normalizedNumber.length() < MIN_PHONENUMBER_LEN) {
 			throw new InvalidAccountIDException("Invalid phone number string " + phoneNumber);
 
 		}
@@ -149,24 +141,26 @@ public final class CommunicationsUtils {
 		}
 
 		// short min length allows of dial codes.
-		if (phoneNum.length() < 3) {
+		if (phoneNum.length() < MIN_PHONENUMBER_LEN) {
 			return false;
 		}
 
 		// A phone number may have a leading '+', special telephony chars, or digits.
 		// Anything else implies an invalid phone number.
 		for (int i = 0; i < phoneNum.length(); i++) {
-			if ((i == 0 && phoneNum.charAt(i) == '+')
-					|| Character.isSpaceChar(phoneNum.charAt(i))
-					|| Character.isDigit(phoneNum.charAt(i))
-					|| TELEPHONY_CHARS.contains(String.valueOf(phoneNum.charAt(i)))) {
-				// continue
-			} else {
+			if (!((i == 0 && phoneNum.charAt(i) == '+')
+					|| isValidPhoneChar(phoneNum.charAt(i)))) {
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+	private static boolean isValidPhoneChar(char ch) {
+		return Character.isSpaceChar(ch)
+				|| Character.isDigit(ch)
+				|| TELEPHONY_CHARS.contains(String.valueOf(ch));
 	}
 
 	/**
@@ -207,12 +201,8 @@ public final class CommunicationsUtils {
 
 		// ensure domain has name and suffix
 		String[] tokens2 = tokens[1].split("\\.");
-		if (tokens2.length < 2
+		return !(tokens2.length < 2
 				|| StringUtils.isEmpty(tokens2[0])
-				|| StringUtils.isEmpty(tokens2[1])) {
-			return false;
-		}
-
-		return true;
+				|| StringUtils.isEmpty(tokens2[1]));
 	}
 }
