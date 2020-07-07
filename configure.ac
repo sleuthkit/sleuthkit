@@ -429,6 +429,7 @@ AC_CONFIG_FILES([
     man/Makefile
     bindings/java/Makefile
     bindings/java/jni/Makefile
+    case-uco/java/Makefile
     unit_tests/Makefile
     unit_tests/base/Makefile])
 

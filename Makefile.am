@@ -34,11 +34,13 @@ endif
 # Compile java bindings if all of the dependencies existed
 if X_JNI
   JAVA_BINDINGS=bindings/java
+  JAVA_CASEUCO=case-uco/java
 else   
   JAVA_BINDINGS=
+  JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) 
+SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
