@@ -107,6 +107,8 @@ class JniDbHelper {
     /**
      * Add a new image to the database.
      * Intended to be called from the native code during the add image process.
+	 * Will not be called if the image was added to the database prior to starting
+	 * the add image process.
      * 
      * @param type        Type of image.
      * @param ssize       Sector size.
@@ -131,14 +133,6 @@ class JniDbHelper {
                 caseDb.addImageNameJNI(objId, paths[i], i, trans);
             }
             commitTransaction();
-            
-			try {
-				addDataSourceCallbacks.onDataSourceAdded(objId);
-			} catch (Exception ex) {
-				// Exception firewall - we do not want to return to the native code without
-				// passing it the data source ID
-				logger.log(Level.SEVERE, "Unexpected error from data source added callback", ex);
-			}
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image to the database", ex);
