@@ -112,7 +112,7 @@ public class TaggingManager {
 					for (int index = 0; index < tagNames.size(); index++) {
 						TagName tagName = tagNames.get(index);
 						stmt.executeUpdate(String.format("UPDATE tag_names SET tag_set_id = %d, rank = %d WHERE tag_name_id = %d", setID, index, tagName.getId()));
-						updatedTags.add(new TagName(skCase, tagName.getId(),
+						updatedTags.add(new TagName(tagName.getId(),
 								tagName.getDisplayName(),
 								tagName.getDescription(),
 								tagName.getColor(),
@@ -174,6 +174,43 @@ public class TaggingManager {
 	}
 
 	/**
+	 * Gets the tag set a tag name (tag definition) belongs to, if any.
+	 *
+	 * @param tagName The tag name.
+	 *
+	 * @return A TagSet object or null.
+	 *
+	 * @throws TskCoreException If there is an error querying the case database.
+	 */
+	public TagSet getTagSet(TagName tagName) throws TskCoreException {
+		if (tagName == null) {
+			throw new IllegalArgumentException("Null tagName argument");
+		}
+		
+		if (tagName.getTagSetId() <= 0) {
+			return null;
+		}
+		
+		CaseDbConnection connection = skCase.getConnection();
+		skCase.acquireSingleUserCaseReadLock();
+		TagSet tagSet = null;
+		String sqlQuery = String.format("SELECT * FROM tsk_tag_sets WHERE tag_set_id = %d", tagName.getTagSetId());
+		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(sqlQuery);) {
+			if (resultSet.next()) {
+				int setID = resultSet.getInt("tag_set_id");
+				String setName = resultSet.getString("name");
+				tagSet = new TagSet(setID, setName, getTagNamesByTagSetID(setID));
+			}
+			return tagSet;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error occurred getting TagSet for TagName '%s' (ID=%d)", tagName.getDisplayName(), tagName.getId()), ex);
+		} finally {
+			connection.close();
+			skCase.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
 	 * Inserts a row into the blackboard_artifact_tags table in the case
 	 * database.
 	 *
@@ -208,7 +245,6 @@ public class TaggingManager {
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
-								skCase,
 								resultSet.getLong("tag_name_id"),
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
@@ -305,7 +341,6 @@ public class TaggingManager {
 				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
-								skCase,
 								resultSet.getLong("tag_name_id"),
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
@@ -438,7 +473,7 @@ public class TaggingManager {
 		String query = String.format("SELECT * FROM tag_names WHERE tag_set_id = %d", tagSetId);
 		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(query)) {
 			while (resultSet.next()) {
-				tagNameList.add(new TagName(skCase, resultSet.getLong("tag_name_id"),
+				tagNameList.add(new TagName(resultSet.getLong("tag_name_id"),
 						resultSet.getString("display_name"),
 						resultSet.getString("description"),
 						TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
