@@ -522,8 +522,6 @@ public class SleuthkitJNI {
 			
 			/**
 			 * Starts the process of adding an image to the case database.
-			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
-			 * called after calling AddImageProcess.run.
 			 *
 			 * @param deviceId       An ASCII-printable identifier for the
 			 *                       device associated with the image that
@@ -550,15 +548,13 @@ public class SleuthkitJNI {
 			
 			/**
 			 * Starts the process of adding an image to the case database.
-			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
-			 * called after calling AddImageProcess.run.
 			 *
 			 * @param deviceId       An ASCII-printable identifier for the
 			 *                       device associated with the image that
 			 *                       should be unique across multiple cases
 			 *                       (e.g., a UUID).
 			 * @param image          The image object (has already been added to the database)
-			 * @param sectorSize     The sector size (use '0' for autodetect).
+			 * @param sectorSize     The sector size (no longer used).
 			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
@@ -704,8 +700,6 @@ public class SleuthkitJNI {
 
 			/**
 			 * Starts the process of adding an image to the case database.
-			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
-			 * called after calling AddImageProcess.run.
 			 *
 			 * @param deviceId       An ASCII-printable identifier for the
 			 *                       device associated with the image that
