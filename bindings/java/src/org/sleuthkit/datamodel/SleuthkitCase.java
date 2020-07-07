@@ -5920,7 +5920,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object
-            String name = displayName;
+			String name = displayName;
 			if (name == null || name.isEmpty()) {
 				if (imagePaths.size() > 0) {
 					String path = imagePaths.get(0);
