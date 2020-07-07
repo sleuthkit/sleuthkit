@@ -33,6 +33,9 @@ class TimelineEventArtifactTypeSingleDescription extends TimelineEventArtifactTy
 	@Override
 	public TimelineEventDescriptionWithTime makeEventDescription(BlackboardArtifact artifact) throws TskCoreException {
 		String description = extractFullDescription(artifact);
+		if (description.length() > MAX_FULL_DESCRIPTION_LENGTH) {
+			description = description.substring(0, MAX_FULL_DESCRIPTION_LENGTH);
+		}
 		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
 
 		if (timeAttribute == null) {
