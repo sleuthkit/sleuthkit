@@ -443,8 +443,48 @@ void extractExtension(char *name, char *extension) {
 }
 
 /**
+* Convert a sequence of characters to a jstring object.
+* We first convert the character sequence to UTF16 and then
+* use the JNI NewString() method to create the jstring.
+* We do it this way because we encountered data that contained
+* 4 byte (or more) UTF8 encoded characters and the JNI NewStringUTF()
+* method does not handle 4 byte UTF8 encoding.
+*
+* @param input The sequence of characters to be turned into a jstring.
+* @param newJString The new jstring object created from the input.
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, jstring & newJString) {
+    size_t input_len = strlen(input) + 1;
+    UTF16 * utf16_input;
+
+    if ((utf16_input = (UTF16 *)tsk_malloc(input_len * sizeof(UTF16))) == NULL) {
+        return TSK_ERR;
+    }
+
+    UTF8 * source = (UTF8 *)input;
+    UTF16 * target = utf16_input;
+
+    if (tsk_UTF8toUTF16((const UTF8 **)&source, (const UTF8 *)&source[input_len], &target, &target[input_len], TSKlenientConversion) != TSKconversionOK) {
+        free(utf16_input);
+        return TSK_ERR;
+    }
+
+    /*
+     * To determine the length of the new string we we subtract the address
+     * of the start of the UTF16 buffer from the address at the end of the 
+     * UTF16 buffer (target is advanced in the call to the conversion routine
+     * above).
+     */
+    newJString = m_jniEnv->NewString(utf16_input, (target - utf16_input) - 1);
+
+    free(utf16_input);
+    return TSK_OK;
+}
+
+/**
 * Adds a file and its associated slack file to database.
-* Does not learn object ID for new files, and files may 
+* Does not learn object ID for new files, and files may
 * not be added to the database immediately.
 *
 * @param fs_file
@@ -530,6 +570,12 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         }
     }
 
+    jstring namej;
+    if (createJString(name, namej) != TSK_OK) {
+        free(name);
+        return TSK_ERR;
+    }
+
     // clean up path
     // +2 = space for leading slash and terminating null
     size_t path_len = strlen(path) + 2;
@@ -541,9 +587,21 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     strncpy(escaped_path, "/", path_len);
     strncat(escaped_path, path, path_len - strlen(escaped_path));
 
-    jstring namej = m_jniEnv->NewStringUTF(name);
-    jstring pathj = m_jniEnv->NewStringUTF(escaped_path);
-    jstring extj = m_jniEnv->NewStringUTF(extension);
+    jstring pathj;
+    if (createJString(escaped_path, pathj) != TSK_OK) {
+        free(name);
+        free(escaped_path);
+        return TSK_ERR;
+    }
+
+    // Escaped path is not needed beyond this point so free it.
+    free(escaped_path);
+
+    jstring extj;
+    if (createJString(extension, extj) != TSK_OK) {
+        free(name);
+        return TSK_ERR;
+    }
 
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
@@ -573,6 +631,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         (uint64_t)meta_seq, par_meta_addr, par_seqj);
 
     if (ret_val < 0) {
+        free(name);
         return TSK_ERR;
     }
 
@@ -592,8 +651,16 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         if (strlen(extension) > 0) {
             strncat(extension, "-slack", 6);
         }
-        jstring slackNamej = m_jniEnv->NewStringUTF(name);
-        jstring slackExtj = m_jniEnv->NewStringUTF(extension);
+        jstring slackNamej;
+        if (createJString(name, slackNamej) != TSK_OK) {
+            free(name);
+            return TSK_ERR;
+        }
+        jstring slackExtj;
+        if (createJString(extension, slackExtj) != TSK_OK) {
+            free(name);
+            return TSK_ERR;
+        }
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
         // Add slack file to database
@@ -611,12 +678,12 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             (uint64_t)meta_seq, par_meta_addr, par_seqj);
 
         if (ret_val < 0) {
+            free(name);
             return TSK_ERR;
         }
     }
 
     free(name);
-    free(escaped_path);
 
     return TSK_OK;
 }
@@ -739,7 +806,7 @@ TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, c
         TSK_DB_FILE_LAYOUT_RANGE & range = *it;
         range.fileObjId = objId;
         if (-1 == m_jniEnv->CallLongMethod(m_javaDbObj, m_addLayoutFileRangeMethodID,
-            objId, range.byteStart, range.byteLen, range.sequence)) {
+            objId, range.byteStart, range.byteLen, (uint64_t)range.sequence)) {
             return TSK_ERR;
         }
     }
