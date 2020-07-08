@@ -22,7 +22,10 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/*.java \
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/attributes/*.java \
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
-    bindings/java/src/*.html 
+    bindings/java/src/*.html \
+    case-uco/java/*.xml \
+    case-uco/java/nbproject/project.xml \
+    case-uco/java/src/org/sleuthkit/caseuco/*.java
 
 ACLOCAL_AMFLAGS = -I m4
 
