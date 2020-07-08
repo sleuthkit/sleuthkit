@@ -17,25 +17,13 @@
     </target>
       
     <!-- Copy the sleuthkit jar into lib -->
-    <target name="copy-sleuthkit-java-bindings-jar" depends="ensure-tsk-env-variable-set">
-        <property environment="env"/>
-        
+    <target name="copy-sleuthkit-java-bindings-jar">
         <!-- VERSION here is being sourced from the build.xml in DataModel, which
              is actively maintained with the current TSK version -->
-        <copy file="${env.TSK_HOME}/bindings/java/dist/sleuthkit-${VERSION}.jar" 
+        <copy file="../../bindings/java/dist/sleuthkit-${VERSION}.jar" 
               tofile="lib\sleuthkit-${VERSION}.jar"/>
     </target>
-    
-    <!-- Verify that the TSK_HOME env variable is set -->
-    <target name="ensure-tsk-env-variable-set">
-        <property environment="env"/>
-        <condition property="tsk-is-set">
-            <isset property="env.TSK_HOME"/>
-        </condition>
-        <fail unless="tsk-is-set" message="TSK_HOME must be set as an environment variable."/>
-        <echo> TSK_HOME: ${env.TSK_HOME}</echo>
-    </target>  
-    
+
     <!-- Ivy related boilerplate -->
     <property name="ivy.install.version" value="2.3.0-rc2"/>
     <condition property="ivy.home" value="${env.IVY_HOME}">
