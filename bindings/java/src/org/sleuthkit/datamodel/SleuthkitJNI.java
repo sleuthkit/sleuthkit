@@ -35,7 +35,6 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.Level;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -517,35 +516,10 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
-				run(deviceId, imageFilePaths, sectorSize, new DefaultAddDataSourceCallbacks());
-			}
-			
-			/**
-			 * Starts the process of adding an image to the case database.
-			 *
-			 * @param deviceId       An ASCII-printable identifier for the
-			 *                       device associated with the image that
-			 *                       should be unique across multiple cases
-			 *                       (e.g., a UUID).
-			 * @param imageFilePaths Full path(s) to the image file(s).
-			 * @param sectorSize     The sector size (use '0' for autodetect).
-			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
-			 *
-			 * @return The object ID of the new image.
-			 * 
-			 * @throws TskCoreException if a critical error occurs within the
-			 *                          SleuthKit.
-			 * @throws TskDataException if a non-critical error occurs within
-			 *                          the SleuthKit (should be OK to continue
-			 *                          the process)
-			 */
-			public long run(String deviceId, String[] imageFilePaths, int sectorSize, 
-					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {
 				Image img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId);
-				run(deviceId, img, sectorSize, addDataSourceCallbacks);
-				return img.getId();
+				run(deviceId, img, sectorSize, new DefaultAddDataSourceCallbacks());
 			}
-			
+
 			/**
 			 * Starts the process of adding an image to the case database.
 			 *
@@ -943,9 +917,9 @@ public class SleuthkitJNI {
 	 * @param imagePaths The path(s) to the image (will just be the first for .e01, .001, etc).
 	 * @param sectorSize The sector size (0 for auto-detect).
 	 * @param timeZone   The time zone.
-	 * @param md5        MD5 hash (if known).
-	 * @param sha1       SHA1 hash (if known).
-	 * @param sha256     SHA256 hash (if known).
+	 * @param md5fromSettings        MD5 hash (if known).
+	 * @param sha1fromSettings       SHA1 hash (if known).
+	 * @param sha256fromSettings     SHA256 hash (if known).
 	 * @param deviceId   Device ID.
 	 * 
 	 * @return The Image object.
@@ -953,7 +927,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException 
 	 */
 	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
-		String timeZone, String md5, String sha1, String sha256, String deviceId) throws TskCoreException {
+		String timeZone, String md5fromSettings, String sha1fromSettings, String sha256fromSettings, String deviceId) throws TskCoreException {
 		
 		// Open the image
 		long imageHandle = openImgNat(imagePaths, 1, sectorSize);
@@ -963,14 +937,17 @@ public class SleuthkitJNI {
 		long size = getSizeForImageNat(imageHandle);
 		long type = getTypeForImageNat(imageHandle);
 		long computedSectorSize = getSectorSizeForImageNat(imageHandle);
+		String md5 = md5fromSettings;
 		if (StringUtils.isEmpty(md5)) {
 			md5 = getMD5HashForImageNat(imageHandle);
 		}
+		String sha1 = sha1fromSettings;
 		if (StringUtils.isEmpty(sha1)) {
 			sha1 = getSha1HashForImageNat(imageHandle);
 		}
 		// Sleuthkit does not currently generate any SHA256 hashes. Set to empty
 		// string for consistency.
+		String sha256 = sha256fromSettings;
 		if (sha256 == null) {
 			sha256 = "";
 		}
