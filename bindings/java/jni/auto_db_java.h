@@ -44,6 +44,7 @@ class TskAutoDbJava :public TskAuto {
     virtual void closeImage();
     void close();
     virtual void setTz(string tzone);
+    virtual void setDatasourceObjId(int64_t img_id);
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);

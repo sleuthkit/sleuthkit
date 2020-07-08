@@ -5920,7 +5920,16 @@ public class SleuthkitCase {
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object
-			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, displayName,
+			String name = displayName;
+			if (name == null || name.isEmpty()) {
+				if (imagePaths.size() > 0) {
+					String path = imagePaths.get(0);
+					name = (new java.io.File(path)).getName();
+				} else {
+					name = "";
+				}
+			}			
+			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, name,
 					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, savedSize);
 		} catch (SQLException ex) {
 			if (!imagePaths.isEmpty()) {

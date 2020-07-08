@@ -24,15 +24,8 @@ import java.util.List;
  * Do-nothing version of AddDataSourceCallbacks
  */
 public class DefaultAddDataSourceCallbacks implements AddDataSourceCallbacks {
-
-	@Override
-	public void onDataSourceAdded(long dataSourceObjectId) {
-		// Do nothing
-	}
-
-	@Override
-	public void onFilesAdded(List<Long> fileObjectIds) {
-		// Do nothing
-	}
-	
+    @Override
+    public void onFilesAdded(List<Long> fileObjectIds) {
+        // Do nothing
+    }	
 }

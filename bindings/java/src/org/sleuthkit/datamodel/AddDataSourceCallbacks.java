@@ -25,13 +25,6 @@ import java.util.List;
  */
 public interface AddDataSourceCallbacks {
     /**
-     * Call when the data source has been completely added to the case database.
-     * 
-     * @param dataSourceObjectId The object ID of the new data source
-     */
-    void onDataSourceAdded(long dataSourceObjectId);
-    
-    /**
      * Call to add a set of file object IDs that have been added to the database.
      * 
      * @param fileObjectIds List of file object IDs.
