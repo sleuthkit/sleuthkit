@@ -578,6 +578,10 @@ sub update_caseuco_project() {
 	    print CONF_OUT "file.reference.sleuthkit-${VER}.jar=lib\/sleuthkit-${VER}.jar\n";
             $found++;
         }
+	elsif (/\$\{file.reference.sleuthkit\-\d+.\d+.\d+.jar\}/) {
+	    print CONF_OUT "\$\{file.reference.sleuthkit-${VER}.jar\}\n";
+	    $found++;
+	}
         else {
             print CONF_OUT $_;
         }
@@ -585,8 +589,8 @@ sub update_caseuco_project() {
     close (CONF_IN);
     close (CONF_OUT);
 
-    if ($found != 1) {
-        die "Error: Found $found (instead of 1) occurrences of jar file in case-uco/java/nbproject/project.properties";
+    if ($found != 2) {
+        die "Error: Found $found (instead of 2) occurrences of jar file in case-uco/java/nbproject/project.properties";
     }
 
     unlink ($IFILE) or die "Error deleting $IFILE";
