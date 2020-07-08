@@ -561,6 +561,37 @@ sub update_debian_install {
     rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
 }
 
+sub update_caseuco_project() {
+    print "Updating the version in the Case UCO project file\n";
+    
+    my $IFILE = "case-uco/java/nbproject/project.properties";
+    my $OFILE = "case-uco/java/nbproject/project.properties2";
+
+    open (CONF_IN, "<${IFILE}") or 
+        die "Cannot open $IFILE";
+    open (CONF_OUT, ">${OFILE}") or 
+        die "Cannot open $OFILE";
+
+    my $found = 0;
+    while (<CONF_IN>) {
+        if (/^file.reference.sleuthkit\-\d+\.\d+\.\d+\.jar=lib\/sleuthkit\-\d+\.\d+.\d+.jar/) {
+	    print CONF_OUT "file.reference.sleuthkit-${VER}.jar=lib\/sleuthkit-${VER}.jar\n";
+            $found++;
+        }
+        else {
+            print CONF_OUT $_;
+        }
+    }
+    close (CONF_IN);
+    close (CONF_OUT);
+
+    if ($found != 1) {
+        die "Error: Found $found (instead of 1) occurrences of jar file in case-uco/java/nbproject/project.properties";
+    }
+
+    unlink ($IFILE) or die "Error deleting $IFILE";
+    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";    
+}
 
 # Update the autotools / autobuild files in current source directory
 sub bootstrap() {
@@ -767,6 +798,7 @@ update_debian_changelog();
 update_debian_install();
 update_doxygen_c();
 update_doxygen_java();
+update_caseuco_project();
 
 bootstrap();
 checkin_vers();
