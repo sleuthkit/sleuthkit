@@ -468,14 +468,14 @@ void extractExtension(char *name, char *extension) {
 * method does not handle 4 byte UTF8 encoding.
 *
 * @param input The sequence of characters to be turned into a jstring.
-* @param input_len The number of chars in the input.
 * @param newJString The new jstring object created from the input.
 * @returns TSK_ERR on error, TSK_OK on success
 */
-TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, size_t input_len, jstring & newJString) {
+TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, jstring & newJString) {
+    size_t input_len = strlen(input) + 1;
     UTF16 * utf16_input;
 
-    if ((utf16_input = (UTF16 *)tsk_malloc(input_len * sizeof(wchar_t))) == NULL) {
+    if ((utf16_input = (UTF16 *)tsk_malloc(input_len * sizeof(UTF16))) == NULL) {
         return TSK_ERR;
     }
 
@@ -487,7 +487,13 @@ TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, size_t input_le
         return TSK_ERR;
     }
 
-    newJString = m_jniEnv->NewString(utf16_input, wcslen((const wchar_t *)utf16_input));
+    /*
+     * To determine the length of the new string we we subtract the address
+     * of the start of the UTF16 buffer from the address at the end of the 
+     * UTF16 buffer (target is advanced in the call to the conversion routine
+     * above).
+     */
+    newJString = m_jniEnv->NewString(utf16_input, (target - utf16_input) - 1);
 
     free(utf16_input);
     return TSK_OK;
@@ -582,7 +588,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     }
 
     jstring namej;
-    if (createJString(name, nlen, namej) != TSK_OK) {
+    if (createJString(name, namej) != TSK_OK) {
         free(name);
         return TSK_ERR;
     }
@@ -599,7 +605,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     strncat(escaped_path, path, path_len - strlen(escaped_path));
 
     jstring pathj;
-    if (createJString(escaped_path, path_len, pathj) != TSK_OK) {
+    if (createJString(escaped_path, pathj) != TSK_OK) {
         free(name);
         free(escaped_path);
         return TSK_ERR;
@@ -609,7 +615,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     free(escaped_path);
 
     jstring extj;
-    if (createJString(extension, 24, extj) != TSK_OK) {
+    if (createJString(extension, extj) != TSK_OK) {
         free(name);
         return TSK_ERR;
     }
@@ -663,12 +669,12 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             strncat(extension, "-slack", 6);
         }
         jstring slackNamej;
-        if (createJString(name, nlen, slackNamej) != TSK_OK) {
+        if (createJString(name, slackNamej) != TSK_OK) {
             free(name);
             return TSK_ERR;
         }
         jstring slackExtj;
-        if (createJString(extension, 24, slackExtj) != TSK_OK) {
+        if (createJString(extension, slackExtj) != TSK_OK) {
             free(name);
             return TSK_ERR;
         }
@@ -817,7 +823,7 @@ TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, c
         TSK_DB_FILE_LAYOUT_RANGE & range = *it;
         range.fileObjId = objId;
         if (-1 == m_jniEnv->CallLongMethod(m_javaDbObj, m_addLayoutFileRangeMethodID,
-            objId, range.byteStart, range.byteLen, range.sequence)) {
+            objId, range.byteStart, range.byteLen, (uint64_t)range.sequence)) {
             return TSK_ERR;
         }
     }

@@ -1327,7 +1327,7 @@ public final class CommunicationsManager {
 						+ " SELECT DISTINCT (account_id), account_type_id, account_unique_identifier"
 						+ " FROM accounts"
 						+ " JOIN account_relationships ON account2_id = account_id"
-						+ " WHERE relationship_source_obj_id = %d)", artifact.getId(), artifact.getId());
+						+ " WHERE relationship_source_obj_id = %d) AS unionOfRelationships", artifact.getId(), artifact.getId());
 				try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
 					while (rs.next()) {
 						Account.Type accountType = null;
