@@ -1,0 +1,33 @@
+Package: sleuthkit-java
+Version: 4.9.0-1
+Architecture: amd64
+Maintainer: Rishwanth Senthilkumar <rishwanth@basistech.com>
+Installed-Size: 13209
+Depends: libafflib0v5 (>= 3.7.6), libc6 (>= 2.14), libewf2 (>= 20121209), libgcc1 (>= 1:4.2), libsqlite3-0 (>= 3.5.9), libstdc++6 (>= 5.2), libvhdi1 (>= 20150110), libvmdk1 (>= 20150516), zlib1g (>= 1:1.1.4), libewf-dev (>= 20130416), libafflib-dev (>= 3.6.6), libsqlite3-dev, libc3p0-java, libvmdk-dev, libvhdi-dev
+Conflicts: libtsk13
+Replaces: libtsk13
+Section: contrib
+Priority: optional
+Homepage: http://www.sleuthkit.org/sleuthkit
+Description: tools for forensics analysis on volume and filesystem data
+ The Sleuth Kit, also known as TSK, is a collection of UNIX-based command
+ line file and volume system forensic analysis tools. The filesystem tools
+ allow you to examine filesystems of a suspect computer in a non-intrusive
+ fashion. Because the tools do not rely on the operating system to process the
+ filesystems, deleted and hidden content is shown.
+ .
+ The volume system (media management) tools allow you to examine the layout of
+ disks and other media. You can also recover deleted files, get information
+ stored in slack spaces, examine filesystems journal, see partitions layout on
+ disks or images etc. But is very important clarify that the TSK acts over the
+ current filesystem only.
+ .
+ The Sleuth Kit supports DOS partitions, BSD partitions (disk labels), Mac
+ partitions, Sun slices (Volume Table of Contents), and GPT disks. With these
+ tools, you can identify where partitions are located and extract them so that
+ they can be analyzed with filesystem analysis tools.
+ .
+ Currently, TSK supports several filesystems, as NTFS, FAT, exFAT, HFS+, Ext3,
+ Ext4, UFS and YAFFS2.
+ .
+ This package contains the set of command line tools in The Sleuth Kit.
