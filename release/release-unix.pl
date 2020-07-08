@@ -82,7 +82,7 @@ sub clone_repo() {
 
     # CI makes not changes, so use http version
     if ($CI) {
-        system ("git clone https://github.com/dannysmyda/sleuthkit.git ${CLONEDIR}");
+        system ("git clone https://github.com/sleuthkit/sleuthkit.git ${CLONEDIR}");
     } else {
         system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
     }
