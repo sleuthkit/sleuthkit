@@ -34,5 +34,8 @@ build_script:
       - ps: pushd bindings/java
       - cmd: ant -q dist
       - ps: popd
+      - ps: pushd case-uco/java
+      - cmd: ant -q
+      - ps: popd
 
 test: off
