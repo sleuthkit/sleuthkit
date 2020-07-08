@@ -82,7 +82,7 @@ sub clone_repo() {
 
     # CI makes not changes, so use http version
     if ($CI) {
-        system ("git clone https://github.com/sleuthkit/sleuthkit.git ${CLONEDIR}");
+        system ("git clone https://github.com/dannysmyda/sleuthkit.git ${CLONEDIR}");
     } else {
         system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
     }
@@ -542,6 +542,10 @@ sub update_debian_install {
             print CONF_OUT "bindings/java/dist/sleuthkit-${VER}.jar /usr/share/java\n";
             $found++;
         }
+	elsif (/^case-uco\/java\/dist\/sleuthkit-caseuco\-\d+\.\d+\.\d+\.jar \/usr\/share\/java/) {
+            print CONF_OUT "case-uco/java/dist/sleuthkit-caseuco-${VER}.jar /usr/share/java\n";
+            $found++;
+        }
         else {
             print CONF_OUT $_;
         }
@@ -549,8 +553,8 @@ sub update_debian_install {
     close (CONF_IN);
     close (CONF_OUT);
 
-    if ($found != 1) {
-        die "Error: Found $found (instead of 1) occurrences of jar in debian/sleuthkit-java.install";
+    if ($found != 2) {
+        die "Error: Found $found (instead of 2) occurrences of jar files in debian/sleuthkit-java.install";
     }
 
     unlink ($IFILE) or die "Error deleting $IFILE";
@@ -660,6 +664,12 @@ sub verify_tar {
     chdir "bindings/java" or die "Error changing directories to java";
     system ("ant");
     die "Error making jar file (bindings/java/dist/sleuthkit-*.jar not found)" unless (glob("dist/sleuthkit-*.jar"));
+    chdir "../..";
+
+    print "Building Case UCO JAR\n";
+    chdir "case-uco/java" or die "Error changing directories to case-uco java";
+    system ("ant");
+    die "Error making jar file (case-uco/java/dist/sleuthkit-caseuco-*.jar not found)" unless (glob("dist/sleuthkit-caseuco-*.jar"));
     chdir "../..";
 
     # Compile the framework
