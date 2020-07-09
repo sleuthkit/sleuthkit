@@ -375,12 +375,12 @@ class JniDbHelper {
                 }
             }
             commitTransaction();
-			try {
-				addDataSourceCallbacks.onFilesAdded(newObjIds);
+            try {
+                addDataSourceCallbacks.onFilesAdded(newObjIds);
 			} catch (Exception ex) {
-				// Exception firewall to prevent unexpected return to the native code
-				logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
-			}
+                // Exception firewall to prevent unexpected return to the native code
+                logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
+            }
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
@@ -414,7 +414,7 @@ class JniDbHelper {
             // stored in the cache.
             throw new TskCoreException("Parent not found in cache (fsObjId: " +fileInfo.fsObjId + ", parMetaAddr: " + fileInfo.parMetaAddr
                 + ", parSeq: " + fileInfo.parSeq + ", parentPath: " + parentPath + ")");
-		}
+        }
     }
     
     /**
