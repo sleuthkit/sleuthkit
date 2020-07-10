@@ -332,12 +332,12 @@ public final class CommunicationsManager {
 	 * instances and between all recipient account instances. All account
 	 * instances must be from the same data source.
 	 *
-	 * @param sender           sender account
-	 * @param recipients       list of recipients
-	 * @param sourceArtifact   Artifact that relationships were derived from
-	 * @param relationshipType The type of relationships to be created
+	 * @param sender           Sender account, may be null.
+	 * @param recipients       List of recipients, may be empty.
+	 * @param sourceArtifact   Artifact that relationships were derived from.
+	 * @param relationshipType The type of relationships to be created.
 	 * @param dateTime         Date of communications/relationship, as epoch
-	 *                         seconds
+	 *                         seconds.
 	 *
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException

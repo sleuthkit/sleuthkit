@@ -140,16 +140,13 @@ public final class CommunicationsUtils {
 			return false;
 		}
 
-		// short min length allows of dial codes.
-		if (phoneNum.length() < MIN_PHONENUMBER_LEN) {
-			return false;
-		}
-
+		String trimmedPhoneNum = phoneNum.trim();
+		
 		// A phone number may have a leading '+', special telephony chars, or digits.
 		// Anything else implies an invalid phone number.
-		for (int i = 0; i < phoneNum.length(); i++) {
-			if (!((i == 0 && phoneNum.charAt(i) == '+')
-					|| isValidPhoneChar(phoneNum.charAt(i)))) {
+		for (int i = 0; i < trimmedPhoneNum.length(); i++) {
+			if (!((trimmedPhoneNum.charAt(i) == '+' && i == 0)		// a '+' is allowed only at the beginning
+					|| isValidPhoneChar(trimmedPhoneNum.charAt(i)))) {
 				return false;
 			}
 		}
@@ -157,6 +154,13 @@ public final class CommunicationsUtils {
 		return true;
 	}
 
+	/**
+	 * Checks if the given character is a valid character for a phone number.
+	 *
+	 * @param ch Character to check.
+	 *
+	 * @return True, if its a valid phone number character, false, otherwise.
+	 */
 	private static boolean isValidPhoneChar(char ch) {
 		return Character.isSpaceChar(ch)
 				|| Character.isDigit(ch)
@@ -186,8 +190,7 @@ public final class CommunicationsUtils {
 		}
 
 		if (emailAddress.contains("@") == false
-				|| emailAddress.contains(".") == false
-				|| emailAddress.length() < 5) {
+				|| emailAddress.contains(".") == false ) {
 			return false;
 		}
 
