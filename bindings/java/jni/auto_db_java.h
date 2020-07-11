@@ -44,6 +44,7 @@ class TskAutoDbJava :public TskAuto {
     virtual void closeImage();
     void close();
     virtual void setTz(string tzone);
+    virtual void setDatasourceObjId(int64_t img_id);
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
@@ -206,7 +207,7 @@ class TskAutoDbJava :public TskAuto {
 
     // JNI methods
     TSK_RETVAL_ENUM addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
-        const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails);
+        const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails, char** img_ptrs, int num_imgs);
     TSK_RETVAL_ENUM addImageName(int64_t objId, char const* imgName, int sequence);
     TSK_RETVAL_ENUM addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId);
     TSK_RETVAL_ENUM addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId);

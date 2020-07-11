@@ -5920,7 +5920,16 @@ public class SleuthkitCase {
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object
-			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, displayName,
+			String name = displayName;
+			if (name == null || name.isEmpty()) {
+				if (imagePaths.size() > 0) {
+					String path = imagePaths.get(0);
+					name = (new java.io.File(path)).getName();
+				} else {
+					name = "";
+				}
+			}			
+			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, name,
 					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, savedSize);
 		} catch (SQLException ex) {
 			if (!imagePaths.isEmpty()) {
@@ -11066,44 +11075,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Looks up a parent file object ID. The calling thread is expected to have
-	 * a case read lock. For use with the JNI callbacks associated with the add
-	 * image process.
-	 *
-	 * @param metaAddr    The metadata address.
-	 * @param fsObjId     The file system object ID.
-	 * @param path        The file path.
-	 * @param name        The file name.
-	 * @param transaction The open transaction.
-	 *
-	 * @return The object ID if found, -1 otherwise.
-	 *
-	 * @throws TskCoreException
-	 */
-	long findParentObjIdJNI(long metaAddr, long fsObjId, String path, String name, CaseDbTransaction transaction) throws TskCoreException {
-		ResultSet resultSet = null;
-		try {
-			CaseDbConnection connection = transaction.getConnection();
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_OBJ_ID_BY_META_ADDR_AND_PATH);
-			preparedStatement.clearParameters();
-			preparedStatement.setLong(1, metaAddr);
-			preparedStatement.setLong(2, fsObjId);
-			preparedStatement.setString(3, path);
-			preparedStatement.setString(4, name);
-			resultSet = connection.executeQuery(preparedStatement);
-			if (resultSet.next()) {
-				return resultSet.getLong("obj_id");
-			} else {
-				throw new TskCoreException(String.format("Error looking up parent - meta addr: %d, path: %s, name: %s", metaAddr, path, name));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error looking up parent - meta addr: %d, path: %s, name: %s", metaAddr, path, name), ex);
-		} finally {
-			closeResultSet(resultSet);
-		}
-	}
-
-	/**
 	 * Add a file system file to the database. For use with the JNI callbacks
 	 * associated with the add image process.
 	 *
@@ -11526,7 +11497,6 @@ public class SleuthkitCase {
 		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		SELECT_OBJ_ID_BY_META_ADDR_AND_PATH("SELECT obj_id FROM tsk_files WHERE meta_addr = ? AND fs_obj_id = ? AND parent_path = ? AND name = ?"),
 		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?");
 
 		private final String sql;

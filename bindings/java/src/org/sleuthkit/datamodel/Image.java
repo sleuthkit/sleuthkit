@@ -129,6 +129,10 @@ public class Image extends AbstractContent implements DataSource {
 
 		return imageHandle;
 	}
+	
+	synchronized void setImageHandle(long imageHandle) {
+		this.imageHandle = imageHandle;
+	}
 
 	@Override
 	public Content getDataSource() {

@@ -22,8 +22,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -33,6 +35,9 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  * case database. All callbacks from the native code should come through this class.
  * Any changes to the method signatures in this class will require changes to the 
  * native code.
+ * 
+ * Note that this code should only be used for the add image process, and not
+ * to add additional files afterward.
  */
 class JniDbHelper {
     
@@ -40,17 +45,20 @@ class JniDbHelper {
     
     private final SleuthkitCase caseDb;
     private CaseDbTransaction trans = null;
+    private final AddDataSourceCallbacks addDataSourceCallbacks;
     
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
     private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
     
     private static final long BATCH_FILE_THRESHOLD = 500;
-    private final List<FileInfo> batchedFiles = new ArrayList<>();
-    private final List<LayoutRangeInfo> batchedLayoutRanges = new ArrayList<>();
+    private final Queue<FileInfo> batchedFiles = new LinkedList<>();
+    private final Queue<LayoutRangeInfo> batchedLayoutRanges = new LinkedList<>();
+    private final List<Long> layoutFileIds = new ArrayList<>();
     
-    JniDbHelper(SleuthkitCase caseDb) {
+    JniDbHelper(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
         this.caseDb = caseDb;
+        this.addDataSourceCallbacks = addDataSourceCallbacks;
         trans = null;
     }
     
@@ -93,11 +101,14 @@ class JniDbHelper {
     void finish() {
         addBatchedFilesToDb();
         addBatchedLayoutRangesToDb();
+        processLayoutFiles();
     }
     
     /**
      * Add a new image to the database.
      * Intended to be called from the native code during the add image process.
+	 * Will not be called if the image was added to the database prior to starting
+	 * the add image process.
      * 
      * @param type        Type of image.
      * @param ssize       Sector size.
@@ -113,39 +124,18 @@ class JniDbHelper {
      */
     long addImageInfo(int type, long ssize, String timezone, 
             long size, String md5, String sha1, String sha256, String deviceId, 
-            String collectionDetails) {    
+            String collectionDetails, String[] paths) {    
         try {
             beginTransaction();
             long objId = caseDb.addImageJNI(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
                     timezone, md5, sha1, sha256, deviceId, collectionDetails, trans);
+            for (int i = 0;i < paths.length;i++) {
+                caseDb.addImageNameJNI(objId, paths[i], i, trans);
+            }
             commitTransaction();
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding image to the database", ex);
-            revertTransaction();
-            return -1;
-        } 
-    }
-    
-    /**
-     * Add an image name to the database. 
-     * Intended to be called from the native code during the add image process.
-     * 
-     * @param objId    The object id of the image.
-     * @param name     The file name for the image
-     * @param sequence The sequence number of this file.
-     * 
-     * @return 0 if successful, -1 if not
-     */
-    int addImageName(long objId, String name, long sequence) {
-        try {
-            beginTransaction();
-            caseDb.addImageNameJNI(objId, name, sequence, trans);
-            commitTransaction();
-            return 0;
-        } catch (TskCoreException ex) {
-            logger.log(Level.SEVERE, "Error adding image name to the database - image obj ID: " + objId + ", image name: " + name
-                    + ", sequence: " + sequence, ex);
             revertTransaction();
             return -1;
         }
@@ -338,9 +328,11 @@ class JniDbHelper {
      * @return 0 if successful, -1 if not
      */
     private long addBatchedFilesToDb() {
+        List<Long> newObjIds = new ArrayList<>();
         try {
             beginTransaction();
-            for (FileInfo fileInfo : batchedFiles) {
+            FileInfo fileInfo;
+            while ((fileInfo = batchedFiles.poll()) != null) {
                 long computedParentObjId = fileInfo.parentObjId;
                 try {
                     // If we weren't given the parent object ID, look it up
@@ -360,6 +352,7 @@ class JniDbHelper {
                         null, TskData.FileKnown.UNKNOWN,
                         fileInfo.escaped_path, fileInfo.extension, 
                         false, trans);
+                    newObjIds.add(objId);
 
                     // If we're adding the root directory for the file system, cache it
                     if (fileInfo.parentObjId == fileInfo.fsObjId) {
@@ -379,46 +372,50 @@ class JniDbHelper {
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
                             + ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
-                    revertTransaction();
-                    return -1;
                 }
             }
             commitTransaction();
+            try {
+                addDataSourceCallbacks.onFilesAdded(newObjIds);
+			} catch (Exception ex) {
+                // Exception firewall to prevent unexpected return to the native code
+                logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
+            }
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
             return -1;
         }
-        batchedFiles.clear();
         return 0;
     }
-	
-	/**
-	 * Look up the parent object ID for a file using the cache or the database.
-	 * 
-	 * @param fileInfo The file to find the parent of
-	 * 
-	 * @return Parent object ID
-	 * 
-	 * @throws TskCoreException 
-	 */
-	private long getParentObjId(FileInfo fileInfo) throws TskCoreException {
-		// Remove the final slash from the path unless we're in the root folder
-		String parentPath = fileInfo.escaped_path;
-		if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
-			parentPath =  parentPath.substring(0, parentPath.lastIndexOf('/'));
-		}
+    
+    /**
+     * Look up the parent object ID for a file using the cache or the database.
+     * 
+     * @param fileInfo The file to find the parent of
+     * 
+     * @return Parent object ID
+     * 
+     * @throws TskCoreException 
+     */
+    private long getParentObjId(FileInfo fileInfo) throws TskCoreException {
+        // Remove the final slash from the path unless we're in the root folder
+        String parentPath = fileInfo.escaped_path;
+        if(parentPath.endsWith("/") && ! parentPath.equals("/")) {
+            parentPath =  parentPath.substring(0, parentPath.lastIndexOf('/'));
+        }
 
-		// Look up the parent
-		ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
-		if (parentDirCache.containsKey(key)) {
-			return parentDirCache.get(key);
-		} else {
-			// The parent wasn't found in the cache so do a database query
-			java.io.File parentAsFile = new java.io.File(parentPath);
-			return caseDb.findParentObjIdJNI(fileInfo.parMetaAddr, fileInfo.fsObjId, parentAsFile.getPath(), parentAsFile.getName(), trans);
-		}
-	}
+        // Look up the parent
+        ParentCacheKey key = new ParentCacheKey(fileInfo.fsObjId, fileInfo.parMetaAddr, fileInfo.parSeq, parentPath);
+        if (parentDirCache.containsKey(key)) {
+            return parentDirCache.get(key);
+        } else {
+            // There's no reason to do a database query since every folder added is being
+            // stored in the cache.
+            throw new TskCoreException("Parent not found in cache (fsObjId: " +fileInfo.fsObjId + ", parMetaAddr: " + fileInfo.parMetaAddr
+                + ", parSeq: " + fileInfo.parSeq + ", parentPath: " + parentPath + ")");
+        }
+    }
     
     /**
      * Add a layout file to the database. 
@@ -462,6 +459,10 @@ class JniDbHelper {
                 null, null, 
                 true, trans);
             commitTransaction();
+
+            // Store the layout file ID for later processing
+            layoutFileIds.add(objId);
+
             return objId;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding layout file to the database - parent object ID: " + parentObjId
@@ -499,25 +500,32 @@ class JniDbHelper {
     private long addBatchedLayoutRangesToDb() {
         try {
             beginTransaction();
-    
-            for (LayoutRangeInfo range : batchedLayoutRanges) {
+    		LayoutRangeInfo range;
+            while ((range = batchedLayoutRanges.poll()) != null) {
                 try {
                     caseDb.addLayoutFileRangeJNI(range.objId, range.byteStart, range.byteLen, range.seq, trans);
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, "Error adding layout file range to the database - layout file ID: " + range.objId 
                         + ", byte start: " + range.byteStart + ", length: " + range.byteLen + ", seq: " + range.seq, ex);
-                    revertTransaction();
-                    return -1;
                 }
             }
             commitTransaction();
-            batchedLayoutRanges.clear();
             return 0;
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
             return -1;
         }
+    }
+	
+    /**
+     * Send completed layout files on for further processing.
+     * Note that this must wait until we know all the ranges for each
+     * file have been added to the database. 
+     */
+    void processLayoutFiles() {
+        addDataSourceCallbacks.onFilesAdded(layoutFileIds);
+        layoutFileIds.clear();
     }
     
     /**
