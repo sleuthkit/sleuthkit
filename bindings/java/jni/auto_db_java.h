@@ -150,6 +150,7 @@ class TskAutoDbJava :public TskAuto {
     jobject m_javaDbObj = NULL;
     jmethodID m_addImageMethodID = NULL;
     jmethodID m_addImageNameMethodID = NULL;
+    jmethodID m_addAcquisitionDetailsMethodID = NULL;
     jmethodID m_addVolumeSystemMethodID = NULL;
     jmethodID m_addVolumeMethodID = NULL;
     jmethodID m_addPoolMethodID = NULL;
@@ -208,7 +209,7 @@ class TskAutoDbJava :public TskAuto {
     // JNI methods
     TSK_RETVAL_ENUM addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
         const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails, char** img_ptrs, int num_imgs);
-    TSK_RETVAL_ENUM addImageName(int64_t objId, char const* imgName, int sequence);
+    void addAcquisitionDetails(int64_t imgId, const string& collectionDetails);
     TSK_RETVAL_ENUM addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId);
     TSK_RETVAL_ENUM addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId);
     TSK_RETVAL_ENUM addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol, int64_t parObjId, int64_t& objId);
