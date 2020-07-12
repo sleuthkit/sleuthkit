@@ -84,6 +84,11 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
+    m_addAcquisitionDetailsMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addAcquisitionDetails", "(JLjava/lang/String;)V");
+    if (m_addAcquisitionDetailsMethodID == NULL) {
+        return TSK_ERR;
+    }
+
     m_addVolumeSystemMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addVsInfo", "(JIJJ)J");
     if (m_addVolumeSystemMethodID == NULL) {
         return TSK_ERR;
@@ -220,6 +225,16 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
 
     saveObjectInfo(objId, 0, TSK_DB_OBJECT_TYPE_IMG);
     return TSK_OK;
+}
+
+void
+TskAutoDbJava::addAcquisitionDetails(int64_t imgId, const string& collectionDetails) {
+
+    const char *coll_cstr = collectionDetails.c_str();
+    jstring collj = m_jniEnv->NewStringUTF(coll_cstr);
+
+    m_jniEnv->CallLongMethod(m_javaDbObj, m_addAcquisitionDetailsMethodID,
+        imgId, collj);
 }
 
 /**
@@ -1029,11 +1044,6 @@ TskAutoDbJava::openImage(const char* a_deviceId)
 uint8_t
 TskAutoDbJava::addImageDetails(const char* deviceId)
 {
-    // The image has already been added to the database
-    if (m_curImgId > 0) {
-        return 0;
-    }
-
    string md5 = "";
    string sha1 = "";
    string collectionDetails = "";
@@ -1051,6 +1061,12 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
        collectionDetails = ewf_get_details(ewf_info);   
    }
 #endif
+
+    // If the image has already been added to the database, update the acquisition details and return.
+    if (m_curImgId > 0) {
+        addAcquisitionDetails(m_curImgId, collectionDetails);
+        return 0;
+    }
 
     string devId;
     if (NULL != deviceId) {

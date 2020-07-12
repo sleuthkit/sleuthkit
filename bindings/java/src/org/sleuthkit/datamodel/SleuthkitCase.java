@@ -9358,6 +9358,31 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Set the acquisition details in the data_source_info table.
+	 * 
+	 * @param dataSourceId The data source ID.
+	 * @param details      The acquisition details.
+	 * @param trans        The current transaction.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	void setAcquisitionDetails(long dataSourceId, String details, CaseDbTransaction trans) throws TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		try {
+			CaseDbConnection connection = trans.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_DETAILS);
+			statement.clearParameters();
+			statement.setString(1, details);
+			statement.setLong(2, dataSourceId);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting acquisition details", ex);
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
 	 * Get the acquisition details from the data_source_info table
 	 *
 	 * @param datasource The data source

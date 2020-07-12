@@ -141,6 +141,23 @@ class JniDbHelper {
             return -1;
         }
     }
+	
+	/**
+	 * Add the acquisition details to the image object. 
+	 * 
+	 * @param imgId   ID of the image
+	 * @param details The details
+	 */
+	void addAcquisitionDetails(long imgId, String details) {
+        try {
+            beginTransaction();
+            caseDb.setAcquisitionDetails(imgId, details, trans);
+            commitTransaction();
+        } catch (TskCoreException ex) {
+            logger.log(Level.SEVERE, "Error adding image details \"" + details + "\" to image with ID " + imgId, ex);
+            revertTransaction();
+        }		
+	}
     
     /**
      * Add a volume system to the database. 
