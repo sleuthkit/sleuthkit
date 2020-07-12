@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import org.apache.commons.lang3.StringUtils;
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -352,7 +353,10 @@ class JniDbHelper {
                         null, TskData.FileKnown.UNKNOWN,
                         fileInfo.escaped_path, fileInfo.extension, 
                         false, trans);
-                    newObjIds.add(objId);
+                    if (fileInfo.fsObjId != fileInfo.parentObjId) {
+                        // Add new file ID to the list to send to ingest unless it is the root folder
+                        newObjIds.add(objId);
+                    }
 
                     // If we're adding the root directory for the file system, cache it
                     if (fileInfo.parentObjId == fileInfo.fsObjId) {
@@ -546,6 +550,7 @@ class JniDbHelper {
             beginTransaction();
             VirtualDirectory dir = caseDb.addVirtualDirectory(fsIdToRootDir.get(fsObjId), name, trans);
             commitTransaction();
+            addDataSourceCallbacks.onFilesAdded(Arrays.asList(dir.getId()));
             return dir.getId();
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Error creating virtual directory " + name + " under file system ID " + fsObjId, ex);
