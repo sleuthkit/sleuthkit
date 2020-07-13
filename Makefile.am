@@ -22,7 +22,11 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/*.java \
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/attributes/*.java \
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
-    bindings/java/src/*.html 
+    bindings/java/src/*.html \
+    case-uco/java/*.xml \
+    case-uco/java/nbproject/*.xml \
+    case-uco/java/nbproject/*.properties \
+    case-uco/java/src/org/sleuthkit/caseuco/*.java
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -34,11 +38,13 @@ endif
 # Compile java bindings if all of the dependencies existed
 if X_JNI
   JAVA_BINDINGS=bindings/java
+  JAVA_CASEUCO=case-uco/java
 else   
   JAVA_BINDINGS=
+  JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) 
+SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
