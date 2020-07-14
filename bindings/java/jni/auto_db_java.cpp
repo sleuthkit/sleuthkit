@@ -79,13 +79,13 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
     }
     m_callbackClass = (jclass)m_jniEnv->NewGlobalRef(localCallbackClass);
 
-    m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)J");
+    m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)J");
     if (m_addImageMethodID == NULL) {
         return TSK_ERR;
     }
 
-    m_addImageNameMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageName", "(JLjava/lang/String;J)I");
-    if (m_addImageNameMethodID == NULL) {
+    m_addAcquisitionDetailsMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addAcquisitionDetails", "(JLjava/lang/String;)V");
+    if (m_addAcquisitionDetailsMethodID == NULL) {
         return TSK_ERR;
     }
 
@@ -184,7 +184,8 @@ TskAutoDbJava::getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info) {
 */
 TSK_RETVAL_ENUM
 TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
-    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails) {
+    const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails,
+    char** img_ptrs, int num_imgs) {
 
     const char *tz_cstr = timezone.c_str();
     jstring tzj = m_jniEnv->NewStringUTF(tz_cstr);
@@ -204,8 +205,18 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     const char *coll_cstr = collectionDetails.c_str();
     jstring collj = m_jniEnv->NewStringUTF(coll_cstr);
 
+    jobjectArray imgNamesj = (jobjectArray)m_jniEnv->NewObjectArray(
+        num_imgs,
+        m_jniEnv->FindClass("java/lang/String"),
+        m_jniEnv->NewStringUTF(""));
+
+    for (int i = 0; i < num_imgs; i++) {
+        m_jniEnv->SetObjectArrayElement(
+            imgNamesj, i, m_jniEnv->NewStringUTF(img_ptrs[i]));
+    }
+
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addImageMethodID,
-        type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj);
+        type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj, imgNamesj);
     objId = (int64_t)objIdj;
 
     if (objId < 0) {
@@ -216,27 +227,14 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     return TSK_OK;
 }
 
-/**
-* Adds one image name
-* @param objId    The object ID of the image
-* @param imgName  The image name
-* @param sequence The sequence number for this image name
-* @returns TSK_ERR on error, TSK_OK on success
-*/
-TSK_RETVAL_ENUM
-TskAutoDbJava::addImageName(int64_t objId, char const* imgName, int sequence) {
+void
+TskAutoDbJava::addAcquisitionDetails(int64_t imgId, const string& collectionDetails) {
 
-    jstring imgNamej = m_jniEnv->NewStringUTF(imgName);
+    const char *coll_cstr = collectionDetails.c_str();
+    jstring collj = m_jniEnv->NewStringUTF(coll_cstr);
 
-    jint res = m_jniEnv->CallIntMethod(m_javaDbObj, m_addImageNameMethodID,
-        objId, imgNamej, (int64_t)sequence);
-
-    if (res == 0) {
-        return TSK_OK;
-    }
-    else {
-        return TSK_ERR;
-    }
+    m_jniEnv->CallLongMethod(m_javaDbObj, m_addAcquisitionDetailsMethodID,
+        imgId, collj);
 }
 
 /**
@@ -468,14 +466,14 @@ void extractExtension(char *name, char *extension) {
 * method does not handle 4 byte UTF8 encoding.
 *
 * @param input The sequence of characters to be turned into a jstring.
-* @param input_len The number of chars in the input.
 * @param newJString The new jstring object created from the input.
 * @returns TSK_ERR on error, TSK_OK on success
 */
-TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, size_t input_len, jstring & newJString) {
+TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, jstring & newJString) {
+    size_t input_len = strlen(input) + 1;
     UTF16 * utf16_input;
 
-    if ((utf16_input = (UTF16 *)tsk_malloc(input_len * sizeof(wchar_t))) == NULL) {
+    if ((utf16_input = (UTF16 *)tsk_malloc(input_len * sizeof(UTF16))) == NULL) {
         return TSK_ERR;
     }
 
@@ -487,7 +485,13 @@ TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, size_t input_le
         return TSK_ERR;
     }
 
-    newJString = m_jniEnv->NewString(utf16_input, wcslen((const wchar_t *)utf16_input));
+    /*
+     * To determine the length of the new string we we subtract the address
+     * of the start of the UTF16 buffer from the address at the end of the 
+     * UTF16 buffer (target is advanced in the call to the conversion routine
+     * above).
+     */
+    newJString = m_jniEnv->NewString(utf16_input, (target - utf16_input) - 1);
 
     free(utf16_input);
     return TSK_OK;
@@ -582,7 +586,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     }
 
     jstring namej;
-    if (createJString(name, nlen, namej) != TSK_OK) {
+    if (createJString(name, namej) != TSK_OK) {
         free(name);
         return TSK_ERR;
     }
@@ -599,7 +603,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     strncat(escaped_path, path, path_len - strlen(escaped_path));
 
     jstring pathj;
-    if (createJString(escaped_path, path_len, pathj) != TSK_OK) {
+    if (createJString(escaped_path, pathj) != TSK_OK) {
         free(name);
         free(escaped_path);
         return TSK_ERR;
@@ -609,7 +613,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     free(escaped_path);
 
     jstring extj;
-    if (createJString(extension, 24, extj) != TSK_OK) {
+    if (createJString(extension, extj) != TSK_OK) {
         free(name);
         return TSK_ERR;
     }
@@ -663,12 +667,12 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             strncat(extension, "-slack", 6);
         }
         jstring slackNamej;
-        if (createJString(name, nlen, slackNamej) != TSK_OK) {
+        if (createJString(name, slackNamej) != TSK_OK) {
             free(name);
             return TSK_ERR;
         }
         jstring slackExtj;
-        if (createJString(extension, 24, slackExtj) != TSK_OK) {
+        if (createJString(extension, slackExtj) != TSK_OK) {
             free(name);
             return TSK_ERR;
         }
@@ -817,7 +821,7 @@ TskAutoDbJava::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, c
         TSK_DB_FILE_LAYOUT_RANGE & range = *it;
         range.fileObjId = objId;
         if (-1 == m_jniEnv->CallLongMethod(m_javaDbObj, m_addLayoutFileRangeMethodID,
-            objId, range.byteStart, range.byteLen, range.sequence)) {
+            objId, range.byteStart, range.byteLen, (uint64_t)range.sequence)) {
             return TSK_ERR;
         }
     }
@@ -1058,19 +1062,18 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
    }
 #endif
 
+    // If the image has already been added to the database, update the acquisition details and return.
+    if (m_curImgId > 0) {
+        addAcquisitionDetails(m_curImgId, collectionDetails);
+        return 0;
+    }
+
     string devId;
     if (NULL != deviceId) {
         devId = deviceId; 
     } else {
         devId = "";
     }
-    if (TSK_OK != addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails)) {
-        registerError();
-        return 1;
-    }
-
-
 
     char **img_ptrs;
 #ifdef TSK_WIN32
@@ -1104,14 +1107,12 @@ TskAutoDbJava::addImageDetails(const char* deviceId)
     img_ptrs = m_img_info->images;
 #endif
 
-    // Add the image names
-    for (int i = 0; i < m_img_info->num_img; i++) {
-        const char *img_ptr = img_ptrs[i];
 
-        if (TSK_OK != addImageName(m_curImgId, img_ptr, i)) {
-            registerError();
-            return 1;
-        }
+    if (TSK_OK != addImageInfo(m_img_info->itype, m_img_info->sector_size,
+        m_curImgId, m_curImgTZone, m_img_info->size, md5, sha1, "", devId, collectionDetails,
+        img_ptrs, m_img_info->num_img)) {
+        registerError();
+        return 1;
     }
 
 #ifdef TSK_WIN32
@@ -1522,6 +1523,15 @@ void
 TskAutoDbJava::setTz(string tzone)
 {
     m_curImgTZone = tzone;
+}
+
+/**
+ * Set the object ID for the data source
+ */
+void 
+TskAutoDbJava::setDatasourceObjId(int64_t img_id)
+{
+    m_curImgId = img_id;
 }
 
 TSK_RETVAL_ENUM

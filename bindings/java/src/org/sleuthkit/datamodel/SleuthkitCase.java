@@ -5920,7 +5920,16 @@ public class SleuthkitCase {
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object
-			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, displayName,
+			String name = displayName;
+			if (name == null || name.isEmpty()) {
+				if (imagePaths.size() > 0) {
+					String path = imagePaths.get(0);
+					name = (new java.io.File(path)).getName();
+				} else {
+					name = "";
+				}
+			}			
+			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, name,
 					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, savedSize);
 		} catch (SQLException ex) {
 			if (!imagePaths.isEmpty()) {
@@ -9349,6 +9358,31 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Set the acquisition details in the data_source_info table.
+	 * 
+	 * @param dataSourceId The data source ID.
+	 * @param details      The acquisition details.
+	 * @param trans        The current transaction.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	void setAcquisitionDetails(long dataSourceId, String details, CaseDbTransaction trans) throws TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		try {
+			CaseDbConnection connection = trans.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_DETAILS);
+			statement.clearParameters();
+			statement.setString(1, details);
+			statement.setLong(2, dataSourceId);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting acquisition details", ex);
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
 	 * Get the acquisition details from the data_source_info table
 	 *
 	 * @param datasource The data source
@@ -9593,7 +9627,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<>();
 			while (resultSet.next()) {
-				tagNames.add(new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
 			}
@@ -9627,7 +9661,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<>();
 			while (resultSet.next()) {
-				tagNames.add(new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
 			}
@@ -9671,7 +9705,7 @@ public class SleuthkitCase {
 			statement.setLong(2, dsObjId);
 			resultSet = connection.executeQuery(statement); //NON-NLS
 			while (resultSet.next()) {
-				tagNames.add(new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
 			}
@@ -9746,8 +9780,8 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			resultSet.next();
 
-			return new TagName(this, tagId,
-					displayName, description, color, knownStatus, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
+			return new TagName(tagId, displayName, description, color, knownStatus, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {
@@ -9819,7 +9853,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				Content content = getContentById(resultSet.getLong("obj_id")); //NON-NLS
@@ -9949,7 +9983,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 
 			while (resultSet.next()) {
-				TagName tagName = new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
 				tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName,
@@ -10085,7 +10119,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName,
@@ -10165,7 +10199,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
@@ -10395,7 +10429,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 
 			while (resultSet.next()) {
-				TagName tagName = new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
@@ -10443,7 +10477,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(this, resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
@@ -11066,44 +11100,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Looks up a parent file object ID. The calling thread is expected to have
-	 * a case read lock. For use with the JNI callbacks associated with the add
-	 * image process.
-	 *
-	 * @param metaAddr    The metadata address.
-	 * @param fsObjId     The file system object ID.
-	 * @param path        The file path.
-	 * @param name        The file name.
-	 * @param transaction The open transaction.
-	 *
-	 * @return The object ID if found, -1 otherwise.
-	 *
-	 * @throws TskCoreException
-	 */
-	long findParentObjIdJNI(long metaAddr, long fsObjId, String path, String name, CaseDbTransaction transaction) throws TskCoreException {
-		ResultSet resultSet = null;
-		try {
-			CaseDbConnection connection = transaction.getConnection();
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_OBJ_ID_BY_META_ADDR_AND_PATH);
-			preparedStatement.clearParameters();
-			preparedStatement.setLong(1, metaAddr);
-			preparedStatement.setLong(2, fsObjId);
-			preparedStatement.setString(3, path);
-			preparedStatement.setString(4, name);
-			resultSet = connection.executeQuery(preparedStatement);
-			if (resultSet.next()) {
-				return resultSet.getLong("obj_id");
-			} else {
-				throw new TskCoreException(String.format("Error looking up parent - meta addr: %d, path: %s, name: %s", metaAddr, path, name));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error looking up parent - meta addr: %d, path: %s, name: %s", metaAddr, path, name), ex);
-		} finally {
-			closeResultSet(resultSet);
-		}
-	}
-
-	/**
 	 * Add a file system file to the database. For use with the JNI callbacks
 	 * associated with the add image process.
 	 *
@@ -11526,7 +11522,6 @@ public class SleuthkitCase {
 		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		SELECT_OBJ_ID_BY_META_ADDR_AND_PATH("SELECT obj_id FROM tsk_files WHERE meta_addr = ? AND fs_obj_id = ? AND parent_path = ? AND name = ?"),
 		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?");
 
 		private final String sql;

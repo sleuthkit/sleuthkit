@@ -44,6 +44,7 @@ class TskAutoDbJava :public TskAuto {
     virtual void closeImage();
     void close();
     virtual void setTz(string tzone);
+    virtual void setDatasourceObjId(int64_t img_id);
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
@@ -149,6 +150,7 @@ class TskAutoDbJava :public TskAuto {
     jobject m_javaDbObj = NULL;
     jmethodID m_addImageMethodID = NULL;
     jmethodID m_addImageNameMethodID = NULL;
+    jmethodID m_addAcquisitionDetailsMethodID = NULL;
     jmethodID m_addVolumeSystemMethodID = NULL;
     jmethodID m_addVolumeMethodID = NULL;
     jmethodID m_addPoolMethodID = NULL;
@@ -167,7 +169,7 @@ class TskAutoDbJava :public TskAuto {
     void saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_TYPE_ENUM type);
     TSK_RETVAL_ENUM getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info);
 
-    TSK_RETVAL_ENUM createJString(const char * inputString, size_t input_len, jstring & newJString);
+    TSK_RETVAL_ENUM createJString(const char * inputString, jstring & newJString);
 
     // prevent copying until we add proper logic to handle it
     TskAutoDbJava(const TskAutoDbJava&);
@@ -206,8 +208,8 @@ class TskAutoDbJava :public TskAuto {
 
     // JNI methods
     TSK_RETVAL_ENUM addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
-        const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails);
-    TSK_RETVAL_ENUM addImageName(int64_t objId, char const* imgName, int sequence);
+        const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails, char** img_ptrs, int num_imgs);
+    void addAcquisitionDetails(int64_t imgId, const string& collectionDetails);
     TSK_RETVAL_ENUM addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId, int64_t& objId);
     TSK_RETVAL_ENUM addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& objId);
     TSK_RETVAL_ENUM addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol, int64_t parObjId, int64_t& objId);

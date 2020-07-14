@@ -19,11 +19,15 @@
 package org.sleuthkit.datamodel;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import org.sleuthkit.datamodel.SQLHelper.PostgreSQLHelper;
 import org.sleuthkit.datamodel.SQLHelper.SQLiteHelper;
 
@@ -32,6 +36,7 @@ import org.sleuthkit.datamodel.SQLHelper.SQLiteHelper;
  */
 class CaseDatabaseFactory {
 	
+	private static final Logger logger = Logger.getLogger(CaseDatabaseFactory.class.getName());
 	private final SQLHelper dbQueryHelper;
 	private final DbCreationHelper dbCreationHelper;
 		
@@ -511,12 +516,20 @@ class CaseDatabaseFactory {
 		 * @return the connection to the database
 		 */
 		Connection getConnection(String databaseName) throws TskCoreException {
+			String encodedDbName;
+			try {
+				encodedDbName = URLEncoder.encode(databaseName, "UTF-8");
+			} catch (UnsupportedEncodingException ex) {
+				// Print the warning and continue with the unencoded name
+				logger.log(Level.WARNING, "Error encoding database name " + databaseName, ex);
+				encodedDbName = databaseName;
+			}
 			
 			StringBuilder url = new StringBuilder();
 			url.append(JDBC_BASE_URI)
 				.append(info.getHost())
 				.append('/') // NON-NLS
-				.append(databaseName);
+				.append(encodedDbName);
 			
 			Connection conn;
 			try {
