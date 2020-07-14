@@ -163,7 +163,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs a AppDB parser helper for the given DB file.
+	 * Constructs a communications artifacts helper for the given source file.
 	 *
 	 * This constructor is for modules that have the application specific
 	 * account information for the device owner to create a 'self' account.
