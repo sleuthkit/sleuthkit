@@ -19,7 +19,8 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -90,13 +91,15 @@ import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
-
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
  * Exports Sleuth Kit DataModel objects to CASE. The CASE JSON output is
- * configured to be serialized with GSON.
+ * configured to be serialized with Gson. Each export method will produce a list
+ * of CASE JSON objects. Clients should loop through this list and write these
+ * objects to any OutputStream via Gson. See the Gson documentation for more
+ * information on object serialization.
  *
  * NOTE: The exporter behavior can be configured by passing configuration
  * parameters in a custom Properties instance. A list of available configuration
@@ -166,8 +169,8 @@ public class CaseUcoExporter {
      *
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportSleuthkitCase() throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportSleuthkitCase() throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         String caseDirPath = sleuthkitCase
                 .getDbDirPath()
@@ -197,7 +200,7 @@ public class CaseUcoExporter {
      *
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportAbstractFile(AbstractFile file) throws TskCoreException {
+    public List<JsonElement> exportAbstractFile(AbstractFile file) throws TskCoreException {
         return exportAbstractFile(file, null);
     }
 
@@ -212,8 +215,8 @@ public class CaseUcoExporter {
      *
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportAbstractFile(AbstractFile file, String localPath) throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportAbstractFile(AbstractFile file, String localPath) throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         ContentData contentData = new ContentData()
                 .setMimeType(file.getMIMEType())
@@ -257,8 +260,8 @@ public class CaseUcoExporter {
      * @return A collection of CASE JSON elements
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportContentTag(ContentTag contentTag) throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportContentTag(ContentTag contentTag) throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         Annotation annotation = new Annotation(this.uuidService.createUUID(contentTag))
                 .addObject(this.uuidService.createUUID(contentTag.getContent()));
@@ -276,8 +279,8 @@ public class CaseUcoExporter {
      * @return A collection of CASE JSON elements
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportDataSource(DataSource dataSource) throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportDataSource(DataSource dataSource) throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         Trace export = new Trace(this.uuidService.createUUID(dataSource))
                 .addBundle(new File()
@@ -313,8 +316,8 @@ public class CaseUcoExporter {
      * @return A collection of CASE JSON elements
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportFileSystem(FileSystem fileSystem) throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportFileSystem(FileSystem fileSystem) throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         Trace export = new Trace(this.uuidService.createUUID(fileSystem))
                 .addBundle(new org.sleuthkit.caseuco.FileSystem()
@@ -336,8 +339,8 @@ public class CaseUcoExporter {
      *
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportPool(Pool pool) throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportPool(Pool pool) throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         Trace export = new Trace(this.uuidService.createUUID(pool))
                 .addBundle(new ContentData()
@@ -357,8 +360,8 @@ public class CaseUcoExporter {
      * @return A collection of CASE JSON elements
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportVolume(Volume volume) throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportVolume(Volume volume) throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         Trace export = new Trace(this.uuidService.createUUID(volume));
         org.sleuthkit.caseuco.Volume volumeFacet = new org.sleuthkit.caseuco.Volume();
@@ -385,8 +388,8 @@ public class CaseUcoExporter {
      *
      * @throws TskCoreException If an error occurred during database access.
      */
-    public JsonArray exportVolumeSystem(VolumeSystem volumeSystem) throws TskCoreException {
-        JsonArray output = new JsonArray();
+    public List<JsonElement> exportVolumeSystem(VolumeSystem volumeSystem) throws TskCoreException {
+        List<JsonElement> output = new ArrayList<>();
 
         Trace export = new Trace(this.uuidService.createUUID(volumeSystem))
                 .addBundle(new ContentData()
@@ -411,9 +414,9 @@ public class CaseUcoExporter {
      * @throws BlackboardJsonAttrUtil.InvalidJsonException If a JSON valued
      * attribute could not be correctly deserialized.
      */
-    public JsonArray exportBlackboardArtifact(BlackboardArtifact artifact) throws TskCoreException,
+    public List<JsonElement> exportBlackboardArtifact(BlackboardArtifact artifact) throws TskCoreException,
             ContentNotExportableException, BlackboardJsonAttrUtil.InvalidJsonException {
-        JsonArray output = new JsonArray();
+        List<JsonElement> output = new ArrayList<>();
 
         String uuid = this.uuidService.createUUID(artifact);
         int artifactTypeId = artifact.getArtifactTypeID();
@@ -518,8 +521,10 @@ public class CaseUcoExporter {
             assembleGpsTrack(uuid, artifact, output);
         }
 
-        if (output.size() == 0) {
-            throw new ContentNotExportableException();
+        if (output.isEmpty()) {
+            throw new ContentNotExportableException(String.format(
+                    "Artifact [id:%d, type:%d] is either not supported "
+                    + "or did not have any exported attributes.", artifact.getId(), artifactTypeId));
         }
 
         addParentChildRelationship(output, uuid,
@@ -528,7 +533,7 @@ public class CaseUcoExporter {
         return output;
     }
 
-    private void assembleWebCookie(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWebCookie(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new URL()
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
@@ -558,7 +563,7 @@ public class CaseUcoExporter {
         addToOutput(applicationNode, output);
     }
 
-    private void assembleWebBookmark(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWebBookmark(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace applicationNode = new BlankTraceNode()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
@@ -578,12 +583,12 @@ public class CaseUcoExporter {
         addToOutput(applicationNode, output);
     }
 
-    private void assembleGenInfo(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleGenInfo(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Hash hash = new Hash(uuid, getValueIfPresent(artifact, StandardAttributeTypes.TSK_HASH_PHOTODNA));
         addToOutput(hash, output);
     }
 
-    private void assembleWebHistory(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWebHistory(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace userNameNode = new BlankTraceNode();
 
         IdentityFacet identityFacet = new IdentityFacet();
@@ -603,7 +608,7 @@ public class CaseUcoExporter {
         addToOutput(userNameNode, output);
     }
 
-    private void assembleWebDownload(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWebDownload(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new URL()
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
@@ -616,7 +621,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleDeviceAttached(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleDeviceAttached(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Device()
                         .setManufacturer(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DEVICE_MAKE))
@@ -629,7 +634,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleHashsetHit(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleHashsetHit(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid);
         export.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SET_NAME));
         export.setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
@@ -637,7 +642,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleInstalledProg(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleInstalledProg(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new File()
                         .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH_SOURCE)));
@@ -655,7 +660,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleRecentObject(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleRecentObject(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
@@ -682,21 +687,21 @@ public class CaseUcoExporter {
                 .setTarget(uuid), output);
     }
 
-    private void assembleInterestingFileHit(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleInterestingFileHit(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid);
         export.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SET_NAME));
         export.setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
         addToOutput(export, output);
     }
 
-    private void assembleExtractedText(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleExtractedText(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new ExtractedString()
                         .setStringValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_TEXT)));
         addToOutput(export, output);
     }
 
-    private void assembleEmailMessage(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleEmailMessage(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace bccNode = new BlankTraceNode()
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_BCC)));
@@ -749,7 +754,7 @@ public class CaseUcoExporter {
         addToOutput(headerRawNode, output);
     }
 
-    private void assembleWebSearchQuery(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWebSearchQuery(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace applicationNode = new BlankTraceNode()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
@@ -765,7 +770,7 @@ public class CaseUcoExporter {
         addToOutput(applicationNode, output);
     }
 
-    private void assembleOsInfo(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleOsInfo(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Identity registeredOwnerNode = new BlankIdentityNode();
         registeredOwnerNode.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_OWNER));
         Identity registeredOrganizationNode = new BlankIdentityNode();
@@ -802,7 +807,7 @@ public class CaseUcoExporter {
         addToOutput(tempDirectoryNode, output);
     }
 
-    private void assembleOsAccount(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleOsAccount(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL)))
@@ -835,7 +840,7 @@ public class CaseUcoExporter {
         addToOutput(ownerNode, output);
     }
 
-    private void assembleServiceAccount(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleServiceAccount(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace inReplyToNode = new BlankTraceNode()
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_REPLYTO)));
@@ -875,7 +880,7 @@ public class CaseUcoExporter {
         addToOutput(inReplyToNode, output);
     }
 
-    private void assembleContact(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleContact(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         EmailAddress homeAddress = new EmailAddress()
                 .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_HOME));
         homeAddress.setTag("Home");
@@ -913,7 +918,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleMessage(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException, BlackboardJsonAttrUtil.InvalidJsonException {
+    private void assembleMessage(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException, BlackboardJsonAttrUtil.InvalidJsonException {
         Trace applicationNode = new BlankTraceNode()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MESSAGE_TYPE)));
@@ -968,7 +973,7 @@ public class CaseUcoExporter {
         addToOutput(toNode, output);
     }
 
-    private void assembleMetadataExif(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleMetadataExif(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Device()
                         .setManufacturer(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DEVICE_MAKE))
@@ -982,7 +987,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleCallog(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleCallog(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace fromNode = new BlankTraceNode()
                 .addBundle(new PhoneAccount()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER_FROM)));
@@ -1008,7 +1013,7 @@ public class CaseUcoExporter {
         addToOutput(fromNode, output);
     }
 
-    private void assembleCalendarEntry(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleCalendarEntry(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid);
 
         CalendarEntry calendarEntry = new CalendarEntry()
@@ -1028,7 +1033,7 @@ public class CaseUcoExporter {
         addToOutput(locationNode, output);
     }
 
-    private void assembleSpeedDialEntry(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleSpeedDialEntry(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Contact()
                         .setContactName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME_PERSON)))
@@ -1038,7 +1043,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleBluetoothPairing(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleBluetoothPairing(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new MobileDevice()
                         .setBluetoothDeviceName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DEVICE_NAME)))
@@ -1049,7 +1054,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleGpsBookmark(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleGpsBookmark(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new LatLongCoordinates()
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
@@ -1067,7 +1072,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleGpsLastKnownLocation(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleGpsLastKnownLocation(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new LatLongCoordinates()
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
@@ -1089,7 +1094,7 @@ public class CaseUcoExporter {
                 .setTarget(export.getId()), output);
     }
 
-    private void assembleGpsSearch(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleGpsSearch(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new LatLongCoordinates()
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
@@ -1111,7 +1116,7 @@ public class CaseUcoExporter {
                 .setTarget(export.getId()), output);
     }
 
-    private void assembleProgRun(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleProgRun(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME))
@@ -1120,14 +1125,14 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleEncryptionDetected(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleEncryptionDetected(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid)
                 .setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
 
         addToOutput(export, output);
     }
 
-    private void assembleInterestingArtifact(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleInterestingArtifact(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid);
         export.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SET_NAME));
         export.setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
@@ -1144,7 +1149,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleGPSRoute(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleGPSRoute(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
@@ -1164,7 +1169,7 @@ public class CaseUcoExporter {
                 .setTarget(export.getId()), output);
     }
 
-    private void assembleRemoteDrive(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleRemoteDrive(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new PathRelation()
                         .setPath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_REMOTE_PATH)))
@@ -1174,7 +1179,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleAccount(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleAccount(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Account account = new Account()
                 .setAccountType(getValueIfPresent(artifact, StandardAttributeTypes.TSK_ACCOUNT_TYPE))
                 .setAccountIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_ID));
@@ -1190,14 +1195,14 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleEncryptionSuspected(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleEncryptionSuspected(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid)
                 .setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
 
         addToOutput(export, output);
     }
 
-    private void assembleObjectDetected(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleObjectDetected(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid)
                 .setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
         export.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DESCRIPTION));
@@ -1205,7 +1210,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleWifiNetwork(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWifiNetwork(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         WirelessNetworkConnection wirelessNetwork = new WirelessNetworkConnection()
                 .setSSID(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SSID));
 
@@ -1222,7 +1227,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleDeviceInfo(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleDeviceInfo(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new MobileDevice()
                         .setIMEI(getValueIfPresent(artifact, StandardAttributeTypes.TSK_IMEI)))
@@ -1233,7 +1238,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleSimAttached(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleSimAttached(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new SIMCard()
                         .setICCID(getValueIfPresent(artifact, StandardAttributeTypes.TSK_ICCID))
@@ -1242,7 +1247,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleBluetoothAdapter(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleBluetoothAdapter(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new MACAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MAC_ADDRESS)));
@@ -1250,7 +1255,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleWifiNetworkAdapter(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWifiNetworkAdapter(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new MACAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MAC_ADDRESS)));
@@ -1258,21 +1263,21 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleVerificationFailed(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleVerificationFailed(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid);
         export.setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
 
         addToOutput(export, output);
     }
 
-    private void assembleDataSourceUsage(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleDataSourceUsage(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid);
         export.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DESCRIPTION));
 
         addToOutput(export, output);
     }
 
-    private void assembleWebFormAddress(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWebFormAddress(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         SimpleAddress simpleAddress = new SimpleAddress();
         simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
 
@@ -1297,7 +1302,7 @@ public class CaseUcoExporter {
 
     }
 
-    private void assembleWebCache(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleWebCache(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new PathRelation()
                         .setPath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)))
@@ -1311,7 +1316,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleTimelineEvent(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleTimelineEvent(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Action export = new Action(uuid)
                 .setStartTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
 
@@ -1337,7 +1342,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleClipboardContent(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleClipboardContent(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Note()
                         .setText(getValueIfPresent(artifact, StandardAttributeTypes.TSK_TEXT)));
@@ -1345,7 +1350,7 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleAssociatedObject(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleAssociatedObject(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid);
         addToOutput(export, output);
 
@@ -1361,14 +1366,14 @@ public class CaseUcoExporter {
         }
     }
 
-    private void assembleUserContentSuspected(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleUserContentSuspected(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid);
         export.setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
 
         addToOutput(export, output);
     }
 
-    private void assembleMetadata(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException {
+    private void assembleMetadata(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Trace export = new Trace(uuid)
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME))
@@ -1408,7 +1413,7 @@ public class CaseUcoExporter {
                 .setTarget(export.getId()), output);
     }
 
-    private void assembleGpsTrack(String uuid, BlackboardArtifact artifact, JsonArray output) throws TskCoreException, BlackboardJsonAttrUtil.InvalidJsonException {
+    private void assembleGpsTrack(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException, BlackboardJsonAttrUtil.InvalidJsonException {
         Trace export = new Trace(uuid)
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
@@ -1482,7 +1487,7 @@ public class CaseUcoExporter {
     /**
      * Add the parent-child relationship, if configured to do so.
      */
-    private void addParentChildRelationship(JsonArray output, String sourceId, String parentId) {
+    private void addParentChildRelationship(List<JsonElement> output, String sourceId, String parentId) {
         String parentChildProperty = this.props.getProperty(INCLUDE_PARENT_CHILD_RELATIONSHIPS_PROP,
                 DEFAULT_PARENT_CHILD_RELATIONSHIPS_VALUE);
 
@@ -1499,7 +1504,7 @@ public class CaseUcoExporter {
      * Adds a given CASE export object to the JSON output that will be consumed
      * by the client.
      */
-    private void addToOutput(UcoObject ucoObject, JsonArray output) {
+    private void addToOutput(UcoObject ucoObject, List<JsonElement> output) {
         output.add(gson.toJsonTree(ucoObject));
     }
 }

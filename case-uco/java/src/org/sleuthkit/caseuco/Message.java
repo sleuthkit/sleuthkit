@@ -31,7 +31,7 @@ class Message extends Facet {
 
     private String application;
 
-    String sentTime;
+    private String sentTime;
 
     private String messageType;
 
