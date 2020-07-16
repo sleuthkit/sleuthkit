@@ -37,16 +37,16 @@ class CaseUcoUUIDServiceImpl implements CaseUcoUUIDService {
 
     @Override
     public String createUUID(Content content) {
-        return "content-" + content.getId() + "_" + databaseName;
+        return "_:content-" + content.getId() + "_" + databaseName;
     }
 
     @Override
     public String createUUID(ContentTag contentTag) {
-        return "tag-" + contentTag.getId() + "_" + databaseName;
+        return "_:tag-" + contentTag.getId() + "_" + databaseName;
     }
 
     @Override
     public String createUUID(SleuthkitCase sleuthkitCase) {
-        return "case-" + sleuthkitCase.getDatabaseName();
+        return "_:case-" + sleuthkitCase.getDatabaseName();
     }
 }
