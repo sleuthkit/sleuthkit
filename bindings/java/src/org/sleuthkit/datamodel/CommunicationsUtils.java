@@ -63,7 +63,7 @@ public final class CommunicationsUtils {
 	public static String normalizeEmailAddress(String emailAddress) throws TskCoreException {
 		
         if (isValidEmailAddress(emailAddress)) {
-            return emailAddress.toLowerCase();
+            return emailAddress.toLowerCase().replace(";", "");
         } else {
             throw new TskCoreException(String.format("Input string is not a valid email address: %s", emailAddress));
         }
