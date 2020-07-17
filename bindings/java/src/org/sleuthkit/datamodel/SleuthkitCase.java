@@ -183,6 +183,7 @@ public class SleuthkitCase {
 	private final DbType dbType;
 	private final String caseDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
+	private final String uniqueCaseIdentifier;
 	private String dbBackupPath;
 	private Map<Integer, BlackboardArtifact.Type> typeIdToArtifactTypeMap;
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
@@ -316,6 +317,7 @@ public class SleuthkitCase {
 		this.databaseName = dbFile.getName();
 		this.connections = new SQLiteConnections(dbPath);
 		this.caseHandle = caseHandle;
+		this.uniqueCaseIdentifier = caseHandle.getCaseDbIdentifier();
 		init();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -344,6 +346,7 @@ public class SleuthkitCase {
 		this.caseDirPath = caseDirPath;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		this.caseHandle = caseHandle;
+		this.uniqueCaseIdentifier = caseHandle.getCaseDbIdentifier();
 		init();
 	}
 
@@ -8947,11 +8950,8 @@ public class SleuthkitCase {
 		return connections.getConnection();
 	}
 
-	synchronized String getUniqueCaseIdentifier() throws TskCoreException {
-		if (caseHandle != null) {
-			return caseHandle.getCaseDbIdentifier();
-		}
-		throw new TskCoreException("Case has been closed");
+	String getUniqueCaseIdentifier() throws TskCoreException {
+		return uniqueCaseIdentifier;
 	}
 
 	@Override
