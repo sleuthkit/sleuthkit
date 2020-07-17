@@ -251,12 +251,7 @@ public class SleuthkitJNI {
 			synchronized (cacheLock) {
 				// Remove from collection of open file handles.
 				if (skCase != null) {
-					try {
-						getCaseHandles(skCase.getUniqueCaseIdentifier()).fileHandleCache.remove(fileHandle);
-					} catch (TskCoreException ex) {
-						// This exception will only occur if a file handle is closed as the case is being closed.
-						// The file will be closed by the case closing code.
-					}
+					getCaseHandles(skCase.getCaseHandleIdentifier()).fileHandleCache.remove(fileHandle);
 				} else {
 					// If we don't know what case the handle is from, delete the first one we find
 					for (String caseIdentifier:caseHandlesCache.keySet()) {
@@ -789,7 +784,7 @@ public class SleuthkitJNI {
 		if (skCase == null) {
 			throw new TskCoreException("SleuthkitCase can not be null");
 		}
-		return openImage(imageFiles, 0, true, skCase.getUniqueCaseIdentifier());
+		return openImage(imageFiles, 0, true, skCase.getCaseHandleIdentifier());
 	}
 
 	/**
@@ -809,7 +804,7 @@ public class SleuthkitJNI {
 		if (skCase == null) {
 			throw new TskCoreException("SleuthkitCase can not be null");
 		}
-		return openImage(imageFiles, sSize, true, skCase.getUniqueCaseIdentifier());
+		return openImage(imageFiles, sSize, true, skCase.getCaseHandleIdentifier());
 	}
 	
 	/**
@@ -898,15 +893,11 @@ public class SleuthkitJNI {
 		final String imageKey = keyBuilder.toString();
 		
 		// Get the case identifier
-		try {
-			String caseIdentifier = skCase.getUniqueCaseIdentifier();
-		
-			synchronized (HandleCache.cacheLock) {
-				HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.put(imageHandle, new HashMap<>());
-				HandleCache.getCaseHandles(caseIdentifier).imageHandleCache.put(imageKey, imageHandle);
-			}
-		} catch (TskCoreException ex) {
-			// getUniqueCaseIdentfier() will only fail if the case is closed
+		String caseIdentifier = skCase.getCaseHandleIdentifier();
+
+		synchronized (HandleCache.cacheLock) {
+			HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.put(imageHandle, new HashMap<>());
+			HandleCache.getCaseHandles(caseIdentifier).imageHandleCache.put(imageKey, imageHandle);
 		}
 	}
 	
@@ -1045,7 +1036,7 @@ public class SleuthkitJNI {
 				if (skCase == null) {
 					caseIdentifier = HandleCache.getDefaultCaseIdentifier();
 				} else {
-					caseIdentifier = skCase.getUniqueCaseIdentifier();
+					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
 				
 				// If a pool handle cache for this image does not exist, make one
@@ -1092,7 +1083,7 @@ public class SleuthkitJNI {
 				if (skCase == null) {
 					caseIdentifier = HandleCache.getDefaultCaseIdentifier();
 				} else {
-					caseIdentifier = skCase.getUniqueCaseIdentifier();
+					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
 				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
 				if (imgOffSetToFsHandle == null) {
@@ -1143,7 +1134,7 @@ public class SleuthkitJNI {
 				if (skCase == null) {
 					caseIdentifier = HandleCache.getDefaultCaseIdentifier();
 				} else {
-					caseIdentifier = skCase.getUniqueCaseIdentifier();
+					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
 				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
 				if (imgOffSetToFsHandle == null) {
@@ -1200,7 +1191,7 @@ public class SleuthkitJNI {
 			if (skCase == null) {
 				caseIdentifier = HandleCache.getDefaultCaseIdentifier();
 			} else {
-				caseIdentifier = skCase.getUniqueCaseIdentifier();
+				caseIdentifier = skCase.getCaseHandleIdentifier();
 			}
 			if (HandleCache.getCaseHandles(caseIdentifier).poolFsList.contains(fsHandle)) {
 				withinPool = true;
@@ -1224,7 +1215,7 @@ public class SleuthkitJNI {
 				if (skCase == null) {
 					caseIdentifier = HandleCache.getDefaultCaseIdentifier();
 				} else {
-					caseIdentifier = skCase.getUniqueCaseIdentifier();
+					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
 				HandleCache.addFileHandle(caseIdentifier, fileHandle, fsHandle);
 
