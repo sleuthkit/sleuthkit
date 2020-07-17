@@ -23,4 +23,8 @@ package org.sleuthkit.caseuco;
  */
 public class ContentNotExportableException extends Exception {
     private static final long serialVersionUID = 1L;
+    
+    ContentNotExportableException(String msg) {
+        super(msg);
+    }
 }

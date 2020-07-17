@@ -24,7 +24,7 @@ package org.sleuthkit.caseuco;
  */
 class SMSMessage extends Facet {
 
-    Boolean isRead;
+    private Boolean isRead;
 
     SMSMessage() {
         super(SMSMessage.class.getSimpleName());
