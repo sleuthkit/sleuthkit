@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
 /**
  * Base class for all CASE/UCO constructs.
  */
-public abstract class UcoObject {
+abstract class UcoObject {
 
     @SerializedName("@id")
     private String id;

@@ -27,6 +27,10 @@ class Relationship extends UcoObject {
     private String source;
 
     private String target;
+    
+    private String kindOfRelationship;
+    
+    private Boolean isDirectional;
 
     Relationship(String id) {
         super(id, "Relationship");
@@ -39,6 +43,16 @@ class Relationship extends UcoObject {
 
     Relationship setTarget(String target) {
         this.target = target;
+        return this;
+    }
+    
+    Relationship setKindOfRelationship(String kindOfRelationship) {
+        this.kindOfRelationship = kindOfRelationship;
+        return this;
+    }
+    
+    Relationship isDirectional(boolean isDirectional) {
+        this.isDirectional = isDirectional;
         return this;
     }
 }
