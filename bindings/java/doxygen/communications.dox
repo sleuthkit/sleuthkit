@@ -94,11 +94,11 @@ The helper creates a TSK_CONTACT artifact. It also creates contact accounts for 
 
 \subsection jni_com_comm_artifacts_helper_add_calllog Adding Call logs
 Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addCalllog() method to add call log.
-The helper creates a TSK_CALLLOG artifact. It also creates account for the caller and each of the callees, if specified.  Finally it creates a relationship between the caller and each of the callees.
+The helper creates a TSK_CALLLOG artifact. It also creates accounts for the caller and each of the callees, if specified.  Finally it creates a relationship between the caller and each of the callees.
 
 \subsection jni_com_comm_artifacts_helper_add_message Adding Messages
 Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addMessage() method to add a message.
-The helper creates a TSK_MESSAGE artifact. It also creates account for the sender and each of the recipients, if specified.  Finally it creates a relationship between the sender and each of the recipients.
+The helper creates a TSK_MESSAGE artifact. It also creates accounts for the sender and each of the recipients, if specified.  Finally it creates a relationship between the sender and each of the recipients.
 
 \subsection jni_com_comm_artifacts_helper_add_attachments Adding Attachments to message
 Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addAttachments() method to add org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments to a message.
