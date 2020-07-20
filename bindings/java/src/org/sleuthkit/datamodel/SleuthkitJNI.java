@@ -51,7 +51,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  */
 public class SleuthkitJNI {
 
-	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
+	private static final Logger logger = Logger.getLogger(SleuthkitJNI.class.getName());
 	
 	/**
 	 * Lock to protect against the TSK data structures being closed while
