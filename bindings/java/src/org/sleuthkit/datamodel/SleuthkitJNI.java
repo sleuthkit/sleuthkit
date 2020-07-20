@@ -35,6 +35,8 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -49,6 +51,8 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  */
 public class SleuthkitJNI {
 
+	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
+	
 	/**
 	 * Lock to protect against the TSK data structures being closed while
 	 * another thread is in the C++ code. Do not use this lock after obtaining
@@ -177,10 +181,16 @@ public class SleuthkitJNI {
 		 * @param caseIdentifier Unique identifier for the case.
 		 * 
 		 * @return the case handle cache
+		 * 
+		 * @throws TskCoreException If there is no cache for this case.
 		 */
-		private static CaseHandles getCaseHandles(String caseIdentifier) {
+		private static CaseHandles getCaseHandles(String caseIdentifier) throws TskCoreException {
 			synchronized (cacheLock) {
-				return caseHandlesCache.get(caseIdentifier);
+				if (caseHandlesCache.containsKey(caseIdentifier)) {
+					return caseHandlesCache.get(caseIdentifier);
+				}
+				// If the CaseHandles object isn't in there, it should mean the case has been closed.
+				throw new TskCoreException("No entry for case " + caseIdentifier + " in cache. Case may have been closed");
 			}
 		}
 		
@@ -228,16 +238,20 @@ public class SleuthkitJNI {
 		 * @param fsHandle   The file system handle in which the file lives.
 		 */
 		private static void addFileHandle(String caseIdentifier, long fileHandle, long fsHandle) {
-			synchronized (cacheLock) {
-				// Add to collection of open file handles.
-				getCaseHandles(caseIdentifier).fileHandleCache.add(fileHandle);
+			try {
+				synchronized (cacheLock) {
+					// Add to collection of open file handles.
+					getCaseHandles(caseIdentifier).fileHandleCache.add(fileHandle);
 
-				// Add to map of file system to file handles.
-				if (getCaseHandles(caseIdentifier).fileSystemToFileHandles.containsKey(fsHandle)) {
-					getCaseHandles(caseIdentifier).fileSystemToFileHandles.get(fsHandle).add(fileHandle);
-				} else {
-					getCaseHandles(caseIdentifier).fileSystemToFileHandles.put(fsHandle, new ArrayList<Long>(Arrays.asList(fileHandle)));
+					// Add to map of file system to file handles.
+					if (getCaseHandles(caseIdentifier).fileSystemToFileHandles.containsKey(fsHandle)) {
+						getCaseHandles(caseIdentifier).fileSystemToFileHandles.get(fsHandle).add(fileHandle);
+					} else {
+						getCaseHandles(caseIdentifier).fileSystemToFileHandles.put(fsHandle, new ArrayList<>(Arrays.asList(fileHandle)));
+					}
 				}
+			} catch (TskCoreException ex) {
+				logger.log(Level.WARNING, "Error caching file handle for case {0}", caseIdentifier);
 			}
 		}
 
@@ -251,7 +265,11 @@ public class SleuthkitJNI {
 			synchronized (cacheLock) {
 				// Remove from collection of open file handles.
 				if (skCase != null) {
-					getCaseHandles(skCase.getCaseHandleIdentifier()).fileHandleCache.remove(fileHandle);
+					try {
+						getCaseHandles(skCase.getCaseHandleIdentifier()).fileHandleCache.remove(fileHandle);
+					} catch (TskCoreException ex) {
+						// If the call to getCaseHandles() failed, we've already cleared the cache.
+					}
 				} else {
 					// If we don't know what case the handle is from, delete the first one we find
 					for (String caseIdentifier:caseHandlesCache.keySet()) {
@@ -882,8 +900,10 @@ public class SleuthkitJNI {
 	 * @param skCase      The case the image belongs to.
 	 * @param imagePaths  The complete list of paths for the image.
 	 * @param imageHandle The open image handle from TSK.
+	 * 
+	 * @throws TskCoreException If the new image could not be added to the cache
 	 */
-	private static void cacheImageHandle(SleuthkitCase skCase, List<String> imagePaths, long imageHandle) {
+	private static void cacheImageHandle(SleuthkitCase skCase, List<String> imagePaths, long imageHandle) throws TskCoreException {
 		
 		// Construct the hash key from the image paths
 		StringBuilder keyBuilder = new StringBuilder();
