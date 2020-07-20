@@ -76,11 +76,36 @@ The final step is to store the relationships between the accounts.  You can do t
 The source of the relationship can be a device account (for things like call logs and contacts) if you are unsure about the specific account (such as phone number) associated with the device. 
 
 
-As an example, you can refer to some code in Autopsy.  Such as:
-- [Android Text Messages] (https://github.com/sleuthkit/autopsy/blob/develop/InternalPythonModules/android/textmessage.py)
+As an example, you can refer to some code in Autopsy, such as:
 - [Email Module addArtifact()] (https://github.com/sleuthkit/autopsy/blob/develop/thunderbirdparser/src/org/sleuthkit/autopsy/thunderbirdparser/ThunderbirdMboxFileIngestModule.java)
 
 
+\section jni_com_comm_artifacts_helper Communication Artifacts Helper
+An alternative to individually creating artifacts, accounts and relationships is to use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.  CommunicationArtifactsHelper provides APIs that create the artifact, create accounts, and create relationships between the accounts, all with a single API call.
+
+\subsection jni_com_comm_artifacts_helper_create_helper Creating a Communications Artifacts Helper
+To use the communication artifacts helper, you must first create a new instance of the helper for each source file from which you are extracting communications artifacts. To create a helper, use the constructor org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.CommunicationArtifactsHelper().
+ When creating the helper, you must specify the account type for the accounts that will be created by this instance of the helper. Addtionally, you may specify the "self" account identifier - i.e. the application specific account identifier for the owner of the device, if it is known.
+If the self account is not known, you may omit it, in which case the helper uses the Device account as proxy for the self account.    
+
+\subsection jni_com_comm_artifacts_helper_add_contact Adding Contacts
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addContact() method to add contacts.  
+The helper creates a TSK_CONTACT artifact. It also creates contact accounts for each of the specified contact method, and finally creates relationships between the contact accounts and the self account.
+
+\subsection jni_com_comm_artifacts_helper_add_calllog Adding Call logs
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addCalllog() method to add call log.
+The helper creates a TSK_CALLLOG artifact. It also creates accounts for the caller and each of the callees, if specified.  Finally it creates a relationship between the caller and each of the callees.
+
+\subsection jni_com_comm_artifacts_helper_add_message Adding Messages
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addMessage() method to add a message.
+The helper creates a TSK_MESSAGE artifact. It also creates accounts for the sender and each of the recipients, if specified.  Finally it creates a relationship between the sender and each of the recipients.
+
+\subsection jni_com_comm_artifacts_helper_add_attachments Adding Attachments to message
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addAttachments() method to add org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments to a message.
+
+As an example, you can refer to some code in Autopsy, such as:
+- [Android Text Messages] (https://github.com/sleuthkit/autopsy/blob/develop/InternalPythonModules/android/textmessage.py)
+- [Facebook messenger Messages] (https://github.com/sleuthkit/autopsy/blob/develop/InternalPythonModules/android/fbmessenger.py)
 
 \section jni_com_schema Database Schema
 
