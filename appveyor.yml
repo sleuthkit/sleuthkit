@@ -29,7 +29,7 @@ environment:
 services:
 
 before_build:
-  - nuget restore
+  - nuget restore win32\libtsk
   
 build_script:
       - python setupDevRepos.py
