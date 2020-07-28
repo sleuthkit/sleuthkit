@@ -343,7 +343,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 				}
 			}
 			catch (InvalidAccountIDException ex) {
-				LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", accountUniqueID), ex);
+				LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", accountUniqueID));
 			}
 		}
 	}
@@ -530,7 +530,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			try {
 				senderAccountInstance = createAccountInstance(moduleAccountsType, senderId);
 			} catch (InvalidAccountIDException ex) {
-				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", senderId), ex);
+				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", senderId));
 			}
 		}
 		
@@ -544,7 +544,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 					try {
 						recipientAccountsList.add(createAccountInstance(moduleAccountsType, recipient));
 					} catch (InvalidAccountIDException ex) {
-						LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", senderId), ex);
+						LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", senderId));
 					}
 				}
 			}
@@ -781,7 +781,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			try {
 				callerAccountInstance = createAccountInstance(moduleAccountsType, callerId);
 			} catch (InvalidAccountIDException ex) {
-				LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callerId), ex);
+				LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callerId));
 			}
 		}
 		
@@ -796,7 +796,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 						recipientAccountsList.add(createAccountInstance(moduleAccountsType, callee));
 					}
 					catch (InvalidAccountIDException ex) {
-						LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callerId), ex);
+						LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callerId));
 					}
 				}
 			}
