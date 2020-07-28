@@ -13,6 +13,7 @@ image: Visual Studio 2015
 
 
 install:  
+  - ps: choco install nuget.commandline
   - ps: choco install ant --ignore-dependencies
   - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
   - set PATH=C:\Python36-x64\';%PATH%
@@ -27,6 +28,9 @@ environment:
       JDK_HOME: C:\Program Files\Java\jdk1.8.0
 services:
 
+before_build:
+  - nuget restore win32\libtsk -PackagesDirectory win32\packages
+  
 build_script:
       - python setupDevRepos.py
       - python win32\updateAndBuildAll.py -m 
