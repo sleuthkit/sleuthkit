@@ -71,6 +71,20 @@ def pullAndBuildAllDependencies(depBranch):
     if(passed):
         buildDependentLibs(vmdkHome, 64, "libvmdk", "libvmdk")
 
+    # get all nuget packages needed by the solution
+    if(passed):
+        if not TSK_HOME:
+            print("Please set the TSK_HOME environment variable")
+            sys.exit(1)
+        else:
+            os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
+
+        # nuget restore
+        print ("Restoring nuget packages.")
+        ret = subprocess.call(["nuget", "restore", "tsk-win.sln"] , stdout=sys.stdout)
+        if ret != 0:
+            sys.exit("Failed to restore nuget packages")
+                 
 
 def buildTSKAll():
 
@@ -217,7 +231,7 @@ def buildTSK(wPlatform, target):
         sys.exit(1)
     else:
         os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
-
+                 
     vs = []
     vs.append(MSBUILD_PATH)
     vs.append(os.path.join("tsk-win.sln"))
