@@ -5493,7 +5493,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	private long addObject(long parentId, int objectType, CaseDbConnection connection) throws SQLException {
+	long addObject(long parentId, int objectType, CaseDbConnection connection) throws SQLException {
 		ResultSet resultSet = null;
 		acquireSingleUserCaseWriteLock();
 		try {
@@ -11106,179 +11106,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add a file system file to the database. For use with the JNI callbacks
-	 * associated with the add image process.
-	 *
-	 * @param parentObjId     The parent of the file.
-	 * @param fsObjId         The object ID of the file system.
-	 * @param dataSourceObjId The data source object ID.
-	 * @param fsType          The type.
-	 * @param attrType        The type attribute given to the file by the file
-	 *                        system.
-	 * @param attrId          The type id given to the file by the file system.
-	 * @param name            The name of the file.
-	 * @param metaAddr        The meta address of the file.
-	 * @param metaSeq         The meta sequence number of the file.
-	 * @param dirType         The type of the file, usually as reported in the
-	 *                        name structure of the file system.
-	 * @param metaType        The type of the file, usually as reported in the
-	 *                        metadata structure of the file system.
-	 * @param dirFlags        The allocated status of the file, usually as
-	 *                        reported in the name structure of the file system.
-	 * @param metaFlags       The allocated status of the file, usually as
-	 *                        reported in the metadata structure of the file
-	 *                        system.
-	 * @param size            The file size.
-	 * @param crtime          The created time.
-	 * @param ctime           The last changed time
-	 * @param atime           The last accessed time.
-	 * @param mtime           The last modified time.
-	 * @param meta_mode       The modes for the file.
-	 * @param gid             The group identifier.
-	 * @param uid             The user identifier.
-	 * @param md5             The MD5 hash.
-	 * @param known           The file known status.
-	 * @param escaped_path    The escaped path to the file.
-	 * @param extension       The file extension.
-	 * @param hasLayout       True if this is a layout file, false otherwise.
-	 * @param transaction     The open transaction.
-	 *
-	 * @return The object ID of the new file system
-	 *
-	 * @throws TskCoreException
-	 */
-	long addFileJNI(long parentObjId,
-			Long fsObjId, long dataSourceObjId,
-			int fsType,
-			Integer attrType, Integer attrId, String name,
-			Long metaAddr, Long metaSeq,
-			int dirType, int metaType, int dirFlags, int metaFlags,
-			long size,
-			Long crtime, Long ctime, Long atime, Long mtime,
-			Integer meta_mode, Integer gid, Integer uid,
-			String md5, TskData.FileKnown known,
-			String escaped_path, String extension,
-			boolean hasLayout, CaseDbTransaction transaction) throws TskCoreException {
-
-		Statement queryStatement = null;
-		try {
-			acquireSingleUserCaseWriteLock();
-			CaseDbConnection connection = transaction.getConnection();
-
-			// Insert a row for the local/logical file into the tsk_objects table.
-			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			long objectId = addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-
-			// INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, 
-			//                        dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, 
-			//                        mode, gid, uid, md5, known, parent_path, extension)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE_All_FIELDS);
-			statement.clearParameters();
-			if (fsObjId != null) {
-				statement.setLong(1, fsObjId);			    // fs_obj_id
-			} else {
-				statement.setNull(1, java.sql.Types.BIGINT);
-			}
-			statement.setLong(2, objectId);					// obj_id 
-			statement.setLong(3, dataSourceObjId);			// data_source_obj_id 
-			statement.setShort(4, (short) fsType);	        // type
-			if (attrType != null) {
-				statement.setShort(5, attrType.shortValue());  // attr_type
-			} else {
-				statement.setNull(5, java.sql.Types.SMALLINT);
-			}
-			if (attrId != null) {
-				statement.setInt(6, attrId);				// attr_id
-			} else {
-				statement.setNull(6, java.sql.Types.INTEGER);
-			}
-			statement.setString(7, name);					// name
-			if (metaAddr != null) {
-				statement.setLong(8, metaAddr);				// meta_addr
-			} else {
-				statement.setNull(8, java.sql.Types.BIGINT);
-			}
-			if (metaSeq != null) {
-				statement.setInt(9, metaSeq.intValue());	// meta_seq
-			} else {
-				statement.setNull(9, java.sql.Types.INTEGER);
-			}
-			statement.setShort(10, (short) dirType);			// dir_type
-			statement.setShort(11, (short) metaType);		// meta_type
-			statement.setShort(12, (short) dirFlags);		// dir_flags
-			statement.setShort(13, (short) metaFlags);		// meta_flags
-			statement.setLong(14, size < 0 ? 0 : size);     // size
-			if (crtime != null) {
-				statement.setLong(15, crtime);              // crtime
-			} else {
-				statement.setNull(15, java.sql.Types.BIGINT);
-			}
-			if (ctime != null) {
-				statement.setLong(16, ctime);               // ctime
-			} else {
-				statement.setNull(16, java.sql.Types.BIGINT);
-			}
-			if (atime != null) {
-				statement.setLong(17, atime);               // atime
-			} else {
-				statement.setNull(17, java.sql.Types.BIGINT);
-			}
-			if (mtime != null) {
-				statement.setLong(18, mtime);               // mtime
-			} else {
-				statement.setNull(18, java.sql.Types.BIGINT);
-			}
-			if (meta_mode != null) {
-				statement.setLong(19, meta_mode);           // mode
-			} else {
-				statement.setNull(19, java.sql.Types.BIGINT);
-			}
-			if (gid != null) {
-				statement.setLong(20, gid);                 // gid
-			} else {
-				statement.setNull(20, java.sql.Types.BIGINT);
-			}
-			if (uid != null) {
-				statement.setLong(21, uid);                 // uid
-			} else {
-				statement.setNull(21, java.sql.Types.BIGINT);
-			}
-			statement.setString(22, md5);                   // md5
-			statement.setInt(23, known.getFileKnownValue());// known
-			statement.setString(24, escaped_path);          // parent_path
-			statement.setString(25, extension);             // extension
-			if (hasLayout) {
-				statement.setInt(26, 1);                    // has_layout
-			} else {
-				statement.setNull(26, java.sql.Types.INTEGER);
-			}
-			connection.executeUpdate(statement);
-
-			// If this is not a slack file create the timeline events
-			if (!hasLayout
-					&& TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType() != fsType
-					&& (!name.equals(".")) && (!name.equals(".."))) {
-				TimelineManager timelineManager = getTimelineManager();
-				DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, name,
-						TSK_FS_NAME_TYPE_ENUM.valueOf((short) dirType),
-						TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
-						TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
-						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, escaped_path, null, parentObjId, null, null, extension);
-
-				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
-			}
-
-			return objectId;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to add file system file", ex);
-		} finally {
-			closeStatement(queryStatement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
 	 * Add a layout file range to the database. For use with the JNI callbacks
 	 * associated with the add image process.
 	 *
@@ -11405,8 +11232,6 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, extension)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
-		INSERT_FILE_SYSTEM_FILE_All_FIELDS("INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
