@@ -73,17 +73,18 @@ def pullAndBuildAllDependencies(depBranch):
 
     # get all nuget packages needed by the solution
     if(passed):
+        TSK_HOME = os.getenv("TSK_HOME", False)
         if not TSK_HOME:
             print("Please set the TSK_HOME environment variable")
             sys.exit(1)
         else:
+            # nuget restore 
             os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
-
-        # nuget restore
-        print ("Restoring nuget packages.")
-        ret = subprocess.call(["nuget", "restore", "tsk-win.sln"] , stdout=sys.stdout)
-        if ret != 0:
-            sys.exit("Failed to restore nuget packages")
+            
+            print ("Restoring nuget packages.")
+            ret = subprocess.call(["nuget", "restore", "tsk-win.sln"] , stdout=sys.stdout)
+            if ret != 0:
+                sys.exit("Failed to restore nuget packages")
                  
 
 def buildTSKAll():
