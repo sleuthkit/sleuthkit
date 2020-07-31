@@ -11015,129 +11015,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add an image to the database. For use with the JNI callbacks associated
-	 * with the add image process.
-	 *
-	 * @param type              Type of image.
-	 * @param sectorSize        Sector size.
-	 * @param size              Image size.
-	 * @param timezone          Time zone.
-	 * @param md5               MD5 hash.
-	 * @param sha1              SHA1 hash.
-	 * @param sha256            SHA256 hash.
-	 * @param deviceId          Device ID.
-	 * @param collectionDetails Collection details.
-	 * @param transaction       Case DB transaction.
-	 *
-	 * @return The newly added Image object ID.
-	 *
-	 * @throws TskCoreException
-	 */
-	long addImageJNI(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size,
-			String timezone, String md5, String sha1, String sha256,
-			String deviceId, String collectionDetails,
-			CaseDbTransaction transaction) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try {
-			// Insert a row for the Image into the tsk_objects table.
-			CaseDbConnection connection = transaction.getConnection();
-			long newObjId = addObject(0, TskData.ObjectType.IMG.getObjectType(), connection);
-
-			// Add a row to tsk_image_info
-			// INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_INFO);
-			preparedStatement.clearParameters();
-			preparedStatement.setLong(1, newObjId);
-			preparedStatement.setShort(2, (short) type.getValue());
-			preparedStatement.setLong(3, sectorSize);
-			preparedStatement.setString(4, timezone);
-			//prevent negative size
-			long savedSize = size < 0 ? 0 : size;
-			preparedStatement.setLong(5, savedSize);
-			preparedStatement.setString(6, md5);
-			preparedStatement.setString(7, sha1);
-			preparedStatement.setString(8, sha256);
-			preparedStatement.setString(9, null);
-			connection.executeUpdate(preparedStatement);
-
-			// Add a row to data_source_info
-			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO_WITH_ACQ_DETAIL);
-			preparedStatement.setLong(1, newObjId);
-			preparedStatement.setString(2, deviceId);
-			preparedStatement.setString(3, timezone);
-			preparedStatement.setString(4, collectionDetails);
-			connection.executeUpdate(preparedStatement);
-
-			return newObjId;
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding image to database"), ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
-	 * Add an image name to the database. For use with the JNI callbacks
-	 * associated with the add image process.
-	 *
-	 * @param objId       The object id of the image.
-	 * @param name        The file name for the image
-	 * @param sequence    The sequence number of this file.
-	 * @param transaction The open transaction.
-	 *
-	 * @throws TskCoreException
-	 */
-	void addImageNameJNI(long objId, String name, long sequence,
-			CaseDbTransaction transaction) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try {
-			CaseDbConnection connection = transaction.getConnection();
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
-			preparedStatement.clearParameters();
-			preparedStatement.setLong(1, objId);
-			preparedStatement.setString(2, name);
-			preparedStatement.setLong(3, sequence);
-			connection.executeUpdate(preparedStatement);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding image name %s to image with object ID %d", name, objId), ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
-	 * Add a layout file range to the database. For use with the JNI callbacks
-	 * associated with the add image process.
-	 *
-	 * @param objId       Object ID of the layout file.
-	 * @param byteStart   Start byte.
-	 * @param byteLen     Length in bytes.
-	 * @param seq         Sequence number of this range.
-	 * @param transaction The open transaction.
-	 *
-	 * @throws TskCoreException
-	 */
-	void addLayoutFileRangeJNI(long objId, long byteStart, long byteLen,
-			long seq, CaseDbTransaction transaction) throws TskCoreException {
-		try {
-			acquireSingleUserCaseWriteLock();
-			CaseDbConnection connection = transaction.getConnection();
-
-			PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
-			prepStmt.clearParameters();
-			prepStmt.setLong(1, objId);
-			prepStmt.setLong(2, byteStart);
-			prepStmt.setLong(3, byteLen);
-			prepStmt.setLong(4, seq);
-			connection.executeUpdate(prepStmt);
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding layout range to file with obj ID " + objId, ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -11346,7 +11223,6 @@ public class SleuthkitCase {
 		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (?, ?, ?)"),
-		INSERT_DATA_SOURCE_INFO_WITH_ACQ_DETAIL("INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
@@ -11673,10 +11549,12 @@ public class SleuthkitCase {
 
 		private final Connection connection;
 		private final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
+		private final Map<String, PreparedStatement> adHocPreparedStatements;
 
 		CaseDbConnection(Connection connection) {
 			this.connection = connection;
 			preparedStatements = new EnumMap<PREPARED_STATEMENT, PreparedStatement>(PREPARED_STATEMENT.class);
+			adHocPreparedStatements = new HashMap<>();
 		}
 
 		boolean isOpen() {
@@ -11695,6 +11573,29 @@ public class SleuthkitCase {
 			} else {
 				statement = prepareStatement(statementKey.getSQL(), generateKeys);
 				this.preparedStatements.put(statementKey, statement);
+			}
+			return statement;
+		}
+		
+		/**
+		 * Get a prepared statement for the given input.
+		 * Will cache the prepared statement for this connection.
+		 * 
+		 * @param sqlStatement  The SQL for the prepared statement.
+		 * @param generateKeys  The generate keys enum from Statement.
+		 * 
+		 * @return The prepared statement
+		 * 
+		 * @throws SQLException 
+		 */
+		PreparedStatement getPreparedStatement(String sqlStatement, int generateKeys) throws SQLException {
+			PreparedStatement statement;
+			String statementKey = "SQL:" + sqlStatement + " Key:" + generateKeys;
+			if (adHocPreparedStatements.containsKey(statementKey)) {
+				statement = this.adHocPreparedStatements.get(statementKey);
+			} else {
+				statement = prepareStatement(sqlStatement, generateKeys);
+				this.adHocPreparedStatements.put(statementKey, statement);
 			}
 			return statement;
 		}
