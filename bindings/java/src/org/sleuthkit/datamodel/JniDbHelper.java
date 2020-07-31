@@ -33,7 +33,6 @@ import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 
 /**
  * This is a utility class to allow the native C code to write to the 
@@ -459,7 +458,6 @@ class JniDbHelper {
         long fsObjId, long dataSourceObjId,
         int fileType,
         String name, long size) {
-		PreparedStatement insertFilesStmt = null;
         try {
             
             // The file system may be null for layout files
@@ -495,9 +493,7 @@ class JniDbHelper {
                     + ", file system object ID: " + fsObjId + ", name: " + name, ex);
             revertTransaction();
             return -1;
-        } finally {
-			closeStatement(insertFilesStmt);
-		}
+        }
     }    
     
     /**
