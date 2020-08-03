@@ -134,7 +134,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(TSK_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;_ITERATOR_DEBUG_LEVEL=2;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -156,7 +156,7 @@ copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"</Command>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(TSK_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -177,7 +177,7 @@ copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(TSK_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;_LIB;WINVER=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -220,7 +220,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(TSK_HOME)\..\zlib;$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBOPENSSL;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -467,11 +467,13 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets" Condition="Exists('..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets')" />
+    <Import Project="..\packages\libewf.20130416.0.0\build\native\libewf.targets" Condition="Exists('..\packages\libewf.20130416.0.0\build\native\libewf.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets'))" />
+    <Error Condition="!Exists('..\packages\libewf.20130416.0.0\build\native\libewf.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\libewf.20130416.0.0\build\native\libewf.targets'))" />
   </Target>
 </Project>
