@@ -11699,6 +11699,12 @@ public class SleuthkitCase {
 		@Override
 		public void close() {
 			try {
+				for (PreparedStatement stmt:preparedStatements.values()) {
+					closeStatement(stmt);
+				}
+				for (PreparedStatement stmt:adHocPreparedStatements.values()) {
+					closeStatement(stmt);
+				}
 				connection.close();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Unable to close connection to case database", ex);

@@ -43,9 +43,9 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  * Note that this code should only be used for the add image process, and not
  * to add additional files afterward.
  */
-class JniDbHelper {
+class TskCaseDbBridge {
     
-    private static final Logger logger = Logger.getLogger(JniDbHelper.class.getName());
+    private static final Logger logger = Logger.getLogger(TskCaseDbBridge.class.getName());
     
     private final SleuthkitCase caseDb;
     private CaseDbTransaction trans = null;
@@ -60,7 +60,7 @@ class JniDbHelper {
     private final Queue<LayoutRangeInfo> batchedLayoutRanges = new LinkedList<>();
     private final List<Long> layoutFileIds = new ArrayList<>();
     
-    JniDbHelper(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
+    TskCaseDbBridge(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
         this.caseDb = caseDb;
         this.addDataSourceCallbacks = addDataSourceCallbacks;
         trans = null;

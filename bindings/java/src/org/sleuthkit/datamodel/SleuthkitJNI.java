@@ -439,7 +439,7 @@ public class SleuthkitJNI {
 		 *                          case database.
 		 */
 		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, SleuthkitCase skCase) throws TskCoreException {
-			JniDbHelper dbHelper = new JniDbHelper(skCase, new DefaultAddDataSourceCallbacks());
+			TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks());
 			try {
 				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
@@ -486,7 +486,7 @@ public class SleuthkitJNI {
 			private long imageId = 0;
 			private boolean isCanceled;
 			private final SleuthkitCase skCase;
-			private JniDbHelper dbHelper;
+			private TskCaseDbBridge dbHelper;
 
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
@@ -552,7 +552,7 @@ public class SleuthkitJNI {
 			 */
 			public void run(String deviceId, Image image, int sectorSize, 
 					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {			
-				dbHelper = new JniDbHelper(skCase, addDataSourceCallbacks);
+				dbHelper = new TskCaseDbBridge(skCase, addDataSourceCallbacks);
 				getTSKReadLock();
 				try {
 					long imageHandle = 0;
@@ -2096,9 +2096,9 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	private static native long initAddImgNat(JniDbHelper dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
-	private static native long initializeAddImgNat(JniDbHelper dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
