@@ -3397,7 +3397,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     sii_sds_ent_size = tsk_getu32(fs->endian, sii->sec_desc_size);
 
     // Check that we do not go out of bounds.
-    if ((uint32_t) sii_sds_file_off > ntfs->sds_data.size) {
+    if (sii_sds_file_off > ntfs->sds_data.size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
         tsk_error_set_errstr("ntfs_get_sds: SII offset too large (%" PRIu64
