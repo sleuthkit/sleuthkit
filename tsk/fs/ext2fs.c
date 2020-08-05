@@ -2854,8 +2854,8 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                     256 ? 256 : tsk_getu32(fs->endian,
                         ea_entry->val_size));
 
-                val[tsk_getu32(fs->endian, ea_entry->val_size) > 256 ?
-                    256 : tsk_getu32(fs->endian, ea_entry->val_size)] =
+                val[tsk_getu32(fs->endian, ea_entry->val_size) > 255 ?
+                    255 : tsk_getu32(fs->endian, ea_entry->val_size)] =
                     '\0';
 
                 if (ea_entry->nidx == EXT2_EA_IDX_USER)
