@@ -39,7 +39,7 @@ usage()
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-    //tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }
@@ -170,6 +170,12 @@ main(int argc, char **argv1)
     /* We need at least one more argument */
     if (OPTIND >= argc) {
         tsk_fprintf(stderr, "Missing image name\n");
+        usage();
+    }
+
+    /* Passwords only work if the file system type has been specified */
+    if (strlen(password) > 0 && fstype == TSK_FS_TYPE_DETECT) {
+        tsk_fprintf(stderr, "File system type must be specified to use a password\n");
         usage();
     }
 
