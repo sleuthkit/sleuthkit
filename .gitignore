@@ -29,6 +29,8 @@
 /case-uco/java/build/
 /case-uco/java/dist/
 /case-uco/java/nbproject/private/
+/case-uco/java/nbproject/build-impl.xml
+/case-uco/java/nbproject/genfiles.properties
 
 # Windows build folders
 /win32/Debug_NoLibs/
