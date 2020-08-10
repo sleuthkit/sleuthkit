@@ -100,7 +100,7 @@ public final class CommunicationsUtils {
 			throw new InvalidAccountIDException(String.format("Input string is not a valid email address: %s", emailAddress));
 		}
 
-		return emailAddress.toLowerCase().trim();
+		return emailAddress.toLowerCase().replace(";", "").trim();
 	}
 
 	/**
