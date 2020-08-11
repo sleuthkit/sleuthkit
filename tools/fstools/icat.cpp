@@ -56,7 +56,7 @@ usage()
     tsk_fprintf(stderr, "\t-S snap_id: Snapshot ID (for APFS only)\n");
     tsk_fprintf(stderr, "\t-v: verbose to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-    //tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }
@@ -200,6 +200,12 @@ main(int argc, char **argv1)
     /* We need at least two more argument */
     if (OPTIND + 1 >= argc) {
         tsk_fprintf(stderr, "Missing image name and/or address\n");
+        usage();
+    }
+
+    /* Passwords only work if the file system type has been specified */
+    if (strlen(password) > 0 && fstype == TSK_FS_TYPE_DETECT) {
+        tsk_fprintf(stderr, "File system type must be specified to use a password\n");
         usage();
     }
 
