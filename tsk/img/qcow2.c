@@ -22,60 +22,6 @@
 #define QCOW_ZLIB_BITLEN(cluster_bits)         (70 - cluster_bits)
 #define QCOW_ZLIB_HOST_OFFSET(entry,bitlen)    ((entry) & (((uint64_t)1 << bitlen) - 1))
 
-/* Adapted from zpipe.c */
-int zlib_inflate(uint8_t * in_buffer, size_t in_len, uint8_t * out_buffer, size_t out_len, size_t *nwrote)
-{
-    int ret;
-    *nwrote = 0;
-    z_stream strm = { 0 };
-
-    /* allocate inflate state */
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    strm.opaque = Z_NULL;
-    strm.avail_in = 0;
-    strm.next_in = Z_NULL;
-    ret = inflateInit2(&strm, -15);
-    if (ret != Z_OK)
-        return ret;
-
-    /* decompress until deflate stream ends or end of file */
-    do {
-        strm.avail_in = in_len - strm.total_in;
-        strm.next_in = in_buffer + strm.total_in;
-        strm.avail_out = out_len - strm.total_out;
-        strm.next_out = out_buffer + strm.total_out;
-
-        if (strm.avail_in == 0 || strm.avail_out == 0)
-        {
-            break;
-        }
-        ret = inflate(&strm, Z_SYNC_FLUSH);
-        switch (ret) {
-        case Z_NEED_DICT:
-            ret = Z_DATA_ERROR;     /* and fall through */
-        case Z_DATA_ERROR:
-        case Z_MEM_ERROR:
-        case Z_STREAM_ERROR:
-            (void)inflateEnd(&strm);
-            return ret;
-        }
-        /* done when inflate() says it's done */
-    } while (ret != Z_STREAM_END);
-
-    /* clean up and return */
-    (void)inflateEnd(&strm);
-    *nwrote = strm.total_out;
-
-    switch (ret)
-    {
-        case Z_STREAM_END:
-        case Z_OK:
-            return Z_OK;
-        default:
-            return Z_DATA_ERROR;
-    }
-}
 #endif
 
 #ifdef TSK_WIN32
@@ -187,7 +133,7 @@ int QCOW2_NORMALIZE_PATH(const TSK_TCHAR * path, IMG_QCOW2_INFO * q)
     {
         return 0;
     }
-    
+
     q->meta.image_name = utf8;
     q->meta.image_path = utf8;
 
@@ -223,11 +169,18 @@ error:
 static void
 qcow2_close(TSK_IMG_INFO * img_info)
 {
+    int i, end;
     IMG_QCOW2_INFO *qcow_info = (IMG_QCOW2_INFO *)img_info;
     if (qcow_info == NULL)
     {
         return;
     }
+
+    for (i = 0, end = img_info->num_img; i < end; ++i)
+    {
+        free(img_info->images[i]);
+    }
+    free(img_info->images);
 
     if (qcow_info->meta.backing_meta)
     {
@@ -272,11 +225,11 @@ qcow2_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "qcow2_read: byte offset: %" PRIuOFF " len: %" PRIuOFF
+            "qcow2_read: byte offset: %" PRIdOFF " len: %" PRIdOFF
             "\n", offset, len);
 
     if (offset > img_info->size) {
-        QCOW_SET_ERROR(TSK_ERR_IMG_READ_OFF, "qcow2_read: offset past image end - %" PRIuOFF, offset);
+        QCOW_SET_ERROR(TSK_ERR_IMG_READ_OFF, "qcow2_read: offset past image end - %" PRIdOFF, offset);
         return -1;
     }
     if (len > cluster_bytes)
@@ -295,7 +248,7 @@ qcow2_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     uint64_t l2_index = (offset / qcow_info->meta.cluster_bytes) % entry_table_len;
     uint64_t l1_index = (offset / qcow_info->meta.cluster_bytes) / entry_table_len;
     ssize_t cluster_offset = (offset % qcow_info->meta.cluster_bytes);
-    
+
     while (qcow_ptr)
     {
         if (l1_index < qcow_ptr->header.l1_size &&      /* l1 index exists in this file */
@@ -333,7 +286,7 @@ qcow2_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 #else
                     uint64_t bitlen = QCOW_ZLIB_BITLEN(qcow_info->header.cluster_bits);
                     uint64_t block_offset = QCOW_ZLIB_HOST_OFFSET(entry.compressed_entry, bitlen);
-                    uint64_t block_len = qcow_info->meta.cluster_bytes; 
+                    uint64_t block_len = qcow_info->meta.cluster_bytes;
                     size_t nwrote = 0;
 
                     if (block_len > qcow_info->meta.cluster_bytes)
@@ -366,7 +319,7 @@ qcow2_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                     }
 
 
-                    if (zlib_inflate(qcow_info->meta.comp_buffer, block_len, 
+                    if (zlib_inflate(qcow_info->meta.comp_buffer, block_len,
                                      qcow_info->meta.ucmp_buffer, qcow_info->meta.cluster_bytes, &nwrote) != Z_OK)
                     {
                         QCOW_SET_ERROR(TSK_ERR_IMG_READ, "Could not inflate cluster.");
@@ -399,7 +352,7 @@ qcow2_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                         return -1;
                     }
                 }
-                
+
                 if (remainder > 0)
                 {
                     nread += qcow2_read(img_info, offset + nread, buf + nread, remainder);
@@ -409,7 +362,7 @@ qcow2_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
             }
             /* else: cache miss */
         }
-        
+
         /* cache miss */
         qcow_ptr = qcow_ptr->meta.backing_meta;
     }
@@ -426,7 +379,7 @@ qcow2_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type: qcow2\n");
-    tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
+    tsk_fprintf(hFile, "\nSize in bytes: %" PRIdOFF "\n", img_info->size);
     tsk_fprintf(hFile, "Version: %d\n", (int)qcow_info->header.version);
     tsk_fprintf(hFile, "Cluster size: %d\n", (int)qcow_info->meta.cluster_bytes);
     return;
@@ -443,7 +396,7 @@ qcow2_init_file(const TSK_TCHAR * path)
     if ((qcow_info =
         (IMG_QCOW2_INFO *)tsk_img_malloc(sizeof(IMG_QCOW2_INFO))) == NULL)
         return NULL;
-    
+
     if (QCOW2_NORMALIZE_PATH(path, qcow_info) == 0)
     {
         QCOW_SET_ERROR(TSK_ERR_FS_UNICODE, "Error converting path to UTF-8 \"%" PRIttocTSK "\"", path);
@@ -511,7 +464,7 @@ qcow2_init_file(const TSK_TCHAR * path)
         goto error;
     }
 
-    if (QCOW_READ_FILE(h, qcow_info->meta.l1_cache, 
+    if (QCOW_READ_FILE(h, qcow_info->meta.l1_cache,
         qcow_info->header.l1_size * sizeof(QCOW_2_L1_entry), &read) == 0 ||
         read != (qcow_info->header.l1_size * sizeof(QCOW_2_L1_entry)))
     {
@@ -596,7 +549,7 @@ qcow2_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize
     }
 
     /* Connect backing files, shrink backing file list */
-    
+
     for (i = 0; i < remaining_size; i++)
     {
         for (j = 0; j < remaining_size; j++)
@@ -605,7 +558,7 @@ qcow2_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize
             {
                 continue;
             }
-            if (strcmp((void*)qcow_info_list[i]->meta.image_name, 
+            if (strcmp((void*)qcow_info_list[i]->meta.image_name,
                         (void*)qcow_info_list[j]->meta.backing_name) == 0)
             {
                 qcow_info_list[j]->meta.backing_meta = qcow_info_list[i];
@@ -620,7 +573,7 @@ qcow2_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize
             }
         }
     }
-    
+
     if (remaining_size != 1)
     {
         QCOW_SET_ERROR(TSK_ERR_IMG_ARG, "Invalid parameters, not all images are part of the same hard disk.");
@@ -635,7 +588,7 @@ qcow2_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize
             /* sanity check, make sure all cluster sizes are identical */
             if (ptr->header.cluster_bits != ptr->meta.backing_meta->header.cluster_bits)
             {
-                QCOW_SET_ERROR(TSK_ERR_IMG_UNSUPTYPE, "Cluster size mismatch between  \"%s\" and \"%s\".", 
+                QCOW_SET_ERROR(TSK_ERR_IMG_UNSUPTYPE, "Cluster size mismatch between  \"%s\" and \"%s\".",
                     ptr->meta.image_path, ptr->meta.backing_meta->meta.image_path);
                 goto error;
             }
@@ -656,7 +609,7 @@ qcow2_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize
 
     qcow_info = qcow_info_list[0];
     img_info = (TSK_IMG_INFO *)qcow_info;
-    
+
     img_info->read = qcow2_read;
     img_info->close = qcow2_close;
     img_info->imgstat = qcow2_imgstat;
@@ -683,7 +636,9 @@ qcow2_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize
     }
 
 
-    return (TSK_IMG_INFO *)qcow_info_list[0];
+    TSK_IMG_INFO *retVal = (TSK_IMG_INFO *)qcow_info_list[0];
+    free(qcow_info_list);
+    return retVal;
 
 error:
     if (img_info && img_info->images)
