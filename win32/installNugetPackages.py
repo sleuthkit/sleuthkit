@@ -17,7 +17,8 @@ import zipfile
 # baseName - base name for the package. This is expected to be the beginning of the extracted folder name.
 def installPackage(url, zipFileName, baseName):
     print("Installing nuget package for " + baseName)
-    targetDir = "packages"
+    pathToScript = os.path.abspath(__file__)
+    targetDir = os.path.join(os.path.dirname(pathToScript), "packages")
 
     # Remove the existing zip file, if present
     if os.path.exists(zipFileName):
@@ -34,7 +35,7 @@ def installPackage(url, zipFileName, baseName):
     wget.download(url, zipFileName)
    
     # Extract to the packages folder
-    print("\nExtracting " + zipFileName + " to " + targetDir + "\n")
+    print("\nExtracting " + zipFileName + " to " + os.path.abspath(targetDir) + "\n")
     with zipfile.ZipFile(zipFileName, 'r') as zip_ref:
         zip_ref.extractall(targetDir)
 
