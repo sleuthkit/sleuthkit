@@ -29,6 +29,7 @@ environment:
 services:
 
 before_build:
+  - python win32\installNugetPackages.py
   - nuget restore win32\libtsk -PackagesDirectory win32\packages
   
 build_script:
