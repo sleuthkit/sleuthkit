@@ -979,7 +979,7 @@ class APFSFileSystem : public APFSObject {
     }
   };
 
-  using crypto_info_t = struct {
+  struct crypto_info_t {
     apfs_block_num recs_block_num{};
     std::string password_hint{};
     std::string password{};

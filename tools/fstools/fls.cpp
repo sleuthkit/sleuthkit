@@ -67,7 +67,7 @@ usage()
         "\t-z: Time zone of original machine (i.e. EST5EDT or GMT) (only useful with -l)\n");
     tsk_fprintf(stderr,
         "\t-s seconds: Time skew of original machine (in seconds) (only useful with -l & -m)\n");
-    //tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }
@@ -252,6 +252,12 @@ main(int argc, char **argv1)
     /* We need at least one more argument */
     if (OPTIND == argc) {
         tsk_fprintf(stderr, "Missing image name\n");
+        usage();
+    }
+
+    /* Passwords only work if the file system type has been specified */
+    if (strlen(password) > 0 && fstype == TSK_FS_TYPE_DETECT) {
+        tsk_fprintf(stderr, "File system type must be specified to use a password\n");
         usage();
     }
 

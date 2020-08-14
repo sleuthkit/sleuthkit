@@ -590,7 +590,7 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
 
   const APFSSnapshotMetaBtreeNode snap_tree{_pool, fs()->snap_meta_tree_oid};
 
-  using key_type = struct {
+  struct key_type {
     uint64_t xid_and_type;
 
     inline uint64_t snap_xid() const noexcept {
