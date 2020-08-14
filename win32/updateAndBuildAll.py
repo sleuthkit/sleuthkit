@@ -19,6 +19,8 @@ from sys import platform as _platform
 import time
 import traceback
 
+from installNugetPackages import installAllPackages
+
 MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
@@ -36,18 +38,17 @@ def pullAndBuildAllDependencies(depBranch):
     # When an error occurs
     global passed
     passed = True
+    
+    # Install all non-official nuget packages (currently just libewf)
+    installAllPackages()
 
-    # get the LIBEWF_HOME, LIBVHDI_HOME, LIBVMDH_HOME
-    ewfHome = os.getenv("LIBEWF_HOME", "C:\\libewf_64bit")
+    # get the LIBVHDI_HOME, LIBVMDH_HOME
     vhdiHome = os.getenv("LIBVHDI_HOME", "C:\\libvhdi_64bit")
     vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
-    # check if ewfHome, vhdiHome or vmdhHome exits
-    checkPathExist(ewfHome)
+    # check if vhdiHome or vmdhHome exits
     checkPathExist(vhdiHome)
     checkPathExist(vmdkHome)
-    # git update libewf, libvhdi and libvmdk
-    if(passed):
-        gitPull(ewfHome, "libewf_64bit", depBranch)
+    # git update libvhdi and libvmdk
     if(passed):
         gitPull(vhdiHome, "libvhdi_64bit", depBranch)
     if(passed):
@@ -56,8 +57,6 @@ def pullAndBuildAllDependencies(depBranch):
     if not MINIMAL:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
-            buildDependentLibs(ewfHome, 32, "libewf", "libewf_dll")
-        if(passed):
             buildDependentLibs(vhdiHome, 32, "libvhdi", "libvhdi")
         if(passed):
             buildDependentLibs(vmdkHome, 32, "libvmdk", "libvmdk")
@@ -65,13 +64,11 @@ def pullAndBuildAllDependencies(depBranch):
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
     if(passed):
-        buildDependentLibs(ewfHome, 64, "libewf", "libewf_dll")
-    if(passed):
         buildDependentLibs(vhdiHome, 64, "libvhdi", "libvhdi")
     if(passed):
         buildDependentLibs(vmdkHome, 64, "libvmdk", "libvmdk")
 
-    # get all nuget packages needed by the solution
+    # get all official nuget packages needed by the solution
     if(passed):
         TSK_HOME = os.getenv("TSK_HOME", False)
         if not TSK_HOME:
