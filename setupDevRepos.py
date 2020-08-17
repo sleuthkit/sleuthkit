@@ -40,17 +40,10 @@ def gitClone(URL, repo, path):
 
 def main():
     #setting the base directory with the help of library env variables.
-    libewf_home = os.getenv("LIBEWF_HOME")
     libvhdi_home = os.getenv("LIBVHDI_HOME")
     libvmdk_home = os.getenv("LIBVMDK_HOME")
     
     base_Library_path = {}
-    
-    if(libewf_home != None):
-        base_Library_path["libewf_64bit"] = ntpath.dirname(libewf_home)
-    else:
-        print('Please set the env variable LIBEWF_HOME')
-        sys.exit(1)
 
     if(libvhdi_home != None):
         base_Library_path["libvhdi_64bit"] = ntpath.dirname(libvhdi_home)
