@@ -22,7 +22,7 @@ def makeRepos(path):
         if not os.path.exists(library_path):
             gitClone(git_repository_url, library, base_library_path)
         else:
-            print("Skipping gitClone - " + base_library_path + " already exists\n")
+            print("Skipping gitClone - " + library_path + " already exists\n")
             
     # Clone zlib
     git_zlib_repository_url="https://github.com/madler/"
@@ -45,6 +45,8 @@ def main():
     #setting the base directory with the help of library env variables.
     libvhdi_home = os.getenv("LIBVHDI_HOME")
     libvmdk_home = os.getenv("LIBVMDK_HOME")
+    print("LIBVHDI_HOME: " + libvhdi_home + "\n")
+    print("LIBVMDK_HOME: " + libvmdk_home + "\n")
     
     base_Library_path = {}
 
