@@ -22,7 +22,7 @@ def makeRepos(path):
         if not os.path.exists(library_path):
             gitClone(git_repository_url, library, base_library_path)
         else:
-            print("Skipping gitClone - " + base_library_path + " already exists\n"
+            print("Skipping gitClone - " + base_library_path + " already exists\n")
             
     # Clone zlib
     git_zlib_repository_url="https://github.com/madler/"
@@ -30,7 +30,7 @@ def makeRepos(path):
     if not os.path.exists(zlib_path):
         gitClone(git_zlib_repository_url,"zlib",path["libvhdi_64bit"])
     else:
-        print("Skipping gitClone - " + zlib_path + " already exists\n"
+        print("Skipping gitClone - " + zlib_path + " already exists\n")
             
 def gitClone(URL, repo, path):
     # This method will clone the library if it does not exist
