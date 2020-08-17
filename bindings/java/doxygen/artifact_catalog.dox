@@ -522,7 +522,7 @@ The number of times a program/application was run.
 - TSK_BYTES_RECEIVED (Number of bytes received)
 - TSK_USER_NAME (User who executed the program)
 - TSK_COMMENT (Source of the attribute)
-
+- TSK_PATH (Path of the executable program)
 
 
 

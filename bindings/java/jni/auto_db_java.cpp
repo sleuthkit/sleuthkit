@@ -66,14 +66,14 @@ TskAutoDbJava::~TskAutoDbJava()
 /**
 * Look up all callback method IDs
 * @param jniEnv pointer to java environment this was called from
-* @param jobj the JniDbHelper object this was called from
+* @param jobj the TskCaseDbBridge object this was called from
 */
 TSK_RETVAL_ENUM
 TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
     m_jniEnv = jniEnv;
     m_javaDbObj = m_jniEnv->NewGlobalRef(jobj);
 
-    jclass localCallbackClass = m_jniEnv->FindClass("org/sleuthkit/datamodel/JniDbHelper");
+    jclass localCallbackClass = m_jniEnv->FindClass("org/sleuthkit/datamodel/TskCaseDbBridge");
     if (localCallbackClass == NULL) {
         return TSK_ERR;
     }

@@ -5493,7 +5493,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	private long addObject(long parentId, int objectType, CaseDbConnection connection) throws SQLException {
+	long addObject(long parentId, int objectType, CaseDbConnection connection) throws SQLException {
 		ResultSet resultSet = null;
 		acquireSingleUserCaseWriteLock();
 		try {
@@ -11015,302 +11015,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add an image to the database. For use with the JNI callbacks associated
-	 * with the add image process.
-	 *
-	 * @param type              Type of image.
-	 * @param sectorSize        Sector size.
-	 * @param size              Image size.
-	 * @param timezone          Time zone.
-	 * @param md5               MD5 hash.
-	 * @param sha1              SHA1 hash.
-	 * @param sha256            SHA256 hash.
-	 * @param deviceId          Device ID.
-	 * @param collectionDetails Collection details.
-	 * @param transaction       Case DB transaction.
-	 *
-	 * @return The newly added Image object ID.
-	 *
-	 * @throws TskCoreException
-	 */
-	long addImageJNI(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size,
-			String timezone, String md5, String sha1, String sha256,
-			String deviceId, String collectionDetails,
-			CaseDbTransaction transaction) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try {
-			// Insert a row for the Image into the tsk_objects table.
-			CaseDbConnection connection = transaction.getConnection();
-			long newObjId = addObject(0, TskData.ObjectType.IMG.getObjectType(), connection);
-
-			// Add a row to tsk_image_info
-			// INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_INFO);
-			preparedStatement.clearParameters();
-			preparedStatement.setLong(1, newObjId);
-			preparedStatement.setShort(2, (short) type.getValue());
-			preparedStatement.setLong(3, sectorSize);
-			preparedStatement.setString(4, timezone);
-			//prevent negative size
-			long savedSize = size < 0 ? 0 : size;
-			preparedStatement.setLong(5, savedSize);
-			preparedStatement.setString(6, md5);
-			preparedStatement.setString(7, sha1);
-			preparedStatement.setString(8, sha256);
-			preparedStatement.setString(9, null);
-			connection.executeUpdate(preparedStatement);
-
-			// Add a row to data_source_info
-			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO_WITH_ACQ_DETAIL);
-			preparedStatement.setLong(1, newObjId);
-			preparedStatement.setString(2, deviceId);
-			preparedStatement.setString(3, timezone);
-			preparedStatement.setString(4, collectionDetails);
-			connection.executeUpdate(preparedStatement);
-
-			return newObjId;
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding image to database"), ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
-	 * Add an image name to the database. For use with the JNI callbacks
-	 * associated with the add image process.
-	 *
-	 * @param objId       The object id of the image.
-	 * @param name        The file name for the image
-	 * @param sequence    The sequence number of this file.
-	 * @param transaction The open transaction.
-	 *
-	 * @throws TskCoreException
-	 */
-	void addImageNameJNI(long objId, String name, long sequence,
-			CaseDbTransaction transaction) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try {
-			CaseDbConnection connection = transaction.getConnection();
-			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
-			preparedStatement.clearParameters();
-			preparedStatement.setLong(1, objId);
-			preparedStatement.setString(2, name);
-			preparedStatement.setLong(3, sequence);
-			connection.executeUpdate(preparedStatement);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding image name %s to image with object ID %d", name, objId), ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
-	 * Add a file system file to the database. For use with the JNI callbacks
-	 * associated with the add image process.
-	 *
-	 * @param parentObjId     The parent of the file.
-	 * @param fsObjId         The object ID of the file system.
-	 * @param dataSourceObjId The data source object ID.
-	 * @param fsType          The type.
-	 * @param attrType        The type attribute given to the file by the file
-	 *                        system.
-	 * @param attrId          The type id given to the file by the file system.
-	 * @param name            The name of the file.
-	 * @param metaAddr        The meta address of the file.
-	 * @param metaSeq         The meta sequence number of the file.
-	 * @param dirType         The type of the file, usually as reported in the
-	 *                        name structure of the file system.
-	 * @param metaType        The type of the file, usually as reported in the
-	 *                        metadata structure of the file system.
-	 * @param dirFlags        The allocated status of the file, usually as
-	 *                        reported in the name structure of the file system.
-	 * @param metaFlags       The allocated status of the file, usually as
-	 *                        reported in the metadata structure of the file
-	 *                        system.
-	 * @param size            The file size.
-	 * @param crtime          The created time.
-	 * @param ctime           The last changed time
-	 * @param atime           The last accessed time.
-	 * @param mtime           The last modified time.
-	 * @param meta_mode       The modes for the file.
-	 * @param gid             The group identifier.
-	 * @param uid             The user identifier.
-	 * @param md5             The MD5 hash.
-	 * @param known           The file known status.
-	 * @param escaped_path    The escaped path to the file.
-	 * @param extension       The file extension.
-	 * @param hasLayout       True if this is a layout file, false otherwise.
-	 * @param transaction     The open transaction.
-	 *
-	 * @return The object ID of the new file system
-	 *
-	 * @throws TskCoreException
-	 */
-	long addFileJNI(long parentObjId,
-			Long fsObjId, long dataSourceObjId,
-			int fsType,
-			Integer attrType, Integer attrId, String name,
-			Long metaAddr, Long metaSeq,
-			int dirType, int metaType, int dirFlags, int metaFlags,
-			long size,
-			Long crtime, Long ctime, Long atime, Long mtime,
-			Integer meta_mode, Integer gid, Integer uid,
-			String md5, TskData.FileKnown known,
-			String escaped_path, String extension,
-			boolean hasLayout, CaseDbTransaction transaction) throws TskCoreException {
-
-		Statement queryStatement = null;
-		try {
-			acquireSingleUserCaseWriteLock();
-			CaseDbConnection connection = transaction.getConnection();
-
-			// Insert a row for the local/logical file into the tsk_objects table.
-			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			long objectId = addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-
-			// INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, 
-			//                        dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, 
-			//                        mode, gid, uid, md5, known, parent_path, extension)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE_All_FIELDS);
-			statement.clearParameters();
-			if (fsObjId != null) {
-				statement.setLong(1, fsObjId);			    // fs_obj_id
-			} else {
-				statement.setNull(1, java.sql.Types.BIGINT);
-			}
-			statement.setLong(2, objectId);					// obj_id 
-			statement.setLong(3, dataSourceObjId);			// data_source_obj_id 
-			statement.setShort(4, (short) fsType);	        // type
-			if (attrType != null) {
-				statement.setShort(5, attrType.shortValue());  // attr_type
-			} else {
-				statement.setNull(5, java.sql.Types.SMALLINT);
-			}
-			if (attrId != null) {
-				statement.setInt(6, attrId);				// attr_id
-			} else {
-				statement.setNull(6, java.sql.Types.INTEGER);
-			}
-			statement.setString(7, name);					// name
-			if (metaAddr != null) {
-				statement.setLong(8, metaAddr);				// meta_addr
-			} else {
-				statement.setNull(8, java.sql.Types.BIGINT);
-			}
-			if (metaSeq != null) {
-				statement.setInt(9, metaSeq.intValue());	// meta_seq
-			} else {
-				statement.setNull(9, java.sql.Types.INTEGER);
-			}
-			statement.setShort(10, (short) dirType);			// dir_type
-			statement.setShort(11, (short) metaType);		// meta_type
-			statement.setShort(12, (short) dirFlags);		// dir_flags
-			statement.setShort(13, (short) metaFlags);		// meta_flags
-			statement.setLong(14, size < 0 ? 0 : size);     // size
-			if (crtime != null) {
-				statement.setLong(15, crtime);              // crtime
-			} else {
-				statement.setNull(15, java.sql.Types.BIGINT);
-			}
-			if (ctime != null) {
-				statement.setLong(16, ctime);               // ctime
-			} else {
-				statement.setNull(16, java.sql.Types.BIGINT);
-			}
-			if (atime != null) {
-				statement.setLong(17, atime);               // atime
-			} else {
-				statement.setNull(17, java.sql.Types.BIGINT);
-			}
-			if (mtime != null) {
-				statement.setLong(18, mtime);               // mtime
-			} else {
-				statement.setNull(18, java.sql.Types.BIGINT);
-			}
-			if (meta_mode != null) {
-				statement.setLong(19, meta_mode);           // mode
-			} else {
-				statement.setNull(19, java.sql.Types.BIGINT);
-			}
-			if (gid != null) {
-				statement.setLong(20, gid);                 // gid
-			} else {
-				statement.setNull(20, java.sql.Types.BIGINT);
-			}
-			if (uid != null) {
-				statement.setLong(21, uid);                 // uid
-			} else {
-				statement.setNull(21, java.sql.Types.BIGINT);
-			}
-			statement.setString(22, md5);                   // md5
-			statement.setInt(23, known.getFileKnownValue());// known
-			statement.setString(24, escaped_path);          // parent_path
-			statement.setString(25, extension);             // extension
-			if (hasLayout) {
-				statement.setInt(26, 1);                    // has_layout
-			} else {
-				statement.setNull(26, java.sql.Types.INTEGER);
-			}
-			connection.executeUpdate(statement);
-
-			// If this is not a slack file create the timeline events
-			if (!hasLayout
-					&& TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType() != fsType
-					&& (!name.equals(".")) && (!name.equals(".."))) {
-				TimelineManager timelineManager = getTimelineManager();
-				DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, name,
-						TSK_FS_NAME_TYPE_ENUM.valueOf((short) dirType),
-						TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
-						TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
-						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, escaped_path, null, parentObjId, null, null, extension);
-
-				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
-			}
-
-			return objectId;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to add file system file", ex);
-		} finally {
-			closeStatement(queryStatement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
-	 * Add a layout file range to the database. For use with the JNI callbacks
-	 * associated with the add image process.
-	 *
-	 * @param objId       Object ID of the layout file.
-	 * @param byteStart   Start byte.
-	 * @param byteLen     Length in bytes.
-	 * @param seq         Sequence number of this range.
-	 * @param transaction The open transaction.
-	 *
-	 * @throws TskCoreException
-	 */
-	void addLayoutFileRangeJNI(long objId, long byteStart, long byteLen,
-			long seq, CaseDbTransaction transaction) throws TskCoreException {
-		try {
-			acquireSingleUserCaseWriteLock();
-			CaseDbConnection connection = transaction.getConnection();
-
-			PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
-			prepStmt.clearParameters();
-			prepStmt.setLong(1, objId);
-			prepStmt.setLong(2, byteStart);
-			prepStmt.setLong(3, byteLen);
-			prepStmt.setLong(4, seq);
-			connection.executeUpdate(prepStmt);
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding layout range to file with obj ID " + objId, ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -11405,8 +11109,6 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, extension)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
-		INSERT_FILE_SYSTEM_FILE_All_FIELDS("INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
@@ -11521,7 +11223,6 @@ public class SleuthkitCase {
 		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (?, ?, ?)"),
-		INSERT_DATA_SOURCE_INFO_WITH_ACQ_DETAIL("INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
@@ -11848,10 +11549,12 @@ public class SleuthkitCase {
 
 		private final Connection connection;
 		private final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
+		private final Map<String, PreparedStatement> adHocPreparedStatements;
 
 		CaseDbConnection(Connection connection) {
 			this.connection = connection;
 			preparedStatements = new EnumMap<PREPARED_STATEMENT, PreparedStatement>(PREPARED_STATEMENT.class);
+			adHocPreparedStatements = new HashMap<>();
 		}
 
 		boolean isOpen() {
@@ -11870,6 +11573,29 @@ public class SleuthkitCase {
 			} else {
 				statement = prepareStatement(statementKey.getSQL(), generateKeys);
 				this.preparedStatements.put(statementKey, statement);
+			}
+			return statement;
+		}
+		
+		/**
+		 * Get a prepared statement for the given input.
+		 * Will cache the prepared statement for this connection.
+		 * 
+		 * @param sqlStatement  The SQL for the prepared statement.
+		 * @param generateKeys  The generate keys enum from Statement.
+		 * 
+		 * @return The prepared statement
+		 * 
+		 * @throws SQLException 
+		 */
+		PreparedStatement getPreparedStatement(String sqlStatement, int generateKeys) throws SQLException {
+			PreparedStatement statement;
+			String statementKey = "SQL:" + sqlStatement + " Key:" + generateKeys;
+			if (adHocPreparedStatements.containsKey(statementKey)) {
+				statement = this.adHocPreparedStatements.get(statementKey);
+			} else {
+				statement = prepareStatement(sqlStatement, generateKeys);
+				this.adHocPreparedStatements.put(statementKey, statement);
 			}
 			return statement;
 		}
@@ -11973,6 +11699,12 @@ public class SleuthkitCase {
 		@Override
 		public void close() {
 			try {
+				for (PreparedStatement stmt:preparedStatements.values()) {
+					closeStatement(stmt);
+				}
+				for (PreparedStatement stmt:adHocPreparedStatements.values()) {
+					closeStatement(stmt);
+				}
 				connection.close();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Unable to close connection to case database", ex);
