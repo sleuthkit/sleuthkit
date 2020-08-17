@@ -17,9 +17,9 @@ def makeRepos(path):
     
     # Clone zlib
     git_zlib_repository_url="https://github.com/madler/"
-    zlib_path = os.path.normpath(os.path.join(path["libewf_64bit"],"zlib"))
+    zlib_path = os.path.normpath(os.path.join(path["libvmdk_64bit"],"zlib"))
     if not os.path.exists(zlib_path):
-        gitClone(git_zlib_repository_url,"zlib",path["libewf_64bit"])
+        gitClone(git_zlib_repository_url,"zlib",path["libvmdk_64bit"])
         
     # Clone the others
     git_repository_url = "https://github.com/sleuthkit/"
