@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,6 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -86,6 +85,8 @@ public abstract class AbstractFile extends AbstractContent {
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
 	private final String extension;
+	private final long objId;
+	private final SleuthkitCase db;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -158,6 +159,8 @@ public abstract class AbstractFile extends AbstractContent {
 		this.uid = uid;
 		this.gid = gid;
 		this.modes = TskData.TSK_FS_META_MODE_ENUM.valuesOf(modes);
+		this.objId = objId;
+		this.db = db;
 
 		this.md5Hash = md5Hash;
 		if (knownState == null) {
@@ -1137,6 +1140,16 @@ public abstract class AbstractFile extends AbstractContent {
 			getSleuthkitCase().releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	@Override
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
+		// don't let them make more than 1 GEN_INFO
+		if (artifactTypeID == BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
+			return getGenInfoArtifact(true);
+		}
+		return db.newBlackboardArtifact(artifactTypeID, objId, dataSourceObjectId);
+	}
+
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
