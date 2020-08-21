@@ -10,9 +10,14 @@
 	<LibEwfInclude>$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\include</LibEwfInclude>
     <LibEwfLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\lib\Win32</LibEwfLib>
     <LibEwfLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\lib\x64</LibEwfLib>
+	<ZlibInclude>$(SolutionDir)\packages\zlib_native.1.2.11\build\native\include</ZlibInclude>
+	<ZlibLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\zlib_native.1.2.11\build\native\lib\Win32\Release</ZlibLib>
+	<ZlibLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\zlib_native.1.2.11\build\native\lib\x64\Release</ZlibLib>
+	<ZlibDll Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\zlib_native.redist.1.2.11\build\native\bin\Win32\Release</ZlibDll>
+	<ZlibDll Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\zlib_native.redist.1.2.11\build\native\bin\x64\Release</ZlibDll>
 	<OpenSslInclude Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\include;</OpenSslInclude>
 	<OpenSslLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\lib\vc140\x64;</OpenSslLib>
-	<TskNugetIncludes>$(LibVmdkInclude);$(LibVhdiInclude);$(LibEwfInclude);$(OpenSslInclude);</TskNugetIncludes>
-	<TskNugetLibs>$(LibVmdkLib);$(LibVhdiLib);$(LibEwfLib);$(OpenSslLib);</TskNugetLibs>
+	<TskNugetIncludes>$(LibVmdkInclude);$(LibVhdiInclude);$(LibEwfInclude);$(ZlibInclude);$(OpenSslInclude);</TskNugetIncludes>
+	<TskNugetLibs>$(LibVmdkLib);$(LibVhdiLib);$(LibEwfLib);$(ZlibLib);$(OpenSslLib);</TskNugetLibs>
   </PropertyGroup>
 </Project>
