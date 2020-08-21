@@ -85,8 +85,6 @@ public abstract class AbstractFile extends AbstractContent {
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
 	private final String extension;
-	private final long objId;
-	private final SleuthkitCase db;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -159,8 +157,6 @@ public abstract class AbstractFile extends AbstractContent {
 		this.uid = uid;
 		this.gid = gid;
 		this.modes = TskData.TSK_FS_META_MODE_ENUM.valuesOf(modes);
-		this.objId = objId;
-		this.db = db;
 
 		this.md5Hash = md5Hash;
 		if (knownState == null) {
@@ -1147,7 +1143,7 @@ public abstract class AbstractFile extends AbstractContent {
 		if (artifactTypeID == BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
 			return getGenInfoArtifact(true);
 		}
-		return db.newBlackboardArtifact(artifactTypeID, objId, dataSourceObjectId);
+		return getSleuthkitCase().newBlackboardArtifact(artifactTypeID, getId(), dataSourceObjectId);
 	}
 
 
