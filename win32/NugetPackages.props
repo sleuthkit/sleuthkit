@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LibVmdkInclude>$(SolutionDir)\packages\libvmdk.20200810.0.0\lib\native\include</LibVmdkInclude>
+    <LibVmdkLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libvmdk.20200810.0.0\lib\native\lib\Win32</LibVmdkLib>
+    <LibVmdkLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libvmdk.20200810.0.0\lib\native\lib\x64</LibVmdkLib>
+    <LibVhdiInclude>$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\include</LibVhdiInclude>
+    <LibVhdiLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\lib\Win32</LibVhdiLib>
+    <LibVhdiLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\lib\x64</LibVhdiLib>
+	<LibEwfInclude>$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\include</LibEwfInclude>
+    <LibEwfLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\lib\Win32</LibEwfLib>
+    <LibEwfLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\lib\x64</LibEwfLib>
+	<OpenSslInclude Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\include;</OpenSslInclude>
+	<OpenSslLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\lib\vc140\x64;</OpenSslLib>
+	<TskNugetIncludes>$(LibVmdkInclude);$(LibVhdiInclude);$(LibEwfInclude);$(OpenSslInclude);</TskNugetIncludes>
+	<TskNugetLibs>$(LibVmdkLib);$(LibVhdiLib);$(LibEwfLib);$(OpenSslLib);</TskNugetLibs>
+  </PropertyGroup>
+</Project>
