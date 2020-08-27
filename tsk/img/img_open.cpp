@@ -230,7 +230,7 @@ tsk_img_open(int num_img,
         }
 
         // if any of the non-raw formats were detected, then use it.
-        if (img_set != NULL) {
+        if (img_set != NULL && set != NULL) {
             img_info = img_set;
             break;
         }
