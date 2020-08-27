@@ -805,9 +805,9 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
 typedef struct {
     char *uncomp_buf;           // Buffer for uncompressed data
     char *comp_buf;             // buffer for compressed data
-    size_t comp_len;            // number of bytes used in compressed data
+    size_t comp_len;            // number of bytes used in compressed data buffer
     size_t uncomp_idx;          // Index into buffer for next byte
-    size_t buf_size_b;          // size of buffer in bytes (1 compression unit)
+    size_t buf_size_b;          // size of both buffers in bytes (1 compression unit)
 } NTFS_COMP_INFO;
 
 
@@ -869,8 +869,7 @@ ntfs_uncompress_done(NTFS_COMP_INFO * comp)
 
 
  /**
-  * Uncompress the block of data in comp->comp_buf,
-  * which has a size of comp->comp_len.
+  * Uncompress the block of data in comp->comp_buf.
   * Store the result in the comp->uncomp_buf.
   *
   * @param comp Compression unit structure
@@ -909,6 +908,11 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         blk_size = (sb_header & 0x0FFF) + 3;
 
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_uncompress_compunit: Block size is %" PRIuSIZE " at index %d\n",
+                blk_size, cl_index);
+
         // this seems to indicate end of block
         if (blk_size == 3)
             break;
@@ -922,10 +926,6 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
             return 1;
         }
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "ntfs_uncompress_compunit: Block size is %" PRIuSIZE "\n",
-                blk_size);
 
         /* The MSB identifies if the block is compressed */
         iscomp = ((sb_header & 0x8000) != 0);
@@ -936,6 +936,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         // the 4096 size seems to occur at the same times as no compression
         if ((iscomp) && (blk_size - 2 != 4096)) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "ntfs_uncompress_compunit: Block size is compressed\n");
 
             // cycle through the block
             while (cl_index < blk_end) {
@@ -1083,6 +1085,9 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         // this block contains uncompressed data
         else {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "ntfs_uncompress_compunit: Block size is not compressed\n");
+
             while (cl_index < blk_end && cl_index < comp->comp_len) {
                 /* This seems to happen only with corrupt data -- such as
                  * when an unallocated file is being processed... */
@@ -1375,6 +1380,11 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     || ((len_idx == fs_attr_run->len - 1)
                         && (fs_attr_run->next == NULL))) {
                     size_t i;
+
+
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "ntfs_proc_compunit: Decompressing at file offset %"PRIdOFF"\n", off);
 
                     // decompress the unit
                     if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
