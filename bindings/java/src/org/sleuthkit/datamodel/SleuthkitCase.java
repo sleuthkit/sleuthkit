@@ -7421,6 +7421,41 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Find and return list of all (abstract) files matching the specific Where
+	 * clause with the give parentId. You need to know the database schema to 
+	 * use this, which is outlined on the
+	 * <a href="http://wiki.sleuthkit.org/index.php?title=SQLite_Database_v3_Schema">wiki</a>.
+	 * You should use enums from org.sleuthkit.datamodel.TskData to make the
+	 * queries easier to maintain and understand.
+	 * 
+	 * @param parentId The parentId 
+	 * @param sqlWhereClause a SQL where clause appropriate for the desired
+	 *                       files (do not begin the WHERE clause with the word
+	 *                       WHERE!)
+	 *
+	 * @return a list of AbstractFile each of which satisfy the given WHERE
+	 *         clause
+	 *
+	 * @throws TskCoreException \ref query_database_page
+	 */
+	public List<AbstractFile> findAllFilesInFolderWhere(long parentId, String sqlWhereClause) throws TskCoreException{
+		String queryTemplate =  "SELECT tsk_files.* FROM tsk_files JOIN tsk_objects ON tsk_objects.obj_id = tsk_files.obj_id WHERE par_obj_id = %d AND %s";
+		
+		try(CaseDbConnection connection = connections.getConnection()) {
+			acquireSingleUserCaseReadLock();
+			
+			String query = String.format(queryTemplate, parentId, sqlWhereClause);
+			try(Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, query)) {
+				return resultSetToAbstractFiles(rs, connection);
+			} catch(SQLException ex) {
+				throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFilesInFolderWhere(): " + query, ex);
+			}
+		}finally {
+			releaseSingleUserCaseReadLock();
+		}
+	}
 
 	/**
 	 * Find and return list of all (abstract) ids of files matching the specific
