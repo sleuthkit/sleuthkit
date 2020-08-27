@@ -58,6 +58,9 @@ namespace Rejistry {
         return _nk->getName();
     }
 
+    /**
+     * Caller is responsible for freeing the key
+     */
     RegistryKey::RegistryKeyPtr RegistryKey::getParent() const {
         if (!_nk->hasParentRecord()) {
             throw NoSuchElementException("Registry Key has no parent.");
@@ -66,6 +69,9 @@ namespace Rejistry {
         return new RegistryKey(_nk->getParentRecord());
     }
 
+    /**
+     * Caller is responsible for freeing the keys in the list
+     */
     RegistryKey::RegistryKeyPtrList RegistryKey::getSubkeyList() const {
         std::vector<RegistryKey *> subkeys;
         NKRecord::NKRecordPtrList nkRecordList = _nk->getSubkeyList()->getSubkeys();
@@ -76,10 +82,16 @@ namespace Rejistry {
         return subkeys;
     }
 
+    /**
+     * Caller is responsible for freeing returned key
+     */
     RegistryKey::RegistryKeyPtr RegistryKey::getSubkey(const std::wstring& name) const {
         return new RegistryKey(_nk->getSubkeyList()->getSubkey(name));
     }
 
+    /**
+     * Caller is responsible for freeing the values in the list
+     */
     RegistryValue::RegistryValuePtrList RegistryKey::getValueList() const {
         RegistryValue::RegistryValuePtrList values;
         VKRecord::VKRecordPtrList vkRecordList = _nk->getValueList()->getValues();
@@ -90,6 +102,9 @@ namespace Rejistry {
         return values;
     }
 
+    /**
+     * Caller is responsible for freeing returned value
+     */
     RegistryValue::RegistryValuePtr RegistryKey::getValue(const std::wstring& name) const {
         return new RegistryValue(_nk->getValueList()->getValue(name));
     }
