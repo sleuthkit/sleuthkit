@@ -910,8 +910,9 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "ntfs_uncompress_compunit: Block size is %" PRIuSIZE " at index %d\n",
-                blk_size, cl_index);
+                "ntfs_uncompress_compunit: Start compression block (length=%" PRIuSIZE " index=%" PRIuSIZE 
+                " compressed buffer size=%" PRIuSIZE ")\n",
+                blk_size, cl_index, comp->comp_len);
 
         // this seems to indicate end of block
         if (blk_size == 3)
@@ -921,7 +922,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
         if (blk_end > comp->comp_len) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
             tsk_error_set_errstr
-                ("ntfs_uncompress_compunit: Block length longer than buffer length: %"
+                ("ntfs_uncompress_compunit: Compression block length longer than buffer length: %"
                 PRIuSIZE "", blk_end);
             return 1;
         }
@@ -937,9 +938,9 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
         // the 4096 size seems to occur at the same times as no compression
         if ((iscomp) && (blk_size - 2 != 4096)) {
             if (tsk_verbose)
-                tsk_fprintf(stderr, "ntfs_uncompress_compunit: Block size is compressed\n");
+                tsk_fprintf(stderr, "ntfs_uncompress_compunit: Compression block is compressed\n");
 
-            // cycle through the block
+            // cycle through the token groups in the block
             while (cl_index < blk_end) {
                 int a;
 
@@ -949,7 +950,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
-                        "ntfs_uncompress_compunit: New Tag: %x\n", header);
+                        "ntfs_uncompress_compunit: Token Group Header: %x\n", header);
 
                 for (a = 0; a < 8 && cl_index < blk_end; a++) {
 
@@ -960,8 +961,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                     if ((header & NTFS_TOKEN_MASK) == NTFS_SYMBOL_TOKEN) {
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
-                                "ntfs_uncompress_compunit: Symbol Token: %"
-                                PRIuSIZE "\n", cl_index);
+                                "ntfs_uncompress_compunit: Symbol Token: (offset %"
+                                PRIuSIZE ")\n", cl_index);
 
                         if (comp->uncomp_idx >= comp->buf_size_b) {
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
@@ -1031,8 +1032,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
-                                "ntfs_uncompress_compunit: Phrase Token: %"
-                                PRIuSIZE "\t%d\t%d\t%x\n", cl_index,
+                                "ntfs_uncompress_compunit: Phrase Token: (offset %"
+                                PRIuSIZE ")\tLen: %d\tPrevOffset: %d\tHeader=%x\n", cl_index-2,
                                 length, offset, pheader);
 
                         /* Sanity checks on values */
