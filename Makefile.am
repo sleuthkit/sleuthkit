@@ -6,7 +6,6 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     docs/README.txt \
     packages/sleuthkit.spec \
     win32/BUILDING.txt \
-    win32/NOTES.txt \
     win32/*/*.vcxproj \
     win32/tsk-win.sln \
     win32/docs/* \
