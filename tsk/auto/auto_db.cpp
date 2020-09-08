@@ -344,7 +344,7 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
 TSK_RETVAL_ENUM
 TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
 
-    for (int i = 0; i < m_poolInfos.size(); i++) {
+    for (size_t i = 0; i < m_poolInfos.size(); i++) {
         const TSK_POOL_INFO * pool_info = m_poolInfos[i];
         if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
             tsk_error_reset();
@@ -384,7 +384,7 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
 
             ranges.push_back(tempRange);
             int64_t fileObjId = 0;
-            if (m_db->addUnallocBlockFile(unallocVolObjId, NULL, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+            if (m_db->addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
                 registerError();
                 tsk_fs_attr_run_free(unalloc_runs);
                 return TSK_ERR;

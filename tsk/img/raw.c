@@ -46,10 +46,12 @@
  *
  * Return 1 if the path represents a Windows device, 0 otherwise
  */
+#ifdef TSK_WIN32
 static int
 is_windows_device_path(const TSK_TCHAR * image_name) {
     return (TSTRNCMP(image_name, _TSK_T("\\\\.\\"), 4) == 0);
 }
+#endif
 
 /** 
  * \internal

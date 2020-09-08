@@ -146,7 +146,7 @@ uint8_t TskAuto::openImageHandle(TSK_IMG_INFO * a_img_info)
 void
  TskAuto::closeImage()
 {
-    for (int i = 0; i < m_poolInfos.size(); i++) {
+    for (size_t i = 0; i < m_poolInfos.size(); i++) {
         tsk_pool_close(m_poolInfos[i]);
     }
     m_poolInfos.clear();
@@ -438,7 +438,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
     TSK_FILTER_ENUM retval1 = filterPool(pool);
     if (retval1 == TSK_FILTER_SKIP)
         return TSK_OK;
-    else if ((retval1 == TSK_FILTER_STOP))
+    else if (retval1 == TSK_FILTER_STOP)
         return TSK_STOP;
 
     /* Only APFS pools are currently supported */
