@@ -550,7 +550,8 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
     const int LOW = 2;
     const int LAST = 3;
     int * scores;
-    int i, currentScore;
+    int currentScore;
+    size_t i;
 
     scores = (int *)tsk_malloc(count * sizeof(int));
     if (scores == NULL) {

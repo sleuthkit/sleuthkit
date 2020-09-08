@@ -904,7 +904,7 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
 TSK_RETVAL_ENUM
 TskAutoDbJava::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId)
 {
-    char *desc = "Unallocated Blocks";
+    const char *desc = "Unallocated Blocks";
     jstring descj = m_jniEnv->NewStringUTF(desc);
 
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeMethodID,
@@ -1179,7 +1179,7 @@ TskAutoDbJava::filterPool(const TSK_POOL_INFO * pool_info)
 TSK_RETVAL_ENUM
 TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
 
-    for (int i = 0; i < m_poolInfos.size(); i++) {
+    for (size_t i = 0; i < m_poolInfos.size(); i++) {
         const TSK_POOL_INFO * pool_info = m_poolInfos[i];
         if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
             tsk_error_reset();
@@ -1224,7 +1224,7 @@ TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
 
             ranges.push_back(tempRange);
             int64_t fileObjId = 0;
-            if (TSK_ERR == addUnallocBlockFile(unallocVolObjId, NULL, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+            if (TSK_ERR == addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
                 registerError();
                 tsk_fs_attr_run_free(unalloc_runs);
                 return TSK_ERR;
