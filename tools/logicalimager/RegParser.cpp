@@ -132,6 +132,10 @@ int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
     }
 
     aKey.initialize(key);
+
+    if (key != NULL) {
+        delete key;
+    }
     return 0;
 }
 
@@ -239,6 +243,7 @@ int RegParser::getValue(const std::wstring &keyName, const std::wstring &valName
         std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
         Rejistry::RegistryValue *value = key->getValue(valName);
         val.initialize(value);
+        delete value;
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;
@@ -279,6 +284,7 @@ int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName,
         std::auto_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
         Rejistry::RegistryValue *value = key->getValue(valName);
         val.initialize(value);
+        delete value;
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;

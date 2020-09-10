@@ -1,0 +1,789 @@
+/*! \page artifact_catalog_page Standard Artifacts Catalog
+
+
+# Introduction
+This document reflects current standard usage of artifact and attribute types for posting analysis results to the case blackboard in Autopsy.  Refer to \ref mod_bbpage for more background on the blackboard and how to make artifacts. 
+
+The catalog section below has one entry for each standard artifact type. Each entry lists the required and optional attributes of artifacts of the type.
+
+NOTE:
+- While we have listed some attributes as "Required", nothing will enforce that they exist. Modules that use artifacts from the blackboard should assume that some of the attributes may not actually exist. 
+- You are not limited to the attributes listed below for each artifact.  Attributes are listed below as "Optional" if at least one, but not all, Autopsy modules create them.  If you want to store data that is not listed below, use an existing attribute type or make your own.  
+
+For the full list of types, refer to:
+- org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE
+- org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE
+
+
+<h1>Artifacts Catalog</h1>
+
+In alphabetical order.
+
+---
+## TSK_ACCOUNT
+Details about a credit card or communications account. 
+
+### REQUIRED ATTRIBUTES
+- TSK_ACCOUNT_TYPE (Type of the account, e.g., Skype)
+- TSK_ID (Unique identifier of the account)
+ 	or 
+TSK_CARD_NUMBER (Credit card number)
+
+### OPTIONAL ATTRIBUTES
+- TSK_KEYWORD_SEARCH_DOCUMENT_ID (Document ID of the Solr document that contains the TSK_CARD_NUMBER when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
+- TSK_SET_NAME (The keyword list name, i.e., "Credit Card Numbers", when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
+
+---
+
+
+## TSK_ASSOCIATED_OBJECT
+Provides a backwards link to an artifact that references the parent file of this artifact.  Example usage is that a downloaded file will have this artifact and it will point back to the TSK_WEB_DOWNLOAD artifact that is associated with a browser's SQLite database. See \ref jni_bb_associated_object.
+
+### REQUIRED ATTRIBUTES
+- TSK_ASSOCIATED_ARTIFACT (Artifact ID of associated artifact)
+
+
+---
+## TSK_BLUETOOTH_ADAPTER
+Details about a Bluetooth adapter.
+
+### REQUIRED ATTRIBUTES
+- TSK_MAC_ADDRESS (MAC address of the Bluetooth adapter)
+
+
+
+---
+## TSK_BLUETOOTH_PAIRING
+Details about a Bluetooth pairing event. 
+
+### REQUIRED ATTRIBUTES
+- TSK_DEVICE_NAME (Name of the Bluetooth device)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (When the pairing occurred, in seconds since 1970-01-01T00:00:00Z)
+- TSK_MAC_ADDRESS (MAC address of the Bluetooth device)
+
+
+
+---
+## TSK_CALENDAR_ENTRY
+A calendar entry in an application file or database.
+
+### REQUIRED ATTRIBUTES
+- TSK_CALENDAR_ENTRY_TYPE (E.g., Reminder, Event, Birthday, etc.)
+- TSK_DATETIME_START (Start of the entry, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DESCRIPTION (Description of the entry, such as a note)
+
+### OPTIONAL ATTRIBUTES
+- TSK_LOCATION (Location of the entry, such as an address)
+- TSK_DATETIME_END (End of the entry, in seconds since 1970-01-01T00:00:00Z)
+
+
+
+---
+## TSK_CALLLOG
+A call log record in an application file or database.
+
+### REQUIRED ATTRIBUTES
+- At least one of:
+- TSK_PHONE_NUMBER (A phone number involved in this call record)
+- TSK_PHONE_NUMBER_FROM (The phone number that initiated the call)
+- TSK_PHONE_NUMBER_TO (The phone number that receives the call)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_END (When the call ended, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_START (When the call started, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DIRECTION (The communication direction, i.e., Incoming or Outgoing)
+- TSK_NAME (The name of the caller or callee)
+
+
+
+---
+## TSK_CLIPBOARD_CONTENT
+Data found on the operating system's clipboard.
+
+### REQUIRED ATTRIBUTES
+- TSK_TEXT (Text on the clipboard)
+
+
+
+---
+## TSK_CONTACT
+A contact book entry in an application file or database.
+
+### REQUIRED ATTRIBUTES
+- At least one of:
+- TSK_EMAIL (An email address associated with the contact)
+- TSK_EMAIL_HOME (An email address that is known to be the personal email of the contact)
+- TSK_EMAIL_OFFICE (An email address that is known to be the work email of the contact)
+- TSK_PHONE_NUMBER (A phone number associated with the contact)
+- TSK_PHONE_NUMBER_HOME (A phone number that is known to be the home phone number of the contact)
+- TSK_PHONE_NUMBER_MOBILE (A phone number that is known to be the mobile phone number of the contact)
+- TSK_PHONE_NUMBER_OFFICE (A phone number that is known to be the work phone number of the contact)
+- TSK_NAME (Contact name)
+
+### OPTIONAL ATTRIBUTES
+- TSK_ORGANIZATION (An organization that the contact belongs to, e.g., Stanford University, Google)
+- TSK_URL (e.g., the URL of an image if the contact is a vCard)
+
+
+
+---
+## TSK_DATA_SOURCE_USAGE
+Describes how a data source was used, e.g., as a SIM card or an OS drive (such as for Windows or Android).
+
+### REQUIRED ATTRIBUTES
+- TSK_DESCRIPTION (Description of the usage, e.g., "OS Drive (Windows Vista)").
+
+
+
+---
+## TSK_DEVICE_ATTACHED
+Details about a device that was physically attached to a data source.
+
+### REQUIRED ATTRIBUTES
+- TSK_DEVICE_ID (String that uniquely identifies the attached device)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (When the device was attached, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DEVICE_MAKE (Make of the attached device, e.g., Apple)
+- TSK_DEVICE_MODEL (Model of the attached device, e.g., iPhone 6s)
+- TSK_MAC_ADDRESS (Mac address of the attached device)
+
+
+
+---
+## TSK_DEVICE_INFO
+Details about a device data source.
+
+### REQUIRED ATTRIBUTES
+- At least one of:
+- TSK_IMEI (IMEI number of the device)
+- TSK_ICCID (ICCID number of the SIM)
+- TSK_IMSI (IMSI number of the device)
+
+
+
+---
+## TSK_EMAIL_MSG
+An email message found in an application file or database.
+
+### REQUIRED ATTRIBUTES
+- At least one of:
+-  TSK_EMAIL_CONTENT_HTML (Representation of email as HTML)
+-  TSK_EMAIL_CONTENT_PLAIN (Representation of email as plain text)
+-  TSK_EMAIL_CONTENT_RTF (Representation of email as RTF)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_RCVD (When email message was received, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_SENT (When email message was sent, in seconds since 1970-01-01T00:00:00Z)
+- TSK_EMAIL_BCC (BCC'd recipient, multiple recipients should be in a comma separated string)
+- TSK_EMAIL_CC (CC'd recipient, multiple recipients should be in a comma separated string)
+- TSK_EMAIL_FROM (Email address that sent the message)
+- TSK_EMAIL_TO (Email addresses the email message was sent to, multiple emails should be in a comma separated string)
+- TSK_HEADERS (Transport message headers)
+- TSK_MSG_ID (Message ID supplied by the email application)
+- TSK_PATH (Path in the data source to the file containing the email message)
+- TSK_SUBJECT (Subject of the email message)
+- TSK_THREAD_ID (ID specified by the analysis module to group emails into threads for display purposes)
+
+
+
+---
+## TSK_ENCRYPTION_DETECTED
+An indication that the content is encrypted.
+
+### REQUIRED ATTRIBUTES
+- TSK_COMMENT (A comment on the encryption, e.g., encryption type or password)
+
+
+
+---
+## TSK_ENCRYPTION_SUSPECTED
+An indication that the content is likely encrypted.
+
+### REQUIRED ATTRIBUTES
+- TSK_COMMENT (Reason for suspecting encryption)
+
+
+
+---
+## TSK_EXTRACTED_TEXT
+Text extracted from some content.
+
+### REQUIRED ATTRIBUTES
+TSK_TEXT (The extracted text)
+
+
+
+---
+## TSK_EXT_MISMATCH_DETECTED
+An indication that the registered extensions for a file's mime type do not match the file's extension.
+
+### REQUIRED ATTRIBUTES
+None
+
+
+
+---
+## TSK_FACE_DETECTED
+An indication that a human face was detected in some content.
+
+### REQUIRED ATTRIBUTES
+None
+
+
+
+---
+## TSK_GEN_INFO
+A generic information artifact. Each content object will have at most one TSK_GEN_INFO artifact, which is easily accessed through org.sleuthkit.datamodel.AbstractContent.getGenInfoArtifact() and related methods. The TSK_GEN_INFO object is useful for storing values related to the content object without making a new artifact type.
+
+### REQUIRED ATTRIBUTES
+None
+
+### OPTIONAL ATTRIBUTES
+- TSK_PHOTODNA_HASH (The PhotoDNA hash of an image)
+
+---
+## TSK_GPS_BOOKMARK
+A bookmarked GPS location or saved waypoint.
+
+### REQUIRED ATTRIBUTES
+- TSK_GEO_LATITUDE (The latitude value of the bookmark)
+- TSK_GEO_LONGITUDE (The longitude value of the bookmark)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (Timestamp of the GPS bookmark, in seconds since 1970-01-01T00:00:00Z)
+- TSK_GEO_ALTITUDE (The altitude of the specified latitude and longitude)
+- TSK_LOCATION (The address of the bookmark. Ex: 123 Main St.)
+- TSK_NAME (The name of the bookmark. Ex: Boston)
+- TSK_PROG_NAME (Name of the application that was the source of the GPS bookmark)
+
+
+
+---
+## TSK_GPS_LAST_KNOWN_LOCATION
+The last known location of a GPS connected device. This may be from a perspective other than the device.
+
+### REQUIRED ATTRIBUTES
+- TSK_GEO_LATITUDE (Last known latitude value)
+- TSK_GEO_LONGITUDE (Last known longitude value)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (Timestamp of the last known location, in seconds since 1970-01-01T00:00:00Z)
+- TSK_GEO_ALTITUDE (Altitude of the last known latitude and longitude)
+- TSK_LOCATION (The address of the last known location. Ex: 123 Main St.)
+- TSK_NAME (The name of the last known location. Ex: Boston)
+
+
+
+---
+## TSK_GPS_ROUTE
+A GPS route.
+
+### REQUIRED ATTRIBUTES
+- TSK_GEO_WAYPOINTS (JSON list of waypoints. Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints class to create/process)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (Timestamp of the GPS route, in seconds since 1970-01-01T00:00:00Z)
+- TSK_LOCATION (Location of the route, e.g., a state or city)
+- TSK_NAME (Name of the route, e.g., Minute Man Trail)
+- TSK_PROG_NAME (Name of the application that was the source of the GPS route)
+
+
+
+---
+## TSK_GPS_SEARCH
+A GPS location that was known to have been searched by the device or user.
+
+### REQUIRED ATTRIBUTES
+- TSK_GEO_LATITUDE (The GPS latitude value that was searched)
+- TSK_GEO_LONGITUDE (The GPS longitude value that was searched)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (Timestamp of the GPS search, in seconds since 1970-01-01T00:00:00Z)
+- TSK_GEO_ALTITUDE (Altitude of the searched GPS coordinates)
+- TSK_LOCATION (The address of the target location, e.g., 123 Main St.)
+- TSK_NAME (The name of the target location, e.g., Boston)
+
+
+
+---
+## TSK_GPS_TRACK
+A Global Positioning System (GPS) track artifact records the track, or path, of a GPS-enabled dvice as a connected series of track points. A track point is a location in a geographic coordinate system with latitude, longitude and altitude (elevation) axes.
+
+### REQUIRED ATTRIBUTES
+- TSK_GEO_TRACKPOINTS (JSON list of trackpoints. Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints class to create/process)
+
+### OPTIONAL ATTRIBUTES
+- TSK_NAME (The name of the trackpoint set. Ex: Boston)
+- TSK_PROG_NAME (Name of application containing the GPS trackpoint set)
+
+
+
+---
+## TSK_HASHSET_HIT
+Indicates that the MD5 hash of a file matches a set of known MD5s (possibly user defined).
+
+### REQUIRED ATTRIBUTES
+- TSK_SET_NAME (Name of hashset containing the file's MD5)
+
+### OPTIONAL ATTRIBUTES
+- TSK_COMMENT (Additional comments about the hit)
+
+
+
+---
+## TSK_INSTALLED_PROG
+Details about an installed program. 
+
+### REQUIRED ATTRIBUTES
+- TSK_PROG_NAME (Name of the installed program)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (A date and time associated with the installed program, e.g., the last modified time, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_CREATED (When the program was installed, in seconds since 1970-01-01T00:00:00Z)
+- TSK_PATH (Path to the installed program in the data source)
+- TSK_PATH_SOURCE (Path to an Android Package Kit (APK) file for an Android program)
+- TSK_PERMISSIONS (Permissions of the installed program)
+
+
+
+---
+## TSK_INTERESTING_ARTIFACT_HIT
+Indicates that the source artifact matches some set of criteria which deem it interesting. Artifacts with this meta artifact will be brought to the attention of the user.
+
+### REQUIRED ATTRIBUTES
+- TSK_ASSOCIATED_ARTIFACT (The source artifact)
+- TSK_SET_NAME (The name of the set of criteria which deemed this artifact interesting)
+
+### OPTIONAL ATTRIBUTES
+- TSK_COMMENT (Comment on the reason that the source artifact is interesting)
+- TSK_CATEGORY (The set membership rule that was satisfied)
+
+
+
+---
+## TSK_INTERESTING_FILE_HIT
+Indication that the source file matches some set of criteria (possibly user defined) which deem it interesting. Files with this artifact will be brought to the attention of the user.
+
+### REQUIRED ATTRIBUTES
+- TSK_SET_NAME (The name of the set of criteria which deemed this file interesting)
+
+### OPTIONAL ATTRIBUTES
+- TSK_COMMENT (Comment on the reason that the source artifact is interesting)
+- TSK_CATEGORY (The set membership rule that was satisfied. I.e. a particular mime)
+
+
+
+---
+## TSK_KEYWORD_HIT
+Indication that the source artifact or file contains a keyword. Keywords are grouped into named sets.
+
+### REQUIRED ATTRIBUTES
+- TSK_KEYWORD (Keyword that was found in the artifact or file)
+- TSK_KEYWORD_SEARCH_TYPE (Specifies the type of match, e.g., an exact match, a substring match, or a regex match)
+- TSK_SET_NAME (The set name that the keyword was contained in)
+- TSK_KEYWORD_REGEXP (The regular expression that matched, only required for regex matches)
+- TSK_ASSOCIATED_ARTIFACT (Only required if the keyword hit source is an artifact)
+
+### OPTIONAL ATTRIBUTES
+- TSK_KEYWORD_PREVIEW (Snippet of text around keyword)
+
+
+
+---
+## TSK_MESSAGE
+A message that is found in some content.
+
+### REQUIRED ATTRIBUTES
+- TSK_TEXT (The text of the message)
+- TSK_MESSAGE_TYPE (E.g., WhatsApp Message, Skype Message, etc.)
+
+### OPTIONAL ATTRIBUTES
+- TSK_ATTACHMENTS (Attachments - use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper class to add an attachment)
+- TSK_DATETIME (Timestamp the message was sent or received, in seconds since 1970-01-01T00:00:00Z) 
+- TSK_DIRECTION (Direction of the message, e.g., incoming or outgoing)
+- TSK_EMAIL_FROM (Email address of the sender)
+- TSK_EMAIL_TO (Email address of the recipient)
+- TSK_PHONE_NUMBER (A phone number associated with the message)
+- TSK_PHONE_NUMBER_FROM (The phone number of the sender)
+- TSK_PHONE_NUMBER_TO (The phone number of the recipient)
+- TSK_READ_STATUS (Status of the message, e.g., read or unread)
+- TSK_SUBJECT (Subject of the message)
+- TSK_THREAD_ID (ID for keeping threaded messages together)
+
+
+
+---
+## TSK_METADATA
+General metadata for some content.
+
+### REQUIRED ATTRIBUTES
+None
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_CREATED  (Timestamp the document was created)
+- TSK_DATETIME_MODIFIED (Timestamp the document was modified)
+- TSK_DESCRIPTION (Title of the document)
+- TSK_LAST_PRINTED_DATETIME (Timestamp when document was last printed)
+- TSK_ORGANIZATION (Organization/Company who owns the document)
+- TSK_OWNER (Author of the document)
+- TSK_PROG_NAME (Program used to create the document)
+- TSK_USER_ID (Last author of the document)
+- TSK_VERSION (Version number of the program used to create the document)
+
+---
+## TSK_METADATA_EXIF
+EXIF metadata found in an image or audio file.
+
+### REQUIRED ATTRIBUTES
+- At least one of:
+- TSK_DATETIME_CREATED (Creation date of the file, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DEVICE_MAKE (Device make, generally the manufacturer, e.g., Apple)
+- TSK_DEVICE_MODEL (Device model, generally the product, e.g., iPhone)
+- TSK_GEO_ALTITUDE (The camera's altitude when the image/audio was taken)
+- TSK_GEO_LATITUDE (The camera's latitude when the image/audio was taken)
+- TSK_GEO_LONGITUDE (The camera's longitude when the image/audio was taken)
+
+
+---
+## TSK_OBJECT_DETECTED
+Indicates that an object was detected in a media file. Typically used by computer vision software to classify images.
+
+### REQUIRED ATTRIBUTES
+- TSK_COMMENT (What was detected)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DESCRIPTION (Additional comments about the object or observer, e.g., what detected the object)
+
+
+
+---
+## TSK_OS_ACCOUNT
+Details about an operating system account recovered from the data source. Examples include user or administrator accounts.
+
+### REQUIRED ATTRIBUTES
+- TSK_ACCOUNT_TYPE (Account type, e.g., Administrator, User, etc.)
+- TSK_USER_NAME (The user name associated with the account)
+
+### OPTIONAL ATTRIBUTES
+- TSK_ACCOUNT_SETTINGS (Account settings such as if the account is set to auto lock or requires a home directory)
+- TSK_COUNT (Number of logins)
+- TSK_DATETIME_ACCESSED (Datetime of last login, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_CREATED (Datetime of account creation, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_PASSWORD_FAIL (Datetime of the last failed login, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_PASSWORD_RESET (Datetime of last password reset, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DESCRIPTION (Description of the account, e.g., "My personal school account")
+- TSK_DISPLAY_NAME (Full name of the user associated with the account)
+- TSK_EMAIL (Email address associated with the account)
+- TSK_FLAG (Account flags such as indication that the account is a server trust account) 
+- TSK_GROUPS (Groups that this account is included in)
+- TSK_PASSWORD_HINT (The password hint description)
+- TSK_PASSWORD_SETTINGS (Password settings such as if the password has been set to expire or is required for login)
+- TSK_PATH (Home directory of the account. Ex: "C:/Users/John/")
+- TSK_USER_ID (User security identifier, e.g., SID)
+- TSK_NAME (Name of person associated with the account)
+
+
+
+---
+## TSK_OS_INFO
+Details about an operating system recovered from the data source.
+
+### REQUIRED ATTRIBUTES
+- TSK_PROG_NAME (Name of the OS)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (Datetime of the OS installation, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DOMAIN (Windows domain for a Windows OS)
+- TSK_ORGANIZATION (Registered organization for the OS installation)
+- TSK_OWNER (Registered owner of the OS installation)
+- TSK_PATH (System root for the OS installation)
+- TSK_PROCESSOR_ARCHITECTURE (Details about the processor architecture as captured by the OS)
+- TSK_NAME (Name of computer that the OS was installed on)
+- TSK_PRODUCT_ID (Product ID for the OS installation)
+- TSK_TEMP_DIR (Temp directory for the OS)
+- TSK_VERSION (Version of the OS)
+
+
+
+---
+## TSK_PROG_RUN
+The number of times a program/application was run.
+
+### REQUIRED ATTRIBUTES
+- TSK_PROG_NAME (Name of the application)
+- TSK_COUNT (Number of times program was run, should be at least 1)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (Timestamp that application was run last, in seconds since 1970-01-01T00:00:00Z)
+- TSK_BYTES_SENT (Number of bytes sent)
+- TSK_BYTES_RECEIVED (Number of bytes received)
+- TSK_USER_NAME (User who executed the program)
+- TSK_COMMENT (Source of the attribute)
+- TSK_PATH (Path of the executable program)
+
+
+
+---
+## TSK_RECENT_OBJECT
+Indicates recently accessed content. Examples: Recent Documents or Recent Downloads menu items on Windows.
+
+### REQUIRED ATTRIBUTES
+- TSK_PATH (Path to the recent object content in the data source)
+- TSK_DATETIME_ACCESSED (Timestamp that the content was last accessed at, in seconds since 1970-01-01T00:00:00Z)
+
+### OPTIONAL ATTRIBUTES
+- TSK_PATH_ID (ID of the file instance in the data source)
+- TSK_PROG_NAME (Application or application extractor that stored this object as recent)
+- TSK_DATETIME (A timestamp associated with the content, in seconds since 1970-01-01T00:00:00Z. Ex: creation time)
+- TSK_NAME (If found in the registry, the name of the attribute)
+- TSK_VALUE (If found in the registry, the value of the attribute)
+- TSK_COMMENT (What the source of the attribute may be)
+
+
+
+---
+## TSK_REMOTE_DRIVE
+Details about a remote drive found in the data source.
+
+### REQUIRED ATTRIBUTES
+- TSK_REMOTE_PATH (Fully qualified UNC path to the remote drive)
+
+### OPTIONAL ATTRIBUTES
+- TSK_LOCAL_PATH (The local path of this remote drive. This path may be mapped, e.g., 'D:/' or 'F:/')
+
+
+
+---
+## TSK_SERVICE_ACCOUNT
+An application or web user account.
+
+### REQUIRED ATTRIBUTES
+- TSK_PROG_NAME (The name of the service, e.g., Netflix)
+- TSK_USER_ID (User ID of the service account)
+
+### OPTIONAL ATTRIBUTES
+- TSK_CATEGORY (Type of service, e.g., Web, TV, Messaging)
+- TSK_DATETIME_CREATED (When this service account was created, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DESCRIPTION (Name of the mailbox, if this is an email account)
+- TSK_DOMAIN (The sign on realm)
+- TSK_EMAIL_REPLYTO (Email reply to address, if this is an email account)
+- TSK_NAME (Display name of the user account)
+- TSK_PASSWORD (Password of the service account)
+- TSK_PATH (Path to the application installation, if it is local)
+- TSK_SERVER_NAME (Name of the mail server, if this is an email account)
+- TSK_URL (URL of the service, if the service is a Web service)
+- TSK_URL_DECODED (Decoded URL of the service, if the service is a Web service)
+- TSK_USER_NAME (User name of the service account)
+
+
+
+---
+## TSK_SIM_ATTACHED
+Details about a SIM card that was physically attached to the device.
+
+### REQUIRED ATTRIBUTES
+- At least one of:
+- TSK_ICCID (ICCID number of this SIM card)
+- TSK_IMSI (IMSI number of this SIM card)
+
+
+
+---
+## TSK_SPEED_DIAL_ENTRY
+A speed dial entry.
+
+### REQUIRED ATTRIBUTES
+- TSK_PHONE_NUMBER (Phone number of the speed dial entry)
+
+### OPTIONAL ATTRIBUTES
+- TSK_NAME_PERSON (Contact name of the speed dial entry)
+- TSK_SHORTCUT (Keyboard shortcut)
+
+
+
+---
+## TSK_TL_EVENT
+An event in the timeline of a case.
+
+### REQUIRED ATTRIBUTES
+- TSK_TL_EVENT_TYPE (The type of the event, e.g., aTimelineEventType) 
+- TSK_DATETIME (When the event occurred, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DESCRIPTION (A description of the event)
+
+
+
+---
+## TSK_USER_CONTENT_SUSPECTED
+An indication that some media file content was generated by the user.
+
+### REQUIRED ATTRIBUTES
+- TSK_COMMENT (The reason why user-generated content is suspected)
+
+
+
+---
+## TSK_VERIFICATION_FAILED
+An indication that some data did not pass verification. One example would be verifying a SHA-1 hash.
+
+### REQUIRED ATTRIBUTES
+- TSK_COMMENT (Reason for failure, what failed)
+
+
+
+---
+## TSK_WEB_BOOKMARK
+A web bookmark entry.
+
+### REQUIRED ATTRIBUTES
+- TSK_URL (Bookmarked URL)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_CREATED (Timestamp that this web bookmark was created, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DOMAIN (Domain of the bookmarked URL)
+- TSK_PROG_NAME (Name of application or application extractor that stored this web bookmark entry)
+- TSK_NAME (Name of the bookmark entry)
+- TSK_TITLE (Title of the web page that was bookmarked)
+
+
+
+---
+## TSK_WEB_CACHE
+A web cache entry. The resource that was cached may or may not be present in the data source.
+
+### REQUIRED ATTRIBUTES
+- TSK_PATH (Path to the cached file. This could point to a container file that has smaller cached data in it.) 
+- TSK_URL (URL of the resource cached in this entry)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_CREATED (Creation date of the cache entry, in seconds since 1970-01-01T00:00:00Z)
+- TSK_HEADERS (HTTP headers on cache entry)
+- TSK_PATH_ID (Object ID of the source cache file)
+
+
+
+---
+## TSK_WEB_COOKIE
+A Web cookie found.
+
+### REQUIRED ATTRIBUTES
+- TSK_URL (Source URL of the web cookie)
+- TSK_NAME (The Web cookie name attribute, e.g., sessionToken)
+- TSK_VALUE (The Web cookie value attribute)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_CREATED (Datetime the Web cookie was created, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_START (Datetime the Web cookie session was started, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_END (Expiration datetime of the Web cookie, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DOMAIN (The domain the Web cookie serves)
+- TSK_PROG_NAME (Name of the application or application extractor that stored the Web cookie)
+
+
+
+---
+## TSK_WEB_DOWNLOAD
+A Web download. The downloaded resource may or may not be present in the data source.
+
+### REQUIRED ATTRIBUTES
+- TSK_URL (URL that hosts this downloaded resource)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_ACCESSED (Last accessed timestamp, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DOMAIN (Domain that hosted the downloaded resource)
+- TSK_PATH_ID (Object ID of the file instance in the data source)
+- TSK_PATH (Path to the downloaded resource in the datasource)
+- TSK_PROG_NAME (Name of the application or application extractor that downloaded this resource)
+
+
+
+---
+## TSK_WEB_FORM_ADDRESS
+Contains autofill data for a person's address. Form data is usually saved by a Web browser.
+
+### REQUIRED ATTRIBUTES
+- TSK_LOCATION (The address of the person, e.g., 123 Main St.)
+
+### OPTIONAL ATTRIBUTES
+- TSK_COUNT (Number of times the Web form data was used)
+- TSK_DATETIME_ACCESSED (Last accessed timestamp of the Web form data, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_MODIFIED (Last modified timestamp of the Web form data, in seconds since 1970-01-01T00:00:00Z)
+- TSK_EMAIL (Email address from the form data)
+- TSK_NAME_PERSON (Name of a person from the form data)
+- TSK_PHONE_NUMBER (Phone number from the form data)
+
+
+
+---
+## TSK_WEB_FORM_AUTOFILL
+Contains autofill data for a Web form. Form data is usually saved by a Web browser. Each field value pair in the form should be stored in separate artifacts.
+
+### REQUIRED ATTRIBUTES
+- One pair of:
+- TSK_NAME (Name of the autofill field)
+- TSK_VALUE (Value of the autofill field)
+
+### OPTIONAL ATTRIBUTES
+- TSK_COUNT (Number of times this Web form data has been used)
+- TSK_DATETIME_CREATED (Datetime this Web form autofill data was created, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME_ACCESSED (Datetime this Web form data was last accessed, in seconds since 1970-01-01T00:00:00Z)
+
+
+
+---
+## TSK_WEB_HISTORY
+A Web history entry. 
+
+### REQUIRED ATTRIBUTES
+- TSK_URL (The URL)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_ACCESSED (The datetime the URL was accessed, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DOMAIN (The domain name of the URL)
+- TSK_PROG_NAME (The application or application extractor that stored this Web history entry)
+- TSK_REFERRER (The URL of a Web page that linked to the page)
+- TSK_TITLE (Title of the Web page that was visited)
+- TSK_URL_DECODED (The decoded URL)
+- TSK_USER_NAME (Name of the user that viewed the Web page)
+
+
+
+---
+## TSK_WEB_SEARCH_QUERY
+Details about a Web search query.
+
+### REQUIRED ATTRIBUTES
+- TSK_TEXT (Web search query text)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_ACCESSED (When the Web search query was last used, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DOMAIN (Domain of the search engine used to execute the query)
+- TSK_PROG_NAME (Application or application extractor that stored the Web search query)
+
+
+
+---
+## TSK_WIFI_NETWORK
+Details about a WiFi network.
+
+### REQUIRED ATTRIBUTES
+- TSK_SSID (The name of the WiFi network)
+
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME (Timestamp, in seconds since 1970-01-01T00:00:00Z. This timestamp could be last connected time or creation time)
+- TSK_DEVICE_ID (String that uniquely identifies the WiFi network)
+
+
+
+---
+## TSK_WIFI_NETWORK_ADAPTER
+Details about a WiFi adapter.
+
+### REQUIRED ATTRIBUTES
+- TSK_MAC_ADDRESS (Mac address of the adapter)
+
+
+
+
+*/

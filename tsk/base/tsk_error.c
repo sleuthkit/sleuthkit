@@ -100,6 +100,13 @@ static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
     "Image not opened yet"
 };
 
+static const char *tsk_err_pool_str[TSK_ERR_POOL_MAX] = {
+    "Cannot determine pool container type",
+    "Unsupported pool container type",
+    "Invalid API argument",
+    "General pool error"
+};
+
 
 #ifdef TSK_MULTITHREAD_LIB
 
@@ -242,6 +249,16 @@ tsk_error_get()
         else
             snprintf(&errstr_print[pidx],
                 TSK_ERROR_STRING_MAX_LENGTH - pidx, "auto error: %" PRIu32,
+                TSK_ERR_MASK & t_errno);
+    }
+    else if (t_errno & TSK_ERR_POOL) {
+        if ((TSK_ERR_MASK & t_errno) < TSK_ERR_POOL_MAX)
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "%s",
+                tsk_err_pool_str[t_errno & TSK_ERR_MASK]);
+        else
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "pool error: %" PRIu32,
                 TSK_ERR_MASK & t_errno);
     }
     else {

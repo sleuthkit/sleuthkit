@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040700ff
+#define TSK_VERSION_NUM 0x041000ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.7.0"
+#define TSK_VERSION_STR "4.10.0"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -55,6 +55,10 @@
 
 // get some other TSK / OS settings
 #include "tsk_os.h"
+
+#ifdef TSK_WIN32
+#define strncasecmp _strnicmp
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -297,6 +301,7 @@ extern "C" {
 #define TSK_ERR_FS	0x08000000
 #define TSK_ERR_HDB	0x10000000
 #define TSK_ERR_AUTO 0x20000000
+#define TSK_ERR_POOL 0x40000000
 #define TSK_ERR_MASK	0x00ffffff
 
 #define TSK_ERR_AUX_MALLOC	(TSK_ERR_AUX | 0)
@@ -328,6 +333,12 @@ extern "C" {
 #define TSK_ERR_VS_BLK_NUM	(TSK_ERR_VS | 6)
 #define TSK_ERR_VS_ARG	    (TSK_ERR_VS | 7)
 #define TSK_ERR_VS_MAX		8
+
+#define TSK_ERR_POOL_UNKTYPE    (TSK_ERR_POOL | 0)
+#define TSK_ERR_POOL_UNSUPTYPE  (TSK_ERR_IMG | 1)
+#define TSK_ERR_POOL_ARG        (TSK_ERR_POOL | 2)
+#define TSK_ERR_POOL_GENPOOL    (TSK_ERR_POOL | 3)
+#define TSK_ERR_POOL_MAX        4
 
 #define TSK_ERR_FS_UNKTYPE	(TSK_ERR_FS | 0)
 #define TSK_ERR_FS_UNSUPTYPE	(TSK_ERR_FS | 1)

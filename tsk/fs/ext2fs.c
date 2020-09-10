@@ -63,7 +63,7 @@ static uint8_t
 test_root(uint32_t a, uint32_t b)
 {
     if (a == 0) {
-        return (b == 0);
+        return b == 0;
     }
     else if (b == 0) {
         return 0;
@@ -81,7 +81,7 @@ test_root(uint32_t a, uint32_t b)
     for (b2 = b; b2 < a; b2 *= b) {}
  
     // was it an exact match?
-    return (b2 == a);
+    return b2 == a;
 }
 
 /** \internal
@@ -511,7 +511,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
             tsk_getu16(fs->endian, ext2fs->fs->s_desc_size));
 #endif
         /* Test for possible overflow */
-        if ((TSK_OFF_T)ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo) 
+        if (ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo) 
                 >= LLONG_MAX / fs->block_size) {
             tsk_release_lock(&ext2fs->lock);
 
@@ -682,10 +682,10 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     }
 
     fs_meta->uid =
-        tsk_getu16(fs->endian, dino_buf->i_uid) + (tsk_getu16(fs->endian,
+        tsk_getu16(fs->endian, dino_buf->i_uid) + ((TSK_UID_T)tsk_getu16(fs->endian,
             dino_buf->i_uid_high) << 16);
     fs_meta->gid =
-        tsk_getu16(fs->endian, dino_buf->i_gid) + (tsk_getu16(fs->endian,
+        tsk_getu16(fs->endian, dino_buf->i_gid) + ((TSK_GID_T)tsk_getu16(fs->endian,
             dino_buf->i_gid_high) << 16);
     fs_meta->mtime = tsk_getu32(fs->endian, dino_buf->i_mtime);
     fs_meta->atime = tsk_getu32(fs->endian, dino_buf->i_atime);
@@ -840,6 +840,20 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     ibase =
         grp_num * tsk_getu32(fs->endian,
         ext2fs->fs->s_inodes_per_group) + fs->first_inum;
+
+
+    /*
+     * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
+     */
+    if ((inum - ibase) > fs->block_size*8) {
+        tsk_release_lock(&ext2fs->lock);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("ext2fs_dinode_copy: Invalid offset into imap_buf (inum %" PRIuINUM " - ibase %" PRIuINUM ")",
+            inum, ibase);
+        return 1;
+    }
+
 
     /*
      * Apply the allocated/unallocated restriction.
@@ -1050,6 +1064,19 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         ibase =
             grp_num * tsk_getu32(fs->endian,
             ext2fs->fs->s_inodes_per_group) + 1;
+
+        /*
+         * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
+         */
+        if ((inum - ibase) > fs->block_size*8) {
+            tsk_release_lock(&ext2fs->lock);
+            free(dino_buf);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+            tsk_error_set_errstr("%s: Invalid offset into imap_buf (inum %" PRIuINUM " - ibase %" PRIuINUM ")",
+                myname, inum, ibase);
+            return 1;
+        }
 
         /*
          * Apply the allocated/unallocated restriction.
@@ -2827,8 +2854,8 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                     256 ? 256 : tsk_getu32(fs->endian,
                         ea_entry->val_size));
 
-                val[tsk_getu32(fs->endian, ea_entry->val_size) > 256 ?
-                    256 : tsk_getu32(fs->endian, ea_entry->val_size)] =
+                val[tsk_getu32(fs->endian, ea_entry->val_size) > 255 ?
+                    255 : tsk_getu32(fs->endian, ea_entry->val_size)] =
                     '\0';
 
                 if (ea_entry->nidx == EXT2_EA_IDX_USER)
@@ -3331,6 +3358,18 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
+    if (tsk_getu32(fs->endian, ext2fs->fs->s_log_block_size) >= sizeof(uint32_t) * 8) {
+        free(ext2fs->fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+        tsk_error_set_errstr("Block size too large");
+        if (tsk_verbose)
+            fprintf(stderr,
+                "ext2fs_open: block size too large\n");
+        return NULL;
+    }
+
     fs->block_size =
         EXT2FS_MIN_BLOCK_SIZE << tsk_getu32(fs->endian,
         ext2fs->fs->s_log_block_size);
@@ -3462,5 +3501,5 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     tsk_init_lock(&ext2fs->lock);
 
-    return (fs);
+    return fs;
 }

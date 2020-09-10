@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="SleuthkitCaseUco" default="default" basedir="." >
+    <description>Builds, tests, and runs the project SleuthkitCaseUco.</description>
+    <import file="nbproject/build-impl.xml"/>
+    <include file="../../bindings/java/build.xml" as="datamodel"/>
+    
+    <!-- Hook into the compilation phase of the build process to ensure compile 
+         time dependencies are present -->
+    <target name="-pre-compile" depends="get-ivy-dependencies, copy-sleuthkit-java-bindings-jar"
+            description="Resolves ivy dependencies before compilation">
+    </target>    
+    
+    <!-- Hook into the clean phase of the build process to ensure the lib
+         folder is being cleared. -->
+    <target name="-post-clean">
+        <delete dir="lib" />
+    </target>
+      
+    <!-- Copy the sleuthkit jar into lib -->
+    <target name="copy-sleuthkit-java-bindings-jar">
+        <!-- VERSION here is being sourced from the build.xml in DataModel, which
+             is actively maintained with the current TSK version -->
+        <copy file="../../bindings/java/dist/sleuthkit-${VERSION}.jar" 
+              tofile="lib\sleuthkit-${VERSION}.jar"/>
+    </target>
+    
+    <target name="get-ivy-dependencies" description="retrieve jar dependencies using ivy" depends="datamodel.init-ivy" unless="offline">
+        <ivy:settings file="ivysettings.xml"/>
+        <ivy:resolve/>
+        <ivy:retrieve sync="true" pattern="lib/[artifact]-[revision](-[classifier]).[ext]"/>
+    </target>
+</project>

@@ -2248,5 +2248,5 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint
 
     tsk_init_lock(&ffs->lock);
 
-    return (fs);
+    return fs;
 }

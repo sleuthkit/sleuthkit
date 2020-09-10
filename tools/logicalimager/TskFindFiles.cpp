@@ -81,8 +81,11 @@ TskFindFiles::filterFs(TSK_FS_INFO * fs_info)
         NTFS_INFO *ntfs_info = (NTFS_INFO *)fs_info;
         if (ntfs_info->alloc_file_count == 0) {
             // we need to force the orphan finding process to get this count
-            tsk_fs_dir_open_meta(fs_info, fs_info->root_inum);
-            m_totalNumberOfFiles = ((NTFS_INFO*)fs_info)->alloc_file_count;
+            TSK_FS_DIR *fs_dir = tsk_fs_dir_open_meta(fs_info, fs_info->root_inum);
+            if (fs_dir) {
+                m_totalNumberOfFiles = ((NTFS_INFO*)fs_info)->alloc_file_count;
+            }
+            tsk_fs_dir_close(fs_dir);
         }
         title += ", 0% complete";
     }

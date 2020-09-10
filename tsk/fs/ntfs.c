@@ -375,7 +375,9 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             ("dinode_lookup: More Update Sequence Entries than MFT size");
         return TSK_COR;
     }
-    if (tsk_getu16(fs->endian, mft->upd_off) + sizeof(ntfs_upd) > a_ntfs->mft_rsize_b) {
+    if (tsk_getu16(fs->endian, mft->upd_off) + 
+            sizeof(ntfs_upd) + 
+            2*(tsk_getu16(fs->endian, mft->upd_cnt) - 1) > a_ntfs->mft_rsize_b) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
@@ -652,10 +654,22 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         if (totlen)
             *totlen += (data_run->len * ntfs->csize_b);
 
-        /* Get the address of this run */
+        /* Get the address offset of this run.
+         * An address offset of more than eight bytes will not fit in the
+         * 64-bit addr_offset field (and is likely corrupt)
+         */
+        if (NTFS_RUNL_LENSZ(run) > 8) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("ntfs_make_run: Run address offset is too large to process");
+            tsk_fs_attr_run_free(*a_data_run_head);
+            *a_data_run_head = NULL;
+            return TSK_COR;
+        }
         for (i = 0, data_run->addr = 0; i < NTFS_RUNL_OFFSZ(run); i++) {
             //data_run->addr |= (run->buf[idx++] << (i * 8));
-            addr_offset |= (run->buf[idx++] << (i * 8));
+            addr_offset |= ((int64_t)(run->buf[idx++]) << (i * 8));
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_make_data_run: Off idx: %i cur: %"
@@ -791,9 +805,9 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
 typedef struct {
     char *uncomp_buf;           // Buffer for uncompressed data
     char *comp_buf;             // buffer for compressed data
-    size_t comp_len;            // number of bytes used in compressed data
+    size_t comp_len;            // number of bytes used in compressed data buffer
     size_t uncomp_idx;          // Index into buffer for next byte
-    size_t buf_size_b;          // size of buffer in bytes (1 compression unit)
+    size_t buf_size_b;          // size of both buffers in bytes (1 compression unit)
 } NTFS_COMP_INFO;
 
 
@@ -855,8 +869,7 @@ ntfs_uncompress_done(NTFS_COMP_INFO * comp)
 
 
  /**
-  * Uncompress the block of data in comp->comp_buf,
-  * which has a size of comp->comp_len.
+  * Uncompress the block of data in comp->comp_buf.
   * Store the result in the comp->uncomp_buf.
   *
   * @param comp Compression unit structure
@@ -895,6 +908,12 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         blk_size = (sb_header & 0x0FFF) + 3;
 
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_uncompress_compunit: Start compression block (length=%" PRIuSIZE " index=%" PRIuSIZE 
+                " compressed buffer size=%" PRIuSIZE ")\n",
+                blk_size, cl_index, comp->comp_len);
+
         // this seems to indicate end of block
         if (blk_size == 3)
             break;
@@ -903,15 +922,11 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
         if (blk_end > comp->comp_len) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
             tsk_error_set_errstr
-                ("ntfs_uncompress_compunit: Block length longer than buffer length: %"
+                ("ntfs_uncompress_compunit: Compression block length longer than buffer length: %"
                 PRIuSIZE "", blk_end);
             return 1;
         }
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "ntfs_uncompress_compunit: Block size is %" PRIuSIZE "\n",
-                blk_size);
 
         /* The MSB identifies if the block is compressed */
         iscomp = ((sb_header & 0x8000) != 0);
@@ -922,8 +937,10 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         // the 4096 size seems to occur at the same times as no compression
         if ((iscomp) && (blk_size - 2 != 4096)) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "ntfs_uncompress_compunit: Compression block is compressed\n");
 
-            // cycle through the block
+            // cycle through the token groups in the block
             while (cl_index < blk_end) {
                 int a;
 
@@ -933,7 +950,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
-                        "ntfs_uncompress_compunit: New Tag: %x\n", header);
+                        "ntfs_uncompress_compunit: Token Group Header: %x\n", header);
 
                 for (a = 0; a < 8 && cl_index < blk_end; a++) {
 
@@ -944,8 +961,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                     if ((header & NTFS_TOKEN_MASK) == NTFS_SYMBOL_TOKEN) {
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
-                                "ntfs_uncompress_compunit: Symbol Token: %"
-                                PRIuSIZE "\n", cl_index);
+                                "ntfs_uncompress_compunit: Symbol Token: (offset %"
+                                PRIuSIZE ")\n", cl_index);
 
                         if (comp->uncomp_idx >= comp->buf_size_b) {
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
@@ -1015,8 +1032,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
-                                "ntfs_uncompress_compunit: Phrase Token: %"
-                                PRIuSIZE "\t%d\t%d\t%x\n", cl_index,
+                                "ntfs_uncompress_compunit: Phrase Token: (offset %"
+                                PRIuSIZE ")\tLen: %d\tPrevOffset: %d\tHeader=%x\n", cl_index-2,
                                 length, offset, pheader);
 
                         /* Sanity checks on values */
@@ -1069,6 +1086,9 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         // this block contains uncompressed data
         else {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "ntfs_uncompress_compunit: Block size is not compressed\n");
+
             while (cl_index < blk_end && cl_index < comp->comp_len) {
                 /* This seems to happen only with corrupt data -- such as
                  * when an unallocated file is being processed... */
@@ -1361,6 +1381,11 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     || ((len_idx == fs_attr_run->len - 1)
                         && (fs_attr_run->next == NULL))) {
                     size_t i;
+
+
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "ntfs_proc_compunit: Decompressing at file offset %"PRIdOFF"\n", off);
 
                     // decompress the unit
                     if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
@@ -1672,7 +1697,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
 /* needs to be predefined for proc_attrseq */
 static TSK_RETVAL_ENUM ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
-    const TSK_FS_ATTR *);
+    const TSK_FS_ATTR *, TSK_STACK *);
 
 
 /* This structure is used when processing attrlist attributes.
@@ -1705,12 +1730,14 @@ typedef struct {
  * @param a_attrinum MFT entry address that the attribute sequence came from (diff from fs_file for attribute lists)
  * @param a_attr_map List that maps to new IDs that were assigned by processing
  * the attribute list attribute (if it exists) or NULL if there is no attrlist.
+ * @param a_seen_inum_list List of inums that have been previously processed based on attribute lists. 
+ *    Can be NULL when this is called for the first time. Should be non-NULL when this is called recursively by proc_attrlist.
  * @returns Error code
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrseq(NTFS_INFO * ntfs,
     TSK_FS_FILE * fs_file, const ntfs_attr * a_attrseq, size_t len,
-    TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP * a_attr_map)
+    TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP * a_attr_map, TSK_STACK * a_seen_inum_list)
 {
     const ntfs_attr *attr;
     const TSK_FS_ATTR *fs_attr_attrl = NULL;
@@ -1756,7 +1783,14 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         // sanity check on bounds of attribute. Prevents other
         // issues later on that use attr->len for bounds checks.
         if (((uintptr_t) attr + tsk_getu32(fs->endian,
-                               attr->len)) > (uintptr_t) (a_attrseq + len)) {
+                               attr->len)) > (uintptr_t)a_attrseq + len) {
+            break;
+        }
+
+        // Ensure that the name offset doesn't refer to a location beyond
+        // the attribute.
+        if (((uintptr_t)attr + tsk_getu16(fs->endian, attr->name_off)) > 
+            ((uintptr_t)attr + tsk_getu32(fs->endian, attr->len))) {
             break;
         }
 
@@ -2343,7 +2377,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
      */
     if (fs_attr_attrl) {
 		TSK_RETVAL_ENUM retval;
-        if ((retval = ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl)) != TSK_OK) {
+        if (a_seen_inum_list != NULL) {
+            tsk_stack_push(a_seen_inum_list, a_attrinum);
+        }
+        if ((retval = ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl, a_seen_inum_list)) != TSK_OK) {
             return retval;
         }
     }
@@ -2368,12 +2405,14 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
  * @param ntfs File system being analyzed
  * @param fs_file Main file that will have attributes added to it.
  * @param fs_attr_attrlist Attrlist attribute that needs to be parsed.
+ * @param a_seen_inum_list List of MFT entries (inums) previously 
+ * processed for this file or NULL.
  *
  * @returns status of error, corrupt, or OK
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrlist(NTFS_INFO * ntfs,
-    TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr_attrlist)
+    TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr_attrlist, TSK_STACK * processed_inum_list)
 {
     ntfs_attrlist *list;
     char *buf;
@@ -2385,6 +2424,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     uint16_t mftToDoCnt = 0;
     NTFS_ATTRLIST_MAP *map;
     uint16_t nextid = 0;
+    TSK_STACK * mftSeenList = NULL;
     int a;
 
     if (tsk_verbose)
@@ -2527,7 +2567,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         /* Sanity check. */
         if (mftToDo[a] < ntfs->fs_info.first_inum ||
-            mftToDo[a] > ntfs->fs_info.last_inum ||
+            // decrement the last_inum because the last value is a special value for the ORPHANS directory
+            mftToDo[a] > ntfs->fs_info.last_inum - 1 ||
             // MFT 0 is for $MFT.  We had one system that we got a reference to it from parsing an allocated attribute list
             mftToDo[a] == 0) {
 
@@ -2600,11 +2641,37 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         /* Process the attribute seq for this MFT entry and add them
          * to the TSK_FS_META structure
          */
+        if (processed_inum_list != NULL && tsk_stack_find(processed_inum_list, mftToDo[a])) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+            tsk_error_set_errstr("ntfs_proc_attrlist: MFT %" PRIuINUM
+                " seen in more than one attribute list for %"
+                PRIuINUM
+                " (base file ref = %" PRIuINUM ")",
+                mftToDo[a],
+                fs_file->meta->addr,
+                tsk_getu48(fs->endian, mft->base_ref));
+            free(mft);
+            free(map);
+            free(buf);
+            return TSK_COR;
+        }
+
+        if (processed_inum_list == NULL) {
+            /*
+             * Create a stack to keep track of inums already seen.
+             * The local mftSeenList variable is used to keep track
+             * of which iteration created the stack so that it can
+             * be correctly freed later.
+             */
+            processed_inum_list = mftSeenList = tsk_stack_create();
+        }
+
         if ((retval =
                 ntfs_proc_attrseq(ntfs, fs_file, (ntfs_attr *) ((uintptr_t)
                         mft + tsk_getu16(fs->endian, mft->attr_off)),
                     ntfs->mft_rsize_b - tsk_getu16(fs->endian,
-                        mft->attr_off), mftToDo[a], map)) != TSK_OK) {
+                        mft->attr_off), mftToDo[a], map, processed_inum_list)) != TSK_OK) {
 
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -2616,6 +2683,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
+            if (mftSeenList != NULL)
+                tsk_stack_free(mftSeenList);
             return TSK_ERR;
         }
     }
@@ -2623,6 +2692,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     free(mft);
     free(map);
     free(buf);
+    if (mftSeenList != NULL)
+        tsk_stack_free(mftSeenList);
     return TSK_OK;
 }
 
@@ -2739,7 +2810,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     if ((retval = ntfs_proc_attrseq(ntfs, a_fs_file, attr,
                 ntfs->mft_rsize_b - tsk_getu16(fs->endian,
                     mft->attr_off), a_fs_file->meta->addr,
-                NULL)) != TSK_OK) {
+                NULL, NULL)) != TSK_OK) {
         return retval;
     }
 
@@ -3337,7 +3408,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     sii_sds_ent_size = tsk_getu32(fs->endian, sii->sec_desc_size);
 
     // Check that we do not go out of bounds.
-    if ((uint32_t) sii_sds_file_off > ntfs->sds_data.size) {
+    if (sii_sds_file_off > ntfs->sds_data.size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
         tsk_error_set_errstr("ntfs_get_sds: SII offset too large (%" PRIu64

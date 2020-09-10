@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ public class Volume extends AbstractContent {
 	private long flags;
 	private String desc;
 	private volatile long volumeHandle = 0;
+	private String uniquePath;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
@@ -52,6 +53,7 @@ public class Volume extends AbstractContent {
 		this.addr = addr;
 		this.startSector = startSector;
 		this.lengthInSectors = lengthInSectors;
+		this.uniquePath = null;
 		this.flags = flags;
 		if (!desc.equals("")) {
 			this.desc = desc;
@@ -68,6 +70,12 @@ public class Volume extends AbstractContent {
 				throw new TskCoreException(bundle.getString("Volume.read.exception.msg1.text"));
 			}
 			VolumeSystem parentVs = (VolumeSystem) myParent;
+			
+			// Reading from APFS volumes/volume systems is not yet supported
+			if (parentVs.getType().equals(TskData.TSK_VS_TYPE_ENUM.TSK_VS_TYPE_APFS)) {
+				throw new TskCoreException("Reading APFS pool volumes not yet supported");
+			}
+			
 			// read from the volume
 			if (volumeHandle == 0) {
 				volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
@@ -100,15 +108,17 @@ public class Volume extends AbstractContent {
 
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
-		String uniquePath = "";
-		String name = getName();
-		if (!name.isEmpty()) {
-			uniquePath = "/vol_" + name; //NON-NLS
-		}
+		if(uniquePath == null) {
+			uniquePath = "";
+			String name = getName();
+			if (!name.isEmpty()) {
+				uniquePath = "/vol_" + name; //NON-NLS
+			}
 
-		Content myParent = getParent();
-		if (myParent != null) {
-			uniquePath = myParent.getUniquePath() + uniquePath;
+			Content myParent = getParent();
+			if (myParent != null) {
+				uniquePath = myParent.getUniquePath() + uniquePath;
+			}
 		}
 		return uniquePath;
 	}

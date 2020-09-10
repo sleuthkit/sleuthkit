@@ -22,14 +22,16 @@
 #include <ostream>
 
 #include "tsk_auto_i.h"
-#include "db_connection_info.h"
 
 using std::ostream;
 using std::vector;
 using std::string;
 
+/**
+ * Keep these values in sync with CURRENT_DB_SCHEMA_VERSION in SleuthkitCase.java
+ */
 #define TSK_SCHEMA_VER 8
-#define TSK_SCHEMA_MINOR_VER 3
+#define TSK_SCHEMA_MINOR_VER 5
 
 /**
  * Values for the type column in the tsk_objects table. 
@@ -40,6 +42,9 @@ typedef enum {
     TSK_DB_OBJECT_TYPE_VOL,     ///< Object is a volume 
     TSK_DB_OBJECT_TYPE_FS,      ///< Object is a file system
     TSK_DB_OBJECT_TYPE_FILE,    ///< Object is a file (exact type can be determined in the tsk_files table via TSK_DB_FILES_TYPE_ENUM)
+    TSK_DB_OBJECT_TYPE_ARTIFACT, ///< Autopsy placeholder
+    TSK_DB_OBJECT_TYPE_REPORT,   ///< Autopsy placeholder
+    TSK_DB_OBJECT_TYPE_POOL     ///< Object is a pool
 } TSK_DB_OBJECT_TYPE_ENUM;
 
 /**
@@ -115,7 +120,7 @@ typedef struct _TSK_DB_FS_INFO {
     TSK_DADDR_T block_count;
     TSK_INUM_T root_inum;
     TSK_INUM_T first_inum;
-    TSK_INUM_T last_inum;     
+    TSK_INUM_T last_inum;   
 } TSK_DB_FS_INFO;
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo);
@@ -167,13 +172,16 @@ class TskDb {
     virtual ~TskDb() {};
     virtual int open(bool) = 0;
     virtual int close() = 0;
-    virtual TSK_RETVAL_ENUM setConnectionInfo(CaseDbConnectionInfo * info);
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone) = 0;
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256) = 0;
     virtual int addImageInfo(int type, TSK_OFF_T size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256, const string& deviceId, const string& collectionDetails) = 0;
     virtual int addImageName(int64_t objId, char const *imgName, int sequence) = 0;
     virtual int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId, int64_t & objId) = 0;
+    virtual int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& vsObjId) = 0;
+    virtual int addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+        int64_t parObjId, int64_t& objId) = 0;
+    virtual int addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId) = 0;
     virtual int addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
@@ -218,7 +226,8 @@ class TskDb {
 
 	  @param name A file name
 	  @param extension The file name extension will be extracted to extension.
-	  */void extractExtension(char *name, char *extension ) {
+	  */
+      void extractExtension(char *name, char *extension ) {
 		   char *ext = strrchr(name, '.');
 
 		   //if ext is not null and is not the entire filename...

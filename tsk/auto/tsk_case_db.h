@@ -22,7 +22,6 @@ using std::string;
 
 #include "tsk_auto_i.h"
 #include "tsk_db_sqlite.h"
-#include "tsk_db_postgresql.h"
 #include "tsk/hashdb/tsk_hashdb.h"
 
 #define TSK_ADD_IMAGE_SAVEPOINT "ADDIMAGE"
@@ -45,6 +44,8 @@ class TskAutoDb:public TskAuto {
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path);
@@ -126,6 +127,8 @@ class TskAutoDb:public TskAuto {
     int64_t m_curImgId;     ///< Object ID of image currently being processed
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
+    int64_t m_curPoolVol;   ///< Object ID of the pool volume currently being processed
+    int64_t m_curPoolVs;    ///< Object ID of the pool volume system currently being processed
     int64_t m_curFsId;      ///< Object ID of file system currently being processed
     int64_t m_curFileId;    ///< Object ID of file currently being processed
     TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed
@@ -137,6 +140,7 @@ class TskAutoDb:public TskAuto {
     bool m_fileHashFlag;
     bool m_vsFound;
     bool m_volFound;
+    bool m_poolFound;
     bool m_stopped;
     bool m_imgTransactionOpen;
     TSK_HDB_INFO * m_NSRLDb;
@@ -148,6 +152,12 @@ class TskAutoDb:public TskAuto {
     int64_t m_maxChunkSize; ///< Max number of unalloc bytes to process before writing to the database, even if there is no natural break. -1 for no chunking
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
+
+    // These are used to write unallocated blocks for pools at the end of the add image
+    // process. We can't load the pool_info objects directly from the database so we will
+    // store info about them here.
+    std::map<int64_t, int64_t> m_poolOffsetToParentId;
+    std::map<int64_t, int64_t> m_poolOffsetToVsId;
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
@@ -181,7 +191,7 @@ class TskAutoDb:public TskAuto {
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
-
+    TSK_RETVAL_ENUM addUnallocatedPoolBlocksToDb(size_t & numPool);
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
     TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);
@@ -204,9 +214,7 @@ class TskCaseDb {
     ~TskCaseDb();
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
-    static TskCaseDb *newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
-    static TskCaseDb *openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info);
 
     void clearLookupDatabases();
     uint8_t setNSRLHashDb(TSK_TCHAR * const indexFile);

@@ -222,6 +222,46 @@ public final class Blackboard {
 		return caseDb.getArtifactsHelper("blackboard_artifacts.data_source_obj_id = " + dataSourceObjId
 				+ " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
 	}
+	
+	/**
+	 * Get all blackboard artifacts of the given type(s) for the given data source(s). Does not included rejected
+	 * artifacts.
+	 *
+	 * @param artifactTypes  list of artifact types to get
+	 * @param dataSourceObjIds data sources to look under
+	 *
+	 * @return list of blackboard artifacts
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<BlackboardArtifact> getArtifacts(Collection<BlackboardArtifact.Type> artifactTypes, 
+			Collection<Long> dataSourceObjIds) throws TskCoreException {
+		
+		if (artifactTypes.isEmpty() || dataSourceObjIds.isEmpty()) {
+			return new ArrayList<>();
+		}
+		
+		String typeQuery = "";
+		for (BlackboardArtifact.Type type : artifactTypes) {
+			if (!typeQuery.isEmpty()) {
+				typeQuery += " OR ";
+			}
+			typeQuery += "blackboard_artifact_types.artifact_type_id = " + type.getTypeID();
+		}
+		
+		String dsQuery = "";
+		for (long dsId : dataSourceObjIds) {
+			if (!dsQuery.isEmpty()) {
+				dsQuery += " OR ";
+			}
+			dsQuery += "blackboard_artifacts.data_source_obj_id = " + dsId;
+		}
+		
+		String fullQuery = "( " + typeQuery + " ) AND ( " + dsQuery + " );";
+		
+		return caseDb.getArtifactsHelper(fullQuery);
+	}	
 
 	/**
 	 * Gets count of blackboard artifacts of given type that match a given WHERE
@@ -344,7 +384,8 @@ public final class Blackboard {
 						fileAttributeValue = fileAttribute.getValueLong();
 						expectedAttributeValue = expectedAttribute.getValueLong();
 						break;
-					case STRING:
+					case STRING: // Fall-thru
+					case JSON:
 						fileAttributeValue = fileAttribute.getValueString();
 						expectedAttributeValue = expectedAttribute.getValueString();
 						break;

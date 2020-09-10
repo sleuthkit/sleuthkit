@@ -58,6 +58,9 @@ namespace Rejistry {
         return _nk->getName();
     }
 
+    /**
+     * Caller is responsible for freeing the key
+     */
     RegistryKey::RegistryKeyPtr RegistryKey::getParent() const {
         if (!_nk->hasParentRecord()) {
             throw NoSuchElementException("Registry Key has no parent.");
@@ -66,6 +69,9 @@ namespace Rejistry {
         return new RegistryKey(_nk->getParentRecord());
     }
 
+    /**
+     * Caller is responsible for freeing the keys in the list
+     */
     RegistryKey::RegistryKeyPtrList RegistryKey::getSubkeyList() const {
         std::vector<RegistryKey *> subkeys;
         SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
@@ -78,6 +84,7 @@ namespace Rejistry {
         return subkeys;
     }
 
+
     size_t RegistryKey::getSubkeyListSize() const {
         std::vector<RegistryKey *> subkeys;
         SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
@@ -86,6 +93,10 @@ namespace Rejistry {
         return nkRecordList.size();
     }
 
+
+    /**
+     * Caller is responsible for freeing returned key
+     */
     RegistryKey::RegistryKeyPtr RegistryKey::getSubkey(const std::wstring& name) const {
         SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
         Rejistry::NKRecord *nkRecord = subkeyListRecordPtr->getSubkey(name);
@@ -93,6 +104,9 @@ namespace Rejistry {
         return new RegistryKey(nkRecord);
     }
 
+    /**
+     * Caller is responsible for freeing the values in the list
+     */
     RegistryValue::RegistryValuePtrList RegistryKey::getValueList() const {
         RegistryValue::RegistryValuePtrList values;
         VKRecord::VKRecordPtrList vkRecordList = _nk->getValueList()->getValues();
@@ -103,6 +117,7 @@ namespace Rejistry {
         return values;
     }
 
+
     size_t RegistryKey::getValueListSize() const {
         Rejistry::ValueListRecord *valueListRecord = _nk->getValueList();
         size_t size = valueListRecord->getValuesSize();
@@ -110,6 +125,9 @@ namespace Rejistry {
         return size;
     }
 
+    /**
+     * Caller is responsible for freeing returned value
+     */
     RegistryValue::RegistryValuePtr RegistryKey::getValue(const std::wstring& name) const {
         Rejistry::ValueListRecord *valueListRecord = _nk->getValueList();
         Rejistry::VKRecord *vkRecord = valueListRecord->getValue(name);

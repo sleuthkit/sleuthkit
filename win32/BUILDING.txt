@@ -19,10 +19,9 @@ XP executables.
 
 Building
 
-There are six build targets: 
+There are four build targets: 
     - Debug_NoLibs and Release_NoLibs do not depend on any third-party libraries. 
-    - Debug and Release depend on libewf, libvmdk, libvhdi, and zlib to be built so that E01 images as well as VMDK and VHD virtual machine formats are supported. 
-    - Debug_PostgreSQL and Release_PostgreSQL depend on libewf, zlib, libvmdk, livhdi, and PostgreSQL libraries so that E01 images as well as VMDK and VHD virtual machine formats are supported. This target is needed by collaborative Autopsy and other programs that rely on TSK that need to write database results to a central PostgreSQL database instead of just SQLite.
+    - Debug and Release depend on libewf, libvmdk, libvhdi, and zlib NuGet packages so that E01 images as well as VMDK and VHD virtual machine formats are supported. 
 
 
 Note: The following instructions are for 64 bit versions to TSK only.
@@ -34,86 +33,14 @@ Debug and Release Targets
 The steps below outline the process required to compile the Debug and
 Release targets.
 
-1) Download libewf from https://github.com/sleuthkit/libewf_64bit. This repository contains a version of libewf updated by us to build a 64 bit library. 
-For 32 bit and bleeding edge versions see the official releases at: https://github.com/libyal/libewf
+1) If you want to build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
 
-2) Open archive file and follow the README instructions in libewf to
-build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll. Later steps also depend on the zlib dll being built inside of libewf.
+2) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory.
 
-3) Set the LIBEWF_HOME environment variable to point to the libewf folder that you created and built in step 2.
+3) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables. The resulting libraries and executables on a 32-bit build will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate. A 64-bit build will put them into the win32/x64 folders. You can change the type of build using the pulldown in Visual Studio and switching between Win32 and x64.
 
-4) Download libvhdi from https://github.com/sleuthkit/libvhdi_64bit. This repository contains a version of libvhdi updated by us to build a 64 bit library.
-For 32 bit and bleeding edge versions see the official releases at: https://github.com/libyal/libvhdi
+4) Note that the libraries and executables will depend on the libewf, libvmdk, libvhdi, and zlib DLL files (which are copied to the TSK build directories).
 
-Open the solution file and build the libvhdi project.
-
-5) Set the LIBVHDI_HOME environment variable to point to the libvhdi folder that you created and built in step 4. 
-
-The LIBVHDI_HOME environment variable should look something like this: C:\cygwin64\home\user_name\libvhdi_64bit
-
-6) Download libvmdk from https://github.com/sleuthkit/libvmdk_64bit. This repository contains a version of libvmdk updated by us to build a 64 bit library.
-For 32 bit and bleeding edge versions see the official releases at: https://github.com/libyal/libvhdi
-
-At the time of writing this, libvmdk requires zlib source code in order to build the Visual Studio project. Our upgraded version includes the zlib source code.
-
-7) Set the LIBVMDK_HOME environment variable to point to the libvmdk folder that you created and built in step 6. 
-
-The LIBVMDK_HOME environment variable should look something like this: C:\cygwin64\home\user_name\libvmdk_64bit\libvmdk
-
-8) If you want to build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
-
-9) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory.
-
-10) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables. The resulting libraries and executables on a 32-bit build will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate. A 64-bit build will put them into the win32/x64 folders. You can change the type of build using the pulldown in Visual Studio and switching between Win32 and x64.
-
-11) Note that the libraries and executables will depend on the libewf, libvmdk, libvhdi, and zlib DLL files (which are copied to the TSK build directories).
-
-
-
-------------------------------------------------------------------------
-PostgreSQL Targets
-
-The steps below outline the process required to compile the
-Debug_PostgreSQL and Release_PostgreSQL targets.
-
-1) Follow all of the steps outlined above that are required to build the
-Release and Debug targets.
-
-2) Download and install PostgreSQL 9.4 or above. You can either download
-the full installer or just the ZIP file. The official releases are from:
-http://www.postgresql.org/download/ 
-
-You will need a 32-bit version to create the 32-bit targets, and a 64-bit
-version to create the 64-bit targets. Autopsy relies on TSK, so if you
-are going to build Autopsy, match the version of PostgreSQL to the
-version of Autopsy you intend to create. If you intend to create both
-32-bit and 64-bit Autopsy builds, install both 32-bit and 64-bit
-PostgreSQL.
-
-3) Set the POSTGRESQL_HOME_32 and/or POSTGRESQL_HOME_64 environment
-variable to point to the PostgreSQL folder containing, but not including,
-the bin folder. 
-    32-bit Example: POSTGRESQL_HOME_32=C:\Program Files (x86)\PostgreSQL\9.4 
-    64-bit Example: POSTGRESQL_HOME_64=C:\Program Files\PostgreSQL\9.4
-    
-4) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32
-directory.
-
-5) Compile a Debug_PostgreSQL Win32 or x64, or a Release_PostgreSQL Win32
-or x64 version of the libraries and executables. The resulting libraries
-and executables will be put in win32/x64/Debug_PostgreSQL and
-win32/x64/Release_PostgreSQL folders as appropriate. You can change the
-type of build using the pulldown in Visual Studio.
-
-6) Note that the libraries and executables will depend on the libewf,
-zlib, libpq, libintl-8, libeay32, and ssleay32 DLL files (which are
-copied to the TSK build directories).
-
-7) If you are using JNI along with the PostgreSQL build, in NetBeans
-build the DataModel PostgreSQL target or in ant 'ant dist-PostgreSQL'.
-
-Refer to the API docs at http://sleuthkit.org/sleuthkit/docs/api-docs/
-for details on how to use the library in an application.
 
 -------------------------------------------------------------------
 carrier <at> sleuthkit <dot> org 

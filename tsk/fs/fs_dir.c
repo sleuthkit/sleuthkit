@@ -17,7 +17,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-
 /** \internal
 * Allocate a FS_DIR structure to load names into.
 *
@@ -541,6 +540,75 @@ save_inum_named(TSK_FS_INFO *a_fs, DENT_DINFO *dinfo) {
     tsk_release_lock(&a_fs->list_inum_named_lock);
 }
 
+/**
+ * Prioritize folders in the root directory based on which are expected to contain user content.
+ */
+static TSK_RETVAL_ENUM 
+prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex) {
+    const int HIGH = 0;
+    const int MED = 1;
+    const int LOW = 2;
+    const int LAST = 3;
+    int * scores;
+    int currentScore;
+    size_t i;
+
+    scores = (int *)tsk_malloc(count * sizeof(int));
+    if (scores == NULL) {
+        return TSK_ERR;
+    }
+
+    // Default level is medium for any files/folders that do not match one of the patterns below.
+    // This includes the Program Files and Applications folders.
+    for (i = 0; i < count; i++) {
+        scores[i] = MED;
+    }
+
+    // Get the score for each name. Currnetly all patterns match the beginning of the name.
+    for (i = 0; i < count; i++) {
+        TSK_FS_NAME* name = &(names[i]);
+        if (name->name != NULL) {
+            if (0 == strncasecmp(name->name, "Users", strlen("Users"))) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "Documents and Settings", strlen("Documents and Settings"))) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "home", strlen("home"))) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "ProgramData", strlen("ProgramData"))) {
+                scores[i] = HIGH;
+            }
+            else if (0 == strncasecmp(name->name, "Windows", strlen("Windows"))) {
+                scores[i] = LOW;
+            }
+            else if (0 == strncasecmp(name->name, "$Orphan", strlen("$Orphan"))) {
+                scores[i] = LOW;
+            }
+            else if (0 == strncasecmp(name->name, "pagefile", strlen("pagefile"))) {
+                scores[i] = LAST;
+            }
+            else if (0 == strncasecmp(name->name, "hiberfil", strlen("hiberfil"))) {
+                scores[i] = LAST;
+            }
+        }
+    }
+
+    // Order the name entries based on the scores
+    int orderedIndex = 0;
+    for (currentScore = HIGH; currentScore <= LAST; currentScore++) {
+        for (i = 0; i < count; i++) {
+            if (scores[i] == currentScore) {
+                indexToOrderedIndex[orderedIndex] = i;
+                orderedIndex++;
+            }
+        }
+    }
+    free(scores);
+    return TSK_OK;
+}
+
 /* dir_walk local function that is used for recursive calls.  Callers
  * should initially call the non-local version. */
 static TSK_WALK_RET_ENUM
@@ -551,10 +619,24 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_FS_DIR *fs_dir;
     TSK_FS_FILE *fs_file;
     size_t i;
+    int* indexToOrderedIndex = NULL;
 
     // get the list of entries in the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs, a_addr)) == NULL) {
         return TSK_WALK_ERROR;
+    }
+
+    // If we're in the root folder, sort the files/folders to prioritize user content
+    if (a_addr == a_fs->root_inum) {
+        indexToOrderedIndex = (int *)tsk_malloc(fs_dir->names_used * sizeof(int));
+        if (indexToOrderedIndex == NULL) {
+            tsk_fs_dir_close(fs_dir);
+            return TSK_WALK_ERROR;
+        }
+        if (TSK_OK != prioritizeDirNames(fs_dir->names, fs_dir->names_used, indexToOrderedIndex)) {
+            tsk_fs_dir_close(fs_dir);
+            return TSK_WALK_ERROR;
+        }
     }
 
     /* Allocate a file structure for the callbacks.  We
@@ -562,6 +644,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
      * point into the fs_dir structure for the names. */
     if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
         tsk_fs_dir_close(fs_dir);
+        if (indexToOrderedIndex != NULL) {
+            free(indexToOrderedIndex);
+        }
         return TSK_WALK_ERROR;
     }
 
@@ -570,7 +655,13 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
         /* Point name to the buffer of names.  We need to be
          * careful about resetting this before we free fs_file */
-        fs_file->name = (TSK_FS_NAME *) & fs_dir->names[i];
+        if (indexToOrderedIndex != NULL) {
+            // If we have a priortized list, use it
+            fs_file->name = (TSK_FS_NAME *)& fs_dir->names[indexToOrderedIndex[i]];
+        }
+        else {
+            fs_file->name = (TSK_FS_NAME *)& fs_dir->names[i];
+        }
 
         /* load the fs_meta structure if possible.
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
@@ -596,6 +687,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 fs_file->name = NULL;
                 tsk_fs_file_close(fs_file);
 
+                if (indexToOrderedIndex != NULL) {
+                    free(indexToOrderedIndex);
+                }
+
                 /* free the list -- fs_dir_walk has no way
                  * of knowing that we stopped early w/out error.
                  */
@@ -610,6 +705,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 tsk_fs_dir_close(fs_dir);
                 fs_file->name = NULL;
                 tsk_fs_file_close(fs_file);
+                if (indexToOrderedIndex != NULL) {
+                    free(indexToOrderedIndex);
+                }
                 return TSK_WALK_ERROR;
             }
         }
@@ -674,6 +772,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
                     tsk_fs_file_close(fs_file);
+                    if (indexToOrderedIndex != NULL) {
+                        free(indexToOrderedIndex);
+                    }
                     return TSK_WALK_ERROR;
                 }
 
@@ -687,6 +788,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                         tsk_fprintf(stdout,
                             "tsk_fs_dir_walk_lcl: directory : %"
                             PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
+                    }
+
+                    if (indexToOrderedIndex != NULL) {
+                        free(indexToOrderedIndex);
                     }
                     return TSK_WALK_ERROR;
                 }
@@ -728,6 +833,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
                     tsk_fs_file_close(fs_file);
+
+                    if (indexToOrderedIndex != NULL) {
+                        free(indexToOrderedIndex);
+                    }
                     return TSK_WALK_STOP;
                 }
 
@@ -763,6 +872,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     tsk_fs_dir_close(fs_dir);
     fs_file->name = NULL;
     tsk_fs_file_close(fs_file);
+
+    if (indexToOrderedIndex != NULL) {
+        free(indexToOrderedIndex);
+    }
     return TSK_WALK_CONT;
 }
 

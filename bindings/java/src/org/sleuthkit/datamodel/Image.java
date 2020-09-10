@@ -129,6 +129,10 @@ public class Image extends AbstractContent implements DataSource {
 
 		return imageHandle;
 	}
+	
+	synchronized void setImageHandle(long imageHandle) {
+		this.imageHandle = imageHandle;
+	}
 
 	@Override
 	public Content getDataSource() {
@@ -255,8 +259,8 @@ public class Image extends AbstractContent implements DataSource {
 	 * @throws TskCoreException
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {
-		List<FileSystem> fs = new ArrayList<FileSystem>();
-		fs.addAll(getSleuthkitCase().getFileSystems(this));
+		List<FileSystem> fs = new ArrayList<>();
+		fs.addAll(getSleuthkitCase().getImageFileSystems(this));
 		return fs;
 	}
 

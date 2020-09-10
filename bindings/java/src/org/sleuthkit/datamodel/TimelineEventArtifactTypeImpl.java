@@ -32,20 +32,20 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOM
 class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 
 	private static final Logger logger = Logger.getLogger(TimelineEventArtifactTypeImpl.class.getName());
-	
+
 	static final int EMAIL_FULL_DESCRIPTION_LENGTH_MAX = 150;
 	static final int EMAIL_TO_FROM_LENGTH_MAX = 75;
-	
+
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> artifactParsingFunction;
-	
-	private static final int MAX_SHORT_DESCRIPTION_LENGTH = 500;
-	private static final int MAX_MED_DESCRIPTION_LENGTH = 500;
-	private static final int MAX_FULL_DESCRIPTION_LENGTH = 1024;
+
+	protected static final int MAX_SHORT_DESCRIPTION_LENGTH = 500;
+	protected static final int MAX_MED_DESCRIPTION_LENGTH = 500;
+	protected static final int MAX_FULL_DESCRIPTION_LENGTH = 1024;
 
 	TimelineEventArtifactTypeImpl(int typeID, String displayName,
 			TimelineEventType superType,
@@ -126,7 +126,10 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 		}
 		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
 		if (timeAttribute == null) {
-			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.toString()); // NON-NLS
+			/*
+			 * This has the side effect of making sure that a TimelineEvent
+			 * object is not created for this artifact.
+			 */
 			return null;
 		}
 
@@ -153,7 +156,7 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 		if (fullDescription.length() > MAX_FULL_DESCRIPTION_LENGTH) {
 			fullDescription = fullDescription.substring(0, MAX_FULL_DESCRIPTION_LENGTH);
 		}
-		
+
 		return new TimelineEventDescriptionWithTime(timeAttribute.getValueLong(), shortDescription, medDescription, fullDescription);
 	}
 

@@ -11,7 +11,7 @@
 	<import file="build-${os.family}.xml"/>
 
     <!-- Careful changing this because release-windows.pl updates it by pattern -->
-<property name="VERSION" value="4.7.0"/>
+<property name="VERSION" value="4.10.0"/>
 
 	<!-- set global properties for this build -->
 	<property name="default-jar-location" location="/usr/share/java"/>
@@ -90,30 +90,27 @@
 		</path>
 	</target>
 
-	<property name="ivy.install.version" value="2.3.0-rc2"/>
-	<condition property="ivy.home" value="${env.IVY_HOME}">
+	<property name="ivy.install.version" value="2.5.0" />
+    <condition property="ivy.home" value="${env.IVY_HOME}">
 		<isset property="env.IVY_HOME"/>
-	</condition>
+    </condition>
 	<property name="ivy.home" value="${user.home}/.ant"/>
 	<property name="ivy.jar.dir" value="${ivy.home}/lib"/>
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
+    
+    <target name="download-ivy" unless="offline">
+        <mkdir dir="${ivy.jar.dir}"/>
+        <get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" 
+             dest="${ivy.jar.file}" usetimestamp="true"/>
+    </target>
 
-	<target name="download-ivy" unless="offline">
-		<available file="${ivy.jar.file}" property="ivy.available"/>
-		<antcall target="-download-ivy"/>
-	</target>
-
-	<target name="-download-ivy" unless="ivy.available">
-		<mkdir dir="${ivy.jar.dir}"/>
-		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
-	</target>
-
-	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path">
-		<path id="ivy.lib.path">
-			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-		</path>
-		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-	</target>
+    <target name="init-ivy" depends="download-ivy">
+        <path id="ivy.lib.path">
+            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+        </path>
+        <taskdef resource="org/apache/ivy/ant/antlib.xml"
+                 uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+    </target>
 
 	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" unless="offline">
 		<ivy:settings file="ivysettings.xml"/>
@@ -143,14 +140,9 @@
 		</javac>
 	</target>
 
-	<target name="dist-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLite" unless="up-to-date" description="generate the distribution">
+	<target name="dist" depends="check-build, init-ivy, compile, copyLibs" unless="up-to-date" description="generate the distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
-	</target>
-
-	<target name="dist-PostgreSQL" depends="check-postgresql-build, init-ivy, compile, copyLibs-PostgreSQL" unless="postgres-up-to-date" description="generate the PostgreSQL distribution">
-		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
 	<target name="check-build" depends="check-native-build">
@@ -164,35 +156,10 @@
 			</and>
 		</condition>
 	</target>
-	
-	<target name="check-postgresql-build" depends="check-native-build">
-		<uptodate property="java-postgres-up-to-date" targetfile="${dist}/sleuthkit-postgresql-${VERSION}.jar">
-			<srcfiles dir="${src}" includes="**/*.java"/>
-		</uptodate>
-		<condition property="postgres-up-to-date">
-			<and>
-				<isset property="java-postgres-up-to-date"/>
-				<isset property="native-up-to-date"/>
-			</and>
-		</condition>
-	</target>
 
-	<target name="dist" depends="check-build" unless="up-to-date">
-		<antcall target="dist-SQLite"/>
-	</target>
-
-	<target name="Debug" depends="check-build" unless="up-to-date">
-		<antcall target="Debug-SQLite"/>
-	</target>
-
-	<target name="Debug-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLiteDebug" unless="up-to-date" description="generate the debug distribution">
+	<target name="Debug" depends="check-build, init-ivy, compile, copyLibs-Debug" unless="up-to-date" description="generate the debug distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
-	</target>
-
-	<target name="Debug-PostgreSQL" depends="check-postgresql-build, init-ivy,  compile, copyLibs-PostgreSQLDebug" unless="postgres-up-to-date" description="generate the PostgreSQL debug distribution">
-		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
 	<target name="jni" depends="compile" description="make the jni.h file">
