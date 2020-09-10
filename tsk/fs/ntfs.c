@@ -658,7 +658,7 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
          * An address offset of more than eight bytes will not fit in the
          * 64-bit addr_offset field (and is likely corrupt)
          */
-        if (NTFS_RUNL_LENSZ(run) > 8) {
+        if (NTFS_RUNL_OFFSZ(run) > 8) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
             tsk_error_set_errstr
