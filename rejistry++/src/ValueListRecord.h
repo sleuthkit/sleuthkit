@@ -61,6 +61,11 @@ namespace Rejistry {
          */
         VKRecord::VKRecordPtr getValue(const std::wstring& name) const;
 
+        /**
+        * @returns The ValueListRecord size
+        */
+        size_t getValuesSize() const { return _numValues; }
+
     private:
         static const uint16_t VALUE_LIST_OFFSET = 0x00;
 
