@@ -634,6 +634,17 @@ An indication that some data did not pass verification. One example would be ver
 
 
 ---
+## TSK_WEB_ACCOUNT_TYPE
+A web account type entry. 
+
+### REQUIRED ATTRIBUTES
+- TSK_DOMAIN (Domain of the URL)
+- TSK_TEXT (Indicates type of account (admin/moderator/user) and possible platform)
+- TSK_URL (URL indicating the user has an account on this domain)
+
+
+
+---
 ## TSK_WEB_BOOKMARK
 A web bookmark entry.
 
