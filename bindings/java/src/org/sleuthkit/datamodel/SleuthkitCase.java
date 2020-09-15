@@ -3905,34 +3905,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Add a set of blackboard artifacts within a transaction context
-	 * 
-	 * @param attributes	 A set of blackboard attribute.
-	 * @param artifactTypeId type of artifact associated with the attributes
-	 * @param artifactId     The artifact id of the blackboard artifact
-	 * @param transaction	 the transaction in the scope of which the operation
-	 *		                 is to be performed, managed by the caller
-	 * 
-	 * @throws TskCoreException  thrown if a critical error occurs.
-	 */
-	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes, int artifactTypeId, long artifactId, CaseDbTransaction transaction) throws TskCoreException {
-		if (attributes.isEmpty()) {
-			return;
-		}
-		if (transaction == null) {
-			throw new TskCoreException("Passed null CaseDbTransaction");
-		}
-		try {
-			CaseDbConnection connection = transaction.getConnection();
-			for (final BlackboardAttribute attr : attributes) {
-				attr.setArtifactId(artifactId);
-				addBlackBoardAttribute(attr, artifactTypeId, connection);
-			} 
-		} catch (SQLException ex) { 
-			throw new TskCoreException("Error adding blackboard attributes", ex);
-		} 
-	}
+
 	void addBlackBoardAttribute(BlackboardAttribute attr, int artifactTypeId, CaseDbConnection connection) throws SQLException, TskCoreException {
 		PreparedStatement statement;
 		switch (attr.getAttributeType().getValueType()) {
@@ -4546,32 +4519,6 @@ public class SleuthkitCase {
 		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
 	}
 
-	/**
-	 * Add a new blackboard artifact with the given type.
-	 *
-	 * @param artifactType the type the given artifact should have
-	 * @param obj_id	   the content object id associated with this artifact
-	 * @param transaction  the transaction in the scope of which the operation
-	 *                     is to be performed, managed by the caller
-	 *
-	 * @return a new blackboard artifact
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within tsk core
-	 */
-	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id, CaseDbTransaction transaction) throws TskCoreException {
-		if (transaction == null) {
-			throw new TskCoreException("Passed null CaseDbTransaction");
-		}
-		CaseDbConnection connection = transaction.getConnection();
-		try {
-			long data_source_obj_id = getDataSourceObjectId(connection, obj_id);
-			return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName(), data_source_obj_id, connection);
-		} finally {
-
-		}
-	}
-
 
 	/**
 	 * Add a new blackboard artifact with the given type.
@@ -4602,7 +4549,8 @@ public class SleuthkitCase {
 
 
 	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
-
+		
+		acquireSingleUserCaseWriteLock();
 		try  {
 			long artifact_obj_id = addObject(obj_id, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
 			PreparedStatement statement = null;
@@ -4634,7 +4582,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
-
+			releaseSingleUserCaseWriteLock();
 		}
 	}
 

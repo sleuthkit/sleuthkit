@@ -453,6 +453,36 @@ public final class Blackboard {
 		}
 	}
 
+
+	/**
+	 * Add a set of blackboard artifacts within a transaction context
+	 *
+	 * @param attributes	 A set of blackboard attribute.
+	 * @param artifactTypeId type of artifact associated with the attributes
+	 * @param artifactId     The artifact id of the blackboard artifact
+	 * @param transaction	 the transaction in the scope of which the operation
+	 *		                 is to be performed, managed by the caller
+	 *
+	 * @throws TskCoreException  thrown if a critical error occurs.
+	 */
+	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes, int artifactTypeId, long artifactId, SleuthkitCase.CaseDbTransaction transaction) throws TskCoreException {
+		if (attributes.isEmpty()) {
+			return;
+		}
+		if (transaction == null) {
+			throw new TskCoreException("Passed null CaseDbTransaction");
+		}
+		try {
+			SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
+			for (final BlackboardAttribute attr : attributes) {
+				attr.setArtifactId(artifactId);
+				caseDb.addBlackBoardAttribute(attr, artifactTypeId, connection);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding blackboard attributes", ex);
+		}
+	}
+
 	/**
 	 * Event published by SleuthkitCase when one or more artifacts are posted. A
 	 * posted artifact is complete (all attributes have been added) and ready
