@@ -3905,7 +3905,6 @@ public class SleuthkitCase {
 		}
 	}
 
-
 	void addBlackBoardAttribute(BlackboardAttribute attr, int artifactTypeId, CaseDbConnection connection) throws SQLException, TskCoreException {
 		PreparedStatement statement;
 		switch (attr.getAttributeType().getValueType()) {
@@ -4519,7 +4518,6 @@ public class SleuthkitCase {
 		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
 	}
 
-
 	/**
 	 * Add a new blackboard artifact with the given type.
 	 *
@@ -4538,7 +4536,6 @@ public class SleuthkitCase {
 			return newBlackboardArtifact(artifactTypeID, obj_id, type.getTypeName(), type.getDisplayName(), data_source_obj_id, connection);
 		}
 	}
-
 	
 	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName) throws TskCoreException {
 		try (CaseDbConnection connection = connections.getConnection()) {
@@ -4546,7 +4543,6 @@ public class SleuthkitCase {
 			return this.newBlackboardArtifact(artifact_type_id, obj_id, artifactTypeName, artifactDisplayName, data_source_obj_id, connection);
 		}
 	}
-
 
 	BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
 		
