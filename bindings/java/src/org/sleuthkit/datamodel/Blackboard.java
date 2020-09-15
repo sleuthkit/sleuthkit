@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
@@ -482,6 +484,37 @@ public final class Blackboard {
 			throw new TskCoreException("Error adding blackboard attributes", ex);
 		}
 	}
+
+
+	/**
+	 * Add a new blackboard artifact with the given type.
+	 *
+	 * This api executes in the context of a transaction.
+	 *
+	 * @param artifactType the type the given artifact should have
+	 * @param obj_id	   the content object id associated with this artifact
+	 * @param data_source_obj_id the data source object.
+	 * @param transaction  the transaction in the scope of which the operation
+	 *                     is to be performed, managed by the caller
+	 *
+	 * @return a new blackboard artifact
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within tsk core
+	 */
+	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id, long data_source_obj_id, CaseDbTransaction transaction) throws TskCoreException {
+		if (transaction == null) {
+			throw new TskCoreException("Passed null CaseDbTransaction");
+		}
+		try {
+			return caseDb.newBlackboardArtifact(artifactType.getTypeID(), obj_id,
+					artifactType.getLabel(), artifactType.getDisplayName(),
+					data_source_obj_id, transaction.getConnection());
+		} finally {
+
+		}
+	}
+
 
 	/**
 	 * Event published by SleuthkitCase when one or more artifacts are posted. A
