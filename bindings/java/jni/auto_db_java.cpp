@@ -140,7 +140,7 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
 * @param type     The type of object
 */
 void 
-TskAutoDbJava::saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_TYPE_ENUM type) {
+TskAutoDbJava::saveObjectInfo(int64_t objId, int64_t parObjId, TSK_DB_OBJECT_TYPE_ENUM type) {
     TSK_DB_OBJECT objectInfo;
     objectInfo.objId = objId;
     objectInfo.parObjId = parObjId;
@@ -153,7 +153,7 @@ TskAutoDbJava::saveObjectInfo(uint64_t objId, uint64_t parObjId, TSK_DB_OBJECT_T
 * @param objId The object ID of the object being loaded
 */
 TSK_RETVAL_ENUM 
-TskAutoDbJava::getObjectInfo(uint64_t objId, TSK_DB_OBJECT** obj_info) {
+TskAutoDbJava::getObjectInfo(int64_t objId, TSK_DB_OBJECT** obj_info) {
     for (vector<TSK_DB_OBJECT>::iterator itObjs = m_savedObjects.begin();
             itObjs != m_savedObjects.end(); ++itObjs) {
         TSK_DB_OBJECT* tskDbObj = &(*itObjs);
@@ -1331,7 +1331,7 @@ TSK_RETVAL_ENUM
     TskAutoDbJava::insertFileData(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
 {
-    if (-1 == addFsFile(fs_file, fs_attr, path, m_curFsId, m_curFileId,
+    if (TSK_ERR == addFsFile(fs_file, fs_attr, path, m_curFsId, m_curFileId,
             m_curImgId)) {
         registerError();
         return TSK_ERR;
@@ -1673,7 +1673,7 @@ TSK_WALK_RET_ENUM TskAutoDbJava::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_blo
     // or we're not chunking. Either way we now add what we've got to the DB
     int64_t fileObjId = 0;
     TskAutoDbJava & tskAutoDbJava = unallocBlockWlkTrack->tskAutoDbJava;
-    if (-1 == tskAutoDbJava.addUnallocBlockFile(tskAutoDbJava.m_curUnallocDirId,
+    if (tskAutoDbJava.addUnallocBlockFile(tskAutoDbJava.m_curUnallocDirId,
         unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, tskAutoDbJava.m_curImgId) == TSK_ERR) {
             // @@@ Handle error -> Don't have access to registerError() though...
     }
@@ -1714,7 +1714,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     }
 
     //create a "fake" dir to hold the unalloc files for the fs
-    if (-1 == addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId, m_curImgId) == TSK_ERR) {
+    if (addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId, m_curImgId) == TSK_ERR) {
         tsk_error_set_errstr2("addFsInfoUnalloc: error creating dir for unallocated space");
         registerError();
         return TSK_ERR;
@@ -1748,7 +1748,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, unallocBlockWlkTrack.nextSequenceNo++));
     int64_t fileObjId = 0;
 
-    if (-1 == addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
+    if (addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
         registerError();
         tsk_fs_close(fsInfo);
         return TSK_ERR;
@@ -1943,7 +1943,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocImageSpaceToDb() {
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
-        if (-1 == addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId)) {
+        if (TSK_ERR == addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId)) {
             return TSK_ERR;
         }
     }

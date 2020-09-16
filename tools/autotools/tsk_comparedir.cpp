@@ -347,7 +347,7 @@ main(int argc, char **argv1)
     unsigned int ssize = 0;
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
-    TSK_DADDR_T pvol_block = 0;
+    TSK_OFF_T pvol_block = 0;
     const char * password = "";
     
 #ifdef WIN32
@@ -475,7 +475,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tskCompareDir.openFs(soffset, fstype, pooltype, pvol_block)) {
+    if (tskCompareDir.openFs(soffset, fstype, pooltype, (TSK_DADDR_T)pvol_block)) {
         // Errors were already logged
         exit(1);
     }
