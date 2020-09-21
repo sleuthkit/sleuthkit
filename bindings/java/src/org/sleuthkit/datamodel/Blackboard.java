@@ -506,13 +506,9 @@ public final class Blackboard {
 		if (transaction == null) {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
-		try {
-			return caseDb.newBlackboardArtifact(artifactType.getTypeID(), obj_id,
+		return caseDb.newBlackboardArtifact(artifactType.getTypeID(), obj_id,
 					artifactType.getLabel(), artifactType.getDisplayName(),
 					data_source_obj_id, transaction.getConnection());
-		} finally {
-
-		}
 	}
 
 
