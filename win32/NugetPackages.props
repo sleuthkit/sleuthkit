@@ -7,9 +7,9 @@
     <LibVhdiInclude>$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\include</LibVhdiInclude>
     <LibVhdiLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\lib\Win32</LibVhdiLib>
     <LibVhdiLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\lib\x64</LibVhdiLib>
-	<LibEwfInclude>$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\include</LibEwfInclude>
-    <LibEwfLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\lib\Win32</LibEwfLib>
-    <LibEwfLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libewf.20140809.0.0\lib\native\lib\x64</LibEwfLib>
+	<LibEwfInclude>$(SolutionDir)\packages\sleuthkit-libewf.20130416.0.0\build\native\include</LibEwfInclude>
+    <LibEwfLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\sleuthkit-libewf.20130416.0.0\build\native\msvscpp\Release</LibEwfLib>
+    <LibEwfLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\sleuthkit-libewf.20130416.0.0\build\native\msvscpp\x64\Release</LibEwfLib>
 	<ZlibInclude>$(SolutionDir)\packages\zlib_native.1.2.11\build\native\include</ZlibInclude>
 	<ZlibLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\zlib_native.1.2.11\build\native\lib\Win32\Release</ZlibLib>
 	<ZlibLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\zlib_native.1.2.11\build\native\lib\x64\Release</ZlibLib>
