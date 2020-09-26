@@ -1,3 +1,14 @@
+---------------- VERSION 4.10.1 --------------
+
+NEED TO FINISH
+
+C/C++:
+- Changed Windows build to use Nuget for libewf, libvmdk, libvhdi
+- Fixed compiler warnings and updated license files
+
+Java:
+- Localized for Japanese
+
 ---------------- VERSION 4.10.0 --------------
 C/C++:
 - Removed PostgreSQL code (that was used only by Java code)

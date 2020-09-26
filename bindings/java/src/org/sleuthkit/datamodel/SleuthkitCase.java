@@ -57,6 +57,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
@@ -230,6 +231,13 @@ public class SleuthkitCase {
 	private final Map<Long, Content> frequentlyUsedContentMap = new HashMap<>();
 
 	private Examiner cachedCurrentExaminer = null;
+	
+	static {
+		Properties p = new Properties(System.getProperties());
+        p.put("com.mchange.v2.log.MLog", "com.mchange.v2.log.FallbackMLog");
+        p.put("com.mchange.v2.log.FallbackMLog.DEFAULT_CUTOFF_LEVEL", "SEVERE");
+        System.setProperties(p);
+	}
 
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
@@ -9831,19 +9839,14 @@ public class SleuthkitCase {
 			statement.setString(3, color.getName());
 			statement.setByte(4, knownStatus.getFileKnownValue());
 			connection.executeUpdate(statement);
-			resultSet = statement.getGeneratedKeys();
-			resultSet.next();
 
-			long tagId = resultSet.getLong(1);
-
-			resultSet.close();
-			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_TAG_NAME_BY_ID);
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_TAG_NAME_BY_NAME);
 			statement.clearParameters();
-			statement.setLong(1, tagId);
+			statement.setString(1, displayName);
 			resultSet = connection.executeQuery(statement);
 			resultSet.next();
 
-			return new TagName(tagId, displayName, description, color, knownStatus, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
+			return new TagName(resultSet.getLong("tag_name_id"), displayName, description, color, knownStatus, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
 			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
@@ -11286,7 +11289,8 @@ public class SleuthkitCase {
 		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?");
+		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?"),
+		SELECT_TAG_NAME_BY_NAME("SELECT * FROM tag_names where display_name = ?");
 
 		private final String sql;
 

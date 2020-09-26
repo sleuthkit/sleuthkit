@@ -1274,7 +1274,12 @@ public class BlackboardArtifact implements Content {
 		 * to create track artifacts.
 		 */
 		TSK_GPS_TRACK(58, "TSK_GPS_TRACK",
-				bundle.getString("BlackboardArtifact.tskTrack.text"));
+				bundle.getString("BlackboardArtifact.tskTrack.text")),
+		/**
+		 * Stores a role on a given domain.
+		 */
+		TSK_WEB_ACCOUNT_TYPE(59, "TSK_WEB_ACCOUNT_TYPE",
+				bundle.getString("BlackboardArtifact.tskWebAccountType.text"));		
         /* To developers: For each new artifact, ensure that:
          * - The enum value has 1-line JavaDoc description
          * - The artifact catalog (artifact_catalog.dox) is updated to reflect the attributes it uses

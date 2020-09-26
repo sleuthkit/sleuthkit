@@ -11,7 +11,7 @@
 	<import file="build-${os.family}.xml"/>
 
     <!-- Careful changing this because release-windows.pl updates it by pattern -->
-<property name="VERSION" value="4.10.0"/>
+<property name="VERSION" value="4.10.1"/>
 
 	<!-- set global properties for this build -->
 	<property name="default-jar-location" location="/usr/share/java"/>
@@ -129,15 +129,19 @@
 		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
 			<compilerarg value="-Xlint"/>
 		</javac>
+
 		<!-- Copy Bundle*.properties files into DataModel build directory, so they are included in the .jar -->
 		<copy todir="${build-datamodel}">
 			<fileset dir="${src}" includes="**/*.properties"/>
 		</copy>
-
+		
 		<!-- Verify sample compiles -->
 		<javac debug="on" srcdir="${sample}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
 		</javac>
+		
+		<!--Copy .properties to .properties-MERGED -->
+		<antcall target="copy-bundle" />
 	</target>
 
 	<target name="dist" depends="check-build, init-ivy, compile, copyLibs" unless="up-to-date" description="generate the distribution">
@@ -201,5 +205,17 @@
 			<arg value="Doxyfile"/>
 		</exec>
 	</target>
+
+    <target name="copy-bundle">
+        <!-- the externalized strings in 'src' are in both the java files as annotations and in the Bundle.property files.
+        The strings get merged during compilation.  This target copies that merged file into src so that it can be checked
+        in and used as a basis for translation efforts -->
+        <copy todir="src">
+            <fileset dir="build">
+                <include name="**/Bundle.properties"/>
+            </fileset>
+            <globmapper from="*" to="*-MERGED"/>
+        </copy>
+    </target>
 
 </project>

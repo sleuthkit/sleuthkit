@@ -634,6 +634,17 @@ An indication that some data did not pass verification. One example would be ver
 
 
 ---
+## TSK_WEB_ACCOUNT_TYPE
+A web account type entry. 
+
+### REQUIRED ATTRIBUTES
+- TSK_DOMAIN (Domain of the URL)
+- TSK_TEXT (Indicates type of account (admin/moderator/user) and possible platform)
+- TSK_URL (URL indicating the user has an account on this domain)
+
+
+
+---
 ## TSK_WEB_BOOKMARK
 A web bookmark entry.
 
@@ -661,6 +672,7 @@ A web cache entry. The resource that was cached may or may not be present in the
 - TSK_DATETIME_CREATED (Creation date of the cache entry, in seconds since 1970-01-01T00:00:00Z)
 - TSK_HEADERS (HTTP headers on cache entry)
 - TSK_PATH_ID (Object ID of the source cache file)
+- TSK_DOMAIN (Domain of the URL)
 
 
 
