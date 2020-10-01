@@ -8292,31 +8292,27 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement s1 = null;
-		Statement s2 = null;
 		ResultSet rs1 = null;
-		ResultSet rs2 = null;
 		try {
 			s1 = connection.createStatement();
-			rs1 = connection.executeQuery(s1, "SELECT obj_id FROM tsk_image_info"); //NON-NLS
-			s2 = connection.createStatement();
+			rs1 = connection.executeQuery(s1, "SELECT obj_id, name FROM tsk_image_names"); //NON-NLS
 			Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
 			while (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id"); //NON-NLS
-				rs2 = connection.executeQuery(s2, "SELECT * FROM tsk_image_names WHERE obj_id = " + obj_id); //NON-NLS
-				List<String> paths = new ArrayList<String>();
-				while (rs2.next()) {
-					paths.add(rs2.getString("name"));
-				}
-				rs2.close();
-				rs2 = null;
-				imgPaths.put(obj_id, paths);
+				String name = rs1.getString("name"); //NON-NLS
+				List<String> imagePaths = imgPaths.get(obj_id);
+				if (imagePaths == null) {
+					List<String> paths = new ArrayList<String>();
+					paths.add(name);
+					imgPaths.put(obj_id, paths);
+				} else {
+					imagePaths.add(name);
+				}				
 			}
 			return imgPaths;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting image paths.", ex);
 		} finally {
-			closeResultSet(rs2);
-			closeStatement(s2);
 			closeResultSet(rs1);
 			closeStatement(s1);
 			connection.close();
