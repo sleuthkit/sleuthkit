@@ -1260,7 +1260,37 @@ public class BlackboardArtifact implements Content {
 		 * Stores a role on a given domain.
 		 */
 		TSK_WEB_ACCOUNT_TYPE(59, "TSK_WEB_ACCOUNT_TYPE",
-				bundle.getString("BlackboardArtifact.tskWebAccountType.text"));		
+				bundle.getString("BlackboardArtifact.tskWebAccountType.text")),		
+		/**
+		 * Screen shots from device or Application.
+		 */
+		TSK_SCREEN_SHOTS(60, "TSK_SCREEN_SHOTS",
+				bundle.getString("BlackboardArtifact.tskScreenShots.text")),		
+		/**
+		 * DHCP Information that is store for a device.
+		 */
+		TSK_DHCP_INFO(61, "TSK_DHCP_INFO",
+				bundle.getString("BlackboardArtifact.tskDhcpInfo.text")),		
+		/**
+		 * Notifications Sent to User.
+		 */
+		TSK_NOTIFICATIONS(62, "TSK_NOTIFICATIONS",
+				bundle.getString("BlackboardArtifact.tskNotifications.text")),		
+		/**
+		 * System/Application/File backup.
+		 */
+		TSK_BACKUP (63, "TSK_BACKUP ",
+				bundle.getString("BlackboardArtifact.tskBackup.text")),		
+		/**
+		 * Programs that have been deleted.
+		 */
+		TSK_DELETED_PROG(64, "TSK_DELETED_PROG",
+				bundle.getString("BlackboardArtifact.tskDeletedProg.text")),		
+		/**
+		 * Activity on the System/Application.
+		 */
+		TSK_ACTIVITY(65, "TSK_ACTIVITY",
+				bundle.getString("BlackboardArtifact.tskActivity.text"));		
         /* To developers: For each new artifact, ensure that:
          * - The enum value has 1-line JavaDoc description
          * - The artifact catalog (artifact_catalog.dox) is updated to reflect the attributes it uses
