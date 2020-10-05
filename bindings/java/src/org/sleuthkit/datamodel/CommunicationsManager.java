@@ -425,7 +425,7 @@ public final class CommunicationsManager {
 			}
 			trans.commit();
 		} catch (SQLException ex) {
-            trans.rollback();
+			trans.rollback();
 			throw new TskCoreException("Error adding accounts relationship", ex);
 		}
 	}
