@@ -35,12 +35,43 @@ TSK_CARD_NUMBER (Credit card number)
 
 ---
 
+## TSK_ACTIVITY
+Activity on the system or from an application.  Example Usage is a mobile device being locked and unlocked.
+. 
+
+### REQUIRED ATTRIBUTES
+- TSK_DATETIME_START (When activity Started)
+    or 
+  TSK_DATETIME
+
+### OPTIONAL ATTRIBUTES
+- TSK_ACTIVITY_TYPE (Activity Type ie: On or Off)
+- TSK_DATETIME_END (When activity ended)
+- TSK_PROG_NAME (Name of the program doing the activity)
+- TSK_VALUE (Connection Type)
+
+---
+
 
 ## TSK_ASSOCIATED_OBJECT
 Provides a backwards link to an artifact that references the parent file of this artifact.  Example usage is that a downloaded file will have this artifact and it will point back to the TSK_WEB_DOWNLOAD artifact that is associated with a browser's SQLite database. See \ref jni_bb_associated_object.
 
 ### REQUIRED ATTRIBUTES
 - TSK_ASSOCIATED_ARTIFACT (Artifact ID of associated artifact)
+
+
+---
+## TSK_BACKUP
+Details about System/Aplication/File backups.
+
+### REQUIRED ATTRIBUTES
+- TSK_DATETIME_STARTED (Date/Time the backup happened)
+     or 
+  TSK_DATETIME
+  
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_ENDED (Date/Time the backup ended)
+
 
 
 ---
@@ -136,6 +167,20 @@ Describes how a data source was used, e.g., as a SIM card or an OS drive (such a
 - TSK_DESCRIPTION (Description of the usage, e.g., "OS Drive (Windows Vista)").
 
 
+---
+## TSK_DELETED_PROG
+Programs that have been deleted from the system.
+
+### REQUIRED ATTRIBUTES
+- TSK_DATETIME_DELETED (Date/Time the program was deleted)
+     or 
+  TSK_DATETIME
+- TSK_PROG_NAME (Program that was deleted)
+
+### OPTIONAL Attributes
+- TSK_PATH (Location where the program resided before being deleted)
+
+
 
 ---
 ## TSK_DEVICE_ATTACHED
@@ -161,6 +206,16 @@ Details about a device data source.
 - TSK_IMEI (IMEI number of the device)
 - TSK_ICCID (ICCID number of the SIM)
 - TSK_IMSI (IMSI number of the device)
+
+
+---
+## TSK_DHCP_INFO
+DHCP information that is stored.
+
+### REQUIRED ATTRIBUTES
+- TSK_NAME (Description of Information)
+- TSK_VALUE (Value of Information)
+
 
 
 
@@ -448,6 +503,20 @@ EXIF metadata found in an image or audio file.
 
 
 ---
+## TSK_NOTIFICATION
+Notifications to the user.
+
+### REQUIRED ATTRIBUTES
+- TSK_DATETIME (When the notification was sent/received)
+- TSK_PROG_NAME (Program to send/receive notification)
+
+### OPTIONAL ATTRIBUTES
+- TSK_TITLE (Title of the notification)
+- TSK_VALUE (Message being sent or received)
+
+
+
+---
 ## TSK_OBJECT_DETECTED
 Indicates that an object was detected in a media file. Typically used by computer vision software to classify images.
 
@@ -554,6 +623,18 @@ Details about a remote drive found in the data source.
 ### OPTIONAL ATTRIBUTES
 - TSK_LOCAL_PATH (The local path of this remote drive. This path may be mapped, e.g., 'D:/' or 'F:/')
 
+
+
+---
+## TSK_SCREEN_SHOTS
+Screen shots from a device or Application.
+
+### REQUIRED ATTRIBUTES
+- TSK_DATETIME (When the screenshot was taken)
+- TSK_PROG_NAME (Program that took the screenshot)
+
+### OPTIONAL ATTRIBUTES
+- TSK_PATH (Location of screenshot)
 
 
 ---
