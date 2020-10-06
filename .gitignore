@@ -165,6 +165,7 @@ tools/fstools/usnjls
 tools/hashtools/hfind
 tools/imgtools/img_cat
 tools/imgtools/img_stat
+tools/pooltools/pstat
 tools/sorter/sorter
 tools/srchtools/sigfind
 tools/srchtools/srch_strings
