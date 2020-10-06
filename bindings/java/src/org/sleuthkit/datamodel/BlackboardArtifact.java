@@ -1279,7 +1279,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * System/Application/File backup.
 		 */
-		TSK_BACKUP (63, "TSK_BACKUP ",
+		TSK_BACKUP (63, "TSK_BACKUP",
 				bundle.getString("BlackboardArtifact.tskBackup.text")),		
 		/**
 		 * Programs that have been deleted.

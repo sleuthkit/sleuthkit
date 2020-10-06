@@ -1419,9 +1419,7 @@ public class BlackboardAttribute {
 		
 		TSK_ACTIVITY_TYPE(150, "TSK_ACTIVITY_TYPE",
 	        bundle.getString("BlackboardAttribute.tskActivityType.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
-		
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
 		;
 
 		private final int typeID;
