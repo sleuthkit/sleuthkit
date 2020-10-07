@@ -7587,15 +7587,18 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT tsk_image_info.type, tsk_image_info.ssize, tsk_image_info.tzone, tsk_image_info.size, tsk_image_info.md5, tsk_image_info.sha1, tsk_image_info.sha256, tsk_image_info.display_name, data_source_info.device_id, tsk_image_names.name "
 					+ "FROM tsk_image_info "
 					+ "INNER JOIN data_source_info ON tsk_image_info.obj_id = data_source_info.obj_id "
-					+ "INNER JOIN tsk_image_names ON tsk_image_names.obj_id = data_source_info.obj_id "
+					+ "LEFT JOIN tsk_image_names ON tsk_image_names.obj_id = data_source_info.obj_id "
 					+ "WHERE tsk_image_info.obj_id = " + id); //NON-NLS
 
 			List<String> imagePaths = new ArrayList<>();
 			long type, ssize, size;
-			String tzone, md5, sha1, sha256, name, device_id;
+			String tzone, md5, sha1, sha256, name, device_id, imagePath;
 
 			if (rs.next()) {
-				imagePaths.add(rs.getString("name"));
+				imagePath = rs.getString("name");
+				if (imagePath != null) {
+					imagePaths.add(imagePath);
+				}
 				type = rs.getLong("type"); //NON-NLS
 				ssize = rs.getLong("ssize"); //NON-NLS
 				tzone = rs.getString("tzone"); //NON-NLS
@@ -7619,7 +7622,10 @@ public class SleuthkitCase {
 
 			// image can have multiple paths, therefore there can be multiple rows in the result set
 			while (rs.next()) {
-				imagePaths.add(rs.getString("name"));
+				imagePath = rs.getString("name");
+				if (imagePath != null) {
+					imagePaths.add(imagePath);
+				}
 			}
 
 			return new Image(this, id, type, device_id, ssize, name,
@@ -8297,7 +8303,8 @@ public class SleuthkitCase {
 		ResultSet rs1 = null;
 		try {
 			s1 = connection.createStatement();
-			rs1 = connection.executeQuery(s1, "SELECT obj_id, name FROM tsk_image_names"); //NON-NLS
+			rs1 = connection.executeQuery(s1, "SELECT tsk_image_info.obj_id, tsk_image_names.name FROM tsk_image_info " +
+				"LEFT JOIN tsk_image_names ON tsk_image_info.obj_id = tsk_image_names.obj_id"); //NON-NLS
 			Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
 			while (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id"); //NON-NLS
@@ -8305,10 +8312,14 @@ public class SleuthkitCase {
 				List<String> imagePaths = imgPaths.get(obj_id);
 				if (imagePaths == null) {
 					List<String> paths = new ArrayList<String>();
-					paths.add(name);
+					if (name != null) {
+						paths.add(name);
+					}
 					imgPaths.put(obj_id, paths);
 				} else {
-					imagePaths.add(name);
+					if (name != null) {
+						imagePaths.add(name);
+					}
 				}				
 			}
 			return imgPaths;
