@@ -7580,31 +7580,33 @@ public class SleuthkitCase {
 	public Image getImageById(long id) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
-		Statement s1 = null;
-		ResultSet rs1 = null;
-		Statement s2 = null;
-		ResultSet rs2 = null;
+		Statement s = null;
+		ResultSet rs = null;
 		try {
-			s1 = connection.createStatement();
-			rs1 = connection.executeQuery(s1, "SELECT tsk_image_info.type, tsk_image_info.ssize, tsk_image_info.tzone, tsk_image_info.size, tsk_image_info.md5, tsk_image_info.sha1, tsk_image_info.sha256, tsk_image_info.display_name, data_source_info.device_id "
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT tsk_image_info.type, tsk_image_info.ssize, tsk_image_info.tzone, tsk_image_info.size, tsk_image_info.md5, tsk_image_info.sha1, tsk_image_info.sha256, tsk_image_info.display_name, data_source_info.device_id, tsk_image_names.name "
 					+ "FROM tsk_image_info "
 					+ "INNER JOIN data_source_info ON tsk_image_info.obj_id = data_source_info.obj_id "
+					+ "LEFT JOIN tsk_image_names ON tsk_image_names.obj_id = data_source_info.obj_id "
 					+ "WHERE tsk_image_info.obj_id = " + id); //NON-NLS
-			if (rs1.next()) {
-				s2 = connection.createStatement();
-				rs2 = connection.executeQuery(s2, "SELECT name FROM tsk_image_names WHERE tsk_image_names.obj_id = " + id); //NON-NLS
-				List<String> imagePaths = new ArrayList<String>();
-				while (rs2.next()) {
-					imagePaths.add(rs2.getString("name"));
+
+			List<String> imagePaths = new ArrayList<>();
+			long type, ssize, size;
+			String tzone, md5, sha1, sha256, name, device_id, imagePath;
+
+			if (rs.next()) {
+				imagePath = rs.getString("name");
+				if (imagePath != null) {
+					imagePaths.add(imagePath);
 				}
-				long type = rs1.getLong("type"); //NON-NLS
-				long ssize = rs1.getLong("ssize"); //NON-NLS
-				String tzone = rs1.getString("tzone"); //NON-NLS
-				long size = rs1.getLong("size"); //NON-NLS
-				String md5 = rs1.getString("md5"); //NON-NLS
-				String sha1 = rs1.getString("sha1"); //NON-NLS
-				String sha256 = rs1.getString("sha256"); //NON-NLS
-				String name = rs1.getString("display_name");
+				type = rs.getLong("type"); //NON-NLS
+				ssize = rs.getLong("ssize"); //NON-NLS
+				tzone = rs.getString("tzone"); //NON-NLS
+				size = rs.getLong("size"); //NON-NLS
+				md5 = rs.getString("md5"); //NON-NLS
+				sha1 = rs.getString("sha1"); //NON-NLS
+				sha256 = rs.getString("sha256"); //NON-NLS
+				name = rs.getString("display_name");
 				if (name == null) {
 					if (imagePaths.size() > 0) {
 						String path = imagePaths.get(0);
@@ -7613,20 +7615,26 @@ public class SleuthkitCase {
 						name = "";
 					}
 				}
-				String device_id = rs1.getString("device_id");
-
-				return new Image(this, id, type, device_id, ssize, name,
-						imagePaths.toArray(new String[imagePaths.size()]), tzone, md5, sha1, sha256, size);
+				device_id = rs.getString("device_id");
 			} else {
 				throw new TskCoreException("No image found for id: " + id);
 			}
+
+			// image can have multiple paths, therefore there can be multiple rows in the result set
+			while (rs.next()) {
+				imagePath = rs.getString("name");
+				if (imagePath != null) {
+					imagePaths.add(imagePath);
+				}
+			}
+
+			return new Image(this, id, type, device_id, ssize, name,
+					imagePaths.toArray(new String[imagePaths.size()]), tzone, md5, sha1, sha256, size);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Image by id, id = " + id, ex);
 		} finally {
-			closeResultSet(rs2);
-			closeStatement(s2);
-			closeResultSet(rs1);
-			closeStatement(s1);
+			closeResultSet(rs);
+			closeStatement(s);
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
@@ -8292,31 +8300,32 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement s1 = null;
-		Statement s2 = null;
 		ResultSet rs1 = null;
-		ResultSet rs2 = null;
 		try {
 			s1 = connection.createStatement();
-			rs1 = connection.executeQuery(s1, "SELECT obj_id FROM tsk_image_info"); //NON-NLS
-			s2 = connection.createStatement();
+			rs1 = connection.executeQuery(s1, "SELECT tsk_image_info.obj_id, tsk_image_names.name FROM tsk_image_info " +
+				"LEFT JOIN tsk_image_names ON tsk_image_info.obj_id = tsk_image_names.obj_id"); //NON-NLS
 			Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
 			while (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id"); //NON-NLS
-				rs2 = connection.executeQuery(s2, "SELECT * FROM tsk_image_names WHERE obj_id = " + obj_id); //NON-NLS
-				List<String> paths = new ArrayList<String>();
-				while (rs2.next()) {
-					paths.add(rs2.getString("name"));
-				}
-				rs2.close();
-				rs2 = null;
-				imgPaths.put(obj_id, paths);
+				String name = rs1.getString("name"); //NON-NLS
+				List<String> imagePaths = imgPaths.get(obj_id);
+				if (imagePaths == null) {
+					List<String> paths = new ArrayList<String>();
+					if (name != null) {
+						paths.add(name);
+					}
+					imgPaths.put(obj_id, paths);
+				} else {
+					if (name != null) {
+						imagePaths.add(name);
+					}
+				}				
 			}
 			return imgPaths;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting image paths.", ex);
 		} finally {
-			closeResultSet(rs2);
-			closeStatement(s2);
 			closeResultSet(rs1);
 			closeStatement(s1);
 			connection.close();
