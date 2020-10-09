@@ -411,6 +411,11 @@ extern "C" {
 #define EXT2_IN_EXTENTS                 0x00080000      /* Inode uses extents */
 #define EXT2_IN_EA_INODE                0x00200000      /* Inode used for large EA */
 #define EXT2_IN_EOFBLOCKS               0x00400000      /* Blocks allocated beyond EOF */
+#define EXT2_SNAPFILE                   0x01000000      /* Inode is a snapshot */
+#define EXT2_SNAPFILE_DELETED           0x04000000	    /* Snapshot is being deleted */
+#define EXT2_SNAPFILE_SHRUNK            0x08000000	    /* Snapshot shrink has completed */
+#define EXT2_INLINE_DATA                0x10000000	    /* Inode has inline data */
+#define EXT2_PROJINHERIT                0x20000000	    /* Create children with the same project ID */
 #define EXT2_IN_RESERVED                0x80000000      /* reserved for ext4 lib */
 #define EXT2_IN_USER_VISIBLE            0x004BDFFF      /* User visible flags */
 #define EXT2_IN_USER_MODIFIABLE         0x004B80FF      /* User modifiable flags */

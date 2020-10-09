@@ -2738,6 +2738,21 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_IN_EOFBLOCKS)
             tsk_fprintf(hFile, "Blocks Allocated Beyond EOF, ");
 
+        if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_SNAPFILE)
+            tsk_fprintf(hFile, "Snapshot, ");
+
+        if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_SNAPFILE_DELETED)
+            tsk_fprintf(hFile, "Deleted Snapshot, ");
+
+        if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_SNAPFILE_SHRUNK)
+            tsk_fprintf(hFile, "Shrunk Snapshot, ");
+
+        if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_INLINE_DATA)
+            tsk_fprintf(hFile, "Inline Data, ");
+
+        if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_PROJINHERIT)
+            tsk_fprintf(hFile, "Inherited project ID, ");
+
 
         tsk_fprintf(hFile, "\n");
     }
