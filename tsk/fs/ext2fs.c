@@ -589,7 +589,6 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     EXT2_GRPNUM_T grp_num;
     TSK_INUM_T ibase = 0;
 
-
     if (dino_buf == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -728,9 +727,17 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
         /* NOTE TSK_DADDR_T != uint32_t, so lets make sure we use uint32_t */
         addr_ptr = (uint32_t *) fs_meta->content_ptr;
         for (i = 0; i < EXT2FS_NDADDR + EXT2FS_NIADDR; i++) {
-            addr_ptr[i] = tsk_gets32(fs->endian, dino_buf->i_block[i]);;
+            addr_ptr[i] = tsk_gets32(fs->endian, dino_buf->i_block[i]);
         }
     }
+    else if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_INLINE_DATA) {
+        uint32_t *addr_ptr;
+        fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_EXT4_INLINE;
+        addr_ptr = (uint32_t *)fs_meta->content_ptr;
+        for (i = 0; i < EXT2FS_NDADDR + EXT2FS_NIADDR; i++) {
+            addr_ptr[i] = tsk_gets32(fs->endian, dino_buf->i_block[i]);
+        }
+    } 
     else {
         TSK_DADDR_T *addr_ptr;
         addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
@@ -1585,6 +1592,36 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
     return count;
 }
 
+/**
+* \internal
+* Loads attribute for Ext4 inline storage method.
+* @param fs_file File system to analyze
+* @returns 0 on success, 1 otherwise
+*/
+static uint8_t
+ext4_load_attrs_inline(TSK_FS_FILE *fs_file)
+{
+    TSK_FS_META *fs_meta = fs_file->meta;
+    TSK_FS_ATTR *fs_attr;
+
+    fs_meta->attr = tsk_fs_attrlist_alloc();
+    if ((fs_attr =
+        tsk_fs_attrlist_getnew(fs_meta->attr,
+            TSK_FS_ATTR_RES)) == NULL) {
+        return 1;
+    }
+
+    // set the details in the fs_attr structure
+    if (tsk_fs_attr_set_str(fs_file, fs_attr, "DATA", 
+        TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+        (void*)fs_meta->content_ptr,
+        fs_meta->size)) {
+        fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+        return 1;
+    }
+
+    return 0;
+}
 
 /**
  * \internal
@@ -1638,7 +1675,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     }
     
     length = roundup(fs_meta->size, fs_info->block_size);
-    
+
     if ((fs_attr =
          tsk_fs_attrlist_getnew(fs_meta->attr,
                                 TSK_FS_ATTR_NONRES)) == NULL) {
@@ -1688,7 +1725,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
             ("ext2fs_load_attr: Inode reports too many extent indices");
             return 1;
         }
-        
+
         if ((fs_attr_extent =
              tsk_fs_attrlist_getnew(fs_meta->attr,
                                     TSK_FS_ATTR_NONRES)) == NULL) {
@@ -1742,6 +1779,9 @@ ext2fs_load_attrs(TSK_FS_FILE * fs_file)
      * the traditional pointer lists. */
     if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS) {
         return ext4_load_attrs_extents(fs_file);
+    }
+    else if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_INLINE) {
+        return ext4_load_attrs_inline(fs_file);
     }
     else {
         return tsk_fs_unix_make_data_run(fs_file);
@@ -3137,6 +3177,9 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                 }
             }
         }
+    }
+    else if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_INLINE) {
+        tsk_fprintf(hFile, "### Inline data - TODO\n");
     }
     else {
         fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
