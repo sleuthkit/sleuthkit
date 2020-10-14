@@ -3118,90 +3118,89 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
     if (numblock > 0)
         fs_meta->size = numblock * fs->block_size;
 
-    tsk_fprintf(hFile, "\nDirect Blocks:\n");
+    if (fs_meta->content_type != TSK_FS_META_CONTENT_TYPE_EXT4_INLINE) {
+        tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
-    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-        const TSK_FS_ATTR *fs_attr_default =
-            tsk_fs_file_attr_get_type(fs_file,
-                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
-        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
-            if (tsk_fs_attr_print(fs_attr_default, hFile)) {
-                tsk_fprintf(hFile, "\nError creating run lists\n");
-                tsk_error_print(hFile);
-                tsk_error_reset();
-            }
-        }
-    }
-    else {
-        print.idx = 0;
-        print.hFile = hFile;
-
-        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-            print_addr_act, (void *)&print)) {
-            tsk_fprintf(hFile, "\nError reading file:  ");
-            tsk_error_print(hFile);
-            tsk_error_reset();
-        }
-        else if (print.idx != 0) {
-            tsk_fprintf(hFile, "\n");
-        }
-    }
-
-    if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS) {
-        const TSK_FS_ATTR *fs_attr_extent =
-            tsk_fs_file_attr_get_type(fs_file,
-            TSK_FS_ATTR_TYPE_UNIX_EXTENT, 0, 0);
-        if (fs_attr_extent) {
-            tsk_fprintf(hFile, "\nExtent Blocks:\n");
-
-            if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-                if (tsk_fs_attr_print(fs_attr_extent, hFile)) {
+        if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+            const TSK_FS_ATTR *fs_attr_default =
+                tsk_fs_file_attr_get_type(fs_file,
+                    TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+            if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+                if (tsk_fs_attr_print(fs_attr_default, hFile)) {
                     tsk_fprintf(hFile, "\nError creating run lists\n");
                     tsk_error_print(hFile);
                     tsk_error_reset();
                 }
             }
-            else {
-                print.idx = 0;
+        }
+        else {
+            print.idx = 0;
+            print.hFile = hFile;
 
-                if (tsk_fs_attr_walk(fs_attr_extent,
-                    TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
-                    (void *)&print)) {
-                    tsk_fprintf(hFile,
-                        "\nError reading indirect attribute:  ");
-                    tsk_error_print(hFile);
-                    tsk_error_reset();
+            if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+                print_addr_act, (void *)&print)) {
+                tsk_fprintf(hFile, "\nError reading file:  ");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+            else if (print.idx != 0) {
+                tsk_fprintf(hFile, "\n");
+            }
+        }
+
+        if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS) {
+            const TSK_FS_ATTR *fs_attr_extent =
+                tsk_fs_file_attr_get_type(fs_file,
+                    TSK_FS_ATTR_TYPE_UNIX_EXTENT, 0, 0);
+            if (fs_attr_extent) {
+                tsk_fprintf(hFile, "\nExtent Blocks:\n");
+
+                if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                    if (tsk_fs_attr_print(fs_attr_extent, hFile)) {
+                        tsk_fprintf(hFile, "\nError creating run lists\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
                 }
-                else if (print.idx != 0) {
-                    tsk_fprintf(hFile, "\n");
+                else {
+                    print.idx = 0;
+
+                    if (tsk_fs_attr_walk(fs_attr_extent,
+                        TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
+                        (void *)&print)) {
+                        tsk_fprintf(hFile,
+                            "\nError reading indirect attribute:  ");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
+                    else if (print.idx != 0) {
+                        tsk_fprintf(hFile, "\n");
+                    }
                 }
             }
         }
-    }
-    else if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_INLINE) {
-        tsk_fprintf(hFile, "### Inline data - TODO\n");
-    }
-    else {
-        fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
-            TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
-        if (fs_attr_indir) {
-            tsk_fprintf(hFile, "\nIndirect Blocks:\n");
-            if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-                tsk_fs_attr_print(fs_attr_indir, hFile);
-            }
-            else {
-                print.idx = 0;
-
-                if (tsk_fs_attr_walk(fs_attr_indir,
-                    TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
-                    (void *)&print)) {
-                    tsk_fprintf(hFile,
-                        "\nError reading indirect attribute:  ");
-                    tsk_error_print(hFile);
-                    tsk_error_reset();
+        else {
+            fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
+            if (fs_attr_indir) {
+                tsk_fprintf(hFile, "\nIndirect Blocks:\n");
+                if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                    tsk_fs_attr_print(fs_attr_indir, hFile);
                 }
-                else if (print.idx != 0) {
-                    tsk_fprintf(hFile, "\n");
+                else {
+                    print.idx = 0;
+
+                    if (tsk_fs_attr_walk(fs_attr_indir,
+                        TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
+                        (void *)&print)) {
+                        tsk_fprintf(hFile,
+                            "\nError reading indirect attribute:  ");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
+                    else if (print.idx != 0) {
+                        tsk_fprintf(hFile, "\n");
+                    }
                 }
             }
         }
