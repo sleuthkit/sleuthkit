@@ -420,6 +420,7 @@ extern "C" {
 #define EXT2_IN_USER_VISIBLE            0x004BDFFF      /* User visible flags */
 #define EXT2_IN_USER_MODIFIABLE         0x004B80FF      /* User modifiable flags */
 
+#define EXT2_INLINE_MAX_DATA_LEN 60  /* Max length for inline data in inode (not counting extended attribute) */
 
 /*
  * directory entries
@@ -466,6 +467,7 @@ extern "C" {
  */
 
 #define EXT2_EA_MAGIC	0xEA020000
+#define EXT2_EA_INODE_OFFSET   160
 
     typedef struct {
         uint8_t magic[4];
@@ -483,6 +485,8 @@ extern "C" {
 #define EXT2_EA_IDX_TRUSTED                4
 #define EXT2_EA_IDX_LUSTRE                 5
 #define EXT2_EA_IDX_SECURITY               6
+#define EXT2_EA_IDX_SYSTEM                 7 // Possibly only valid for inline data
+#define EXT2_EA_IDX_SYSTEM_RICHACL         8
 
 /* Entries follow the header and are aligned to 4-byte boundaries
  * the value of the attribute is stored at the bottom of the block
