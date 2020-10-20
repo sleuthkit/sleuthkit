@@ -1585,6 +1585,49 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
     return count;
 }
 
+/** \internal
+* If the file length is longer than what is in the attr runs, add a sparse
+* data run to cover the rest of the file.
+*
+* @return 0 if successful or -1 on error.
+*/
+static uint8_t
+ext2fs_handle_implicit_sparse_data_run(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr) {
+    TSK_FS_FILE *fs_file = fs_attr->fs_file;
+
+    if (fs_attr == NULL || fs_file == NULL) {
+        return -1;
+    }
+
+    TSK_DADDR_T end_of_runs;
+    TSK_DADDR_T total_file_blocks = roundup(fs_file->meta->size, fs_info->block_size) / fs_info->block_size;
+
+    if (fs_attr->nrd.run_end) {
+        end_of_runs = fs_attr->nrd.run_end->offset + fs_attr->nrd.run_end->len;
+    }
+    else {
+        end_of_runs = 0;
+    }
+
+    if (end_of_runs < total_file_blocks) {
+        // Make sparse run.
+        TSK_FS_ATTR_RUN *data_run;
+        data_run = tsk_fs_attr_run_alloc();
+        if (data_run == NULL) {
+            return 1;
+        }
+        data_run->offset = end_of_runs;
+        data_run->addr = 0;
+        data_run->len = total_file_blocks - end_of_runs;
+        data_run->flags = TSK_FS_ATTR_RUN_FLAG_SPARSE;
+
+        // Save the run.
+        if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 /**
  * \internal
@@ -1652,6 +1695,17 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     }
     
     if (num_entries == 0) {
+        if (fs_meta->size == 0) {
+            // Empty file
+            fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+            return 0;
+        }
+
+        // The entire file is sparse
+        if (ext2fs_handle_implicit_sparse_data_run(fs_info, fs_attr)) {
+            return 1;
+        }
+
         fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
         return 0;
     }
@@ -1722,6 +1776,11 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
                 return 1;
             }
         }
+    }
+
+    // There may be implicit sparse blocks at the end of the file
+    if (ext2fs_handle_implicit_sparse_data_run(fs_info, fs_attr)) {
+        return 1;
     }
     
     fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
