@@ -559,7 +559,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
         *ea_buf_len = ext2fs->inode_size - EXT2_EA_INODE_OFFSET;
     }
     else {
-        ea_buf = NULL;
+        *ea_buf = NULL;
     }
 
     if (tsk_verbose) {
@@ -588,8 +588,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
 
 /**
 * \internal
-* Loads attribute for Ext4 inline storage method. Extended attribute data
-* must be created afterward.
+* Loads attribute for Ext4 inline storage method.
 * @param fs_file File to load attrs
 * @param ea_buf  Extended attribute buffer
 * @param ea_buf_len Extended attribute buffer length
@@ -621,8 +620,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
         size_t index = 4;
         ext2fs_ea_entry *ea_entry = (ext2fs_ea_entry*) &(ea_buf[index]);
 
-        // The end of the list of entries is marked by two null bytes. Also make sure we have enough bytes
-        // for the header including the name.
+        // The end of the list of entries is marked by two null bytes
         while ((ea_entry->nlen != 0) || (ea_entry->nidx != 0)) {
 
             // It looks like the continuation of inline data is stored in system.data.
@@ -658,7 +656,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
 
     // Combine the two parts of the inline data for the resident attribute. For now, make a
     // buffer for the full file size - this may be different than the length of the data 
-    // from the inode if we have sparse data. More investigation will be done in JIRA-6914.
+    // from the inode if we have sparse data.
     uint8_t *resident_data;
     if ((resident_data = (uint8_t*)tsk_malloc(fs_meta->size)) == NULL) {
         return 1;
