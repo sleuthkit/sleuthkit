@@ -1595,8 +1595,8 @@ static uint8_t
 ext2fs_handle_implicit_sparse_data_run(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr) {
     TSK_FS_FILE *fs_file = fs_attr->fs_file;
 
-    if (fs_attr == NULL || fs_file == NULL) {
-        return -1;
+    if (fs_attr == NULL) {
+        return 1;
     }
 
     TSK_DADDR_T end_of_runs;
