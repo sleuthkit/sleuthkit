@@ -884,7 +884,7 @@ class TskCaseDbBridge {
 						TskData.TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
 						TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
 						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, escaped_path, null, parentObjId, null, null, extension);
+						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension);
 
 				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
 			}

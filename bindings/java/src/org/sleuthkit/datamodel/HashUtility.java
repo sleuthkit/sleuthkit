@@ -22,9 +22,14 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.InputStream;
+import java.util.Arrays;
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * Utility to calculate a hash for FsContent and store in TSK database
@@ -67,6 +72,48 @@ public class HashUtility {
 			in.close();
 		}
 		return hashText;
+	}
+	
+	static public Map<HashType, String> calculateHashes(Content content, Collection<HashType> hashTypes) throws TskCoreException {
+		Map<HashType, String> results = new HashMap<>();
+		Map<HashType, MessageDigest> digests = new HashMap();
+		
+		for (HashType type : hashTypes) {
+			try {
+				digests.put(type, MessageDigest.getInstance(type.getName()));
+			} catch (NoSuchAlgorithmException ex) {
+				throw new TskCoreException("No algorithm found matching name " + type.getName());
+			}
+		}
+		
+		// Read in byte size chunks and update the hash value with the data.
+        byte[] data = new byte[(int) BUFFER_SIZE];
+		int totalChunks = (int) Math.ceil((double) content.getSize() / (double) BUFFER_SIZE);
+        int read;
+        for (int i = 0; i < totalChunks; i++) {
+            try {
+                read = content.read(data, i * BUFFER_SIZE, BUFFER_SIZE);
+            } catch (TskCoreException ex) {
+                throw new TskCoreException("Error reading data at address " + i * BUFFER_SIZE + " from content with ID: " + content.getId(), ex);
+            }
+
+            // Only update with the read bytes.
+            if (read == BUFFER_SIZE) {
+                for (HashType type : hashTypes) {
+					digests.get(type).update(data);
+                }
+            } else {
+                byte[] subData = Arrays.copyOfRange(data, 0, read);
+                for (HashType type : hashTypes) {
+                    digests.get(type).update(subData);
+                }
+            }
+        }
+		
+		for (HashType type : hashTypes) {
+			results.put(type, DatatypeConverter.printHexBinary(digests.get(type).digest()).toLowerCase());
+		}
+		return results;
 	}
 
 	/**
@@ -114,6 +161,21 @@ public class HashUtility {
 	public static boolean isNoDataMd5(String md5) {
 		return md5.toLowerCase().equals("d41d8cd98f00b204e9800998ecf8427e"); //NON-NLS
 	}
+	
+	public enum HashType {
+        MD5("MD5"), 
+        SHA256("SHA-256");
+        
+        private final String name; // This should be the string expected by MessageDigest
+        
+        HashType(String name) {
+            this.name = name;
+        }
+        
+        String getName() {
+            return name;
+        }
+    }
 
 	/**
 	 * Calculate the MD5 hash for the given FsContent and store it in the
