@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
@@ -492,8 +491,8 @@ public final class Blackboard {
 	 * This api executes in the context of a transaction.
 	 *
 	 * @param artifactType the type the given artifact should have
-	 * @param obj_id	   the content object id associated with this artifact
-	 * @param data_source_obj_id the data source object.
+	 * @param objId	   the content object id associated with this artifact
+	 * @param dataSourceObjId the data source object.
 	 * @param transaction  the transaction in the scope of which the operation
 	 *                     is to be performed, managed by the caller
 	 *
@@ -502,13 +501,13 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
 	 */
-	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id, long data_source_obj_id, CaseDbTransaction transaction) throws TskCoreException {
+	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long objId, long dataSourceObjId, CaseDbTransaction transaction) throws TskCoreException {
 		if (transaction == null) {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
-		return caseDb.newBlackboardArtifact(artifactType.getTypeID(), obj_id,
-					artifactType.getLabel(), artifactType.getDisplayName(),
-					data_source_obj_id, transaction.getConnection());
+		return caseDb.newBlackboardArtifact(artifactType.getTypeID(), objId,
+					artifactType.getTypeName(), artifactType.getDisplayName(),
+					dataSourceObjId, transaction.getConnection());
 	}
 
 
