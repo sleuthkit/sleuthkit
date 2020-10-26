@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,15 +19,15 @@
 package org.sleuthkit.datamodel;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.InputStream;
 import java.util.Arrays;
 import javax.xml.bind.DatatypeConverter;
 
@@ -38,56 +38,22 @@ public class HashUtility {
 
 	private final static int BUFFER_SIZE = 16 * 1024;
 
-	/**
-	 * Calculate the MD5 hash for the given FsContent
-	 *
-	 * @param content content object whose md5 hash we want to calculate
-	 *
-	 * @return md5 of the given FsContent object
-	 *
-	 * @throws java.io.IOException
-	 */
-	static public String calculateMd5Hash(Content content) throws IOException {
-		String hashText = "";
-		InputStream in = new ReadContentInputStream(content);
-		Logger logger = Logger.getLogger(HashUtility.class.getName());
-		try {
-			byte[] buffer = new byte[BUFFER_SIZE];
-			MessageDigest md = MessageDigest.getInstance("md5"); //NON-NLS
-			int len = in.read(buffer);
-			while (len != -1) {
-				md.update(buffer, 0, len);
-				len = in.read(buffer);
-			}
-			byte[] hash = md.digest();
-			BigInteger bigInt = new BigInteger(1, hash);
-			hashText = bigInt.toString(16);
-			// zero padding
-			while (hashText.length() < 32) {
-				hashText = "0" + hashText;
-			}
-		} catch (NoSuchAlgorithmException ex) {
-			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex); //NON-NLS
-		} finally {
-			in.close();
-		}
-		return hashText;
-	}
+
 	
-	static public Map<HashType, String> calculateHashes(Content content, Collection<HashType> hashTypes) throws TskCoreException {
-		Map<HashType, String> results = new HashMap<>();
-		Map<HashType, MessageDigest> digests = new HashMap();
+	static public List<HashValue> calculateHashes(Content content, Collection<HashType> hashTypes) throws TskCoreException {
+		List<HashValue> results = new ArrayList<>();
+		Map<HashType, MessageDigest> digests = new HashMap<>();
 		
 		for (HashType type : hashTypes) {
 			try {
 				digests.put(type, MessageDigest.getInstance(type.getName()));
 			} catch (NoSuchAlgorithmException ex) {
-				throw new TskCoreException("No algorithm found matching name " + type.getName());
+				throw new TskCoreException("No algorithm found matching name " + type.getName(), ex);
 			}
 		}
 		
 		// Read in byte size chunks and update the hash value with the data.
-        byte[] data = new byte[(int) BUFFER_SIZE];
+        byte[] data = new byte[BUFFER_SIZE];
 		int totalChunks = (int) Math.ceil((double) content.getSize() / (double) BUFFER_SIZE);
         int read;
         for (int i = 0; i < totalChunks; i++) {
@@ -111,7 +77,7 @@ public class HashUtility {
         }
 		
 		for (HashType type : hashTypes) {
-			results.put(type, DatatypeConverter.printHexBinary(digests.get(type).digest()).toLowerCase());
+			results.add(new HashValue(type, DatatypeConverter.printHexBinary(digests.get(type).digest()).toLowerCase()));
 		}
 		return results;
 	}
@@ -162,6 +128,30 @@ public class HashUtility {
 		return md5.toLowerCase().equals("d41d8cd98f00b204e9800998ecf8427e"); //NON-NLS
 	}
 	
+	/**
+	 * Utility class to hold a hash value along with its type.
+	 */
+	public static class HashValue {
+		HashType type;
+		String value;
+		
+		public HashValue(HashType type, String value) {
+			this.type = type;
+			this.value = value;
+		}
+		
+		public HashType getType() {
+			return type;
+		}
+		
+		public String getValue() {
+			return value;
+		}
+	}
+	
+	/**
+	 * Hash types that can be calculated.
+	 */
 	public enum HashType {
         MD5("MD5"), 
         SHA256("SHA-256");
@@ -200,4 +190,29 @@ public class HashUtility {
 		}
 		return md5Hash;
 	}
+	
+	/**
+	 * Calculate the MD5 hash for the given FsContent
+	 *
+	 * @param content content object whose md5 hash we want to calculate
+	 *
+	 * @return md5 of the given FsContent object
+	 *
+	 * @throws java.io.IOException
+	 * 
+	 * @decprecated Use calculateHashes() instead
+	 */
+	@Deprecated
+	static public String calculateMd5Hash(Content content) throws IOException {
+		try {
+			List<HashValue> results = calculateHashes(content, Arrays.asList(HashType.MD5));
+			return results.stream()
+				.filter(result -> result.getType().equals(HashType.MD5))
+				.findFirst().get().getValue();
+			
+		} catch (TskCoreException ex) {
+			// Wrap in an IOException to retain the current method signature
+			throw new IOException(ex);
+		}
+	}	
 }
