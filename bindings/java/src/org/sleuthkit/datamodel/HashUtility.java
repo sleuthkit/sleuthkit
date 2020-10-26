@@ -49,7 +49,6 @@ public class HashUtility {
 	 * @throws TskCoreException
 	 */
 	static public List<HashResult> calculateHashes(Content content, Collection<HashType> hashTypes) throws TskCoreException {
-		List<HashResult> results = new ArrayList<>();
 		Map<HashType, MessageDigest> digests = new HashMap<>();
 
 		for (HashType type : hashTypes) {
@@ -84,6 +83,7 @@ public class HashUtility {
 			}
 		}
 
+		List<HashResult> results = new ArrayList<>();
 		for (HashType type : hashTypes) {
 			results.add(new HashResult(type, DatatypeConverter.printHexBinary(digests.get(type).digest()).toLowerCase()));
 		}
