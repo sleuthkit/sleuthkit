@@ -38,12 +38,20 @@ public class HashUtility {
 
 	private final static int BUFFER_SIZE = 16 * 1024;
 
-
-	
-	static public List<HashValue> calculateHashes(Content content, Collection<HashType> hashTypes) throws TskCoreException {
-		List<HashValue> results = new ArrayList<>();
+	/**
+	 * Calculate hashes of the content object.
+	 *
+	 * @param content   The content object to hash
+	 * @param hashTypes The types of hash to compute
+	 *
+	 * @return A list of the hash results
+	 *
+	 * @throws TskCoreException
+	 */
+	static public List<HashResult> calculateHashes(Content content, Collection<HashType> hashTypes) throws TskCoreException {
+		List<HashResult> results = new ArrayList<>();
 		Map<HashType, MessageDigest> digests = new HashMap<>();
-		
+
 		for (HashType type : hashTypes) {
 			try {
 				digests.put(type, MessageDigest.getInstance(type.getName()));
@@ -51,33 +59,33 @@ public class HashUtility {
 				throw new TskCoreException("No algorithm found matching name " + type.getName(), ex);
 			}
 		}
-		
-		// Read in byte size chunks and update the hash value with the data.
-        byte[] data = new byte[BUFFER_SIZE];
-		int totalChunks = (int) Math.ceil((double) content.getSize() / (double) BUFFER_SIZE);
-        int read;
-        for (int i = 0; i < totalChunks; i++) {
-            try {
-                read = content.read(data, i * BUFFER_SIZE, BUFFER_SIZE);
-            } catch (TskCoreException ex) {
-                throw new TskCoreException("Error reading data at address " + i * BUFFER_SIZE + " from content with ID: " + content.getId(), ex);
-            }
 
-            // Only update with the read bytes.
-            if (read == BUFFER_SIZE) {
-                for (HashType type : hashTypes) {
+		// Read in byte size chunks and update the hash value with the data.
+		byte[] data = new byte[BUFFER_SIZE];
+		int totalChunks = (int) Math.ceil((double) content.getSize() / (double) BUFFER_SIZE);
+		int read;
+		for (int i = 0; i < totalChunks; i++) {
+			try {
+				read = content.read(data, i * BUFFER_SIZE, BUFFER_SIZE);
+			} catch (TskCoreException ex) {
+				throw new TskCoreException("Error reading data at address " + i * BUFFER_SIZE + " from content with ID: " + content.getId(), ex);
+			}
+
+			// Only update with the read bytes.
+			if (read == BUFFER_SIZE) {
+				for (HashType type : hashTypes) {
 					digests.get(type).update(data);
-                }
-            } else {
-                byte[] subData = Arrays.copyOfRange(data, 0, read);
-                for (HashType type : hashTypes) {
-                    digests.get(type).update(subData);
-                }
-            }
-        }
-		
+				}
+			} else {
+				byte[] subData = Arrays.copyOfRange(data, 0, read);
+				for (HashType type : hashTypes) {
+					digests.get(type).update(subData);
+				}
+			}
+		}
+
 		for (HashType type : hashTypes) {
-			results.add(new HashValue(type, DatatypeConverter.printHexBinary(digests.get(type).digest()).toLowerCase()));
+			results.add(new HashResult(type, DatatypeConverter.printHexBinary(digests.get(type).digest()).toLowerCase()));
 		}
 		return results;
 	}
@@ -131,41 +139,42 @@ public class HashUtility {
 	/**
 	 * Utility class to hold a hash value along with its type.
 	 */
-	public static class HashValue {
-		HashType type;
-		String value;
-		
-		public HashValue(HashType type, String value) {
+	public static class HashResult {
+
+		private final HashType type;
+		private final String value;
+
+		public HashResult(HashType type, String value) {
 			this.type = type;
 			this.value = value;
 		}
-		
+
 		public HashType getType() {
 			return type;
 		}
-		
+
 		public String getValue() {
 			return value;
 		}
 	}
-	
+
 	/**
 	 * Hash types that can be calculated.
 	 */
 	public enum HashType {
-        MD5("MD5"), 
-        SHA256("SHA-256");
-        
-        private final String name; // This should be the string expected by MessageDigest
-        
-        HashType(String name) {
-            this.name = name;
-        }
-        
-        String getName() {
-            return name;
-        }
-    }
+		MD5("MD5"),
+		SHA256("SHA-256");
+
+		private final String name; // This should be the string expected by MessageDigest
+
+		HashType(String name) {
+			this.name = name;
+		}
+
+		String getName() {
+			return name;
+		}
+	}
 
 	/**
 	 * Calculate the MD5 hash for the given FsContent and store it in the
@@ -177,7 +186,7 @@ public class HashUtility {
 	 *
 	 * @throws java.io.IOException
 	 *
-	 * @deprecated
+	 * @deprecated Use calculateHashes() instead
 	 */
 	@Deprecated
 	static public String calculateMd5(AbstractFile file) throws IOException {
@@ -205,7 +214,7 @@ public class HashUtility {
 	@Deprecated
 	static public String calculateMd5Hash(Content content) throws IOException {
 		try {
-			List<HashValue> results = calculateHashes(content, Arrays.asList(HashType.MD5));
+			List<HashResult> results = calculateHashes(content, Arrays.asList(HashType.MD5));
 			return results.stream()
 				.filter(result -> result.getType().equals(HashType.MD5))
 				.findFirst().get().getValue();
