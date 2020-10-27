@@ -29,7 +29,6 @@ import java.util.logging.Logger;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Arrays;
-import javax.xml.bind.DatatypeConverter;
 
 /**
  * Utility to calculate a hash for FsContent and store in TSK database
@@ -85,7 +84,12 @@ public class HashUtility {
 
 		List<HashResult> results = new ArrayList<>();
 		for (HashType type : hashTypes) {
-			results.add(new HashResult(type, DatatypeConverter.printHexBinary(digests.get(type).digest()).toLowerCase()));
+			byte hashData[] = digests.get(type).digest();
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hashData) {
+				sb.append(String.format("%02x", b));
+			}
+			results.add(new HashResult(type, sb.toString()));
 		}
 		return results;
 	}
