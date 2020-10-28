@@ -36,19 +36,19 @@ TSK_CARD_NUMBER (Credit card number)
 ---
 
 ## TSK_ACTIVITY
-Activity on the system or from an application.  Example Usage is a mobile device being locked and unlocked.
+Activity on the system or from an application.  Example usage is a mobile device being locked and unlocked.
 . 
 
 ### REQUIRED ATTRIBUTES
-- TSK_DATETIME_START (When activity Started)
+- TSK_DATETIME_START (When activity started)
     or 
   TSK_DATETIME
 
 ### OPTIONAL ATTRIBUTES
-- TSK_ACTIVITY_TYPE (Activity Type i.e.: On or Off)
+- TSK_ACTIVITY_TYPE (Activity type i.e.: On or Off)
 - TSK_DATETIME_END (When activity ended)
 - TSK_PROG_NAME (Name of the program doing the activity)
-- TSK_VALUE (Connection Type)
+- TSK_VALUE (Connection type)
 
 ---
 
@@ -62,7 +62,7 @@ Provides a backwards link to an artifact that references the parent file of this
 
 ---
 ## TSK_BACKUP
-Details about System/Aplication/File backups.
+Details about System/aplication/file backups.
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME_START (Date/Time the backup happened)
@@ -627,7 +627,7 @@ Details about a remote drive found in the data source.
 
 ---
 ## TSK_SCREEN_SHOTS
-Screen shots from a device or Application.
+Screenshots from a device or application.
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME (When the screenshot was taken)
