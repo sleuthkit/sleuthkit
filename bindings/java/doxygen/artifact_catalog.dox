@@ -45,7 +45,7 @@ Activity on the system or from an application.  Example Usage is a mobile device
   TSK_DATETIME
 
 ### OPTIONAL ATTRIBUTES
-- TSK_ACTIVITY_TYPE (Activity Type ie: On or Off)
+- TSK_ACTIVITY_TYPE (Activity Type i.e.: On or Off)
 - TSK_DATETIME_END (When activity ended)
 - TSK_PROG_NAME (Name of the program doing the activity)
 - TSK_VALUE (Connection Type)
@@ -65,7 +65,7 @@ Provides a backwards link to an artifact that references the parent file of this
 Details about System/Aplication/File backups.
 
 ### REQUIRED ATTRIBUTES
-- TSK_DATETIME_STARTED (Date/Time the backup happened)
+- TSK_DATETIME_START (Date/Time the backup happened)
      or 
   TSK_DATETIME
   
