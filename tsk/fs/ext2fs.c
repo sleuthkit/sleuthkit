@@ -1412,11 +1412,22 @@ ext2fs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
     }
 
     data_run->offset = tsk_getu32(fs_info->endian, extent->ee_block);
-    data_run->addr =
-        (((uint32_t) tsk_getu16(fs_info->endian,
+
+    // Check if the extent is initialized or uninitialized
+    if (tsk_getu16(fs_info->endian, extent->ee_len) <= EXT2_MAX_INIT_EXTENT_LENGTH) {
+        // Extent is initalized - process normally
+        data_run->addr =
+            (((uint32_t)tsk_getu16(fs_info->endian,
                 extent->ee_start_hi)) << 16) | tsk_getu32(fs_info->endian,
-        extent->ee_start_lo);
-    data_run->len = tsk_getu16(fs_info->endian, extent->ee_len);
+                    extent->ee_start_lo);
+        data_run->len = tsk_getu16(fs_info->endian, extent->ee_len);
+    }
+    else {
+        // Extent is uninitialized - make a sparse run
+        data_run->len = tsk_getu16(fs_info->endian, extent->ee_len) - EXT2_MAX_INIT_EXTENT_LENGTH;
+        data_run->addr = 0;
+        data_run->flags = TSK_FS_ATTR_RUN_FLAG_SPARSE;
+    }
 
     // save the run
     if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
