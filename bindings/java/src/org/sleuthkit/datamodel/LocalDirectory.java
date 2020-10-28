@@ -55,6 +55,7 @@ public class LocalDirectory extends SpecialDirectory {
 	 * @param md5Hash            The MD5 hash for the local directory.
 	 * @param knownState         The known state for the local directory
 	 * @param parentPath         The parent path for the local directory
+	 * @param location           The location of the directory.
 	 */
 	LocalDirectory(SleuthkitCase db,
 			long objId,
@@ -63,10 +64,10 @@ public class LocalDirectory extends SpecialDirectory {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			String md5Hash, String sha256Hash, FileKnown knownState,
-			String parentPath) {
+			String parentPath, TskData.FileLocation location) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name,
 				TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL_DIR, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, null);
+				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, location, null);
 	}
 	
 	/**

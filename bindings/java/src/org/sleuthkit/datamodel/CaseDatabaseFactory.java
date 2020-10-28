@@ -204,7 +204,7 @@ class CaseDatabaseFactory {
 				+ "crtime " + dbQueryHelper.getBigIntType() + ", atime " + dbQueryHelper.getBigIntType() + ", "
 				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, "
 				+ "known INTEGER, "
-				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
+				+ "parent_path TEXT, location INTEGER NOT NULL, mime_type TEXT, extension TEXT, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE)");

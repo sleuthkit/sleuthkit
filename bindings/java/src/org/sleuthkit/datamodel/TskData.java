@@ -878,4 +878,36 @@ public class TskData {
 					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
 		}
 	}
+	
+	/**
+	 * TODO
+	 */
+	public enum FileLocation{
+		LOCAL(0),
+		MICROSERVICE(1);
+		
+		private final int value;
+		
+		private FileLocation(int value){
+			this.value = value;
+		}
+		
+		public int getValue(){
+			return value;
+		}
+		
+		public static FileLocation valueOf(int value) {
+			for (FileLocation v : FileLocation.values()) {
+				if (v.value == value) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					// TODO TODO
+					"FIX THIS"
+					//MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), location));
+					// TODO
+			);
+		}
+	}
 }

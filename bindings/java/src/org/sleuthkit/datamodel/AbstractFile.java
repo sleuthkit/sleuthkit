@@ -86,6 +86,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private boolean sha256HashDirty = false;	
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
+	protected TskData.FileLocation location;
 	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
@@ -124,6 +125,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
+	 * @param location
 	 * @param mimeType           The MIME type of the file, can be null.
 	 * @param extension		        The extension part of the file name (not
 	 *                           including the '.'), can be null.
@@ -143,6 +145,7 @@ public abstract class AbstractFile extends AbstractContent {
 			int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
+			TskData.FileLocation location,
 			String mimeType,
 			String extension) {
 		super(db, objId, name);
@@ -173,6 +176,7 @@ public abstract class AbstractFile extends AbstractContent {
 			this.knownState = knownState;
 		}
 		this.parentPath = parentPath;
+		this.location = location;
 		this.mimeType = mimeType;
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
@@ -960,6 +964,15 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Get the location of the file data
+	 * 
+	 * @return file location
+	 */
+	public TskData.FileLocation getFileLocation() {
+		return location;
+	}
+	
+	/**
 	 * Get local absolute path of the file, if localPath has been set
 	 *
 	 * @return local absolute file path if local path has been set, or null
@@ -1087,6 +1100,7 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size //NON-NLS
 				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash + "\t" + "sha256Hash " + sha256Hash //NON-NLS
 				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath //NON-NLS
+				+ "\t" + "location " + location // NON-NLS
 				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile //NON-NLS
 				+ "]\t";
 	}
@@ -1222,7 +1236,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, TskData.FileLocation.LOCAL, null, null);
 	}
 
 	/**
@@ -1267,7 +1281,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, TskData.FileLocation.LOCAL, null, null);
 	}
 
 	/**

@@ -2205,6 +2205,7 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		try {
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN sha256 TEXT");
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN location INTEGER NOT NULL DEFAULT " + TskData.FileLocation.LOCAL.getValue());
 
 			return new CaseDbSchemaVersionNumber(8, 6);
 
@@ -2852,7 +2853,7 @@ public class SleuthkitCase {
 					final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 							| TSK_FS_META_FLAG_ENUM.USED.getValue());
 					String parentPath = "/"; //NON-NLS
-					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, dsName, dirType, metaType, dirFlag, metaFlags, timezone, null, null, FileKnown.UNKNOWN, parentPath);
+					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, dsName, dirType, metaType, dirFlag, metaFlags, timezone, null, null, FileKnown.UNKNOWN, parentPath, TskData.FileLocation.LOCAL);
 				} else {
 					/*
 					 * Data found in 'tsk_image_info', so we build an Image.
@@ -2951,7 +2952,7 @@ public class SleuthkitCase {
 					final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 							| TSK_FS_META_FLAG_ENUM.USED.getValue());
 					String parentPath = "/"; //NON-NLS
-					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, dsName, dirType, metaType, dirFlag, metaFlags, timezone, null, null, FileKnown.UNKNOWN, parentPath);
+					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, dsName, dirType, metaType, dirFlag, metaFlags, timezone, null, null, FileKnown.UNKNOWN, parentPath, TskData.FileLocation.LOCAL);
 				} else {
 					/*
 					 * Data found in 'tsk_image_info', so we build an Image.
@@ -5618,8 +5619,8 @@ public class SleuthkitCase {
 
 			// Insert a row for the virtual directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id,extension)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type, parent_path, location, data_source_obj_id,extension)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
@@ -5673,6 +5674,8 @@ public class SleuthkitCase {
 			// parent path
 			statement.setString(19, parentPath);
 
+			statement.setLong(20, TskData.FileLocation.LOCAL.getValue());
+			
 			// data source object id (same as object id if this is a data source)
 			long dataSourceObjectId;
 			if (0 == parentId) {
@@ -5680,15 +5683,15 @@ public class SleuthkitCase {
 			} else {
 				dataSourceObjectId = getDataSourceObjectId(connection, parentId);
 			}
-			statement.setLong(20, dataSourceObjectId);
+			statement.setLong(21, dataSourceObjectId);
 
 			//extension, since this is not really file we just set it to null
-			statement.setString(21, null);
+			statement.setString(22, null);
 			connection.executeUpdate(statement);
 
 			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
 					metaType, dirFlag, metaFlags, null, null, FileKnown.UNKNOWN,
-					parentPath);
+					parentPath, TskData.FileLocation.LOCAL);
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {
@@ -5763,8 +5766,8 @@ public class SleuthkitCase {
 
 			// Insert a row for the local directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, location, data_source_obj_id)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
@@ -5808,19 +5811,21 @@ public class SleuthkitCase {
 
 			// parent path
 			statement.setString(19, parentPath);
+			
+			statement.setLong(20, TskData.FileLocation.LOCAL.getValue());
 
 			// data source object id
 			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
-			statement.setLong(20, dataSourceObjectId);
+			statement.setLong(21, dataSourceObjectId);
 
 			//extension, since this is a directory we just set it to null
-			statement.setString(21, null);
+			statement.setString(22, null);
 
 			connection.executeUpdate(statement);
 
 			return new LocalDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
 					metaType, dirFlag, metaFlags, null, null, FileKnown.UNKNOWN,
-					parentPath);
+					parentPath, TskData.FileLocation.LOCAL);
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating local directory '" + directoryName + "'", e);
 		} finally {
@@ -5867,8 +5872,8 @@ public class SleuthkitCase {
 			// its own object id.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path,
 			// dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime,
-			// atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id, extension)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+			// atime, mtime, md5, sha256, known, mime_type, parent_path, location, data_source_obj_id, extension)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
@@ -5896,11 +5901,12 @@ public class SleuthkitCase {
 			preparedStatement.setNull(18, java.sql.Types.VARCHAR); // MIME type	
 			String parentPath = "/"; //NON-NLS
 			preparedStatement.setString(19, parentPath);
-			preparedStatement.setLong(20, newObjId);
-			preparedStatement.setString(21, null); //extension, just set it to null
+			preparedStatement.setLong(20, TskData.FileLocation.LOCAL.getValue());
+			preparedStatement.setLong(21, newObjId);
+			preparedStatement.setString(22, null); //extension, just set it to null
 			connection.executeUpdate(preparedStatement);
 
-			return new LocalFilesDataSource(this, newObjId, newObjId, deviceId, rootDirectoryName, dirType, metaType, dirFlag, metaFlags, timeZone, null, null, FileKnown.UNKNOWN, parentPath);
+			return new LocalFilesDataSource(this, newObjId, newObjId, deviceId, rootDirectoryName, dirType, metaType, dirFlag, metaFlags, timeZone, null, null, FileKnown.UNKNOWN, parentPath, TskData.FileLocation.LOCAL);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, rootDirectoryName), ex);
@@ -6268,13 +6274,14 @@ public class SleuthkitCase {
 			statement.setLong(18, atime);
 			statement.setLong(19, mtime);
 			statement.setString(20, parentPath);
+			statement.setLong(21, TskData.FileLocation.LOCAL.getValue());
 			final String extension = extractExtension(fileName);
-			statement.setString(21, extension);
+			statement.setString(22, extension);
 
 			connection.executeUpdate(statement);
 
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, null, parentPath, null, parent.getId(), null, null, extension);
+					size, ctime, crtime, atime, mtime, null, null, null, parentPath, null, TskData.FileLocation.LOCAL, parent.getId(), null, null, extension);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 
@@ -6285,7 +6292,7 @@ public class SleuthkitCase {
 					attrType, attrId, fileName, metaAddr, metaSeq,
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
-					(short) 0, 0, 0, null, null, null, parentPath, null,
+					(short) 0, 0, 0, null, null, null, parentPath, TskData.FileLocation.LOCAL, null,
 					extension);
 
 		} catch (SQLException ex) {
@@ -6382,8 +6389,8 @@ public class SleuthkitCase {
 				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
 				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
 				 * ctime, crtime, atime, mtime, md5, known, mime_type,
-				 * parent_path, data_source_obj_id,extension) VALUES (?, ?, ?,
-				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+				 * parent_path, location, data_source_obj_id,extension) VALUES (?, ?, ?,
+				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
@@ -6406,10 +6413,11 @@ public class SleuthkitCase {
 				prepStmt.setByte(17, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 				prepStmt.setNull(18, java.sql.Types.VARCHAR); // MIME type
 				prepStmt.setNull(19, java.sql.Types.VARCHAR); // parent path
-				prepStmt.setLong(20, parent.getId()); // data_source_obj_id
+				prepStmt.setLong(20, TskData.FileLocation.LOCAL.getValue()); // location
+				prepStmt.setLong(21, parent.getId()); // data_source_obj_id
 
 				//extension, since this is not a FS file we just set it to null
-				prepStmt.setString(21, null);
+				prepStmt.setString(22, null);
 				connection.executeUpdate(prepStmt);
 
 				/*
@@ -6441,7 +6449,7 @@ public class SleuthkitCase {
 						0L, 0L, 0L, 0L,
 						null, null,
 						FileKnown.UNKNOWN,
-						parent.getUniquePath(),
+						parent.getUniquePath(), TskData.FileLocation.LOCAL,
 						null));
 			}
 
@@ -6563,8 +6571,8 @@ public class SleuthkitCase {
 				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
 				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
 				 * ctime, crtime, atime, mtime, md5, known, mime_type,
-				 * parent_path, data_source_obj_id,extenion) VALUES (?, ?, ?, ?,
-				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+				 * parent_path, location, data_source_obj_id,extenion) VALUES (?, ?, ?, ?,
+				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
@@ -6591,8 +6599,9 @@ public class SleuthkitCase {
 				prepStmt.setByte(17, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 				prepStmt.setNull(18, java.sql.Types.VARCHAR); // MIME type	
 				prepStmt.setString(19, parentPath); // parent path
-				prepStmt.setLong(20, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
-				prepStmt.setString(21, extractExtension(carvedFile.getName())); //extension
+				prepStmt.setLong(20, TskData.FileLocation.LOCAL.getValue());
+				prepStmt.setLong(21, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
+				prepStmt.setString(22, extractExtension(carvedFile.getName())); //extension
 				connection.executeUpdate(prepStmt);
 
 				/*
@@ -6626,7 +6635,7 @@ public class SleuthkitCase {
 						0L, 0L, 0L, 0L,
 						null, null,
 						FileKnown.UNKNOWN,
-						parentPath,
+						parentPath, TskData.FileLocation.LOCAL,
 						null));
 			}
 
@@ -6762,13 +6771,15 @@ public class SleuthkitCase {
 
 			//parent path
 			statement.setString(19, parentPath);
+			
+			statement.setLong(20, TskData.FileLocation.LOCAL.getValue());
 
 			// root data source object id
 			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
-			statement.setLong(20, dataSourceObjId);
+			statement.setLong(21, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			//extension
-			statement.setString(21, extension);
+			statement.setString(22, extension);
 
 			connection.executeUpdate(statement);
 
@@ -6776,7 +6787,7 @@ public class SleuthkitCase {
 			addFilePath(connection, newObjId, localPath, encodingType);
 
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, TskData.FileLocation.LOCAL, parentId, null, encodingType, extension);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			transaction.commit();
@@ -6886,7 +6897,7 @@ public class SleuthkitCase {
 			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
 			final String extension = extractExtension(derivedFile.getName());
 			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
-					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, TskData.FileLocation.LOCAL, parentId, null, encodingType, extension);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -7017,8 +7028,8 @@ public class SleuthkitCase {
 			// Insert a row for the local/logical file into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type,
-			// parent_path, data_source_obj_id,extension)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+			// parent_path, location, data_source_obj_id,extension)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, objectId);
@@ -7065,9 +7076,10 @@ public class SleuthkitCase {
 				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			}
 			statement.setString(19, parentPath);
-			statement.setLong(20, dataSourceObjId);
+			statement.setLong(20, TskData.FileLocation.LOCAL.getValue());
+			statement.setLong(21, dataSourceObjId);
 			final String extension = extractExtension(fileName);
-			statement.setString(21, extension);
+			statement.setString(22, extension);
 
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
@@ -7082,7 +7094,7 @@ public class SleuthkitCase {
 					savedSize,
 					ctime, crtime, atime, mtime,
 					mimeType, md5, sha256, known,
-					parent.getId(), parentPath,
+					parent.getId(), parentPath, TskData.FileLocation.LOCAL,
 					dataSourceObjId,
 					localPath,
 					encodingType, extension);
@@ -7196,8 +7208,8 @@ public class SleuthkitCase {
 			 * Insert a row for the file into the tsk_files table: INSERT INTO
 			 * tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type,
 			 * meta_type, dir_flags, meta_flags, size, ctime, crtime, atime,
-			 * mtime, md5, known, mime_type, parent_path,
-			 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
+			 * mtime, md5, known, mime_type, parent_path, location,
+			 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			 * ?, ?, ?, ?, ?, ?, ?,?)
 			 */
 			PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
@@ -7234,9 +7246,10 @@ public class SleuthkitCase {
 			prepStmt.setByte(17, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 			prepStmt.setNull(18, java.sql.Types.VARCHAR); // MIME type	
 			prepStmt.setString(19, parentPath); // parent path
-			prepStmt.setLong(20, parent.getDataSource().getId()); // data_source_obj_id
+			prepStmt.setLong(20, TskData.FileLocation.LOCAL.getValue());  // location
+			prepStmt.setLong(21, parent.getDataSource().getId()); // data_source_obj_id
 
-			prepStmt.setString(21, extractExtension(fileName)); 				//extension
+			prepStmt.setString(22, extractExtension(fileName)); 				//extension
 			connection.executeUpdate(prepStmt);
 
 			/*
@@ -7270,7 +7283,7 @@ public class SleuthkitCase {
 					ctime, crtime, atime, mtime,
 					null, null,
 					FileKnown.UNKNOWN,
-					parentPath,
+					parentPath, TskData.FileLocation.LOCAL,
 					null);
 
 			transaction.commit();
@@ -8570,7 +8583,8 @@ public class SleuthkitCase {
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
 							rs.getLong("size"), //NON-NLS
 							rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
-							rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type")); //NON-NLS
+							rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), parentPath, //NON-NLS
+							TskData.FileLocation.valueOf(rs.getByte("location")), rs.getString("mime_type")); //NON-NLS
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;
@@ -8616,7 +8630,8 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), TskData.FileLocation.valueOf(rs.getByte("location")), //NON-NLS
+				rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -8643,7 +8658,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path")); //NON-NLS
+				rs.getString("parent_path"), TskData.FileLocation.valueOf(rs.getByte("location"))); //NON-NLS
 		dir.setFileSystem(fs);
 		return dir;
 	}
@@ -8701,7 +8716,8 @@ public class SleuthkitCase {
 					rs.getString("md5"),
 					rs.getString("sha256"),
 					FileKnown.valueOf(rs.getByte("known")),
-					parentPath);
+					parentPath,
+					TskData.FileLocation.valueOf(rs.getByte("location")));
 		} else {
 			final VirtualDirectory vd = new VirtualDirectory(this,
 					objId, dsObjId,
@@ -8710,7 +8726,8 @@ public class SleuthkitCase {
 					TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 					TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
 					rs.getShort("meta_flags"), rs.getString("md5"), rs.getString("sha256"), //NON-NLS
-					FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+					FileKnown.valueOf(rs.getByte("known")), parentPath, //NON-NLS
+					TskData.FileLocation.valueOf(rs.getByte("location"))); //NON-NLS
 			return vd;
 		}
 	}
@@ -8735,7 +8752,7 @@ public class SleuthkitCase {
 				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
 				rs.getShort("meta_flags"), rs.getString("md5"), rs.getString("sha256"), //NON-NLS
-				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), parentPath, TskData.FileLocation.valueOf(rs.getByte("location"))); //NON-NLS
 		return ld;
 	}
 
@@ -8788,7 +8805,7 @@ public class SleuthkitCase {
 				rs.getLong("size"), //NON-NLS
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				parentPath, localPath, parentId, rs.getString("mime_type"),
+				parentPath, localPath, TskData.FileLocation.valueOf(rs.getByte("location")), parentId, rs.getString("mime_type"),
 				encodingType, rs.getString("extension"));
 		return df;
 	}
@@ -8841,7 +8858,7 @@ public class SleuthkitCase {
 				rs.getLong("size"), //NON-NLS
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("mime_type"), rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				parentId, parentPath, rs.getLong("data_source_obj_id"),
+				parentId, parentPath, TskData.FileLocation.valueOf(rs.getByte("location")), rs.getLong("data_source_obj_id"),
 				localPath, encodingType, rs.getString("extension"));
 		return file;
 	}
@@ -8869,7 +8886,8 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), TskData.FileLocation.valueOf(rs.getByte("location")), //NON-NLS
+				rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -8931,7 +8949,8 @@ public class SleuthkitCase {
 								rs.getLong("size"),
 								rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
 								rs.getString("md5"), rs.getString("sha256"),
-								FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"));
+								FileKnown.valueOf(rs.getByte("known")), parentPath, 
+								TskData.FileLocation.valueOf(rs.getByte("location")), rs.getString("mime_type"));
 						children.add(lf);
 						break;
 					}
@@ -11203,10 +11222,10 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
-		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id,extension) " //NON-NLS
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, extension)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, location, data_source_obj_id,extension) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, location, extension)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
