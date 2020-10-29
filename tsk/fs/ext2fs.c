@@ -1420,6 +1420,7 @@ ext2fs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
 
     // save the run
     if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
+        tsk_fs_attr_run_free(data_run);
         return 1;
     }
 
@@ -1589,7 +1590,7 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
 * If the file length is longer than what is in the attr runs, add a sparse
 * data run to cover the rest of the file.
 *
-* @return 0 if successful or -1 on error.
+* @return 0 if successful or 1 on error.
 */
 static uint8_t
 ext2fs_handle_implicit_sparse_data_run(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr) {
@@ -1623,6 +1624,7 @@ ext2fs_handle_implicit_sparse_data_run(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_a
 
         // Save the run.
         if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
+
             return 1;
         }
     }
