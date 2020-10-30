@@ -318,25 +318,6 @@ public class BlackboardArtifact implements Content {
 		attrsCache.add(attribute);
 	}
 
-
-	/**
-	 * Adds a collection of attributes to this artifact in a single operation
-	 * (faster than adding each attribute individually).
-	 * This function also executes in the inserts within the transaction context.
-	 *
-	 * @param attributes		 The collection of attributes.
-	 * @param caseDbTransaction  the transaction in the scope of which the operation
-	 *							 is to be performed, managed by the caller
-	 *
-	 * @throws TskCoreException If an error occurs and the attributes were not
-	 *                          added to the artifact.
-	 */
-	public void addAttributes(Collection<BlackboardAttribute> attributes, SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
-		getSleuthkitCase().getBlackboard().addBlackboardAttributes(attributes, artifactTypeId, artifactId, caseDbTransaction);
-		attrsCache.addAll(attributes);
-	}
-
-
 	/**
 	 * Gets the attributes of this artifact.
 	 *
