@@ -43,12 +43,12 @@ public abstract class SpecialDirectory extends AbstractFile {
 			long ctime, long crtime, long atime, long mtime,
 			short modes,
 			int uid, int gid,
-			String md5Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType) {
 		super(db, objId, dataSourceObjectId, attrType, attrId, name,
 				fileType, metaAddr, metaSeq, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, null);
+				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, null);
 	}
 
 	/**

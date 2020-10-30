@@ -61,13 +61,14 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 * @param metaFlags          The meta flags for the virtual directory.
 	 * @param timezone           The timezone for the data source.
 	 * @param md5Hash            The MD5 hash for the virtual directory.
+	 * @param sha256Hash         The SHA-256 hash for the virtual directory.
 	 * @param knownState         The known state for the virtual directory
 	 * @param parentPath         The parent path for the virtual directory,
 	 *                           should be "/" if the virtual directory is a
 	 *                           data source.
 	 */
-	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, TskData.FileKnown knownState, String parentPath) {
-		super(db, objId, dataSourceObjectId, name, dirType, metaType, dirFlag, metaFlags, md5Hash, knownState, parentPath);
+	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, String sha256Hash, TskData.FileKnown knownState, String parentPath) {
+		super(db, objId, dataSourceObjectId, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, knownState, parentPath);
 		this.objectId = objId;
 		this.deviceId = deviceId;
 		this.timezone = timezone;
@@ -233,4 +234,35 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 			}
 		}
 	}
+	
+	/**
+	 * Constructs a local/logical files and/or directories data source.
+	 *
+	 * @param db                 The case database.
+	 * @param objId              The object id of the virtual directory.
+	 * @param dataSourceObjectId The object id of the data source for the
+	 *                           virtual directory; same as objId if the virtual
+	 *                           directory is a data source.
+	 * @param name               The name of the virtual directory.
+	 * @param dirType            The TSK_FS_NAME_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param deviceId           The device ID for the data source.
+	 * @param metaType           The TSK_FS_META_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param dirFlag            The TSK_FS_META_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param metaFlags          The meta flags for the virtual directory.
+	 * @param timezone           The timezone for the data source.
+	 * @param md5Hash            The MD5 hash for the virtual directory.
+	 * @param knownState         The known state for the virtual directory
+	 * @param parentPath         The parent path for the virtual directory,
+	 *                           should be "/" if the virtual directory is a
+	 *                           data source.
+	 * 
+	 * @deprecated Use version with SHA-256 parameter
+	 */
+	@Deprecated
+	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, TskData.FileKnown knownState, String parentPath) {
+		this(db, objId, dataSourceObjectId, deviceId, name, dirType, metaType, dirFlag, metaFlags, timezone, md5Hash, null, knownState, parentPath);
+	}	
 }

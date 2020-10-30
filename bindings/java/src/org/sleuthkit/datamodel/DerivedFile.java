@@ -91,7 +91,7 @@ public class DerivedFile extends AbstractFile {
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size,
 			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String localPath,
 			long parentId,
@@ -102,7 +102,7 @@ public class DerivedFile extends AbstractFile {
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, extension);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension);
 		setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}
@@ -305,7 +305,7 @@ public class DerivedFile extends AbstractFile {
 			long parentId) {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
-				md5Hash, knownState,
+				md5Hash, null, knownState,
 				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null);
 	}
 
