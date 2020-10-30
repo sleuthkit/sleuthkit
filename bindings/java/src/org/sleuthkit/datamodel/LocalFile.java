@@ -83,7 +83,7 @@ public class LocalFile extends AbstractFile {
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size,
 			long ctime, long crtime, long atime, long mtime,
-			String mimeType, String md5Hash, FileKnown knownState,
+			String mimeType, String md5Hash, String sha256Hash, FileKnown knownState,
 			long parentId, String parentPath,
 			long dataSourceObjectId,
 			String localPath,
@@ -91,7 +91,7 @@ public class LocalFile extends AbstractFile {
 			String extension) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, extension);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension);
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors, using 
 		// AbstractContent.UNKNOWN_ID as needed.
@@ -218,7 +218,7 @@ public class LocalFile extends AbstractFile {
 				dirFlag, metaFlags,
 				size,
 				ctime, crtime, atime, mtime,
-				null, md5Hash, knownState,
+				null, md5Hash, null, knownState,
 				AbstractContent.UNKNOWN_ID, parentPath,
 				db.getDataSourceObjectId(objId),
 				localPath,
