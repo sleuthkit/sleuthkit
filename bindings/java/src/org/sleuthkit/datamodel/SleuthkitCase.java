@@ -3913,7 +3913,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private void addBlackBoardAttribute(BlackboardAttribute attr, int artifactTypeId, CaseDbConnection connection) throws SQLException, TskCoreException {
+	void addBlackBoardAttribute(BlackboardAttribute attr, int artifactTypeId, CaseDbConnection connection) throws SQLException, TskCoreException {
 		PreparedStatement statement;
 		switch (attr.getAttributeType().getValueType()) {
 			case STRING:
@@ -4525,7 +4525,7 @@ public class SleuthkitCase {
 	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
 		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
 	}
-	
+
 	/**
 	 * Add a new blackboard artifact with the given type.
 	 *
@@ -4540,19 +4540,22 @@ public class SleuthkitCase {
 	 */
 	BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id, long data_source_obj_id) throws TskCoreException {
 		BlackboardArtifact.Type type = getArtifactType(artifactTypeID);
-		return newBlackboardArtifact(artifactTypeID, obj_id, type.getTypeName(), type.getDisplayName(), data_source_obj_id);
+		try (CaseDbConnection connection = connections.getConnection()) {
+			return newBlackboardArtifact(artifactTypeID, obj_id, type.getTypeName(), type.getDisplayName(), data_source_obj_id, connection);
+		}
 	}
-
+	
 	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName) throws TskCoreException {
 		try (CaseDbConnection connection = connections.getConnection()) {
 			long data_source_obj_id = getDataSourceObjectId(connection, obj_id);
-			return this.newBlackboardArtifact(artifact_type_id, obj_id, artifactTypeName, artifactDisplayName, data_source_obj_id);
+			return this.newBlackboardArtifact(artifact_type_id, obj_id, artifactTypeName, artifactDisplayName, data_source_obj_id, connection);
 		}
 	}
 
-	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id) throws TskCoreException {
+	BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
+		
 		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection()) {
+		try  {
 			long artifact_obj_id = addObject(obj_id, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
 			PreparedStatement statement = null;
 			if (dbType == DbType.POSTGRESQL) {

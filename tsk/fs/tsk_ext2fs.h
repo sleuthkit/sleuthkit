@@ -365,6 +365,8 @@ extern "C" {
         uint8_t eh_generation[4];       /* u32 */
     } ext2fs_extent_header;
 
+#define EXT2_MAX_INIT_EXTENT_LENGTH 0x8000  /* Maximum length of an initialized extent */
+
 /* MODE - Note that values are in octal format */
 #define EXT2_IN_FMT  0170000
 #define EXT2_IN_SOCK 0140000
