@@ -6984,6 +6984,75 @@ public class SleuthkitCase {
 				isFile, encodingType,
 				parent, transaction);
 	}
+	
+	/**
+	 * TODO
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
+	 *
+	 * @param fileName     The name of the file.
+	 * @param localPath    The absolute path (including the file name) of the
+	 *                     local/logical in secondary storage.
+	 * @param size         The size of the file in bytes.
+	 * @param ctime        The changed time of the file.
+	 * @param crtime       The creation time of the file.
+	 * @param atime        The accessed time of the file
+	 * @param mtime        The modified time of the file.
+	 * @param md5          The MD5 hash of the file.
+	 * @param sha256       The SHA256 hash of the file.
+	 * @param known        The known status of the file (can be null)
+	 * @param mimeType     The MIME type of the file
+	 * @param isFile       True, unless the file is a directory.
+	 * @param encodingType Type of encoding used on the file
+	 * @param parent       The parent of the file (e.g., a virtual directory)
+	 * @param transaction  A caller-managed transaction within which the add
+	 *                     file operations are performed.
+	 *
+	 * @return An object representing the local/logical file.
+	 *
+	 * @throws TskCoreException if there is an error completing a case database
+	 *                          operation.
+	 */
+	public LocalFile addRemoteLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			String md5, String sha256, FileKnown known, String mimeType,
+			boolean isFile, TskData.EncodingType encodingType,
+			Content parent, CaseDbTransaction transaction) throws TskCoreException {	
+		
+		File file = new File(localPath);
+		
+		// curl -X POST "http://localhost:8080/api/files" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@Report.xml"
+		List<String> command = new ArrayList<>();
+		command.add("curl");
+		command.add("-X");
+		command.add("POST");
+		command.add("http://localhost:8080/api/files");
+		command.add("-H");
+		command.add("accept: application/json");
+		command.add("-H");
+		command.add("Content-Type: multipart/form-data");
+		command.add("-F");
+		command.add("file=@" + file.getAbsolutePath());
+		
+		System.out.println("### Process builder commands");
+		for(String s:command){
+			System.out.println("  " + s);
+		}
+		
+		ProcessBuilder processBuilder = new ProcessBuilder(command).inheritIO();
+		try {
+			Process process = processBuilder.start();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		
+		return addLocalFile(fileName, localPath,
+				size, ctime, crtime, atime, mtime,
+				md5, sha256, known, mimeType,
+				isFile, encodingType,
+				parent, TskData.FileLocation.MICROSERVICE, transaction);
+	}
 
 	/**
 	 * Adds a local/logical file to the case database. The database operations
@@ -6998,7 +7067,8 @@ public class SleuthkitCase {
 	 * @param crtime       The creation time of the file.
 	 * @param atime        The accessed time of the file
 	 * @param mtime        The modified time of the file.
-	 * @param md5          The MD5 hash of the file
+	 * @param md5          The MD5 hash of the file.
+	 * @param sha256       The SHA256 hash of the file.
 	 * @param known        The known status of the file (can be null)
 	 * @param mimeType     The MIME type of the file
 	 * @param isFile       True, unless the file is a directory.
@@ -7017,6 +7087,49 @@ public class SleuthkitCase {
 			String md5, String sha256, FileKnown known, String mimeType,
 			boolean isFile, TskData.EncodingType encodingType,
 			Content parent, CaseDbTransaction transaction) throws TskCoreException {
+		
+		return addLocalFile(fileName, localPath,
+				size, ctime, crtime, atime, mtime,
+				md5, sha256, known, mimeType,
+				isFile, encodingType,
+				parent, TskData.FileLocation.LOCAL, transaction);
+	}
+	
+	/**
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
+	 *
+	 * @param fileName     The name of the file.
+	 * @param localPath    The absolute path (including the file name) of the
+	 *                     local/logical in secondary storage.
+	 * @param size         The size of the file in bytes.
+	 * @param ctime        The changed time of the file.
+	 * @param crtime       The creation time of the file.
+	 * @param atime        The accessed time of the file
+	 * @param mtime        The modified time of the file.
+	 * @param md5          The MD5 hash of the file.
+	 * @param sha256       The SHA-256 hash of the file.
+	 * @param known        The known status of the file (can be null)
+	 * @param mimeType     The MIME type of the file
+	 * @param isFile       True, unless the file is a directory.
+	 * @param encodingType Type of encoding used on the file
+	 * @param parent       The parent of the file (e.g., a virtual directory)
+	 * @param location     The location of the file.
+	 * @param transaction  A caller-managed transaction within which the add
+	 *                     file operations are performed.
+	 *
+	 * @return An object representing the local/logical file.
+	 *
+	 * @throws TskCoreException if there is an error completing a case database
+	 *                          operation.
+	 */	
+	LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			String md5, String sha256, FileKnown known, String mimeType,
+			boolean isFile, TskData.EncodingType encodingType,
+			Content parent, TskData.FileLocation location, CaseDbTransaction transaction) throws TskCoreException {
+		
 		CaseDbConnection connection = transaction.getConnection();
 		Statement queryStatement = null;
 		try {
@@ -7076,7 +7189,7 @@ public class SleuthkitCase {
 				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			}
 			statement.setString(19, parentPath);
-			statement.setLong(20, TskData.FileLocation.LOCAL.getValue());
+			statement.setLong(20, location.getValue());
 			statement.setLong(21, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			statement.setString(22, extension);
