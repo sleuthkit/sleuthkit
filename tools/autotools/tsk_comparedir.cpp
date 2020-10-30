@@ -166,18 +166,18 @@ uint8_t
     struct stat status;
 
     strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
-    strncat(fullPath, a_dir, TSK_CD_BUFSIZE-strlen(fullPath));
+    strncat(fullPath, a_dir, TSK_CD_BUFSIZE-strlen(fullPath)-1);
     if ((dp = opendir(fullPath)) == NULL) {
         fprintf(stderr, "Error opening directory");
         return 1;
     }
     while ((dirp = readdir(dp)) != NULL) {
         strncpy(file, a_dir, TSK_CD_BUFSIZE);
-        strncat(file, "/", TSK_CD_BUFSIZE-strlen(file));
-        strncat(file, dirp->d_name, TSK_CD_BUFSIZE-strlen(file));
+        strncat(file, "/", TSK_CD_BUFSIZE-strlen(file)-1);
+        strncat(file, dirp->d_name, TSK_CD_BUFSIZE-strlen(file)-1);
 
         strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
-        strncat(fullPath, file, TSK_CD_BUFSIZE-strlen(fullPath));
+        strncat(fullPath, file, TSK_CD_BUFSIZE-strlen(fullPath)-1);
 
         stat(fullPath, &status);
         if (S_ISDIR(status.st_mode)) {
