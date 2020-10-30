@@ -40,13 +40,25 @@ public class RootFilterTest {
 	@Test
 	public void testCopyOf() {
 		System.out.println("copyOf");
-		TimelineFilter instance = getNewRootFilter();
-		assertEquals(instance, instance.copyOf());
+		
+		testCopyOfEqual(new TimelineFilter.TagsFilter());
+		testCopyOfEqual(new TimelineFilter.HashHitsFilter());
+		testCopyOfEqual(new TimelineFilter.TextFilter());
+		testCopyOfEqual(new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE));
+		testCopyOfEqual(new TimelineFilter.DataSourcesFilter());
+		testCopyOfEqual(new TimelineFilter.HideKnownFilter());
+		testCopyOfEqual(new TimelineFilter.FileTypesFilter());
+		
+		testCopyOfEqual(getNewRootFilter());
 	}
+	
+	private void testCopyOfEqual(TimelineFilter filter) {
+		assertEquals(filter, filter.copyOf());
+	}
+	
 
 	TimelineFilter.RootFilter getNewRootFilter() {
 		TimelineFilter.TagsFilter tagsFilter = new TimelineFilter.TagsFilter();
-		tagsFilter.addSubFilter(new TimelineFilter.TagNameFilter(new PublicTagName(0, "test tagName", "test tag name description", TagName.HTML_COLOR.NONE, TskData.FileKnown.KNOWN)));
 		TimelineFilter.HashHitsFilter hashHitsFilter = new TimelineFilter.HashHitsFilter();
 		TimelineFilter.TextFilter textFilter = new TimelineFilter.TextFilter();
 		EventTypeFilter eventTypeFilter = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
