@@ -7,30 +7,30 @@ cache:
 
 image: Visual Studio 2015
 
-
-install:  
+install:
   - ps: choco install nuget.commandline
   - ps: choco install ant --ignore-dependencies
   - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
   - set PATH=C:\Python36-x64\';%PATH%
 environment:
-    global:
-      TSK_HOME: "%APPVEYOR_BUILD_FOLDER%"
-      PYTHON: "C:\\Python36-x64"
-      JDK_HOME: C:\Program Files\Java\jdk1.8.0
+  global:
+    TSK_HOME: "%APPVEYOR_BUILD_FOLDER%"
+    PYTHON: "C:\\Python36-x64"
+    JDK_HOME: C:\Program Files\Java\jdk1.8.0
 services:
 
 before_build:
   - nuget restore win32\libtsk -PackagesDirectory win32\packages
-  
-build_script:
-      - python win32\updateAndBuildAll.py -m 
-      - ps: ant -version
-      - ps: pushd bindings/java
-      - cmd: ant -q dist
-      - ps: popd
-      - ps: pushd case-uco/java
-      - cmd: ant -q
-      - ps: popd
 
-test: off
+build_script:
+  - python win32\updateAndBuildAll.py -m
+  - ps: ant -version
+  - ps: pushd bindings/java
+  - cmd: ant -q dist
+  - ps: popd
+  - ps: pushd case-uco/java
+  - cmd: ant -q
+  - ps: popd
+
+test_script:
+  - cmd: ant -q -f bindings/java test
