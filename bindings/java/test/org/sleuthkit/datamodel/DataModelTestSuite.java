@@ -122,6 +122,10 @@ public class DataModelTestSuite {
 			standardFile.createNewFile();
 			java.io.File dbFile = new java.io.File(dbPath);
 			dbFile.delete();
+			if (dbFile.getParentFile() != null) {
+				dbFile.getParentFile().mkdirs();
+			}
+			
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 
 			String timezone = "";

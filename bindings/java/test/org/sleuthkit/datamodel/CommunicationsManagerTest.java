@@ -245,6 +245,9 @@ public class CommunicationsManagerTest {
 			// Delete the DB file, in case 
 			java.io.File dbFile = new java.io.File(dbPath);
 			dbFile.delete();
+			if (dbFile.getParentFile() != null) {
+				dbFile.getParentFile().mkdirs();
+			}
 
 			// Create new case db
 			caseDB = SleuthkitCase.newCase(dbPath);
