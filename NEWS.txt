@@ -1,10 +1,10 @@
 ---------------- VERSION 4.10.1 --------------
-
-NEED TO FINISH
-
 C/C++:
-- Changed Windows build to use Nuget for libewf, libvmdk, libvhdi
-- Fixed compiler warnings and updated license files
+- Changed Windows build to use Nuget for libewf, libvmdk, libvhdi.
+- Fixed compiler warnings 
+- Clarrified licenses and added Apache license to distribution
+- Improved error handling for out of memory issues
+- Rejistry++ memory leak fixes
 
 Java:
 - Localized for Japanese
