@@ -1,14 +1,23 @@
-/*! \page artifact_catalog_page Autopsy Standard Artifacts Catalog
+/*! \page artifact_catalog_page Standard Artifacts Catalog
 
 
 # Introduction
-This document reflects current standard usage of artifacts and attributes for posting analysis results to the case blackboard.
-
-Note that "TSK" is an abbreviation of "The SleuthKit." Artifact type names with a "TSK_" prefix indicate the names of standard or "built in" types. User-defined artifact and attribute types should not be given names with "TSK_" prefixes.
+This document reflects current standard usage of artifact and attribute types for posting analysis results to the case blackboard in Autopsy.  Refer to \ref mod_bbpage for more background on the blackboard and how to make artifacts. 
 
 The catalog section below has one entry for each standard artifact type. Each entry lists the required and optional attributes of artifacts of the type.
+
+NOTE:
+- While we have listed some attributes as "Required", nothing will enforce that they exist. Modules that use artifacts from the blackboard should assume that some of the attributes may not actually exist. 
+- You are not limited to the attributes listed below for each artifact.  Attributes are listed below as "Optional" if at least one, but not all, Autopsy modules create them.  If you want to store data that is not listed below, use an existing attribute type or make your own.  
+
+For the full list of types, refer to:
+- org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE
+- org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE
+
+
 <h1>Artifacts Catalog</h1>
 
+In alphabetical order.
 
 ---
 ## TSK_ACCOUNT
@@ -24,6 +33,14 @@ TSK_CARD_NUMBER (Credit card number)
 - TSK_KEYWORD_SEARCH_DOCUMENT_ID (Document ID of the Solr document that contains the TSK_CARD_NUMBER when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
 - TSK_SET_NAME (The keyword list name, i.e., "Credit Card Numbers", when the account is a credit card discovered by the Autopsy regular expression search for credit cards)
 
+---
+
+
+## TSK_ASSOCIATED_OBJECT
+Provides a backwards link to an artifact that references the parent file of this artifact.  Example usage is that a downloaded file will have this artifact and it will point back to the TSK_WEB_DOWNLOAD artifact that is associated with a browser's SQLite database. See \ref jni_bb_associated_object.
+
+### REQUIRED ATTRIBUTES
+- TSK_ASSOCIATED_ARTIFACT (Artifact ID of associated artifact)
 
 
 ---
@@ -219,16 +236,17 @@ None
 
 ---
 ## TSK_GEN_INFO
-A generic information artifact.
+A generic information artifact. Each content object will have at most one TSK_GEN_INFO artifact, which is easily accessed through org.sleuthkit.datamodel.AbstractContent.getGenInfoArtifact() and related methods. The TSK_GEN_INFO object is useful for storing values related to the content object without making a new artifact type.
 
 ### REQUIRED ATTRIBUTES
 None
 
-
+### OPTIONAL ATTRIBUTES
+- TSK_PHOTODNA_HASH (The PhotoDNA hash of an image)
 
 ---
 ## TSK_GPS_BOOKMARK
-A bookmarked GPS location.
+A bookmarked GPS location or saved waypoint.
 
 ### REQUIRED ATTRIBUTES
 - TSK_GEO_LATITUDE (The latitude value of the bookmark)
@@ -264,10 +282,7 @@ The last known location of a GPS connected device. This may be from a perspectiv
 A GPS route.
 
 ### REQUIRED ATTRIBUTES
-- TSK_GEO_LATITUDE_START (The latitude value of the starting point)
-- TSK_GEO_LATITUDE_END (The latitude value of the ending point)
-- TSK_GEO_LONGITUDE_START (The longitude value of the ending point)
-- TSK_GEO_LONGITUDE_END (The longitude value of the ending point)
+- TSK_GEO_WAYPOINTS (JSON list of waypoints. Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints class to create/process)
 
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (Timestamp of the GPS route, in seconds since 1970-01-01T00:00:00Z)
@@ -294,18 +309,15 @@ A GPS location that was known to have been searched by the device or user.
 
 
 ---
-## TSK_GPS_TRACKPOINT
-A GPS trackpoint found in an application, file or database.
+## TSK_GPS_TRACK
+A Global Positioning System (GPS) track artifact records the track, or path, of a GPS-enabled dvice as a connected series of track points. A track point is a location in a geographic coordinate system with latitude, longitude and altitude (elevation) axes.
 
 ### REQUIRED ATTRIBUTES
-- TSK_GEO_LATITUDE (The GPS latitude value that was tracked)
-- TSK_GEO_LONGITUDE (The GPS longitude value that was tracked)
+- TSK_GEO_TRACKPOINTS (JSON list of trackpoints. Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints class to create/process)
 
 ### OPTIONAL ATTRIBUTES
-- TSK_DATETIME (Timestamp of the GPS trackpoint, in seconds since 1970-01-01T00:00:00Z)
-- TSK_GEO_ALTITUDE (Altitude of the latitude and longitude values)
-- TSK_NAME (The name of the trackpoint. Ex: Boston)
-- TSK_PROG_NAME (Name of application containing the GPS trackpoint)
+- TSK_NAME (The name of the trackpoint set. Ex: Boston)
+- TSK_PROG_NAME (Name of application containing the GPS trackpoint set)
 
 
 
@@ -389,6 +401,7 @@ A message that is found in some content.
 - TSK_MESSAGE_TYPE (E.g., WhatsApp Message, Skype Message, etc.)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_ATTACHMENTS (Attachments - use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper class to add an attachment)
 - TSK_DATETIME (Timestamp the message was sent or received, in seconds since 1970-01-01T00:00:00Z) 
 - TSK_DIRECTION (Direction of the message, e.g., incoming or outgoing)
 - TSK_EMAIL_FROM (Email address of the sender)
@@ -409,7 +422,16 @@ General metadata for some content.
 ### REQUIRED ATTRIBUTES
 None
 
-
+### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_CREATED  (Timestamp the document was created)
+- TSK_DATETIME_MODIFIED (Timestamp the document was modified)
+- TSK_DESCRIPTION (Title of the document)
+- TSK_LAST_PRINTED_DATETIME (Timestamp when document was last printed)
+- TSK_ORGANIZATION (Organization/Company who owns the document)
+- TSK_OWNER (Author of the document)
+- TSK_PROG_NAME (Program used to create the document)
+- TSK_USER_ID (Last author of the document)
+- TSK_VERSION (Version number of the program used to create the document)
 
 ---
 ## TSK_METADATA_EXIF
@@ -496,6 +518,11 @@ The number of times a program/application was run.
 
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (Timestamp that application was run last, in seconds since 1970-01-01T00:00:00Z)
+- TSK_BYTES_SENT (Number of bytes sent)
+- TSK_BYTES_RECEIVED (Number of bytes received)
+- TSK_USER_NAME (User who executed the program)
+- TSK_COMMENT (Source of the attribute)
+- TSK_PATH (Path of the executable program)
 
 
 
@@ -512,7 +539,8 @@ Indicates recently accessed content. Examples: Recent Documents or Recent Downlo
 - TSK_PROG_NAME (Application or application extractor that stored this object as recent)
 - TSK_DATETIME (A timestamp associated with the content, in seconds since 1970-01-01T00:00:00Z. Ex: creation time)
 - TSK_NAME (If found in the registry, the name of the attribute)
-- TSK_VALUE(If found in the registry, the value of the attribute)
+- TSK_VALUE (If found in the registry, the value of the attribute)
+- TSK_COMMENT (What the source of the attribute may be)
 
 
 
@@ -606,6 +634,17 @@ An indication that some data did not pass verification. One example would be ver
 
 
 ---
+## TSK_WEB_ACCOUNT_TYPE
+A web account type entry. 
+
+### REQUIRED ATTRIBUTES
+- TSK_DOMAIN (Domain of the URL)
+- TSK_TEXT (Indicates type of account (admin/moderator/user) and possible platform)
+- TSK_URL (URL indicating the user has an account on this domain)
+
+
+
+---
 ## TSK_WEB_BOOKMARK
 A web bookmark entry.
 
@@ -626,13 +665,14 @@ A web bookmark entry.
 A web cache entry. The resource that was cached may or may not be present in the data source.
 
 ### REQUIRED ATTRIBUTES
-- TSK_PATH (Path to the source cache file. There are typically many cache files which each contain many cached resources)
+- TSK_PATH (Path to the cached file. This could point to a container file that has smaller cached data in it.) 
 - TSK_URL (URL of the resource cached in this entry)
 
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME_CREATED (Creation date of the cache entry, in seconds since 1970-01-01T00:00:00Z)
 - TSK_HEADERS (HTTP headers on cache entry)
 - TSK_PATH_ID (Object ID of the source cache file)
+- TSK_DOMAIN (Domain of the URL)
 
 
 
@@ -651,7 +691,6 @@ A Web cookie found.
 - TSK_DATETIME_END (Expiration datetime of the Web cookie, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DOMAIN (The domain the Web cookie serves)
 - TSK_PROG_NAME (Name of the application or application extractor that stored the Web cookie)
-- TSK_PATH (Path to the file containing the Web cookie in the data source)
 
 
 

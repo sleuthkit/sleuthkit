@@ -146,6 +146,11 @@ uint8_t TskAuto::openImageHandle(TSK_IMG_INFO * a_img_info)
 void
  TskAuto::closeImage()
 {
+    for (size_t i = 0; i < m_poolInfos.size(); i++) {
+        tsk_pool_close(m_poolInfos[i]);
+    }
+    m_poolInfos.clear();
+
     if ((m_img_info) && (m_internalOpen)) {
         tsk_img_close(m_img_info);
     }
@@ -215,7 +220,7 @@ TSK_FILTER_ENUM
 TskAuto::filterPool(const TSK_POOL_INFO * /*pool_info*/) {
     /* Most of our tools can't handle pool volumes yet */
     if (tsk_verbose)
-        fprintf(stderr, "filterPoolVol: Pool handling is not yet implemented for this tool\n");
+        fprintf(stderr, "filterPool: Pool handling is not yet implemented for this tool\n");
     return TSK_FILTER_SKIP;
 }
 
@@ -315,7 +320,7 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     }
 
     TSK_VS_INFO *vs_info;
-    // USE mm_walk to get the volumes
+    // Use mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
         /* we're going to ignore this error to avoid confusion if the
          * fs_open passes. */
@@ -433,7 +438,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
     TSK_FILTER_ENUM retval1 = filterPool(pool);
     if (retval1 == TSK_FILTER_SKIP)
         return TSK_OK;
-    else if ((retval1 == TSK_FILTER_STOP))
+    else if (retval1 == TSK_FILTER_STOP)
         return TSK_STOP;
 
     /* Only APFS pools are currently supported */
@@ -493,7 +498,10 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         registerError();
         return TSK_ERR;
     }
-    pool->close(pool);
+
+    // Store the pool_info for later use. It will be closed at the end of the add image process.
+    m_poolInfos.push_back(pool);
+
     return TSK_OK;
 }
 
@@ -667,6 +675,30 @@ TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)
     }
     
     findFilesInFsInt(a_fs_info, a_fs_info->root_inum);
+    return m_errors.empty() ? 0 : 1;
+}
+
+/**
+* Processes the file system represented by the given TSK_FS_INFO
+* pointer. Will Call processFile() on each file that is found.
+*
+* @param a_fs_info Pointer to a previously opened file system.
+ * @param a_inum inum to start walking files system at.
+*
+* @returns 1 if an error occurred (messages will have been registered) and 0 on success
+*/
+uint8_t
+TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info, TSK_INUM_T inum)
+{
+    if (a_fs_info == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
+        tsk_error_set_errstr("findFilesInFs - fs_info");
+        registerError();
+        return 1;
+    }
+
+    findFilesInFsInt(a_fs_info, inum);
     return m_errors.empty() ? 0 : 1;
 }
 

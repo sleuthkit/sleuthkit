@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040800ff
+#define TSK_VERSION_NUM 0x041001ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.8.0"
+#define TSK_VERSION_STR "4.10.1"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -55,6 +55,10 @@
 
 // get some other TSK / OS settings
 #include "tsk_os.h"
+
+#ifdef TSK_WIN32
+#define strncasecmp _strnicmp
+#endif
 
 #ifdef __cplusplus
 extern "C" {

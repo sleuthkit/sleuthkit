@@ -34,7 +34,7 @@
  * @param bytesConsumed  -- return of the number of input bytes of compressed data used.
  * @return 0 on success, a negative number on error
  */
-static int
+int
 zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uint64_t * uncompressedLength, unsigned long *bytesConsumed)       // this is unsigned long because that's what zlib uses.
 {
 
@@ -1159,7 +1159,7 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                               TSK_OFF_T attributeLength,
                               uint64_t uncSize,
                               int (*decompress_attr)(char* rawBuf,
-                                                     TSK_OFF_T rawSize,
+                                                     uint32_t rawSize,
                                                      uint64_t uncSize,
                                                      char** dstBuf,
                                                      uint64_t* dstSize,

@@ -1,0 +1,7 @@
+<ivy-module version="2.0">
+    <info organisation="org.sleuthkit" module="SleuthkitCaseUco"/>
+    <dependencies>		
+        <dependency org="com.google.code.gson" name="gson" rev="2.8.5"/>
+    </dependencies>
+</ivy-module>
+

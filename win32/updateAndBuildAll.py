@@ -37,40 +37,21 @@ def pullAndBuildAllDependencies(depBranch):
     global passed
     passed = True
 
-    # get the LIBEWF_HOME, LIBVHDI_HOME, LIBVMDH_HOME
-    ewfHome = os.getenv("LIBEWF_HOME", "C:\\libewf_64bit")
-    vhdiHome = os.getenv("LIBVHDI_HOME", "C:\\libvhdi_64bit")
-    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
-    # check if ewfHome, vhdiHome or vmdhHome exits
-    checkPathExist(ewfHome)
-    checkPathExist(vhdiHome)
-    checkPathExist(vmdkHome)
-    # git update libewf, libvhdi and libvmdk
+    # get all nuget packages needed by the solution
     if(passed):
-        gitPull(ewfHome, "libewf_64bit", depBranch)
-    if(passed):
-        gitPull(vhdiHome, "libvhdi_64bit", depBranch)
-    if(passed):
-        gitPull(vmdkHome, "libvmdk_64bit", depBranch)
-
-    if not MINIMAL:
-        # build 32-bit of libewf, libvhdi, libvmdk and TSK
-        if(passed):
-            buildDependentLibs(ewfHome, 32, "libewf", "libewf_dll")
-        if(passed):
-            buildDependentLibs(vhdiHome, 32, "libvhdi", "libvhdi")
-        if(passed):
-            buildDependentLibs(vmdkHome, 32, "libvmdk", "libvmdk")
-
-
-    # build 64-bit of libewf, libvhdi, libvmdk and TSK
-    if(passed):
-        buildDependentLibs(ewfHome, 64, "libewf", "libewf_dll")
-    if(passed):
-        buildDependentLibs(vhdiHome, 64, "libvhdi", "libvhdi")
-    if(passed):
-        buildDependentLibs(vmdkHome, 64, "libvmdk", "libvmdk")
-
+        TSK_HOME = os.getenv("TSK_HOME", False)
+        if not TSK_HOME:
+            print("Please set the TSK_HOME environment variable")
+            sys.exit(1)
+        else:
+            # nuget restore 
+            os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
+            
+            print ("Restoring nuget packages.")
+            ret = subprocess.call(["nuget", "restore", "tsk-win.sln"] , stdout=sys.stdout)
+            if ret != 0:
+                sys.exit("Failed to restore nuget packages")
+                 
 
 def buildTSKAll():
 
@@ -78,17 +59,13 @@ def buildTSKAll():
         if(passed):
             buildTSK(32, "Release")
         if(passed):
-            buildTSK(32, "Release_PostgreSQL")
-        if(passed):
-            buildTSK(64, "Release")
-        if(passed):
             buildTSK(64, "Release_NoLibs")
 
     # MINIMAL is 64-bit for Autopsy and 32-bit with no deps for logical imager et al.
     if(passed):
         buildTSK(32, "Release_NoLibs")
     if(passed):
-        buildTSK(64, "Release_PostgreSQL")
+        buildTSK(64, "Release")
 
 def checkPathExist(path):
     global passed
@@ -221,7 +198,7 @@ def buildTSK(wPlatform, target):
         sys.exit(1)
     else:
         os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
-
+                 
     vs = []
     vs.append(MSBUILD_PATH)
     vs.append(os.path.join("tsk-win.sln"))
@@ -259,7 +236,7 @@ def usage():
     '''
     print('Usage: python3 updateAndBuildLibs.py [[-h | --help, -b <branch> | --branch=<branch>, -m | --minimal]')
     print('branch: Branch for dependencies (master is default)')
-    print('-m,--minimal: Build 64-bit PostgreSQL only')
+    print('-m,--minimal: Build 64-bit Release only')
     sys.stdout.flush()
     sys.exit(1)
 

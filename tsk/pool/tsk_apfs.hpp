@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 /** \@file Public C++ API */
 #pragma once
 
@@ -35,7 +44,6 @@ class APFSBlock {
 
   // Move constructible
   APFSBlock(APFSBlock &&) = default;
-  APFSBlock &operator=(APFSBlock &&) = default;
 
   virtual ~APFSBlock() = default;
 

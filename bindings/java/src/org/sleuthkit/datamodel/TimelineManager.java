@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018-2019 Basis Technology Corp.
+ * Copyright 2018-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +37,8 @@ import java.util.Objects;
 import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
@@ -51,6 +54,8 @@ import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
  */
 public final class TimelineManager {
 
+	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
+	
 	/**
 	 * Timeline event types added to the case database when it is created.
 	 */
@@ -81,6 +86,11 @@ public final class TimelineManager {
 
 	private final SleuthkitCase caseDB;
 
+	/**
+	 * Maximum timestamp to look to in future. Twelve (12) years from current date. 
+	 */
+	private static final Long MAX_TIMESTAMP_TO_ADD = Instant.now().getEpochSecond() + 394200000;
+	
 	/**
 	 * Mapping of timeline event type IDs to TimelineEventType objects.
 	 */
@@ -477,6 +487,29 @@ public final class TimelineManager {
 	}
 
 	Collection<TimelineEvent> addEventsForNewFile(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
+		Set<TimelineEvent> events = addEventsForNewFileQuiet(file, connection);
+		events.stream()
+				.map(TimelineEventAddedEvent::new)
+				.forEach(caseDB::fireTSKEvent);
+
+		return events;
+	}
+	
+	/**
+	 * Adds timeline events for the new file to the database.
+	 * Does not fire TSKEvents for each addition. This method should only be used if an 
+	 * update event will be sent later. For example, a data source processor may
+	 * send out a single event that a data source has been added rather than an event
+	 * for each timeline event.
+	 * 
+	 * @param file        The new file
+	 * @param connection  Database connection to use
+	 * 
+	 * @return Set of new events
+	 * 
+	 * @throws TskCoreException 
+	 */
+	Set<TimelineEvent> addEventsForNewFileQuiet(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
 		//gather time stamps into map
 		Map<TimelineEventType, Long> timeMap = ImmutableMap.of(TimelineEventType.FILE_CREATED, file.getCrtime(),
 				TimelineEventType.FILE_ACCESSED, file.getAtime(),
@@ -501,7 +534,7 @@ public final class TimelineManager {
 
 			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
 				Long time = timeEntry.getValue();
-				if (time > 0) {// if the time is legitimate ( greater than zero ) insert it
+				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
 					TimelineEventType type = timeEntry.getKey();
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
@@ -512,15 +545,16 @@ public final class TimelineManager {
 					 */
 					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
 							description, null, null, false, false));
+				} else {
+					if (time >= MAX_TIMESTAMP_TO_ADD) {
+						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
+					}
 				}
 			}
 
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
-		events.stream()
-				.map(TimelineEventAddedEvent::new)
-				.forEach(caseDB::fireTSKEvent);
 
 		return events;
 	}
@@ -605,8 +639,11 @@ public final class TimelineManager {
 			return Optional.empty();
 		}
 		long time = eventPayload.getTime();
-		// if the time is legitimate ( greater than zero ) insert it into the db
-		if (time <= 0) {
+		// if the time is legitimate ( greater than or equal to zero or less than or equal to 12 years from present time) insert it into the db
+		if (time <= 0 || time >= MAX_TIMESTAMP_TO_ADD) {
+			if (time >= MAX_TIMESTAMP_TO_ADD) {
+				logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for artifact %s with id %d", artifact.getDisplayName(), eventPayload.getDescription(TimelineLevelOfDetail.HIGH), artifact.getId()));
+			}
 			return Optional.empty();
 		}
 		String fullDescription = eventPayload.getDescription(TimelineLevelOfDetail.HIGH);

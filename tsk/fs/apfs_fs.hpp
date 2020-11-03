@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #pragma once
 
 #include "../util/crypto.hpp"
@@ -122,11 +131,7 @@ class APFSJObjTree {
                uint64_t root_tree_oid,
                const APFSFileSystem::crypto_info_t &crypto);
 
-  APFSJObjTree(const APFSJObjTree &) = default;
-  APFSJObjTree &operator=(const APFSJObjTree &) = default;
-
   APFSJObjTree(APFSJObjTree &&) = default;
-  APFSJObjTree &operator=(APFSJObjTree &&) = default;
 
   inline APFSJObject obj(uint64_t oid) const { return {jobjs(oid)}; }
 

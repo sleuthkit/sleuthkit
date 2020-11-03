@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2013-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,38 +33,44 @@ public class TagName implements Comparable<TagName>, Serializable {
 
 	public enum HTML_COLOR {
 
-		NONE("None"), //NON-NLS
-		WHITE("White"), //NON-NLS
-		SILVER("Silver"), //NON-NLS
-		GRAY("Gray"), //NON-NLS
-		BLACK("Black"), //NON-NLS
-		RED("Red"), //NON-NLS
-		MAROON("Maron"), //NON-NLS
-		YELLOW("Yellow"), //NON-NLS
-		OLIVE("Olive"), //NON-NLS
-		LIME("Lime"), //NON-NLS
-		GREEN("Green"), //NON-NLS
-		AQUA("Aqua"), //NON-NLS
-		TEAL("Teal"), //NON-NLS
-		BLUE("Blue"), //NON-NLS
-		NAVY("Navy"), //NON-NLS
-		FUCHSIA("Fuchsia"), //NON-NLS
-		PURPLE("Purple"); //NON-NLS
+		NONE("None", ""), //NON-NLS
+		WHITE("White", "#FFFFFF"), //NON-NLS
+		SILVER("Silver", "#C0C0C0"), //NON-NLS
+		GRAY("Gray", "#808080"), //NON-NLS
+		BLACK("Black", "#000000"), //NON-NLS
+		RED("Red", "#FF0000"), //NON-NLS
+		MAROON("Maron", "#800000"), //NON-NLS
+		YELLOW("Yellow", "#FFFF00"), //NON-NLS
+		OLIVE("Olive", "#808000"), //NON-NLS
+		LIME("Lime", "#00FF00"), //NON-NLS
+		GREEN("Green", "#008000"), //NON-NLS
+		AQUA("Aqua", "#00FFFF"), //NON-NLS
+		TEAL("Teal", "#008080"), //NON-NLS
+		BLUE("Blue", "#0000FF"), //NON-NLS
+		NAVY("Navy", "#000080"), //NON-NLS
+		FUCHSIA("Fuchsia", "#FF00FF"), //NON-NLS
+		PURPLE("Purple", "#800080"); //NON-NLS
 		private final static HashMap<String, HTML_COLOR> colorMap = new HashMap<String, HTML_COLOR>();
 		private final String name;
+		private final String hexString;
 
 		static {
 			for (HTML_COLOR color : HTML_COLOR.values()) {
-				colorMap.put(color.name(), color);
+				colorMap.put(color.getName(), color);
 			}
 		}
 
-		private HTML_COLOR(String name) {
+		HTML_COLOR(String name, String hexString) {
+			this.hexString = hexString;
 			this.name = name;
 		}
 
 		String getName() {
 			return name;
+		}
+
+		public String getRgbValue() {
+			return hexString;
 		}
 
 		public static HTML_COLOR getColorByName(String colorName) {
@@ -80,14 +86,18 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String description;
 	private final HTML_COLOR color;
 	private final TskData.FileKnown knownStatus;
-		
+	private final long tagSetId;
+	private final int rank;
+
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus) {
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
 		this.color = color;
 		this.knownStatus = knownStatus;
+		this.tagSetId = tagSetId;
+		this.rank = rank;
 	}
 
 	public long getId() {
@@ -110,6 +120,14 @@ public class TagName implements Comparable<TagName>, Serializable {
 		return knownStatus;
 	}
 
+	long getTagSetId() {
+		return tagSetId;
+	}
+
+	public int getRank() {
+		return rank;
+	}
+
 	/**
 	 * Compares two TagName objects by comparing their display names.
 	 *
@@ -130,6 +148,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
 		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
 		hash = 89 * hash + (this.knownStatus != null ? this.knownStatus.hashCode() : 0);
+		hash = 89 * hash + (int) (this.id ^ (this.tagSetId >>> 32));
 		return hash;
 	}
 
@@ -142,10 +161,11 @@ public class TagName implements Comparable<TagName>, Serializable {
 			return false;
 		}
 		final TagName other = (TagName) obj;
-		return (this.id == other.id
-				&& Objects.equals(this.displayName, other.displayName)
-				&& Objects.equals(this.description, other.description)
-				&& Objects.equals(this.color, other.color)
-				&& Objects.equals(this.knownStatus, other.knownStatus));
+		return (this.id == other.getId()
+				&& Objects.equals(this.displayName, other.getDisplayName())
+				&& Objects.equals(this.description, other.getDescription())
+				&& Objects.equals(this.color, other.getColor())
+				&& Objects.equals(this.knownStatus, other.getKnownStatus())
+				&& this.tagSetId == other.getTagSetId());
 	}
 }

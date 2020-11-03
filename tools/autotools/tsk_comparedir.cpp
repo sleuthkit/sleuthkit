@@ -37,7 +37,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-n start_inum] [-vV] image [image] comparison_directory\n"),
+        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-n start_inum] [-vV] image [image] comparison_directory\n"),
         progname);
 
     tsk_fprintf(stderr,
@@ -48,6 +48,10 @@ usage()
         "\t-f fstype: The file system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for file system to compare\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
         "\t-n start_inum: inum for directory in image file to start compare at\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -113,7 +117,8 @@ uint8_t
         //if the file is a directory make recursive call
         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             // skip the '.' and '..' entries
-            if ((file[0] == L'.') && ((file[1] == '\0') || ((file[1] == L'.') && (file[2] == '\0')))) {
+            //if ((file[0] == L'.') && ((file[1] == '\0') || ((file[1] == L'.') && (file[2] == '\0')))) {
+            if ((ffd.cFileName[0] == L'.') && ((ffd.cFileName[1] == '\0') || ((ffd.cFileName[1] == L'.') && (ffd.cFileName[2] == '\0')))) {
                 // do nothing
             }
             else if (processLclDir(file)) {
@@ -177,7 +182,7 @@ uint8_t
         stat(fullPath, &status);
         if (S_ISDIR(status.st_mode)) {
             // skip the '.' and '..' entries
-            if ((file[0] == '.') && ((file[1] == '\0') || ((file[1] == '.') && (file[2] == '\0')))) {
+            if ((dirp->d_name[0] == '.') && ((dirp->d_name[1] == '\0') || ((dirp->d_name[1] == '.') && (dirp->d_name[2] == '\0')))) {
                 // do nothing
             }
             else if (processLclDir(file)) {
@@ -201,6 +206,38 @@ uint8_t
     return 0;
 }
 
+uint8_t
+TskCompareDir::openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_ENUM pooltype, TSK_DADDR_T pvol_block)
+{
+    if (pvol_block == 0) {
+        if ((m_fs_info = tsk_fs_open_img_decrypt(m_img_info, a_soffset * m_img_info->sector_size,
+            fstype, "")) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            return TSK_ERR;
+        }
+    }
+    else {
+        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(m_img_info, a_soffset * m_img_info->sector_size, pooltype);
+        if (pool == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            return TSK_ERR;
+        }
+
+        m_img_info = pool->get_img_info(pool, pvol_block);
+        if ((m_fs_info = tsk_fs_open_img_decrypt(m_img_info, a_soffset * m_img_info->sector_size, fstype, "")) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            return TSK_ERR;
+        }
+    }
+    return TSK_OK;
+}
+
 
 /********** Methods that load the internal list / set with info from the image **********/
 
@@ -222,7 +259,7 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     
     //create the full path
     size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
-    char *fullPath = (char *) tsk_malloc(len);
+    char *fullPath = (char *) tsk_malloc(len + 1);
     if (fullPath == NULL) {
         registerError();
         return TSK_STOP;
@@ -261,17 +298,16 @@ TskCompareDir::filterVol(const TSK_VS_PART_INFO * /*a_vs_part*/)
  * @returns 1 on error
  */
 uint8_t
-    TskCompareDir::compareDirs(TSK_OFF_T a_soffset, TSK_INUM_T a_inum,
-    TSK_FS_TYPE_ENUM a_fstype, const TSK_TCHAR * a_lcl_dir)
+    TskCompareDir::compareDirs(TSK_INUM_T a_inum, const TSK_TCHAR * a_lcl_dir)
 {
     uint8_t retval;
 
     // collect the file names that are in the disk image
     if (a_inum != 0)
         retval =
-            findFilesInFs(a_soffset * m_img_info->sector_size, a_fstype, a_inum);
+            findFilesInFs(m_fs_info, a_inum);
     else
-        retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_fstype);
+        retval = findFilesInFs(m_fs_info);
 
     if (retval)
         return 1;
@@ -293,8 +329,9 @@ uint8_t
     else {
         std::set < char *, ltstr >::iterator it;
         for (it = m_filesInImg.begin(); it != m_filesInImg.end(); ++it)
-            printf("file: %" PRIttocTSK " not found in directory\n",
-                (TSK_TCHAR *) * it);
+            printf("file: %s not found in directory\n",
+                    (char *) * it);
+                
     }
 
     return 0;
@@ -308,6 +345,10 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     unsigned int ssize = 0;
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_OFF_T pvol_block = 0;
+    const char * password = "";
     
 #ifdef WIN32
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -327,7 +368,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:n:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:P:n:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -387,6 +428,26 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
+
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                usage();
+            }
+            break;
+
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
         
         case _TSK_T('v'):
             tsk_verbose++;
@@ -414,7 +475,12 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tskCompareDir.compareDirs(soffset, inum, fstype, argv[argc - 1])) {
+    if (tskCompareDir.openFs(soffset, fstype, pooltype, (TSK_DADDR_T)pvol_block)) {
+        // Errors were already logged
+        exit(1);
+    }
+
+    if (tskCompareDir.compareDirs(inum, argv[argc - 1])) {
         // errors were already displayed
         exit(1);
     }

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2019 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1369,9 +1369,54 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskgroups.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments to create and
+		 * process TSK_ATTACHMENTS attributes.
+		 */
 		TSK_ATTACHMENTS (141, "TSK_ATTACHMENTS", 
 				bundle.getString("BlackboardAttribute.tskattachments.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+		
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints to create and
+		 * process TSK_GEO_TRACKPOINTS attributes.
+		 */
+		TSK_GEO_TRACKPOINTS(142, "TSK_GEO_TRACKPOINTS",
+			bundle.getString("BlackboardAttribute.tskgeopath.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+		
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints to create and
+		 * process TSK_GEO_WAYPOINTS attributes.
+		 */
+		TSK_GEO_WAYPOINTS(143, "TSK_GEO_WAYPOINTS",
+			bundle.getString("BlackboardAttribute.tskgeowaypoints.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+
+		TSK_DISTANCE_TRAVELED(144, "TSK_DISTANCE_TRAVELED",
+			bundle.getString("BlackboardAttribute.tskdistancetraveled.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
+		
+		TSK_DISTANCE_FROM_HOMEPOINT(145, "TSK_DISTANCE_FROM_HOMEPOINT",
+			bundle.getString("BlackboardAttribute.tskdistancefromhome.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
+		
+		TSK_HASH_PHOTODNA(146, "TSK_HASH_PHOTODNA",
+			bundle.getString("BlackboardAttribute.tskhashphotodna.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_BYTES_SENT(147, "TSK_BYTES_SENT",
+	        bundle.getString("BlackboardAttribute.tskbytessent.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+		
+		TSK_BYTES_RECEIVED(148, "TSK_BYTES_RECEIVED",
+	        bundle.getString("BlackboardAttribute.tskbytesreceived.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+		
+		TSK_LAST_PRINTED_DATETIME(149, "TSK_LAST_PRINTED_DATETIME",
+	        bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
+		
 		
 		;
 

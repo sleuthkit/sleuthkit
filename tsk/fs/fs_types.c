@@ -34,18 +34,23 @@ typedef struct {
 /** \internal
  * The table used to parse input strings - supports
  * legacy strings - in order of expected usage
+ *
+ * All unique TSK_FS_TYPE_ENUM values should be in here with a unique 
+ * name so that we can map between values and names. 
  */
 static FS_TYPES fs_type_table[] = {
-    {"ntfs", TSK_FS_TYPE_NTFS_DETECT, "NTFS"},
+    {"ntfs", TSK_FS_TYPE_NTFS, "NTFS"}, // NTFS == NTFS_DETECT 
     {"fat", TSK_FS_TYPE_FAT_DETECT, "FAT (Auto Detection)"},
     {"ext", TSK_FS_TYPE_EXT_DETECT, "ExtX (Auto Detection)"},
-    {"iso9660", TSK_FS_TYPE_ISO9660_DETECT, "ISO9660 CD"},
+    {"iso9660", TSK_FS_TYPE_ISO9660, "ISO9660 CD"}, // ISO9660 == DETECT
 #if TSK_USE_HFS
-    {"hfs", TSK_FS_TYPE_HFS_DETECT, "HFS+"},
+    {"hfs", TSK_FS_TYPE_HFS_DETECT, "HFS+ (Auto Detection)"},
 #endif
+    {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
+    {"apfs", TSK_FS_TYPE_APFS, "APFS"},
     {"ufs", TSK_FS_TYPE_FFS_DETECT, "UFS (Auto Detection)"},
-    {"raw", TSK_FS_TYPE_RAW_DETECT, "Raw Data"},
-    {"swap", TSK_FS_TYPE_SWAP_DETECT, "Swap Space"},
+    {"raw", TSK_FS_TYPE_RAW, "Raw Data"}, // RAW == RAW_DETECT
+    {"swap", TSK_FS_TYPE_SWAP, "Swap Space"}, // SWAP == SWAP_DETECT
     {"fat12", TSK_FS_TYPE_FAT12, "FAT12"},
     {"fat16", TSK_FS_TYPE_FAT16, "FAT16"},
     {"fat32", TSK_FS_TYPE_FAT32, "FAT32"},
@@ -55,8 +60,10 @@ static FS_TYPES fs_type_table[] = {
     {"ext4", TSK_FS_TYPE_EXT4, "Ext4"},
     {"ufs1", TSK_FS_TYPE_FFS1, "UFS1"},
     {"ufs2", TSK_FS_TYPE_FFS2, "UFS2"},
-    {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
-    {"apfs", TSK_FS_TYPE_APFS, "APFS"},
+#if TSK_USE_HFS
+    {"hfsp", TSK_FS_TYPE_HFS, "HFS+"},
+    {"hfsl", TSK_FS_TYPE_HFS_LEGACY, "HFS (Legacy)"},
+#endif
     {0,0,""},
 };
 

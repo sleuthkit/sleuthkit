@@ -1,11 +1,11 @@
 # File that we want to include in the dist
 EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-CHANGES.txt \
-    licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
+    licenses/GNU-COPYING licenses/IBM-LICENSE \
+    licenses/cpl1.0.txt licenses/bsd.txt licenses/mit.txt \
     m4/*.m4 \
     docs/README.txt \
     packages/sleuthkit.spec \
     win32/BUILDING.txt \
-    win32/NOTES.txt \
     win32/*/*.vcxproj \
     win32/tsk-win.sln \
     win32/docs/* \
@@ -22,42 +22,10 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/attributes/*.java \
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
     bindings/java/src/*.html \
-    framework/*.txt \
-    framework/Makefile.am \
-    framework/bootstrap \
-    framework/config/* \
-    framework/config.h.in \
-    framework/configure.ac \
-    framework/m4/* \
-    framework/tsk/framework/*.h \
-    framework/tsk/framework/Makefile.am \
-    framework/tsk/framework/extraction/Makefile.am \
-    framework/tsk/framework/extraction/*.cpp \
-    framework/tsk/framework/extraction/*.h \
-    framework/tsk/framework/file/Makefile.am \
-    framework/tsk/framework/file/*.cpp \
-    framework/tsk/framework/file/*.h \
-    framework/tsk/framework/pipeline/Makefile.am \
-    framework/tsk/framework/pipeline/*.cpp \
-    framework/tsk/framework/pipeline/*.h \
-    framework/tsk/framework/services/Makefile.am \
-    framework/tsk/framework/services/*.cpp \
-    framework/tsk/framework/services/*.h \
-    framework/tsk/framework/utilities/Makefile.am \
-    framework/tsk/framework/utilities/*.cpp \
-    framework/tsk/framework/utilities/*.h \
-    framework/modules/* \
-    framework/SampleConfig/*.xml \
-    framework/docs/* \
-    framework/man/* \
-    framework/tools/tsk_analyzeimg/Makefile.am \
-    framework/tools/tsk_analyzeimg/*.cpp \
-    framework/tools/tsk_validatepipeline/Makefile.am \
-    framework/tools/tsk_validatepipeline/*.cpp \
-    framework/tools/Makefile.am \
-    framework/msvcpp/*/*.vcxproj \
-    framework/msvcpp/*/*.sln \
-    framework/msvcpp/Makefile
+    case-uco/java/*.xml \
+    case-uco/java/nbproject/*.xml \
+    case-uco/java/nbproject/*.properties \
+    case-uco/java/src/org/sleuthkit/caseuco/*.java
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -69,11 +37,13 @@ endif
 # Compile java bindings if all of the dependencies existed
 if X_JNI
   JAVA_BINDINGS=bindings/java
+  JAVA_CASEUCO=case-uco/java
 else   
   JAVA_BINDINGS=
+  JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) 
+SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
@@ -96,7 +66,6 @@ nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
-# doxygen framework/docs/Doxyfile
 	cd bindings/java/doxygen; doxygen Doxyfile
 
 man-html:

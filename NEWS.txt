@@ -1,3 +1,43 @@
+---------------- VERSION 4.10.1 --------------
+C/C++:
+- Changed Windows build to use Nuget for libewf, libvmdk, libvhdi.
+- Fixed compiler warnings 
+- Clarrified licenses and added Apache license to distribution
+- Improved error handling for out of memory issues
+- Rejistry++ memory leak fixes
+
+Java:
+- Localized for Japanese
+
+---------------- VERSION 4.10.0 --------------
+C/C++:
+- Removed PostgreSQL code (that was used only by Java code)
+- Added Java callback support so that database inserts are done in Java.
+
+Java: 
+- Added methods and callbacks as required to allow database population to happen in Java instead of C/C++.
+- Added support to allow Autopsy streaming ingest where files are added in batches. 
+- Added TaggingManager class and concept of a TagSet to support ProjectVic categories. 
+- Fixed changes to normalization and validation of emails and phone numbers.
+- Added a CASE/UCO JAR file that creates JSON-LD based on TSK objects.
+
+
+
+---------------- VERSION 4.9.0 --------------
+C/C++
+- Removed framework project.  Use Autopsy instead if you need an analysis framework. 
+- Various fixes from Google-based fuzzing.
+- Ensure all reads (even big ones) are sector aligned when reading from Windows device.
+- Ensure all command line tools support new pool command line arguments. 
+- Create virtual files for APFS unallocated space
+- HFS fix to display type
+
+Java:
+- More artifact helper methods
+- More artifacts and attributes for drones and GPS coordinates
+- Updated TimelineManager to insert GPS artifacts into events table
+
+
 ---------------- VERSION 4.8.0 --------------
 C/C++
 - Pool layer was added to support APFS. NOTE: API is likely to change. 

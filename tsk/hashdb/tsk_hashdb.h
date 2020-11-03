@@ -3,6 +3,8 @@
 *
 * Brian Carrier [carrier <at> sleuthkit [dot] org]
 * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
+*
+* This software is distributed under the Common Public License 1.0
 */
 
 /**

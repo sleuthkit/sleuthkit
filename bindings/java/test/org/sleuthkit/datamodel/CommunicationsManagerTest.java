@@ -253,7 +253,6 @@ public class CommunicationsManagerTest {
 			System.out.println("CommsMgr Test DB created at: " + dbPath);
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
-			trans.acquireSingleUserCaseWriteLock();
 
 			LocalFilesDataSource dataSource_1 = caseDB.addLocalFilesDataSource(DS1_DEVICEID, ROOTDIR_1, "", trans);
 			LocalFilesDataSource dataSource_2 = caseDB.addLocalFilesDataSource(DS2_DEVICEID, ROOTDIR_2, "", trans);

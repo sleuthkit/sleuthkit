@@ -76,47 +76,6 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 }
 
 /**
-* Creates a new multi-user case with a new database and initializes its tables.
-* Fails if multi-user database with requested name already exists.
-*
-* @param path Full path to create new database at.
-* @returns Pointer to a new TskCaseDb object, NULL on error
-*/
-TskCaseDb *
-TskCaseDb::newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info)
-{
-#ifdef HAVE_LIBPQ_
-    TskDb *db = new TskDbPostgreSQL(path, true);
-
-    // Store connection info for the multi-user database
-    if (db->setConnectionInfo(info) != TSK_OK) {
-        delete(db);
-        return NULL;
-    }
-
-    // Check if the database already exsists
-    if (db->dbExists()) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("Database %" PRIttocTSK
-            " already exists.  Must be deleted first.", path);
-        delete(db);
-        return NULL;
-    }
-
-    // Open the database.
-    if (db->open(true)) {
-        delete(db);
-        return NULL;
-    }
-
-    return new TskCaseDb(db);
-#else
-    return NULL;
-#endif 
-}
-
-/**
 * Opens a single-user case from an existing database.
 *
 * @param path Full path to open database from.
@@ -144,48 +103,6 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
     }
 
     return new TskCaseDb(db);
-}
-
-/**
-* Opens a multi-user case from an existing database.
-*
-* @param path
-* @param info CaseDbConnectionInfo object containing datbase connection info.
-* @returns Pointer to a new TskCaseDb object, NULL on error
-*/
-TskCaseDb *
-TskCaseDb::openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info)
-{
-#ifdef HAVE_LIBPQ_
-
-    TskDb *db = new TskDbPostgreSQL(path, true);
-
-    // Store connection info for the multi-user database
-    if (db->setConnectionInfo(info) != TSK_OK) {
-        delete(db);
-        return NULL;
-    }
-
-    // Confirm that database already exsists
-    if (!db->dbExists()) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("Database %" PRIttocTSK
-            " does not exist.  Must be created first.", path);
-        delete(db);
-        return NULL;
-    }
-
-    // Open the database.
-    if (db->open(false)) {
-        delete(db);
-        return NULL;
-    }
-
-    return new TskCaseDb(db);
-#else
-    return NULL;
-#endif // HAVE_POSTGRESQL && TSK_WIN32
 }
 
 /**

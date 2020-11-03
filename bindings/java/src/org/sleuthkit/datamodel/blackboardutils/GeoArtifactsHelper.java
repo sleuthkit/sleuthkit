@@ -19,101 +19,154 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints;
+import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 
 /**
- * Class to help ingest modules create Geolocation artifacts. 
- *
+ * An artifact creation helper that adds geolocation artifacts to the case
+ * database.
  */
 public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
-	/**
-	 * Constructs a geolocation artifact helper for the given source file.
-	 *
-	 * @param caseDb			  Sleuthkit case db.
-	 * @param moduleName	Name of module using the helper.
-	 * @param srcFile			 Source file being processed by the module.
-	 */
-	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcFile) {
-		super(caseDb, moduleName, srcFile);
-	}
-	
-	/**
-	 * Adds a TSK_GPS_TRACKPOINT artifact.
-	 *
-	 * @param latitude    Location latitude, required.
-	 * @param longitude   Location longitude, required.
-	 * @param timeStamp   Date/time trackpoint was recorded, can be 0 if not
-	 *                    available.
-	 * @param name        Trackpoint name, can be empty/null if not available.
-	 * @param programName Name of program that recorded the trackpoint, can be
-	 *                    empty or null if not available.
-	 *
-	 * @return GPS trackpoint artifact added
-	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
-	 * @throws BlackboardException	If there is a problem posting the artifact.
-	 */
-	public BlackboardArtifact addGPSTrackpoint(double latitude, double longitude,
-			long timeStamp, String name, String programName) throws TskCoreException, BlackboardException {
+	private static final BlackboardAttribute.Type WAYPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS);
+	private static final BlackboardAttribute.Type TRACKPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS);
+	private final String programName;
 
-		return addGPSTrackpoint(latitude, longitude, timeStamp, name, programName,
-				Collections.emptyList());
+	/**
+	 * Constructs an artifact creation helper that adds geolocation artifacts to
+	 * the case database.
+	 *
+	 * @param caseDb      The case database.
+	 * @param moduleName  The name of the module creating the artifacts.
+	 * @param programName The name of the user application associated with the
+	 *                    geolocation data to be recorded as artifacts, may be
+	 *                    null. If a program name is supplied, it will be added
+	 *                    to each artifact that is created as a TSK_PROG_NAME
+	 *                    attribute.
+	 * @param srcContent  The source content for the artifacts, i.e., either a
+	 *                    file within a data source or a data source.
+	 */
+	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcContent) {
+		super(caseDb, moduleName, srcContent);
+		this.programName = programName;
 	}
 
 	/**
-	 * Adds a TSK_GPS_TRACKPOINT artifact.
+	 * Adds a TSK_GPS_TRACK artifact to the case database. A Global Positioning
+	 * System (GPS) track artifact records the track, or path, of a GPS-enabled
+	 * device as a connected series of track points. A track point is a location
+	 * in a geographic coordinate system with latitude, longitude and altitude
+	 * (elevation) axes.
 	 *
-	 * @param latitude            Location latitude, required.
-	 * @param longitude           Location longitude, required.
-	 * @param timeStamp           Date/time the trackpoint was recorded, can be
-	 *                            0 if not available.
-	 * @param name                Trackpoint name, can be empty/null if not
-	 *                            available.
-	 * @param programName         Name of program that recorded the trackpoint,
-	 *                            can be empty or null if not available.
-	 * @param otherAttributesList Other attributes, can be an empty list of no
-	 *                            additional attributes.
+	 * @param trackName      The name of the GPS track, may be null.
+	 * @param trackPoints    The track points that make up the track. This list
+	 *                       should be non-null and non-empty.
+	 * @param moreAttributes Additional attributes for the TSK_GPS_TRACK
+	 *                       artifact, may be null.
 	 *
-	 * @return GPS trackpoint artifact added
+	 * @return	The TSK_GPS_TRACK artifact that was added to the case database.
 	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
-	 * @throws BlackboardException	If there is a problem posting the artifact.
+	 * @throws TskCoreException	        If there is an error creating the
+	 *                                  artifact.
+	 * @throws BlackboardException      If there is a error posting the artifact
+	 *                                  to the blackboard.
+	 * @throws IllegalArgumentException If the trackpoints provided are null or
+	 *                                  empty.
 	 */
-	public BlackboardArtifact addGPSTrackpoint(double latitude, double longitude, long timeStamp, String name, String programName,
-			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
+	public BlackboardArtifact addTrack(String trackName, GeoTrackPoints trackPoints, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
+		if (trackPoints == null || trackPoints.isEmpty()) {
+			throw new IllegalArgumentException(String.format("addTrack was passed a null or empty list of track points"));
+		}
 
-		BlackboardArtifact gpsTrackpointArtifact;
-		Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		List<BlackboardAttribute> attributes = new ArrayList<>();
 
-		// create artifact
-		gpsTrackpointArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT);
+		if (trackName != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), trackName));
+		}
 
-		// construct attributes 
-		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE, getModuleName(), latitude));
-		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LONGITUDE, getModuleName(), longitude));
+		// acquire necessary attribute.  If 'toAttribute' call throws an exception, an artifact will not be created for this instance.
+		attributes.add(BlackboardJsonAttrUtil.toAttribute(TRACKPOINTS_ATTR_TYPE, getModuleName(), trackPoints));
 
-		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, timeStamp, attributes);
+		if (programName != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
+		}
 
-		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, name, attributes);
-		addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, programName, attributes);
+		if (moreAttributes != null) {
+			attributes.addAll(moreAttributes);
+		}
 
-		// add the attributes 
-		attributes.addAll(otherAttributesList);
-		gpsTrackpointArtifact.addAttributes(attributes);
+		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
+		artifact.addAttributes(attributes);
 
-		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(gpsTrackpointArtifact, getModuleName());
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
-		// return the artifact
-		return gpsTrackpointArtifact;
+		return artifact;
 	}
-	
+
+	/**
+	 * Adds a TSK_GPS_ROUTE artifact to the case database. A Global Positioning
+	 * System (GPS) route artifact records one or more waypoints entered into a
+	 * GPS-enabled device as a route to be navigated from waypoint to waypoint.
+	 * A waypoint is a location in a geographic coordinate system with latitude,
+	 * longitude and altitude (elevation) axes.
+	 *
+	 * @param routeName      The name of the GPS route, may be null.
+	 * @param creationTime   The time at which the route was created as
+	 *                       milliseconds from the Java epoch of
+	 *                       1970-01-01T00:00:00Z, may be null.
+	 * @param wayPoints      The waypoints that make up the route.  This list
+	 *                       should be non-null and non-empty.
+	 * @param moreAttributes Additional attributes for the TSK_GPS_ROUTE
+	 *                       artifact, may be null.
+	 *
+	 * @return	The TSK_GPS_ROUTE artifact that was added to the case database.
+	 *
+	 * @throws TskCoreException	        If there is an error creating the
+	 *                                  artifact.
+	 * @throws BlackboardException      If there is a error posting the artifact
+	 *                                  to the blackboard.
+	 * @throws IllegalArgumentException If the waypoints provided are null or
+	 *                                  empty.
+	 */
+	public BlackboardArtifact addRoute(String routeName, Long creationTime, GeoWaypoints wayPoints, List<BlackboardAttribute> moreAttributes) throws TskCoreException, BlackboardException {
+		if (wayPoints == null || wayPoints.isEmpty()) {
+			throw new IllegalArgumentException(String.format("addRoute was passed a null or empty list of waypoints"));
+		}
+
+		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
+		List<BlackboardAttribute> attributes = new ArrayList<>();
+
+		attributes.add(BlackboardJsonAttrUtil.toAttribute(WAYPOINTS_ATTR_TYPE, getModuleName(), wayPoints));
+
+		if (routeName != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), routeName));
+		}
+
+		if (creationTime != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, getModuleName(), creationTime));
+		}
+
+		if (programName != null) {
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
+		}
+
+		if (moreAttributes != null) {
+			attributes.addAll(moreAttributes);
+		}
+
+		artifact.addAttributes(attributes);
+
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
+
+		return artifact;
+	}
+
 }
