@@ -67,7 +67,11 @@ script:
   - pushd bindings/java/ && ant -q dist && popd
   - pushd case-uco/java/ && ant -q && popd
   - make check && if [ -f "tests/test-suite.log" ];then cat tests/test-suite.log; fi ; if [ -f "unit_tests/base/test-suite.log" ];then cat unit_tests/base/test-suite.log; fi
-  - pushd bindings/java/ && ant -q clean && ant -q dist && ant -q test && popd
+  - pushd bindings/java/
+  - ant -q clean 
+  - ant dist 
+  - ant test 
+  - popd
   - if test ${TRAVIS_OS_NAME} = "linux"; then
         pushd release && ./release-unix.pl ci && popd;
     fi
