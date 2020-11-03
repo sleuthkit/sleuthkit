@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.READ;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -236,6 +237,11 @@ public class Report implements Content {
 		return db.newBlackboardArtifact(artifactTypeID, objectId);
 	}
 
+	@Override
+	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		throw new TskCoreException("Cannot create analysis result from a report. Not supported.");
+	}
+	
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());

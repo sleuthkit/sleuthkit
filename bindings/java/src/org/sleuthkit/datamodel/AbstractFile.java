@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -32,6 +33,8 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -1146,7 +1149,21 @@ public abstract class AbstractFile extends AbstractContent {
 		return getSleuthkitCase().newBlackboardArtifact(artifactTypeID, getId(), dataSourceObjectId);
 	}
 
-
+	@Override
+	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		
+		CaseDbTransaction trans = getSleuthkitCase().beginTransaction();
+		try {
+			AnalysisResult result = getSleuthkitCase().getBlackboard().newAnalysisResult(artifactType, getId(), dataSourceObjectId, score, conclusion, configuration, justification, attributesList, trans);
+			
+			trans.commit();
+			return result;
+		}
+		catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
+	}
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
