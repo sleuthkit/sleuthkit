@@ -1037,21 +1037,26 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws org.sleuthkit.datamodel.TskCoreException If the local path is not
 	 *                                                  set.
 	 */
-	private void loadLocalFile() throws TskCoreException {
-		if (!localPathSet) {
-			throw new TskCoreException(
-					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
-		}
-
+	private synchronized void loadLocalFile() throws TskCoreException {
+		
 		// already been set
 		if (localFile != null) {
 			return;
 		}
+		
+		if (location.equals(TskData.FileLocation.LOCAL)) {
+			if (!localPathSet) {
+				throw new TskCoreException(
+						BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
+			}
 
-		synchronized (this) {
 			if (localFile == null) {
 				localFile = new java.io.File(localAbsPath);
 			}
+		} else {
+			// Copy the file from the server
+			localFile = getSleuthkitCase().loadFromFileService(this);
+			
 		}
 	}
 
