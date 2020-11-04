@@ -210,6 +210,7 @@ public class SleuthkitCase {
 	private Blackboard blackboard;
 	private CaseDbAccessManager dbAccessManager;
 	private TaggingManager taggingMgr;
+	private FileRepositoryManager fileRepositoryManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -388,6 +389,7 @@ public class SleuthkitCase {
 		timelineMgr = new TimelineManager(this);
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
+		fileRepositoryManager = new FileRepositoryManager(this);
 	}
 
 	/**
@@ -498,6 +500,15 @@ public class SleuthkitCase {
 	 */
 	public synchronized TaggingManager getTaggingManager() {
 		return taggingMgr;
+	}
+	
+	/**
+	 * Get the case database FileRepositoryManager object.
+	 *
+	 * @return The per case FileRepositoryManager object.
+	 */
+	public synchronized FileRepositoryManager getFileRepositoryManager() {
+		return fileRepositoryManager;
 	}
 
 	/**
@@ -7018,49 +7029,7 @@ public class SleuthkitCase {
 			String md5, String sha256, FileKnown known, String mimeType,
 			boolean isFile, TskData.EncodingType encodingType,
 			Content parent, CaseDbTransaction transaction) throws TskCoreException {
-		
-		return addLocalFile(fileName, localPath,
-				size, ctime, crtime, atime, mtime,
-				md5, sha256, known, mimeType,
-				isFile, encodingType,
-				parent, TskData.FileLocation.LOCAL, transaction);
-	}
-	
-	/**
-	 * Adds a local/logical file to the case database. The database operations
-	 * are done within a caller-managed transaction; the caller is responsible
-	 * for committing or rolling back the transaction.
-	 *
-	 * @param fileName     The name of the file.
-	 * @param localPath    The absolute path (including the file name) of the
-	 *                     local/logical in secondary storage.
-	 * @param size         The size of the file in bytes.
-	 * @param ctime        The changed time of the file.
-	 * @param crtime       The creation time of the file.
-	 * @param atime        The accessed time of the file
-	 * @param mtime        The modified time of the file.
-	 * @param md5          The MD5 hash of the file.
-	 * @param sha256       The SHA-256 hash of the file.
-	 * @param known        The known status of the file (can be null)
-	 * @param mimeType     The MIME type of the file
-	 * @param isFile       True, unless the file is a directory.
-	 * @param encodingType Type of encoding used on the file
-	 * @param parent       The parent of the file (e.g., a virtual directory)
-	 * @param location     The location of the file.
-	 * @param transaction  A caller-managed transaction within which the add
-	 *                     file operations are performed.
-	 *
-	 * @return An object representing the local/logical file.
-	 *
-	 * @throws TskCoreException if there is an error completing a case database
-	 *                          operation.
-	 */	
-	LocalFile addLocalFile(String fileName, String localPath,
-			long size, long ctime, long crtime, long atime, long mtime,
-			String md5, String sha256, FileKnown known, String mimeType,
-			boolean isFile, TskData.EncodingType encodingType,
-			Content parent, TskData.FileLocation location, CaseDbTransaction transaction) throws TskCoreException {
-		
+				
 		CaseDbConnection connection = transaction.getConnection();
 		Statement queryStatement = null;
 		try {
@@ -7120,7 +7089,7 @@ public class SleuthkitCase {
 				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			}
 			statement.setString(19, parentPath);
-			statement.setLong(20, location.getValue());
+			statement.setLong(20, TskData.FileLocation.LOCAL.getValue());
 			statement.setLong(21, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			statement.setString(22, extension);
@@ -7430,132 +7399,6 @@ public class SleuthkitCase {
 		statement.setInt(2, type.getType());
 		statement.setLong(3, objId);
 		connection.executeUpdate(statement);
-	}
-	
-	// TEMP TEMP
-	// Should be set at the same time as the file service server
-	File getFileServiceTempFolder() {
-		return new File("R:\\mytemp");
-	}
-	
-	File loadFromFileService(AbstractFile abstractFile) throws TskCoreException {
-		if (! abstractFile.getFileLocation().equals(TskData.FileLocation.MICROSERVICE)) {
-			throw new TskCoreException("Not file service");
-		}
-		
-		// TODO verify there's a hash (there should be)
-		
-		// TODO check existence first?
-		String downloadPath = Paths.get(getFileServiceTempFolder().toString(), abstractFile.getSha256Hash()).toString();
-		downloadFileFromFileService(abstractFile, downloadPath);
-		
-		File tempFile = new File(downloadPath);
-		if (tempFile.exists()) {
-			// YAY!
-			return tempFile;
-		} else {
-			System.out.println("\n### oh no... " + tempFile.toString() + " does not exist");
-			throw new TskCoreException("error");
-		}
-		
-	}
-	
-	private void downloadFileFromFileService(AbstractFile file, String downloadPath) {
-		
-		// curl -X GET "http://localhost:8080/api/files/(hash value)" -H "accept: */*" --output downloadPath
-		List<String> command = new ArrayList<>();
-		command.add("curl");
-		command.add("-X");
-		command.add("GET");
-		command.add("http://localhost:8080/v1/files/" + file.getSha256Hash());
-		command.add("-H");
-		command.add("accept: */*");
-		command.add("--output");
-		command.add(downloadPath);
-		
-		System.out.println("### Process builder commands");
-		for(String s:command){
-			System.out.println("  " + s);
-		}
-		
-		ProcessBuilder processBuilder = new ProcessBuilder(command).inheritIO();
-		try {
-			Process process = processBuilder.start();
-			process.waitFor();
-		} catch (IOException | InterruptedException ex) {
-			ex.printStackTrace();
-		}	
-		
-		
-	}
-	
-	/**
-	 * TODO: should be abstractFile or content?
-	 * @param abstractFile 
-	 */
-	public void saveToFileService(AbstractFile abstractFile, CaseDbTransaction trans) throws TskCoreException {
-		
-		if (abstractFile.getLocalPath() == null || abstractFile.getLocalPath().isEmpty()) {
-			// TODO
-			System.out.println("Not supported yet\n");
-		} else {
-			// Make sure the SHA-256 hash has been calculated
-			if (abstractFile.getSha256Hash() == null || abstractFile.getSha256Hash().isEmpty()) {
-				HashUtility.calculateHashes(abstractFile, Arrays.asList(HashUtility.HashType.SHA256));
-				abstractFile.save();
-			}
-			
-			// Save the abstractFile data
-			saveLocalFileToFileService(abstractFile);
-			
-			// Update the file table entry
-			try {
-				CaseDbConnection connection = trans.getConnection();
-				PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_FILE_SERVICE_FILE);
-				statement.clearParameters();
-				
-				statement.setLong(1, TskData.FileLocation.MICROSERVICE.getValue());
-				statement.setLong(2, abstractFile.getId());
-				
-				connection.executeUpdate(statement);
-				
-				// TODO remove local path
-				
-			} catch (SQLException ex) {
-				ex.printStackTrace();
-			}
-		}
-		
-	}
-	
-	private void saveLocalFileToFileService(AbstractFile abstractFile) {
-		File file = new File(abstractFile.getLocalPath());
-		
-		// curl -X POST "http://localhost:8080/api/files" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@Report.xml"
-		List<String> command = new ArrayList<>();
-		command.add("curl");
-		command.add("-X");
-		command.add("POST");
-		command.add("http://localhost:8080/v1/files");
-		command.add("-H");
-		command.add("accept: application/json");
-		command.add("-H");
-		command.add("Content-Type: multipart/form-data");
-		command.add("-F");
-		command.add("file=@" + file.getAbsolutePath());
-		
-		System.out.println("### Process builder commands");
-		for(String s:command){
-			System.out.println("  " + s);
-		}
-		
-		ProcessBuilder processBuilder = new ProcessBuilder(command).inheritIO();
-		try {
-			Process process = processBuilder.start();
-			process.waitFor();
-		} catch (IOException | InterruptedException ex) {
-			ex.printStackTrace();
-		}	
 	}
 
 	/**
@@ -11517,8 +11360,7 @@ public class SleuthkitCase {
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?"),
-		SELECT_TAG_NAME_BY_NAME("SELECT * FROM tag_names where display_name = ?"),
-		UPDATE_FILE_SERVICE_FILE("UPDATE tsk_files SET location = ? WHERE obj_id = ?");
+		SELECT_TAG_NAME_BY_NAME("SELECT * FROM tag_names where display_name = ?");
 
 		private final String sql;
 

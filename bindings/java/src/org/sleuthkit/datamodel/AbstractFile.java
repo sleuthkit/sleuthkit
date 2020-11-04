@@ -1055,7 +1055,7 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 		} else {
 			// Copy the file from the server
-			localFile = getSleuthkitCase().loadFromFileService(this);
+			localFile = getSleuthkitCase().getFileRepositoryManager().loadFromFileRepository(this);
 			
 		}
 	}

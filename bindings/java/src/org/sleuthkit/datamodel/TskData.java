@@ -884,7 +884,7 @@ public class TskData {
 	 */
 	public enum FileLocation{
 		LOCAL(0),
-		MICROSERVICE(1);
+		REPOSITORY(1);
 		
 		private final int value;
 		
