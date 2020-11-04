@@ -3163,59 +3163,6 @@ public class SleuthkitCase {
 
 	
 	/**
-	 * Get all analysis result artifacts of the specified type, 
-	 * for the specified data source.
-	 *
-	 *
-	 * @param artifactTypeID
-	 * @param dataSourceObjId Object id of the data source.
-	 * 
-	 * @return a list of analysis results.
-	 *
-	 * @throws TskCoreException If a critical error occurred
-	 *                          within tsk core and artifacts could not be
-	 *                          queried.
-	 */
-	public List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-					+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-					+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
-					+ " arts.review_status_id AS review_status_id, " //NON-NLS
-					+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
-					+ " results.configuration AS configuration,  results.justification AS justification "
-					+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
-					+ " WHERE arts.artifact_obj_id = aresults.obj_id " //NON-NLS
-					+ " AND arts.artifact_type_id = types.artifact_type_id"
-					+ " AND types.artifact_type_id = " + artifactTypeID
-					+ " AND arts.data_source_obj_id = " + dataSourceObjId //NON-NLS
-					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());	 //NON-NLS
-			ArrayList<AnalysisResult> analysisResults = new ArrayList<>();
-			while (rs.next()) {
-
-				analysisResults.add(new AnalysisResult(new Score(Significance.fromID(rs.getInt("significance")), Confidence.fromID(rs.getInt("confidence"))),
-						rs.getString("conclusion"), rs.getString("configuration"), rs.getString("justification"),
-						this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-			}
-			return analysisResults;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting analysis results by type.", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
 	 * Get all blackboard artifacts that have an attribute of the given type and
 	 * String value. Does not included rejected artifacts.
 	 *
@@ -4696,23 +4643,24 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 *  Creates a new analysis result by inserting a row in the artifacts table 
-	 *  and a corresponding row in the tsk_analysis_results table.
-	 * 
-	 * @param artifactType Analysis result artifact type.
-	 * @param obj_id Object id of parent.
+	 * Creates a new analysis result by inserting a row in the artifacts table
+	 * and a corresponding row in the tsk_analysis_results table.
+	 *
+	 * @param artifactType       Analysis result artifact type.
+	 * @param obj_id             Object id of parent.
 	 * @param data_source_obj_id Data source object id.
-	 * @param score Score.
-	 * @param conclusion Conclusion, may be empty.
-	 * @param configuration Configuration used by analysis, may be empty.
-	 * @param justification Justification, may be empty.
-	 * @param connection Database connection to use.
-	 * 
+	 * @param score              Score.
+	 * @param conclusion         Conclusion, may be null or an empty string.
+	 * @param configuration      Configuration used by analysis, may be null or
+	 *                           an empty string.
+	 * @param justification      Justification, may be null or an empty string.
+	 * @param connection         Database connection to use.
+	 *
 	 * @return Analysis result.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
-	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, long obj_id, long data_source_obj_id, Score score, String conclusion, String configuration, String justification, CaseDbConnection connection) throws TskCoreException {
+	AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, long obj_id, long data_source_obj_id, Score score, String conclusion, String configuration, String justification, CaseDbConnection connection) throws TskCoreException {
 		
 		if (artifactType.getCategory() != BlackboardArtifact.CategoryType.ANALYSIS_RESULT) {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of the AnalysisResult category type. ", artifactType.getTypeName()) );

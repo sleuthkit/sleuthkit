@@ -22,53 +22,82 @@ package org.sleuthkit.datamodel;
  * Analysis result is a category of artifact types that represent the outcome of
  * some analysis technique applied to extracted data.
  *
- *
  */
 public class AnalysisResult extends BlackboardArtifact {
 
-	private final String conclusion;	// conclusion of analysis - may be empty
+	private final String conclusion;	// conclusion of analysis - may be an empty string
 	private final Score score;			// score from the analysis
-	private final String configuration; // name of a configuration file/element that guides this analysis, may be empty.
-	private final String justificaion;  // justification/explanation from the analysis, may be empty.
+	private final String configuration; // name of a configuration file/element that guides this analysis, may be an empty string.
+	private final String justificaion;  // justification/explanation from the analysis, may be an empty string.
 
 	private boolean ignore_result = false;
 
-	public AnalysisResult(Score score, String conclusion, String configuration, String justificaion, SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
+	AnalysisResult(Score score, String conclusion, String configuration, String justificaion, SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		this.score = score;
-		this.conclusion = conclusion;
-		this.configuration = configuration;
-		this.justificaion = justificaion;
+		this.conclusion = (conclusion != null) ? conclusion : "";
+		this.configuration = (configuration != null) ? configuration : "";
+		this.justificaion = (justificaion != null) ? justificaion : "";
 	}
 
-	public AnalysisResult(Score score, String conclusion, String configuration, String justificaion, SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
+	AnalysisResult(Score score, String conclusion, String configuration, String justificaion, SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.score = score;
-		this.conclusion = conclusion;
-		this.configuration = configuration;
-		this.justificaion = justificaion;
+		this.conclusion = (conclusion != null) ? conclusion : "";
+		this.configuration = (configuration != null) ? configuration : "";
+		this.justificaion = (justificaion != null) ? justificaion : "";
 	}
 
+	/**
+	 * Returns analysis result conclusion.
+	 *
+	 * @return Conclusion, returns an empty string if not set.
+	 */
 	public String getConclusion() {
 		return conclusion;
 	}
 
+	/**
+	 * Returns analysis result score.
+	 *
+	 * @return Score.
+	 */
 	public Score getScore() {
 		return score;
 	}
 
+	/**
+	 * Returns configuration used in analysis.
+	 *
+	 * @return Configuration, returns an empty string if not set.
+	 */
 	public String getConfiguration() {
 		return configuration;
 	}
 
+	/**
+	 * Returns analysis justification.
+	 *
+	 * @return justification, returns an empty string if not set.
+	 */
 	public String getJustificaion() {
 		return justificaion;
 	}
 
+	/**
+	 * Sets if this result is to be ignored.
+	 *
+	 * @param ignore if the result should be ignored or not.
+	 */
 	public void ignoreResult(boolean ignore) {
 		ignore_result = ignore;
 	}
 
+	/**
+	 * Checks if this result is to be ignored.
+	 *
+	 * @return true is the result should should be ignored, false otherwise.
+	 */
 	public boolean isIgnored() {
 		return ignore_result;
 	}

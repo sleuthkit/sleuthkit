@@ -30,8 +30,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
@@ -632,7 +634,16 @@ public class BlackboardArtifact implements Content {
 
 	@Override
 	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		throw new TskCoreException("Cannot create analysis result of an artifact. Not supported.");
+		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
+		try {
+			AnalysisResult result = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return result;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
 	}
 	/**
 	 * Create and add an artifact associated with this content to the blackboard

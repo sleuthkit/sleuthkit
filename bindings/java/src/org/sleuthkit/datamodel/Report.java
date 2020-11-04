@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
  * This is a class that models reports.
@@ -237,9 +239,20 @@ public class Report implements Content {
 		return db.newBlackboardArtifact(artifactTypeID, objectId);
 	}
 
+
+	
 	@Override
 	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		throw new TskCoreException("Cannot create analysis result from a report. Not supported.");
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResult result = db.getBlackboard().newAnalysisResult(artifactType, objectId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return result;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
 	}
 	
 	@Override

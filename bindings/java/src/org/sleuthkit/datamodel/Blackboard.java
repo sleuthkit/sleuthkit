@@ -31,7 +31,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import static org.sleuthkit.datamodel.SleuthkitCase.closeResultSet;
+import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
@@ -151,10 +154,11 @@ public final class Blackboard {
 	 * @param obj_id            Object id of parent.
 	 * @param datasource_obj_id Data source object id.
 	 * @param score	            Score associated with this analysis result.
-	 * @param conclusion        Conclusion of the analysis, may be empty.
+	 * @param conclusion        Conclusion of the analysis, may be null or an
+	 *                          empty string.
 	 * @param configuration     Configuration association with this analysis,
-	 *                          may be empty.
-	 * @param justification     Justification.
+	 *                          may be null or an empty string.
+	 * @param justification     Justification, may be null or an empty string.
 	 * @param attributesList    Attributes to be attached to this analysis
 	 *                          result artifact.
 	 * @param transaction       DB transaction to use.
@@ -190,7 +194,43 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
-		return caseDb.getAnalysisResults(artifactTypeID, dataSourceObjId);
+		
+		CaseDbConnection connection = caseDb.getConnection();
+		caseDb.acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+					+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+					+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
+					+ " arts.review_status_id AS review_status_id, " //NON-NLS
+					+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
+					+ " results.configuration AS configuration,  results.justification AS justification "
+					+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
+					+ " WHERE arts.artifact_obj_id = aresults.obj_id " //NON-NLS
+					+ " AND arts.artifact_type_id = types.artifact_type_id"
+					+ " AND types.artifact_type_id = " + artifactTypeID
+					+ " AND arts.data_source_obj_id = " + dataSourceObjId //NON-NLS
+					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());	 //NON-NLS
+			ArrayList<AnalysisResult> analysisResults = new ArrayList<>();
+			while (rs.next()) {
+
+				analysisResults.add(new AnalysisResult(new Score(Score.Significance.fromID(rs.getInt("significance")), Score.Confidence.fromID(rs.getInt("confidence"))),
+						rs.getString("conclusion"), rs.getString("configuration"), rs.getString("justification"),
+						caseDb, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
+						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+			}
+			return analysisResults;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting analysis results by type.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			caseDb.releaseSingleUserCaseReadLock();
+		}
 	}
 	
 	/**

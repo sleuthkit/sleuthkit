@@ -250,6 +250,7 @@ class CaseDatabaseFactory {
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "artifact_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "review_status_id INTEGER NOT NULL, "
+				+ "UNIQUE (artifact_obj_id),"
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
@@ -277,7 +278,7 @@ class CaseDatabaseFactory {
 				+ "confidence INTEGER NOT NULL, "
 				+ "configuration TEXT, justification TEXT, "
 				+ "ignore_score INTEGER DEFAULT 0, " // boolean	
-				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE"
+				+ "FOREIGN KEY(obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
 				+ ")");		
 		
 		stmt.execute("CREATE TABLE tsk_final_score( obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
