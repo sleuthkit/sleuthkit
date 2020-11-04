@@ -31,7 +31,7 @@ using std::string;
  * Keep these values in sync with CURRENT_DB_SCHEMA_VERSION in SleuthkitCase.java
  */
 #define TSK_SCHEMA_VER 8
-#define TSK_SCHEMA_MINOR_VER 5
+#define TSK_SCHEMA_MINOR_VER 6
 
 /**
  * Values for the type column in the tsk_objects table. 
