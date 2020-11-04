@@ -58,7 +58,7 @@ before_script:
     fi
   - if [ $TRAVIS_OS_NAME = "osx" ]; then
         export PATH=${PATH}:/usr/local/opt/gettext/bin;
-        brew uninstall java --force;
+        brew uninstall java --force --ignore-dependencies;
         brew cask uninstall java --force;
     fi
 
