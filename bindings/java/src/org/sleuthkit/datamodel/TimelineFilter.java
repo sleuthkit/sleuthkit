@@ -655,7 +655,8 @@ public abstract class TimelineFilter {
 			if (notEqual(this.fileTypesFilter, other.getFileTypesFilter())) {
 				return false;
 			}
-			return Objects.equals(this.additionalFilters, other.getSubFilters());
+
+			return Objects.equals(this.additionalFilters, new HashSet<>(other.getSubFilters()));
 		}
 
 	}

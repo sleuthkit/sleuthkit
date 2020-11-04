@@ -2,8 +2,7 @@
 #
 # This software is distributed under the Common Public License 1.0
 #
-# Updates the TSK dependency repos (libewf, etc.), compiles them, and
-# compiles various TSK platforms using the current branch
+# Gets TSK dependencies from Nuget and compiles the current branch
 
 import codecs
 import datetime
@@ -26,7 +25,7 @@ LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S
 MINIMAL = False
 
 
-def pullAndBuildAllDependencies(depBranch):
+def getDependencies(depBranch):
     '''
         Compile libewf, libvhdi, libvmdk.
         Args:
@@ -67,121 +66,6 @@ def buildTSKAll():
     if(passed):
         buildTSK(64, "Release")
 
-def checkPathExist(path):
-    global passed
-
-    if not os.path.exists(path):
-        print (path + " not exist.")
-        sys.stdout.flush()
-        passed = False
-
-def gitPull(libHome, repo, branch):
-    '''
-        Pull the latest code.
-        Args:
-            libHome: according the environment variable to get the location
-            repo String of repository ("libewf_64bit", "libvmdk_64bit" or "libvhdi_64bit" which one to pull
-            branch: String, which branch to pull
-    '''
-
-    global SYS
-    global passed
-
-    gppth = os.path.join(LOG_PATH, "GitPullOutput" + repo + ".txt")
-    gpout = open(gppth, 'a')
-
-
-    print("Resetting " + repo)
-    sys.stdout.flush()
-    call = ["git", "reset", "--hard"]
-    ret = subprocess.call(call, stdout=sys.stdout, cwd=libHome)
-
-    if ret != 0:
-        passed = False
-        return
-
-    print("Checking out " + branch)
-    sys.stdout.flush()
-    call = ["git", "checkout", branch]
-    ret = subprocess.call(call, stdout=sys.stdout, cwd=libHome)
-
-    if ret != 0:
-        passed = False
-        return
-
-    call = ["git", "pull"]
-    print("Pulling " + repo + "/" + branch)
-    sys.stdout.flush()
-    ret = subprocess.call(call, stdout=sys.stdout, cwd=libHome)
-
-    if ret != 0:
-        passed = False
-
-    gpout.close()
-    if passed:
-        print("Update " + repo + " successfully.")
-    else:
-        print("Update " + repo + " failed.")
-
-def buildDependentLibs(libHome, wPlatform, targetDll, project):
-    '''
-        build libewf.dll, libvhdi.dll and libvmdk.dll
-    '''
-    global passed
-    passed = True
-
-    print("Building " + str(wPlatform) + "-bit " + targetDll)
-    sys.stdout.flush()
-
-    target = "Release"
-
-    if wPlatform == 64:
-        dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
-    elif wPlatform == 32:
-        dllFile = os.path.join(libHome,"msvscpp",target,targetDll + ".dll")
-    else:
-        print("Invalid platform")
-        sys.stdout.flush()
-        passed = False
-        return
-
-    if (os.path.isfile(dllFile)):
-        os.remove(dllFile)
-    os.chdir(os.path.join(libHome,"msvscpp"))
-
-    vs = []
-    vs.append(MSBUILD_PATH)
-    vs.append(os.path.join(targetDll + ".sln"))
-    vs.append("/t:" + project)
-    vs.append("/p:configuration=" + target)
-    if wPlatform == 64:
-        vs.append("/p:platform=x64")
-    elif wPlatform == 32:
-        vs.append("/p:platform=Win32")
-    vs.append("/clp:ErrorsOnly")
-    vs.append("/m")
-
-    outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
-    VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=sys.stdout)
-    errorCode = ret
-    VSout.close()
-    if ret > 0:
-        failed_proj = os.system("grep 'Done Building Project' " + outputFile + " | grep vcxproj |grep FAILED |wc -l |cut -f1 -d' '")
-        failed_pyewf = os.system("grep 'Done Building Project' " + outputFile + " | grep pyewf |grep FAILED |grep pywc -l |cut -f1 -d' '")
-        if failed_proj == failed_pyewf:
-            errorCode = 0
-    if errorCode != 0 or not os.path.exists(dllFile) or os.path.getctime(dllFile) < (time.time() - 2 * 60): # the new dll should not be 2 mins old
-        print(targetDll + " " + str(wPlatform) + "-bit C++ failed to build.\n")
-        print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile)))
-        sys.stdout.flush()
-        passed = False
-        os.chdir(CURRENT_PATH)
-        return
-    else:
-        print("Build " + str(wPlatform) + "-bit " + targetDll + " successfully")
-
-    os.chdir(CURRENT_PATH)
 
 def buildTSK(wPlatform, target):
     '''
@@ -265,7 +149,7 @@ def main():
         print("MS_BUILD Does not exist")
         sys.stdout.flush()
 
-    pullAndBuildAllDependencies(depBranch)
+    getDependencies(depBranch)
     buildTSKAll()
 
 class OS:

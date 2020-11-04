@@ -89,9 +89,9 @@ public class SlackFile extends FsContent {
 			long size,
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
-			String md5Hash, FileKnown knownState, String parentPath, String mimeType,
+			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
 			String extension) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, extension);
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension);
 	}
 
 	/**
