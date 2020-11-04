@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -238,9 +239,8 @@ public class CommunicationsManagerTest {
 	@BeforeClass
 	public static void setUpClass() {
 		String tempDirPath = System.getProperty("java.io.tmpdir");
-		tempDirPath = tempDirPath.substring(0, tempDirPath.length() - 1);
 		try {
-			dbPath = tempDirPath + java.io.File.separator + TEST_DB;
+			dbPath = Paths.get(tempDirPath, TEST_DB).toString();
 
 			// Delete the DB file, in case 
 			java.io.File dbFile = new java.io.File(dbPath);
