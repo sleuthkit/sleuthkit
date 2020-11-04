@@ -7,12 +7,12 @@
 # This only builds the 32-bit, release target  
 #
 # Assumes:
-#- libewf, libvmdk, and libvhdi are configured and built
 #- The correct msbuild is in the PATH
 #-- VS2015 and VS2008 put this in different places.  If VS2008 is found first, you'll get errors
 #   about not finding the 140_xp platform. 
 #-- The easiest way to do this is to launch Cygwin using the appropriate batch file, which sets
 #   the correct environment variables. 
+#- Nuget exe commandline is installed and on path
 #
 # This requires Cygwin with:
 # - git 
@@ -21,8 +21,7 @@
 
 use strict;
 
-my $TESTING = 0;
-print "TESTING MODE (no commits)\n" if ($TESTING);
+# Use 'no-tag' as the tag name to do basic testing
 
 unless (@ARGV == 1) {
 	print stderr "Missing arguments: version\n";
@@ -47,18 +46,6 @@ my $VER = "";
 #die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
 
 
-# Verify LIBX libraries exist / built
-die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
-die "libewf dll missing" 
-	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/Release/libewf.dll" ); 
-
-die "libvhdi dll missing" 
-	unless (-e "$ENV{'LIBVHDI_HOME'}/msvscpp/Release/libvhdi.dll" ); 
-
-die "libvhdi dll missing" 
-	unless (-e "$ENV{'LIBVMDK_HOME'}/msvscpp/Release/libvmdk.dll" ); 
-
-	
 #######################
 
 # Function to execute a command and send output to pipe
@@ -165,10 +152,14 @@ sub build_core {
 
 	die "Release folder not deleted" if (-x "Release/fls.exe");
 
+
+	# Get Dependencies
+	`nuget restore tsk-win.sln`;
+
 	# 2008 version
 	# `vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
 	# 2010/2015 version
-	`msbuild.exe tsk-win.sln /m /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
+	`msbuild.exe tsk-win.sln /m /p:Configuration=Release /p:platform=Win32 /clp:ErrorsOnly /nologo > BuildErrors.txt`;
 	die "Build errors -- check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables

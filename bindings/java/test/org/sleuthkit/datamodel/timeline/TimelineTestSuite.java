@@ -27,7 +27,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 	RootFilterTest.class,
-	EventTypeFilterTest.class})
+	EventTypeFilterTest.class
+})
 public class TimelineTestSuite {
 
 }

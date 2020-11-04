@@ -82,6 +82,11 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String md5Hash;
 	private boolean md5HashDirty = false;
+	/*
+	 * SHA-256 hash
+	 */
+	protected String sha256Hash;
+	private boolean sha256HashDirty = false;	
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
 	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
@@ -117,6 +122,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param gid
 	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
 	 *                           present
+	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if not
+	 *                           present
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
@@ -137,7 +144,7 @@ public abstract class AbstractFile extends AbstractContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes,
 			int uid, int gid,
-			String md5Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType,
 			String extension) {
@@ -162,6 +169,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.modes = TskData.TSK_FS_META_MODE_ENUM.valuesOf(modes);
 
 		this.md5Hash = md5Hash;
+		this.sha256Hash = sha256Hash;
 		if (knownState == null) {
 			this.knownState = FileKnown.UNKNOWN;
 		} else {
@@ -473,6 +481,28 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getMd5Hash() {
 		return this.md5Hash;
 	}
+	
+	/**
+	 * Sets the SHA-256 hash for this file.
+	 *
+	 * IMPORTANT: The SHA-256 hash is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param sha256Hash The SHA-256 hash of the file.
+	 */
+	public void setSha256Hash(String sha256Hash) {
+		this.sha256Hash = sha256Hash;
+		this.sha256HashDirty = true;
+	}
+	
+	/**
+	 * Get the SHA-256 hash value as calculated, if present
+	 *
+	 * @return SHA-256 hash string, if it is present or null if it is not
+	 */
+	public String getSha256Hash() {
+		return this.sha256Hash;
+	}	
 
 	/**
 	 * Sets the known state for this file.
@@ -1058,7 +1088,7 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "\t" + "metaAddr " + metaAddr + "\t" + "metaSeq " + metaSeq + "\t" + "metaFlags " + metaFlags //NON-NLS
 				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes //NON-NLS
 				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size //NON-NLS
-				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash //NON-NLS
+				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash + "\t" + "sha256Hash " + sha256Hash //NON-NLS
 				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath //NON-NLS
 				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile //NON-NLS
 				+ "]\t";
@@ -1102,7 +1132,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public void save() throws TskCoreException {
 
 		// No fields have been updated
-		if (!(md5HashDirty || mimeTypeDirty || knownStateDirty)) {
+		if (!(md5HashDirty || sha256HashDirty || mimeTypeDirty || knownStateDirty)) {
 			return;
 		}
 
@@ -1116,6 +1146,12 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 			queryStr += "md5 = '" + this.getMd5Hash() + "'";
 		}
+		if (sha256HashDirty) {
+			if (!queryStr.isEmpty()) {
+				queryStr += ", ";
+			}
+			queryStr += "sha256 = '" + this.getSha256Hash() + "'";
+		}		
 		if (knownStateDirty) {
 			if (!queryStr.isEmpty()) {
 				queryStr += ", ";
@@ -1131,6 +1167,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 			connection.executeUpdate(statement, queryStr);
 			md5HashDirty = false;
+			sha256HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
 		} catch (SQLException ex) {
@@ -1202,7 +1239,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
 	}
 
 	/**
@@ -1247,7 +1284,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
 	}
 
 	/**

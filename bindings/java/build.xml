@@ -121,6 +121,7 @@
 	<target name="compile-test" depends="compile" description="compile the tests">
 		<javac debug="on" srcdir="${test}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
+			<compilerarg value="-Xlint" />
 		</javac>
 	</target>
 

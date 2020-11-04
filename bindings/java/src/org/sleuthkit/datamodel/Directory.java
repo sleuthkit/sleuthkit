@@ -85,8 +85,8 @@ public class Directory extends FsContent {
 			long size,
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
-			String md5Hash, FileKnown knownState, String parentPath) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
+			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath) {
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, null, null);
 	}
 
 	/**
@@ -247,6 +247,6 @@ public class Directory extends FsContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
 			String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath);
 	}
 }
