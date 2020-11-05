@@ -50,7 +50,7 @@ public class FileRepositoryManager {
 		fileDownloadFolder = "";
 	}
 	
-	public void initializeSettings(FileRepositorySettings settings, String fileDownloadPath) {
+	public synchronized void initializeSettings(FileRepositorySettings settings, String fileDownloadPath) {
 		this.settings = settings;
 		this.fileDownloadFolder = fileDownloadPath;
 	}
@@ -58,7 +58,7 @@ public class FileRepositoryManager {
 	/**
 	 * Check whether the file repository has been initialized.
 	 */
-	public boolean isEnabled() {
+	public synchronized boolean isEnabled() {
 		return settings != null;
 	}
 	
@@ -142,7 +142,7 @@ public class FileRepositoryManager {
 	 * @param abstractFile 
 	 * @param trans
 	 */
-	public void saveToFileRepository(AbstractFile abstractFile, SleuthkitCase.CaseDbTransaction trans) throws TskCoreException {
+	public void saveToFileRepository(AbstractFile abstractFile) throws TskCoreException {
 		
 		if (! isEnabled()) {
 			throw new TskCoreException("File repository is not enabled");
@@ -167,6 +167,9 @@ public class FileRepositoryManager {
 		
 		// Save the abstractFile data
 		saveLocalFileToFileService(filePath);
+	}
+	
+	public void updateFileToUseFileRepository(AbstractFile abstractFile, SleuthkitCase.CaseDbTransaction trans)throws TskCoreException {
 		
 		// Update the file table entry
 		try {
