@@ -1417,6 +1417,9 @@ public class BlackboardAttribute {
 	        bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
 	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		
+		TSK_RULE(150, "TSK_RULE",
+	        bundle.getString("BlackboardAttribute.tskrule.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),		
 		
 		;
 

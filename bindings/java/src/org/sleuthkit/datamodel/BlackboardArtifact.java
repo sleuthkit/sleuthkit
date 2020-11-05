@@ -1260,7 +1260,13 @@ public class BlackboardArtifact implements Content {
 		 * Stores a role on a given domain.
 		 */
 		TSK_WEB_ACCOUNT_TYPE(59, "TSK_WEB_ACCOUNT_TYPE",
-				bundle.getString("BlackboardArtifact.tskWebAccountType.text"));		
+				bundle.getString("BlackboardArtifact.tskWebAccountType.text")),	
+		
+		/**
+		 * Indicates that the file had a yara pattern match hit.
+		 */
+		TSK_YARA_HIT(60, "TSK_YARA_HIT",
+				bundle.getString("BlackboardArtifact.tskWebAccountType.text"));	
         /* To developers: For each new artifact, ensure that:
          * - The enum value has 1-line JavaDoc description
          * - The artifact catalog (artifact_catalog.dox) is updated to reflect the attributes it uses
