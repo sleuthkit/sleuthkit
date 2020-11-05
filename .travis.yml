@@ -66,7 +66,7 @@ script:
   - javac -version
   - ./bootstrap && ./configure --prefix=/usr && make
   - pushd bindings/java/ && ant -q dist 
-  # don't run tests on linux; libtsk not present due to SIP on osx: VIK-6971
+  # don't run tests on osx; libtsk not present due to SIP on osx: VIK-6971
   - if [ $TRAVIS_OS_NAME != "osx" ]; then
       ant -q test
     fi
