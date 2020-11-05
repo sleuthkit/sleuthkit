@@ -16,6 +16,3 @@ installLib() {
 installLib libvhdi 20201018
 installLib libvmdk 20200926
 
-echo "directories:"
-ls /usr/lib
-ls /usr/local/lib
