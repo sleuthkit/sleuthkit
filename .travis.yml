@@ -67,8 +67,8 @@ script:
   - ./bootstrap && ./configure --prefix=/usr && make
   - pushd bindings/java/ && ant -q dist 
   # don't run tests on osx; libtsk not present due to SIP on osx: VIK-6971
-  - if [ $TRAVIS_OS_NAME != "osx" ]; then
-      ant -q test
+  - if test ${TRAVIS_OS_NAME} != "osx"; then
+        ant -q test;
     fi
   - popd
   - pushd case-uco/java/ && ant -q && popd
