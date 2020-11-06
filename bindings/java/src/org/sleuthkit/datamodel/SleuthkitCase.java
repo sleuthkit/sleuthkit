@@ -210,7 +210,6 @@ public class SleuthkitCase {
 	private Blackboard blackboard;
 	private CaseDbAccessManager dbAccessManager;
 	private TaggingManager taggingMgr;
-	private FileRepositoryManager fileRepositoryManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -389,7 +388,6 @@ public class SleuthkitCase {
 		timelineMgr = new TimelineManager(this);
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
-		fileRepositoryManager = new FileRepositoryManager(this);
 	}
 
 	/**
@@ -500,15 +498,6 @@ public class SleuthkitCase {
 	 */
 	public synchronized TaggingManager getTaggingManager() {
 		return taggingMgr;
-	}
-	
-	/**
-	 * Get the case database FileRepositoryManager object.
-	 *
-	 * @return The per case FileRepositoryManager object.
-	 */
-	public synchronized FileRepositoryManager getFileRepositoryManager() {
-		return fileRepositoryManager;
 	}
 
 	/**
@@ -7013,6 +7002,7 @@ public class SleuthkitCase {
 	 * @param sha256       The SHA256 hash of the file.
 	 * @param known        The known status of the file (can be null)
 	 * @param mimeType     The MIME type of the file
+	 * @param location     The location of the file
 	 * @param isFile       True, unless the file is a directory.
 	 * @param encodingType Type of encoding used on the file
 	 * @param parent       The parent of the file (e.g., a virtual directory)
@@ -7026,7 +7016,8 @@ public class SleuthkitCase {
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			String md5, String sha256, FileKnown known, String mimeType,
+			String md5, String sha256, FileKnown known, String mimeType, 
+			TskData.FileLocation location,
 			boolean isFile, TskData.EncodingType encodingType,
 			Content parent, CaseDbTransaction transaction) throws TskCoreException {
 				
@@ -7089,7 +7080,7 @@ public class SleuthkitCase {
 				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			}
 			statement.setString(19, parentPath);
-			statement.setLong(20, TskData.FileLocation.LOCAL.getValue());
+			statement.setLong(20, location.getValue());
 			statement.setLong(21, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			statement.setString(22, extension);
@@ -7107,7 +7098,7 @@ public class SleuthkitCase {
 					savedSize,
 					ctime, crtime, atime, mtime,
 					mimeType, md5, sha256, known,
-					parent.getId(), parentPath, TskData.FileLocation.LOCAL,
+					parent.getId(), parentPath, location,
 					dataSourceObjId,
 					localPath,
 					encodingType, extension);
@@ -11143,6 +11134,30 @@ public class SleuthkitCase {
 
 		}
 	}
+	
+	/**
+	 * Check whether any files in the case are stored in the repository.
+	 * 
+	 * @return true if any files have the location field set to "REPOSITORY", false otherwise.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public boolean caseUsesFileRepository() throws TskCoreException {
+		acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = getConnection();
+			Statement statement = connection.createStatement();
+			ResultSet rs = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM tsk_files WHERE location=" + TskData.FileLocation.REPOSITORY.getValue());) {
+			int count = 0;
+			if (rs.next()) {
+				count = rs.getInt("count");
+			}
+			return count > 0;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error querying case database for files stored in repository", ex);
+		} finally {
+			releaseSingleUserCaseReadLock();
+		}
+	}
 
 	/**
 	 * Stores a pair of object ID and its type
@@ -12685,7 +12700,7 @@ public class SleuthkitCase {
 			Content parent, CaseDbTransaction transaction) throws TskCoreException {	
 		
 		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
-				md5, null, known, mimeType, isFile, encodingType,
+				md5, null, known, mimeType, TskData.FileLocation.LOCAL, isFile, encodingType,
 				parent, transaction);
 	}
 

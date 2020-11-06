@@ -1055,8 +1055,12 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 		} else {
 			// Copy the file from the server
-			localFile = getSleuthkitCase().getFileRepositoryManager().loadFromFileRepository(this);
-			
+			FileRepository fileRepo = FileRepository.getInstance();
+			if (fileRepo != null) {
+				localFile = fileRepo.downloadFromFileRepository(this);
+			} else {
+				throw new TskCoreException("Error loading remote file with object ID " + getId() + ": file repository is not enabled");
+			}
 		}
 	}
 
