@@ -14,10 +14,8 @@ matrix:
     group: edge
   - compiler: clang
     os: osx
-    osx_image: xcode7.1
   - compiler: gcc
     os: osx
-    osx_image: xcode7.1
 
 addons:
   apt:
@@ -66,6 +64,7 @@ before_script:
 
 script:
   - javac -version
+  - sudo spctl --master-disable
   - ./bootstrap && ./configure --prefix=/usr && make
   - pushd bindings/java/ && ant -q dist 
   - ant -q test
