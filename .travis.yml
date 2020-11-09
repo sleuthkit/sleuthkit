@@ -68,9 +68,7 @@ script:
   - if test ${TRAVIS_OS_NAME} = "osx"; then
         sudo spctl --master-disable;
     fi
-  - ./bootstrap && ./configure --prefix=/usr && make && make install
-  - ls /usr/lib
-  - ls /usr/local/lib
+  - ./bootstrap && ./configure --prefix=/usr && make && sudo make install
   - pushd bindings/java/ && ant -q dist 
   - ant test
   - popd
