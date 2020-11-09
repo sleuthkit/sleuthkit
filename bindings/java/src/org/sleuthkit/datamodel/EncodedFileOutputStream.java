@@ -30,7 +30,8 @@ import java.io.OutputStream;
  */
 public class EncodedFileOutputStream extends BufferedOutputStream {
 
-	private TskData.EncodingType type;
+	private final TskData.EncodingType type;
+	private long encodedDataLength;
 
 	/**
 	 * Create an encoded output stream using the specified encoding.
@@ -43,6 +44,7 @@ public class EncodedFileOutputStream extends BufferedOutputStream {
 	public EncodedFileOutputStream(OutputStream out, TskData.EncodingType type) throws IOException {
 		super(out);
 		this.type = type;
+		encodedDataLength = 0;
 		writeHeader();
 	}
 
@@ -65,11 +67,13 @@ public class EncodedFileOutputStream extends BufferedOutputStream {
 	private void writeHeader() throws IOException {
 		// We get the encoded header here so it will be in plaintext after encoding
 		write(EncodedFileUtil.getEncodedHeader(type), 0, EncodedFileUtil.getHeaderLength());
+		encodedDataLength -= EncodedFileUtil.getHeaderLength();
 	}
 
 	@Override
 	public void write(int b) throws IOException {
 		super.write((int) EncodedFileUtil.encodeByte((byte) b, type));
+		encodedDataLength++;
 	}
 
 	@Override
@@ -83,5 +87,17 @@ public class EncodedFileOutputStream extends BufferedOutputStream {
 		}
 
 		super.write(encodedData, off, len);
+		encodedDataLength += len;
 	}
+	
+	/**
+	 * Get the number of bytes written to the file, excluding header bytes.
+	 * This is needed for storing the original length of the file in the
+	 * tsk_files table in cases where we don't know the size in advance.
+	 * 
+	 * @return the number of bytes written to the stream, excluding the header.
+	 */
+	public long getBytesWritten() {
+		return encodedDataLength;
+	} 
 }
