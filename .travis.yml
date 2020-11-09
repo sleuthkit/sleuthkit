@@ -65,8 +65,10 @@ before_script:
 
 script:
   - javac -version
-  - sudo spctl --master-disable
-  - ./bootstrap && ./configure --prefix=/usr && make
+  - if test ${TRAVIS_OS_NAME} = "osx"; then
+        sudo spctl --master-disable;
+    fi
+  - ./bootstrap && ./configure --prefix=/usr && make && make install
   - ls /usr/lib
   - ls /usr/local/lib
   - pushd bindings/java/ && ant -q dist 
