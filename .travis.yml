@@ -14,8 +14,10 @@ matrix:
     group: edge
   - compiler: clang
     os: osx
+    osx_image: xcode7.1
   - compiler: gcc
     os: osx
+    osx_image: xcode7.1
 
 addons:
   apt:
@@ -66,10 +68,7 @@ script:
   - javac -version
   - ./bootstrap && ./configure --prefix=/usr && make
   - pushd bindings/java/ && ant -q dist 
-  # don't run tests on osx; libtsk not present due to SIP on osx: VIK-6971
-  - if test ${TRAVIS_OS_NAME} != "osx"; then
-        ant -q test;
-    fi
+  - ant -q test
   - popd
   - pushd case-uco/java/ && ant -q && popd
   - make check && if [ -f "tests/test-suite.log" ];then cat tests/test-suite.log; fi ; if [ -f "unit_tests/base/test-suite.log" ];then cat unit_tests/base/test-suite.log; fi
