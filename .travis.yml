@@ -67,6 +67,8 @@ script:
   - javac -version
   - sudo spctl --master-disable
   - ./bootstrap && ./configure --prefix=/usr && make
+  - ls /usr/lib
+  - ls /usr/local/lib
   - pushd bindings/java/ && ant -q dist 
   - ant -q test
   - popd
