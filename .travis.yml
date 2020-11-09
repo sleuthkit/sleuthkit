@@ -69,6 +69,7 @@ script:
         sudo spctl --master-disable;
     fi
   - ./bootstrap && ./configure --prefix=/usr && make && sudo make install
+  - ls /usr/lib
   - pushd bindings/java/ && ant -q dist 
   - ant test
   - popd
