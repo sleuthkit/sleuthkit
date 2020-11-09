@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -383,6 +384,41 @@ public class BlackboardArtifact implements Content {
 		getSleuthkitCase().addBlackboardAttributes(attributes, artifactTypeId);
 		attrsCache.addAll(attributes);
 	}
+
+	/**
+	 * Adds a collection of attributes to this artifact in a single operation
+	 * (faster than adding each attribute individually). This function also
+	 * executes in the inserts within the transaction context.
+	 *
+	 * @param attributes		      The collection of attributes.
+	 * @param caseDbTransaction the transaction in the scope of which the
+	 *                          operation is to be performed, managed by the
+	 *                          caller
+	 *
+	 * @throws TskCoreException If an error occurs and the attributes were not
+	 *                          added to the artifact.
+	 */
+	public void addAttributes(Collection<BlackboardAttribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
+
+		if (attributes.isEmpty()) {
+			return;
+		}
+		if (caseDbTransaction == null) {
+			addAttributes(attributes);
+			return;
+		}
+		try {
+			for (final BlackboardAttribute attribute : attributes) {
+				attribute.setArtifactId(artifactId);
+				attribute.setCaseDatabase(getSleuthkitCase());
+				getSleuthkitCase().addBlackBoardAttribute(attribute, artifactTypeId, caseDbTransaction.getConnection());
+			}
+			attrsCache.addAll(attributes);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding blackboard attributes", ex);
+		}
+	}
+
 
 	/**
 	 * This overiding implementation returns the unique path of the parent. It

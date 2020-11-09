@@ -456,58 +456,59 @@ public final class Blackboard {
 
 
 	/**
-	 * Add a set of blackboard artifacts within a transaction context
-	 *
-	 * @param attributes	 A set of blackboard attribute.
-	 * @param artifactTypeId type of artifact associated with the attributes
-	 * @param artifactId     The artifact id of the blackboard artifact
-	 * @param transaction	 the transaction in the scope of which the operation
-	 *		                 is to be performed, managed by the caller
-	 *
-	 * @throws TskCoreException  thrown if a critical error occurs.
-	 */
-	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes, int artifactTypeId, long artifactId, SleuthkitCase.CaseDbTransaction transaction) throws TskCoreException {
-		if (attributes.isEmpty()) {
-			return;
-		}
-		if (transaction == null) {
-			throw new TskCoreException("Passed null CaseDbTransaction");
-		}
-		try {
-			SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
-			for (final BlackboardAttribute attr : attributes) {
-				attr.setArtifactId(artifactId);
-				caseDb.addBlackBoardAttribute(attr, artifactTypeId, connection);
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding blackboard attributes", ex);
-		}
-	}
-
-
-	/**
 	 * Add a new blackboard artifact with the given type.
 	 *
-	 * This api executes in the context of a transaction.
+	 * This api executes in the context of a transaction if one is provided.
 	 *
-	 * @param artifactType the type the given artifact should have
-	 * @param objId	   the content object id associated with this artifact
-	 * @param dataSourceObjId the data source object.
-	 * @param transaction  the transaction in the scope of which the operation
-	 *                     is to be performed, managed by the caller
+	 * @param artifactType    The type of the artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 * @param attributes      The attributes.
+	 * @param allowDuplicates Whether or not a duplicate artifact should be
+	 *                        created if the artifact already exists.
+	 * @param transaction     the transaction in the scope of which the
+	 *                        operation is to be performed. Null may be
+	 *                        provided, if one is not available. 
 	 *
 	 * @return a new blackboard artifact
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
 	 */
-	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long objId, long dataSourceObjId, CaseDbTransaction transaction) throws TskCoreException {
+	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, boolean allowDuplicates, final CaseDbTransaction transaction) throws TskCoreException {
+
+	    CaseDbTransaction localTrans = null;
+		boolean isNewLocalTx = false;
 		if (transaction == null) {
-			throw new TskCoreException("Passed null CaseDbTransaction");
+			localTrans = caseDb.beginTransaction();
+			isNewLocalTx = true;
+		}else {
+			localTrans = transaction;
 		}
-		return caseDb.newBlackboardArtifact(artifactType.getTypeID(), objId,
+
+		try {
+			// TODO: Perform duplicate checks if requested.
+			BlackboardArtifact blackboardArtifact = caseDb.newBlackboardArtifact(artifactType.getTypeID(), sourceObjId,
 					artifactType.getTypeName(), artifactType.getDisplayName(),
-					dataSourceObjId, transaction.getConnection());
+					dataSourceObjId, localTrans.getConnection());
+
+			if (Objects.nonNull(attributes)) {
+				blackboardArtifact.addAttributes(attributes, localTrans);
+			}
+
+			if (isNewLocalTx) {
+				localTrans.commit();
+			}
+			return blackboardArtifact;
+
+		} catch (TskCoreException ex) {
+			if (isNewLocalTx) {
+				localTrans.rollback(); // An exception here is not caught. This can cause confusion 
+			}
+			throw ex;
+		}
 	}
 
 
