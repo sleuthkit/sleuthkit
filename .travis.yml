@@ -57,6 +57,7 @@ before_script:
         unset JAVA_HOME;
     fi
   - if [ $TRAVIS_OS_NAME = "osx" ]; then
+        sudo spctl --master-disable;
         export PATH=${PATH}:/usr/local/opt/gettext/bin;
         brew uninstall java --force;
         brew cask uninstall java --force;
