@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
@@ -105,6 +106,8 @@ public final class Blackboard {
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.
 	 *
+	 * This assumes that the artifact type is of category EXTRACTED_DATA.
+	 *
 	 * @param typeName    The type name of the artifact type.
 	 * @param displayName The display name of the artifact type.
 	 *
@@ -115,8 +118,26 @@ public final class Blackboard {
 	 */
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
 
+		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.EXTRACTED_DATA);
+	}
+
+	/**
+	 * Gets an artifact type, creating it if it does not already exist. Use this
+	 * method to define custom artifact types.
+	 *
+	 * @param typeName    The type name of the artifact type.
+	 * @param displayName The display name of the artifact type.
+	 * @param category    The artifact type category.
+	 *
+	 * @return A type object representing the artifact type.
+	 *
+	 * @throws BlackboardException If there is a problem getting or adding the
+	 *                             artifact type.
+	 */
+	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName, BlackboardArtifact.Category category) throws BlackboardException {
+
 		try {
-			return caseDb.addBlackboardArtifactType(typeName, displayName);
+			return caseDb.addBlackboardArtifactType(typeName, displayName, category);
 		} catch (TskDataException typeExistsEx) {
 			try {
 				return caseDb.getArtifactType(typeName);
@@ -127,7 +148,95 @@ public final class Blackboard {
 			throw new BlackboardException("Failed to get or add artifact type", ex);
 		}
 	}
+	
+	/**
+	 * Adds new analysis result artifact.
+	 *
+	 * @param artifactType      Type of analysis result artifact to create.
+	 * @param obj_id            Object id of parent.
+	 * @param datasource_obj_id Data source object id.
+	 * @param score	            Score associated with this analysis result.
+	 * @param conclusion        Conclusion of the analysis, may be null or an
+	 *                          empty string.
+	 * @param configuration     Configuration association with this analysis,
+	 *                          may be null or an empty string.
+	 * @param justification     Justification, may be null or an empty string.
+	 * @param attributesList    Attributes to be attached to this analysis
+	 *                          result artifact.
+	 * @param transaction       DB transaction to use.
+	 *
+	 * @return Analysis result created.
+	 *
+	 * @throws BlackboardException exception thrown if a critical error occurs
+	 *                             within TSK core
+	 */
+	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, long obj_id, long datasource_obj_id, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
+		
+		try {
+			// add analysis result
+			AnalysisResult analysisResult =  caseDb.newAnalysisResult(artifactType, obj_id, datasource_obj_id, score, conclusion, configuration, justification, transaction.getConnection());
+			
+			// add the given attributes
+			analysisResult.addAttributes(attributesList, transaction);
+			
+			return analysisResult;
+		}  catch (TskCoreException ex) {
+			throw new BlackboardException("Failed to add analysis result.", ex);
+		}
+	}
+	
+	/**
+	 * Get all analysis results of a given type.
+	 *
+	 * @param artifactTypeID  Type of results to get.
+	 * @param dataSourceObjId Data source to look under.
+	 *
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
 
+		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeID));
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeID));
+		}
+		
+		final String queryString = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+				+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
+				+ " arts.review_status_id AS review_status_id, " //NON-NLS
+				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
+				+ " results.configuration AS configuration,  results.justification AS justification "
+				+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
+				+ " WHERE arts.artifact_obj_id = aresults.obj_id " //NON-NLS
+				+ " AND arts.artifact_type_id = types.artifact_type_id"
+				+ " AND types.artifact_type_id = " + artifactTypeID
+				+ " AND arts.data_source_obj_id = " + dataSourceObjId //NON-NLS
+				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
+
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+			ArrayList<AnalysisResult> analysisResults = new ArrayList<>();
+			while (resultSet.next()) {
+				analysisResults.add(new AnalysisResult( caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"), 
+						resultSet.getLong("artifact_obj_id"), resultSet.getLong("data_source_obj_id"),
+						resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
+						BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")), 
+						new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.Confidence.fromID(resultSet.getInt("confidence"))),
+						resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification")));
+			}
+			return analysisResults;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting analysis results for type id %d", artifactTypeID), ex);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}
+	
 	/**
 	 * Gets an attribute type, creating it if it does not already exist. Use
 	 * this method to define custom attribute types.

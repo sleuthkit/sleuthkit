@@ -147,6 +147,7 @@ class CaseDatabaseFactory {
 		try (Statement stmt = conn.createStatement()) {
 			createFileTables(stmt);
 			createArtifactTables(stmt);
+			createAnalysisResultsTables(stmt);
 			createTagTables(stmt);
 			createIngestTables(stmt);
 			createAccountTables(stmt);
@@ -233,7 +234,8 @@ class CaseDatabaseFactory {
 	
 	private void createArtifactTables(Statement stmt) throws SQLException {
 		stmt.execute("CREATE TABLE blackboard_artifact_types (artifact_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ "type_name TEXT NOT NULL, display_name TEXT)");
+				+ "type_name TEXT NOT NULL, display_name TEXT,"
+				+ "category_type INTEGER DEFAULT 0)");
 
 		stmt.execute("CREATE TABLE blackboard_attribute_types (attribute_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)");
@@ -248,6 +250,7 @@ class CaseDatabaseFactory {
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "artifact_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "review_status_id INTEGER NOT NULL, "
+				+ "UNIQUE (artifact_obj_id),"
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
@@ -268,6 +271,23 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");		
 	}
 	
+	private void createAnalysisResultsTables(Statement stmt) throws SQLException  {
+		stmt.execute("CREATE TABLE tsk_analysis_result (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "conclusion TEXT, "
+				+ "significance INTEGER NOT NULL, "
+				+ "confidence INTEGER NOT NULL, "
+				+ "configuration TEXT, justification TEXT, "
+				+ "ignore_score INTEGER DEFAULT 0, " // boolean	
+				+ "FOREIGN KEY(obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
+				+ ")");		
+		
+		stmt.execute("CREATE TABLE tsk_final_score( obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "significance INTEGER NOT NULL, "
+				+ "confidence INTEGER NOT NULL, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE"
+				+ ")");	
+		
+	}
 	private void createTagTables(Statement stmt) throws SQLException {
 		stmt.execute("CREATE TABLE tsk_tag_sets (tag_set_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, name TEXT UNIQUE)");
 		stmt.execute("CREATE TABLE tag_names (tag_name_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, display_name TEXT UNIQUE, "
@@ -332,6 +352,9 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX events_artifact_id ON tsk_event_descriptions(artifact_id)");
 			stmt.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time)");
 			stmt.execute("CREATE INDEX events_time ON tsk_events(time)");
+			
+			// analysis results indices
+			stmt.execute("CREATE INDEX score_significance_confidence ON tsk_final_score(significance,confidence)");
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);
 		}
