@@ -331,7 +331,7 @@ public abstract class AbstractContent implements Content {
 		}
 		catch (BlackboardException ex) {
 			trans.rollback();
-			throw new TskCoreException("Error adding analysis result.", ex);
+			throw new TskCoreException(String.format("Error adding analysis result to content with objId = %d.", objId), ex);
 		}
 	}
 

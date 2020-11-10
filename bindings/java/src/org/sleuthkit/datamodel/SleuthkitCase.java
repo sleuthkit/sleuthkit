@@ -4349,7 +4349,7 @@ public class SleuthkitCase {
 	 * @throws TskDataException exception thrown if given data is already in db
 	 *                          within tsk core
 	 */
-	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName, BlackboardArtifact.Category category) throws TskCoreException, TskDataException {
+	BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName, BlackboardArtifact.Category category) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		Statement s = null;
