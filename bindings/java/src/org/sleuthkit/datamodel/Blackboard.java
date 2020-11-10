@@ -30,7 +30,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
@@ -38,6 +40,8 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  * attributes are posted.
  */
 public final class Blackboard {
+
+	private static final Logger LOGGER = Logger.getLogger(Blackboard.class.getName());
 
 	private final SleuthkitCase caseDb;
 
@@ -464,10 +468,8 @@ public final class Blackboard {
 	 * @param sourceObjId     The content that is the source of this artifact.
 	 * @param dataSourceObjId The data source the artifact source content
 	 *                        belongs to, may be the same as the sourceObjId.
-	 * @param attributes      The attributes.
-	 * @param allowDuplicates Whether or not a duplicate artifact should be
-	 *                        created if the artifact already exists.
-	 * @param transaction     the transaction in the scope of which the
+	 * @param attributes      The attributes. May be empty or null. 
+	 * @param transaction     The transaction in the scope of which the
 	 *                        operation is to be performed. Null may be
 	 *                        provided, if one is not available. 
 	 *
@@ -477,7 +479,7 @@ public final class Blackboard {
 	 *                          within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
-			Collection<BlackboardAttribute> attributes, boolean allowDuplicates, final CaseDbTransaction transaction) throws TskCoreException {
+			Collection<BlackboardAttribute> attributes, final CaseDbTransaction transaction) throws TskCoreException {
 
 	    CaseDbTransaction localTrans = null;
 		boolean isNewLocalTx = false;
@@ -489,12 +491,11 @@ public final class Blackboard {
 		}
 
 		try {
-			// TODO: Perform duplicate checks if requested.
 			BlackboardArtifact blackboardArtifact = caseDb.newBlackboardArtifact(artifactType.getTypeID(), sourceObjId,
 					artifactType.getTypeName(), artifactType.getDisplayName(),
 					dataSourceObjId, localTrans.getConnection());
 
-			if (Objects.nonNull(attributes)) {
+			if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
 				blackboardArtifact.addAttributes(attributes, localTrans);
 			}
 
@@ -504,8 +505,12 @@ public final class Blackboard {
 			return blackboardArtifact;
 
 		} catch (TskCoreException ex) {
-			if (isNewLocalTx) {
-				localTrans.rollback(); // An exception here is not caught. This can cause confusion 
+			try {
+				if (isNewLocalTx) {
+					localTrans.rollback();
+				}
+			} catch (TskCoreException ex2) {
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
 			}
 			throw ex;
 		}

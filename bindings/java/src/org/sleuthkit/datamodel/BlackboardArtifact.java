@@ -387,25 +387,24 @@ public class BlackboardArtifact implements Content {
 
 	/**
 	 * Adds a collection of attributes to this artifact in a single operation
-	 * (faster than adding each attribute individually). This function also
-	 * executes in the inserts within the transaction context.
+	 * (faster than adding each attribute individually) within a transaction
+	 * supplied by the caller.
 	 *
-	 * @param attributes		      The collection of attributes.
-	 * @param caseDbTransaction the transaction in the scope of which the
+	 * @param attributes        The collection of attributes.
+	 * @param caseDbTransaction The transaction in the scope of which the
 	 *                          operation is to be performed, managed by the
-	 *                          caller
+	 *                          caller. Null is not permitted.
 	 *
 	 * @throws TskCoreException If an error occurs and the attributes were not
 	 *                          added to the artifact.
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
-		if (attributes.isEmpty()) {
-			return;
+		if (Objects.isNull(attributes) || attributes.isEmpty()) {
+			throw new TskCoreException("Passed null or empty attributes");
 		}
-		if (caseDbTransaction == null) {
-			addAttributes(attributes);
-			return;
+		if (Objects.isNull(caseDbTransaction) ) {
+			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
 		try {
 			for (final BlackboardAttribute attribute : attributes) {
