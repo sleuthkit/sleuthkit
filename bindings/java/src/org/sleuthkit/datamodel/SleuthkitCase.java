@@ -4262,7 +4262,7 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.CategoryType.withID(rs.getInt("category_type")));
+						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 				this.typeNameToArtifactTypeMap.put(artTypeName, type);
 			}
@@ -4301,7 +4301,7 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.CategoryType.withID(rs.getInt("category_type")));
+						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 				this.typeIdToArtifactTypeMap.put(artTypeId, type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
 			}
@@ -4332,7 +4332,7 @@ public class SleuthkitCase {
 	 */
 	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName) throws TskCoreException, TskDataException {
 		
-		return addBlackboardArtifactType(artifactTypeName, displayName, BlackboardArtifact.CategoryType.EXTRACTED_DATA);
+		return addBlackboardArtifactType(artifactTypeName, displayName, BlackboardArtifact.Category.EXTRACTED_DATA);
 	}
 
 	/**
@@ -4349,7 +4349,7 @@ public class SleuthkitCase {
 	 * @throws TskDataException exception thrown if given data is already in db
 	 *                          within tsk core
 	 */
-	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName, BlackboardArtifact.CategoryType category) throws TskCoreException, TskDataException {
+	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName, BlackboardArtifact.Category category) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		Statement s = null;
@@ -4662,8 +4662,8 @@ public class SleuthkitCase {
 	 */
 	AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, long obj_id, long data_source_obj_id, Score score, String conclusion, String configuration, String justification, CaseDbConnection connection) throws TskCoreException {
 		
-		if (artifactType.getCategory() != BlackboardArtifact.CategoryType.ANALYSIS_RESULT) {
-			throw new TskCoreException(String.format("Artifact type (name = %s) is not of the AnalysisResult category type. ", artifactType.getTypeName()) );
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new TskCoreException(String.format("Artifact type (name = %s) is not of the AnalysisResult category. ", artifactType.getTypeName()) );
 		}
 		
 		long artifactID;
@@ -4694,11 +4694,11 @@ public class SleuthkitCase {
 				connection.executeUpdate(analysisResultsStatement);
 			}
 			
-			return new AnalysisResult(score, (conclusion != null) ? conclusion : "", 
-											(configuration != null) ? configuration : "", (justification != null) ? justification : "", 
-											this, artifactID, obj_id, artifact_obj_id, data_source_obj_id, artifactType.getTypeID(), 
-											artifactType.getTypeName(), artifactType.getDisplayName(), 
-											BlackboardArtifact.ReviewStatus.UNDECIDED, true);
+			return new AnalysisResult( this, artifactID, obj_id, artifact_obj_id, data_source_obj_id, artifactType.getTypeID(), 
+										artifactType.getTypeName(), artifactType.getDisplayName(), 
+										BlackboardArtifact.ReviewStatus.UNDECIDED, true,
+										score, (conclusion != null) ? conclusion : "", 
+										(configuration != null) ? configuration : "", (justification != null) ? justification : "");
 			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a analysis result", ex);

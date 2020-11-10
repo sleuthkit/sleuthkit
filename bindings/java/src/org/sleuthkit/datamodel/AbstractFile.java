@@ -1186,21 +1186,6 @@ public abstract class AbstractFile extends AbstractContent {
 		return getSleuthkitCase().newBlackboardArtifact(artifactTypeID, getId(), dataSourceObjectId);
 	}
 
-	@Override
-	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		
-		CaseDbTransaction trans = getSleuthkitCase().beginTransaction();
-		try {
-			AnalysisResult result = getSleuthkitCase().getBlackboard().newAnalysisResult(artifactType, getId(), dataSourceObjectId, score, conclusion, configuration, justification, attributesList, trans);
-			
-			trans.commit();
-			return result;
-		}
-		catch (BlackboardException ex) {
-			trans.rollback();
-			throw new TskCoreException("Error adding analysis result.", ex);
-		}
-	}
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)

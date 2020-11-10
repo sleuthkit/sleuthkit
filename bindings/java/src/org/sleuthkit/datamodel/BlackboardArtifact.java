@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -195,14 +196,6 @@ public class BlackboardArtifact implements Content {
 		return this.artifactTypeName;
 	}
 
-	/**
-	 * Gets the artifact type category for this artifact.
-	 *
-	 * @return The artifact type category.
-	 */
-	public CategoryType getCategoryType() {
-		return ARTIFACT_TYPE.fromID(artifactTypeId).getCategory();
-	}
 
 	/**
 	 * Gets the artifact type display name for this artifact.
@@ -394,6 +387,40 @@ public class BlackboardArtifact implements Content {
 		getSleuthkitCase().addBlackboardAttributes(attributes, artifactTypeId);
 		attrsCache.addAll(attributes);
 	}
+
+	/**
+	 * Adds a collection of attributes to this artifact in a single operation
+	 * (faster than adding each attribute individually) within a transaction
+	 * supplied by the caller.
+	 *
+	 * @param attributes        The collection of attributes.
+	 * @param caseDbTransaction The transaction in the scope of which the
+	 *                          operation is to be performed, managed by the
+	 *                          caller. Null is not permitted.
+	 *
+	 * @throws TskCoreException If an error occurs and the attributes were not
+	 *                          added to the artifact.
+	 */
+	public void addAttributes(Collection<BlackboardAttribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
+
+		if (Objects.isNull(attributes) || attributes.isEmpty()) {
+			throw new TskCoreException("Passed null or empty attributes");
+		}
+		if (Objects.isNull(caseDbTransaction) ) {
+			throw new TskCoreException("Passed null CaseDbTransaction");
+		}
+		try {
+			for (final BlackboardAttribute attribute : attributes) {
+				attribute.setArtifactId(artifactId);
+				attribute.setCaseDatabase(getSleuthkitCase());
+				getSleuthkitCase().addBlackBoardAttribute(attribute, artifactTypeId, caseDbTransaction.getConnection());
+			}
+			attrsCache.addAll(attributes);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding blackboard attributes", ex);
+		}
+	}
+
 
 	/**
 	 * This overiding implementation returns the unique path of the parent. It
@@ -845,7 +872,7 @@ public class BlackboardArtifact implements Content {
 		private final String typeName;
 		private final int typeID;
 		private final String displayName;
-		private final CategoryType category;
+		private final Category category;
 
 		/**
 		 * Constructs a custom artifact type.
@@ -855,7 +882,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The display name of the type.
 		 */
 		public Type(int typeID, String typeName, String displayName) {
-			this(typeID, typeName, displayName, CategoryType.EXTRACTED_DATA);
+			this(typeID, typeName, displayName, Category.EXTRACTED_DATA);
 		}
 
 		/**
@@ -866,7 +893,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The display name of the type.
 		 * @param category    The artifact type category.
 		 */
-		public Type(int typeID, String typeName, String displayName, CategoryType category) {
+		public Type(int typeID, String typeName, String displayName, Category category) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
@@ -914,7 +941,7 @@ public class BlackboardArtifact implements Content {
 		 *
 		 * @return The artifact type category.
 		 */
-		public CategoryType getCategory() {
+		public Category getCategory() {
 			return category;
 		}
 
@@ -1026,12 +1053,12 @@ public class BlackboardArtifact implements Content {
 		 * A search hit for a keyword.
 		 */
 		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT",
-				bundle.getString("BlackboardArtifact.tskKeywordHits.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskKeywordHits.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * A hit for a hash set (hash database).
 		 */
 		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskHashsetHit.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskHashsetHit.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * An attached device.
 		 */
@@ -1042,7 +1069,7 @@ public class BlackboardArtifact implements Content {
 		 * interesting.
 		 */
 		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskInterestingFileHit.text"), CategoryType.ANALYSIS_RESULT), ///< an interesting/notable file hit
+				bundle.getString("BlackboardArtifact.tskInterestingFileHit.text"), Category.ANALYSIS_RESULT), ///< an interesting/notable file hit
 		/**
 		 * An email message.
 		 */
@@ -1164,18 +1191,18 @@ public class BlackboardArtifact implements Content {
 		 * An encrypted file.
 		 */
 		TSK_ENCRYPTION_DETECTED(33, "TSK_ENCRYPTION_DETECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskEncryptionDetected.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskEncryptionDetected.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * A file with an extension that does not match its MIME type.
 		 */
 		TSK_EXT_MISMATCH_DETECTED(34, "TSK_EXT_MISMATCH_DETECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskExtMismatchDetected.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskExtMismatchDetected.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * An meta-artifact to call attention to an artifact deemed to be
 		 * interesting.
 		 */
 		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * A route based on GPS coordinates.
 		 * Use org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addRoute()
@@ -1192,7 +1219,7 @@ public class BlackboardArtifact implements Content {
 		 * A human face was detected in a media file.
 		 */
 		TSK_FACE_DETECTED(38, "TSK_FACE_DETECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskFaceDetected.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskFaceDetected.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * An account.
 		 */
@@ -1202,12 +1229,12 @@ public class BlackboardArtifact implements Content {
 		 * An encrypted file.
 		 */
 		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text"), Category.ANALYSIS_RESULT),
 		/*
 		 * A classifier detected an object in a media file.
 		 */
 		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskObjectDetected.text"), CategoryType.ANALYSIS_RESULT),
+				bundle.getString("BlackboardArtifact.tskObjectDetected.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * A wireless network.
 		 */
@@ -1317,7 +1344,7 @@ public class BlackboardArtifact implements Content {
 		private final String label;
 		private final int typeId;
 		private final String displayName;
-		private final CategoryType category;
+		private final Category category;
 
 		/**
 		 * Constructs a value for the standard artifact types enum.
@@ -1327,7 +1354,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The type display name.
 		 */
 		private ARTIFACT_TYPE(int typeId, String label, String displayName) {
-			this(typeId, label, displayName, CategoryType.EXTRACTED_DATA);
+			this(typeId, label, displayName, Category.EXTRACTED_DATA);
 		}
 
 		/**
@@ -1338,7 +1365,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The type display name.
 		 * @param category	  The type category.
 		 */
-		private ARTIFACT_TYPE(int typeId, String label, String displayName, CategoryType category) {
+		private ARTIFACT_TYPE(int typeId, String label, String displayName, Category category) {
 			this.typeId = typeId;
 			this.label = label;
 			this.displayName = displayName;
@@ -1368,7 +1395,7 @@ public class BlackboardArtifact implements Content {
 		 *
 		 * @return The type category.
 		 */
-		public CategoryType getCategory() {
+		public Category getCategory() {
 			return this.category;
 		}
 
@@ -1436,51 +1463,50 @@ public class BlackboardArtifact implements Content {
 	}
 
 	/**
-	 * Enum to encapsulate categories of artifact types.
+	 * Enumeration to encapsulate categories of artifact.
 	 *
 	 * Some artifact types represent data directly extracted from a data source, 
 	 * while others may be the result of some analysis done on the extracted 
 	 * data.
 	 */
-	public enum CategoryType {
+	public enum Category {
 
-		EXTRACTED_DATA(0, "EXTRACTED_DATA", "CategoryType.ExtractedData"), // artifact is data that is directly/indirectly extracted from a data source.
-		ANALYSIS_RESULT(1, "ANALYSIS_RESULT", "CategoryType.AnalysisResult"); // artifacts represents outcome of analysis of data.
+		EXTRACTED_DATA(0, "EXTRACTED_DATA", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.ExtractedData")), // artifact is data that is directly/indirectly extracted from a data source.
+		ANALYSIS_RESULT(1, "ANALYSIS_RESULT", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.AnalysisResult")); // artifacts represents outcome of analysis of data.
 
 		private final Integer id;
 		private final String name;
 		private final String displayName;
 
-		private final static Map<Integer, CategoryType> idToCategory = new HashMap<Integer, CategoryType>();
+		private final static Map<Integer, Category> idToCategory = new HashMap<Integer, Category>();
 
 		static {
-			for (CategoryType status : values()) {
+			for (Category status : values()) {
 				idToCategory.put(status.getID(), status);
 			}
 		}
 
 		/**
-		 * Constructs a value for the category type enum.
+		 * Constructs a value for the category enum.
 		 *
 		 * @param id             The category id.
 		 * @param name           The category name
-		 * @param displayNameKey The bundle.properties key for the category
-		 *                       display name.
+		 * @param displayNameKey Category display name.
 		 */
-		private CategoryType(Integer id, String name, String displayNameKey) {
+		private Category(Integer id, String name, String displayName) {
 			this.id = id;
 			this.name = name;
-			this.displayName = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString(displayNameKey);
+			this.displayName = displayName;
 		}
 
 		/**
-		 * Gets the category type value with the given id, if one exists.
+		 * Gets the category value with the given id, if one exists.
 		 *
 		 * @param id A category id.
 		 *
 		 * @return The category with the given id, or null if none exists.
 		 */
-		public static CategoryType withID(int id) {
+		public static Category fromID(int id) {
 			return idToCategory.get(id);
 		}
 

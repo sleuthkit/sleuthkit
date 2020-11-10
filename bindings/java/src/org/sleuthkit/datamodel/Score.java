@@ -33,10 +33,11 @@ public class Score {
 	 */
 	public enum Significance {
 
-		NONE(0, "None"), // has no siginifcance, i.e. it's Good
-		LOW(1, "Low"),
-		MEDIUM(2, "Medium"), // Suspicious
-		HIGH(3, "High");	// Bad & Notable
+		UNKNOWN(0, "Unknown"), // no analysis has been performed to ascertain significance.
+		NONE(1, "None"), // has no siginifcance, i.e. it's Good
+		LOW(2, "Low"),
+		MEDIUM(3, "Medium"), // Suspicious
+		HIGH(4, "High");	// Bad & Notable
 
 		private final int id;
 		private final String name;

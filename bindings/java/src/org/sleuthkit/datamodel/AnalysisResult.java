@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2020 Basis Technology Corp.
+ * Copyright 2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,24 +28,24 @@ public class AnalysisResult extends BlackboardArtifact {
 	private final String conclusion;	// conclusion of analysis - may be an empty string
 	private final Score score;			// score from the analysis
 	private final String configuration; // name of a configuration file/element that guides this analysis, may be an empty string.
-	private final String justificaion;  // justification/explanation from the analysis, may be an empty string.
+	private final String justification;  // justification/explanation from the analysis, may be an empty string.
 
-	private boolean ignore_result = false;
+	private boolean ignoreResult = false; // ignore this analysis result when computing score of the parent object.
 
-	AnalysisResult(Score score, String conclusion, String configuration, String justificaion, SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
+	AnalysisResult( SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		this.score = score;
 		this.conclusion = (conclusion != null) ? conclusion : "";
 		this.configuration = (configuration != null) ? configuration : "";
-		this.justificaion = (justificaion != null) ? justificaion : "";
+		this.justification = (justification != null) ? justification : "";
 	}
 
-	AnalysisResult(Score score, String conclusion, String configuration, String justificaion, SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
+	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.score = score;
 		this.conclusion = (conclusion != null) ? conclusion : "";
 		this.configuration = (configuration != null) ? configuration : "";
-		this.justificaion = (justificaion != null) ? justificaion : "";
+		this.justification = (justification != null) ? justification : "";
 	}
 
 	/**
@@ -80,8 +80,8 @@ public class AnalysisResult extends BlackboardArtifact {
 	 *
 	 * @return justification, returns an empty string if not set.
 	 */
-	public String getJustificaion() {
-		return justificaion;
+	public String getJustification() {
+		return justification;
 	}
 
 	/**
@@ -89,8 +89,8 @@ public class AnalysisResult extends BlackboardArtifact {
 	 *
 	 * @param ignore if the result should be ignored or not.
 	 */
-	public void ignoreResult(boolean ignore) {
-		ignore_result = ignore;
+	public void setIgnoreResult(boolean ignore) {
+		ignoreResult = ignore;
 	}
 
 	/**
@@ -98,8 +98,8 @@ public class AnalysisResult extends BlackboardArtifact {
 	 *
 	 * @return true is the result should should be ignored, false otherwise.
 	 */
-	public boolean isIgnored() {
-		return ignore_result;
+	public boolean ignoreResult() {
+		return ignoreResult;
 	}
 
 }
