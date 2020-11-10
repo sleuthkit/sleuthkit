@@ -35,8 +35,6 @@ import java.util.stream.Collectors;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import static org.sleuthkit.datamodel.SleuthkitCase.closeResultSet;
-import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
