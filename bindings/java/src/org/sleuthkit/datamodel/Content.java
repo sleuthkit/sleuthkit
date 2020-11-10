@@ -207,6 +207,17 @@ public interface Content extends SleuthkitVisitableItem {
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException;
 
 	/**
+	 * Get all analysis results associated with this content, that have the given type.
+	 *
+	 * @param artifactType  Type to look up.
+	 *
+	 * @return A list of analysis result artifacts matching the type.
+	 *
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException;
+	
+	/**
 	 * Return the TSK_GEN_INFO artifact for the file so that individual
 	 * attributes can be added to it. Creates one if it does not already exist.
 	 *
@@ -273,6 +284,15 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
 
+	/**
+	 * Get all analysis results associated with this content.
+	 *
+	 * @return A list of analysis results.
+	 *
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException;
+	
 	/**
 	 * Get the names of all the hashsets that this content is in.
 	 *

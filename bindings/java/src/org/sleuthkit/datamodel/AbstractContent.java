@@ -421,6 +421,23 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		return db.getBlackboard().getAnalysisResultsWhere(" obj_id = " + objId); //NON-NLS
+	}
+	
+
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new TskCoreException(String.format("Artifact type %s is not in analysis result catgeory.", artifactType.getTypeName()));
+		}
+		
+		return db.getBlackboard().getAnalysisResultsWhere(" obj_id = " + objId
+														+ " AND artifact_type_id = " + artifactType.getTypeID() ); //NON-NLS
+	}
+	
+	@Override
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
 		return db.getBlackboardArtifactsCount(artifactTypeName, objId);
 	}

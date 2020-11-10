@@ -469,6 +469,23 @@ public class BlackboardArtifact implements Content {
 		return new ArrayList<BlackboardArtifact>();
 	}
 
+	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		return sleuthkitCase.getBlackboard().getAnalysisResultsWhere(" obj_id = " + artifactObjId); //NON-NLS
+	}
+	
+
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new TskCoreException(String.format("Artifact type %s is not in analysis result catgeory.", artifactType.getTypeName()));
+		}
+		
+		return sleuthkitCase.getBlackboard().getAnalysisResultsWhere(" obj_id = " + artifactObjId
+														+ " AND artifact_type_id = " + artifactType.getTypeID() ); //NON-NLS
+	}
+	
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * name

@@ -302,6 +302,22 @@ public class Report implements Content {
 	}
 
 	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		return db.getBlackboard().getAnalysisResultsWhere(" obj_id = " + objectId); //NON-NLS
+	}
+	
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new TskCoreException(String.format("Artifact type %s is not in analysis result catgeory.", artifactType.getTypeName()));
+		}
+		
+		return db.getBlackboard().getAnalysisResultsWhere(" obj_id = " + objectId
+														+ " AND artifact_type_id = " + artifactType.getTypeID() ); //NON-NLS
+	}
+	
+	@Override
 	public Set<String> getHashSetNames() throws TskCoreException {
 		return Collections.<String>emptySet();
 	}
