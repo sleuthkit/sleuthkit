@@ -6192,6 +6192,122 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Add a file system file to the database by supplying all fields to copy into the 
+	 * tsk_files entry. This should generally only be used when the location
+	 * field is not set to LOCAL since it does not create any additional database
+	 * entries for reading the file data (such as rows in tsk_files_path for local files,
+	 * rows in tsk_file_layout for layout files, etc). 
+	 *
+	 * @param fsObjId              The fs object ID or null
+	 * @param fileName		       The name of the file.
+	 * @param fileType             The type of file
+	 * @param metaAddr		       The meta address of the file.
+	 * @param metaSeq		       The meta address sequence of the file.
+	 * @param attrType		       The attributed type of the file.
+	 * @param attrId		       The attribute id
+	 * @param dirFlag		       The allocated status from the name structure
+	 * @param metaFlags             The meta flags.
+	 * @param size			        The size of the file in bytes.
+	 * @param ctime			        The changed time of the file.
+	 * @param crtime		        The creation time of the file.
+	 * @param atime			        The accessed time of the file
+	 * @param mtime			        The modified time of the file.
+	 * @param md5                   The MD5 hash of the file (may be null).
+	 * @param sha256                The SHA-256 hash of the file (may be null).
+	 * @param known                 The FileKnown value of the file.
+	 * @param mimeType              The MIME type of the file (may be null).
+	 * @param isFile		        True, unless the file is a directory.
+	 * @param location              The location the file is stored.
+	 * @param parent		        The parent of the file (e.g., a virtual directory)
+	 * @param transaction           The current transaction
+	 *
+	 * @return Newly created file
+	 *
+	 * @throws TskCoreException
+	 */
+	public AbstractFile addFileSystemFile(long fsObjId,
+			String fileName,
+			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
+			long metaAddr, long metaSeq,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime,
+			String md5, String sha256, FileKnown known, String mimeType,
+			boolean isFile, TskData.FileLocation location, Content parent,
+			CaseDbTransaction transaction) throws TskCoreException {
+
+		TimelineManager timelineManager = getTimelineManager();
+		Statement queryStatement = null;
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+
+			// Insert a row for the local/logical file into the tsk_objects table.
+			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+			long objectId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
+
+			String parentPath;
+			long dataSourceObjId;
+
+			if (parent instanceof AbstractFile) {
+				AbstractFile parentFile = (AbstractFile) parent;
+				if (isRootDirectory(parentFile, transaction)) {
+					parentPath = "/";
+				} else {
+					parentPath = parentFile.getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
+				dataSourceObjId = parentFile.getDataSourceObjectId();
+			} else {
+				parentPath = "/";
+				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
+			}
+
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE);
+			statement.clearParameters();
+			statement.setLong(1, objectId);											// obj_is
+			statement.setLong(2, fsObjId);											// fs_obj_id 
+			statement.setLong(3, dataSourceObjId);									// data_source_obj_id 
+			statement.setShort(4, (short) attrType.getValue());						// attr_type
+			statement.setInt(5, attrId);											// attr_id
+			statement.setString(6, fileName);										// name
+			statement.setLong(7, metaAddr);											// meta_addr
+			statement.setInt(8, (int)metaSeq);											// meta_addr
+			statement.setShort(9, fileType.getFileType());	//type
+			statement.setShort(10, (short) 1);										// has_path
+			TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			statement.setShort(11, dirType.getValue());								// dir_type
+			TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			statement.setShort(12, metaType.getValue());							// meta_type
+			statement.setShort(13, dirFlag.getValue());								// dir_flags
+			statement.setShort(14, metaFlags);										// meta_flags
+			statement.setLong(15, size < 0 ? 0 : size);
+			statement.setLong(16, ctime);
+			statement.setLong(17, crtime);
+			statement.setLong(18, atime);
+			statement.setLong(19, mtime);
+			statement.setString(20, md5);                      // MD5
+			statement.setString(21, sha256);                   // SHA-256
+			statement.setByte(22, known.getFileKnownValue());  // Known
+			statement.setString(23, mimeType);                 // MIME type
+			statement.setString(24, parentPath);
+			statement.setLong(25, location.getValue());
+			final String extension = extractExtension(fileName);
+			statement.setString(26, extension);
+
+			connection.executeUpdate(statement);
+
+			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime, md5, sha256, known, parentPath, mimeType, TskData.FileLocation.LOCAL, parent.getId(), null, null, extension);
+			timelineManager.addEventsForNewFile(derivedFile, connection);
+
+			return getAbstractFileById(objectId, connection);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to add file system file", ex);
+		} finally {
+			closeStatement(queryStatement);
+		}
+	}	
 
 	/**
 	 * Add a file system file.
@@ -6273,16 +6389,19 @@ public class SleuthkitCase {
 			statement.setLong(17, crtime);
 			statement.setLong(18, atime);
 			statement.setLong(19, mtime);
-			statement.setString(20, parentPath);
-			statement.setLong(21, TskData.FileLocation.LOCAL.getValue());
+			statement.setNull(20, java.sql.Types.VARCHAR);                 // MD5
+			statement.setNull(21, java.sql.Types.VARCHAR);                 // SHA-256
+			statement.setByte(22, FileKnown.UNKNOWN.getFileKnownValue());  // Known
+			statement.setNull(23, java.sql.Types.VARCHAR);                 // MIME type
+			statement.setString(24, parentPath);
+			statement.setLong(25, TskData.FileLocation.LOCAL.getValue());
 			final String extension = extractExtension(fileName);
-			statement.setString(22, extension);
+			statement.setString(26, extension);
 
 			connection.executeUpdate(statement);
 
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, null, parentPath, null, TskData.FileLocation.LOCAL, parent.getId(), null, null, extension);
-
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 
 			transaction.commit();
@@ -11252,8 +11371,8 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, location, data_source_obj_id,extension) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, location, extension)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, location, extension)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS

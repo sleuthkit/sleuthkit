@@ -43,7 +43,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * to the case.
  */
 public abstract class AbstractFile extends AbstractContent {
-
+    private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	protected final TskData.TSK_DB_FILES_TYPE_ENUM fileType;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_META_TYPE_ENUM metaType;
@@ -61,6 +61,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private String localPath; ///< local path as stored in db tsk_files_path, is relative to the db, 
 	private String localAbsPath; ///< absolute path representation of the local path
 	private volatile RandomAccessFile localFileHandle;
+	private volatile boolean errorLoadingFromFileRepo = false;
 	private volatile java.io.File localFile;
 	private TskData.EncodingType encodingType;
 	//range support
@@ -781,6 +782,13 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getDirFlagAsString() {
 		return dirFlag.toString();
 	}
+	
+	/**
+	 * @return The directory flag value.
+	 */
+	public TSK_FS_NAME_FLAG_ENUM getDirFlag() {
+		return dirFlag;
+	}
 
 	/**
 	 * @return a string representation of the meta flags
@@ -796,6 +804,13 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * @return The meta flags as stored in the database.
+	 */
+	public short getMetaFlagsAsInt() {
+		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
+	}
+	
+	/**
 	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
 	 *
 	 * @return true if the given meta flag is set in this FsContent object.
@@ -808,7 +823,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
 		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (localPathSet) {
+		if ((location == TskData.FileLocation.REPOSITORY) || localPathSet) {
 			return readLocal(buf, offset, len);
 		} else {
 			return readInt(buf, offset, len);
@@ -843,7 +858,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws TskCoreException exception thrown when file could not be read
 	 */
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
-		if (!localPathSet) {
+		if ((location == TskData.FileLocation.LOCAL) && !localPathSet) {
 			throw new TskCoreException(
 					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
@@ -1054,12 +1069,18 @@ public abstract class AbstractFile extends AbstractContent {
 				localFile = new java.io.File(localAbsPath);
 			}
 		} else {
+			if (errorLoadingFromFileRepo == true) {
+				// Don't try to download it again
+				throw new TskCoreException("Previously failed to load file with object ID " + getId() + " from file repository.");
+			}
+			
 			// Copy the file from the server
-			FileRepository fileRepo = FileRepository.getInstance();
-			if (fileRepo != null) {
-				localFile = fileRepo.downloadFromFileRepository(this);
-			} else {
-				throw new TskCoreException("Error loading remote file with object ID " + getId() + ": file repository is not enabled");
+			try {
+				localFile = FileRepository.downloadFromFileRepository(this);
+			} catch (TskCoreException ex) {
+				// If we've failed to download from the file repository, don't try again for this session.
+				errorLoadingFromFileRepo = true;
+				throw ex;
 			}
 		}
 	}

@@ -71,6 +71,8 @@ public class DerivedFile extends AbstractFile {
 	 * @param mtime              The modified time of the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
+	 * @param sha256Hash         The SHA-256 hash of the file, null if not yet
+	 *                           calculated.
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.

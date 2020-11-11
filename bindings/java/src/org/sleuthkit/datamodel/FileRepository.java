@@ -21,17 +21,24 @@ package org.sleuthkit.datamodel;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Class to represent a file repository.
  */
 public class FileRepository {
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static final Logger logger = Logger.getLogger(FileRepository.class.getName());
+	private static FileRepositoryErrorHandler errorHandler;
 	
 	private final static String FILE_PATH = "v1/files/";
 	private final FileRepositorySettings settings;
-	private final String fileDownloadFolder;
+	private final File fileDownloadFolder;
 	
 	private static FileRepository instance;
 
@@ -41,7 +48,7 @@ public class FileRepository {
      * @param settings          The file repository settings
      * @param fileDownloadPath  The temporary folder to download files to from the repository
      */
-	private FileRepository(FileRepositorySettings settings, String fileDownloadPath) {
+	private FileRepository(FileRepositorySettings settings, File fileDownloadPath) {
 		this.settings = settings;
 		this.fileDownloadFolder = fileDownloadPath;
 	}
@@ -52,7 +59,12 @@ public class FileRepository {
      * @param settings          The file repository settings
      * @param fileDownloadPath  The temporary folder to download files to from the repository
      */	
-	public static synchronized void initialize(FileRepositorySettings settings, String fileDownloadPath) {
+	public static synchronized void initialize(FileRepositorySettings settings, File fileDownloadPath) {
+		// If the download path is changing, delete any files in the old one
+		if ((instance != null) && (instance.fileDownloadFolder != null)
+				&& ( ! instance.fileDownloadFolder.equals(fileDownloadPath))) {
+			deleteDownloadFolder(instance.fileDownloadFolder);
+		}
 		instance = new FileRepository(settings, fileDownloadPath);
 	}
 	
@@ -60,20 +72,74 @@ public class FileRepository {
      * De-initializes the file repository.
      */	
 	public static synchronized void deinitialize() {
+		if (instance != null) {
+			// Delete the temp folder
+			deleteDownloadFolder(instance.fileDownloadFolder);
+		}
+		
 		instance = null;
 	}
 	
 	/**
-     * Gets the instance of the file repository.
+	 * Check if the file repository is enabled.
 	 * 
-	 * @return The instance of the file repository. Will be null if not initialized.
-     */	
-	public static synchronized FileRepository getInstance() {
-		return instance;
+	 * @return true if enabled, false otherwise.
+	 */
+	public static boolean isEnabled() {
+		return instance != null;
+	}
+	
+	/**
+	 * Set the error handling callback.
+	 * 
+	 * @param handler The error handler.
+	 */
+	public static synchronized void setErrorHandler(FileRepositoryErrorHandler handler) {
+		errorHandler = handler;
+	}
+	
+	/**
+	 * Report an error to the user.
+	 * The idea is to use this for cases where it's a user error that may be able
+	 * to be corrected through changing the repository settings.
+	 * 
+	 * @param errorTitle The title for the error display.
+	 * @param errorStr   The error message.
+	 */
+	private static synchronized void reportError(String errorTitle, String errorStr) {
+		if (errorHandler != null) {
+			errorHandler.displayErrorToUser(errorTitle, errorStr);
+		}
+	}
+	
+	/**
+	 * Delete the folder of downloaded files.
+	 */
+	private static synchronized void deleteDownloadFolder(File dirPath) {
+        if (dirPath.isDirectory() == false || dirPath.exists() == false) {
+            return;
+        }
+
+        File[] files = dirPath.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    deleteDownloadFolder(file);
+                } else {
+                    if (file.delete() == false) {
+                        logger.log(Level.WARNING, "Failed to delete file {0}", file.getPath()); //NON-NLS
+                    }
+                }
+            }
+        }
+        if (dirPath.delete() == false) {
+            logger.log(Level.WARNING, "Failed to delete the empty directory at {0}", dirPath.getPath()); //NON-NLS
+        }
 	}
 	
 	/**
      * Download a file from the file repository.
+	 * The caller must ensure that this is not called on the same file multiple times concurrently. 
      *
      * @param abstractFile The file being downloaded. 
 	 * 
@@ -81,8 +147,15 @@ public class FileRepository {
 	 * 
 	 * @throws TskCoreException
      */
-	public File downloadFromFileRepository(AbstractFile abstractFile) throws TskCoreException {
+	public static synchronized File downloadFromFileRepository(AbstractFile abstractFile) throws TskCoreException {
 
+		if (instance == null) {
+			String title = BUNDLE.getString("FileRepository.downloadError.title.text");
+			String msg = BUNDLE.getString("FileRepository.notEnabled.msg.text");
+			reportError(title, msg);
+			throw new TskCoreException("File repository is not enabled");
+		}
+		
 		if (! abstractFile.getFileLocation().equals(TskData.FileLocation.REPOSITORY)) {
 			throw new TskCoreException("File with object ID " + abstractFile.getId() + " is not stored in the file repository");
 		}
@@ -92,17 +165,19 @@ public class FileRepository {
 		}
 		
 		// Download the file if it's not already there.
-		String targetPath = Paths.get(fileDownloadFolder, abstractFile.getSha256Hash()).toString();
+		String targetPath = Paths.get(instance.fileDownloadFolder.getAbsolutePath(), abstractFile.getSha256Hash()).toString();
 		if ( ! new File(targetPath).exists()) {
-			downloadFile(abstractFile, targetPath);
+			instance.downloadFile(abstractFile, targetPath);
 		}
 		
 		// Check that we got the file.
 		File tempFile = new File(targetPath);
 		if (tempFile.exists()) {
-			System.out.println("Got file " + targetPath); // TODO REMOVE
 			return tempFile;
 		} else {
+			String title = BUNDLE.getString("FileRepository.downloadError.title.text");
+			String msg = MessageFormat.format(BUNDLE.getString("FileRepository.downloadError.msg.text"), abstractFile.getId(), abstractFile.getSha256Hash());
+			reportError(title, msg);
 			throw new TskCoreException("Failed to download file with object ID " + abstractFile.getId() 
 					+ " and SHA-256 hash " + abstractFile.getSha256Hash() + " from file repository");
 		}
@@ -134,8 +209,13 @@ public class FileRepository {
 		try {
 			Process process = processBuilder.start();
 			process.waitFor();
-		} catch (IOException | InterruptedException ex) {
+		} catch (IOException ex) {
+			String title = BUNDLE.getString("FileRepository.downloadError.title.text");
+			String msg = MessageFormat.format(BUNDLE.getString("FileRepository.downloadError.msg.text"), abstractFile.getId(), abstractFile.getSha256Hash());
+			reportError(title, msg);
 			throw new TskCoreException("Error downloading file with SHA-256 hash " + abstractFile.getSha256Hash() + " from file repository", ex);
+		} catch (InterruptedException ex) {
+			throw new TskCoreException("Interrupted while downloading file with SHA-256 hash " + abstractFile.getSha256Hash() + " from file repository", ex);
 		}
 	}
 	
@@ -143,16 +223,22 @@ public class FileRepository {
      * Upload a given file to the file repository.
      *
      * @param filePath The path on disk to the file being uploaded.
+	 * 
+	 * @throws TskCoreException
      */
-	public void uploadToFileRepository(String filePath) throws TskCoreException {
+	public static synchronized void uploadToFileRepository(String filePath) throws TskCoreException {
 	
+		if (instance == null) {
+			throw new TskCoreException("File repository is not enabled");
+		}
+		
 		File file = new File(filePath);
 		if (! file.exists()) {
 			throw new TskCoreException("Error uploading file " + filePath + " to file repository - file does not exist");
 		}
 		
 		// Upload the file.
-		uploadFile(file);
+		instance.uploadFile(file);
 	}
 	
 	/**
@@ -212,5 +298,18 @@ public class FileRepository {
 		String getPort() {
 			return port;
 		}
+	}
+	
+	/**
+	 * Callback class to use for error reporting. 
+	 */
+	public interface FileRepositoryErrorHandler {
+		/**
+		 * Handles displaying an error message to the user (if appropriate).
+		 * 
+		 * @param title The title for the error display.
+		 * @param error The more detailed error message to display.
+		 */
+		void displayErrorToUser(String title, String error);
 	}
 }
