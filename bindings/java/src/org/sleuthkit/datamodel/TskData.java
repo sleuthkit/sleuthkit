@@ -880,7 +880,7 @@ public class TskData {
 	}
 	
 	/**
-	 * TODO
+	 * Location of the data for an AbstractFile.
 	 */
 	public enum FileLocation{
 		LOCAL(0),
@@ -902,12 +902,7 @@ public class TskData {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException(
-					// TODO TODO
-					"FIX THIS"
-					//MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), location));
-					// TODO
-			);
+			throw new IllegalArgumentException(MessageFormat.format(bundle.getString("TskData.fileLocation.exception.msg1.text"), value));
 		}
 	}
 }
