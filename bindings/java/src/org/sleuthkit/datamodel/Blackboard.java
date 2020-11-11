@@ -185,6 +185,17 @@ public final class Blackboard {
 		}
 	}
 	
+	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+				+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
+				+ " arts.review_status_id AS review_status_id, " //NON-NLS
+				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
+				+ " results.configuration AS configuration,  results.justification AS justification "
+				+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
+				+ " WHERE arts.artifact_obj_id = aresults.obj_id " //NON-NLS
+				+ " AND arts.artifact_type_id = types.artifact_type_id"
+				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
+				
 	/**
 	 * Get all analysis results of a given type.
 	 *
@@ -203,32 +214,16 @@ public final class Blackboard {
 			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeID));
 		}
 		
-		final String queryString = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-				+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
-				+ " arts.review_status_id AS review_status_id, " //NON-NLS
-				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
-				+ " results.configuration AS configuration,  results.justification AS justification "
-				+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
-				+ " WHERE arts.artifact_obj_id = aresults.obj_id " //NON-NLS
-				+ " AND arts.artifact_type_id = types.artifact_type_id"
+		final String queryString = ANALYSIS_RESULT_QUERY_STRING
 				+ " AND types.artifact_type_id = " + artifactTypeID
-				+ " AND arts.data_source_obj_id = " + dataSourceObjId //NON-NLS
-				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
-
+				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
+				
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
-			ArrayList<AnalysisResult> analysisResults = new ArrayList<>();
-			while (resultSet.next()) {
-				analysisResults.add(new AnalysisResult( caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"), 
-						resultSet.getLong("artifact_obj_id"), resultSet.getLong("data_source_obj_id"),
-						resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")), 
-						new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.Confidence.fromID(resultSet.getInt("confidence"))),
-						resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification")));
-			}
+			
+			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
 			return analysisResults;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting analysis results for type id %d", artifactTypeID), ex);
@@ -237,6 +232,65 @@ public final class Blackboard {
 		}
 	}
 	
+	/**
+	 * Get all analysis results matching the given where sub-clause.
+	 * 
+	 *
+	 * @param whereClause Where sub clause, specifies conditions to match.  
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<AnalysisResult> getAnalysisResultsWhere(String whereClause) throws TskCoreException {
+
+		final String queryString = ANALYSIS_RESULT_QUERY_STRING
+				+ " AND " + whereClause;
+							
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+			
+			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
+			return analysisResults;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting analysis results for WHERE caluse = '%s'", whereClause), ex);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	/**
+	 * Creates AnalysisResult objects for the result set of a table query of the
+	 * form "SELECT * FROM blackboard_artifacts JOIN WHERE XYZ".
+	 *
+	 * @param rs A result set from a query of the blackboard_artifacts table of
+	 *           the form "SELECT * FROM blackboard_artifacts,
+	 *           tsk_analysis_results WHERE ...".
+	 *
+	 * @return A list of BlackboardArtifact objects.
+	 *
+	 * @throws SQLException     Thrown if there is a problem iterating through
+	 *                          the result set.
+	 * @throws TskCoreException Thrown if there is an error looking up the
+	 *                          artifact type id.
+	 */
+	private List<AnalysisResult> resultSetToAnalysisResults(ResultSet resultSet) throws SQLException, TskCoreException {
+		ArrayList<AnalysisResult> analysisResults = new ArrayList<>();
+
+		while (resultSet.next()) {
+			analysisResults.add(new AnalysisResult(caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"),
+					resultSet.getLong("artifact_obj_id"), resultSet.getLong("data_source_obj_id"),
+					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
+					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")),
+					new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.Confidence.fromID(resultSet.getInt("confidence"))),
+					resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification")));
+		} //end for each resultSet
+
+		return analysisResults;
+	}
+
 	/**
 	 * Gets an attribute type, creating it if it does not already exist. Use
 	 * this method to define custom attribute types.
