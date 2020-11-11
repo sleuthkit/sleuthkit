@@ -71,8 +71,6 @@ import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
-import org.sleuthkit.datamodel.Score.Confidence;
-import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -2215,6 +2213,35 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}	
+
+	private CaseDbSchemaVersionNumber updateFromSchema8dot6toSchema8dot7(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 6) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			String dateDataType = "BIGINT";
+			if (this.dbType.equals(DbType.SQLITE)) {
+				dateDataType = "INTEGER";
+			}
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType);
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_settings TEXT");
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN module_name TEXT");
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN module_version TEXT");
+
+			return new CaseDbSchemaVersionNumber(8, 7);
+
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
 
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
