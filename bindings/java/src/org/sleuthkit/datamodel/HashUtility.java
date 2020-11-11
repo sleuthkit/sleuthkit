@@ -68,6 +68,11 @@ public class HashUtility {
 			} catch (TskCoreException ex) {
 				throw new TskCoreException("Error reading data at address " + i * BUFFER_SIZE + " from content with ID: " + content.getId(), ex);
 			}
+			
+			// Check for EOF
+			if (read == -1) {
+				break;
+			}
 
 			// Only update with the read bytes.
 			if (read == BUFFER_SIZE) {

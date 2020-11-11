@@ -19,14 +19,17 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
@@ -314,6 +317,22 @@ public abstract class AbstractContent implements Content {
 			return getGenInfoArtifact(true);
 		}
 		return db.newBlackboardArtifact(artifactTypeID, objId);
+	}
+
+	@Override
+	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResult result = db.getBlackboard().newAnalysisResult(artifactType, objId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			
+			trans.commit();
+			return result;
+		}
+		catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException(String.format("Error adding analysis result to content with objId = %d.", objId), ex);
+		}
 	}
 
 	@Override

@@ -1183,7 +1183,6 @@ public abstract class AbstractFile extends AbstractContent {
 		return getSleuthkitCase().newBlackboardArtifact(artifactTypeID, getId(), dataSourceObjectId);
 	}
 
-
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
