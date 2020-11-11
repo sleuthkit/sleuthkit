@@ -430,7 +430,7 @@ public abstract class AbstractContent implements Content {
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
 		
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
-			throw new TskCoreException(String.format("Artifact type %s is not in analysis result catgeory.", artifactType.getTypeName()));
+			throw new IllegalArgumentException(String.format("Artifact type %s is not in analysis result catgeory.", artifactType.getTypeName()));
 		}
 		
 		return db.getBlackboard().getAnalysisResultsWhere(" obj_id = " + objId

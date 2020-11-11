@@ -262,19 +262,19 @@ public final class Blackboard {
 	}
 	
 	/**
-	 * Creates AnalysisResult objects for the result set of a
-	 *  table query of the form "SELECT * FROM
-	 * blackboard_artifacts JOIN WHERE XYZ".
+	 * Creates AnalysisResult objects for the result set of a table query of the
+	 * form "SELECT * FROM blackboard_artifacts JOIN WHERE XYZ".
 	 *
 	 * @param rs A result set from a query of the blackboard_artifacts table of
-	 *           the form "SELECT * FROM blackboard_artifacts WHERE XYZ".
+	 *           the form "SELECT * FROM blackboard_artifacts,
+	 *           tsk_analysis_results WHERE ...".
 	 *
 	 * @return A list of BlackboardArtifact objects.
 	 *
 	 * @throws SQLException     Thrown if there is a problem iterating through
 	 *                          the result set.
 	 * @throws TskCoreException Thrown if there is an error looking up the
-	 *                          artifact type id
+	 *                          artifact type id.
 	 */
 	private List<AnalysisResult> resultSetToAnalysisResults(ResultSet resultSet) throws SQLException, TskCoreException {
 		ArrayList<AnalysisResult> analysisResults = new ArrayList<>();
