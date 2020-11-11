@@ -619,7 +619,8 @@ public final class Blackboard {
 					localTrans.rollback();
 				}
 			} catch (TskCoreException ex2) {
-				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
+						+ "Error invoking newBlackboardArtifact with dataSourceObjId: " + dataSourceObjId + ",  sourceObjId: " + sourceObjId, ex2);
 			}
 			throw ex;
 		}

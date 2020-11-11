@@ -398,16 +398,19 @@ public class BlackboardArtifact implements Content {
 	 *                          operation is to be performed, managed by the
 	 *                          caller. Null is not permitted.
 	 *
-	 * @throws TskCoreException If an error occurs and the attributes were not
-	 *                          added to the artifact.
+	 * @throws TskCoreException         If an error occurs and the attributes
+	 *                                  were not added to the artifact.
+	 * @throws IllegalArgumentException If <code>caseDbTransaction</code> is
+	 *                                  null or if <code>attributes</code> is
+	 *                                  null or empty.
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
 		if (Objects.isNull(attributes) || attributes.isEmpty()) {
-			throw new TskCoreException("Passed null or empty attributes");
+			throw new IllegalArgumentException("null or empty attributes passed to addAttributes");
 		}
 		if (Objects.isNull(caseDbTransaction) ) {
-			throw new TskCoreException("Passed null CaseDbTransaction");
+			throw new IllegalArgumentException("null caseDbTransaction passed to addAttributes");
 		}
 		try {
 			for (final BlackboardAttribute attribute : attributes) {
