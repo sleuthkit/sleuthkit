@@ -33,8 +33,8 @@ public class Score {
 	 */
 	public enum Significance {
 
-		UNKNOWN(0, "Unknown"), // no analysis has been performed to ascertain significance.
-		NONE(1, "None"), // has no siginifcance, i.e. it's Good
+		NONE(0, "None"),		// has no (bad) siginifcance, i.e. it's Good
+		UNKNOWN(1, "Unknown"), // no analysis has been performed to ascertain significance.
 		LOW(2, "Low"),
 		MEDIUM(3, "Medium"), // Suspicious
 		HIGH(4, "High");	// Bad & Notable
