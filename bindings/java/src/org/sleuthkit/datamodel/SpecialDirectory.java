@@ -44,11 +44,11 @@ public abstract class SpecialDirectory extends AbstractFile {
 			short modes,
 			int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState,
-			String parentPath,
+			String parentPath, TskData.FileLocation location,
 			String mimeType) {
 		super(db, objId, dataSourceObjectId, attrType, attrId, name,
 				fileType, metaAddr, metaSeq, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, null);
+				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, location, mimeType, null);
 	}
 
 	/**

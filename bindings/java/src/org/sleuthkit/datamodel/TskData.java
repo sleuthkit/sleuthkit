@@ -878,4 +878,31 @@ public class TskData {
 					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
 		}
 	}
+	
+	/**
+	 * Location of the data for an AbstractFile.
+	 */
+	public enum FileLocation{
+		LOCAL(0),
+		REPOSITORY(1);
+		
+		private final int value;
+		
+		private FileLocation(int value){
+			this.value = value;
+		}
+		
+		public int getValue(){
+			return value;
+		}
+		
+		public static FileLocation valueOf(int value) {
+			for (FileLocation v : FileLocation.values()) {
+				if (v.value == value) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(MessageFormat.format(bundle.getString("TskData.fileLocation.exception.msg1.text"), value));
+		}
+	}
 }

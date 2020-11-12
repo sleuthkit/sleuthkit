@@ -72,6 +72,7 @@ public class SlackFile extends FsContent {
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.
+	 * @param location           The location of the file,
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
 	 * @param extension	         The extension part of the file name (not
@@ -89,9 +90,9 @@ public class SlackFile extends FsContent {
 			long size,
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
-			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
+			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, TskData.FileLocation location, String mimeType,
 			String extension) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension);
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, location, mimeType, extension);
 	}
 
 	/**

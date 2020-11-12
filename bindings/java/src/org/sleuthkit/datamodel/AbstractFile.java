@@ -43,7 +43,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * to the case.
  */
 public abstract class AbstractFile extends AbstractContent {
-
 	protected final TskData.TSK_DB_FILES_TYPE_ENUM fileType;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_META_TYPE_ENUM metaType;
@@ -61,6 +60,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private String localPath; ///< local path as stored in db tsk_files_path, is relative to the db, 
 	private String localAbsPath; ///< absolute path representation of the local path
 	private volatile RandomAccessFile localFileHandle;
+	private volatile boolean errorLoadingFromFileRepo = false;
 	private volatile java.io.File localFile;
 	private TskData.EncodingType encodingType;
 	//range support
@@ -86,6 +86,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private boolean sha256HashDirty = false;	
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
+	protected TskData.FileLocation location;
 	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
@@ -124,6 +125,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
+	 * @param location
 	 * @param mimeType           The MIME type of the file, can be null.
 	 * @param extension		        The extension part of the file name (not
 	 *                           including the '.'), can be null.
@@ -143,6 +145,7 @@ public abstract class AbstractFile extends AbstractContent {
 			int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
+			TskData.FileLocation location,
 			String mimeType,
 			String extension) {
 		super(db, objId, name);
@@ -173,6 +176,7 @@ public abstract class AbstractFile extends AbstractContent {
 			this.knownState = knownState;
 		}
 		this.parentPath = parentPath;
+		this.location = location;
 		this.mimeType = mimeType;
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
@@ -777,6 +781,13 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getDirFlagAsString() {
 		return dirFlag.toString();
 	}
+	
+	/**
+	 * @return The directory flag value.
+	 */
+	public TSK_FS_NAME_FLAG_ENUM getDirFlag() {
+		return dirFlag;
+	}
 
 	/**
 	 * @return a string representation of the meta flags
@@ -792,6 +803,13 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * @return The meta flags as stored in the database.
+	 */
+	public short getMetaFlagsAsInt() {
+		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
+	}
+	
+	/**
 	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
 	 *
 	 * @return true if the given meta flag is set in this FsContent object.
@@ -804,7 +822,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
 		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (localPathSet) {
+		if ((location == TskData.FileLocation.REPOSITORY) || localPathSet) {
 			return readLocal(buf, offset, len);
 		} else {
 			return readInt(buf, offset, len);
@@ -839,7 +857,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws TskCoreException exception thrown when file could not be read
 	 */
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
-		if (!localPathSet) {
+		if ((location == TskData.FileLocation.LOCAL) && !localPathSet) {
 			throw new TskCoreException(
 					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
@@ -960,6 +978,15 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Get the location of the file data
+	 * 
+	 * @return file location
+	 */
+	public TskData.FileLocation getFileLocation() {
+		return location;
+	}
+	
+	/**
 	 * Get local absolute path of the file, if localPath has been set
 	 *
 	 * @return local absolute file path if local path has been set, or null
@@ -1024,20 +1051,35 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws org.sleuthkit.datamodel.TskCoreException If the local path is not
 	 *                                                  set.
 	 */
-	private void loadLocalFile() throws TskCoreException {
-		if (!localPathSet) {
-			throw new TskCoreException(
-					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
-		}
-
+	private synchronized void loadLocalFile() throws TskCoreException {
+		
 		// already been set
 		if (localFile != null) {
 			return;
 		}
+		
+		if (location.equals(TskData.FileLocation.LOCAL)) {
+			if (!localPathSet) {
+				throw new TskCoreException(
+						BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
+			}
 
-		synchronized (this) {
 			if (localFile == null) {
 				localFile = new java.io.File(localAbsPath);
+			}
+		} else {
+			if (errorLoadingFromFileRepo == true) {
+				// Don't try to download it again
+				throw new TskCoreException("Previously failed to load file with object ID " + getId() + " from file repository.");
+			}
+			
+			// Copy the file from the server
+			try {
+				localFile = FileRepository.downloadFromFileRepository(this);
+			} catch (TskCoreException ex) {
+				// If we've failed to download from the file repository, don't try again for this session.
+				errorLoadingFromFileRepo = true;
+				throw ex;
 			}
 		}
 	}
@@ -1087,6 +1129,7 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size //NON-NLS
 				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash + "\t" + "sha256Hash " + sha256Hash //NON-NLS
 				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath //NON-NLS
+				+ "\t" + "location " + location // NON-NLS
 				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile //NON-NLS
 				+ "]\t";
 	}
@@ -1222,7 +1265,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, TskData.FileLocation.LOCAL, null, null);
 	}
 
 	/**
@@ -1267,7 +1310,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, TskData.FileLocation.LOCAL, null, null);
 	}
 
 	/**

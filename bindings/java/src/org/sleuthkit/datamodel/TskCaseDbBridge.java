@@ -789,8 +789,8 @@ class TskCaseDbBridge {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = caseDb.addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 			
-			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
+			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, location, extension, has_layout)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(fileInsert, Statement.NO_GENERATED_KEYS);			
 			preparedStatement.clearParameters();
 			
@@ -866,11 +866,12 @@ class TskCaseDbBridge {
 			preparedStatement.setString(22, md5);                   // md5
 			preparedStatement.setInt(23, known.getFileKnownValue());// known
 			preparedStatement.setString(24, escaped_path);          // parent_path
-			preparedStatement.setString(25, extension);             // extension
+			preparedStatement.setLong(25, TskData.FileLocation.LOCAL.getValue());  // location
+			preparedStatement.setString(26, extension);             // extension
 			if (hasLayout) {
-				preparedStatement.setInt(26, 1);                    // has_layout
+				preparedStatement.setInt(27, 1);                    // has_layout
 			} else {
-				preparedStatement.setNull(26, java.sql.Types.INTEGER);
+				preparedStatement.setNull(27, java.sql.Types.INTEGER);
 			}
 			connection.executeUpdate(preparedStatement);
 
@@ -884,7 +885,7 @@ class TskCaseDbBridge {
 						TskData.TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
 						TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
 						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension);
+						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, TskData.FileLocation.LOCAL, parentObjId, null, null, extension);
 
 				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
 			}

@@ -71,11 +71,14 @@ public class DerivedFile extends AbstractFile {
 	 * @param mtime              The modified time of the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
+	 * @param sha256Hash         The SHA-256 hash of the file, null if not yet
+	 *                           calculated.
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.
 	 * @param localPath          The absolute path of the file in secondary
 	 *                           storage.
+	 * @param location           The location of the file.
 	 * @param parentId           The object id of parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
@@ -94,6 +97,7 @@ public class DerivedFile extends AbstractFile {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String localPath,
+			TskData.FileLocation location,
 			long parentId,
 			String mimeType,
 			TskData.EncodingType encodingType,
@@ -102,7 +106,7 @@ public class DerivedFile extends AbstractFile {
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, location, mimeType, extension);
 		setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}
@@ -306,7 +310,7 @@ public class DerivedFile extends AbstractFile {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
 				md5Hash, null, knownState,
-				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null);
+				parentPath, localPath, TskData.FileLocation.LOCAL, parentId, null, TskData.EncodingType.NONE, null);
 	}
 
 }

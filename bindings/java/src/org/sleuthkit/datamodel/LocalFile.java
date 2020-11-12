@@ -68,6 +68,7 @@ public class LocalFile extends AbstractFile {
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentId           The object id of parent of the file.
 	 * @param parentPath         The path of the parent of the file.
+	 * @param location           The location of the file.
 	 * @param dataSourceObjectId The object id of the data source for the file.
 	 * @param localPath          The absolute path of the file in secondary
 	 *                           storage.
@@ -84,14 +85,15 @@ public class LocalFile extends AbstractFile {
 			long size,
 			long ctime, long crtime, long atime, long mtime,
 			String mimeType, String md5Hash, String sha256Hash, FileKnown knownState,
-			long parentId, String parentPath,
+			long parentId, String parentPath, TskData.FileLocation location,
 			long dataSourceObjectId,
 			String localPath,
 			TskData.EncodingType encodingType,
 			String extension) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, 
+				location, mimeType, extension);
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors, using 
 		// AbstractContent.UNKNOWN_ID as needed.
@@ -219,7 +221,7 @@ public class LocalFile extends AbstractFile {
 				size,
 				ctime, crtime, atime, mtime,
 				null, md5Hash, null, knownState,
-				AbstractContent.UNKNOWN_ID, parentPath,
+				AbstractContent.UNKNOWN_ID, parentPath, TskData.FileLocation.LOCAL,
 				db.getDataSourceObjectId(objId),
 				localPath,
 				TskData.EncodingType.NONE, null);

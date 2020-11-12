@@ -66,9 +66,12 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 * @param parentPath         The parent path for the virtual directory,
 	 *                           should be "/" if the virtual directory is a
 	 *                           data source.
+	 * @param location           The location of the file
 	 */
-	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, String sha256Hash, TskData.FileKnown knownState, String parentPath) {
-		super(db, objId, dataSourceObjectId, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, knownState, parentPath);
+	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, 
+			TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, 
+			String md5Hash, String sha256Hash, TskData.FileKnown knownState, String parentPath, TskData.FileLocation location) {
+		super(db, objId, dataSourceObjectId, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, knownState, parentPath, location);
 		this.objectId = objId;
 		this.deviceId = deviceId;
 		this.timezone = timezone;
@@ -263,6 +266,6 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 */
 	@Deprecated
 	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, TskData.FileKnown knownState, String parentPath) {
-		this(db, objId, dataSourceObjectId, deviceId, name, dirType, metaType, dirFlag, metaFlags, timezone, md5Hash, null, knownState, parentPath);
+		this(db, objId, dataSourceObjectId, deviceId, name, dirType, metaType, dirFlag, metaFlags, timezone, md5Hash, null, knownState, parentPath, TskData.FileLocation.LOCAL);
 	}	
 }
