@@ -6097,6 +6097,7 @@ public class SleuthkitCase {
 			preparedStatement.setLong(1, newObjId);
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
+			preparedStatement.setLong(4, new Date().getTime());
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object
@@ -9312,6 +9313,42 @@ public class SleuthkitCase {
 		}
 	}
 
+
+
+	/**
+	 * Updates the image's total size and sector size.This function may be used
+	 * to update the sizes after the image was created.
+	 *
+	 * Can only update the sizes if they were not set before. Will throw
+	 * TskCoreException if the values in the db are not 0 prior to this call.
+	 *
+	 * @param imgage     The image that needs to be updated
+	 * @param totalSize  The total size
+	 * @param sectorSize The sector size
+	 *
+	 * @throws TskCoreException Thrown if the values were not 0 in DB
+	 *
+	 */
+	void setImageSizes(Image image, long totalSize, long sectorSize) throws TskCoreException {
+
+		if (image.getSize() > 0 || image.getSsize() > 0) {
+			throw new TskCoreException(String.format("Error updating image sizes for object ID %d. Cannot update non-zero total size (%d) or sector size (%d)",image.getId(), image.getSize(), image.getSsize()));
+		}
+		acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = connections.getConnection();) {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(SleuthkitCase.PREPARED_STATEMENT.UPDATE_IMAGE_SIZES);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, totalSize);
+			preparedStatement.setLong(2, sectorSize);
+			preparedStatement.setLong(3, image.getId());
+			connection.executeUpdate(preparedStatement);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error updating image sizes to %d and sector size to %d for object ID %d ",totalSize, sectorSize, image.getId()), ex);
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
 	/**
 	 * Stores the MIME type of a file in the case database and updates the MIME
 	 * type of the given file object.
@@ -9572,6 +9609,22 @@ public class SleuthkitCase {
 	 * @throws TskCoreException Thrown if the database write fails
 	 */
 	void setAcquisitionDetails(DataSource datasource, String details) throws TskCoreException {
+		this.setAcquisitionDetails(datasource, details, null, null, null);
+	}
+
+	/**
+	 * Set the acquisition details along with any settings used as well as
+	 * module name and module version in the data_source_info table
+	 *
+	 * @param details             The acquisition details
+	 * @param acquisitionSettings Any settings specific to the acquisition. May
+	 *                            be Null.
+	 * @param moduleName          The module name. May be Null
+	 * @param moduleVersion       The module's version number. May be Null.
+	 *
+	 * @throws TskCoreException Thrown if the database write fails
+	 */
+	void setAcquisitionDetails(DataSource datasource, String details, String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException {
 
 		long id = datasource.getId();
 		CaseDbConnection connection = connections.getConnection();
@@ -9580,7 +9633,10 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_DETAILS);
 			statement.clearParameters();
 			statement.setString(1, details);
-			statement.setLong(2, id);
+			statement.setString(2, acquisitionSettings);
+			statement.setString(3, moduleName);
+			statement.setString(4, moduleVersion);
+			statement.setLong(5, id);
 			connection.executeUpdate(statement);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting acquisition details", ex);
@@ -11318,7 +11374,7 @@ public class SleuthkitCase {
 		SELECT_IMAGE_MD5("SELECT md5 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_IMAGE_SHA1("SELECT sha1 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_IMAGE_SHA256("SELECT sha256 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
-		UPDATE_ACQUISITION_DETAILS("UPDATE data_source_info SET acquisition_details = ? WHERE obj_id = ?"), //NON-NLS
+		UPDATE_ACQUISITION_DETAILS("UPDATE data_source_info SET acquisition_details = ?, acquisition_settings = ?, module_name = ?, module_version = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_ACQUISITION_DETAILS("SELECT acquisition_details FROM data_source_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
@@ -11442,11 +11498,12 @@ public class SleuthkitCase {
 		INSERT_EXAMINER_SQLITE("INSERT OR IGNORE INTO tsk_examiners (login_name) VALUES (?)"),
 		UPDATE_FILE_NAME("UPDATE tsk_files SET name = ? WHERE obj_id = ?"),
 		UPDATE_IMAGE_NAME("UPDATE tsk_image_info SET display_name = ? WHERE obj_id = ?"),
+		UPDATE_IMAGE_SIZES("UPDATE tsk_image_info SET size = ?, ssize = ? WHERE obj_id = ?"),
 		DELETE_IMAGE_NAME("DELETE FROM tsk_image_names WHERE obj_id = ?"),
 		INSERT_IMAGE_NAME("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (?, ?, ?)"),
 		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (?, ?, ?)"),
+		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone, added_date_time) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),

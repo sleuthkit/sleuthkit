@@ -73,7 +73,23 @@ public interface DataSource extends Content {
 	 * 
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
-	void setAcquisitionDetails(String details) throws TskCoreException;
+	default void setAcquisitionDetails(String details) throws TskCoreException {
+		setAcquisitionDetails(details, null, null, null);
+	}
+
+	/**
+	 * Sets the acquisition details along with any settings used as well as
+	 * module name and module version.
+	 *
+	 * @param details             The acquisition details
+	 * @param acquisitionSettings Any settings specific to the acquisition. May
+	 *                            be Null.
+	 * @param moduleName          The module name. May be Null
+	 * @param moduleVersion       The module's version number. May be Null.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	public void setAcquisitionDetails(String details, String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException;
 	
 	/**
 	 * Gets the acquisition details field from the case database.

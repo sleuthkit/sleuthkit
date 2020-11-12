@@ -180,19 +180,24 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 
 		return contentSize;
 	}
-	
+
 	/**
-	 * Sets the acquisition details field in the case database.
-	 * 
-	 * @param details The acquisition details
-	 * 
+	 * Sets the acquisition details along with any settings used as well as
+	 * module name and module version.
+	 *
+	 * @param details             The acquisition details
+	 * @param acquisitionSettings Any settings specific to the acquisition. May
+	 *                            be Null.
+	 * @param moduleName          The module name. May be Null
+	 * @param moduleVersion       The module's version number. May be Null.
+	 *
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
 	@Override
-	public void setAcquisitionDetails(String details) throws TskCoreException {
-		getSleuthkitCase().setAcquisitionDetails(this, details);
+	public void setAcquisitionDetails(String details, String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionDetails(this, details, acquisitionSettings, moduleName, moduleVersion);
 	}
-	
+
 	/**
 	 * Gets the acquisition details field from the case database.
 	 * 

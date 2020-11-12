@@ -516,15 +516,20 @@ public class Image extends AbstractContent implements DataSource {
 	}
 	
 	/**
-	 * Sets the acquisition details field in the case database.
-	 * 
-	 * @param details The acquisition details
-	 * 
+	 * Sets the acquisition details along with any settings used as well as
+	 * module name and module version.
+	 *
+	 * @param details             The acquisition details
+	 * @param acquisitionSettings Any settings specific to the acquisition. May
+	 *                            be Null.
+	 * @param moduleName          The module name. May be Null
+	 * @param moduleVersion       The module's version number. May be Null.
+	 *
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
 	@Override
-	public void setAcquisitionDetails(String details) throws TskCoreException {
-		getSleuthkitCase().setAcquisitionDetails(this, details);
+	public void setAcquisitionDetails(String details, String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionDetails(this, details, acquisitionSettings, moduleName, moduleVersion);
 	}
 	
 	/**
@@ -538,6 +543,23 @@ public class Image extends AbstractContent implements DataSource {
 	public String getAcquisitionDetails() throws TskCoreException {
 		return getSleuthkitCase().getAcquisitionDetails(this);
 	}	
+
+	/**
+	 * Updates the image's total size and sector size.This function may be used
+	 * to update the sizes after the image was created.
+	 *
+	 * Can only update the sizes if they were not set before. Will throw
+	 * TskCoreException if the values in the db are not 0 prior to this call.
+	 *
+	 * @param totalSize  The total size
+	 * @param sectorSize The sector size
+	 *
+	 * @throws TskCoreException Thrown if the values were not 0 in DB
+	 *
+	 */
+	public void setSizes(long totalSize, long sectorSize) throws TskCoreException {
+		getSleuthkitCase().setImageSizes(this, totalSize, sectorSize);
+	}
 
 	/**
 	 * Close a ResultSet.
