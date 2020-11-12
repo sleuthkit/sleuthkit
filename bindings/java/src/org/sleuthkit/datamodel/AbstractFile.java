@@ -43,7 +43,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * to the case.
  */
 public abstract class AbstractFile extends AbstractContent {
-    private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	protected final TskData.TSK_DB_FILES_TYPE_ENUM fileType;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_META_TYPE_ENUM metaType;
