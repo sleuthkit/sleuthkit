@@ -365,7 +365,9 @@ extern "C" {
         uint8_t eh_generation[4];       /* u32 */
     } ext2fs_extent_header;
 
-/* MODE */
+#define EXT2_MAX_INIT_EXTENT_LENGTH 0x8000  /* Maximum length of an initialized extent */
+
+/* MODE - Note that values are in octal format */
 #define EXT2_IN_FMT  0170000
 #define EXT2_IN_SOCK 0140000
 #define EXT2_IN_LNK  0120000
@@ -411,10 +413,16 @@ extern "C" {
 #define EXT2_IN_EXTENTS                 0x00080000      /* Inode uses extents */
 #define EXT2_IN_EA_INODE                0x00200000      /* Inode used for large EA */
 #define EXT2_IN_EOFBLOCKS               0x00400000      /* Blocks allocated beyond EOF */
+#define EXT2_SNAPFILE                   0x01000000      /* Inode is a snapshot */
+#define EXT2_SNAPFILE_DELETED           0x04000000	    /* Snapshot is being deleted */
+#define EXT2_SNAPFILE_SHRUNK            0x08000000	    /* Snapshot shrink has completed */
+#define EXT2_INLINE_DATA                0x10000000	    /* Inode has inline data */
+#define EXT2_PROJINHERIT                0x20000000	    /* Create children with the same project ID */
 #define EXT2_IN_RESERVED                0x80000000      /* reserved for ext4 lib */
 #define EXT2_IN_USER_VISIBLE            0x004BDFFF      /* User visible flags */
 #define EXT2_IN_USER_MODIFIABLE         0x004B80FF      /* User modifiable flags */
 
+#define EXT2_INLINE_MAX_DATA_LEN 60  /* Max length for inline data in inode (not counting extended attribute) */
 
 /*
  * directory entries
@@ -461,6 +469,7 @@ extern "C" {
  */
 
 #define EXT2_EA_MAGIC	0xEA020000
+#define EXT2_EA_INODE_OFFSET   160
 
     typedef struct {
         uint8_t magic[4];
@@ -478,6 +487,8 @@ extern "C" {
 #define EXT2_EA_IDX_TRUSTED                4
 #define EXT2_EA_IDX_LUSTRE                 5
 #define EXT2_EA_IDX_SECURITY               6
+#define EXT2_EA_IDX_SYSTEM                 7 // Possibly only valid for inline data
+#define EXT2_EA_IDX_SYSTEM_RICHACL         8
 
 /* Entries follow the header and are aligned to 4-byte boundaries
  * the value of the attribute is stored at the bottom of the block

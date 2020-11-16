@@ -24,6 +24,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -41,7 +42,18 @@ import org.junit.runners.Suite;
  * default ant target sets properties for the various folders.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ CommunicationsManagerTest.class, CaseDbSchemaVersionNumberTest.class,org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class, org.sleuthkit.datamodel.HashDbTest.class})
+@Suite.SuiteClasses({ 
+	CommunicationsManagerTest.class, 
+	CaseDbSchemaVersionNumberTest.class,
+
+//  Note: these tests have dependencies on images being placed in the input folder: nps-2009-canon2-gen6, ntfs1-gen, and small2	
+//	org.sleuthkit.datamodel.TopDownTraversal.class, 
+//	org.sleuthkit.datamodel.SequentialTraversal.class, 
+//	org.sleuthkit.datamodel.CrossCompare.class, 
+//	org.sleuthkit.datamodel.BottomUpTest.class, 
+//	org.sleuthkit.datamodel.CPPtoJavaCompare.class, 
+//	org.sleuthkit.datamodel.HashDbTest.class
+})
 public class DataModelTestSuite {
 
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
@@ -111,6 +123,10 @@ public class DataModelTestSuite {
 			standardFile.createNewFile();
 			java.io.File dbFile = new java.io.File(dbPath);
 			dbFile.delete();
+			if (dbFile.getParentFile() != null) {
+				dbFile.getParentFile().mkdirs();
+			}
+			
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 
 			String timezone = "";
@@ -217,7 +233,7 @@ public class DataModelTestSuite {
 	 * @return the path for an output file
 	 */
 	public static String buildPath(String path, String name, String type, String Ext) {
-		return path + java.io.File.separator + name + type + Ext;
+		return Paths.get(path, name + type + Ext).toString();
 	}
 
 	/**

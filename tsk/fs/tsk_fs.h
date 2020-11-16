@@ -437,7 +437,8 @@ extern "C" {
 
     typedef enum TSK_FS_META_CONTENT_TYPE_ENUM {
         TSK_FS_META_CONTENT_TYPE_DEFAULT = 0x0,
-        TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1     ///< Ext4 with extents instead of individual pointers
+        TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1,     ///< Ext4 with extents instead of individual pointers
+        TSK_FS_META_CONTENT_TYPE_EXT4_INLINE = 0x02      ///< Ext4 with inline data
     } TSK_FS_META_CONTENT_TYPE_ENUM;
 
 
