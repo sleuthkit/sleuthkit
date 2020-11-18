@@ -1269,17 +1269,17 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * DHCP Information that is store for a device.
 		 */
-		TSK_DHCP_INFO(61, "TSK_IP_DHCP",
+		TSK_IP_DHCP(61, "TSK_IP_DHCP",
 				bundle.getString("BlackboardArtifact.tskDhcpInfo.text")),		
 		/**
 		 * Notifications Sent to User.
 		 */
-		TSK_NOTIFICATIONS(62, "TSK_PROG_NOTIFICATIONS",
+		TSK_PROG_NOTIFICATIONS(62, "TSK_PROG_NOTIFICATIONS",
 				bundle.getString("BlackboardArtifact.tskProgNotifications.text")),		
 		/**
 		 * System/Application/File backup.
 		 */
-		TSK_BACKUP (63, "TSK_BACKUP_EVENT",
+		TSK_BACKUP_EVENT (63, "TSK_BACKUP_EVENT",
 				bundle.getString("BlackboardArtifact.tskBackupEvent.text")),		
 		/**
 		 * Programs that have been deleted.
@@ -1289,7 +1289,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Activity on the System/Application.
 		 */
-		TSK_ACTIVITY(65, "TSK_USER_DEVICE_EVENT",
+		TSK_USER_DEVICE_EVENT(65, "TSK_USER_DEVICE_EVENT",
 				bundle.getString("BlackboardArtifact.tskUserDeviceEvent.text"));		
         /* To developers: For each new artifact, ensure that:
          * - The enum value has 1-line JavaDoc description
