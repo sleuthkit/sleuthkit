@@ -1416,7 +1416,13 @@ public class BlackboardAttribute {
 		TSK_LAST_PRINTED_DATETIME(149, "TSK_LAST_PRINTED_DATETIME",
 	        bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
 	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
-		
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoAreaPoints to create and
+		 * process TSK_GEO_AREAPOINTS attributes.
+		 */
+		TSK_GEO_AREAPOINTS(150, "TSK_GEO_AREAPOINTS",
+			bundle.getString("BlackboardAttribute.tskgeoareapoints.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		
 		;
 
