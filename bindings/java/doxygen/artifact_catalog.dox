@@ -875,5 +875,14 @@ Details about a WiFi adapter.
 
 
 
+---
+## TSK_YARA_HIT
+Indicates that the some content of the file was a hit for a YARA rule match.
+
+### REQUIRED ATTRIBUTES
+- TSK_RULE (The rule that was a hit for this file)
+- TSK_SET_NAME (Name of the rule set containing the matching rule YARA rule)
+
+
 
 */

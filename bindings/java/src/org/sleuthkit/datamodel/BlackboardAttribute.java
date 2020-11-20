@@ -1417,9 +1417,14 @@ public class BlackboardAttribute {
 	        bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
 	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		
-		TSK_ACTIVITY_TYPE(150, "TSK_ACTIVITY_TYPE",
+		TSK_RULE(150, "TSK_RULE",
+	        bundle.getString("BlackboardAttribute.tskrule.text"),
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),		
+		
+		TSK_ACTIVITY_TYPE(151, "TSK_ACTIVITY_TYPE",
 	        bundle.getString("BlackboardAttribute.tskActivityType.text"),
 	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
+
 		;
 
 		private final int typeID;

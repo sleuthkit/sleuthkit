@@ -206,6 +206,7 @@ BlackboardAttribute.tskhashphotodna.text=PhotoDNA Hash
 BlackboardAttribute.tskbytessent.text=Bytes Sent
 BlackboardAttribute.tskbytesreceived.text=Bytes Received
 BlackboardAttribute.tsklastprinteddatetime.text=Last Printed Date
+BlackboardAttribute.tskrule.text = Rule
 BlackboardAttribute.tskActivityType.text=Activity Type
 AbstractFile.readLocal.exception.msg4.text=Error reading local file\: {0}
 AbstractFile.readLocal.exception.msg1.text=Error reading local file, local path is not set
