@@ -9719,6 +9719,14 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Get String value from the provided column from data_source_info table. 
+	 * 
+	 * @param datasource The datasource
+	 * @param columnName The column from which the data should be returned 
+	 * @return String value from the column 
+	 * @throws TskCoreException 
+	 */
 	String getDataSourceInfoString(DataSource datasource, String columnName) throws TskCoreException {
 		long id = datasource.getId();
 		CaseDbConnection connection = connections.getConnection();
@@ -9743,6 +9751,15 @@ public class SleuthkitCase {
 		}
 	}
 
+
+	/**
+	 * Get Long value from the provided column from data_source_info table.
+	 *
+	 * @param datasource The datasource
+	 * @param columnName The column from which the data should be returned
+	 * @return Long value from the column
+	 * @throws TskCoreException
+	 */
 	Long getDataSourceInfoLong(DataSource datasource, String columnName) throws TskCoreException {
 		long id = datasource.getId();
 		CaseDbConnection connection = connections.getConnection();

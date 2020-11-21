@@ -85,7 +85,7 @@ public interface DataSource extends Content {
 	 *
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
-	public void setAcquisitionSettings(String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException;
+	void setAcquisitionSettings(String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException;
 	
 	/**
 	 * Gets the acquisition details field from the case database.
@@ -95,4 +95,40 @@ public interface DataSource extends Content {
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
 	String getAcquisitionDetails() throws TskCoreException;
+
+	/**
+	 * Gets the acquisition settings field from the case database.
+	 *
+	 * @return The acquisition settings
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	String getAcquisitionSettings() throws TskCoreException;
+
+	/**
+	 * Gets the module name field from the case database.
+	 *
+	 * @return The module name
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	String getModuleName() throws TskCoreException;
+
+	/**
+	 * Gets the module version field from the case database.
+	 *
+	 * @return The module version details
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	String getModuleVersion() throws TskCoreException;
+
+	/**
+	 * Gets the added date field from the case database.
+	 *
+	 * @return The date time when the image was added in epoch seconds.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	Long getDateAdded() throws TskCoreException;
 }

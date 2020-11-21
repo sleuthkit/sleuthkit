@@ -220,6 +220,51 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 		return getSleuthkitCase().getAcquisitionDetails(this);
 	}
 
+
+	/**
+	 * Gets the acquisition settings field from the case database.
+	 *
+	 * @return The acquisition settings
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionSettings() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_settings");
+	}
+
+	/**
+	 * Gets the module name field from the case database.
+	 *
+	 * @return The module name
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getModuleName() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "module_name");
+	}
+
+	/**
+	 * Gets the module version field from the case database.
+	 *
+	 * @return The module version details
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getModuleVersion() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "module_version");
+	}
+
+	/**
+	 * Gets the added date field from the case database.
+	 *
+	 * @return The date time when the image was added in epoch seconds.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public Long getDateAdded() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoLong(this, "added_date_time");
+	}
+
 	/**
 	 * Close a ResultSet.
 	 *
