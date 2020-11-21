@@ -519,7 +519,7 @@ public class Image extends AbstractContent implements DataSource {
 	 * Sets the acquisition details field in the case database.
 	 *
 	 * @param details The acquisition details
-	 *
+	 * 
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
 	@Override
