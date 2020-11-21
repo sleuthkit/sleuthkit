@@ -98,7 +98,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 6);
+			= new CaseDbSchemaVersionNumber(8, 7);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -915,6 +915,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot3toSchema8dot4(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot4toSchema8dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot5toSchema8dot6(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot6toSchema8dot7(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -9609,12 +9610,27 @@ public class SleuthkitCase {
 	 * @throws TskCoreException Thrown if the database write fails
 	 */
 	void setAcquisitionDetails(DataSource datasource, String details) throws TskCoreException {
-		this.setAcquisitionDetails(datasource, details, null, null, null);
+
+		long id = datasource.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_DETAILS);
+			statement.clearParameters();
+			statement.setString(1, details);
+			statement.setLong(2, id);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting acquisition details", ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
 	}
 
 	/**
-	 * Set the acquisition details along with any settings used as well as
-	 * module name and module version in the data_source_info table
+	 * Set the acquisition settings used as well as module name and
+	 * module version in the data_source_info table
 	 *
 	 * @param details             The acquisition details
 	 * @param acquisitionSettings Any settings specific to the acquisition. May
@@ -9624,19 +9640,18 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException Thrown if the database write fails
 	 */
-	void setAcquisitionDetails(DataSource datasource, String details, String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException {
+	void setAcquisitionSettings(DataSource datasource, String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException {
 
 		long id = datasource.getId();
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_DETAILS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_SETTINGS);
 			statement.clearParameters();
-			statement.setString(1, details);
-			statement.setString(2, acquisitionSettings);
-			statement.setString(3, moduleName);
-			statement.setString(4, moduleVersion);
-			statement.setLong(5, id);
+			statement.setString(1, acquisitionSettings);
+			statement.setString(2, moduleName);
+			statement.setString(3, moduleVersion);
+			statement.setLong(4, id);
 			connection.executeUpdate(statement);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting acquisition details", ex);
@@ -9695,6 +9710,54 @@ public class SleuthkitCase {
 				hash = rs.getString("acquisition_details");
 			}
 			return hash;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting acquisition details", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
+
+	String getDataSourceInfoString(DataSource datasource, String columnName) throws TskCoreException {
+		long id = datasource.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		String returnValue = "";
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_DATASOURCE_INFO_DETAILS);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				returnValue = rs.getString(columnName);
+			}
+			return returnValue;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting acquisition details", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
+
+	Long getDataSourceInfoLong(DataSource datasource, String columnName) throws TskCoreException {
+		long id = datasource.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		Long returnValue = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_DATASOURCE_INFO_DETAILS);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				returnValue = rs.getLong(columnName);
+			}
+			return returnValue;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting acquisition details", ex);
 		} finally {
@@ -11374,8 +11437,10 @@ public class SleuthkitCase {
 		SELECT_IMAGE_MD5("SELECT md5 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_IMAGE_SHA1("SELECT sha1 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_IMAGE_SHA256("SELECT sha256 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
-		UPDATE_ACQUISITION_DETAILS("UPDATE data_source_info SET acquisition_details = ?, acquisition_settings = ?, module_name = ?, module_version = ? WHERE obj_id = ?"), //NON-NLS
+		UPDATE_ACQUISITION_DETAILS("UPDATE data_source_info SET acquisition_details = ? WHERE obj_id = ?"), //NON-NLS
+		UPDATE_ACQUISITION_SETTINGS("UPDATE data_source_info SET acquisition_settings = ?, module_name = ?, module_version = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_ACQUISITION_DETAILS("SELECT acquisition_details FROM data_source_info WHERE obj_id = ?"), //NON-NLS
+		SELECT_DATASOURCE_INFO_DETAILS("SELECT acquisition_settings, module_name, module_version, added_date_time FROM data_source_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS
