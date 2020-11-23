@@ -49,7 +49,7 @@ public class Score {
 
 		public static Significance fromString(String name) {
 			return Arrays.stream(values())
-					.filter(val -> val.getName().equalsIgnoreCase(name))
+					.filter(val -> val.getName().equals(name))
 					.findFirst().orElse(NONE);
 		}
 
@@ -97,7 +97,7 @@ public class Score {
 
 		public static Confidence fromString(String name) {
 			return Arrays.stream(values())
-					.filter(val -> val.getName().equalsIgnoreCase(name))
+					.filter(val -> val.getName().equals(name))
 					.findFirst().orElse(NONE);
 		}
 
