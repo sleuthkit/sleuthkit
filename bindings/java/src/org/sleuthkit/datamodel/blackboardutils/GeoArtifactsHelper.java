@@ -194,10 +194,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		if (areaPoints == null || areaPoints.isEmpty()) {
 			throw new IllegalArgumentException(String.format("addArea was passed a null or empty list of points"));
 		}
-
-		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
+		
+		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
-
 		attributes.add(BlackboardJsonAttrUtil.toAttribute(AREAPOINTS_ATTR_TYPE, getModuleName(), areaPoints));
 
 		if (areaName != null) {
