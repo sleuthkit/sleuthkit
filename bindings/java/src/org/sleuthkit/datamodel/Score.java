@@ -49,7 +49,7 @@ public class Score {
 
 		public static Significance fromString(String name) {
 			return Arrays.stream(values())
-					.filter(val -> val.name.equals(name))
+					.filter(val -> val.getName().equals(name))
 					.findFirst().orElse(NONE);
 		}
 

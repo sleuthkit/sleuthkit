@@ -177,7 +177,9 @@ public final class Blackboard {
 			AnalysisResult analysisResult =  caseDb.newAnalysisResult(artifactType, obj_id, datasource_obj_id, score, conclusion, configuration, justification, transaction.getConnection());
 			
 			// add the given attributes
-			analysisResult.addAttributes(attributesList, transaction);
+			if (attributesList != null && !attributesList.isEmpty()) {
+				analysisResult.addAttributes(attributesList, transaction);
+			}
 			
 			return analysisResult;
 		}  catch (TskCoreException ex) {
