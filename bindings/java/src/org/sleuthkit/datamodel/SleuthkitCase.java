@@ -4699,35 +4699,42 @@ public class SleuthkitCase {
 		try {
 			// add a row in tsk_objects
 			long artifact_obj_id = addObject(obj_id, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
-			
+
 			// add a row in blackboard_artifacts table
-			try (PreparedStatement insertArtifactstatement = createInsertArtifactStatement(artifactType.getTypeID(), obj_id, artifact_obj_id, data_source_obj_id, connection)) {
+			PreparedStatement insertArtifactstatement;
+			ResultSet resultSet = null;
+			try {
+				insertArtifactstatement = createInsertArtifactStatement(artifactType.getTypeID(), obj_id, artifact_obj_id, data_source_obj_id, connection);
 				connection.executeUpdate(insertArtifactstatement);
-				ResultSet resultSet = insertArtifactstatement.getGeneratedKeys();
+				resultSet = insertArtifactstatement.getGeneratedKeys();
 				resultSet.next();
 				artifactID = resultSet.getLong(1); //last_insert_rowid()
-			}
-			
-			// add a row in tsk_analysis_results table
-			try (PreparedStatement analysisResultsStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ANALYSIS_RESULT)) {
+
+				// add a row in tsk_analysis_results table
+				PreparedStatement analysisResultsStatement;
+
+				analysisResultsStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ANALYSIS_RESULT);
 				analysisResultsStatement.clearParameters();
-				
+
 				analysisResultsStatement.setLong(1, artifact_obj_id);
-				analysisResultsStatement.setString(2, (conclusion != null) ? conclusion : "" );
+				analysisResultsStatement.setString(2, (conclusion != null) ? conclusion : "");
 				analysisResultsStatement.setInt(3, score.getSignificance().getId());
 				analysisResultsStatement.setInt(4, score.getConfidence().getId());
-				analysisResultsStatement.setString(5, (configuration != null) ? configuration : "" );
-				analysisResultsStatement.setString(6, (justification != null) ? justification : "" );
-				
+				analysisResultsStatement.setString(5, (configuration != null) ? configuration : "");
+				analysisResultsStatement.setString(6, (justification != null) ? justification : "");
+
 				connection.executeUpdate(analysisResultsStatement);
+
+				return new AnalysisResult(this, artifactID, obj_id, artifact_obj_id, data_source_obj_id, artifactType.getTypeID(),
+						artifactType.getTypeName(), artifactType.getDisplayName(),
+						BlackboardArtifact.ReviewStatus.UNDECIDED, true,
+						score, (conclusion != null) ? conclusion : "",
+						(configuration != null) ? configuration : "", (justification != null) ? justification : "");
+
+			} finally {
+				closeResultSet(resultSet);
 			}
-			
-			return new AnalysisResult( this, artifactID, obj_id, artifact_obj_id, data_source_obj_id, artifactType.getTypeID(), 
-										artifactType.getTypeName(), artifactType.getDisplayName(), 
-										BlackboardArtifact.ReviewStatus.UNDECIDED, true,
-										score, (conclusion != null) ? conclusion : "", 
-										(configuration != null) ? configuration : "", (justification != null) ? justification : "");
-			
+		
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a analysis result", ex);
 		} finally {
