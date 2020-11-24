@@ -75,14 +75,14 @@
 		<copy file="${tsk.jni.32}" todir="${i686}/win" overwrite="true"/>
 	</target>
 
-	<target name="copyWinTskLibsToBuild-PostgreSQL" depends="copyWinTskLibs64ToBuild-PostgreSQL,copyWinTskLibs32ToBuild-PostgreSQL" description="Copy Windows DLLs to the correct location, PostgreSQL build." />
+	<!--<target name="copyWinTskLibsToBuild-PostgreSQL" depends="copyWinTskLibs64ToBuild-PostgreSQL,copyWinTskLibs32ToBuild-PostgreSQL" description="Copy Windows DLLs to the correct location, PostgreSQL build." />-->
 
 	<target name="checkTskLibDirs">
 		<available property="win64.TskLib.exists" type="file" file="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 		<available property="win32.TskLib.exists" type="file" file="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 	</target>
 
-	<target name="copyWinTskLibs64ToBuild-PostgreSQL" depends="checkTskLibDirs" if="win64.TskLib.exists">
+<!--	<target name="copyWinTskLibs64ToBuild-PostgreSQL" depends="checkTskLibDirs" if="win64.TskLib.exists">
 		<property name="tsk.jni.64" location="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 
 		<copy file="${tsk.jni.64}" todir="${amd64}/win" overwrite="true"/>
@@ -96,5 +96,5 @@
 		<copy file="${tsk.jni.32}" todir="${x86}/win" overwrite="true"/>
 		<copy file="${tsk.jni.32}" todir="${i586}/win" overwrite="true"/>
 		<copy file="${tsk.jni.32}" todir="${i686}/win" overwrite="true"/>
-	</target>
+	</target>-->
 </project>
