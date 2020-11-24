@@ -194,12 +194,12 @@ public final class Blackboard {
 				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
 				+ " results.configuration AS configuration,  results.justification AS justification "
 				+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
-				+ " WHERE arts.artifact_obj_id = aresults.obj_id " //NON-NLS
+				+ " WHERE arts.artifact_obj_id = results.obj_id " //NON-NLS
 				+ " AND arts.artifact_type_id = types.artifact_type_id"
 				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
 				
 	/**
-	 * Get all analysis results of a given type.
+	 * Get all analysis results of a given type, for a given data source.
 	 *
 	 * @param artifactTypeID  Type of results to get.
 	 * @param dataSourceObjId Data source to look under.
@@ -229,6 +229,35 @@ public final class Blackboard {
 			return analysisResults;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting analysis results for type id %d", artifactTypeID), ex);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	/**
+	 * Get all analysis results of a given data source.
+	 *
+	 * @param dataSourceObjId Data source to look under.
+	 *
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId) throws TskCoreException {
+
+		final String queryString = ANALYSIS_RESULT_QUERY_STRING
+				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
+				
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+			
+			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
+			return analysisResults;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting analysis results for data source, dataSourceObjId=%d", dataSourceObjId), ex);
 		} finally {
 			caseDb.releaseSingleUserCaseReadLock();
 		}

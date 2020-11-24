@@ -11277,7 +11277,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (DEFAULT, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
-		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_result (obj_id, conclusion, significance, confidence, configuration, justification) " //NON-NLS
+		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (obj_id, conclusion, significance, confidence, configuration, justification) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS

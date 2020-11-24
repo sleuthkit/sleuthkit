@@ -272,7 +272,7 @@ class CaseDatabaseFactory {
 	}
 	
 	private void createAnalysisResultsTables(Statement stmt) throws SQLException  {
-		stmt.execute("CREATE TABLE tsk_analysis_result (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+		stmt.execute("CREATE TABLE tsk_analysis_results (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "conclusion TEXT, "
 				+ "significance INTEGER NOT NULL, "
 				+ "confidence INTEGER NOT NULL, "
