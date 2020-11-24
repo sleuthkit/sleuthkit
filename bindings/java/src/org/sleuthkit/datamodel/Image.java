@@ -608,7 +608,7 @@ public class Image extends AbstractContent implements DataSource {
 	 * @param totalSize  The total size
 	 * @param sectorSize The sector size
 	 *
-	 * @throws TskCoreException Thrown if the values were not 0 in DB
+	 * @throws TskCoreException If there is an error updating the case database.
 	 *
 	 */
 	public void setSizes(long totalSize, long sectorSize) throws TskCoreException {

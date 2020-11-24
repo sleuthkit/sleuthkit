@@ -9327,14 +9327,11 @@ public class SleuthkitCase {
 	 * @param totalSize  The total size
 	 * @param sectorSize The sector size
 	 *
-	 * @throws TskCoreException Thrown if the values were not 0 in DB
+	 * @throws TskCoreException If there is an error updating the case database.
 	 *
 	 */
 	void setImageSizes(Image image, long totalSize, long sectorSize) throws TskCoreException {
 
-		if (image.getSize() > 0 || image.getSsize() > 0) {
-			throw new TskCoreException(String.format("Error updating image sizes for object ID %d. Cannot update non-zero total size (%d) or sector size (%d)",image.getId(), image.getSize(), image.getSsize()));
-		}
 		acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = connections.getConnection();) {
 			PreparedStatement preparedStatement = connection.getPreparedStatement(SleuthkitCase.PREPARED_STATEMENT.UPDATE_IMAGE_SIZES);
