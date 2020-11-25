@@ -76,16 +76,16 @@ public interface DataSource extends Content {
 	void setAcquisitionDetails(String details) throws TskCoreException;
 
 	/**
-	 * Sets the acquisition settings used as well as module name and module version.
-	 * 
-	 * @param acquisitionSettings Any settings specific to the acquisition. May
-	 *                            be Null.
-	 * @param moduleName          The module name. May be Null
-	 * @param moduleVersion       The module's version number. May be Null.
+	 * Sets the acquisition tool details such as its name, version number and 
+	 * any settings used during the acquisition tool to acquire data.
+	 *
+	 * @param name     The name of the acquisition tool. May be NULL.
+	 * @param version  The acquisition tool version number. May be NULL.
+	 * @param settings The settings used by the acquisition tool. May be NULL.
 	 *
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
-	void setAcquisitionSettings(String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException;
+	void setAcquisitionToolDetails(String name, String version, String settings) throws TskCoreException;
 	
 	/**
 	 * Gets the acquisition details field from the case database.
@@ -97,31 +97,31 @@ public interface DataSource extends Content {
 	String getAcquisitionDetails() throws TskCoreException;
 
 	/**
-	 * Gets the acquisition settings field from the case database.
+	 * Gets the acquisition tool settings field from the case database.
 	 *
-	 * @return The acquisition settings
+	 * @return The acquisition tool settings. May be Null if not set.
 	 *
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
-	String getAcquisitionSettings() throws TskCoreException;
+	String getAcquisitionToolSettings() throws TskCoreException;
 
 	/**
-	 * Gets the module name field from the case database.
+	 * Gets the acquisition tool name field from the case database.
 	 *
-	 * @return The module name
+	 * @return The acquisition tool name. May be Null if not set.
 	 *
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
-	String getModuleName() throws TskCoreException;
+	String getAcquisitionToolName() throws TskCoreException;
 
 	/**
-	 * Gets the module version field from the case database.
+	 * Gets the acquisition tool version field from the case database.
 	 *
-	 * @return The module version details
+	 * @return The acquisition tool version. May be Null if not set. 
 	 *
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
-	String getModuleVersion() throws TskCoreException;
+	String getAcquisitionToolVersion() throws TskCoreException;
 
 	/**
 	 * Gets the added date field from the case database.

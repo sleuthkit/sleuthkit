@@ -2232,9 +2232,9 @@ public class SleuthkitCase {
 				dateDataType = "INTEGER";
 			}
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType);
-			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_settings TEXT");
-			statement.execute("ALTER TABLE data_source_info ADD COLUMN module_name TEXT");
-			statement.execute("ALTER TABLE data_source_info ADD COLUMN module_version TEXT");
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_settings TEXT");
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
 
 			return new CaseDbSchemaVersionNumber(8, 7);
 
@@ -9632,29 +9632,29 @@ public class SleuthkitCase {
 		}
 	}
 
+
 	/**
-	 * Set the acquisition settings used as well as module name and
-	 * module version in the data_source_info table
+	 * Sets the acquisition tool details such as its name, version number and
+	 * any settings used during the acquisition tool to acquire data.
 	 *
-	 * @param details             The acquisition details
-	 * @param acquisitionSettings Any settings specific to the acquisition. May
-	 *                            be Null.
-	 * @param moduleName          The module name. May be Null
-	 * @param moduleVersion       The module's version number. May be Null.
+	 * @param datasource The datasource object
+	 * @param name       The name of the acquisition tool. May be NULL.
+	 * @param version    The acquisition tool version number. May be NULL.
+	 * @param settings   The settings used by the acquisition tool. May be NULL.
 	 *
 	 * @throws TskCoreException Thrown if the database write fails
 	 */
-	void setAcquisitionSettings(DataSource datasource, String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException {
+	void setAcquisitionToolDetails(DataSource datasource, String name, String version, String settings) throws TskCoreException {
 
 		long id = datasource.getId();
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_SETTINGS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_TOOL_SETTINGS);
 			statement.clearParameters();
-			statement.setString(1, acquisitionSettings);
-			statement.setString(2, moduleName);
-			statement.setString(3, moduleVersion);
+			statement.setString(1, settings);
+			statement.setString(2, name);
+			statement.setString(3, version);
 			statement.setLong(4, id);
 			connection.executeUpdate(statement);
 		} catch (SQLException ex) {
@@ -9738,7 +9738,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		String returnValue = "";
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_DATASOURCE_INFO_DETAILS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ACQUISITION_TOOL_SETTINGS);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
@@ -9771,7 +9771,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		Long returnValue = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_DATASOURCE_INFO_DETAILS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ACQUISITION_TOOL_SETTINGS);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
@@ -11459,9 +11459,9 @@ public class SleuthkitCase {
 		SELECT_IMAGE_SHA1("SELECT sha1 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_IMAGE_SHA256("SELECT sha256 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		UPDATE_ACQUISITION_DETAILS("UPDATE data_source_info SET acquisition_details = ? WHERE obj_id = ?"), //NON-NLS
-		UPDATE_ACQUISITION_SETTINGS("UPDATE data_source_info SET acquisition_settings = ?, module_name = ?, module_version = ? WHERE obj_id = ?"), //NON-NLS
+		UPDATE_ACQUISITION_TOOL_SETTINGS("UPDATE data_source_info SET acquisition_tool_settings = ?, acquisition_tool_name = ?, acquisition_tool_version = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_ACQUISITION_DETAILS("SELECT acquisition_details FROM data_source_info WHERE obj_id = ?"), //NON-NLS
-		SELECT_DATASOURCE_INFO_DETAILS("SELECT acquisition_settings, module_name, module_version, added_date_time FROM data_source_info WHERE obj_id = ?"), //NON-NLS
+		SELECT_ACQUISITION_TOOL_SETTINGS("SELECT acquisition_tool_settings, acquisition_tool_name, acquisition_tool_version, added_date_time FROM data_source_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS

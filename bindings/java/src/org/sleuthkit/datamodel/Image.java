@@ -528,51 +528,51 @@ public class Image extends AbstractContent implements DataSource {
 	}
 
 	/**
-	 * Sets the acquisition settings used as well as module name and module version.
+	 * Sets the acquisition tool details such as its name, version number and
+	 * any settings used during the acquisition tool to acquire data.
 	 *
-	 * @param acquisitionSettings Any settings specific to the acquisition. May
-	 *                            be Null.
-	 * @param moduleName          The module name. May be Null
-	 * @param moduleVersion       The module's version number. May be Null.
+	 * @param name     The name of the acquisition tool. May be NULL.
+	 * @param version  The acquisition tool version number. May be NULL.
+	 * @param settings The settings used by the acquisition tool. May be NULL.
 	 *
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
 	@Override
-	public void setAcquisitionSettings(String acquisitionSettings, String moduleName, String moduleVersion) throws TskCoreException {
-		getSleuthkitCase().setAcquisitionSettings(this, acquisitionSettings, moduleName, moduleVersion);
+	public void setAcquisitionToolDetails(String name, String version, String settings) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionToolDetails(this, name, version, settings);
 	}
 
 	/**
-	 * Gets the acquisition settings field from the case database.
+	 * Gets the acquisition tool settings field from the case database.
 	 *
-	 * @return The acquisition settings
+	 * @return The acquisition tool settings. May be Null if not set.
 	 *
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
-	public String getAcquisitionSettings() throws TskCoreException {
-		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_settings");
+	public String getAcquisitionToolSettings() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_settings");
 	}
 
 	/**
-	 * Gets the module name field from the case database.
+	 * Gets the acquisition tool name field from the case database.
 	 *
-	 * @return The module name
+	 * @return The acquisition tool name. May be Null if not set.
 	 *
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
-	public String getModuleName() throws TskCoreException {
-		return getSleuthkitCase().getDataSourceInfoString(this, "module_name");
+	public String getAcquisitionToolName() throws TskCoreException{
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_name");
 	}
 
 	/**
-	 * Gets the module version field from the case database.
+	 * Gets the acquisition tool version field from the case database.
 	 *
-	 * @return The module version details
+	 * @return The acquisition tool version. May be Null if not set.
 	 *
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
-	public String getModuleVersion() throws TskCoreException {
-		return getSleuthkitCase().getDataSourceInfoString(this, "module_version");
+	public String getAcquisitionToolVersion() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_version");
 	}
 
 	/**
