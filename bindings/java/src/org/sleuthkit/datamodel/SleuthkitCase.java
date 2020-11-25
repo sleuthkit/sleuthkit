@@ -9635,7 +9635,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Sets the acquisition tool details such as its name, version number and
-	 * any settings used during the acquisition tool to acquire data.
+	 * any settings used during the acquisition to acquire data.
 	 *
 	 * @param datasource The datasource object
 	 * @param name       The name of the acquisition tool. May be NULL.
