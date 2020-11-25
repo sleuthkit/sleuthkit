@@ -76,8 +76,8 @@ public interface DataSource extends Content {
 	void setAcquisitionDetails(String details) throws TskCoreException;
 
 	/**
-	 * Sets the acquisition tool details such as its name, version number and 
-	 * any settings used during the acquisition tool to acquire data.
+	 * Sets the acquisition tool details such as its name, version number and
+	 * any settings used during the acquisition to acquire data.
 	 *
 	 * @param name     The name of the acquisition tool. May be NULL.
 	 * @param version  The acquisition tool version number. May be NULL.
