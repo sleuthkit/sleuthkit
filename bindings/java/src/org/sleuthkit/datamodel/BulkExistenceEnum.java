@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.filerepository;
+package org.sleuthkit.datamodel;
 
 /**
  * Represents the states of existence for a file in the file repository.

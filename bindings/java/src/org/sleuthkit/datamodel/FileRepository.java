@@ -16,9 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.filerepository;
+package org.sleuthkit.datamodel;
 
 import com.google.gson.Gson;
+import java.io.File;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
@@ -33,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -46,50 +49,86 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.TskData;
 
 /**
  * Class to represent a file repository.
  */
 public class FileRepository {
 
-	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.filerepository.Bundle");
+	private static final Logger logger = Logger.getLogger(FileRepository.class.getName());
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private static final int MAX_BULK_QUERY_SIZE = 500;
 	private final static String V1_FILES_TEMPLATE = "http://%s:%s/v1/files/";
 	
 	private final Gson gson;
 	private final FileRepositorySettings settings;
+	private final File fileDownloadFolder;
 	
 	private static FileRepositoryErrorHandler errorHandler;
 	private static FileRepository instance;
 
-	/**
-	 * Create the file repository.
-	 *
-	 * @param settings         The file repository settings
-	 * @param fileDownloadPath The temporary folder to download files to from
-	 *                         the repository
-	 */
-	FileRepository(FileRepositorySettings settings) {
-		this.settings = settings;
+	/**	
+     * Create the file repository.	
+     *	
+     * @param settings          The file repository settings	
+     * @param fileDownloadPath  The temporary folder to download files to from the repository	
+     */	
+	private FileRepository(FileRepositorySettings settings, File fileDownloadPath) {	
+		this.settings = settings;	
+		this.fileDownloadFolder = fileDownloadPath;	
 		this.gson = new Gson();
 	}
+	
+	/**	
+	 * Delete the folder of downloaded files.	
+	 */	
+	private static synchronized void deleteDownloadFolder(File dirPath) {	
+        if (dirPath.isDirectory() == false || dirPath.exists() == false) {	
+            return;	
+        }	
 
-	/**
-	 * Initializes the file repository.
-	 *
-	 * @param settings The file repository settings
-	 */
-	public static synchronized void initialize(FileRepositorySettings settings) {
-		instance = new FileRepository(settings);
+        File[] files = dirPath.listFiles();	
+        if (files != null) {	
+            for (File file : files) {	
+                if (file.isDirectory()) {	
+                    deleteDownloadFolder(file);	
+                } else {	
+                    if (file.delete() == false) {	
+                        logger.log(Level.WARNING, "Failed to delete file {0}", file.getPath()); //NON-NLS	
+                    }	
+                }	
+            }	
+        }	
+        if (dirPath.delete() == false) {	
+            logger.log(Level.WARNING, "Failed to delete the empty directory at {0}", dirPath.getPath()); //NON-NLS	
+        }	
 	}
 
-	/**
-	 * De-initializes the file repository.
-	 */
-	public static synchronized void deinitialize() {
-		instance = null;
+	/**	
+     * Initializes the file repository.	
+     *	
+     * @param settings          The file repository settings	
+     * @param fileDownloadPath  The temporary folder to download files to from the repository	
+     */		
+	public static synchronized void initialize(FileRepositorySettings settings, File fileDownloadPath) {	
+		// If the download path is changing, delete any files in the old one	
+		if ((instance != null) && (instance.fileDownloadFolder != null)	
+				&& ( ! instance.fileDownloadFolder.equals(fileDownloadPath))) {	
+			deleteDownloadFolder(instance.fileDownloadFolder);	
+		}	
+		instance = new FileRepository(settings, fileDownloadPath);	
+	}
+
+	/**	
+     * De-initializes the file repository.	
+     */		
+	public static synchronized void deinitialize() {	
+		if (instance != null) {	
+			// Delete the temp folder	
+			deleteDownloadFolder(instance.fileDownloadFolder);	
+		}	
+
+		instance = null;	
 	}
 
 	/**
@@ -108,6 +147,11 @@ public class FileRepository {
 	 */
 	public static synchronized void setErrorHandler(FileRepositoryErrorHandler handler) {
 		errorHandler = handler;
+	}
+	
+	static synchronized File getTempDirectory() throws FileRepositoryException {
+		ensureInstanceIsEnabled();
+		return instance.fileDownloadFolder;
 	}
 
 	/**
@@ -132,7 +176,7 @@ public class FileRepository {
 	 *
 	 * @return The file contents, as a stream.
 	 *
-	 * @throws org.sleuthkit.datamodel.filerepository.FileRepositoryException
+	 * @throws org.sleuthkit.datamodel.FileRepositoryException
 	 * @throws java.io.IOException
 	 *
 	 */
@@ -201,7 +245,7 @@ public class FileRepository {
 	 * @param stream Arbitrary data to store in this file repository.
 	 *
 	 * @throws java.io.IOException
-	 * @throws org.sleuthkit.datamodel.filerepository.FileRepositoryException
+	 * @throws org.sleuthkit.datamodel.FileRepositoryException
 	 */
 	public static synchronized void upload(InputStream stream) throws IOException, FileRepositoryException {
 		// Preconditions
@@ -218,7 +262,7 @@ public class FileRepository {
 			final String uploadURL = settings.createBaseURL(V1_FILES_TEMPLATE);
 
 			// Flush the stream to a local temp file for transport.
-			final Path temp = Paths.get(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+			final Path temp = Paths.get(fileDownloadFolder.getAbsolutePath(), UUID.randomUUID().toString());
 			Files.copy(stream, temp);
 
 			final HttpEntity fileUpload = MultipartEntityBuilder.create()
@@ -257,7 +301,7 @@ public class FileRepository {
 	 * @return An object encapsulating the response for each file.
 	 *
 	 * @throws java.io.IOException
-	 * @throws org.sleuthkit.datamodel.filerepository.FileRepositoryException
+	 * @throws org.sleuthkit.datamodel.FileRepositoryException
 	 */
 	public static synchronized BulkExistenceResult exists(List<AbstractFile> files) throws IOException, FileRepositoryException {
 		// Preconditions

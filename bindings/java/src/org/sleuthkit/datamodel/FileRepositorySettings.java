@@ -16,13 +16,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.filerepository;
+package org.sleuthkit.datamodel;
 
-public class FileRepositoryException extends Exception {
+/**
+ * Utility class to hold the file repository server settings.
+ */
+public class FileRepositorySettings {
+
+	private final String address;
+	private final String port;
 	
-	private static final long serialVersionUID = 1L;
+	/**
+	 * Create a FileRepositorySettings instance for the server.
+	 *
+	 * @param address The IP address/hostname of the server.
+	 * @param port    The port.
+	 */
+	public FileRepositorySettings(String address, String port) {
+		this.address = address;
+		this.port = port;
+	}
 	
-	public FileRepositoryException(String msg) {
-		super(msg);
+	/**
+	 * Fills in an API template with the address and port.
+	 */
+	String createBaseURL(String urlTemplate) {
+		return String.format(urlTemplate, address, port);
 	}
 }

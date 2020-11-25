@@ -16,31 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.filerepository;
+package org.sleuthkit.datamodel;
 
 /**
- * Utility class to hold the file repository server settings.
+ * Callback class to use for error reporting.
  */
-public class FileRepositorySettings {
+public interface FileRepositoryErrorHandler {
 
-	private final String address;
-	private final String port;
-	
 	/**
-	 * Create a FileRepositorySettings instance for the server.
+	 * Handles displaying an error message to the user (if appropriate).
 	 *
-	 * @param address The IP address/hostname of the server.
-	 * @param port    The port.
+	 * @param title The title for the error display.
+	 * @param error The more detailed error message to display.
 	 */
-	public FileRepositorySettings(String address, String port) {
-		this.address = address;
-		this.port = port;
-	}
-	
-	/**
-	 * Fills in an API template with the address and port.
-	 */
-	String createBaseURL(String urlTemplate) {
-		return String.format(urlTemplate, address, port);
-	}
+	void displayErrorToUser(String title, String error);
+    
 }

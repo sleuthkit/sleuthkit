@@ -16,19 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.filerepository;
+package org.sleuthkit.datamodel;
 
-/**
- * Callback class to use for error reporting.
- */
-public interface FileRepositoryErrorHandler {
-
-	/**
-	 * Handles displaying an error message to the user (if appropriate).
-	 *
-	 * @param title The title for the error display.
-	 * @param error The more detailed error message to display.
-	 */
-	void displayErrorToUser(String title, String error);
-    
+public class FileRepositoryException extends Exception {
+	
+	private static final long serialVersionUID = 1L;
+	
+	public FileRepositoryException(String msg) {
+		super(msg);
+	}
 }

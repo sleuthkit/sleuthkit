@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import org.sleuthkit.datamodel.filerepository.FileRepository;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,11 +26,11 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -44,7 +43,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-import org.sleuthkit.datamodel.filerepository.FileRepositoryException;
 
 /**
  * An abstract base class for classes that represent files that have been added
@@ -1081,14 +1079,12 @@ public abstract class AbstractFile extends AbstractContent {
 				throw new TskCoreException("Previously failed to load file with object ID " + getId() + " from file repository.");
 			}
 			
-			// Copy the file from the server
-			Path localFilePath = Paths.get(System.getProperty("java.io.tmpdir"), this.getSha256Hash());
 			try (InputStream fileRepositoryStream = FileRepository.download(this)) {
-				Files.copy(fileRepositoryStream, localFilePath);
+				Path localFilePath = Paths.get(FileRepository.getTempDirectory().getAbsolutePath(), this.getSha256Hash());
+				if (!Files.exists(localFilePath)) {
+					Files.copy(fileRepositoryStream, localFilePath);
+				}
 				localFile = localFilePath.toFile();
-			} catch (FileAlreadyExistsException ex) {
-				// Do nothing, file already exists.
-				this.localFile = localFilePath.toFile();
 			} catch (FileRepositoryException | IOException ex) {
 				// If we've failed to download from the file repository, don't try again for this session.
 				errorLoadingFromFileRepo = true;
