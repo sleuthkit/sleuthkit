@@ -18,91 +18,147 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.gson.Gson;
 import java.io.File;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 /**
  * Class to represent a file repository.
  */
 public class FileRepository {
-	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+
 	private static final Logger logger = Logger.getLogger(FileRepository.class.getName());
-	private static FileRepositoryErrorHandler errorHandler;
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static final int MAX_BULK_QUERY_SIZE = 500;
+	private final static String V1_FILES_TEMPLATE = "http://%s:%s/v1/files/";
 	
-	private final static String FILE_PATH = "v1/files/";
+	private final Gson gson;
 	private final FileRepositorySettings settings;
 	private final File fileDownloadFolder;
 	
+	private static FileRepositoryErrorHandler errorHandler;
 	private static FileRepository instance;
 
-	/**
-     * Create the file repository.
-     *
-     * @param settings          The file repository settings
-     * @param fileDownloadPath  The temporary folder to download files to from the repository
-     */
-	private FileRepository(FileRepositorySettings settings, File fileDownloadPath) {
-		this.settings = settings;
-		this.fileDownloadFolder = fileDownloadPath;
-	}
-	
-	/**
-     * Initializes the file repository.
-     *
-     * @param settings          The file repository settings
-     * @param fileDownloadPath  The temporary folder to download files to from the repository
+	/**	
+     * Create the file repository.	
+     *	
+     * @param settings          The file repository settings	
+     * @param fileDownloadPath  The temporary folder to download files to from the repository	
      */	
-	public static synchronized void initialize(FileRepositorySettings settings, File fileDownloadPath) {
-		// If the download path is changing, delete any files in the old one
-		if ((instance != null) && (instance.fileDownloadFolder != null)
-				&& ( ! instance.fileDownloadFolder.equals(fileDownloadPath))) {
-			deleteDownloadFolder(instance.fileDownloadFolder);
-		}
-		instance = new FileRepository(settings, fileDownloadPath);
+	private FileRepository(FileRepositorySettings settings, File fileDownloadPath) {	
+		this.settings = settings;	
+		this.fileDownloadFolder = fileDownloadPath;	
+		this.gson = new Gson();
 	}
 	
-	/**
-     * De-initializes the file repository.
-     */	
-	public static synchronized void deinitialize() {
-		if (instance != null) {
-			// Delete the temp folder
-			deleteDownloadFolder(instance.fileDownloadFolder);
-		}
-		
-		instance = null;
+	/**	
+	 * Delete the folder of downloaded files.	
+	 */	
+	private static synchronized void deleteDownloadFolder(File dirPath) {	
+        if (dirPath.isDirectory() == false || dirPath.exists() == false) {	
+            return;	
+        }	
+
+        File[] files = dirPath.listFiles();	
+        if (files != null) {	
+            for (File file : files) {	
+                if (file.isDirectory()) {	
+                    deleteDownloadFolder(file);	
+                } else {	
+                    if (file.delete() == false) {	
+                        logger.log(Level.WARNING, "Failed to delete file {0}", file.getPath()); //NON-NLS	
+                    }	
+                }	
+            }	
+        }	
+        if (dirPath.delete() == false) {	
+            logger.log(Level.WARNING, "Failed to delete the empty directory at {0}", dirPath.getPath()); //NON-NLS	
+        }	
 	}
-	
+
+	/**	
+     * Initializes the file repository.	
+     *	
+     * @param settings          The file repository settings	
+     * @param fileDownloadPath  The temporary folder to download files to from the repository	
+     */		
+	public static synchronized void initialize(FileRepositorySettings settings, File fileDownloadPath) {	
+		// If the download path is changing, delete any files in the old one	
+		if ((instance != null) && (instance.fileDownloadFolder != null)	
+				&& ( ! instance.fileDownloadFolder.equals(fileDownloadPath))) {	
+			deleteDownloadFolder(instance.fileDownloadFolder);	
+		}	
+		instance = new FileRepository(settings, fileDownloadPath);	
+	}
+
+	/**	
+     * De-initializes the file repository.	
+     */		
+	public static synchronized void deinitialize() {	
+		if (instance != null) {	
+			// Delete the temp folder	
+			deleteDownloadFolder(instance.fileDownloadFolder);	
+		}	
+
+		instance = null;	
+	}
+
 	/**
 	 * Check if the file repository is enabled.
-	 * 
+	 *
 	 * @return true if enabled, false otherwise.
 	 */
 	public static boolean isEnabled() {
 		return instance != null;
 	}
-	
+
 	/**
 	 * Set the error handling callback.
-	 * 
+	 *
 	 * @param handler The error handler.
 	 */
 	public static synchronized void setErrorHandler(FileRepositoryErrorHandler handler) {
 		errorHandler = handler;
 	}
 	
+	static synchronized File getTempDirectory() throws FileRepositoryException {
+		ensureInstanceIsEnabled();
+		return instance.fileDownloadFolder;
+	}
+
 	/**
-	 * Report an error to the user.
-	 * The idea is to use this for cases where it's a user error that may be able
-	 * to be corrected through changing the repository settings.
-	 * 
+	 * Report an error to the user. The idea is to use this for cases where it's
+	 * a user error that may be able to be corrected through changing the
+	 * repository settings.
+	 *
 	 * @param errorTitle The title for the error display.
 	 * @param errorStr   The error message.
 	 */
@@ -111,205 +167,326 @@ public class FileRepository {
 			errorHandler.displayErrorToUser(errorTitle, errorStr);
 		}
 	}
-	
+
 	/**
-	 * Delete the folder of downloaded files.
+	 * Download a file's data from the file repository. The resulting stream
+	 * must be closed and it should be read as soon as possible.
+	 *
+	 * @param abstractFile The file to be downloaded.
+	 *
+	 * @return The file contents, as a stream.
+	 *
+	 * @throws org.sleuthkit.datamodel.FileRepositoryException
+	 * @throws java.io.IOException
+	 *
 	 */
-	private static synchronized void deleteDownloadFolder(File dirPath) {
-        if (dirPath.isDirectory() == false || dirPath.exists() == false) {
-            return;
-        }
+	public static synchronized InputStream download(AbstractFile abstractFile) throws FileRepositoryException, IOException {
+		// Preconditions
+		ensureInstanceIsEnabled();
+		ensureNonEmptySHA256(abstractFile);
+		ensureFileLocationIsRemote(abstractFile);
 
-        File[] files = dirPath.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    deleteDownloadFolder(file);
-                } else {
-                    if (file.delete() == false) {
-                        logger.log(Level.WARNING, "Failed to delete file {0}", file.getPath()); //NON-NLS
-                    }
-                }
-            }
-        }
-        if (dirPath.delete() == false) {
-            logger.log(Level.WARNING, "Failed to delete the empty directory at {0}", dirPath.getPath()); //NON-NLS
-        }
+		return instance.sendDownloadRequest(abstractFile.getSha256Hash());
 	}
-	
-	/**
-     * Download a file from the file repository.
-	 * The caller must ensure that this is not called on the same file multiple times concurrently. 
-     *
-     * @param abstractFile The file being downloaded. 
-	 * 
-	 * @return The downloaded file.
-	 * 
-	 * @throws TskCoreException
-     */
-	public static synchronized File downloadFromFileRepository(AbstractFile abstractFile) throws TskCoreException {
 
-		if (instance == null) {
-			String title = BUNDLE.getString("FileRepository.downloadError.title.text");
-			String msg = BUNDLE.getString("FileRepository.notEnabled.msg.text");
-			reportError(title, msg);
-			throw new TskCoreException("File repository is not enabled");
+	/**
+	 * Private function to perform file download.
+	 */
+	private InputStream sendDownloadRequest(String SHA256) throws IOException, FileRepositoryException {
+		final CloseableHttpClient httpClient = HttpClients.createDefault();
+		final String downloadURL = settings.createBaseURL(V1_FILES_TEMPLATE) + SHA256;
+
+		final HttpGet downloadRequest = new HttpGet(downloadURL);
+		final CloseableHttpResponse response = httpClient.execute(downloadRequest);
+		final int statusCode = response.getStatusLine().getStatusCode();
+
+		if (statusCode != HttpStatus.SC_OK) {
+			FileRepositoryException repoEx = null;
+			try {
+				final String title = BUNDLE.getString("FileRepository.error.title.text");
+				final String message = BUNDLE.getString("FileRepository.downloadError.msg.text");
+				reportError(title, message);
+				final String errorMessage = extractErrorMessage(response);
+				repoEx = new FileRepositoryException(String.format("Request "
+						+ "failed with the following response body %s. Please "
+						+ "check the file repository logs for more information.", errorMessage));
+			} finally {
+				try {
+					response.close();
+				} catch (IOException ex) {
+					// Best effort
+					if (repoEx != null) {
+						repoEx.addSuppressed(ex);
+					}
+				}
+
+				try {
+					httpClient.close();
+				} catch (IOException ex) {
+					// Best effort
+					if (repoEx != null) {
+						repoEx.addSuppressed(ex);
+					}
+				}
+			}
+
+			throw repoEx;
 		}
-		
-		if (! abstractFile.getFileLocation().equals(TskData.FileLocation.REPOSITORY)) {
-			throw new TskCoreException("File with object ID " + abstractFile.getId() + " is not stored in the file repository");
+
+		// Client and response will close once the stream has been
+		// consumed and closed by the client.
+		return new HTTPInputStream(httpClient, response);
+	}
+
+	/**
+	 * Uploads a stream of data to the file repository.
+	 *
+	 *
+	 * @param stream Arbitrary data to store in this file repository.
+	 *
+	 * @throws java.io.IOException
+	 * @throws org.sleuthkit.datamodel.FileRepositoryException
+	 */
+	public static synchronized void upload(InputStream stream) throws IOException, FileRepositoryException {
+		// Preconditions
+		ensureInstanceIsEnabled();
+
+		instance.sendUploadRequest(stream);
+	}
+
+	/**
+	 * Private function to perform file upload.
+	 */
+	private void sendUploadRequest(InputStream stream) throws IOException, FileRepositoryException {
+		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+			final String uploadURL = settings.createBaseURL(V1_FILES_TEMPLATE);
+
+			// Flush the stream to a local temp file for transport.
+			final Path temp = Paths.get(fileDownloadFolder.getAbsolutePath(), UUID.randomUUID().toString());
+			Files.copy(stream, temp);
+
+			final HttpEntity fileUpload = MultipartEntityBuilder.create()
+					.addBinaryBody("file", temp.toFile())
+					.build();
+			final HttpUriRequest postRequest = RequestBuilder.post(uploadURL)
+					.setEntity(fileUpload)
+					.build();
+
+			try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
+				checkSuccess(response);
+			} catch (IOException | FileRepositoryException ex) {
+				try {
+					Files.delete(temp);
+				} catch (IOException deleteEx) {
+					ex.addSuppressed(deleteEx);
+				}
+				throw ex;
+			} finally {
+				try {
+					Files.delete(temp);
+				} catch (IOException ex) {
+					// Do nothing, best effort.
+				}
+			}
 		}
-		
+	}
+
+	/**
+	 * Checks if many abstract files are stored within this file repository.
+	 * This API is tolerant of files without SHA-256 values, as opposed to its
+	 * overridden counterpart, which will throw an exception if not present.
+	 *
+	 * @param files Files to test
+	 *
+	 * @return An object encapsulating the response for each file.
+	 *
+	 * @throws java.io.IOException
+	 * @throws org.sleuthkit.datamodel.FileRepositoryException
+	 */
+	public static synchronized BulkExistenceResult exists(List<AbstractFile> files) throws IOException, FileRepositoryException {
+		// Preconditions
+		ensureInstanceIsEnabled();
+		ensureBulkQuerySize(files);
+
+		return instance.sendMultiExistenceQuery(new ExistenceQuery(files));
+	}
+
+	/**
+	 * Private function to perform the bulk existence query.
+	 */
+	private BulkExistenceResult sendMultiExistenceQuery(ExistenceQuery query) throws IOException, FileRepositoryException {
+		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+			final String existsURL = settings.createBaseURL(V1_FILES_TEMPLATE) + "exists";
+			final String jsonString = gson.toJson(query);
+			final StringEntity jsonEntity = new StringEntity(jsonString, StandardCharsets.UTF_8);
+
+			final HttpPut bulkExistsPost = new HttpPut(existsURL);
+			bulkExistsPost.setEntity(jsonEntity);
+			bulkExistsPost.setHeader("Accept", "application/json");
+			bulkExistsPost.setHeader("Content-type", "application/json");
+
+			try (CloseableHttpResponse response = httpClient.execute(bulkExistsPost)) {
+				checkSuccess(response);
+
+				final HttpEntity entity = response.getEntity();
+				final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+				entity.writeTo(byteOutputStream);
+				final String jsonBody = new String(byteOutputStream.toByteArray(), StandardCharsets.UTF_8);
+				return gson.fromJson(jsonBody, BulkExistenceResult.class);
+			}
+		}
+	}
+
+	/**
+	 * Checks if the abstract file is stored within this file repository.
+	 *
+	 * @param file Abstract file to query
+	 *
+	 * @return True/False
+	 *
+	 * @throws IOException
+	 * @throws FileRepositoryException
+	 */
+	public static synchronized boolean exists(AbstractFile file) throws IOException, FileRepositoryException {
+		// Preconditions
+		ensureInstanceIsEnabled();
+		ensureNonEmptySHA256(file);
+
+		if (!file.getFileLocation().equals(TskData.FileLocation.REPOSITORY)) {
+			return false;
+		}
+
+		return instance.sendSingularExistenceQuery(file.getSha256Hash());
+	}
+
+	/**
+	 * Private function to perform the existence query.
+	 */
+	private boolean sendSingularExistenceQuery(String SHA256) throws IOException, FileRepositoryException {
+		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+			final String existsURL = settings.createBaseURL(V1_FILES_TEMPLATE) + SHA256;
+
+			final HttpHead request = new HttpHead(existsURL);
+
+			try (CloseableHttpResponse response = httpClient.execute(request)) {
+				final int statusCode = response.getStatusLine().getStatusCode();
+				switch (statusCode) {
+					case HttpStatus.SC_OK:
+						return true;
+					case HttpStatus.SC_NOT_FOUND:
+						return false;
+					default:
+						throw new FileRepositoryException(String.format("Unexpected "
+								+ "response code. Expected 200 or 404, but instead got %d. "
+								+ "Please check the file repository logs for more information.", statusCode));
+				}
+			}
+		}
+	}
+
+	/**
+	 * Prevents a query if the file is not remote.
+	 */
+	private static void ensureFileLocationIsRemote(AbstractFile abstractFile) throws FileRepositoryException {
+		if (!abstractFile.getFileLocation().equals(TskData.FileLocation.REPOSITORY)) {
+			throw new FileRepositoryException("File with object ID " + abstractFile.getId() + " is not stored in the file repository");
+		}
+	}
+
+	/**
+	 * Prevents a query for a file with no SHA-256.
+	 */
+	private static void ensureNonEmptySHA256(AbstractFile abstractFile) throws FileRepositoryException {
 		if (abstractFile.getSha256Hash() == null || abstractFile.getSha256Hash().isEmpty()) {
-			throw new TskCoreException("File with object ID " + abstractFile.getId() + " has no SHA-256 hash and can not be downloaded");
-		}
-		
-		// Download the file if it's not already there.
-		String targetPath = Paths.get(instance.fileDownloadFolder.getAbsolutePath(), abstractFile.getSha256Hash()).toString();
-		if ( ! new File(targetPath).exists()) {
-			instance.downloadFile(abstractFile, targetPath);
-		}
-		
-		// Check that we got the file.
-		File tempFile = new File(targetPath);
-		if (tempFile.exists()) {
-			return tempFile;
-		} else {
-			String title = BUNDLE.getString("FileRepository.downloadError.title.text");
-			String msg = MessageFormat.format(BUNDLE.getString("FileRepository.downloadError.msg.text"), abstractFile.getId(), abstractFile.getSha256Hash());
-			reportError(title, msg);
-			throw new TskCoreException("Failed to download file with object ID " + abstractFile.getId() 
-					+ " and SHA-256 hash " + abstractFile.getSha256Hash() + " from file repository");
+			throw new FileRepositoryException("File with object ID " + abstractFile.getId() + " has no SHA-256 hash.");
 		}
 	}
-	
+
 	/**
-     * Download the file.
-     *
-     * @param abstractFile The file being downloaded.
-     * @param targetPath   The location to save the file to.
-	 * 
-	 * @throws TskCoreException
-     */
-	private void downloadFile(AbstractFile abstractFile, String targetPath) throws TskCoreException {		
-		
-		String url = "http://" + settings.getAddress() + ":" + settings.getPort() + "/" + FILE_PATH + abstractFile.getSha256Hash();
-		
-		List<String> command = new ArrayList<>();
-		command.add("curl");
-		command.add("-X");
-		command.add("GET");
-		command.add(url);
-		command.add("-H");
-		command.add("accept: */*");
-		command.add("--output");
-		command.add(targetPath);
-		
-		ProcessBuilder processBuilder = new ProcessBuilder(command).inheritIO();
-		try {
-			Process process = processBuilder.start();
-			process.waitFor();
-		} catch (IOException ex) {
-			String title = BUNDLE.getString("FileRepository.downloadError.title.text");
-			String msg = MessageFormat.format(BUNDLE.getString("FileRepository.downloadError.msg.text"), abstractFile.getId(), abstractFile.getSha256Hash());
-			reportError(title, msg);
-			throw new TskCoreException("Error downloading file with SHA-256 hash " + abstractFile.getSha256Hash() + " from file repository", ex);
-		} catch (InterruptedException ex) {
-			throw new TskCoreException("Interrupted while downloading file with SHA-256 hash " + abstractFile.getSha256Hash() + " from file repository", ex);
-		}
-	}
-	
-	/**
-     * Upload a given file to the file repository.
-     *
-     * @param filePath The path on disk to the file being uploaded.
-	 * 
-	 * @throws TskCoreException
-     */
-	public static synchronized void uploadToFileRepository(String filePath) throws TskCoreException {
-	
-		if (instance == null) {
-			throw new TskCoreException("File repository is not enabled");
-		}
-		
-		File file = new File(filePath);
-		if (! file.exists()) {
-			throw new TskCoreException("Error uploading file " + filePath + " to file repository - file does not exist");
-		}
-		
-		// Upload the file.
-		instance.uploadFile(file);
-	}
-	
-	/**
-     * Upload the file.
-     *
-     * @param file The file being uploaded.
-	 * 
-	 * @throws TskCoreException
-     */	
-	private void uploadFile(File file) throws TskCoreException {
-		String url = "http://" + settings.getAddress() + ":" + settings.getPort() + "/" + FILE_PATH;
-		
-		// Example: curl -X POST "http://localhost:8080/api/files" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@Report.xml"
-		List<String> command = new ArrayList<>();
-		command.add("curl");
-		command.add("-X");
-		command.add("POST");
-		command.add(url);
-		command.add("-H");
-		command.add("accept: application/json");
-		command.add("-H");
-		command.add("Content-Type: multipart/form-data");
-		command.add("-F");
-		command.add("file=@" + file.getAbsolutePath());
-		
-		ProcessBuilder processBuilder = new ProcessBuilder(command).inheritIO();
-		try {
-			Process process = processBuilder.start();
-			process.waitFor();
-		} catch (IOException | InterruptedException ex) {
-			throw new TskCoreException("Error saving file at " + file.getAbsolutePath() + " to file repository", ex);
-		}	
-	}	
-		
-	/**
-	 * Utility class to hold the file repository server settings.
+	 * Ensures the instance is enabled, notifying users otherwise.
 	 */
-	static public class FileRepositorySettings {
-		private final String address;
-		private final String port;
-		
-		/**
-		 * Create a FileRepositorySettings instance for the server.
-		 * 
-		 * @param address The IP address/hostname of the server.
-		 * @param port    The port.
-		 */
-		public FileRepositorySettings(String address, String port) {
-			this.address = address;
-			this.port = port;
-		}
-		
-		String getAddress() {
-			return address;
-		}
-		
-		String getPort() {
-			return port;
+	private static void ensureInstanceIsEnabled() throws FileRepositoryException {
+		if (!isEnabled()) {
+			final String title = BUNDLE.getString("FileRepository.error.title.text");
+			final String msg = BUNDLE.getString("FileRepository.notEnabled.msg.text");
+			reportError(title, msg);
+			throw new FileRepositoryException("File repository is not enabled");
 		}
 	}
-	
+
 	/**
-	 * Callback class to use for error reporting. 
+	 * Prevents a request from being made if it exceeds the maximum threshold
+	 * for a bulk query.
 	 */
-	public interface FileRepositoryErrorHandler {
-		/**
-		 * Handles displaying an error message to the user (if appropriate).
-		 * 
-		 * @param title The title for the error display.
-		 * @param error The more detailed error message to display.
-		 */
-		void displayErrorToUser(String title, String error);
+	private static void ensureBulkQuerySize(List<AbstractFile> files) throws FileRepositoryException {
+		if (files.size() > MAX_BULK_QUERY_SIZE) {
+			throw new FileRepositoryException(String.format("Exceeds the allowable "
+					+ "threshold (%d) for a single request.", MAX_BULK_QUERY_SIZE));
+		}
+	}
+
+	/**
+	 * Checks the status code of the response and throws a templated exception
+	 * if it's not the expected 200 code.
+	 */
+	private static void checkSuccess(CloseableHttpResponse response) throws FileRepositoryException, IOException {
+		final int statusCode = response.getStatusLine().getStatusCode();
+
+		if (statusCode != HttpStatus.SC_OK) {
+			final String errorMessage = extractErrorMessage(response);
+			throw new FileRepositoryException(String.format("Request failed with "
+					+ "the following response body %s. Please check the file "
+					+ "repository logs for more information.", errorMessage));
+		}
+	}
+
+	/**
+	 * Extracts the entire response body as a plain string.
+	 */
+	private static String extractErrorMessage(CloseableHttpResponse response) throws IOException {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+				response.getEntity().getContent(), StandardCharsets.UTF_8))) {
+			return reader.lines().collect(Collectors.joining("\n"));
+		}
+	}
+
+	/**
+	 * Query object to be serialized by GSON and sent as a payload to the bulk
+	 * exists endpoint.
+	 */
+	private static class ExistenceQuery {
+
+		private final List<String> files;
+
+		ExistenceQuery(List<AbstractFile> absFiles) {
+			files = new ArrayList<>();
+			for (AbstractFile file : absFiles) {
+				if (file.getSha256Hash() != null && !file.getSha256Hash().isEmpty()) {
+					files.add(file.getSha256Hash());
+				}
+			}
+		}
+	}
+
+	/**
+	 * Streams data over a HTTP connection.
+	 */
+	private static class HTTPInputStream extends FilterInputStream {
+
+		private final CloseableHttpResponse response;
+		private final CloseableHttpClient client;
+
+		HTTPInputStream(CloseableHttpClient client, CloseableHttpResponse response) throws IOException {
+			super(response.getEntity().getContent());
+			this.response = response;
+			this.client = client;
+		}
+
+		@Override
+		public void close() throws IOException {
+			super.close();
+			response.close();
+			client.close();
+		}
 	}
 }

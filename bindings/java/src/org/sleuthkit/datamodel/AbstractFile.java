@@ -20,7 +20,13 @@ package org.sleuthkit.datamodel;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -1073,13 +1079,16 @@ public abstract class AbstractFile extends AbstractContent {
 				throw new TskCoreException("Previously failed to load file with object ID " + getId() + " from file repository.");
 			}
 			
-			// Copy the file from the server
-			try {
-				localFile = FileRepository.downloadFromFileRepository(this);
-			} catch (TskCoreException ex) {
+			try (InputStream fileRepositoryStream = FileRepository.download(this)) {
+				Path localFilePath = Paths.get(FileRepository.getTempDirectory().getAbsolutePath(), this.getSha256Hash());
+				if (!Files.exists(localFilePath)) {
+					Files.copy(fileRepositoryStream, localFilePath);
+				}
+				localFile = localFilePath.toFile();
+			} catch (FileRepositoryException | IOException ex) {
 				// If we've failed to download from the file repository, don't try again for this session.
 				errorLoadingFromFileRepo = true;
-				throw ex;
+				throw new TskCoreException("Failed trying to download file from repository", ex);
 			}
 		}
 	}
