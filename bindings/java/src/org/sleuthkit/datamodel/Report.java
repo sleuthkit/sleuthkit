@@ -303,7 +303,7 @@ public class Report implements Content {
 
 	@Override
 	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
-		return db.getBlackboard().getAnalysisResultsWhere(" obj_id = " + objectId); //NON-NLS
+		return db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + objectId); //NON-NLS
 	}
 	
 	@Override
@@ -313,7 +313,7 @@ public class Report implements Content {
 			throw new TskCoreException(String.format("Artifact type %s is not in analysis result catgeory.", artifactType.getTypeName()));
 		}
 		
-		return db.getBlackboard().getAnalysisResultsWhere(" obj_id = " + objectId
+		return db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + objectId
 														+ " AND artifact_type_id = " + artifactType.getTypeID() ); //NON-NLS
 	}
 	
