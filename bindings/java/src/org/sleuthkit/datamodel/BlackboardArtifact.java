@@ -1295,7 +1295,7 @@ public class BlackboardArtifact implements Content {
 		 * Indicates that the file had a yara pattern match hit.
 		 */
 		TSK_YARA_HIT(66, "TSK_YARA_HIT",	
-				bundle.getString("BlackboardArtifact.tskWebAccountType.text"));		
+				bundle.getString("BlackboardArtifact.tskYaraHit.text"));		
 
         /* To developers: For each new artifact, ensure that:
          * - The enum value has 1-line JavaDoc description
