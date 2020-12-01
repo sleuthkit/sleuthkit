@@ -1295,7 +1295,13 @@ public class BlackboardArtifact implements Content {
 		 * Indicates that the file had a yara pattern match hit.
 		 */
 		TSK_YARA_HIT(66, "TSK_YARA_HIT",	
-				bundle.getString("BlackboardArtifact.tskYaraHit.text"));		
+				bundle.getString("BlackboardArtifact.tskYaraHit.text")),		
+
+		/**
+		 * Stores the outline of an area using GPS coordinates.
+		 */
+		TSK_GPS_AREA(67, "TSK_GPS_AREA",
+				bundle.getString("BlackboardArtifact.tskGPSArea.text"));
 
         /* To developers: For each new artifact, ensure that:
          * - The enum value has 1-line JavaDoc description

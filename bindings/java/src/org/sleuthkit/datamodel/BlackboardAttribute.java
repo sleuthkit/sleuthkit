@@ -1416,14 +1416,19 @@ public class BlackboardAttribute {
 		TSK_LAST_PRINTED_DATETIME(149, "TSK_LAST_PRINTED_DATETIME",
 	        bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
 	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
-		
 		TSK_RULE(150, "TSK_RULE",
 	        bundle.getString("BlackboardAttribute.tskrule.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),		
-		
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),				
 		TSK_ACTIVITY_TYPE(151, "TSK_ACTIVITY_TYPE",
 	        bundle.getString("BlackboardAttribute.tskActivityType.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoAreaPoints to create and
+		 * process TSK_GEO_AREAPOINTS attributes.
+		 */
+		TSK_GEO_AREAPOINTS(152, "TSK_GEO_AREAPOINTS",
+			bundle.getString("BlackboardAttribute.tskgeoareapoints.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),		
 
 		;
 

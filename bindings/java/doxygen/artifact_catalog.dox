@@ -271,6 +271,18 @@ None
 - TSK_PHOTODNA_HASH (The PhotoDNA hash of an image)
 
 ---
+## TSK_GPS_AREA
+An outline of an area.
+
+### REQUIRED ATTRIBUTES
+- TSK_GEO_WAYPOINTS (JSON list of waypoints. Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints class to create/process)
+
+### OPTIONAL ATTRIBUTES
+- TSK_LOCATION (Location of the route, e.g., a state or city)
+- TSK_NAME (Name of the area, e.g., Minute Man Trail)
+- TSK_PROG_NAME (Name of the application that was the source of the GPS route)
+
+---
 ## TSK_GPS_BOOKMARK
 A bookmarked GPS location or saved waypoint.
 
