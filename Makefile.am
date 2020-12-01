@@ -8,6 +8,7 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     win32/BUILDING.txt \
     win32/*/*.vcxproj \
     win32/tsk-win.sln \
+    win32/NugetPackages.props \
     win32/docs/* \
     bindings/java/README.txt \
     bindings/java/*.xml \
