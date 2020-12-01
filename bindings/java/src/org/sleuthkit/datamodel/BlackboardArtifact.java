@@ -1295,7 +1295,12 @@ public class BlackboardArtifact implements Content {
 		 * Indicates that the file had a yara pattern match hit.
 		 */
 		TSK_YARA_HIT(66, "TSK_YARA_HIT",	
-				bundle.getString("BlackboardArtifact.tskWebAccountType.text"));		
+				bundle.getString("BlackboardArtifact.tskWebAccountType.text")),
+		/**
+		 * A match for a domain category (i.e. webmail).
+		 */
+		TSK_DOMAIN_CATEGORY(67, "TSK_DOMAIN_CATEGORY",	
+				bundle.getString("BlackboardArtifact.tskDomainCategoryType.text"));		
 
         /* To developers: For each new artifact, ensure that:
          * - The enum value has 1-line JavaDoc description

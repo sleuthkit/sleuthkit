@@ -191,6 +191,16 @@ Details about a device data source.
 
 
 ---
+## TSK_DOMAIN_CATEGORY
+Details about the category of the domain.
+
+### REQUIRED ATTRIBUTES
+- TSK_NAME The category name
+- TSK_DOMAIN The domain of the category
+
+
+
+---
 ## TSK_EMAIL_MSG
 An email message found in an application file or database.
 
