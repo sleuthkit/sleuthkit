@@ -1426,7 +1426,7 @@ public class BlackboardAttribute {
 	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		
 		TSK_REALM(152, "TSK_REALM",
-			bundle.getString("BlackboardAttribute.tskActivityType.text"),
+			bundle.getString("BlackboardAttribute.tskRealm.text"),
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
 		;
 
