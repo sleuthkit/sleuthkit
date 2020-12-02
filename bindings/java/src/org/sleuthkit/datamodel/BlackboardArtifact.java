@@ -477,6 +477,12 @@ public class BlackboardArtifact implements Content {
 		return sleuthkitCase.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + artifactObjId); //NON-NLS
 	}
 	
+	@Override
+	public Score getFinalScore() throws TskCoreException {
+		return sleuthkitCase.getScoringManager().getFinalScore(artifactObjId);
+		
+	}
+	
 
 	@Override
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
@@ -882,6 +888,8 @@ public class BlackboardArtifact implements Content {
 		}
 
 	}
+
+
 
 	/**
 	 * An artifact type.

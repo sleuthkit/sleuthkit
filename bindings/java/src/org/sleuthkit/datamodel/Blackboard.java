@@ -181,6 +181,9 @@ public final class Blackboard {
 				analysisResult.addAttributes(attributesList, transaction);
 			}
 			
+			// update the final score for the object 
+			caseDb.getScoringManager().updateFinalScore(obj_id, analysisResult.getScore(), transaction);
+			
 			return analysisResult;
 		}  catch (TskCoreException ex) {
 			throw new BlackboardException("Failed to add analysis result.", ex);
@@ -210,6 +213,27 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
+		try (CaseDbConnection connection = caseDb.getConnection()) {	
+			return getAnalysisResults(artifactTypeID, dataSourceObjId, connection );
+		} finally {
+			// do nothing
+		}
+	}
+	
+	/**
+	 * Get all analysis results of a given type, for a given data source.
+	 * Uses the given database connection to execute the query.
+	 *
+	 * @param artifactTypeID  Type of results to get.
+	 * @param dataSourceObjId Data source to look under.
+	 * @param connection	  Database connection to use.
+	 *
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId, CaseDbConnection connection ) throws TskCoreException {
 
 		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeID));
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
@@ -221,9 +245,8 @@ public final class Blackboard {
 				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
 				
 		caseDb.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = caseDb.getConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+		try ( Statement statement = connection.createStatement();
+			  ResultSet resultSet = connection.executeQuery(statement, queryString);) {
 			
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
 			return analysisResults;
@@ -236,7 +259,7 @@ public final class Blackboard {
 	
 	/**
 	 * Get all analysis results of a given data source.
-	 *
+	 * 
 	 * @param dataSourceObjId Data source to look under.
 	 *
 	 * @return list of analysis results.
@@ -245,13 +268,32 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId) throws TskCoreException {
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			return getAnalysisResultsForDataSource(dataSourceObjId, connection);
+		} finally {
+			// do nothing
+		}
+	}
+	
+	/**
+	 * Get all analysis results of a given data source.
+	 * Uses the given database connection to execute the query.
+	 *
+	 * @param dataSourceObjId Data source to look under.
+	 * @param connection Database connection to use. 
+	 *
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, CaseDbConnection connection ) throws TskCoreException {
 
 		final String queryString = ANALYSIS_RESULT_QUERY_STRING
 				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
 				
 		caseDb.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = caseDb.getConnection();
-				Statement statement = connection.createStatement();
+		try (	Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
 			
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
@@ -274,13 +316,32 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<AnalysisResult> getAnalysisResultsWhere(String whereClause) throws TskCoreException {
+		
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			return getAnalysisResultsWhere(whereClause, connection);
+		} finally {
+			// do nothing
+		}
+	}
+	/**
+	 * Get all analysis results matching the given where sub-clause.
+	 * Uses the given database connection to execute the query.
+	 *
+	 * @param whereClause Where sub clause, specifies conditions to match.  
+	 * @param connection Database connection to use. 
+	 * 
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	List<AnalysisResult> getAnalysisResultsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
 
 		final String queryString = ANALYSIS_RESULT_QUERY_STRING
 				+ " AND " + whereClause;
 							
 		caseDb.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = caseDb.getConnection();
-				Statement statement = connection.createStatement();
+		try (	Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
 			
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);

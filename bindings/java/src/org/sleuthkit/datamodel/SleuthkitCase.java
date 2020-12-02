@@ -210,6 +210,7 @@ public class SleuthkitCase {
 	private Blackboard blackboard;
 	private CaseDbAccessManager dbAccessManager;
 	private TaggingManager taggingMgr;
+	private ScoringManager scoringManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -388,6 +389,7 @@ public class SleuthkitCase {
 		timelineMgr = new TimelineManager(this);
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
+		scoringManager = new ScoringManager(this);
 	}
 
 	/**
@@ -500,6 +502,17 @@ public class SleuthkitCase {
 		return taggingMgr;
 	}
 
+	/**
+	 * Gets the scoring manager for this case.
+	 *
+	 * @return The per case ScoringManager object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public ScoringManager getScoringManager() throws TskCoreException {
+		return scoringManager;
+	}
+	
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *

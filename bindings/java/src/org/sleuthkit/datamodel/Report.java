@@ -318,6 +318,11 @@ public class Report implements Content {
 	}
 	
 	@Override
+	public Score getFinalScore() throws TskCoreException {
+		return db.getScoringManager().getFinalScore(objectId);
+	}
+	
+	@Override
 	public Set<String> getHashSetNames() throws TskCoreException {
 		return Collections.<String>emptySet();
 	}

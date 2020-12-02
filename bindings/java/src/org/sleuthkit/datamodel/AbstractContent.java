@@ -425,6 +425,10 @@ public abstract class AbstractContent implements Content {
 		return db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + objId); //NON-NLS
 	}
 	
+	@Override
+	public Score getFinalScore() throws TskCoreException {
+		return db.getScoringManager().getFinalScore(objId);
+	}
 
 	@Override
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {

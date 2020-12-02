@@ -286,6 +286,7 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_final_score( obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "significance INTEGER NOT NULL, "
 				+ "confidence INTEGER NOT NULL, "
+				+ "UNIQUE (obj_id),"
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE"
 				+ ")");	
 		

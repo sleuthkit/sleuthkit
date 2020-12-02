@@ -27,9 +27,11 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.Score.Confidence;
 import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
- * The scoring manager is responsible for maintaining the score of the objects.
+ * The scoring manager is responsible for updating and querying the score of
+ * objects.
  *
  */
 public class ScoringManager {
@@ -57,10 +59,44 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Score getScore(long obj_id) throws TskCoreException {
+	public Score getFinalScore(long obj_id) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getFinalScore(obj_id, connection);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get the final score for the given object. Uses the connection from the
+	 * given transaction.
+	 *
+	 * @param obj_id      Object id.
+	 * @param transaction Transaction that provides the connection to use.
+	 *
+	 * @return Score, if it is found, unknown otherwise.
+	 *
+	 * @throws TskCoreException
+	 */
+	Score getFinalScore(long obj_id, CaseDbTransaction transaction) throws TskCoreException {
+		CaseDbConnection connection = transaction.getConnection();
+		return getFinalScore(obj_id, connection);
+	}
+
+	/**
+	 * Get the final score for the given object.
+	 *
+	 * @param obj_id Object id.
+	 * @param connection Connection to use for the query.
+	 *
+	 * @return Score, if it is found, Score(UNKNOWN,NONE) otherwise.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Score getFinalScore(long obj_id, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT significance, confidence FROM tsk_final_score WHERE obj_id = " + obj_id;
 
-		try (CaseDbConnection connection = db.getConnection()) {
+		try {
 			db.acquireSingleUserCaseReadLock();
 
 			try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -77,8 +113,6 @@ public class ScoringManager {
 		}
 	}
 
-
-	
 	/**
 	 * Inserts pr updates the final score for the given object.
 	 *
@@ -87,7 +121,39 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void setScore(long obj_id, Score score) throws TskCoreException {
+	void setFinalScore(long obj_id, Score score) throws TskCoreException {
+
+		try (CaseDbConnection connection = db.getConnection()) {
+			setFinalScore(obj_id, score, connection);
+		} finally {
+			// do nothing
+		}
+	}
+
+	/**
+	 * Inserts or updates the score for the given object.
+	 *
+	 * @param obj_id Object id of the object.
+	 * @param score  Score to be inserted/updated.
+	 * @param transaction Transaction to use for the update.
+	 *
+	 * @throws TskCoreException
+	 */
+	void setFinalScore(long obj_id, Score score, CaseDbTransaction transaction) throws TskCoreException {
+		CaseDbConnection connection = transaction.getConnection();
+		setFinalScore(obj_id, score, connection);
+	}
+
+	/**
+	 * Inserts or updates the score for the given object.
+	 *
+	 * @param obj_id Object id of the object.
+	 * @param score  Score to be inserted/updated.
+	 * @param connection Connection to use for the update.
+	 *
+	 * @throws TskCoreException
+	 */
+	private void setFinalScore(long obj_id, Score score, CaseDbConnection connection) throws TskCoreException {
 
 		String query = String.format(" INTO tsk_final_score (obj_id, significance , confidence) VALUES (%d, %d, %d)",
 				obj_id, score.getSignificance().getId(), score.getConfidence().getId());
@@ -103,7 +169,7 @@ public class ScoringManager {
 				throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
 		}
 
-		try (CaseDbConnection connection = db.getConnection()) {
+		try {
 			db.acquireSingleUserCaseReadLock();
 
 			try (Statement updateStatement = connection.createStatement()) {
@@ -125,20 +191,47 @@ public class ScoringManager {
 	 *
 	 * @return Final score of the object.
 	 */
-	Score recalculateScore(long obj_id) throws TskCoreException {
+	public Score recalculateFinalScore(long obj_id) throws TskCoreException {
+
+		CaseDbTransaction transaction = db.beginTransaction();
+		try {
+			Score score = recalculateFinalScore(obj_id, transaction);
+
+			transaction.commit();
+			return score;
+		} catch (TskCoreException ex) {
+			try {
+				transaction.rollback();
+			} catch (TskCoreException ex2) {
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
+						+ "Error invoking recalculateScore with obj_id: " + obj_id, ex2);
+			}
+			throw ex;
+		}
+	}
+
+	/**
+	 * Recalculates and update the final score of the specified object, based on
+	 * the analysis results. The update is done as part of the given
+	 * transaction.
+	 *
+	 * @param obj_id      Object id.
+	 * @param transaction Transaction to use to update the score.
+	 *
+	 * @return Final score of the object.
+	 */
+	public Score recalculateFinalScore(long obj_id, CaseDbTransaction transaction) throws TskCoreException {
 
 		// Get the current score 
-		Score currentScore = getScore(obj_id);
+		Score currentScore = getFinalScore(obj_id, transaction);
 
 		// Get all the analysis_results for this object, 
-		List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + obj_id);
-
-		// RAMAN TBD: what if there is no analysis result??
-		if ( analysisResults.isEmpty() ) {
-			LOGGER.log(Level.WARNING, String.format("No analysis results found for obj id = %d", obj_id)  );
+		List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + obj_id, transaction.getConnection());
+		if (analysisResults.isEmpty()) {
+			LOGGER.log(Level.WARNING, String.format("No analysis results found for obj id = %d", obj_id));
 			return new Score(Significance.UNKNOWN, Confidence.NONE);
 		}
-		
+
 		// find the highest score
 		Score newScore = analysisResults.stream()
 				.map(result -> result.getScore())
@@ -146,13 +239,13 @@ public class ScoringManager {
 				.get();
 
 		// If the new score is diff from current score
-		if (currentScore.getSignificance() == Significance.UNKNOWN
-				|| Score.getScoreComparator().compare(newScore, currentScore) > 0) {
+		if ((currentScore.compareTo(new Score(Significance.UNKNOWN, Confidence.NONE)) == 0)
+				|| (Score.getScoreComparator().compare(newScore, currentScore) != 0)) {
 
-			setScore(obj_id, newScore);
+			setFinalScore(obj_id, newScore, transaction);
 
 			// fire an event
-			db.fireTSKEvent(new ScoreChangedEvent(obj_id, newScore));
+			db.fireTSKEvent(new FinalScoreChangedEvent(obj_id, newScore));
 
 			return newScore;
 		} else {
@@ -160,13 +253,78 @@ public class ScoringManager {
 			return currentScore;
 		}
 	}
-	
-	final public class ScoreChangedEvent {
+
+	/**
+	 * Updates the score for the specified object, if the given analysis result
+	 * score is higher than the score the object already has.
+	 *
+	 * @param obj_id      Object id.
+	 * @param resultScore Score for newly added analysis result.
+	 *
+	 * @return Final score for the object.
+	 *
+	 * @throws TskCoreException
+	 */
+	Score updateFinalScore(long obj_id, Score resultScore) throws TskCoreException {
+		CaseDbTransaction transaction = db.beginTransaction();
+		try {
+			Score score = updateFinalScore(obj_id, resultScore, transaction);
+
+			transaction.commit();
+			return score;
+		} catch (TskCoreException ex) {
+			try {
+				transaction.rollback();
+			} catch (TskCoreException ex2) {
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
+						+ "Error invoking updateScore with obj_id: " + obj_id, ex2);
+			}
+			throw ex;
+		}
+	}
+
+	/**
+	 * /**
+	 * Updates the score for the specified object, if the given analysis result
+	 * score is higher than the score the object already has.
+	 *
+	 * @param obj_id      Object id.
+	 * @param resultScore Score for a newly added analysis result.
+	 * @param transaction Transaction to use for the update.
+	 *
+	 * @return Final score for the object.
+	 *
+	 * @throws TskCoreException
+	 */
+	Score updateFinalScore(long obj_id, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
+
+		// Get the current score 
+		Score currentScore = getFinalScore(obj_id, transaction);
+
+		// If the current score is Unknown or the new score is higher than the current score
+		if ((currentScore.compareTo(new Score(Significance.UNKNOWN, Confidence.NONE)) == 0)
+				|| (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
+
+			setFinalScore(obj_id, resultScore, transaction);
+
+			// fire an event
+			db.fireTSKEvent(new FinalScoreChangedEvent(obj_id, resultScore));
+			return resultScore;
+		} else {
+			// return te current score
+			return currentScore;
+		}
+	}
+
+	/**
+	 * Event fired to indicate that the score of an object has changed. 
+	 */
+	final public class FinalScoreChangedEvent {
 
 		private final long obj_id;
 		private final Score score;
 
-		public ScoreChangedEvent(long obj_id, Score score) {
+		public FinalScoreChangedEvent(long obj_id, Score score) {
 			this.obj_id = obj_id;
 			this.score = score;
 		}
