@@ -1423,8 +1423,11 @@ public class BlackboardAttribute {
 		
 		TSK_ACTIVITY_TYPE(151, "TSK_ACTIVITY_TYPE",
 	        bundle.getString("BlackboardAttribute.tskActivityType.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
-
+	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		
+		TSK_REALM(152, "TSK_REALM",
+			bundle.getString("BlackboardAttribute.tskActivityType.text"),
+			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
 		;
 
 		private final int typeID;

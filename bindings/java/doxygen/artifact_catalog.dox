@@ -195,9 +195,9 @@ Details about a device data source.
 Details about the category of the domain.
 
 ### REQUIRED ATTRIBUTES
-- TSK_NAME The category identifier.
-- TSK_DOMAIN The domain of the category.
-- TSK_REALM The full host of the category.
+- TSK_NAME (The category identifier)
+- TSK_DOMAIN (The domain of the category)
+- TSK_REALM (The full host of the category)
 
 
 ---
