@@ -394,14 +394,14 @@ class TskCaseDbBridge {
                         parentDirCache.put(key, objId);
                     }
                 } catch (TskCoreException ex) {
-					if (computedParentObjId > 0) {
-						// Most likely a database error occurred
-						logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
-								+ ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
-					} else {
-						// The parent lookup failed
-						logger.log(Level.SEVERE, "Error adding file to the database", ex);
-					}
+                    if (computedParentObjId > 0) {
+                        // Most likely a database error occurred
+                        logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
+                            + ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
+                    } else {
+                        // The parent lookup failed
+                        logger.log(Level.SEVERE, "Error adding file to the database", ex);
+                    }
                 }
             }
             commitTransaction();
