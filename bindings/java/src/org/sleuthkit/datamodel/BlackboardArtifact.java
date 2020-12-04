@@ -1303,8 +1303,8 @@ public class BlackboardArtifact implements Content {
 		TSK_GPS_AREA(67, "TSK_GPS_AREA",
 				bundle.getString("BlackboardArtifact.tskGPSArea.text")),
 
-		TSK_WEB_CATEGORY(68, "TSK_WEB_CATEGORY",
-				bundle.getString("BlackboardArtifact.tskDomainCategoryType.text")),
+		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
+				bundle.getString("BlackboardArtifact.tskWebCategorization.text")),
 
 		;
 

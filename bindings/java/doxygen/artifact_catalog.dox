@@ -191,8 +191,8 @@ Details about a device data source.
 
 
 ---
-## TSK_WEB_CATEGORY
-A web host corresponding to a particular usage type, e.g. mail.google.com would correspond to Web Email.
+## TSK_WEB_CATEGORIZATION
+The categorization of a web host using a specific usage type, e.g. mail.google.com would correspond to Web Email.
 
 ### REQUIRED ATTRIBUTES
 - TSK_NAME (The usage category identifier, e.g. Web Email)
