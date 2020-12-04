@@ -1416,6 +1416,9 @@ public class BlackboardAttribute {
 		TSK_REALM(153, "TSK_REALM",
 				bundle.getString("BlackboardAttribute.tskRealm.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_HOST(154, "TSK_HOST",
+				bundle.getString("BlackboardAttribute.tskHost.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		;
 
 		private final int typeID;

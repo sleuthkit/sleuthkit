@@ -191,13 +191,13 @@ Details about a device data source.
 
 
 ---
-## TSK_DOMAIN_CATEGORY
-Details about the category of the domain.
+## TSK_WEB_CATEGORY
+A web host corresponding to a particular usage type, e.g. mail.google.com would correspond to Web Email.
 
 ### REQUIRED ATTRIBUTES
-- TSK_NAME (The category identifier)
-- TSK_DOMAIN (The domain of the category)
-- TSK_REALM (The full host of the category)
+- TSK_NAME (The usage category identifier, e.g. Web Email)
+- TSK_DOMAIN (The domain of the host, e.g. google.com)
+- TSK_HOST (The full host, e.g. mail.google.com)
 
 
 ---
