@@ -244,8 +244,8 @@ public class BlackboardAttribute {
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, String valueString) throws IllegalArgumentException {
-		if  (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
-		     && attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) 		{
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
@@ -277,7 +277,7 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardAttribute(Type attributeType, String source, String valueString) throws IllegalArgumentException {
 		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
-			&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
+				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
@@ -808,7 +808,7 @@ public class BlackboardAttribute {
 		/**
 		 * The value type of the attribute is a JSON string.
 		 */
-		JSON(6, "Json" );
+		JSON(6, "Json");
 
 		private final long typeId;
 		private final String typeName;
@@ -1336,100 +1336,89 @@ public class BlackboardAttribute {
 		TSK_TL_EVENT_TYPE(132, "TSK_TL_EVENT_TYPE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskTLEventType.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
-		
 		TSK_DATETIME_DELETED(133, "TSK_DATETIME_DELETED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskdatetimedeleted.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
-		
 		TSK_DATETIME_PASSWORD_RESET(134, "TSK_DATETIME_PASSWORD_RESET",
 				bundle.getString("BlackboardAttribute.tskdatetimepwdreset.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
-				
 		TSK_DATETIME_PASSWORD_FAIL(135, "TSK_DATETIME_PWD_FAIL",
 				bundle.getString("BlackboardAttribute.tskdatetimepwdfail.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
-		
 		TSK_DISPLAY_NAME(136, "TSK_DISPLAY_NAME",
 				bundle.getString("BlackboardAttribute.tskdisplayname.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
 		TSK_PASSWORD_SETTINGS(137, "TSK_PASSWORD_SETTINGS",
 				bundle.getString("BlackboardAttribute.tskpasswordsettings.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
 		TSK_ACCOUNT_SETTINGS(138, "TSK_ACCOUNT_SETTINGS",
 				bundle.getString("BlackboardAttribute.tskaccountsettings.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
-		TSK_PASSWORD_HINT(139, "TSK_PASSWORD_HINT", 
-			bundle.getString("BlackboardAttribute.tskpasswordhint.text"), 
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
-		TSK_GROUPS (140, "TSK_GROUPS", 
+		TSK_PASSWORD_HINT(139, "TSK_PASSWORD_HINT",
+				bundle.getString("BlackboardAttribute.tskpasswordhint.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_GROUPS(140, "TSK_GROUPS",
 				bundle.getString("BlackboardAttribute.tskgroups.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
 		/*
-		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments to create and
-		 * process TSK_ATTACHMENTS attributes.
+		 * Use
+		 * org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments
+		 * to create and process TSK_ATTACHMENTS attributes.
 		 */
-		TSK_ATTACHMENTS (141, "TSK_ATTACHMENTS", 
+		TSK_ATTACHMENTS(141, "TSK_ATTACHMENTS",
 				bundle.getString("BlackboardAttribute.tskattachments.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
-		
 		/*
-		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints to create and
-		 * process TSK_GEO_TRACKPOINTS attributes.
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints
+		 * to create and process TSK_GEO_TRACKPOINTS attributes.
 		 */
 		TSK_GEO_TRACKPOINTS(142, "TSK_GEO_TRACKPOINTS",
-			bundle.getString("BlackboardAttribute.tskgeopath.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
-		
+				bundle.getString("BlackboardAttribute.tskgeopath.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		/*
-		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints to create and
-		 * process TSK_GEO_WAYPOINTS attributes.
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints
+		 * to create and process TSK_GEO_WAYPOINTS attributes.
 		 */
 		TSK_GEO_WAYPOINTS(143, "TSK_GEO_WAYPOINTS",
-			bundle.getString("BlackboardAttribute.tskgeowaypoints.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
-
+				bundle.getString("BlackboardAttribute.tskgeowaypoints.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
 		TSK_DISTANCE_TRAVELED(144, "TSK_DISTANCE_TRAVELED",
-			bundle.getString("BlackboardAttribute.tskdistancetraveled.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
-		
+				bundle.getString("BlackboardAttribute.tskdistancetraveled.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		TSK_DISTANCE_FROM_HOMEPOINT(145, "TSK_DISTANCE_FROM_HOMEPOINT",
-			bundle.getString("BlackboardAttribute.tskdistancefromhome.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
-		
+				bundle.getString("BlackboardAttribute.tskdistancefromhome.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		TSK_HASH_PHOTODNA(146, "TSK_HASH_PHOTODNA",
-			bundle.getString("BlackboardAttribute.tskhashphotodna.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		
+				bundle.getString("BlackboardAttribute.tskhashphotodna.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_BYTES_SENT(147, "TSK_BYTES_SENT",
-	        bundle.getString("BlackboardAttribute.tskbytessent.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
-		
+				bundle.getString("BlackboardAttribute.tskbytessent.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		TSK_BYTES_RECEIVED(148, "TSK_BYTES_RECEIVED",
-	        bundle.getString("BlackboardAttribute.tskbytesreceived.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
-		
+				bundle.getString("BlackboardAttribute.tskbytesreceived.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		TSK_LAST_PRINTED_DATETIME(149, "TSK_LAST_PRINTED_DATETIME",
-	        bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
+				bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		TSK_RULE(150, "TSK_RULE",
-	        bundle.getString("BlackboardAttribute.tskrule.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),				
+				bundle.getString("BlackboardAttribute.tskrule.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_ACTIVITY_TYPE(151, "TSK_ACTIVITY_TYPE",
-	        bundle.getString("BlackboardAttribute.tskActivityType.text"),
-	        TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+				bundle.getString("BlackboardAttribute.tskActivityType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		/*
-		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoAreaPoints to create and
-		 * process TSK_GEO_AREAPOINTS attributes.
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoAreaPoints
+		 * to create and process TSK_GEO_AREAPOINTS attributes.
 		 */
 		TSK_GEO_AREAPOINTS(152, "TSK_GEO_AREAPOINTS",
-			bundle.getString("BlackboardAttribute.tskgeoareapoints.text"),
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),		
-
+				bundle.getString("BlackboardAttribute.tskgeoareapoints.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON),
+		TSK_REALM(153, "TSK_REALM",
+				bundle.getString("BlackboardAttribute.tskRealm.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_HOST(154, "TSK_HOST",
+				bundle.getString("BlackboardAttribute.tskHost.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		;
 
 		private final int typeID;

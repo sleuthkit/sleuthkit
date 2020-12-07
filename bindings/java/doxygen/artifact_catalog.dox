@@ -191,6 +191,16 @@ Details about a device data source.
 
 
 ---
+## TSK_WEB_CATEGORIZATION
+The categorization of a web host using a specific usage type, e.g. mail.google.com would correspond to Web Email.
+
+### REQUIRED ATTRIBUTES
+- TSK_NAME (The usage category identifier, e.g. Web Email)
+- TSK_DOMAIN (The domain of the host, e.g. google.com)
+- TSK_HOST (The full host, e.g. mail.google.com)
+
+
+---
 ## TSK_EMAIL_MSG
 An email message found in an application file or database.
 
