@@ -65,12 +65,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
+import org.sleuthkit.datamodel.ScoringManager.ScoreChange;
+import org.sleuthkit.datamodel.ScoringManager.AggregateScoreChangedEvent;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -12212,6 +12215,11 @@ public class SleuthkitCase {
 		private final CaseDbConnection connection;
 		private SleuthkitCase sleuthkitCase;
 
+		// A collection of object score changes that ocuured as part of this transaction.
+		// When the transaction is committed, events are fired to notify any listeners.
+		// Score changes are stored as a map keyed by objId to prevent duplicates.
+		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>(); 
+		
 		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
 			this.connection = connection;
 			this.sleuthkitCase = sleuthkitCase;
@@ -12234,6 +12242,16 @@ public class SleuthkitCase {
 			return this.connection;
 		}
 
+		
+		/**
+		 * Saves a score change done as part of the transaction.
+		 * 
+		 * @param scoreChange Score change.
+		 */
+		void registerScoreChange(ScoreChange scoreChange) {
+			scoreChangeMap.put(scoreChange.getObjId(), scoreChange);
+		}
+		
 		/**
 		 * Commits the transaction on the case database that was begun when this
 		 * object was constructed.
@@ -12243,6 +12261,18 @@ public class SleuthkitCase {
 		public void commit() throws TskCoreException {
 			try {
 				this.connection.commitTransaction();
+
+				if (!scoreChangeMap.isEmpty()) {
+					// Group the score changes by data source id
+					Map<Long, List<ScoreChange>> changesByDataSource = scoreChangeMap.values().stream()
+							.collect(Collectors.groupingBy(ScoreChange::getDataSourceObjectId));
+
+					// Fire an event for each data source with a list of score changes.
+					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
+						sleuthkitCase.fireTSKEvent(new AggregateScoreChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
+					}
+				}
+
 			} catch (SQLException ex) {
 				throw new TskCoreException("Failed to commit transaction on case database", ex);
 			} finally {

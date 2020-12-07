@@ -319,7 +319,7 @@ public class Report implements Content {
 	
 	@Override
 	public Score getFinalScore() throws TskCoreException {
-		return db.getScoringManager().getFinalScore(objectId);
+		return db.getScoringManager().getAggregateScore(objectId);
 	}
 	
 	@Override

@@ -152,29 +152,29 @@ public final class Blackboard {
 	/**
 	 * Adds new analysis result artifact.
 	 *
-	 * @param artifactType      Type of analysis result artifact to create.
-	 * @param obj_id            Object id of parent.
-	 * @param datasource_obj_id Data source object id.
-	 * @param score	            Score associated with this analysis result.
-	 * @param conclusion        Conclusion of the analysis, may be null or an
-	 *                          empty string.
-	 * @param configuration     Configuration association with this analysis,
-	 *                          may be null or an empty string.
-	 * @param justification     Justification, may be null or an empty string.
-	 * @param attributesList    Attributes to be attached to this analysis
-	 *                          result artifact.
-	 * @param transaction       DB transaction to use.
+	 * @param artifactType    Type of analysis result artifact to create.
+	 * @param objId           Object id of parent.
+	 * @param dataSourceObjId Data source object id.
+	 * @param score	          Score associated with this analysis result.
+	 * @param conclusion      Conclusion of the analysis, may be null or an
+	 *                        empty string.
+	 * @param configuration   Configuration association with this analysis, may
+	 *                        be null or an empty string.
+	 * @param justification   Justification, may be null or an empty string.
+	 * @param attributesList  Attributes to be attached to this analysis result
+	 *                        artifact.
+	 * @param transaction     DB transaction to use.
 	 *
 	 * @return Analysis result created.
 	 *
 	 * @throws BlackboardException exception thrown if a critical error occurs
 	 *                             within TSK core
 	 */
-	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, long obj_id, long datasource_obj_id, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
+	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
 		
 		try {
 			// add analysis result
-			AnalysisResult analysisResult =  caseDb.newAnalysisResult(artifactType, obj_id, datasource_obj_id, score, conclusion, configuration, justification, transaction.getConnection());
+			AnalysisResult analysisResult =  caseDb.newAnalysisResult(artifactType, objId, dataSourceObjId, score, conclusion, configuration, justification, transaction.getConnection());
 			
 			// add the given attributes
 			if (attributesList != null && !attributesList.isEmpty()) {
@@ -182,7 +182,7 @@ public final class Blackboard {
 			}
 			
 			// update the final score for the object 
-			caseDb.getScoringManager().updateFinalScore(obj_id, analysisResult.getScore(), transaction);
+			caseDb.getScoringManager().updateFinalScore(objId, dataSourceObjId, analysisResult.getScore(), transaction);
 			
 			return analysisResult;
 		}  catch (TskCoreException ex) {
@@ -213,41 +213,21 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
-		try (CaseDbConnection connection = caseDb.getConnection()) {	
-			return getAnalysisResults(artifactTypeID, dataSourceObjId, connection );
-		} finally {
-			// do nothing
-		}
-	}
-	
-	/**
-	 * Get all analysis results of a given type, for a given data source.
-	 * Uses the given database connection to execute the query.
-	 *
-	 * @param artifactTypeID  Type of results to get.
-	 * @param dataSourceObjId Data source to look under.
-	 * @param connection	  Database connection to use.
-	 *
-	 * @return list of analysis results.
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
-	 */
-	List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId, CaseDbConnection connection ) throws TskCoreException {
-
+		
 		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeID));
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeID));
 		}
-		
+
 		final String queryString = ANALYSIS_RESULT_QUERY_STRING
 				+ " AND types.artifact_type_id = " + artifactTypeID
 				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
-				
+
 		caseDb.acquireSingleUserCaseReadLock();
-		try ( Statement statement = connection.createStatement();
-			  ResultSet resultSet = connection.executeQuery(statement, queryString);) {
-			
+		try (CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
 			return analysisResults;
 		} catch (SQLException ex) {
@@ -268,34 +248,15 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId) throws TskCoreException {
-		try (CaseDbConnection connection = caseDb.getConnection()) {
-			return getAnalysisResultsForDataSource(dataSourceObjId, connection);
-		} finally {
-			// do nothing
-		}
-	}
-	
-	/**
-	 * Get all analysis results of a given data source.
-	 * Uses the given database connection to execute the query.
-	 *
-	 * @param dataSourceObjId Data source to look under.
-	 * @param connection Database connection to use. 
-	 *
-	 * @return list of analysis results.
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
-	 */
-	List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, CaseDbConnection connection ) throws TskCoreException {
-
+		
 		final String queryString = ANALYSIS_RESULT_QUERY_STRING
 				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
-				
+
 		caseDb.acquireSingleUserCaseReadLock();
-		try (	Statement statement = connection.createStatement();
+		try (	CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
-			
+
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
 			return analysisResults;
 		} catch (SQLException ex) {
@@ -305,6 +266,7 @@ public final class Blackboard {
 		}
 	}
 	
+
 	/**
 	 * Get all analysis results matching the given where sub-clause.
 	 * 
@@ -319,8 +281,6 @@ public final class Blackboard {
 		
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			return getAnalysisResultsWhere(whereClause, connection);
-		} finally {
-			// do nothing
 		}
 	}
 	/**

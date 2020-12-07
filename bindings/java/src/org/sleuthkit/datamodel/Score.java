@@ -122,6 +122,8 @@ public class Score implements Comparable<Score> {
 		}
 	}
 
+	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Confidence.NONE);
+	
 	// Score is a combination of significance and confidence.
 	private final Significance significance;
 	private final Confidence confidence;

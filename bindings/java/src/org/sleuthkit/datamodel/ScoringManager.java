@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -51,50 +52,50 @@ public class ScoringManager {
 	}
 
 	/**
-	 * Get the final score for the given object.
+	 * Get the aggregate score for the given object.
 	 *
-	 * @param obj_id Object id.
+	 * @param objId Object id.
 	 *
 	 * @return Score, if it is found, unknown otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
-	public Score getFinalScore(long obj_id) throws TskCoreException {
+	public Score getAggregateScore(long objId) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getFinalScore(obj_id, connection);
+			return getAggregateScore(objId, connection);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
 	/**
-	 * Get the final score for the given object. Uses the connection from the
+	 * Get the aggregate score for the given object. Uses the connection from the
 	 * given transaction.
 	 *
-	 * @param obj_id      Object id.
+	 * @param objId      Object id.
 	 * @param transaction Transaction that provides the connection to use.
 	 *
 	 * @return Score, if it is found, unknown otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
-	Score getFinalScore(long obj_id, CaseDbTransaction transaction) throws TskCoreException {
+	private Score getAggregateScore(long objId, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
-		return getFinalScore(obj_id, connection);
+		return getAggregateScore(objId, connection);
 	}
 
 	/**
-	 * Get the final score for the given object.
+	 * Get the aggregate score for the given object.
 	 *
-	 * @param obj_id Object id.
+	 * @param objId Object id.
 	 * @param connection Connection to use for the query.
 	 *
 	 * @return Score, if it is found, Score(UNKNOWN,NONE) otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Score getFinalScore(long obj_id, CaseDbConnection connection) throws TskCoreException {
-		String queryString = "SELECT significance, confidence FROM tsk_final_score WHERE obj_id = " + obj_id;
+	private Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
+		String queryString = "SELECT significance, confidence FROM tsk_aggregate_score WHERE obj_id = " + objId;
 
 		try {
 			db.acquireSingleUserCaseReadLock();
@@ -114,49 +115,32 @@ public class ScoringManager {
 	}
 
 	/**
-	 * Inserts pr updates the final score for the given object.
-	 *
-	 * @param obj_id Object id of the object.
-	 * @param score  Final score to be inserted/updated.
-	 *
-	 * @throws TskCoreException
-	 */
-	void setFinalScore(long obj_id, Score score) throws TskCoreException {
-
-		try (CaseDbConnection connection = db.getConnection()) {
-			setFinalScore(obj_id, score, connection);
-		} finally {
-			// do nothing
-		}
-	}
-
-	/**
 	 * Inserts or updates the score for the given object.
 	 *
-	 * @param obj_id Object id of the object.
+	 * @param objId Object id of the object.
 	 * @param score  Score to be inserted/updated.
 	 * @param transaction Transaction to use for the update.
 	 *
 	 * @throws TskCoreException
 	 */
-	void setFinalScore(long obj_id, Score score, CaseDbTransaction transaction) throws TskCoreException {
+	private void setAggregateScore(long objId, Score score, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
-		setFinalScore(obj_id, score, connection);
+		setAggregateScore(objId, score, connection);
 	}
 
 	/**
 	 * Inserts or updates the score for the given object.
 	 *
-	 * @param obj_id Object id of the object.
+	 * @param objId Object id of the object.
 	 * @param score  Score to be inserted/updated.
 	 * @param connection Connection to use for the update.
 	 *
 	 * @throws TskCoreException
 	 */
-	private void setFinalScore(long obj_id, Score score, CaseDbConnection connection) throws TskCoreException {
+	private void setAggregateScore(long objId, Score score, CaseDbConnection connection) throws TskCoreException {
 
-		String query = String.format(" INTO tsk_final_score (obj_id, significance , confidence) VALUES (%d, %d, %d)",
-				obj_id, score.getSignificance().getId(), score.getConfidence().getId());
+		String query = String.format(" INTO tsk_aggregate_score (obj_id, significance , confidence) VALUES (%d, %d, %d)",
+				objId, score.getSignificance().getId(), score.getConfidence().getId());
 
 		switch (db.getDatabaseType()) {
 			case POSTGRESQL:
@@ -187,97 +171,50 @@ public class ScoringManager {
 	/**
 	 * Recalculate and update the final score of the specified object.
 	 *
-	 * @param obj_id Object id.
+	 * @param objId Object id.
 	 *
 	 * @return Final score of the object.
 	 */
-	public Score recalculateFinalScore(long obj_id) throws TskCoreException {
+	public Score recalculateAggregateScore(long objId) throws TskCoreException {
 
 		CaseDbTransaction transaction = db.beginTransaction();
 		try {
-			Score score = recalculateFinalScore(obj_id, transaction);
+			// Get the current score 
+			Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
 
-			transaction.commit();
-			return score;
-		} catch (TskCoreException ex) {
-			try {
-				transaction.rollback();
-			} catch (TskCoreException ex2) {
-				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
-						+ "Error invoking recalculateScore with obj_id: " + obj_id, ex2);
+			// Get all the analysis_results for this object, 
+			List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + objId, transaction.getConnection());
+			if (analysisResults.isEmpty()) {
+				LOGGER.log(Level.WARNING, String.format("No analysis results found for obj id = %d", objId));
+				return new Score(Significance.UNKNOWN, Confidence.NONE);
 			}
-			throw ex;
-		}
-	}
 
-	/**
-	 * Recalculates and update the final score of the specified object, based on
-	 * the analysis results. The update is done as part of the given
-	 * transaction.
-	 *
-	 * @param obj_id      Object id.
-	 * @param transaction Transaction to use to update the score.
-	 *
-	 * @return Final score of the object.
-	 */
-	public Score recalculateFinalScore(long obj_id, CaseDbTransaction transaction) throws TskCoreException {
+			// find the highest score
+			Score newScore = analysisResults.stream()
+					.map(result -> result.getScore())
+					.max(Score.getScoreComparator())
+					.get();
 
-		// Get the current score 
-		Score currentScore = getFinalScore(obj_id, transaction);
+			// If the new score is diff from current score
+			if  (Score.getScoreComparator().compare(newScore, currentScore) != 0) {
+				ScoringManager.this.setAggregateScore(objId, newScore, transaction);
 
-		// Get all the analysis_results for this object, 
-		List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + obj_id, transaction.getConnection());
-		if (analysisResults.isEmpty()) {
-			LOGGER.log(Level.WARNING, String.format("No analysis results found for obj id = %d", obj_id));
-			return new Score(Significance.UNKNOWN, Confidence.NONE);
-		}
+				// register score change in the transaction.
+				long dataSourceObjectId = analysisResults.get(0).getDataSourceObjectID();
+				transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, newScore));
 
-		// find the highest score
-		Score newScore = analysisResults.stream()
-				.map(result -> result.getScore())
-				.max(Score.getScoreComparator())
-				.get();
+				return newScore;
+			} else {
+				// return the current score
+				return currentScore;
+			}
 
-		// If the new score is diff from current score
-		if ((currentScore.compareTo(new Score(Significance.UNKNOWN, Confidence.NONE)) == 0)
-				|| (Score.getScoreComparator().compare(newScore, currentScore) != 0)) {
-
-			setFinalScore(obj_id, newScore, transaction);
-
-			// fire an event
-			db.fireTSKEvent(new FinalScoreChangedEvent(obj_id, newScore));
-
-			return newScore;
-		} else {
-			// return te current score
-			return currentScore;
-		}
-	}
-
-	/**
-	 * Updates the score for the specified object, if the given analysis result
-	 * score is higher than the score the object already has.
-	 *
-	 * @param obj_id      Object id.
-	 * @param resultScore Score for newly added analysis result.
-	 *
-	 * @return Final score for the object.
-	 *
-	 * @throws TskCoreException
-	 */
-	Score updateFinalScore(long obj_id, Score resultScore) throws TskCoreException {
-		CaseDbTransaction transaction = db.beginTransaction();
-		try {
-			Score score = updateFinalScore(obj_id, resultScore, transaction);
-
-			transaction.commit();
-			return score;
 		} catch (TskCoreException ex) {
 			try {
 				transaction.rollback();
 			} catch (TskCoreException ex2) {
 				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
-						+ "Error invoking updateScore with obj_id: " + obj_id, ex2);
+						+ "Error invoking recalculateScore with objId: " + objId, ex2);
 			}
 			throw ex;
 		}
@@ -288,7 +225,8 @@ public class ScoringManager {
 	 * Updates the score for the specified object, if the given analysis result
 	 * score is higher than the score the object already has.
 	 *
-	 * @param obj_id      Object id.
+	 * @param objId      Object id.
+	 * @param dataSourceObjectId Object id of the data source.
 	 * @param resultScore Score for a newly added analysis result.
 	 * @param transaction Transaction to use for the update.
 	 *
@@ -296,45 +234,81 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Score updateFinalScore(long obj_id, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
+	Score updateFinalScore(long objId, long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
 
 		// Get the current score 
-		Score currentScore = getFinalScore(obj_id, transaction);
+		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
 
-		// If the current score is Unknown or the new score is higher than the current score
-		if ((currentScore.compareTo(new Score(Significance.UNKNOWN, Confidence.NONE)) == 0)
-				|| (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
-
-			setFinalScore(obj_id, resultScore, transaction);
-
-			// fire an event
-			db.fireTSKEvent(new FinalScoreChangedEvent(obj_id, resultScore));
+		// If current score is Unknown And newscore is not Unknown - allow None (good) to be recorded
+		// or if the new score is higher than the current score
+		if  ( (currentScore.compareTo(Score.SCORE_UNKNOWN) == 0 && resultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
+			  || (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
+			ScoringManager.this.setAggregateScore(objId, resultScore, transaction);
+			
+			// register score change in the transaction.
+			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, resultScore));
 			return resultScore;
 		} else {
-			// return te current score
+			// return the current score
 			return currentScore;
 		}
 	}
 
 	/**
-	 * Event fired to indicate that the score of an object has changed. 
+	 * This class encapsulates a score change.
 	 */
-	final public class FinalScoreChangedEvent {
+	final public static class ScoreChange {
 
-		private final long obj_id;
-		private final Score score;
+		
+		private final long objId;
+		private final long dataSourceObjectId;
+		private final Score oldScore ;
+		private final Score newScore;
 
-		public FinalScoreChangedEvent(long obj_id, Score score) {
-			this.obj_id = obj_id;
-			this.score = score;
+		public ScoreChange(long objId,long dataSourceObjectId, Score oldScore, Score newScore) {
+			this.objId = objId;
+			this.dataSourceObjectId = dataSourceObjectId;
+			this.oldScore = oldScore;
+			this.newScore = newScore;
+		}
+		
+		public long getDataSourceObjectId() {
+			return dataSourceObjectId;
 		}
 
 		public long getObjId() {
-			return obj_id;
+			return objId;
 		}
 
-		public Score getScore() {
-			return score;
+		public Score getOldScore() {
+			return oldScore;
 		}
+
+		public Score getNewScore() {
+			return newScore;
+		}
+	}
+	
+	/**
+	 * Event to indicate that aggregate score of objects has changed. 
+	 */
+	final public static class AggregateScoreChangedEvent {
+
+		public AggregateScoreChangedEvent(long dataSourceId, ImmutableSet<ScoreChange> scoreChanges) {
+			this.dataSourceId = dataSourceId;
+			this.scoreChanges = scoreChanges;
+		}
+
+		private final long dataSourceId;
+
+		public long getDataSourceId() {
+			return dataSourceId;
+		}
+
+		public ImmutableSet<ScoreChange> getScoreChanges() {
+			return scoreChanges;
+		}
+		private final ImmutableSet<ScoreChange> scoreChanges;
+		
 	}
 }
