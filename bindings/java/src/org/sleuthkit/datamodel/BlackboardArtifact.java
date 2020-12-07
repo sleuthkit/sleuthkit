@@ -478,7 +478,7 @@ public class BlackboardArtifact implements Content {
 	}
 	
 	@Override
-	public Score getFinalScore() throws TskCoreException {
+	public Score getAggregateScore() throws TskCoreException {
 		return sleuthkitCase.getScoringManager().getAggregateScore(artifactObjId);
 		
 	}

@@ -201,7 +201,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * 
 	 * @throws TskCoreException if critical error occurred within tsk core.
 	 */
-	public Score getFinalScore() throws TskCoreException;
+	public Score getAggregateScore() throws TskCoreException;
 	
 	/**
 	 * Get all artifacts associated with this content that have the given type
