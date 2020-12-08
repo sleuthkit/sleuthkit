@@ -174,7 +174,7 @@ public class ScoringManager {
 	 *
 	 * @return Final score of the object.
 	 */
-	public Score recalculateAggregateScore(long objId) throws TskCoreException {
+	Score recalculateAggregateScore(long objId) throws TskCoreException {
 
 		CaseDbTransaction transaction = db.beginTransaction();
 		try {
