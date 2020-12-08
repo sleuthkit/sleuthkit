@@ -12267,7 +12267,7 @@ public class SleuthkitCase {
 
 					// Fire an event for each data source with a list of score changes.
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
-						sleuthkitCase.fireTSKEvent(new AggregateScoreChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
+						sleuthkitCase.fireTSKEvent(new AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
 				}
 

@@ -20,7 +20,7 @@ package org.sleuthkit.datamodel;
 
 /**
  *
- * Defines an interface implemented by events thrown by Sleuthkit.
+ * Defines an interface implemented by events published by Sleuthkit.
  */
 public interface TskEvent {
 

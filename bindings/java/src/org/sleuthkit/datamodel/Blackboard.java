@@ -158,7 +158,7 @@ public final class Blackboard {
 	 * @param score	          Score associated with this analysis result.
 	 * @param conclusion      Conclusion of the analysis, may be null or an
 	 *                        empty string.
-	 * @param configuration   Configuration association with this analysis, may
+	 * @param configuration   Configuration associated with this analysis, may
 	 *                        be null or an empty string.
 	 * @param justification   Justification, may be null or an empty string.
 	 * @param attributesList  Attributes to be attached to this analysis result
