@@ -72,8 +72,6 @@ import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
-import org.sleuthkit.datamodel.ScoringManager.ScoreChange;
-import org.sleuthkit.datamodel.ScoringManager.AggregateScoreChangedEvent;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;

@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -254,61 +253,7 @@ public class ScoringManager {
 		}
 	}
 
-	/**
-	 * This class encapsulates a score change.
-	 */
-	final public static class ScoreChange {
-
-		
-		private final long objId;
-		private final long dataSourceObjectId;
-		private final Score oldScore ;
-		private final Score newScore;
-
-		public ScoreChange(long objId,long dataSourceObjectId, Score oldScore, Score newScore) {
-			this.objId = objId;
-			this.dataSourceObjectId = dataSourceObjectId;
-			this.oldScore = oldScore;
-			this.newScore = newScore;
-		}
-		
-		public long getDataSourceObjectId() {
-			return dataSourceObjectId;
-		}
-
-		public long getObjId() {
-			return objId;
-		}
-
-		public Score getOldScore() {
-			return oldScore;
-		}
-
-		public Score getNewScore() {
-			return newScore;
-		}
-	}
 	
-	/**
-	 * Event to indicate that aggregate score of objects has changed. 
-	 */
-	final public static class AggregateScoreChangedEvent {
-
-		public AggregateScoreChangedEvent(long dataSourceId, ImmutableSet<ScoreChange> scoreChanges) {
-			this.dataSourceId = dataSourceId;
-			this.scoreChanges = scoreChanges;
-		}
-
-		private final long dataSourceId;
-
-		public long getDataSourceId() {
-			return dataSourceId;
-		}
-
-		public ImmutableSet<ScoreChange> getScoreChanges() {
-			return scoreChanges;
-		}
-		private final ImmutableSet<ScoreChange> scoreChanges;
-		
-	}
+	
+	
 }
