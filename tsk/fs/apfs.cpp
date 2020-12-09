@@ -809,9 +809,17 @@ const std::vector<APFSSpacemanCIB::bm_entry>& APFSSpaceman::bm_entries() const {
   return _bm_entries;
 }
 
-const std::vector<APFSSpaceman::range> APFSSpaceman::unallocated_ranges()
+const std::vector<APFSSpaceman::range>& APFSSpaceman::unallocated_ranges()
     const {
-  std::vector<range> v{};
+
+#ifdef TSK_MULTITHREAD_LIB
+  std::lock_guard<std::mutex> lock{_unallocated_ranges_init_lock};
+#endif
+
+  if (!_unallocated_ranges.empty())
+    return _unallocated_ranges;
+
+  auto& v = _unallocated_ranges;
 
   for (const auto& entry : bm_entries()) {
     if (entry.free_blocks == 0) {

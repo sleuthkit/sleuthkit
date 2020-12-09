@@ -1429,9 +1429,6 @@ uint8_t tsk_apfs_istat(TSK_FS_FILE* fs_file, apfs_istat_info* info) try {
  */
 TSK_FS_BLOCK_FLAG_ENUM APFSFSCompat::block_getflags(TSK_FS_INFO* fs, TSK_DADDR_T addr) {
 
-    TSK_FS_FILE *fs_file;
-    int result;
-
     if (fs->img_info->itype != TSK_IMG_TYPE_POOL) {
         // No way to return an error
         return TSK_FS_BLOCK_FLAG_UNALLOC;
@@ -1439,13 +1436,16 @@ TSK_FS_BLOCK_FLAG_ENUM APFSFSCompat::block_getflags(TSK_FS_INFO* fs, TSK_DADDR_T
 
     IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)fs->img_info;
     const APFSPoolCompat* pool = static_cast<APFSPoolCompat*>(pool_img->pool_info->impl);
+    const auto& unallocated_ranges = pool->nx()->unallocated_ranges();
 
-    // Check if the given addr is contained in an unallocated range
-    for (const TSKPool::range &range : pool->nx()->unallocated_ranges()) {
-        if (range.start_block < addr
-            && (range.start_block + range.num_blocks > addr)) {
-            return TSK_FS_BLOCK_FLAG_UNALLOC;
-        }
+    auto it = std::lower_bound(
+      unallocated_ranges.cbegin(), unallocated_ranges.cend(), addr, 
+      [](const TSKPool::range& range, TSK_DADDR_T addr) {
+        return range.start_block + range.num_blocks < addr;
+      });
+
+    if (it != unallocated_ranges.end() && it->start_block < addr && it->start_block + it->num_blocks > addr) {
+      return TSK_FS_BLOCK_FLAG_UNALLOC;
     }
     return TSK_FS_BLOCK_FLAG_ALLOC;
 }
@@ -1499,13 +1499,14 @@ uint8_t APFSFSCompat::block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_
 
     for (addr = start; addr <= end; addr++) {
         int retval;
+        TSK_FS_BLOCK* block;
 
         /* If we're getting both alloc and unalloc, no need to load and
          * check the flags here */
         if (((flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) ||
             ((flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
 
-            int myflags = fs->block_getflags(fs, addr);
+            TSK_FS_BLOCK_FLAG_ENUM myflags = fs->block_getflags(fs, addr);
 
             // Test if we should call the callback with this one
             if ((myflags & TSK_FS_BLOCK_FLAG_ALLOC)
@@ -1514,10 +1515,15 @@ uint8_t APFSFSCompat::block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_
             else if ((myflags & TSK_FS_BLOCK_FLAG_UNALLOC)
                 && (!(flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
                 continue;
+
+            block = tsk_fs_block_get_flag(fs, fs_block, addr, myflags);
+        }
+        else {
+          block = tsk_fs_block_get(fs, fs_block, addr);
         }
 
         /* Get the block */
-        if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
+        if (block == NULL) {
             tsk_error_set_errstr2("APFSFSCompat::block_walk: block %" PRIuDADDR,
                 addr);
             tsk_fs_block_free(fs_block);

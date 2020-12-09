@@ -714,9 +714,11 @@ class APFSSpacemanCAB : public APFSObject {
 
 class APFSSpaceman : public APFSObject {
   mutable std::vector<APFSSpacemanCIB::bm_entry> _bm_entries{};
+  mutable std::vector<APFSPool::range> _unallocated_ranges{};
 
 #ifdef TSK_MULTITHREAD_LIB
   mutable std::mutex _bm_entries_init_lock;
+  mutable std::mutex _unallocated_ranges_init_lock;
 #endif
 
  protected:
@@ -741,7 +743,7 @@ class APFSSpaceman : public APFSObject {
     return sm()->devs[APFS_SD_MAIN].free_count;
   }
 
-  const std::vector<range> unallocated_ranges() const;
+  const std::vector<range>& unallocated_ranges() const;
 };
 
 class APFSBitmapBlock : public APFSBlock {
@@ -880,7 +882,7 @@ class APFSSuperblock : public APFSObject {
 
   const std::vector<apfs_block_num> volume_blocks() const;
   const std::vector<apfs_block_num> sm_bitmap_blocks() const;
-  inline const std::vector<APFSSpaceman::range> unallocated_ranges() const {
+  inline const std::vector<APFSSpaceman::range>& unallocated_ranges() const {
     return spaceman().unallocated_ranges();
   }
 

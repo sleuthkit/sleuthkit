@@ -16,6 +16,18 @@
 
 #include <stdexcept>
 
+namespace {
+  auto nx_create(const APFSPool& pool, apfs_block_num nx_block_num, bool validate = false) {
+    auto nxsb = std::make_unique<APFSSuperblock>(pool, nx_block_num);
+
+    if (validate && nxsb->validate_checksum() == false) {
+      throw std::runtime_error("NXSB object checksum failed");
+    }
+
+    return nxsb;
+  }
+}
+
 APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
     : TSKPool(std::forward<std::vector<img_t>>(imgs)),
       _nx_block_num{nx_block_num} {
@@ -32,7 +44,7 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
 
   std::tie(_img, _offset) = _members[0];
 
-  auto nxsb = nx(true);
+  auto nxsb = nx_create(*this, _nx_block_num, true);
 
   // Update the base members
   _uuid = nxsb->uuid();
@@ -61,11 +73,11 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
         _nx_block_num = highest->nx_block_num;
 
         try {
-          nxsb = nx(true);
+          nxsb = nx_create(*this, _nx_block_num, true);
         } catch (const std::runtime_error&) {
           // Fallback to last known good block if the latest block is not valid
           _nx_block_num = APFS_POOL_NX_BLOCK_LAST_KNOWN_GOOD;
-          nxsb = nx(true);
+          nxsb = nx_create(*this, _nx_block_num, true);
         }
       }
     }
@@ -86,16 +98,14 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
       }
     }
   }
+
+  _apfsSuperBlock = std::move(nxsb);
 }
 
-std::unique_ptr<APFSSuperblock> APFSPool::nx(bool validate) const {
-  auto nxsb = std::make_unique<APFSSuperblock>((*this), _nx_block_num);
+APFSPool::~APFSPool() = default;
 
-  if (validate && nxsb->validate_checksum() == false) {
-    throw std::runtime_error("NXSB object checksum failed");
-  }
-
-  return nxsb;
+const APFSSuperblock* APFSPool::nx() const {
+  return _apfsSuperBlock.get();
 }
 
 std::vector<APFSFileSystem> APFSPool::volumes() const {
@@ -117,7 +127,7 @@ ssize_t APFSPool::read(uint64_t address, char* buf, size_t buf_size) const
 const std::vector<APFSPool::nx_version> APFSPool::known_versions() const {
   std::vector<nx_version> vers{};
 
-  const auto nxsb = nx();
+  const auto nxsb = nx_create(*this, _nx_block_num);
   const auto sb = nxsb->sb();
 
   for (auto addr = sb->chkpt_desc_base_addr;
