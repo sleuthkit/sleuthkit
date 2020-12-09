@@ -238,36 +238,6 @@ public final class Blackboard {
 	}
 	
 	/**
-	 * Get all analysis results of a given data source.
-	 * 
-	 * @param dataSourceObjId Data source to look under.
-	 *
-	 * @return list of analysis results.
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
-	 */
-	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId) throws TskCoreException {
-		
-		final String queryString = ANALYSIS_RESULT_QUERY_STRING
-				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
-
-		caseDb.acquireSingleUserCaseReadLock();
-		try (	CaseDbConnection connection = caseDb.getConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
-
-			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
-			return analysisResults;
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting analysis results for data source, dataSourceObjId=%d", dataSourceObjId), ex);
-		} finally {
-			caseDb.releaseSingleUserCaseReadLock();
-		}
-	}
-	
-
-	/**
 	 * Get all analysis results matching the given where sub-clause.
 	 * 
 	 *
