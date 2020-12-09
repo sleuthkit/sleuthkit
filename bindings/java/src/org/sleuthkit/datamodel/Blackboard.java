@@ -209,46 +209,58 @@ public final class Blackboard {
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 *                          within TSK core.
 	 */
 	public List<AnalysisResult> getAnalysisResults(long objId) throws TskCoreException {
 		return getAnalysisResultsWhere(" arts.obj_id = " + objId);
 	}
 	
 	/**
+	 * Get analysis results of the given type, for the given object.
+	 *
+	 * @param objId Object id.
+	 * @param artifactTypeId Result type to get.
+	
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public List<AnalysisResult> getAnalysisResults(long objId, int artifactTypeId) throws TskCoreException {
+		
+		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
+		}
+		
+		String whereClause = " types.artifact_type_id = " + artifactTypeId
+							 + " AND arts.obj_id = " + objId; 
+		
+		return getAnalysisResultsWhere(whereClause);
+	}
+	
+	/**
 	 * Get all analysis results of a given type, for a given data source.
 	 *
-	 * @param artifactTypeID  Type of results to get.
 	 * @param dataSourceObjId Data source to look under.
+	 * @param artifactTypeId  Type of results to get.
 	 *
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 *                          within TSK core.
 	 */
-	public List<AnalysisResult> getAnalysisResults(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
+	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, int artifactTypeId) throws TskCoreException {
 		
-		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeID));
+		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
-			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeID));
+			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
 		}
 
-		final String queryString = ANALYSIS_RESULT_QUERY_STRING
-				+ " AND types.artifact_type_id = " + artifactTypeID
-				+ " AND arts.data_source_obj_id = " + dataSourceObjId; //NON-NLS
-
-		caseDb.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = caseDb.getConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
-
-			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
-			return analysisResults;
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting analysis results for type id %d", artifactTypeID), ex);
-		} finally {
-			caseDb.releaseSingleUserCaseReadLock();
-		}
+		String whereClause = " types.artifact_type_id = " + artifactTypeId
+				+ " AND arts.data_source_obj_id = " + dataSourceObjId;  // NON-NLS
+		
+		return getAnalysisResultsWhere(whereClause);
 	}
 	
 	/**
@@ -259,7 +271,7 @@ public final class Blackboard {
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 *                          within TSK core.
 	 */
 	public List<AnalysisResult> getAnalysisResultsWhere(String whereClause) throws TskCoreException {
 		
