@@ -28,7 +28,7 @@ final public class ScoreChange {
 	private final Score oldScore;
 	private final Score newScore;
 
-	public ScoreChange(long objId, long dataSourceObjectId, Score oldScore, Score newScore) {
+	ScoreChange(long objId, long dataSourceObjectId, Score oldScore, Score newScore) {
 		this.objId = objId;
 		this.dataSourceObjectId = dataSourceObjectId;
 		this.oldScore = oldScore;

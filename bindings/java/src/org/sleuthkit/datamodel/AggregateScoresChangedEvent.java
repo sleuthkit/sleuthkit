@@ -24,9 +24,9 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Event to indicate that aggregate score of objects has changed.
  */
-final public class AggregateScoresChangedEvent implements TskEvent {
+final public class AggregateScoresChangedEvent implements TskEventWithDataSource {
 
-	public AggregateScoresChangedEvent(long dataSourceId, ImmutableSet<ScoreChange> scoreChanges) {
+	AggregateScoresChangedEvent(long dataSourceId, ImmutableSet<ScoreChange> scoreChanges) {
 		this.dataSourceId = dataSourceId;
 		this.scoreChanges = scoreChanges;
 	}

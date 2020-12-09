@@ -62,8 +62,6 @@ public class ScoringManager {
 	public Score getAggregateScore(long objId) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
 			return getAggregateScore(objId, connection);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -153,7 +151,7 @@ public class ScoringManager {
 		}
 
 		try {
-			db.acquireSingleUserCaseReadLock();
+			db.acquireSingleUserCaseWriteLock();
 
 			try (Statement updateStatement = connection.createStatement()) {
 				updateStatement.executeUpdate(query);
@@ -162,62 +160,12 @@ public class ScoringManager {
 			}
 
 		} finally {
-			db.releaseSingleUserCaseReadLock();
+			db.releaseSingleUserCaseWriteLock();
 		}
 
 	}
 
-	/**
-	 * Recalculate and update the final score of the specified object.
-	 *
-	 * @param objId Object id.
-	 *
-	 * @return Final score of the object.
-	 */
-	Score recalculateAggregateScore(long objId) throws TskCoreException {
 
-		CaseDbTransaction transaction = db.beginTransaction();
-		try {
-			// Get the current score 
-			Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
-
-			// Get all the analysis_results for this object, 
-			List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + objId, transaction.getConnection());
-			if (analysisResults.isEmpty()) {
-				LOGGER.log(Level.WARNING, String.format("No analysis results found for obj id = %d", objId));
-				return new Score(Significance.UNKNOWN, Confidence.NONE);
-			}
-
-			// find the highest score
-			Score newScore = analysisResults.stream()
-					.map(result -> result.getScore())
-					.max(Score.getScoreComparator())
-					.get();
-
-			// If the new score is diff from current score
-			if  (Score.getScoreComparator().compare(newScore, currentScore) != 0) {
-				ScoringManager.this.setAggregateScore(objId, newScore, transaction);
-
-				// register score change in the transaction.
-				long dataSourceObjectId = analysisResults.get(0).getDataSourceObjectID();
-				transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, newScore));
-
-				return newScore;
-			} else {
-				// return the current score
-				return currentScore;
-			}
-
-		} catch (TskCoreException ex) {
-			try {
-				transaction.rollback();
-			} catch (TskCoreException ex2) {
-				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
-						+ "Error invoking recalculateScore with objId: " + objId, ex2);
-			}
-			throw ex;
-		}
-	}
 
 	/**
 	 * /**
