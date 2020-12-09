@@ -200,7 +200,21 @@ public final class Blackboard {
 				+ " WHERE arts.artifact_obj_id = results.obj_id " //NON-NLS
 				+ " AND arts.artifact_type_id = types.artifact_type_id"
 				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
-				
+
+	/**
+	 * Get all analysis results for a given object.
+	 *
+	 * @param objId Object id.
+	
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<AnalysisResult> getAnalysisResults(long objId) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.obj_id = " + objId);
+	}
+	
 	/**
 	 * Get all analysis results of a given type, for a given data source.
 	 *
