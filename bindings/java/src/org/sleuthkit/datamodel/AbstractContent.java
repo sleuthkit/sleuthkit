@@ -422,7 +422,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
-		return db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + objId); //NON-NLS
+		return db.getBlackboard().getAnalysisResults(objId);
 	}
 	
 	@Override
@@ -432,13 +432,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
-		
-		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
-			throw new IllegalArgumentException(String.format("Artifact type %s is not in analysis result catgeory.", artifactType.getTypeName()));
-		}
-		
-		return db.getBlackboard().getAnalysisResultsWhere(" arts.obj_id = " + objId
-														+ " AND artifact_type_id = " + artifactType.getTypeID() ); //NON-NLS
+		return db.getBlackboard().getAnalysisResults(objId, artifactType.getTypeID()); //NON-NLS
 	}
 	
 	@Override

@@ -250,18 +250,23 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, int artifactTypeId) throws TskCoreException {
-		
-		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
-		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
-			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
-		}
 
-		String whereClause = " types.artifact_type_id = " + artifactTypeId
-				+ " AND arts.data_source_obj_id = " + dataSourceObjId;  // NON-NLS
-		
-		return getAnalysisResultsWhere(whereClause);
-	}
+// To keep the public API footprint minimal and necessary, this API is commented out 
+// till Autopsy implements and intgerates the concept of AnalysisResults. 
+// At that time, this api could be uncommented or deleted if it is not needed.
+	
+//	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, int artifactTypeId) throws TskCoreException {
+//		
+//		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
+//		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+//			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
+//		}
+//
+//		String whereClause = " types.artifact_type_id = " + artifactTypeId
+//				+ " AND arts.data_source_obj_id = " + dataSourceObjId;  // NON-NLS
+//		
+//		return getAnalysisResultsWhere(whereClause);
+//	}
 	
 	/**
 	 * Get all analysis results matching the given where sub-clause.
