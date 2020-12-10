@@ -4406,6 +4406,7 @@ public class SleuthkitCase {
 						rs.getString("value_text"),
 						rs.getBytes("value_byte"), this
 				);
+				attr.setParentDataSourceID(artifact.getDataSourceObjectID());
 				attributes.add(attr);
 			}
 			return attributes;
