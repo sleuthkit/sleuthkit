@@ -20,17 +20,8 @@ package org.sleuthkit.datamodel;
 
 /**
  *
- * Defines an interface implemented by data source specific events published by
- * Sleuthkit. These events are applicable to single data source.
+ * A marker interface for events published by SleuthKit. 
  */
-public interface TskEventWithDataSource {
-
-	/**
-	 * Returns the object id of the data source that the event pertains to.
-	 *
-	 * All data in an event should pertain to a single data source.
-	 *
-	 * @return Data source object id.
-	 */
-	public long getDataSourceId();
+public interface TskEvent {
+	
 }

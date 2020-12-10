@@ -24,11 +24,19 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Event to indicate that aggregate score of objects has changed.
  */
-final public class AggregateScoresChangedEvent implements TskEventWithDataSource {
+final public class AggregateScoresChangedEvent implements TskDataSourceEvent, TskEvent {
 
 	AggregateScoresChangedEvent(long dataSourceId, ImmutableSet<ScoreChange> scoreChanges) {
 		this.dataSourceId = dataSourceId;
 		this.scoreChanges = scoreChanges;
+		
+		// ensure that all score changes have the same data source as the one in the event.
+		scoreChanges.stream()
+				.forEach(chg -> {
+					if (chg.getDataSourceObjectId() != dataSourceId) {
+						throw new IllegalArgumentException("ScoreChange datasource id does not match the datasource id of the event.");
+					}
+				});
 	}
 
 	private final long dataSourceId;
