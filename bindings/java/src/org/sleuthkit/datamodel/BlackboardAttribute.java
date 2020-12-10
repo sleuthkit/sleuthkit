@@ -65,7 +65,7 @@ public class BlackboardAttribute {
 	
 	// The parent data source is defined as being 
 	// the data source of the parent artifact.
-	private long parentDataSourceID;
+	private Long parentDataSourceID;
 
 	/**
 	 * Constructs a standard attribute with an integer value. The attribute
@@ -542,6 +542,10 @@ public class BlackboardAttribute {
 
 			case DATETIME: {
 				try {
+					if (parentDataSourceID == null) {
+						BlackboardArtifact parent = getParentArtifact();
+						parentDataSourceID = parent.getDataSourceObjectID();
+					}
 					final Content dataSource = sleuthkitCase.getContentById(parentDataSourceID);
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						// return the date/time string in the timezone associated with the datasource,
