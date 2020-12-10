@@ -769,6 +769,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
                     tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
                     tsk_error_set_errstr
                         ("dos_load_ext_table: Loop in partition table detected");
+                    free(sect_buf);
                     return 1;
                 }
                 part_info = part_info->next;
