@@ -195,6 +195,15 @@ public interface Content extends SleuthkitVisitableItem {
 	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
 
 	/**
+	 * Returns the final score for the content object.
+	 * 
+	 * @return Score.
+	 * 
+	 * @throws TskCoreException if critical error occurred within tsk core.
+	 */
+	public Score getAggregateScore() throws TskCoreException;
+	
+	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * name
 	 *

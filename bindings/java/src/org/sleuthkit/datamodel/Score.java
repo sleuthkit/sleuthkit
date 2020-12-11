@@ -19,13 +19,14 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  *
  * Encapsulates a final score of an artifact. Computed by taking into account
  * all of the analysis results.
  */
-public class Score {
+public class Score implements Comparable<Score> {
 
 	/**
 	 * Enum to encapsulate significance of a analysis result.
@@ -33,11 +34,11 @@ public class Score {
 	 */
 	public enum Significance {
 
-		NONE(0, "None"),		// has no (bad) siginifcance, i.e. it's Good
-		UNKNOWN(1, "Unknown"), // no analysis has been performed to ascertain significance.
-		LOW(2, "Low"),
-		MEDIUM(3, "Medium"), // Suspicious
-		HIGH(4, "High");	// Bad & Notable
+		NONE(0, "None"),		// has no (bad) significance, i.e. it's Good
+		UNKNOWN(10, "Unknown"), // no analysis has been performed to ascertain significance.
+		LOW(20, "Low"),
+		MEDIUM(30, "Medium"), // Suspicious
+		HIGH(40, "High");	// Bad & Notable
 
 		private final int id;
 		private final String name;
@@ -81,11 +82,11 @@ public class Score {
 	public enum Confidence {
 
 		NONE(0, "None"),
-		LOWEST(1, "Lowest"),
-		LOW(2, "Low"),
-		MEDIUM(3, "Medium"),
-		HIGH(4, "High"),
-		HIGHEST(5, "Highest");
+		LOWEST(10, "Lowest"),
+		LOW(20, "Low"),
+		MEDIUM(30, "Medium"),
+		HIGH(40, "High"),
+		HIGHEST(50, "Highest");
 
 		private final int id;
 		private final String name;
@@ -121,6 +122,8 @@ public class Score {
 		}
 	}
 
+	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Confidence.NONE);
+	
 	// Score is a combination of significance and confidence.
 	private final Significance significance;
 	private final Confidence confidence;
@@ -138,4 +141,21 @@ public class Score {
 		return confidence;
 	}
 
+	@Override
+	public int compareTo(Score other) {
+		// A score is a combination of significance & confidence
+		// Higher confidence wins.  
+		// If two results have same confidence, then the higher significance wins
+		if (this.getConfidence() != other.getConfidence()) {
+			return this.getConfidence().ordinal() - other.getConfidence().ordinal();
+		} else {
+			return this.getSignificance().ordinal() - other.getSignificance().ordinal();
+		}
+	}
+	
+	 public static final Comparator<Score> getScoreComparator() {
+        return (Score score1, Score score2) -> {
+			return score1.compareTo(score2);
+        };
+    }
 }
