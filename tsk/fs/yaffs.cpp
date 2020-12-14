@@ -3185,7 +3185,7 @@ TSK_FS_INFO *
     fs->block_post_size = yaffsfs->spare_size;
     fs->block_count = img_info->size / (fs->block_pre_size + fs->block_size + fs->block_post_size);
     fs->first_block = 0;
-    fs->last_block_act = fs->last_block = fs->block_count ? fs->block_count - 1 : 0;
+    fs->last_block_act = fs->last_block == fs->block_count ? fs->block_count - 1 : 0;
 
     /* Set the generic function pointers */
     fs->inode_walk = yaffsfs_inode_walk;
