@@ -58,6 +58,14 @@ public class BlackboardAttribute {
 	private long artifactID;
 	private SleuthkitCase sleuthkitCase;
 	private String sources;
+	
+	// Cached parent artifact. This field is populated lazily upon the first
+	// call to getParentArtifact().
+	private BlackboardArtifact parentArtifact;
+	
+	// The parent data source is defined as being 
+	// the data source of the parent artifact.
+	private Long parentDataSourceID;
 
 	/**
 	 * Constructs a standard attribute with an integer value. The attribute
@@ -474,7 +482,10 @@ public class BlackboardAttribute {
 	 *                          case database.
 	 */
 	public BlackboardArtifact getParentArtifact() throws TskCoreException {
-		return sleuthkitCase.getBlackboardArtifact(artifactID);
+		if (parentArtifact == null) {
+			parentArtifact = sleuthkitCase.getBlackboardArtifact(artifactID);
+		}
+		return parentArtifact;
 	}
 
 	@Override
@@ -531,7 +542,11 @@ public class BlackboardAttribute {
 
 			case DATETIME: {
 				try {
-					final Content dataSource = getParentArtifact().getDataSource();
+					if (parentDataSourceID == null) {
+						BlackboardArtifact parent = getParentArtifact();
+						parentDataSourceID = parent.getDataSourceObjectID();
+					}
+					final Content dataSource = sleuthkitCase.getContentById(parentDataSourceID);
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						// return the date/time string in the timezone associated with the datasource,
 						Image image = (Image) dataSource;
@@ -611,6 +626,16 @@ public class BlackboardAttribute {
 	 */
 	void setArtifactId(long artifactID) {
 		this.artifactID = artifactID;
+	}
+	
+	/**
+	 * Sets the parent data source id. The parent data source is defined
+	 * as being the data source of the parent artifact.
+	 * 
+	 * @param parentDataSourceID The parent data source id.
+	 */
+	void setParentDataSourceID(long parentDataSourceID) {
+		this.parentDataSourceID = parentDataSourceID;
 	}
 
 	/**
