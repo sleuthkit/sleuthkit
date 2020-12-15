@@ -181,7 +181,7 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Score updateFinalScore(long objId, long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
+	Score updateAggregateScore(long objId, long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
 
 		// Get the current score 
 		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);

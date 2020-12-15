@@ -183,7 +183,7 @@ public final class Blackboard {
 			}
 			
 			// update the final score for the object 
-			Score aggregateScore = caseDb.getScoringManager().updateFinalScore(objId, dataSourceObjId, analysisResult.getScore(), transaction);
+			Score aggregateScore = caseDb.getScoringManager().updateAggregateScore(objId, dataSourceObjId, analysisResult.getScore(), transaction);
 			
 			// return the analysis result and the current aggregate score.
 			return new AnalysisResultAdded(analysisResult, aggregateScore);

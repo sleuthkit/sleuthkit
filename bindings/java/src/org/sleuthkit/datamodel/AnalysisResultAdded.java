@@ -36,7 +36,7 @@ public class AnalysisResultAdded {
 		return analysisResult;
 	}
 
-	public Score getScore() {
+	public Score getAggregateScore() {
 		return score;
 	}
 	
