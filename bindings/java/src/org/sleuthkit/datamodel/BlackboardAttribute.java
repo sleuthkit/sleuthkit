@@ -555,11 +555,10 @@ public class BlackboardAttribute {
 					}
 				} catch (TskException ex) {
 					LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
-					// return time string in default timezone
-					return TimeUtilities.epochToTime(getValueLong());
 				}
+				// return time string in default timezone
+				return TimeUtilities.epochToTime(getValueLong());
 			}
-			break;
 			case JSON: {
 				return getValueString();
 			}
