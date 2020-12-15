@@ -680,13 +680,13 @@ public class BlackboardArtifact implements Content {
 	}
 
 	@Override
-	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
-			AnalysisResult result = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
-			return result;
+			return resultAdded;
 		} catch (BlackboardException ex) {
 			trans.rollback();
 			throw new TskCoreException("Error adding analysis result.", ex);

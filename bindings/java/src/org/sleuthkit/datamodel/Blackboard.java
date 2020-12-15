@@ -165,12 +165,13 @@ public final class Blackboard {
 	 *                        artifact.
 	 * @param transaction     DB transaction to use.
 	 *
-	 * @return Analysis result created.
+	* @return AnalysisResultAdded The analysis return added and the
+         current aggregate score of content.
 	 *
 	 * @throws BlackboardException exception thrown if a critical error occurs
 	 *                             within TSK core
 	 */
-	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
 		
 		try {
 			// add analysis result
@@ -182,9 +183,11 @@ public final class Blackboard {
 			}
 			
 			// update the final score for the object 
-			caseDb.getScoringManager().updateFinalScore(objId, dataSourceObjId, analysisResult.getScore(), transaction);
+			Score aggregateScore = caseDb.getScoringManager().updateFinalScore(objId, dataSourceObjId, analysisResult.getScore(), transaction);
 			
-			return analysisResult;
+			// return the analysis result and the current aggregate score.
+			return new AnalysisResultAdded(analysisResult, aggregateScore);
+			
 		}  catch (TskCoreException ex) {
 			throw new BlackboardException("Failed to add analysis result.", ex);
 		}

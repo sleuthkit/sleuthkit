@@ -179,20 +179,21 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Create and add an analysis result associated with this content.
 	 *
 	 *
-	 * @param artifactType	    Type of analysis result artifact to create.
-	 * @param score             Score associated with this analysis.
-	 * @param conclusion        Conclusion from the analysis, may be empty.
-	 * @param configuration     Configuration element associated with this
-	 *                          analysis, may be empty.
-	 * @param justification	    Justification
-	 * @param attributesList    Additional attributes to attach to this analysis
-	 *                          result artifact.
+	 * @param artifactType	  Type of analysis result artifact to create.
+	 * @param score          Score associated with this analysis.
+	 * @param conclusion     Conclusion from the analysis, may be empty.
+	 * @param configuration  Configuration element associated with this
+	 *                       analysis, may be empty.
+	 * @param justification	 Justification
+	 * @param attributesList Additional attributes to attach to this analysis
+	 *                       result artifact.
 	 *
-	 * @return The analysis result created.
+	 * @return AnalysisResultAdded The analysis return added and the
+         current aggregate score of content.
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core.
 	 */
-	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
 
 	/**
 	 * Returns the final score for the content object.
