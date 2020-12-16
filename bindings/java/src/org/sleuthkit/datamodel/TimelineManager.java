@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
@@ -55,7 +56,7 @@ import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
 public final class TimelineManager {
 
 	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
-	
+
 	/**
 	 * Timeline event types added to the case database when it is created.
 	 */
@@ -87,10 +88,11 @@ public final class TimelineManager {
 	private final SleuthkitCase caseDB;
 
 	/**
-	 * Maximum timestamp to look to in future. Twelve (12) years from current date. 
+	 * Maximum timestamp to look to in future. Twelve (12) years from current
+	 * date.
 	 */
 	private static final Long MAX_TIMESTAMP_TO_ADD = Instant.now().getEpochSecond() + 394200000;
-	
+
 	/**
 	 * Mapping of timeline event type IDs to TimelineEventType objects.
 	 */
@@ -494,20 +496,20 @@ public final class TimelineManager {
 
 		return events;
 	}
-	
+
 	/**
-	 * Adds timeline events for the new file to the database.
-	 * Does not fire TSKEvents for each addition. This method should only be used if an 
-	 * update event will be sent later. For example, a data source processor may
-	 * send out a single event that a data source has been added rather than an event
+	 * Adds timeline events for the new file to the database. Does not fire
+	 * TSKEvents for each addition. This method should only be used if an update
+	 * event will be sent later. For example, a data source processor may send
+	 * out a single event that a data source has been added rather than an event
 	 * for each timeline event.
-	 * 
-	 * @param file        The new file
-	 * @param connection  Database connection to use
-	 * 
+	 *
+	 * @param file       The new file
+	 * @param connection Database connection to use
+	 *
 	 * @return Set of new events
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	Set<TimelineEvent> addEventsForNewFileQuiet(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
 		//gather time stamps into map
@@ -608,11 +610,78 @@ public final class TimelineManager {
 				addArtifactEvent(eventType::makeEventDescription, eventType, artifact)
 						.ifPresent(newEvents::add);
 			}
+
+			if (newEvents.isEmpty()) {
+				addArtifactEvent(
+						((TimelineEventArtifactTypeImpl) (art) -> getOtherTimelineEventDesc(art)),
+						TimelineEventType.OTHER,
+						artifact)
+						.ifPresent(newEvents::add);
+			}
 		}
 		newEvents.stream()
 				.map(TimelineEventAddedEvent::new)
 				.forEach(caseDB::fireTSKEvent);
 		return newEvents;
+	}
+
+	private static final List<Integer> TIME_VALUE_ATTRIBUTES = Stream.of(BlackboardAttribute.ATTRIBUTE_TYPE.values())
+			.filter(attrType -> attrType.getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME)
+			.map(attrType -> attrType.getTypeID())
+			.sorted((a, b) -> Integer.compare(a, b))
+			.collect(Collectors.toList());
+
+	private static final List<Integer> STRING_VALUE_ATTRIBUTES = Stream.of(BlackboardAttribute.ATTRIBUTE_TYPE.values())
+			.filter(attrType -> attrType.getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
+			.map(attrType -> attrType.getTypeID())
+			.sorted((a, b) -> Integer.compare(a, b))
+			.collect(Collectors.toList());
+
+	private static final String OTHER_DELIMITER = " : ";
+
+	private static TimelineEventDescriptionWithTime getOtherTimelineEventDesc(BlackboardArtifact artifact) throws TskCoreException {
+		if (artifact == null) {
+			/*
+			 * This has the side effect of making sure that a TimelineEvent
+			 * object is not created for this artifact.
+			 */
+			return null;
+		}
+
+		final Map<Integer, BlackboardAttribute> attrMapping = artifact.getAttributes().stream()
+				.collect(Collectors.toMap((attr) -> attr.getAttributeType().getTypeID(), (attr) -> attr, (attr1, attr2) -> attr1));
+
+		Long timeVal = TIME_VALUE_ATTRIBUTES.stream()
+				.map((typeId) -> attrMapping.get(typeId))
+				.filter(attr -> attr != null)
+				.map(attr -> attr.getValueLong())
+				.findFirst()
+				.orElse(null);
+
+		if (timeVal == null) {
+			return null;
+		}
+
+		String description = STRING_VALUE_ATTRIBUTES.stream()
+				.map((typeId) -> attrMapping.get(typeId))
+				.filter(attr -> attr != null)
+				.map((attr) -> attr.getValueString())
+				.filter(str -> str != null && str.length() > 0)
+				.collect(Collectors.joining(OTHER_DELIMITER));
+
+		return new TimelineEventDescriptionWithTime(
+				timeVal,
+				getCappedString(description, TimelineEventArtifactTypeImpl.MAX_FULL_DESCRIPTION_LENGTH),
+				getCappedString(description, TimelineEventArtifactTypeImpl.MAX_MED_DESCRIPTION_LENGTH),
+				getCappedString(description, TimelineEventArtifactTypeImpl.MAX_SHORT_DESCRIPTION_LENGTH));
+	}
+
+	private static String getCappedString(String orig, int maxLimit) {
+		if (orig != null && orig.length() > maxLimit) {
+			return orig.substring(0, maxLimit);
+		} else {
+			return orig;
+		}
 	}
 
 	/**
@@ -845,7 +914,7 @@ public final class TimelineManager {
 		if (eventDescriptionIDs.isEmpty()) {
 			return;
 		}
-		
+
 		String sql = "UPDATE tsk_event_descriptions SET tagged = " + flagValue + " WHERE event_description_id IN (" + buildCSVString(eventDescriptionIDs) + ")"; //NON-NLS
 		try (Statement updateStatement = conn.createStatement()) {
 			updateStatement.executeUpdate(sql);
@@ -872,7 +941,7 @@ public final class TimelineManager {
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = caseDB.getConnection(); Statement updateStatement = con.createStatement();) {
 			Map<Long, Long> eventIDs = getEventAndDescriptionIDs(con, content.getId(), true);
-			if (! eventIDs.isEmpty()) {
+			if (!eventIDs.isEmpty()) {
 				String sql = "UPDATE tsk_event_descriptions SET hash_hit = 1" + " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"; //NON-NLS
 				try {
 					updateStatement.executeUpdate(sql); //NON-NLS
