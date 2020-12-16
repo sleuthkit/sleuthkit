@@ -613,7 +613,7 @@ public final class TimelineManager {
 
 			if (newEvents.isEmpty()) {
 				addArtifactEvent(
-						((TimelineEventArtifactTypeImpl) (art) -> getOtherTimelineEventDesc(art)),
+						((TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime>) (art) -> getOtherTimelineEventDesc(art)),
 						TimelineEventType.OTHER,
 						artifact)
 						.ifPresent(newEvents::add);
