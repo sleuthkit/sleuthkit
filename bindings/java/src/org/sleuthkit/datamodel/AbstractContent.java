@@ -320,14 +320,14 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
-	public AnalysisResult newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			AnalysisResult result = db.getBlackboard().newAnalysisResult(artifactType, objId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
 			
 			trans.commit();
-			return result;
+			return resultAdded;
 		}
 		catch (BlackboardException ex) {
 			trans.rollback();
