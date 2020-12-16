@@ -1158,8 +1158,10 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
         return 1;
     if ((fs_file->meta =
-            tsk_fs_meta_alloc(EXT2FS_FILE_CONTENT_LEN)) == NULL)
+            tsk_fs_meta_alloc(EXT2FS_FILE_CONTENT_LEN)) == NULL) {
+        tsk_fs_file_close(fs_file);
         return 1;
+    }
 
     // we need to handle fs->last_inum specially because it is for the
     // virtual ORPHANS directory.  Handle it outside of the loop.
@@ -1175,6 +1177,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         ext2fs->inode_size >
         sizeof(ext2fs_inode) ? ext2fs->inode_size : sizeof(ext2fs_inode);
     if ((dino_buf = (ext2fs_inode *) tsk_malloc(size)) == NULL) {
+        tsk_fs_file_close(fs_file);
         return 1;
     }
 
@@ -1195,6 +1198,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
         if (ext2fs_imap_load(ext2fs, grp_num)) {
             tsk_release_lock(&ext2fs->lock);
+            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
@@ -1207,6 +1211,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          */
         if ((inum - ibase) > fs->block_size*8) {
             tsk_release_lock(&ext2fs->lock);
+            tsk_fs_file_close(fs_file);
             free(dino_buf);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
@@ -1257,7 +1262,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          * to the application.
          */
         if (ext2fs_dinode_copy(ext2fs, fs_file, inum, dino_buf, ea_buf, ea_buf_len)) {
-            tsk_fs_meta_close(fs_file->meta);
+            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
