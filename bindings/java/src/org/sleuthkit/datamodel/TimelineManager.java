@@ -631,14 +631,6 @@ public final class TimelineManager {
 			.sorted((a, b) -> Integer.compare(a, b))
 			.collect(Collectors.toList());
 
-	private static final List<Integer> STRING_VALUE_ATTRIBUTES = Stream.of(BlackboardAttribute.ATTRIBUTE_TYPE.values())
-			.filter(attrType -> attrType.getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING)
-			.map(attrType -> attrType.getTypeID())
-			.sorted((a, b) -> Integer.compare(a, b))
-			.collect(Collectors.toList());
-
-	private static final String OTHER_DELIMITER = " : ";
-
 	private static TimelineEventDescriptionWithTime getOtherTimelineEventDesc(BlackboardArtifact artifact) throws TskCoreException {
 		if (artifact == null) {
 			/*
@@ -662,27 +654,10 @@ public final class TimelineManager {
 			return null;
 		}
 
-		String description = STRING_VALUE_ATTRIBUTES.stream()
-				.map((typeId) -> attrMapping.get(typeId))
-				.filter(attr -> attr != null)
-				.map((attr) -> attr.getValueString())
-				.filter(str -> str != null && str.length() > 0)
-				.collect(Collectors.joining(OTHER_DELIMITER));
-
-		return new TimelineEventDescriptionWithTime(
-				timeVal,
-				getCappedString(description, TimelineEventArtifactTypeImpl.MAX_FULL_DESCRIPTION_LENGTH),
-				getCappedString(description, TimelineEventArtifactTypeImpl.MAX_MED_DESCRIPTION_LENGTH),
-				getCappedString(description, TimelineEventArtifactTypeImpl.MAX_SHORT_DESCRIPTION_LENGTH));
+		String description = String.format("%s: %d", artifact.getArtifactTypeName(), artifact.getArtifactID());
+		return new TimelineEventDescriptionWithTime(timeVal, description, description, description);
 	}
 
-	private static String getCappedString(String orig, int maxLimit) {
-		if (orig != null && orig.length() > maxLimit) {
-			return orig.substring(0, maxLimit);
-		} else {
-			return orig;
-		}
-	}
 
 	/**
 	 * Add an event of the given type from the given artifact. By passing the
