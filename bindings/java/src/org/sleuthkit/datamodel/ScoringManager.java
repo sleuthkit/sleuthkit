@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -115,40 +116,32 @@ public class ScoringManager {
 	 * Inserts or updates the score for the given object.
 	 *
 	 * @param objId Object id of the object.
+	 * @param dataSourceObjectId Data source object id.
 	 * @param score  Score to be inserted/updated.
 	 * @param transaction Transaction to use for the update.
 	 *
 	 * @throws TskCoreException
 	 */
-	private void setAggregateScore(long objId, Score score, CaseDbTransaction transaction) throws TskCoreException {
+	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
-		setAggregateScore(objId, score, connection);
+		setAggregateScore(objId, dataSourceObjectId, score, connection);
 	}
 
 	/**
 	 * Inserts or updates the score for the given object.
 	 *
 	 * @param objId Object id of the object.
+	 * @param dataSourceObjectId Data source object id.
 	 * @param score  Score to be inserted/updated.
 	 * @param connection Connection to use for the update.
 	 *
 	 * @throws TskCoreException
 	 */
-	private void setAggregateScore(long objId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
 
-		String query = String.format(" INTO tsk_aggregate_score (obj_id, significance , confidence) VALUES (%d, %d, %d)",
-				objId, score.getSignificance().getId(), score.getConfidence().getId());
-
-		switch (db.getDatabaseType()) {
-			case POSTGRESQL:
-				query = "INSERT " + query + " ON CONFLICT DO NOTHING"; //NON-NLS
-				break;
-			case SQLITE:
-				query = "INSERT OR IGNORE " + query;
-				break;
-			default:
-				throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
-		}
+		String query = String.format("INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , confidence) VALUES (%d, %d, %d, %d)"
+				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = %d, confidence = %d",
+				objId, dataSourceObjectId, score.getSignificance().getId(), score.getConfidence().getId(), score.getSignificance().getId(), score.getConfidence().getId() );
 
 		try {
 			db.acquireSingleUserCaseWriteLock();
@@ -156,7 +149,7 @@ public class ScoringManager {
 			try (Statement updateStatement = connection.createStatement()) {
 				updateStatement.executeUpdate(query);
 			} catch (SQLException ex) {
-				throw new TskCoreException("Error updating  final score, query: " + query, ex);//NON-NLS
+				throw new TskCoreException("Error updating  aggregate score, query: " + query, ex);//NON-NLS
 			}
 
 		} finally {
@@ -190,7 +183,7 @@ public class ScoringManager {
 		// or if the new score is higher than the current score
 		if  ( (currentScore.compareTo(Score.SCORE_UNKNOWN) == 0 && resultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
 			  || (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
-			ScoringManager.this.setAggregateScore(objId, resultScore, transaction);
+			ScoringManager.this.setAggregateScore(objId, dataSourceObjectId, resultScore, transaction);
 			
 			// register score change in the transaction.
 			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, resultScore));
@@ -201,7 +194,124 @@ public class ScoringManager {
 		}
 	}
 
+	/**
+	 * Get the count of items within the specified data source
+	 * with the specified score.
+	 *
+	 * @param dataSourceObjectId Data source object id.
+	 * @param score Score to look for.
+	 *
+	 * @return Number of items with given score.
+	 */
+	public long getItemCount(long dataSourceObjectId, Score score) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getItemCount(dataSourceObjectId, score, connection);
+		} 
+	}
+
+
+	/**
+	 * Get the count of items with the specified score. Uses the specified
+	 * transaction to obtain the database connection.
+	 *
+	 * @param dataSourceObjectId Data source object id.
+	 * @param score       Score to look for.
+	 * @param transaction Transaction from which to get the connection.
+	 *
+	 * @return Number of items with given score.
+	 *
+	 * @throws TskCoreException
+	 */
+	private long getItemCount(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+		String queryString = "SELECT COUNT(obj_id) AS count FROM tsk_aggregate_score"
+				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
+				+ " AND significance = " + score.getSignificance().getId()
+				+ " AND confidence = " + score.getConfidence().getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+
+			long count = 0;
+			if (resultSet.next()) {
+				count = resultSet.getLong("count");
+			}
+			return count;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting count of items with score = " + score.toString(), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
 	
-	
-	
+	/**
+	 * Get the items with the specified score.
+	 * 
+	 * @param dataSourceObjectId Data source object id.
+	 * @param score Score to look for.
+	 *
+	 * @return Collection of items with given score.
+	 */
+	public List<Content> getItems(long dataSourceObjectId, Score score) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getItems(dataSourceObjectId, score, connection);
+		} 
+	}
+
+	/**
+	 * Gets the items with the specified score. Uses the specified transaction
+	 * to obtain the database connection.
+	 *
+	 * @param dataSourceObjectId Data source object id.
+	 * @param score       Score to look for.
+	 * @param transaction Transaction from which to get the connection.
+	 *
+	 * @return List items with given score.
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<Content> getItems(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+		String queryString = "SELECT obj_id FROM tsk_aggregate_score"
+				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
+				+ " AND significance = " + score.getSignificance().getId()
+				+ " AND confidence = " + score.getConfidence().getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+
+			List<Content> items = new ArrayList<>();
+			while (resultSet.next()) {
+				long objId = resultSet.getLong("obj_id");
+				items.add(db.getContentById(objId));
+			}
+			return items;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting list of items with score = " + score.toString(), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Event fired to indicate that the score of an object has changed. 
+	 */
+	final public class FinalScoreChangedEvent {
+
+		private final long obj_id;
+		private final Score score;
+
+		public FinalScoreChangedEvent(long obj_id, Score score) {
+			this.obj_id = obj_id;
+			this.score = score;
+		}
+
+		public long getObjId() {
+			return obj_id;
+		}
+
+		public Score getScore() {
+			return score;
+		}
+	}
 }

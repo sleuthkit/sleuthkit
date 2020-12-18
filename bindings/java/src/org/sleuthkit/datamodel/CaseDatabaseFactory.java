@@ -284,10 +284,12 @@ class CaseDatabaseFactory {
 				+ ")");		
 		
 		stmt.execute("CREATE TABLE tsk_aggregate_score( obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "significance INTEGER NOT NULL, "
 				+ "confidence INTEGER NOT NULL, "
 				+ "UNIQUE (obj_id),"
-				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE"
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
 				+ ")");	
 		
 	}
@@ -356,8 +358,10 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX events_sub_type_time ON tsk_events(event_type_id,  time)");
 			stmt.execute("CREATE INDEX events_time ON tsk_events(time)");
 			
-			// analysis results indices
+			// analysis results and scores indices
 			stmt.execute("CREATE INDEX score_significance_confidence ON tsk_aggregate_score(significance,confidence)");
+			stmt.execute("CREATE INDEX score_datasource_obj_id ON tsk_aggregate_score(data_source_obj_id)");
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);
 		}
