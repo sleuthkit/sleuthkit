@@ -190,15 +190,6 @@ Details about a device data source.
 - TSK_IMSI (IMSI number of the device)
 
 
----
-## TSK_WEB_CATEGORIZATION
-The categorization of a web host using a specific usage type, e.g. mail.google.com would correspond to Web Email.
-
-### REQUIRED ATTRIBUTES
-- TSK_NAME (The usage category identifier, e.g. Web Email)
-- TSK_DOMAIN (The domain of the host, e.g. google.com)
-- TSK_HOST (The full host, e.g. mail.google.com)
-
 
 ---
 ## TSK_EMAIL_MSG
@@ -773,6 +764,17 @@ A web cache entry. The resource that was cached may or may not be present in the
 - TSK_HEADERS (HTTP headers on cache entry)
 - TSK_PATH_ID (Object ID of the source cache file)
 - TSK_DOMAIN (Domain of the URL)
+
+
+
+---
+## TSK_WEB_CATEGORIZATION
+The categorization of a web host using a specific usage type, e.g. mail.google.com would correspond to Web Email.
+
+### REQUIRED ATTRIBUTES
+- TSK_NAME (The usage category identifier, e.g. Web Email)
+- TSK_DOMAIN (The domain of the host, e.g. google.com)
+- TSK_HOST (The full host, e.g. mail.google.com)
 
 
 
