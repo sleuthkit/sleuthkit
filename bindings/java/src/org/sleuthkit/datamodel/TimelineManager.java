@@ -79,11 +79,15 @@ public final class TimelineManager {
 	 */
 	private static final ImmutableList<TimelineEventType> PREDEFINED_EVENT_TYPES
 			= new ImmutableList.Builder<TimelineEventType>()
-					.add(TimelineEventType.OTHER_TYPES)
+					.add(TimelineEventType.CUSTOM_TYPES)
 					.addAll(TimelineEventType.WEB_ACTIVITY.getChildren())
 					.addAll(TimelineEventType.MISC_TYPES.getChildren())
-					.addAll(TimelineEventType.OTHER_TYPES.getChildren())
+					.addAll(TimelineEventType.CUSTOM_TYPES.getChildren())
 					.build();
+	
+	private static final Set<Integer> ARTIFACT_TYPE_IDS = Stream.of(BlackboardArtifact.ARTIFACT_TYPE.values())
+			.map(artType -> artType.getTypeID())
+			.collect(Collectors.toSet());
 
 	private final SleuthkitCase caseDB;
 
@@ -586,14 +590,14 @@ public final class TimelineManager {
 			TimelineEventType eventType;//the type of the event to add.
 			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_TL_EVENT_TYPE));
 			if (attribute == null) {
-				eventType = TimelineEventType.STANDARD_OTHER;
+				eventType = TimelineEventType.OTHER;
 			} else {
 				long eventTypeID = attribute.getValueLong();
-				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.STANDARD_OTHER);
+				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
 			}
 
 			// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
-			addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.STANDARD_OTHER).makeEventDescription(artifact), eventType, artifact)
+			addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER).makeEventDescription(artifact), eventType, artifact)
 					.ifPresent(newEvents::add);
 		} else {
 			/*
@@ -611,6 +615,7 @@ public final class TimelineManager {
 						.ifPresent(newEvents::add);
 			}
 
+			// if no other timeline events were created directly, then create new 'other' ones.
 			if (newEvents.isEmpty()) {
 				addOtherEventDesc(artifact).ifPresent(newEvents::add);
 			}
@@ -621,13 +626,17 @@ public final class TimelineManager {
 		return newEvents;
 	}
 
-	private static final Set<Integer> ARTIFACT_TYPE_IDS = Stream.of(BlackboardArtifact.ARTIFACT_TYPE.values())
-			.map(artType -> artType.getTypeID())
-			.collect(Collectors.toSet());
 
+
+	/**
+	 * Adds 'other' type events for artifacts that have no corresponding TimelineEventType.
+	 * @param artifact The artifact for which to add a new timeline event.
+	 * @return An optional of a new timeline event or empty if no time attribute can be determined or the artifact is null.
+	 * @throws TskCoreException 
+	 */
 	private Optional<TimelineEvent> addOtherEventDesc(BlackboardArtifact artifact) throws TskCoreException {
 		if (artifact == null) {
-			return null;
+			return Optional.empty();
 		}
 		
 		Long timeVal = artifact.getAttributes().stream()
@@ -637,16 +646,16 @@ public final class TimelineManager {
 				.orElse(null);
 
 		if (timeVal == null) {
-			return null;
+			return Optional.empty();
 		}
 
-		String description = String.format("%s: %d", artifact.getArtifactTypeName(), artifact.getArtifactID());
+		String description = String.format("%s: %d", artifact.getArtifactTypeName(), artifact.getId());
 		
 		TimelineEventDescriptionWithTime evtWDesc = new TimelineEventDescriptionWithTime(timeVal, description, description, description);
 		
 		TimelineEventType evtType = (ARTIFACT_TYPE_IDS.contains(artifact.getArtifactTypeID())) ? 
-				TimelineEventType.STANDARD_OTHER : 
-				TimelineEventType.CUSTOM_OTHER;
+				TimelineEventType.OTHER : 
+				TimelineEventType.USER_CREATED;
 		
 		return addArtifactEvent(evtWDesc, evtType, artifact);
 	}
