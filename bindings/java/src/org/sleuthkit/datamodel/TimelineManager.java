@@ -79,10 +79,10 @@ public final class TimelineManager {
 	 */
 	private static final ImmutableList<TimelineEventType> PREDEFINED_EVENT_TYPES
 			= new ImmutableList.Builder<TimelineEventType>()
-					.add(TimelineEventType.CUSTOM_TYPES)
+					.add(TimelineEventType.OTHER_TYPES)
 					.addAll(TimelineEventType.WEB_ACTIVITY.getChildren())
 					.addAll(TimelineEventType.MISC_TYPES.getChildren())
-					.addAll(TimelineEventType.CUSTOM_TYPES.getChildren())
+					.addAll(TimelineEventType.OTHER_TYPES.getChildren())
 					.build();
 
 	private final SleuthkitCase caseDB;
@@ -586,14 +586,14 @@ public final class TimelineManager {
 			TimelineEventType eventType;//the type of the event to add.
 			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_TL_EVENT_TYPE));
 			if (attribute == null) {
-				eventType = TimelineEventType.OTHER;
+				eventType = TimelineEventType.STANDARD_OTHER;
 			} else {
 				long eventTypeID = attribute.getValueLong();
-				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
+				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.STANDARD_OTHER);
 			}
 
 			// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
-			addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER)::makeEventDescription, eventType, artifact)
+			addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.STANDARD_OTHER).makeEventDescription(artifact), eventType, artifact)
 					.ifPresent(newEvents::add);
 		} else {
 			/*
@@ -607,16 +607,12 @@ public final class TimelineManager {
 					.collect(Collectors.toSet());
 
 			for (TimelineEventArtifactTypeImpl eventType : eventTypesForArtifact) {
-				addArtifactEvent(eventType::makeEventDescription, eventType, artifact)
+				addArtifactEvent(eventType.makeEventDescription(artifact), eventType, artifact)
 						.ifPresent(newEvents::add);
 			}
 
 			if (newEvents.isEmpty()) {
-				addArtifactEvent(
-						((TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime>) (art) -> getOtherTimelineEventDesc(art)),
-						TimelineEventType.OTHER,
-						artifact)
-						.ifPresent(newEvents::add);
+				addOtherEventDesc(artifact).ifPresent(newEvents::add);
 			}
 		}
 		newEvents.stream()
@@ -625,27 +621,17 @@ public final class TimelineManager {
 		return newEvents;
 	}
 
-	private static final List<Integer> TIME_VALUE_ATTRIBUTES = Stream.of(BlackboardAttribute.ATTRIBUTE_TYPE.values())
-			.filter(attrType -> attrType.getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME)
-			.map(attrType -> attrType.getTypeID())
-			.sorted((a, b) -> Integer.compare(a, b))
-			.collect(Collectors.toList());
+	private static final Set<Integer> ARTIFACT_TYPE_IDS = Stream.of(BlackboardArtifact.ARTIFACT_TYPE.values())
+			.map(artType -> artType.getTypeID())
+			.collect(Collectors.toSet());
 
-	private static TimelineEventDescriptionWithTime getOtherTimelineEventDesc(BlackboardArtifact artifact) throws TskCoreException {
+	private Optional<TimelineEvent> addOtherEventDesc(BlackboardArtifact artifact) throws TskCoreException {
 		if (artifact == null) {
-			/*
-			 * This has the side effect of making sure that a TimelineEvent
-			 * object is not created for this artifact.
-			 */
 			return null;
 		}
-
-		final Map<Integer, BlackboardAttribute> attrMapping = artifact.getAttributes().stream()
-				.collect(Collectors.toMap((attr) -> attr.getAttributeType().getTypeID(), (attr) -> attr, (attr1, attr2) -> attr1));
-
-		Long timeVal = TIME_VALUE_ATTRIBUTES.stream()
-				.map((typeId) -> attrMapping.get(typeId))
-				.filter(attr -> attr != null)
+		
+		Long timeVal = artifact.getAttributes().stream()
+				.filter((attr) -> attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME)
 				.map(attr -> attr.getValueLong())
 				.findFirst()
 				.orElse(null);
@@ -655,30 +641,33 @@ public final class TimelineManager {
 		}
 
 		String description = String.format("%s: %d", artifact.getArtifactTypeName(), artifact.getArtifactID());
-		return new TimelineEventDescriptionWithTime(timeVal, description, description, description);
+		
+		TimelineEventDescriptionWithTime evtWDesc = new TimelineEventDescriptionWithTime(timeVal, description, description, description);
+		
+		TimelineEventType evtType = (ARTIFACT_TYPE_IDS.contains(artifact.getArtifactTypeID())) ? 
+				TimelineEventType.STANDARD_OTHER : 
+				TimelineEventType.CUSTOM_OTHER;
+		
+		return addArtifactEvent(evtWDesc, evtType, artifact);
 	}
-
 
 	/**
 	 * Add an event of the given type from the given artifact. By passing the
 	 * payloadExtractor, thismethod allows a non standard description for the
 	 * given event type.
 	 *
-	 * @param payloadExtractor A Function that will create the decsription based
-	 *                         on the artifact. This allows the description to
-	 *                         be built based on an event type (usually OTHER)
-	 *                         different to the event type of the event.
-	 * @param eventType        The event type to create.
-	 * @param artifact         The artifact to create the event from.
+	 * @param eventPayload A description for this artifact including the time.
+	 * @param eventType    The event type to create.
+	 * @param artifact     The artifact to create the event from.
 	 *
 	 * @return The created event, wrapped in an Optional, or an empty Optional
 	 *         if no event was created.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<TimelineEvent> addArtifactEvent(TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> payloadExtractor,
+	private Optional<TimelineEvent> addArtifactEvent(TimelineEventDescriptionWithTime eventPayload,
 			TimelineEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
-		TimelineEventDescriptionWithTime eventPayload = payloadExtractor.apply(artifact);
+
 		if (eventPayload == null) {
 			return Optional.empty();
 		}

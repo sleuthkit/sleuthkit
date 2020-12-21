@@ -183,7 +183,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			HierarchyLevel.ROOT, null) {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
+			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, OTHER_TYPES);
 		}
 	};
 
@@ -424,19 +424,19 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
 
 	//custom event type base type
-	TimelineEventType CUSTOM_TYPES = new TimelineEventTypeImpl(22,
-			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
+	TimelineEventType OTHER_TYPES = new TimelineEventTypeImpl(22,
+			getBundle().getString("BaseTypes.otherTypes.name"), // NON-NLS
 			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(OTHER, USER_CREATED);
+			return ImmutableSortedSet.of(STANDARD_OTHER, CUSTOM_OTHER);
 		}
 	};
 
 	//generic catch all other event
-	TimelineEventType OTHER = new TimelineEventArtifactTypeSingleDescription(23,
-			getBundle().getString("CustomTypes.other.name"), //NON-NLS
-			CUSTOM_TYPES,
+	TimelineEventType STANDARD_OTHER = new TimelineEventArtifactTypeSingleDescription(23,
+			getBundle().getString("OtherTypes.standard.name"), //NON-NLS
+			OTHER_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
@@ -457,13 +457,13 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	//generic catch all other event
-	TimelineEventType USER_CREATED = new TimelineEventArtifactTypeSingleDescription(26,
-			getBundle().getString("CustomTypes.userCreated.name"),//NON-NLS
-			CUSTOM_TYPES,
+	TimelineEventType CUSTOM_OTHER = new TimelineEventArtifactTypeSingleDescription(26,
+			getBundle().getString("OtherTypes.custom.name"),//NON-NLS
+			OTHER_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
-
+	
 	TimelineEventType WEB_FORM_AUTOFILL = new TimelineEventArtifactTypeImpl(27,
 			getBundle().getString("WebTypes.webFormAutoFill.name"),//NON-NLS
 			WEB_ACTIVITY,
