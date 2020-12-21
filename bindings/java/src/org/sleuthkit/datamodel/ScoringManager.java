@@ -195,34 +195,35 @@ public class ScoringManager {
 	}
 
 	/**
-	 * Get the count of items within the specified data source
-	 * with the specified score.
+	 * Get the count of contents within the specified data source
+	 * with the specified aggregate score.
 	 *
 	 * @param dataSourceObjectId Data source object id.
-	 * @param score Score to look for.
+	 * @param aggregateScore Score to look for.
 	 *
-	 * @return Number of items with given score.
+	 * @return Number of contents with given score.
+	 * @throws TskCoreException if there is an error getting the count. 
 	 */
-	public long getItemCount(long dataSourceObjectId, Score score) throws TskCoreException {
+	public long getContentCount(long dataSourceObjectId, Score aggregateScore) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getItemCount(dataSourceObjectId, score, connection);
+			return getContentCount(dataSourceObjectId, aggregateScore, connection);
 		} 
 	}
 
 
 	/**
-	 * Get the count of items with the specified score. Uses the specified
+	 * Get the count of contents with the specified score. Uses the specified
 	 * transaction to obtain the database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
-	 * @param score       Score to look for.
+	 * @param aggregateScore       Score to look for.
 	 * @param transaction Transaction from which to get the connection.
 	 *
-	 * @return Number of items with given score.
+	 * @return Number of contents with given score.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException if there is an error getting the count. 
 	 */
-	private long getItemCount(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private long getContentCount(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT COUNT(obj_id) AS count FROM tsk_aggregate_score"
 				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
 				+ " AND significance = " + score.getSignificance().getId()
@@ -245,32 +246,32 @@ public class ScoringManager {
 	}
 	
 	/**
-	 * Get the items with the specified score.
+	 * Get the contents with the specified score.
 	 * 
 	 * @param dataSourceObjectId Data source object id.
 	 * @param score Score to look for.
 	 *
-	 * @return Collection of items with given score.
+	 * @return Collection of contents with given score.
 	 */
-	public List<Content> getItems(long dataSourceObjectId, Score score) throws TskCoreException {
+	public List<Content> getContent(long dataSourceObjectId, Score score) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getItems(dataSourceObjectId, score, connection);
+			return getContent(dataSourceObjectId, score, connection);
 		} 
 	}
 
 	/**
-	 * Gets the items with the specified score. Uses the specified transaction
+	 * Gets the contents with the specified score. Uses the specified transaction
 	 * to obtain the database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
 	 * @param score       Score to look for.
-	 * @param transaction Transaction from which to get the connection.
+	 * @param connection Connection to use for the query.
 	 *
-	 * @return List items with given score.
+	 * @return List of contents with given score.
 	 *
 	 * @throws TskCoreException
 	 */
-	private List<Content> getItems(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private List<Content> getContent(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT obj_id FROM tsk_aggregate_score"
 				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
 				+ " AND significance = " + score.getSignificance().getId()
@@ -290,28 +291,6 @@ public class ScoringManager {
 			throw new TskCoreException("Error getting list of items with score = " + score.toString(), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
-	 * Event fired to indicate that the score of an object has changed. 
-	 */
-	final public class FinalScoreChangedEvent {
-
-		private final long obj_id;
-		private final Score score;
-
-		public FinalScoreChangedEvent(long obj_id, Score score) {
-			this.obj_id = obj_id;
-			this.score = score;
-		}
-
-		public long getObjId() {
-			return obj_id;
-		}
-
-		public Score getScore() {
-			return score;
 		}
 	}
 }
