@@ -84,7 +84,8 @@ public final class TimelineManager {
 					.addAll(TimelineEventType.MISC_TYPES.getChildren())
 					.addAll(TimelineEventType.CUSTOM_TYPES.getChildren())
 					.build();
-	
+
+	// all known artifact type ids (used for determining if an artifact is standard or custom event)
 	private static final Set<Integer> ARTIFACT_TYPE_IDS = Stream.of(BlackboardArtifact.ARTIFACT_TYPE.values())
 			.map(artType -> artType.getTypeID())
 			.collect(Collectors.toSet());
@@ -626,19 +627,22 @@ public final class TimelineManager {
 		return newEvents;
 	}
 
-
-
 	/**
-	 * Adds 'other' type events for artifacts that have no corresponding TimelineEventType.
+	 * Adds 'other' type events for artifacts that have no corresponding
+	 * TimelineEventType.
+	 *
 	 * @param artifact The artifact for which to add a new timeline event.
-	 * @return An optional of a new timeline event or empty if no time attribute can be determined or the artifact is null.
-	 * @throws TskCoreException 
+	 *
+	 * @return An optional of a new timeline event or empty if no time attribute
+	 *         can be determined or the artifact is null.
+	 *
+	 * @throws TskCoreException
 	 */
 	private Optional<TimelineEvent> addOtherEventDesc(BlackboardArtifact artifact) throws TskCoreException {
 		if (artifact == null) {
 			return Optional.empty();
 		}
-		
+
 		Long timeVal = artifact.getAttributes().stream()
 				.filter((attr) -> attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME)
 				.map(attr -> attr.getValueLong())
@@ -650,13 +654,13 @@ public final class TimelineManager {
 		}
 
 		String description = String.format("%s: %d", artifact.getArtifactTypeName(), artifact.getId());
-		
+
 		TimelineEventDescriptionWithTime evtWDesc = new TimelineEventDescriptionWithTime(timeVal, description, description, description);
-		
-		TimelineEventType evtType = (ARTIFACT_TYPE_IDS.contains(artifact.getArtifactTypeID())) ? 
-				TimelineEventType.OTHER : 
-				TimelineEventType.USER_CREATED;
-		
+
+		TimelineEventType evtType = (ARTIFACT_TYPE_IDS.contains(artifact.getArtifactTypeID()))
+				? TimelineEventType.OTHER
+				: TimelineEventType.USER_CREATED;
+
 		return addArtifactEvent(evtWDesc, evtType, artifact);
 	}
 
