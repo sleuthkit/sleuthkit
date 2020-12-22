@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.Score.Confidence;
 import org.sleuthkit.datamodel.Score.Significance;
@@ -161,7 +160,6 @@ public class ScoringManager {
 
 
 	/**
-	 * /**
 	 * Updates the score for the specified object, if the given analysis result
 	 * score is higher than the score the object already has.
 	 *
@@ -170,7 +168,7 @@ public class ScoringManager {
 	 * @param resultScore Score for a newly added analysis result.
 	 * @param transaction Transaction to use for the update.
 	 *
-	 * @return Final score for the object.
+	 * @return Aggregate score for the object.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -223,11 +221,11 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException if there is an error getting the count. 
 	 */
-	private long getContentCount(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private long getContentCount(long dataSourceObjectId, Score aggregateScore, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT COUNT(obj_id) AS count FROM tsk_aggregate_score"
 				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
-				+ " AND significance = " + score.getSignificance().getId()
-				+ " AND confidence = " + score.getConfidence().getId();
+				+ " AND significance = " + aggregateScore.getSignificance().getId()
+				+ " AND confidence = " + aggregateScore.getConfidence().getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (Statement statement = connection.createStatement();
@@ -239,7 +237,7 @@ public class ScoringManager {
 			}
 			return count;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting count of items with score = " + score.toString(), ex);
+			throw new TskCoreException("Error getting count of items with score = " + aggregateScore.toString(), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -249,13 +247,13 @@ public class ScoringManager {
 	 * Get the contents with the specified score.
 	 * 
 	 * @param dataSourceObjectId Data source object id.
-	 * @param score Score to look for.
+	 * @param aggregateScore Score to look for.
 	 *
 	 * @return Collection of contents with given score.
 	 */
-	public List<Content> getContent(long dataSourceObjectId, Score score) throws TskCoreException {
+	public List<Content> getContent(long dataSourceObjectId, Score aggregateScore) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getContent(dataSourceObjectId, score, connection);
+			return getContent(dataSourceObjectId, aggregateScore, connection);
 		} 
 	}
 
@@ -264,18 +262,18 @@ public class ScoringManager {
 	 * to obtain the database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
-	 * @param score       Score to look for.
+	 * @param aggregateScore       Score to look for.
 	 * @param connection Connection to use for the query.
 	 *
 	 * @return List of contents with given score.
 	 *
 	 * @throws TskCoreException
 	 */
-	private List<Content> getContent(long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private List<Content> getContent(long dataSourceObjectId, Score aggregateScore, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT obj_id FROM tsk_aggregate_score"
 				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
-				+ " AND significance = " + score.getSignificance().getId()
-				+ " AND confidence = " + score.getConfidence().getId();
+				+ " AND significance = " + aggregateScore.getSignificance().getId()
+				+ " AND confidence = " + aggregateScore.getConfidence().getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (Statement statement = connection.createStatement();
@@ -288,7 +286,7 @@ public class ScoringManager {
 			}
 			return items;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting list of items with score = " + score.toString(), ex);
+			throw new TskCoreException("Error getting list of items with score = " + aggregateScore.toString(), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
