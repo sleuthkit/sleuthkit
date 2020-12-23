@@ -24,6 +24,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -122,6 +123,10 @@ public class DataModelTestSuite {
 			standardFile.createNewFile();
 			java.io.File dbFile = new java.io.File(dbPath);
 			dbFile.delete();
+			if (dbFile.getParentFile() != null) {
+				dbFile.getParentFile().mkdirs();
+			}
+			
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 
 			String timezone = "";
@@ -228,7 +233,7 @@ public class DataModelTestSuite {
 	 * @return the path for an output file
 	 */
 	public static String buildPath(String path, String name, String type, String Ext) {
-		return path + java.io.File.separator + name + type + Ext;
+		return Paths.get(path, name + type + Ext).toString();
 	}
 
 	/**

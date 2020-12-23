@@ -218,7 +218,7 @@ public class HashUtility {
 	 *
 	 * @throws java.io.IOException
 	 * 
-	 * @decprecated Use calculateHashes() instead
+	 * @deprecated Use calculateHashes() instead
 	 */
 	@Deprecated
 	static public String calculateMd5Hash(Content content) throws IOException {

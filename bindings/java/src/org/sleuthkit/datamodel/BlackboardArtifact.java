@@ -1026,30 +1026,30 @@ public class BlackboardArtifact implements Content {
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGenInfo.text")),
 		/**
-		 * A Web bookmark.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper
-		 * to create bookmark artifacts.
+		 * A Web bookmark. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+		 * create bookmark artifacts.
 		 */
 		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebBookmark.text")),
 		/**
-		 * A Web cookie.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper
-		 * to create cookie artifacts.
+		 * A Web cookie. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+		 * create cookie artifacts.
 		 */
 		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE",
 				bundle.getString("BlackboardArtifact.tskWebCookie.text")), //NON-NLS				
 		/**
-		 * A Web history.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper
-		 * to create history artifacts.
+		 * A Web history. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+		 * create history artifacts.
 		 */
 		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebHistory.text")),
 		/**
-		 * A Web download.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper
-		 * to create download artifacts.
+		 * A Web download. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+		 * create download artifacts.
 		 */
 		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebDownload.text")),
@@ -1153,23 +1153,24 @@ public class BlackboardArtifact implements Content {
 				bundle.getString("BlackboardArtifact.tskToolOutput.text")),
 		/**
 		 * A contact extracted from a phone, or from an address
-		 * book/email/messaging application.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper
+		 * book/email/messaging application. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper
 		 * to create contact artifacts.
 		 */
 		TSK_CONTACT(23, "TSK_CONTACT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskContact.text")),
 		/**
 		 * An SMS/MMS message extracted from phone, or from another messaging
-		 * application, like IM.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper
+		 * application, like IM. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper
 		 * to create message artifacts.
 		 */
 		TSK_MESSAGE(24, "TSK_MESSAGE", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskMessage.text")),
 		/**
-		 * A phone call log extracted from a phone or softphone application.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper
+		 * A phone call log extracted from a phone or softphone application. Use
+		 * methods in
+		 * org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper
 		 * to create call log artifacts.
 		 */
 		TSK_CALLLOG(25, "TSK_CALLLOG", //NON-NLS
@@ -1226,8 +1227,8 @@ public class BlackboardArtifact implements Content {
 		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * A route based on GPS coordinates.
-		 * Use org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addRoute()
+		 * A route based on GPS coordinates. Use
+		 * org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addRoute()
 		 * to create route artifacts.
 		 */
 		TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", //NON-NLS
@@ -1293,16 +1294,16 @@ public class BlackboardArtifact implements Content {
 		TSK_DATA_SOURCE_USAGE(48, "TSK_DATA_SOURCE_USAGE", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskDataSourceUsage.text")),
 		/**
-		 * Indicates auto fill data from a Web form.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper
-		 * to create web form autofill artifacts.
+		 * Indicates auto fill data from a Web form. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+		 * create web form autofill artifacts.
 		 */
 		TSK_WEB_FORM_AUTOFILL(49, "TSK_WEB_FORM_AUTOFILL", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebFormAutofill.text")),
 		/**
-		 * Indicates an person's address filled in a web form.
-		 * Use methods in org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper
-		 * to create web form address artifacts.
+		 * Indicates an person's address filled in a web form. Use methods in
+		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+		 * create web form address artifacts.
 		 */
 		TSK_WEB_FORM_ADDRESS(50, "TSK_WEB_FORM_ADDRESSES ", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
@@ -1346,8 +1347,8 @@ public class BlackboardArtifact implements Content {
 		TSK_METADATA(57, "TSK_METADATA", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskMetadata.text")),
 		/**
-		 * Stores a GPS track log.
-		 * Use org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addTrack() 
+		 * Stores a GPS track log. Use
+		 * org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addTrack()
 		 * to create track artifacts.
 		 */
 		TSK_GPS_TRACK(58, "TSK_GPS_TRACK",
@@ -1356,13 +1357,58 @@ public class BlackboardArtifact implements Content {
 		 * Stores a role on a given domain.
 		 */
 		TSK_WEB_ACCOUNT_TYPE(59, "TSK_WEB_ACCOUNT_TYPE",
-				bundle.getString("BlackboardArtifact.tskWebAccountType.text"));
+				bundle.getString("BlackboardArtifact.tskWebAccountType.text")),
+		/**
+		 * Screen shots from device or Application.
+		 */
+		TSK_SCREEN_SHOTS(60, "TSK_SCREEN_SHOTS",
+				bundle.getString("BlackboardArtifact.tskScreenShots.text")),
+		/**
+		 * DHCP Information that is store for a device.
+		 */
+		TSK_IP_DHCP(61, "TSK_IP_DHCP",
+				bundle.getString("BlackboardArtifact.tskDhcpInfo.text")),
+		/**
+		 * Notifications Sent to User.
+		 */
+		TSK_PROG_NOTIFICATIONS(62, "TSK_PROG_NOTIFICATIONS",
+				bundle.getString("BlackboardArtifact.tskProgNotifications.text")),
+		/**
+		 * System/Application/File backup.
+		 */
+		TSK_BACKUP_EVENT(63, "TSK_BACKUP_EVENT",
+				bundle.getString("BlackboardArtifact.tskBackupEvent.text")),
+		/**
+		 * Programs that have been deleted.
+		 */
+		TSK_DELETED_PROG(64, "TSK_DELETED_PROG",
+				bundle.getString("BlackboardArtifact.tskDeletedProg.text")),
+		/**
+		 * Activity on the System/Application.
+		 */
+		TSK_USER_DEVICE_EVENT(65, "TSK_USER_DEVICE_EVENT",
+				bundle.getString("BlackboardArtifact.tskUserDeviceEvent.text")),
+		/**
+		 * Indicates that the file had a yara pattern match hit.
+		 */
+		TSK_YARA_HIT(66, "TSK_YARA_HIT",
+				bundle.getString("BlackboardArtifact.tskYaraHit.text")),
+		/**
+		 * Stores the outline of an area using GPS coordinates.
+		 */
+		TSK_GPS_AREA(67, "TSK_GPS_AREA",
+				bundle.getString("BlackboardArtifact.tskGPSArea.text")),
+
+		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
+				bundle.getString("BlackboardArtifact.tskWebCategorization.text")),
+
+		;
+
 		/*
 		 * To developers: For each new artifact, ensure that: - The enum value
 		 * has 1-line JavaDoc description - The artifact catalog
 		 * (artifact_catalog.dox) is updated to reflect the attributes it uses
 		 */
-
 		private final String label;
 		private final int typeId;
 		private final String displayName;
