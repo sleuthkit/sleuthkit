@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -463,25 +464,34 @@ public final class TimelineManager {
 	private long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
 			String fullDescription, String medDescription, String shortDescription,
 			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException {
-		String insertDescriptionSql
-				= "INSERT INTO tsk_event_descriptions ( "
+		String tableValuesClause
+				= "tsk_event_descriptions ( "
 				+ "data_source_obj_id, content_obj_id, artifact_id,  "
 				+ " full_description, med_description, short_description, "
 				+ " hash_hit, tagged "
-				+ " ) VALUES ("
-				+ dataSourceObjId + ","
-				+ fileObjId + ","
-				+ Objects.toString(artifactID, "NULL") + ","
-				+ quotePreservingNull(fullDescription) + ","
-				+ quotePreservingNull(medDescription) + ","
-				+ quotePreservingNull(shortDescription) + ", "
-				+ booleanToInt(hasHashHits) + ","
-				+ booleanToInt(tagged)
-				+ " )";
+				+ " ) VALUES "
+				+ "(?, ?, ?, ?, ?, ?, ?, ?)";
+
+		String insertDescriptionSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (Statement insertDescriptionStmt = connection.createStatement()) {
-			connection.executeUpdate(insertDescriptionStmt, insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS);
+		try (PreparedStatement insertDescriptionStmt = connection.prepareStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+			insertDescriptionStmt.setLong(1, dataSourceObjId);
+			insertDescriptionStmt.setLong(2, fileObjId);
+
+			if (artifactID == null) {
+				insertDescriptionStmt.setNull(3, Types.INTEGER);
+			} else {
+				insertDescriptionStmt.setLong(3, artifactID);
+			}
+
+			insertDescriptionStmt.setString(4, fullDescription);
+			insertDescriptionStmt.setString(5, medDescription);
+			insertDescriptionStmt.setString(6, shortDescription);
+			insertDescriptionStmt.setInt(7, booleanToInt(hasHashHits));
+			insertDescriptionStmt.setInt(8, booleanToInt(tagged));
+
+			connection.executeUpdate(insertDescriptionStmt);
 			try (ResultSet generatedKeys = insertDescriptionStmt.getGeneratedKeys()) {
 				generatedKeys.next();
 				return generatedKeys.getLong(1);
@@ -728,13 +738,17 @@ public final class TimelineManager {
 	}
 
 	private long addEventWithExistingDescription(Long time, TimelineEventType type, long descriptionID, CaseDbConnection connection) throws TskCoreException {
-		String insertEventSql
-				= "INSERT INTO tsk_events ( event_type_id, event_description_id , time) "
-				+ " VALUES (" + type.getTypeID() + ", " + descriptionID + ", " + time + ")";
+		String tableValuesClause
+				= "tsk_events ( event_type_id, event_description_id , time) VALUES (?, ?, ?)";
+
+		String insertEventSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (Statement insertRowStmt = connection.createStatement();) {
-			connection.executeUpdate(insertRowStmt, insertEventSql, PreparedStatement.RETURN_GENERATED_KEYS);
+		try (PreparedStatement insertRowStmt = connection.prepareStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);) {
+			insertRowStmt.setLong(1, type.getTypeID());
+			insertRowStmt.setLong(2, descriptionID);
+			insertRowStmt.setLong(3, time);
+			connection.executeUpdate(insertRowStmt);
 
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				generatedKeys.next();
@@ -1173,6 +1187,28 @@ public final class TimelineManager {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Creates a sql statement that will do nothing due to unique constraint.
+	 *
+	 * @param insertTableValues the table, columns, and values portion of the
+	 *                          insert statement (i.e. 'table_name(col1, col2)
+	 *                          VALUES (rowVal1, rowVal2)').
+	 *
+	 * @return The sql statement.
+	 *
+	 * @throws TskCoreException
+	 */
+	private String getSqlIgnoreConflict(String insertTableValues) throws TskCoreException {
+		switch (caseDB.getDatabaseType()) {
+			case POSTGRESQL:
+				return "INSERT INTO " + insertTableValues + " ON CONFLICT DO NOTHING";
+			case SQLITE:
+				return "INSERT OR IGNORE INTO " + insertTableValues;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + caseDB.getDatabaseType().name());
+		}
 	}
 
 	private String getTrueLiteral() {
