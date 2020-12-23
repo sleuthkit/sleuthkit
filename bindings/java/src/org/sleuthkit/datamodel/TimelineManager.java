@@ -496,7 +496,7 @@ public final class TimelineManager {
 			if (row < 1) {
 				return null;
 			}
-			
+
 			try (ResultSet generatedKeys = insertDescriptionStmt.getGeneratedKeys()) {
 				if (generatedKeys.next()) {
 					return generatedKeys.getLong(1);
@@ -738,13 +738,13 @@ public final class TimelineManager {
 			if (descriptionID == null) {
 				return Optional.empty();
 			}
-			
+
 			// if not inserted eventID, already present, return empty.
 			Long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
 			if (eventID == null) {
 				return Optional.empty();
 			}
-			
+
 			event = new TimelineEvent(eventID, dataSourceObjectID, fileObjId, artifactID,
 					time, eventType, fullDescription, medDescription, shortDescription,
 					hasHashHits, tagged);
@@ -772,7 +772,7 @@ public final class TimelineManager {
 			if (row < 1) {
 				return null;
 			}
-			
+
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				if (generatedKeys.next()) {
 					return generatedKeys.getLong(1);
