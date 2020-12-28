@@ -394,8 +394,14 @@ class TskCaseDbBridge {
                         parentDirCache.put(key, objId);
                     }
                 } catch (TskCoreException ex) {
-                    logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
+                    if (computedParentObjId > 0) {
+                        // Most likely a database error occurred
+                        logger.log(Level.SEVERE, "Error adding file to the database - parent object ID: " + computedParentObjId
                             + ", file system object ID: " + fileInfo.fsObjId + ", name: " + fileInfo.name, ex);
+                    } else {
+                        // The parent lookup failed
+                        logger.log(Level.SEVERE, "Error adding file to the database", ex);
+                    }
                 }
             }
             commitTransaction();
@@ -436,7 +442,7 @@ class TskCaseDbBridge {
         } else {
             // There's no reason to do a database query since every folder added is being
             // stored in the cache.
-            throw new TskCoreException("Parent not found in cache (fsObjId: " +fileInfo.fsObjId + ", parMetaAddr: " + fileInfo.parMetaAddr
+            throw new TskCoreException("Could not find parent (fsObjId: " +fileInfo.fsObjId + ", parMetaAddr: " + fileInfo.parMetaAddr
                 + ", parSeq: " + fileInfo.parSeq + ", parentPath: " + parentPath + ")");
         }
     }
