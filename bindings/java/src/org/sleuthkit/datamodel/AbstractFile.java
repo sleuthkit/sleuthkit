@@ -638,7 +638,8 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Converts a file offset and length into a series of TskFileRange objects
-	 * whose offsets are relative to the image.
+	 * whose offsets are relative to the image.  This method will only work on
+	 * files with layout ranges.
 	 *
 	 * @param fileOffset The byte offset in this file to map.
 	 * @param length     The length of bytes starting at fileOffset requested.
