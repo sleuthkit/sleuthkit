@@ -35,7 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -460,10 +459,11 @@ public final class TimelineManager {
 	 * @return the event_decription_id of the inserted row.
 	 *
 	 * @throws TskCoreException
+	 * @throws DuplicateException
 	 */
-	private Long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
+	private long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
 			String fullDescription, String medDescription, String shortDescription,
-			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException {
+			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException, DuplicateException {
 		String tableValuesClause
 				= "tsk_event_descriptions ( "
 				+ "data_source_obj_id, content_obj_id, artifact_id,  "
@@ -492,16 +492,25 @@ public final class TimelineManager {
 			insertDescriptionStmt.setInt(7, booleanToInt(hasHashHits));
 			insertDescriptionStmt.setInt(8, booleanToInt(tagged));
 			int row = insertDescriptionStmt.executeUpdate();
-			// if no inserted rows, return null.
+			// if no inserted rows, there is a conflict due to a duplicate event 
+			// description.  If that happens, return null as no id was inserted.
 			if (row < 1) {
-				return null;
+				throw new DuplicateException(String.format(
+						"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
+						fullDescription == null ? "<null>" : fullDescription,
+						fileObjId,
+						artifactID == null ? "<null>" : Long.toString(artifactID)));
 			}
 
 			try (ResultSet generatedKeys = insertDescriptionStmt.getGeneratedKeys()) {
 				if (generatedKeys.next()) {
 					return generatedKeys.getLong(1);
 				} else {
-					return null;
+					throw new DuplicateException(String.format(
+							"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
+							fullDescription == null ? "<null>" : fullDescription,
+							fileObjId,
+							artifactID == null ? "<null>" : Long.toString(artifactID)));
 				}
 			}
 		} catch (SQLException ex) {
@@ -554,30 +563,30 @@ public final class TimelineManager {
 		Set<TimelineEvent> events = new HashSet<>();
 		caseDB.acquireSingleUserCaseWriteLock();
 		try {
-			Long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
+			long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
 					description, null, null, false, false, connection);
 
-			if (descriptionID != null) {
-				for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
-					Long time = timeEntry.getValue();
-					if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
-						TimelineEventType type = timeEntry.getKey();
-						long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
+			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
+				Long time = timeEntry.getValue();
+				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
+					TimelineEventType type = timeEntry.getKey();
+					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
-						/*
-						 * Last two flags indicating hasTags and hasHashHits are
-						 * both set to false with the assumption that this is
-						 * not possible for a new file. See JIRA-5407
-						 */
-						events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
-								description, null, null, false, false));
-					} else {
-						if (time >= MAX_TIMESTAMP_TO_ADD) {
-							logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
-						}
+					/*
+					 * Last two flags indicating hasTags and hasHashHits are
+					 * both set to false with the assumption that this is not
+					 * possible for a new file. See JIRA-5407
+					 */
+					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
+							description, null, null, false, false));
+				} else {
+					if (time >= MAX_TIMESTAMP_TO_ADD) {
+						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
 					}
 				}
 			}
+		} catch (DuplicateException dupEx) {
+			logger.log(Level.SEVERE, "Attempt to make file event duplicate.", dupEx);
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
@@ -616,9 +625,13 @@ public final class TimelineManager {
 				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
 			}
 
-			// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
-			addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER).makeEventDescription(artifact), eventType, artifact)
-					.ifPresent(newEvents::add);
+			try {
+				// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
+				addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER).makeEventDescription(artifact), eventType, artifact)
+						.ifPresent(newEvents::add);
+			} catch (DuplicateException ex) {
+				logger.log(Level.SEVERE, "Attempt to make a timeline event artifact duplicate.", ex);
+			}
 		} else {
 			/*
 			 * If there are any event types configured to make descriptions
@@ -630,14 +643,24 @@ public final class TimelineManager {
 					.filter(eventType -> eventType.getArtifactTypeID() == artifact.getArtifactTypeID())
 					.collect(Collectors.toSet());
 
+			boolean duplicateExists = false;
 			for (TimelineEventArtifactTypeImpl eventType : eventTypesForArtifact) {
-				addArtifactEvent(eventType.makeEventDescription(artifact), eventType, artifact)
-						.ifPresent(newEvents::add);
+				try {
+					addArtifactEvent(eventType.makeEventDescription(artifact), eventType, artifact)
+							.ifPresent(newEvents::add);
+				} catch (DuplicateException ex) {
+					duplicateExists = true;
+					logger.log(Level.SEVERE, "Attempt to make artifact event duplicate.", ex);
+				}
 			}
 
 			// if no other timeline events were created directly, then create new 'other' ones.
-			if (newEvents.isEmpty()) {
-				addOtherEventDesc(artifact).ifPresent(newEvents::add);
+			if (!duplicateExists && newEvents.isEmpty()) {
+				try {
+					addOtherEventDesc(artifact).ifPresent(newEvents::add);
+				} catch (DuplicateException ex) {
+					logger.log(Level.SEVERE, "Attempt to make 'other' artifact event duplicate.", ex);
+				}
 			}
 		}
 		newEvents.stream()
@@ -657,7 +680,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<TimelineEvent> addOtherEventDesc(BlackboardArtifact artifact) throws TskCoreException {
+	private Optional<TimelineEvent> addOtherEventDesc(BlackboardArtifact artifact) throws TskCoreException, DuplicateException {
 		if (artifact == null) {
 			return Optional.empty();
 		}
@@ -684,9 +707,7 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Add an event of the given type from the given artifact. By passing the
-	 * payloadExtractor, thismethod allows a non standard description for the
-	 * given event type.
+	 * Add an event of the given type from the given artifact to the database.
 	 *
 	 * @param eventPayload A description for this artifact including the time.
 	 * @param eventType    The event type to create.
@@ -696,9 +717,10 @@ public final class TimelineManager {
 	 *         if no event was created.
 	 *
 	 * @throws TskCoreException
+	 * @throws DuplicateException
 	 */
 	private Optional<TimelineEvent> addArtifactEvent(TimelineEventDescriptionWithTime eventPayload,
-			TimelineEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
+			TimelineEventType eventType, BlackboardArtifact artifact) throws TskCoreException, DuplicateException {
 
 		if (eventPayload == null) {
 			return Optional.empty();
@@ -730,20 +752,11 @@ public final class TimelineManager {
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = caseDB.getConnection();) {
 
-			Long descriptionID = addEventDescription(dataSourceObjectID, fileObjId, artifactID,
+			long descriptionID = addEventDescription(dataSourceObjectID, fileObjId, artifactID,
 					fullDescription, medDescription, shortDescription,
 					hasHashHits, tagged, connection);
 
-			// if no inserted descriptionID, already present, return empty.
-			if (descriptionID == null) {
-				return Optional.empty();
-			}
-
-			// if not inserted eventID, already present, return empty.
-			Long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
-			if (eventID == null) {
-				return Optional.empty();
-			}
+			long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
 
 			event = new TimelineEvent(eventID, dataSourceObjectID, fileObjId, artifactID,
 					time, eventType, fullDescription, medDescription, shortDescription,
@@ -755,7 +768,7 @@ public final class TimelineManager {
 		return Optional.of(event);
 	}
 
-	private Long addEventWithExistingDescription(Long time, TimelineEventType type, long descriptionID, CaseDbConnection connection) throws TskCoreException {
+	private long addEventWithExistingDescription(Long time, TimelineEventType type, long descriptionID, CaseDbConnection connection) throws TskCoreException, DuplicateException {
 		String tableValuesClause
 				= "tsk_events ( event_type_id, event_description_id , time) VALUES (?, ?, ?)";
 
@@ -770,14 +783,20 @@ public final class TimelineManager {
 			int row = insertRowStmt.executeUpdate();
 			// if no inserted rows, return null.
 			if (row < 1) {
-				return null;
+				throw new DuplicateException(String.format("An event already exists in the event table for this item [time: %s, type: %s, description: %d].",
+						time == null ? "<null>" : Long.toString(time),
+						type == null ? "<null>" : type.toString(),
+						descriptionID));
 			}
 
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				if (generatedKeys.next()) {
 					return generatedKeys.getLong(1);
 				} else {
-					return null;
+					throw new DuplicateException(String.format("An event already exists in the event table for this item [time: %s, type: %s, description: %d].",
+							time == null ? "<null>" : Long.toString(time),
+							type == null ? "<null>" : type.toString(),
+							descriptionID));
 				}
 			}
 		} catch (SQLException ex) {
@@ -785,10 +804,6 @@ public final class TimelineManager {
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
-	}
-
-	static private String quotePreservingNull(String value) {
-		return isNull(value) ? " NULL " : "'" + escapeSingleQuotes(value) + "'";//NON-NLS
 	}
 
 	private Map<Long, Long> getEventAndDescriptionIDs(CaseDbConnection conn, long contentObjID, boolean includeArtifacts) throws TskCoreException {
@@ -1267,15 +1282,17 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Functional interface for a function from I to O that throws
-	 * TskCoreException.
-	 *
-	 * @param <I> Input type.
-	 * @param <O> Output type.
+	 * Exception thrown in the event of a duplicate.
 	 */
-	@FunctionalInterface
-	private interface TSKCoreCheckedFunction<I, O> {
+	private static class DuplicateException extends Exception {
 
-		O apply(I input) throws TskCoreException;
+		/**
+		 * Main constructor.
+		 *
+		 * @param message Message for duplicate exception.
+		 */
+		DuplicateException(String message) {
+			super(message);
+		}
 	}
 }
