@@ -1285,7 +1285,8 @@ public final class TimelineManager {
 	 * Exception thrown in the event of a duplicate.
 	 */
 	private static class DuplicateException extends Exception {
-
+		private static final long serialVersionUID = 1L;
+		
 		/**
 		 * Main constructor.
 		 *
