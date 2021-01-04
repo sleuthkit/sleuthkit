@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,12 +35,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
@@ -55,7 +56,7 @@ import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
 public final class TimelineManager {
 
 	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
-	
+
 	/**
 	 * Timeline event types added to the case database when it is created.
 	 */
@@ -84,13 +85,19 @@ public final class TimelineManager {
 					.addAll(TimelineEventType.CUSTOM_TYPES.getChildren())
 					.build();
 
+	// all known artifact type ids (used for determining if an artifact is standard or custom event)
+	private static final Set<Integer> ARTIFACT_TYPE_IDS = Stream.of(BlackboardArtifact.ARTIFACT_TYPE.values())
+			.map(artType -> artType.getTypeID())
+			.collect(Collectors.toSet());
+
 	private final SleuthkitCase caseDB;
 
 	/**
-	 * Maximum timestamp to look to in future. Twelve (12) years from current date. 
+	 * Maximum timestamp to look to in future. Twelve (12) years from current
+	 * date.
 	 */
 	private static final Long MAX_TIMESTAMP_TO_ADD = Instant.now().getEpochSecond() + 394200000;
-	
+
 	/**
 	 * Mapping of timeline event type IDs to TimelineEventType objects.
 	 */
@@ -452,32 +459,59 @@ public final class TimelineManager {
 	 * @return the event_decription_id of the inserted row.
 	 *
 	 * @throws TskCoreException
+	 * @throws DuplicateException
 	 */
 	private long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
 			String fullDescription, String medDescription, String shortDescription,
-			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException {
-		String insertDescriptionSql
-				= "INSERT INTO tsk_event_descriptions ( "
+			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException, DuplicateException {
+		String tableValuesClause
+				= "tsk_event_descriptions ( "
 				+ "data_source_obj_id, content_obj_id, artifact_id,  "
 				+ " full_description, med_description, short_description, "
 				+ " hash_hit, tagged "
-				+ " ) VALUES ("
-				+ dataSourceObjId + ","
-				+ fileObjId + ","
-				+ Objects.toString(artifactID, "NULL") + ","
-				+ quotePreservingNull(fullDescription) + ","
-				+ quotePreservingNull(medDescription) + ","
-				+ quotePreservingNull(shortDescription) + ", "
-				+ booleanToInt(hasHashHits) + ","
-				+ booleanToInt(tagged)
-				+ " )";
+				+ " ) VALUES "
+				+ "(?, ?, ?, ?, ?, ?, ?, ?)";
+
+		String insertDescriptionSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (Statement insertDescriptionStmt = connection.createStatement()) {
-			connection.executeUpdate(insertDescriptionStmt, insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS);
+		try (PreparedStatement insertDescriptionStmt = connection.prepareStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+			insertDescriptionStmt.clearParameters();
+			insertDescriptionStmt.setLong(1, dataSourceObjId);
+			insertDescriptionStmt.setLong(2, fileObjId);
+
+			if (artifactID == null) {
+				insertDescriptionStmt.setNull(3, Types.INTEGER);
+			} else {
+				insertDescriptionStmt.setLong(3, artifactID);
+			}
+
+			insertDescriptionStmt.setString(4, fullDescription);
+			insertDescriptionStmt.setString(5, medDescription);
+			insertDescriptionStmt.setString(6, shortDescription);
+			insertDescriptionStmt.setInt(7, booleanToInt(hasHashHits));
+			insertDescriptionStmt.setInt(8, booleanToInt(tagged));
+			int row = insertDescriptionStmt.executeUpdate();
+			// if no inserted rows, there is a conflict due to a duplicate event 
+			// description.  If that happens, return null as no id was inserted.
+			if (row < 1) {
+				throw new DuplicateException(String.format(
+						"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
+						fullDescription == null ? "<null>" : fullDescription,
+						fileObjId,
+						artifactID == null ? "<null>" : Long.toString(artifactID)));
+			}
+
 			try (ResultSet generatedKeys = insertDescriptionStmt.getGeneratedKeys()) {
-				generatedKeys.next();
-				return generatedKeys.getLong(1);
+				if (generatedKeys.next()) {
+					return generatedKeys.getLong(1);
+				} else {
+					throw new DuplicateException(String.format(
+							"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
+							fullDescription == null ? "<null>" : fullDescription,
+							fileObjId,
+							artifactID == null ? "<null>" : Long.toString(artifactID)));
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event description.", ex); // NON-NLS
@@ -494,20 +528,20 @@ public final class TimelineManager {
 
 		return events;
 	}
-	
+
 	/**
-	 * Adds timeline events for the new file to the database.
-	 * Does not fire TSKEvents for each addition. This method should only be used if an 
-	 * update event will be sent later. For example, a data source processor may
-	 * send out a single event that a data source has been added rather than an event
+	 * Adds timeline events for the new file to the database. Does not fire
+	 * TSKEvents for each addition. This method should only be used if an update
+	 * event will be sent later. For example, a data source processor may send
+	 * out a single event that a data source has been added rather than an event
 	 * for each timeline event.
-	 * 
-	 * @param file        The new file
-	 * @param connection  Database connection to use
-	 * 
+	 *
+	 * @param file       The new file
+	 * @param connection Database connection to use
+	 *
 	 * @return Set of new events
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	Set<TimelineEvent> addEventsForNewFileQuiet(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
 		//gather time stamps into map
@@ -551,7 +585,8 @@ public final class TimelineManager {
 					}
 				}
 			}
-
+		} catch (DuplicateException dupEx) {
+			logger.log(Level.SEVERE, "Attempt to make file event duplicate.", dupEx);
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
@@ -590,9 +625,13 @@ public final class TimelineManager {
 				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
 			}
 
-			// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
-			addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER)::makeEventDescription, eventType, artifact)
-					.ifPresent(newEvents::add);
+			try {
+				// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
+				addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER).makeEventDescription(artifact), eventType, artifact)
+						.ifPresent(newEvents::add);
+			} catch (DuplicateException ex) {
+				logger.log(Level.SEVERE, "Attempt to make a timeline event artifact duplicate.", ex);
+			}
 		} else {
 			/*
 			 * If there are any event types configured to make descriptions
@@ -604,9 +643,24 @@ public final class TimelineManager {
 					.filter(eventType -> eventType.getArtifactTypeID() == artifact.getArtifactTypeID())
 					.collect(Collectors.toSet());
 
+			boolean duplicateExists = false;
 			for (TimelineEventArtifactTypeImpl eventType : eventTypesForArtifact) {
-				addArtifactEvent(eventType::makeEventDescription, eventType, artifact)
-						.ifPresent(newEvents::add);
+				try {
+					addArtifactEvent(eventType.makeEventDescription(artifact), eventType, artifact)
+							.ifPresent(newEvents::add);
+				} catch (DuplicateException ex) {
+					duplicateExists = true;
+					logger.log(Level.SEVERE, "Attempt to make artifact event duplicate.", ex);
+				}
+			}
+
+			// if no other timeline events were created directly, then create new 'other' ones.
+			if (!duplicateExists && newEvents.isEmpty()) {
+				try {
+					addOtherEventDesc(artifact).ifPresent(newEvents::add);
+				} catch (DuplicateException ex) {
+					logger.log(Level.SEVERE, "Attempt to make 'other' artifact event duplicate.", ex);
+				}
 			}
 		}
 		newEvents.stream()
@@ -616,25 +670,58 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Add an event of the given type from the given artifact. By passing the
-	 * payloadExtractor, thismethod allows a non standard description for the
-	 * given event type.
+	 * Adds 'other' type events for artifacts that have no corresponding
+	 * TimelineEventType.
 	 *
-	 * @param payloadExtractor A Function that will create the decsription based
-	 *                         on the artifact. This allows the description to
-	 *                         be built based on an event type (usually OTHER)
-	 *                         different to the event type of the event.
-	 * @param eventType        The event type to create.
-	 * @param artifact         The artifact to create the event from.
+	 * @param artifact The artifact for which to add a new timeline event.
+	 *
+	 * @return An optional of a new timeline event or empty if no time attribute
+	 *         can be determined or the artifact is null.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Optional<TimelineEvent> addOtherEventDesc(BlackboardArtifact artifact) throws TskCoreException, DuplicateException {
+		if (artifact == null) {
+			return Optional.empty();
+		}
+
+		Long timeVal = artifact.getAttributes().stream()
+				.filter((attr) -> attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME)
+				.map(attr -> attr.getValueLong())
+				.findFirst()
+				.orElse(null);
+
+		if (timeVal == null) {
+			return Optional.empty();
+		}
+
+		String description = String.format("%s: %d", artifact.getArtifactTypeName(), artifact.getId());
+
+		TimelineEventDescriptionWithTime evtWDesc = new TimelineEventDescriptionWithTime(timeVal, description, description, description);
+
+		TimelineEventType evtType = (ARTIFACT_TYPE_IDS.contains(artifact.getArtifactTypeID()))
+				? TimelineEventType.OTHER
+				: TimelineEventType.USER_CREATED;
+
+		return addArtifactEvent(evtWDesc, evtType, artifact);
+	}
+
+	/**
+	 * Add an event of the given type from the given artifact to the database.
+	 *
+	 * @param eventPayload A description for this artifact including the time.
+	 * @param eventType    The event type to create.
+	 * @param artifact     The artifact to create the event from.
 	 *
 	 * @return The created event, wrapped in an Optional, or an empty Optional
 	 *         if no event was created.
 	 *
 	 * @throws TskCoreException
+	 * @throws DuplicateException
 	 */
-	private Optional<TimelineEvent> addArtifactEvent(TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> payloadExtractor,
-			TimelineEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
-		TimelineEventDescriptionWithTime eventPayload = payloadExtractor.apply(artifact);
+	private Optional<TimelineEvent> addArtifactEvent(TimelineEventDescriptionWithTime eventPayload,
+			TimelineEventType eventType, BlackboardArtifact artifact) throws TskCoreException, DuplicateException {
+
 		if (eventPayload == null) {
 			return Optional.empty();
 		}
@@ -681,28 +768,42 @@ public final class TimelineManager {
 		return Optional.of(event);
 	}
 
-	private long addEventWithExistingDescription(Long time, TimelineEventType type, long descriptionID, CaseDbConnection connection) throws TskCoreException {
-		String insertEventSql
-				= "INSERT INTO tsk_events ( event_type_id, event_description_id , time) "
-				+ " VALUES (" + type.getTypeID() + ", " + descriptionID + ", " + time + ")";
+	private long addEventWithExistingDescription(Long time, TimelineEventType type, long descriptionID, CaseDbConnection connection) throws TskCoreException, DuplicateException {
+		String tableValuesClause
+				= "tsk_events ( event_type_id, event_description_id , time) VALUES (?, ?, ?)";
+
+		String insertEventSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (Statement insertRowStmt = connection.createStatement();) {
-			connection.executeUpdate(insertRowStmt, insertEventSql, PreparedStatement.RETURN_GENERATED_KEYS);
+		try (PreparedStatement insertRowStmt = connection.prepareStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);) {
+			insertRowStmt.clearParameters();
+			insertRowStmt.setLong(1, type.getTypeID());
+			insertRowStmt.setLong(2, descriptionID);
+			insertRowStmt.setLong(3, time);
+			int row = insertRowStmt.executeUpdate();
+			// if no inserted rows, return null.
+			if (row < 1) {
+				throw new DuplicateException(String.format("An event already exists in the event table for this item [time: %s, type: %s, description: %d].",
+						time == null ? "<null>" : Long.toString(time),
+						type == null ? "<null>" : type.toString(),
+						descriptionID));
+			}
 
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
-				generatedKeys.next();
-				return generatedKeys.getLong(1);
+				if (generatedKeys.next()) {
+					return generatedKeys.getLong(1);
+				} else {
+					throw new DuplicateException(String.format("An event already exists in the event table for this item [time: %s, type: %s, description: %d].",
+							time == null ? "<null>" : Long.toString(time),
+							type == null ? "<null>" : type.toString(),
+							descriptionID));
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event for existing description.", ex); // NON-NLS
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
-	}
-
-	static private String quotePreservingNull(String value) {
-		return isNull(value) ? " NULL " : "'" + escapeSingleQuotes(value) + "'";//NON-NLS
 	}
 
 	private Map<Long, Long> getEventAndDescriptionIDs(CaseDbConnection conn, long contentObjID, boolean includeArtifacts) throws TskCoreException {
@@ -845,7 +946,7 @@ public final class TimelineManager {
 		if (eventDescriptionIDs.isEmpty()) {
 			return;
 		}
-		
+
 		String sql = "UPDATE tsk_event_descriptions SET tagged = " + flagValue + " WHERE event_description_id IN (" + buildCSVString(eventDescriptionIDs) + ")"; //NON-NLS
 		try (Statement updateStatement = conn.createStatement()) {
 			updateStatement.executeUpdate(sql);
@@ -872,7 +973,7 @@ public final class TimelineManager {
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = caseDB.getConnection(); Statement updateStatement = con.createStatement();) {
 			Map<Long, Long> eventIDs = getEventAndDescriptionIDs(con, content.getId(), true);
-			if (! eventIDs.isEmpty()) {
+			if (!eventIDs.isEmpty()) {
 				String sql = "UPDATE tsk_event_descriptions SET hash_hit = 1" + " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"; //NON-NLS
 				try {
 					updateStatement.executeUpdate(sql); //NON-NLS
@@ -1129,6 +1230,28 @@ public final class TimelineManager {
 		return result;
 	}
 
+	/**
+	 * Creates a sql statement that will do nothing due to unique constraint.
+	 *
+	 * @param insertTableValues the table, columns, and values portion of the
+	 *                          insert statement (i.e. 'table_name(col1, col2)
+	 *                          VALUES (rowVal1, rowVal2)').
+	 *
+	 * @return The sql statement.
+	 *
+	 * @throws TskCoreException
+	 */
+	private String getSqlIgnoreConflict(String insertTableValues) throws TskCoreException {
+		switch (caseDB.getDatabaseType()) {
+			case POSTGRESQL:
+				return "INSERT INTO " + insertTableValues + " ON CONFLICT DO NOTHING";
+			case SQLITE:
+				return "INSERT OR IGNORE INTO " + insertTableValues;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + caseDB.getDatabaseType().name());
+		}
+	}
+
 	private String getTrueLiteral() {
 		switch (caseDB.getDatabaseType()) {
 			case POSTGRESQL:
@@ -1159,15 +1282,18 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Functional interface for a function from I to O that throws
-	 * TskCoreException.
-	 *
-	 * @param <I> Input type.
-	 * @param <O> Output type.
+	 * Exception thrown in the event of a duplicate.
 	 */
-	@FunctionalInterface
-	private interface TSKCoreCheckedFunction<I, O> {
-
-		O apply(I input) throws TskCoreException;
+	private static class DuplicateException extends Exception {
+		private static final long serialVersionUID = 1L;
+		
+		/**
+		 * Main constructor.
+		 *
+		 * @param message Message for duplicate exception.
+		 */
+		DuplicateException(String message) {
+			super(message);
+		}
 	}
 }
