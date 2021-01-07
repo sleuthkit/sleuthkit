@@ -702,7 +702,7 @@ public final class TimelineManager {
 		artifactIDStr = (artifactIDStr == null) ? "<null>" : artifactIDStr;
 		sourceStr = (sourceStr == null) ? "<null>" : sourceStr;
 
-		return String.format("[%s]: %s (artifactID=%s, Source=%s).", TimelineManager.class.getName(), error, artifactIDStr, sourceStr);
+		return String.format("%s (artifactID=%s, Source=%s).", error, artifactIDStr, sourceStr);
 	}
 
 	/**
