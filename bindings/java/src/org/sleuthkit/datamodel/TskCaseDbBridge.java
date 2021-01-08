@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.base.Strings;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -306,6 +307,7 @@ class TskCaseDbBridge {
      * @param seq         The sequence number from fs_file->meta->seq. 
      * @param parMetaAddr The metadata address of the parent
      * @param parSeq      The parent sequence number if NTFS, -1 otherwise.
+	 * @param ownerUid	  String uid of the file owner.  May be an empty string.
      * 
      * @return 0 if successful, -1 if not
      */
@@ -319,7 +321,7 @@ class TskCaseDbBridge {
         long crtime, long ctime, long atime, long mtime,
         int meta_mode, int gid, int uid,
         String escaped_path, String extension, 
-        long seq, long parMetaAddr, long parSeq) {
+        long seq, long parMetaAddr, long parSeq, String ownerUid) {
         
         // Add the new file to the list
         batchedFiles.add(new FileInfo(parentObjId,
@@ -332,7 +334,7 @@ class TskCaseDbBridge {
                 crtime, ctime, atime, mtime,
                 meta_mode, gid, uid,
                 escaped_path, extension,
-                seq, parMetaAddr, parSeq));
+                seq, parMetaAddr, parSeq, ownerUid));
         
         // Add the current files to the database if we've exceeded the threshold or if we
         // have the root folder.
@@ -371,7 +373,7 @@ class TskCaseDbBridge {
                         fileInfo.crtime, fileInfo.ctime, fileInfo.atime, fileInfo.mtime,
                         fileInfo.meta_mode, fileInfo.gid, fileInfo.uid,
                         null, TskData.FileKnown.UNKNOWN,
-                        fileInfo.escaped_path, fileInfo.extension, 
+                        fileInfo.escaped_path, fileInfo.extension, fileInfo.ownerUid,
                         false, trans);
                     if (fileInfo.fsObjId != fileInfo.parentObjId) {
                         // Add new file ID to the list to send to ingest unless it is the root folder
@@ -486,7 +488,7 @@ class TskCaseDbBridge {
                 null, null, null, null,
                 null, null, null,
                 null, TskData.FileKnown.UNKNOWN,
-                null, null, 
+                null, null, null,
                 true, trans);
             commitTransaction();
 
@@ -692,6 +694,7 @@ class TskCaseDbBridge {
         long seq;
         long parMetaAddr;
         long parSeq;
+		String ownerUid;
         
         FileInfo(long parentObjId, 
             long fsObjId, long dataSourceObjId,
@@ -703,7 +706,7 @@ class TskCaseDbBridge {
             long crtime, long ctime, long atime, long mtime,
             int meta_mode, int gid, int uid,
             String escaped_path, String extension, 
-            long seq, long parMetaAddr, long parSeq) {
+            long seq, long parMetaAddr, long parSeq, String ownerUid) {
             
             this.parentObjId = parentObjId;
             this.fsObjId = fsObjId;
@@ -731,6 +734,7 @@ class TskCaseDbBridge {
             this.seq = seq;
             this.parMetaAddr = parMetaAddr;
             this.parSeq = parSeq;
+			this.ownerUid = ownerUid;
         }
     }
 	
@@ -768,6 +772,7 @@ class TskCaseDbBridge {
 	 * @param known           The file known status.
 	 * @param escaped_path    The escaped path to the file.
 	 * @param extension       The file extension.
+	 * @param ownerUid		  The string user id of the file owner.
 	 * @param hasLayout       True if this is a layout file, false otherwise.
 	 * @param transaction     The open transaction.
 	 *
@@ -785,8 +790,8 @@ class TskCaseDbBridge {
 			Long crtime, Long ctime, Long atime, Long mtime,
 			Integer meta_mode, Integer gid, Integer uid,
 			String md5, TskData.FileKnown known,
-			String escaped_path, String extension,
-			boolean hasLayout, CaseDbTransaction transaction) throws TskCoreException {
+			String escaped_path, String extension, String ownerUid,
+			boolean hasLayout,  CaseDbTransaction transaction) throws TskCoreException {
 
 		try {
 			SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
@@ -795,8 +800,13 @@ class TskCaseDbBridge {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = caseDb.addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 			
-			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
+			//  add the ownerUid to the database. Use that rowId 
+			long osAccountRowId = Strings.isNullOrEmpty(ownerUid) 
+								? OsAccount.NO_USER
+								: caseDb.getOsAccountManager().createOrGetOsAccount(dataSourceObjId, ownerUid, null, null, transaction);
+			
+			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, uid_str, os_account_row_id)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(fileInsert, Statement.NO_GENERATED_KEYS);			
 			preparedStatement.clearParameters();
 			
@@ -878,6 +888,14 @@ class TskCaseDbBridge {
 			} else {
 				preparedStatement.setNull(26, java.sql.Types.INTEGER);
 			}
+			
+			preparedStatement.setString(27, ownerUid); // uidStr
+			
+			if (osAccountRowId != OsAccount.NO_USER) {
+				preparedStatement.setLong(28, osAccountRowId);
+			} else {
+				preparedStatement.setNull(28, java.sql.Types.BIGINT);
+			}
 			connection.executeUpdate(preparedStatement);
 
 			// If this is not a slack file create the timeline events
@@ -890,7 +908,7 @@ class TskCaseDbBridge {
 						TskData.TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
 						TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
 						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension);
+						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension, ownerUid, osAccountRowId);
 
 				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
 			}

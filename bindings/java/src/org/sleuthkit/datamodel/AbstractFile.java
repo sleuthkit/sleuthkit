@@ -21,11 +21,13 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
@@ -91,6 +93,8 @@ public abstract class AbstractFile extends AbstractContent {
 	private long dataSourceObjectId;
 	private final String extension;
 
+	private final String uidStr;	// SID/uid
+	private final long userRowId;
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
@@ -125,8 +129,11 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           unknown (default)
 	 * @param parentPath
 	 * @param mimeType           The MIME type of the file, can be null.
-	 * @param extension		        The extension part of the file name (not
+	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param uidStr			 String uid/SID, can be null if not available.
+	 * @param userRowId	         The row id of user in tsk_os_accounts.
+	 * 
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
@@ -144,7 +151,9 @@ public abstract class AbstractFile extends AbstractContent {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType,
-			String extension) {
+			String extension,
+			String uidStr,
+			long userRowId) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
@@ -176,6 +185,8 @@ public abstract class AbstractFile extends AbstractContent {
 		this.mimeType = mimeType;
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
+		this.uidStr = uidStr;
+		this.userRowId = userRowId;
 	}
 
 	/**
@@ -1174,6 +1185,52 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 	}
 	
+	/**
+	 * Get the uidStr.
+	 * 
+	 * @return String uid. Returns an empty string if no uid is recorded.
+	 */
+	public String getUidStr() {
+		return Objects.nonNull(uidStr) ? uidStr
+				: "";
+	}
+		
+	/**
+	 * Get the row id of the owing user. 
+	 * 
+	 * @return rowId, or OsAccount.NO_USER
+	 */
+	public long getUserRowId() {
+		return userRowId;
+	}
+	
+	/**
+	 * Gets the user for the file.
+	 * 
+	 * @return OsAccount  
+	 * 
+	 * @throws TskCoreException  If there is an error getting the user
+	 */
+	public OsAccount getUser() throws TskCoreException {
+		
+		// run a query to get the user row id from the tsk_files
+		String queryStr = "SELECT os_account_row_id FROM tsk_files WHERE obj_id = " + this.getId();
+		try (SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryStr);) {
+
+			if (resultSet.next()) {
+					long userRowId = resultSet.getLong("os_account_row_id");
+					return getSleuthkitCase().getOsAccountManager().getOsAccount(userRowId);
+			} else {
+				throw new TskCoreException(String.format("Error getting user account id for file (obj_id = %d)", this.getId()));
+			}
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting user account id for file (obj_id = %d)", this.getId()), ex);
+		} 
+	}
+	
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		// don't let them make more than 1 GEN_INFO
@@ -1221,7 +1278,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
 	}
 
 	/**
@@ -1266,7 +1323,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
 	}
 
 	/**

@@ -208,9 +208,12 @@ class CaseDatabaseFactory {
 				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, "
 				+ "known INTEGER, "
 				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
+				+ "uid_str TEXT, "
+				+ "os_account_row_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE)");
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(os_account_row_id) REFERENCES tsk_os_accounts(id)) " );
 
 		stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 
@@ -270,7 +273,7 @@ class CaseDatabaseFactory {
 				+ "value_text TEXT, value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", value_double NUMERIC(20, 10), "
 				+ "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
-				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");		
+				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");	
 	}
 	
 	private void createAnalysisResultsTables(Statement stmt) throws SQLException  {
@@ -408,6 +411,23 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(account2_id) REFERENCES accounts(account_id), "
 				+ "FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
+		
+		stmt.execute("CREATE TABLE tsk_os_accounts (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "user_name TEXT, "	// username if available
+				+ "realm TEXT, "		// domain or host
+				+ "unique_id TEXT, "	// SID/UID, if available
+				+ "signature TEXT NOT NULL, "	// realm/username or sid 
+				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + ","
+				+ "UNIQUE(data_source_obj_id, signature), "
+				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))");
+		
+		stmt.execute("CREATE TABLE tsk_data_artifact_data (id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "os_account_row_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(os_account_row_id) REFERENCES tsk_os_accounts(id)) ");	
 	}
 	
 	private void createEventTables(Statement stmt) throws SQLException {

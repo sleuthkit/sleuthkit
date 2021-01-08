@@ -105,6 +105,10 @@ public abstract class FsContent extends AbstractFile {
 	 *                           yet been determined.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param uidStr			 String UID of the user as found in in the file
+	 *                           system, can be null.
+	 * @param osAccountRowId	 Row id of the user in the tsk_os_accounts
+	 *                           table.
 	 */
 	@SuppressWarnings("deprecation")
 	FsContent(SleuthkitCase db,
@@ -123,8 +127,10 @@ public abstract class FsContent extends AbstractFile {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType,
-			String extension) {
-		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension);
+			String extension,
+			String uidStr,
+			long osAccountRowId) {
+		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountRowId);
 		this.fsObjId = fsObjId;
 	}
 
@@ -383,7 +389,7 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
 	}
 
 	/**
@@ -442,6 +448,6 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, mimeType, null);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, mimeType, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
 	}
 }
