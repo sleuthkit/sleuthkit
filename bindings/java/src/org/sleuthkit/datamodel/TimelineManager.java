@@ -630,7 +630,7 @@ public final class TimelineManager {
 				addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER).makeEventDescription(artifact), eventType, artifact)
 						.ifPresent(newEvents::add);
 			} catch (DuplicateException ex) {
-				logger.log(Level.SEVERE, "Attempt to make a timeline event artifact duplicate.", ex);
+				logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make a timeline event artifact duplicate"), ex);
 			}
 		} else {
 			/*
@@ -650,7 +650,7 @@ public final class TimelineManager {
 							.ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
 					duplicateExists = true;
-					logger.log(Level.SEVERE, "Attempt to make artifact event duplicate.", ex);
+					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make artifact event duplicate"), ex);
 				}
 			}
 
@@ -659,7 +659,7 @@ public final class TimelineManager {
 				try {
 					addOtherEventDesc(artifact).ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
-					logger.log(Level.SEVERE, "Attempt to make 'other' artifact event duplicate.", ex);
+					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make 'other' artifact event duplicate"), ex);
 				}
 			}
 		}
@@ -667,6 +667,42 @@ public final class TimelineManager {
 				.map(TimelineEventAddedEvent::new)
 				.forEach(caseDB::fireTSKEvent);
 		return newEvents;
+	}
+
+	/**
+	 * Formats a message to be displayed in response to a duplicate exception.
+	 *
+	 * @param artifact The artifact that caused the exception.
+	 * @param error    The error message to be displayed in the core of the
+	 *                 message.
+	 *
+	 * @return A formatted message (i.e.
+	 *         "[org.sleuthkit.datamodel.TimelineManager]: Attempt to make
+	 *         'other' artifact event duplicate (artifactID=12345, Source=Recent
+	 *         Activity).")
+	 */
+	private String getDuplicateExceptionMessage(BlackboardArtifact artifact, String error) {
+		String artifactIDStr = null;
+		String sourceStr = null;
+
+		if (artifact != null) {
+			artifactIDStr = Long.toString(artifact.getId());
+
+			try {
+				sourceStr = artifact.getAttributes().stream()
+					.filter(attr -> attr != null && attr.getSources() != null && !attr.getSources().isEmpty())
+					.map(attr -> String.join(",", attr.getSources()))
+					.findFirst()
+					.orElse(null);
+			} catch (TskCoreException ex) {
+				logger.log(Level.WARNING, String.format("Could not fetch artifacts for artifact id: %d.", artifact.getId()), ex);
+			}
+		}
+
+		artifactIDStr = (artifactIDStr == null) ? "<null>" : artifactIDStr;
+		sourceStr = (sourceStr == null) ? "<null>" : sourceStr;
+
+		return String.format("%s (artifactID=%s, Source=%s).", error, artifactIDStr, sourceStr);
 	}
 
 	/**
@@ -1285,8 +1321,9 @@ public final class TimelineManager {
 	 * Exception thrown in the event of a duplicate.
 	 */
 	private static class DuplicateException extends Exception {
+
 		private static final long serialVersionUID = 1L;
-		
+
 		/**
 		 * Main constructor.
 		 *
