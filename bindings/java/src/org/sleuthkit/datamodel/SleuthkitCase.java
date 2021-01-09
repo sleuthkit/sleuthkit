@@ -57,6 +57,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -4026,6 +4027,51 @@ public class SleuthkitCase {
 		statement.setLong(6, attr.getAttributeType().getValueType().getType());
 		connection.executeUpdate(statement);
 	}
+	
+	void addFileAttribute(Attribute attr, CaseDbConnection connection) throws SQLException, TskCoreException {
+		PreparedStatement statement;
+		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE);
+		statement.clearParameters();
+
+		statement.setLong(1, attr.getAttributeOwnerId());
+		statement.setLong(2, attr.getParentDataSourceID());
+		statement.setString(3, attr.getSourcesCSV());
+		statement.setInt(4, attr.getAttributeType().getTypeID());
+		statement.setLong(5, attr.getAttributeType().getValueType().getType());
+
+		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+			statement.setBytes(6, attr.getValueBytes());
+		} else {
+			statement.setBytes(6, null);
+		}
+
+		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+				|| attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
+			statement.setString(7, attr.getValueString());
+		} else {
+			statement.setString(7, null);
+		}
+		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+			statement.setInt(8, attr.getValueInt());
+		} else {
+			statement.setNull(8, java.sql.Types.INTEGER);
+		}
+ 
+		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+				|| attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
+			statement.setLong(9, attr.getValueLong());
+		} else {
+			statement.setNull(9, java.sql.Types.BIGINT);
+		}
+		
+		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+			statement.setDouble(10, attr.getValueDouble());
+		} else {
+			statement.setNull(10, java.sql.Types.DOUBLE);
+		}
+ 
+		connection.executeUpdate(statement);
+	}
 
 	/**
 	 * Adds a source name to the source column of one or more rows in the
@@ -4478,6 +4524,64 @@ public class SleuthkitCase {
 			return attributes;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attributes for artifact, artifact id = " + artifact.getArtifactID(), ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get the attributes associated with the given file.
+	 * @param file
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	ArrayList<Attribute> getFileAttributes(final AbstractFile file) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		try {
+			Statement statement = connection.createStatement();
+			rs = connection.executeQuery(statement, "SELECT attrs.obj_id AS obj_id, "
+					+ "attrs.data_source_obj_id AS data_source_obj_id, attrs.source AS source, attrs.attribute_type_id AS attribute_type_id, "
+					+ "attrs.value_type AS value_type, attrs.value_byte AS value_byte, "
+					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
+					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
+					+ "types.type_name AS type_name, types.display_name AS display_name "
+					+ "FROM tsk_file_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.obj_id = " + file.getId()
+					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
+			while (rs.next()) {
+				int attributeTypeId = rs.getInt("attribute_type_id");
+				String attributeTypeName = rs.getString("type_name");
+				BlackboardAttribute.Type attributeType;
+				if (this.typeIdToAttributeTypeMap.containsKey(attributeTypeId)) {
+					attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
+				} else {
+					attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
+							rs.getString("display_name"),
+							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
+					this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
+					this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
+				}
+
+				final Attribute attr = new Attribute(
+						rs.getLong("obj_id"),
+						attributeType,
+						rs.getString("source"), 
+						rs.getInt("value_int32"),
+						rs.getLong("value_int64"),
+						rs.getDouble("value_double"),
+						rs.getString("value_text"),
+						rs.getBytes("value_byte"), this
+				);
+				attr.setParentDataSourceID(rs.getLong("data_source_obj_id"));
+				attributes.add(attr);
+			}
+			return attributes;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attributes for file, file id = " + file.getId(), ex);
 		} finally {
 			closeResultSet(rs);
 			connection.close();
@@ -6367,19 +6471,78 @@ public class SleuthkitCase {
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			boolean isFile, Content parent) throws TskCoreException {
+		
+		CaseDbTransaction transaction = beginTransaction();
+		try {
+
+			FsContent fileSystemFile = addFileSystemFile(dataSourceObjId, fsObjId, fileName,
+					metaAddr, metaSeq, attrType, attrId, dirFlag, metaFlags, size,
+					ctime, crtime, atime, mtime, isFile, parent,
+					Collections.EMPTY_LIST, transaction);
+			
+			transaction.commit();
+			transaction = null;
+			return fileSystemFile;
+		} finally {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Add a file system file.
+	 *
+	 * @param dataSourceObjId The object id of the root data source of this
+	 *                        file.
+	 * @param fsObjId         The file system object id.
+	 * @param fileName        The name of the file.
+	 * @param metaAddr        The meta address of the file.
+	 * @param metaSeq         The meta address sequence of the file.
+	 * @param attrType        The attributed type of the file.
+	 * @param attrId          The attribute id.
+	 * @param dirFlag         The allocated status from the name structure
+	 * @param metaFlags       The allocated status of the file, usually as
+	 *                        reported in the metadata structure of the file
+	 *                        system.
+	 * @param size            The size of the file in bytes.
+	 * @param ctime           The changed time of the file.
+	 * @param crtime          The creation time of the file.
+	 * @param atime           The accessed time of the file
+	 * @param mtime           The modified time of the file.
+	 * @param isFile          True, unless the file is a directory.
+	 * @param parent          The parent of the file (e.g., a virtual
+	 *                        directory).
+	 * @param fileAttributes  A list of file attributes. May be empty.
+	 * @param transaction     A caller-managed transaction within which the add
+	 *                        file operations are performed.
+	 *
+	 * @return Newly created file
+	 *
+	 * @throws TskCoreException
+	 */
+	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId,
+			String fileName,
+			long metaAddr, int metaSeq,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime,
+			boolean isFile, Content parent, List<Attribute> fileAttributes, CaseDbTransaction transaction) throws TskCoreException {
 
 		TimelineManager timelineManager = getTimelineManager();
 
-		CaseDbTransaction transaction = beginTransaction();
 		Statement queryStatement = null;
+		String parentPath = "/";
 		try {
 			CaseDbConnection connection = transaction.getConnection();
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = addObject(parent.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-
-			String parentPath;
 
 			if (parent instanceof AbstractFile) {
 				AbstractFile parentFile = (AbstractFile) parent;
@@ -6425,30 +6588,26 @@ public class SleuthkitCase {
 					size, ctime, crtime, atime, mtime, null, null, null, parentPath, null, parent.getId(), null, null, extension);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
-
-			transaction.commit();
-			transaction = null;
+			
+			for (Attribute fileAttribute : fileAttributes) {
+				fileAttribute.setAttributeOwnerId(objectId);
+				fileAttribute.setParentDataSourceID(dataSourceObjId);
+				fileAttribute.setCaseDatabase(this);
+				addFileAttribute(fileAttribute, connection);
+			}
 
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
 					attrType, attrId, fileName, metaAddr, metaSeq,
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, null, null, null, parentPath, null,
-					extension);
-
+					extension, fileAttributes);
+	
 		} catch (SQLException ex) {
-			logger.log(Level.WARNING, "Failed to add file system file", ex);
+			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
 		} finally {
 			closeStatement(queryStatement);
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
-				}
-			}
-		}
-		return null;
+		} 
 	}
 
 	/**
@@ -8764,7 +8923,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), Collections.EMPTY_LIST); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -11464,6 +11623,8 @@ public class SleuthkitCase {
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 		INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_FILE_ATTRIBUTE("INSERT INTO tsk_file_attributes (obj_id, data_source_obj_id, source, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?,?,?)"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
