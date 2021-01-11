@@ -731,7 +731,7 @@ public final class TimelineManager {
 			return Optional.empty();
 		}
 
-		String description = String.format("%s: %d", artifact.getArtifactTypeName(), artifact.getId());
+		String description = String.format("%s: %d", artifact.getDisplayName(), artifact.getId());
 
 		TimelineEventDescriptionWithTime evtWDesc = new TimelineEventDescriptionWithTime(timeVal, description, description, description);
 
