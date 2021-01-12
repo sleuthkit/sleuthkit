@@ -57,7 +57,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -6477,7 +6476,7 @@ public class SleuthkitCase {
 
 			FsContent fileSystemFile = addFileSystemFile(dataSourceObjId, fsObjId, fileName,
 					metaAddr, metaSeq, attrType, attrId, dirFlag, metaFlags, size,
-					ctime, crtime, atime, mtime, isFile, parent,
+					ctime, crtime, atime, mtime, null, null, null, isFile, parent,
 					Collections.EMPTY_LIST, transaction);
 			
 			transaction.commit();
@@ -6514,6 +6513,9 @@ public class SleuthkitCase {
 	 * @param crtime          The creation time of the file.
 	 * @param atime           The accessed time of the file
 	 * @param mtime           The modified time of the file.
+	 * @param md5             The MD5 hash of the file
+	 * @param sha256          The SHA256 hash of the file
+	 * @param mimeType        The MIME type of the file
 	 * @param isFile          True, unless the file is a directory.
 	 * @param parent          The parent of the file (e.g., a virtual
 	 *                        directory).
@@ -6531,6 +6533,7 @@ public class SleuthkitCase {
 			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
+			String md5, String sha256, String mimeType,
 			boolean isFile, Content parent, List<Attribute> fileAttributes, CaseDbTransaction transaction) throws TskCoreException {
 
 		TimelineManager timelineManager = getTimelineManager();
@@ -6578,9 +6581,12 @@ public class SleuthkitCase {
 			statement.setLong(17, crtime);
 			statement.setLong(18, atime);
 			statement.setLong(19, mtime);
-			statement.setString(20, parentPath);
+			statement.setString(20, md5);
+			statement.setString(21, sha256);
+			statement.setString(22, mimeType);
+			statement.setString(23, parentPath);
 			final String extension = extractExtension(fileName);
-			statement.setString(21, extension);
+			statement.setString(24, extension);
 
 			connection.executeUpdate(statement);
 
@@ -11624,7 +11630,7 @@ public class SleuthkitCase {
 		INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 		INSERT_FILE_ATTRIBUTE("INSERT INTO tsk_file_attributes (obj_id, data_source_obj_id, source, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double) " //NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?,?,?)"), //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?,?,?,?)"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
@@ -11649,8 +11655,8 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id,extension) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, extension)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, mime_type, parent_path, extension)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
