@@ -6513,8 +6513,8 @@ public class SleuthkitCase {
 	 * @param crtime          The creation time of the file.
 	 * @param atime           The accessed time of the file
 	 * @param mtime           The modified time of the file.
-	 * @param md5             The MD5 hash of the file
-	 * @param sha256          The SHA256 hash of the file
+	 * @param md5Hash         The MD5 hash of the file
+	 * @param sha256Hash      The SHA256 hash of the file
 	 * @param mimeType        The MIME type of the file
 	 * @param isFile          True, unless the file is a directory.
 	 * @param parent          The parent of the file (e.g., a virtual
@@ -6533,7 +6533,7 @@ public class SleuthkitCase {
 			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
-			String md5, String sha256, String mimeType,
+			String md5Hash, String sha256Hash, String mimeType,
 			boolean isFile, Content parent, List<Attribute> fileAttributes, CaseDbTransaction transaction) throws TskCoreException {
 
 		TimelineManager timelineManager = getTimelineManager();
@@ -6581,8 +6581,8 @@ public class SleuthkitCase {
 			statement.setLong(17, crtime);
 			statement.setLong(18, atime);
 			statement.setLong(19, mtime);
-			statement.setString(20, md5);
-			statement.setString(21, sha256);
+			statement.setString(20, md5Hash);
+			statement.setString(21, sha256Hash);
 			statement.setString(22, mimeType);
 			statement.setString(23, parentPath);
 			final String extension = extractExtension(fileName);
@@ -6591,7 +6591,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, null, parentPath, null, parent.getId(), null, null, extension);
+					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
@@ -6606,7 +6606,7 @@ public class SleuthkitCase {
 					attrType, attrId, fileName, metaAddr, metaSeq,
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
-					(short) 0, 0, 0, null, null, null, parentPath, null,
+					(short) 0, 0, 0, md5Hash, sha256Hash, null, parentPath, mimeType,
 					extension, fileAttributes);
 	
 		} catch (SQLException ex) {
