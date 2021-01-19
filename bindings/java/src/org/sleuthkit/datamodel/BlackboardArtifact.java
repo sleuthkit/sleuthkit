@@ -1268,11 +1268,6 @@ public class BlackboardArtifact implements Content {
 		TSK_SCREEN_SHOTS(60, "TSK_SCREEN_SHOTS",
 				bundle.getString("BlackboardArtifact.tskScreenShots.text")),
 		/**
-		 * DHCP Information that is store for a device.
-		 */
-		TSK_IP_DHCP(61, "TSK_IP_DHCP",
-				bundle.getString("BlackboardArtifact.tskDhcpInfo.text")),
-		/**
 		 * Notifications Sent to User.
 		 */
 		TSK_PROG_NOTIFICATIONS(62, "TSK_PROG_NOTIFICATIONS",
