@@ -553,8 +553,7 @@ public abstract class AbstractFile extends AbstractContent {
 		
 		try {
 			for (final Attribute attribute : attributes) {
-				attribute.setAttributeOwnerId(getId());
-				attribute.setParentDataSourceID(getDataSourceObjectId());
+				attribute.setAttributeOwnerId(getId()); 
 				attribute.setCaseDatabase(getSleuthkitCase());
 				getSleuthkitCase().addFileAttribute(attribute, connection);
 			}

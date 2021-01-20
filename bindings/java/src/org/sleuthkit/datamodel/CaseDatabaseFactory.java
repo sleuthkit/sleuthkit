@@ -469,8 +469,7 @@ class CaseDatabaseFactory {
 		 * http://www.postgresql.org/docs/9.4/static/libpq-example.html
 		 */
 		stmt.execute("CREATE TABLE tsk_file_attributes (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "source TEXT, attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "value_type INTEGER NOT NULL, value_byte " + dbQueryHelper.getBlobType() + ", "
 				+ "value_text TEXT, value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", value_double NUMERIC(20, 10), "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_files(obj_id) ON DELETE CASCADE, "

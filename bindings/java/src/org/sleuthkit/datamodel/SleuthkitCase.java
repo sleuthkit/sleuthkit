@@ -4033,40 +4033,38 @@ public class SleuthkitCase {
 		statement.clearParameters();
 
 		statement.setLong(1, attr.getAttributeOwnerId());
-		statement.setLong(2, attr.getParentDataSourceID());
-		statement.setString(3, attr.getSourcesCSV());
-		statement.setInt(4, attr.getAttributeType().getTypeID());
-		statement.setLong(5, attr.getAttributeType().getValueType().getType());
+		statement.setInt(2, attr.getAttributeType().getTypeID());
+		statement.setLong(3, attr.getAttributeType().getValueType().getType());
 
 		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
-			statement.setBytes(6, attr.getValueBytes());
+			statement.setBytes(4, attr.getValueBytes());
 		} else {
-			statement.setBytes(6, null);
+			statement.setBytes(4, null);
 		}
 
 		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
 				|| attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
-			statement.setString(7, attr.getValueString());
+			statement.setString(5, attr.getValueString());
 		} else {
-			statement.setString(7, null);
+			statement.setString(5, null);
 		}
 		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
-			statement.setInt(8, attr.getValueInt());
+			statement.setInt(6, attr.getValueInt());
 		} else {
-			statement.setNull(8, java.sql.Types.INTEGER);
+			statement.setNull(6, java.sql.Types.INTEGER);
 		}
  
 		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
 				|| attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
-			statement.setLong(9, attr.getValueLong());
+			statement.setLong(7, attr.getValueLong());
 		} else {
-			statement.setNull(9, java.sql.Types.BIGINT);
+			statement.setNull(7, java.sql.Types.BIGINT);
 		}
 		
 		if (attr.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
-			statement.setDouble(10, attr.getValueDouble());
+			statement.setDouble(8, attr.getValueDouble());
 		} else {
-			statement.setNull(10, java.sql.Types.DOUBLE);
+			statement.setNull(8, java.sql.Types.DOUBLE);
 		}
  
 		connection.executeUpdate(statement);
@@ -4543,7 +4541,7 @@ public class SleuthkitCase {
 		try {
 			Statement statement = connection.createStatement();
 			rs = connection.executeQuery(statement, "SELECT attrs.obj_id AS obj_id, "
-					+ "attrs.data_source_obj_id AS data_source_obj_id, attrs.source AS source, attrs.attribute_type_id AS attribute_type_id, "
+					+ "attrs.attribute_type_id AS attribute_type_id, "
 					+ "attrs.value_type AS value_type, attrs.value_byte AS value_byte, "
 					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
@@ -4568,14 +4566,12 @@ public class SleuthkitCase {
 				final Attribute attr = new Attribute(
 						rs.getLong("obj_id"),
 						attributeType,
-						rs.getString("source"), 
 						rs.getInt("value_int32"),
 						rs.getLong("value_int64"),
 						rs.getDouble("value_double"),
 						rs.getString("value_text"),
 						rs.getBytes("value_byte"), this
 				);
-				attr.setParentDataSourceID(rs.getLong("data_source_obj_id"));
 				attributes.add(attr);
 			}
 			return attributes;
@@ -6596,8 +6592,7 @@ public class SleuthkitCase {
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
 			for (Attribute fileAttribute : fileAttributes) {
-				fileAttribute.setAttributeOwnerId(objectId);
-				fileAttribute.setParentDataSourceID(dataSourceObjId);
+				fileAttribute.setAttributeOwnerId(objectId); 
 				fileAttribute.setCaseDatabase(this);
 				addFileAttribute(fileAttribute, connection);
 			}
@@ -11629,8 +11624,8 @@ public class SleuthkitCase {
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 		INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-		INSERT_FILE_ATTRIBUTE("INSERT INTO tsk_file_attributes (obj_id, data_source_obj_id, source, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double) " //NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_FILE_ATTRIBUTE("INSERT INTO tsk_file_attributes (obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?,?)"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
