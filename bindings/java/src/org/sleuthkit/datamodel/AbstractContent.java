@@ -19,14 +19,17 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
@@ -317,6 +320,22 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			
+			trans.commit();
+			return resultAdded;
+		}
+		catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException(String.format("Error adding analysis result to content with objId = %d.", objId), ex);
+		}
+	}
+
+	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());
 	}
@@ -401,6 +420,21 @@ public abstract class AbstractContent implements Content {
 		return db.getMatchingArtifacts("WHERE obj_id = " + objId); //NON-NLS
 	}
 
+	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objId);
+	}
+	
+	@Override
+	public Score getAggregateScore() throws TskCoreException {
+		return db.getScoringManager().getAggregateScore(objId);
+	}
+
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objId, artifactType.getTypeID()); //NON-NLS
+	}
+	
 	@Override
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
 		return db.getBlackboardArtifactsCount(artifactTypeName, objId);
