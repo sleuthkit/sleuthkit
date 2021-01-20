@@ -48,7 +48,7 @@ public abstract class SpecialDirectory extends AbstractFile {
 			String mimeType) {
 		super(db, objId, dataSourceObjectId, attrType, attrId, name,
 				fileType, metaAddr, metaSeq, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, null, Collections.EMPTY_LIST);
+				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, null, Collections.emptyList());
 	}
 
 	/**

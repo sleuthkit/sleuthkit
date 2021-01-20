@@ -6473,7 +6473,7 @@ public class SleuthkitCase {
 			FsContent fileSystemFile = addFileSystemFile(dataSourceObjId, fsObjId, fileName,
 					metaAddr, metaSeq, attrType, attrId, dirFlag, metaFlags, size,
 					ctime, crtime, atime, mtime, null, null, null, isFile, parent,
-					Collections.EMPTY_LIST, transaction);
+					Collections.emptyList(), transaction);
 			
 			transaction.commit();
 			transaction = null;
@@ -8924,7 +8924,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), Collections.EMPTY_LIST); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), Collections.emptyList()); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
