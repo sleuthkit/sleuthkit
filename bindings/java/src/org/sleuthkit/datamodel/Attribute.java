@@ -130,6 +130,18 @@ public class Attribute extends AbstractAttribute{
 		super(attributeOwnerId, attributeType, valueInt, valueLong, valueDouble, valueString, valueBytes, sleuthkitCase);
 	}
 
+	/**
+	 * Gets the owner Id of this attribute. An owner is defined as the Object
+	 * to which this attribute is associated with.
+	 * Eg: For a file Attribute, the owner id would be the file object id.
+	 *
+	 * @return
+	 */
+	@Override
+	public long getAttributeOwnerId() {
+		return super.getAttributeOwnerId();
+	}
+
 
 	@Override
 	public int hashCode() {

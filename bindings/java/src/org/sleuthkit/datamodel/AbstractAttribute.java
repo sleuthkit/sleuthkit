@@ -323,10 +323,13 @@ abstract class AbstractAttribute {
 	/**
 	 * Gets the owner Id of this attribute. An owner is defined as the Object
 	 * to which this attribute is associated with.
-	 * Eg: For a file Attribute, the owner id would be the file object id. 
+	 * Eg: For a file Attribute, the owner id would be the file object id.
+	 *
+	 * Each implementation is expected to give a more specific name. 
+	 *
 	 * @return
 	 */
-	public long getAttributeOwnerId() {
+	long getAttributeOwnerId() {
 		return this.attributeOwnerId;
 	}
 
