@@ -415,15 +415,6 @@ Indication that the source file matches some set of criteria (possibly user defi
 
 
 ---
-## TSK_IP_DHCP
-DHCP information that is stored.
-
-### REQUIRED ATTRIBUTES
-- TSK_NAME (Description of Information)
-- TSK_VALUE (Value of Information)
-
-
----
 ## TSK_KEYWORD_HIT
 Indication that the source artifact or file contains a keyword. Keywords are grouped into named sets.
 
