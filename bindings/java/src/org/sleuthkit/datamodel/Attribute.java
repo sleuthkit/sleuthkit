@@ -143,13 +143,7 @@ public class Attribute extends AbstractAttribute{
 		if (this == that) {
 			return true;
 		} else if (that instanceof Attribute) {
-			AbstractAttribute other = (AbstractAttribute) that;
-			Object[] thisObject = new Object[]{this.getAttributeType(), this.getValueInt(), this.getValueLong(), this.getValueDouble(),
-				this.getValueString(), this.getValueBytes()};
-			Object[] otherObject = new Object[]{other.getAttributeType(), other.getValueInt(), other.getValueLong(), other.getValueDouble(),
-				other.getValueString(), other.getValueBytes()};
-
-			return Objects.deepEquals(thisObject, otherObject);
+ 			return isAttributeEquals(that);
 		} else {
 			return false;
 		}
@@ -164,7 +158,7 @@ public class Attribute extends AbstractAttribute{
 				.add("valueDouble", getValueDouble())
 				.add("valueString", getValueString())
 				.add("valueBytes", Arrays.toString(getValueBytes()) )
-				.add("Case", getSleuthkitCase())
+				.add("Case", getCaseDatabase())
 				.toString();
 	}
 }

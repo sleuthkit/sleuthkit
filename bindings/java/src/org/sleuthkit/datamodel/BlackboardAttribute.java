@@ -288,7 +288,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public void addSource(String source) throws TskCoreException {
-		this.sources = getSleuthkitCase().addSourceToArtifactAttribute(this, source);
+		this.sources = getCaseDatabase().addSourceToArtifactAttribute(this, source);
 	}
 
 	/**
@@ -304,7 +304,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 */
 	public BlackboardArtifact getParentArtifact() throws TskCoreException {
 		if (parentArtifact == null) {
-			parentArtifact = getSleuthkitCase().getBlackboardArtifact(getArtifactID());
+			parentArtifact = getCaseDatabase().getBlackboardArtifact(getArtifactID());
 		}
 		return parentArtifact;
 	}
@@ -314,7 +314,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	public int hashCode() {
 		return Objects.hash(
 				this.getAttributeType(), this.getValueInt(), this.getValueLong(), this.getValueDouble(),
-				this.getValueString(), this.getValueBytes(), this.getSources());
+				this.getValueString(), this.getValueBytes(), this.getSources(), getContext());
 	}
 
 	@Override
@@ -323,12 +323,9 @@ public class BlackboardAttribute extends AbstractAttribute{
 			return true;
 		} else if (that instanceof BlackboardAttribute) {
 			BlackboardAttribute other = (BlackboardAttribute) that;
-			Object[] thisObject = new Object[]{this.getAttributeType(), this.getValueInt(), this.getValueLong(), this.getValueDouble(),
-				this.getValueString(), this.getValueBytes(), this.getSources()};
-			Object[] otherObject = new Object[]{other.getAttributeType(), other.getValueInt(), other.getValueLong(), other.getValueDouble(),
-				other.getValueString(), other.getValueBytes(), other.getSources()};
-
-			return Objects.deepEquals(thisObject, otherObject);
+			Object[] thisObject = new Object[]{this.getSources(), this.getContext()};
+			Object[] otherObject = new Object[]{other.getSources(), other.getContext()};
+			return isAttributeEquals(that) && Objects.deepEquals(thisObject, otherObject);
 		} else {
 			return false;
 		}
@@ -336,7 +333,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 
 	@Override
 	public String toString() {
-		return "BlackboardAttribute{" + "artifactID=" + getArtifactID() + ", attributeType=" + getAttributeType().toString() + ", moduleName=" + getSources() + ", context=" + context + ", valueInt=" + getValueInt() + ", valueLong=" + getValueLong() + ", valueDouble=" + getValueDouble() + ", valueString=" + getValueString() + ", valueBytes=" + Arrays.toString(getValueBytes()) + ", Case=" + getSleuthkitCase() + '}'; //NON-NLS
+		return "BlackboardAttribute{" + "artifactID=" + getArtifactID() + ", attributeType=" + getAttributeType().toString() + ", moduleName=" + getSources() + ", context=" + context + ", valueInt=" + getValueInt() + ", valueLong=" + getValueLong() + ", valueDouble=" + getValueDouble() + ", valueString=" + getValueString() + ", valueBytes=" + Arrays.toString(getValueBytes()) + ", Case=" + getCaseDatabase() + '}'; //NON-NLS
 	}
 
 	/**
@@ -352,7 +349,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 						BlackboardArtifact parent = getParentArtifact();
 						parentDataSourceID = parent.getDataSourceObjectID();
 					}
-					final Content dataSource = getSleuthkitCase().getContentById(parentDataSourceID);
+					final Content dataSource = getCaseDatabase().getContentById(parentDataSourceID);
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						// return the date/time string in the timezone associated with the datasource,
 						Image image = (Image) dataSource;

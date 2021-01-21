@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Attributes are a name-value pairs. Abstract Attribute provides the base
@@ -53,7 +54,7 @@ abstract class AbstractAttribute {
 	 *                                  attribute type is not
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
 	 */
-	public AbstractAttribute(BlackboardAttribute.Type attributeType, int valueInt) throws IllegalArgumentException {
+	public AbstractAttribute(BlackboardAttribute.Type attributeType, int valueInt) {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
@@ -80,7 +81,7 @@ abstract class AbstractAttribute {
 	 *                                  or
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
 	 */
-	public AbstractAttribute(BlackboardAttribute.Type attributeType, long valueLong) throws IllegalArgumentException {
+	public AbstractAttribute(BlackboardAttribute.Type attributeType, long valueLong) {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
 				&& attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
 			throw new IllegalArgumentException("Type mismatched with value type");
@@ -106,7 +107,7 @@ abstract class AbstractAttribute {
 	 *                                  attribute type is not
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
 	 */
-	public AbstractAttribute(BlackboardAttribute.Type attributeType, double valueDouble) throws IllegalArgumentException {
+	public AbstractAttribute(BlackboardAttribute.Type attributeType, double valueDouble) {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
@@ -131,7 +132,7 @@ abstract class AbstractAttribute {
 	 *                                  attribute type is not
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
 	 */
-	public AbstractAttribute(BlackboardAttribute.Type attributeType, String valueString) throws IllegalArgumentException {
+	public AbstractAttribute(BlackboardAttribute.Type attributeType, String valueString) {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
 				&& attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
 			throw new IllegalArgumentException("Type mismatched with value type");
@@ -161,7 +162,7 @@ abstract class AbstractAttribute {
 	 *                                  attribute type is not
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
 	 */
-	public AbstractAttribute(BlackboardAttribute.Type attributeType, byte[] valueBytes) throws IllegalArgumentException {
+	public AbstractAttribute(BlackboardAttribute.Type attributeType, byte[] valueBytes) {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
@@ -319,11 +320,17 @@ abstract class AbstractAttribute {
 		return Arrays.copyOf(valueBytes, valueBytes.length);
 	}
 
+	/**
+	 * Gets the owner Id of this attribute. An owner is defined as the Object
+	 * to which this attribute is associated with.
+	 * Eg: For a file Attribute, the owner id would be the file object id. 
+	 * @return
+	 */
 	public long getAttributeOwnerId() {
 		return this.attributeOwnerId;
 	}
 
-	SleuthkitCase getSleuthkitCase() {
+	SleuthkitCase getCaseDatabase() {
 		return this.sleuthkitCase;
 	}
 
@@ -374,5 +381,20 @@ abstract class AbstractAttribute {
 	 */
 	final String replaceNulls(String text) {
 		return text.replace((char) 0x00, (char) 0x1A);
+	}
+
+
+	boolean isAttributeEquals(Object that) {
+		if (that instanceof AbstractAttribute) {
+			AbstractAttribute other = (AbstractAttribute) that;
+			Object[] thisObject = new Object[]{this.getAttributeType(), this.getValueInt(), this.getValueLong(), this.getValueDouble(),
+				this.getValueString(), this.getValueBytes()};
+			Object[] otherObject = new Object[]{other.getAttributeType(), other.getValueInt(), other.getValueLong(), other.getValueDouble(),
+				other.getValueString(), other.getValueBytes()};
+
+			return Objects.deepEquals(thisObject, otherObject);
+		} else {
+			return false;
+		}
 	}
 }

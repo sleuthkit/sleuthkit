@@ -517,7 +517,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return
 	 * @throws TskCoreException 
 	 */
-	public List<Attribute> getAttributes() throws TskCoreException {
+	public synchronized List<Attribute> getAttributes() throws TskCoreException {
 		if (!loadedAttributesCacheFromDb.get()) {
 			ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
 			fileAttributesCache.clear();
@@ -567,8 +567,6 @@ public abstract class AbstractFile extends AbstractContent {
 				fileAttributesCache.addAll(attributes);
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding file attributes", ex);
-		} finally {
 			if (isLocalTransaction && null != localTransaction) {
 				try {
 					localTransaction.rollback();
@@ -576,6 +574,7 @@ public abstract class AbstractFile extends AbstractContent {
 					LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
 				}
 			}
+			throw new TskCoreException("Error adding file attributes", ex);
 		}
 	}
 	
