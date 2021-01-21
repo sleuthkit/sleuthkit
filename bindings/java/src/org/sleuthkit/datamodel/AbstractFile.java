@@ -33,7 +33,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -95,7 +94,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private long dataSourceObjectId;
 	private final String extension;
 	private final List<Attribute> fileAttributesCache = new ArrayList<Attribute>();
-	private final AtomicBoolean loadedAttributesCacheFromDb = new AtomicBoolean(false);
+	private boolean loadedAttributesCacheFromDb = false;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -185,7 +184,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.encodingType = TskData.EncodingType.NONE;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
-			loadedAttributesCacheFromDb.set(true);
+			loadedAttributesCacheFromDb = true;
 		}
 	}
 
@@ -517,14 +516,16 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return
 	 * @throws TskCoreException 
 	 */
-	public synchronized List<Attribute> getAttributes() throws TskCoreException {
-		if (!loadedAttributesCacheFromDb.get()) {
-			ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
-			fileAttributesCache.clear();
-			fileAttributesCache.addAll(attributes);
-			loadedAttributesCacheFromDb.set(true);
+	public List<Attribute> getAttributes() throws TskCoreException {
+		synchronized (this) {
+			if (!loadedAttributesCacheFromDb) {
+				ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
+				fileAttributesCache.clear();
+				fileAttributesCache.addAll(attributes);
+				loadedAttributesCacheFromDb = true;
+			}
+			return Collections.unmodifiableList(fileAttributesCache);
 		}
-		return Collections.unmodifiableList(fileAttributesCache);
 	}
 
 	/**
@@ -562,9 +563,11 @@ public abstract class AbstractFile extends AbstractContent {
 				localTransaction.commit();
 				localTransaction = null;
 			}
-			// append the new attributes if cache is already loaded. 
-			if (loadedAttributesCacheFromDb.get()) {
-				fileAttributesCache.addAll(attributes);
+			// append the new attributes if cache is already loaded.
+			synchronized (this) {
+				if (loadedAttributesCacheFromDb) {
+					fileAttributesCache.addAll(attributes);
+				}
 			}
 		} catch (SQLException ex) {
 			if (isLocalTransaction && null != localTransaction) {
