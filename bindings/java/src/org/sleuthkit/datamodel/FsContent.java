@@ -261,7 +261,7 @@ public abstract class FsContent extends AbstractFile {
 	@Override
 	public String getUniquePath() throws TskCoreException {
 		// It is possible that multiple threads could be doing this calculation
-		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(getFileSystem().getUniquePath());

@@ -394,7 +394,7 @@ public class BlackboardArtifact implements Content {
 	public String getUniquePath() throws TskCoreException {
 		// Return the path of the parent file
 		// It is possible that multiple threads could be doing this calculation
-		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
 			String tempUniquePath = "";
 			Content myParent = getParent();
@@ -411,7 +411,7 @@ public class BlackboardArtifact implements Content {
 	@Override
 	public Content getParent() throws TskCoreException {
 		// It is possible that multiple threads could be doing this calculation
-		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
 			ObjectInfo parentInfo;
 			parentInfo = getSleuthkitCase().getParentInfo(this);

@@ -40,7 +40,7 @@ public abstract class AbstractContent implements Content {
 	private final long objId;
 	private final String name;
 	private volatile Content parent;
-	private String uniquePath;
+	private volatile String uniquePath;
 	protected long parentId;
 	private volatile boolean hasChildren;
 	private volatile boolean checkedHasChildren;
@@ -71,7 +71,7 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public String getUniquePath() throws TskCoreException {
 		// It is possible that multiple threads could be doing this calculation
-		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
 			String tempUniquePath = "";
 			if (!name.isEmpty()) {
@@ -118,7 +118,7 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public Content getParent() throws TskCoreException {
 		// It is possible that multiple threads could be doing this calculation
-		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
 			ObjectInfo parentInfo;
 			parentInfo = db.getParentInfo(this);
