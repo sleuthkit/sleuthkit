@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -100,7 +101,7 @@ public class LayoutFile extends AbstractFile {
 			String uidStr,
 			long osAccountRowId) {
 			
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), uidStr, osAccountRowId);
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), uidStr, osAccountRowId, Collections.emptyList());
 	}
 
 	/**

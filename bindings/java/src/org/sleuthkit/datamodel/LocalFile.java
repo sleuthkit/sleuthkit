@@ -97,7 +97,7 @@ public class LocalFile extends AbstractFile {
 			long osAccountRowId) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountRowId);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountRowId, Collections.emptyList());
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors, using 
 		// AbstractContent.UNKNOWN_ID as needed.

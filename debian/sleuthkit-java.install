@@ -1,4 +1,4 @@
 bindings/java/lib/sqlite-jdbc-3.25.2.jar /usr/share/java
-bindings/java/dist/sleuthkit-4.10.1.jar /usr/share/java
-case-uco/java/dist/sleuthkit-caseuco-4.10.1.jar /usr/share/java
+bindings/java/dist/sleuthkit-4.10.2.jar /usr/share/java
+case-uco/java/dist/sleuthkit-caseuco-4.10.2.jar /usr/share/java
 

@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Collections;
+import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -96,8 +98,9 @@ public class File extends FsContent {
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
 			String extension,
 			String uidStr,
-			long osAccountRowId) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountRowId);
+			long osAccountRowId,
+			List<Attribute> fileAttributes) {
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountRowId, fileAttributes);
 	}
 
 	/**
@@ -251,6 +254,6 @@ public class File extends FsContent {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, mimeType, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, mimeType, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER, Collections.emptyList());
 	}
 }

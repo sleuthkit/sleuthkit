@@ -1,3 +1,14 @@
+---------------- VERSION 4.10.2 --------------
+C/C++
+- Added support for Ext4 inline data
+
+Java
+- New Blackboard Artifacts for ALEAPP/ILEAPP, Yara, Geo Area, etc.
+- Upgraded to PostgreSQL JDBC Driver 42.2.18
+- Added SHA256 to files table in DB and added utility calculation methods.
+- Changed TimelineManager to make events for any artifact with a time stamp
+
+
 ---------------- VERSION 4.10.1 --------------
 C/C++:
 - Changed Windows build to use Nuget for libewf, libvmdk, libvhdi.

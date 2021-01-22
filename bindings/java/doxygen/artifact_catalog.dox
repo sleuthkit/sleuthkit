@@ -594,12 +594,11 @@ Indicates recently accessed content. Examples: Recent Documents or Recent Downlo
 
 ### REQUIRED ATTRIBUTES
 - TSK_PATH (Path to the recent object content in the data source)
-- TSK_DATETIME_ACCESSED (Timestamp that the content was last accessed at, in seconds since 1970-01-01T00:00:00Z)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_ACCESSED (Timestamp that the content was last accessed at, in seconds since 1970-01-01T00:00:00Z)
 - TSK_PATH_ID (ID of the file instance in the data source)
 - TSK_PROG_NAME (Application or application extractor that stored this object as recent)
-- TSK_DATETIME (A timestamp associated with the content, in seconds since 1970-01-01T00:00:00Z. Ex: creation time)
 - TSK_NAME (If found in the registry, the name of the attribute)
 - TSK_VALUE (If found in the registry, the value of the attribute)
 - TSK_COMMENT (What the source of the attribute may be)

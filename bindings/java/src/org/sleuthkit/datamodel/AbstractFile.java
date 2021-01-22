@@ -26,6 +26,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
@@ -85,13 +87,15 @@ public abstract class AbstractFile extends AbstractContent {
 	 * SHA-256 hash
 	 */
 	protected String sha256Hash;
-	private boolean sha256HashDirty = false;	
+	private boolean sha256HashDirty = false;
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
 	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
 	private final String extension;
+	private final List<Attribute> fileAttributesCache = new ArrayList<Attribute>();
+	private boolean loadedAttributesCacheFromDb = false;
 
 	private final String uidStr;	// SID/uid
 	private final long userRowId;
@@ -123,8 +127,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param gid
 	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
 	 *                           present
-	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if not
-	 *                           present
+	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if
+	 *                           not present
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
@@ -153,7 +157,8 @@ public abstract class AbstractFile extends AbstractContent {
 			String mimeType,
 			String extension,
 			String uidStr,
-			long userRowId) {
+			long userRowId,
+			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
@@ -187,6 +192,10 @@ public abstract class AbstractFile extends AbstractContent {
 		this.encodingType = TskData.EncodingType.NONE;
 		this.uidStr = uidStr;
 		this.userRowId = userRowId;
+		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
+			this.fileAttributesCache.addAll(fileAttributes);
+			loadedAttributesCacheFromDb = true;
+		}
 	}
 
 	/**
@@ -489,12 +498,12 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getMd5Hash() {
 		return this.md5Hash;
 	}
-	
+
 	/**
 	 * Sets the SHA-256 hash for this file.
 	 *
-	 * IMPORTANT: The SHA-256 hash is set for this AbstractFile object, but it is
-	 * not saved to the case database until AbstractFile.save is called.
+	 * IMPORTANT: The SHA-256 hash is set for this AbstractFile object, but it
+	 * is not saved to the case database until AbstractFile.save is called.
 	 *
 	 * @param sha256Hash The SHA-256 hash of the file.
 	 */
@@ -502,7 +511,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.sha256Hash = sha256Hash;
 		this.sha256HashDirty = true;
 	}
-	
+
 	/**
 	 * Get the SHA-256 hash value as calculated, if present
 	 *
@@ -511,11 +520,81 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getSha256Hash() {
 		return this.sha256Hash;
 	}	
+	
+	/**
+	 * Gets the attributes of this File
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	public List<Attribute> getAttributes() throws TskCoreException {
+		synchronized (this) {
+			if (!loadedAttributesCacheFromDb) {
+				ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
+				fileAttributesCache.clear();
+				fileAttributesCache.addAll(attributes);
+				loadedAttributesCacheFromDb = true;
+			}
+			return Collections.unmodifiableList(fileAttributesCache);
+		}
+	}
 
 	/**
-	 * Sets the known state for this file.
-	 * Passed in value will be ignored if it is "less" than the current
-	 * state.  A NOTABLE file cannot be downgraded to KNOWN.
+	 * Adds a collection of attributes to this file in a single operation 
+	 * within a transaction supplied by the caller.
+	 *
+	 * @param attributes        The collection of attributes.
+	 * @param caseDbTransaction The transaction in the scope of which the
+	 *                          operation is to be performed, managed by the
+	 *                          caller. if Null is passed in a local transaction
+	 *							will be created and used. 
+	 *
+	 * @throws TskCoreException         If an error occurs and the attributes
+	 *                                  were not added to the artifact.
+	 * @throws IllegalArgumentException If <code>attributes</code> is
+	 *                                  null or empty.
+	 */
+	public void addAttributes(Collection<Attribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
+
+		if (Objects.isNull(attributes) || attributes.isEmpty()) {
+			throw new IllegalArgumentException("null or empty attributes passed to addAttributes");
+		}
+		boolean isLocalTransaction = Objects.isNull(caseDbTransaction);
+		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;		
+		SleuthkitCase.CaseDbConnection connection = isLocalTransaction ? localTransaction.getConnection() : caseDbTransaction.getConnection();
+		
+		try {
+			for (final Attribute attribute : attributes) {
+				attribute.setAttributeOwnerId(getId()); 
+				attribute.setCaseDatabase(getSleuthkitCase());
+				getSleuthkitCase().addFileAttribute(attribute, connection);
+			}
+			
+			if(isLocalTransaction) {
+				localTransaction.commit();
+				localTransaction = null;
+			}
+			// append the new attributes if cache is already loaded.
+			synchronized (this) {
+				if (loadedAttributesCacheFromDb) {
+					fileAttributesCache.addAll(attributes);
+				}
+			}
+		} catch (SQLException ex) {
+			if (isLocalTransaction && null != localTransaction) {
+				try {
+					localTransaction.rollback();
+				} catch (TskCoreException ex2) {
+					LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+			}
+			throw new TskCoreException("Error adding file attributes", ex);
+		}
+	}
+	
+	/**
+	 * Sets the known state for this file. Passed in value will be ignored if it
+	 * is "less" than the current state. A NOTABLE file cannot be downgraded to
+	 * KNOWN.
 	 *
 	 * IMPORTANT: The known state is set for this AbstractFile object, but it is
 	 * not saved to the case database until AbstractFile.save is called.
@@ -580,7 +659,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @throws TskCoreException if there was an error querying the case
 	 *                          database.
-	 * 
+	 *
 	 * To obtain the data source as a DataSource object, use:
 	 * getSleuthkitCase().getDataSource(getDataSourceObjectId());
 	 */
@@ -645,6 +724,67 @@ public abstract class AbstractFile extends AbstractContent {
 			fileOffset -= rangeLength;
 		}
 		return imgOffset;
+	}
+
+	/**
+	 * Converts a file offset and length into a series of TskFileRange objects
+	 * whose offsets are relative to the image.  This method will only work on
+	 * files with layout ranges.
+	 *
+	 * @param fileOffset The byte offset in this file to map.
+	 * @param length     The length of bytes starting at fileOffset requested.
+	 *
+	 * @return The TskFileRange objects whose offsets are relative to the image.
+	 *         The sum total of lengths in these ranges will equal the length
+	 *         requested or will run until the end of this file.
+	 *
+	 * @throws TskCoreException
+	 */
+	public List<TskFileRange> convertToImgRanges(long fileOffset, long length) throws TskCoreException {
+		if (fileOffset < 0 || length < 0) {
+			throw new TskCoreException("fileOffset and length must be non-negative");
+		}
+
+		List<TskFileRange> thisRanges = getRanges();
+		List<TskFileRange> toRet = new ArrayList<>();
+
+		long requestedEnd = fileOffset + length;
+
+		// the number of bytes counted from the beginning of this file
+		long bytesCounted = 0;
+
+		for (int curRangeIdx = 0; curRangeIdx < thisRanges.size(); curRangeIdx++) {
+			// if we exceeded length of requested, then we are done
+			if (bytesCounted >= requestedEnd) {
+				break;
+			}
+
+			TskFileRange curRange = thisRanges.get(curRangeIdx);
+			long curRangeLen = curRange.getByteLen();
+			// the bytes counted when we reach the end of this range
+			long curRangeEnd = bytesCounted + curRangeLen;
+
+			// if fileOffset is less than current range's end and we have not 
+			// gone past the end we requested, then grab at least part of this 
+			// range.
+			if (fileOffset < curRangeEnd) {
+				// offset into range to be returned to user (0 if fileOffset <= bytesCounted)
+				long rangeOffset = Math.max(0, fileOffset - bytesCounted);
+
+				// calculate the new TskFileRange start by adding on the offset into the current range
+				long newRangeStart = curRange.getByteStart() + rangeOffset;
+
+				// how much this current range exceeds the length requested (or 0 if within the length requested)
+				long rangeOvershoot = Math.max(0, curRangeEnd - requestedEnd);
+				
+				long newRangeLen = curRangeLen - rangeOffset - rangeOvershoot;
+				toRet.add(new TskFileRange(newRangeStart, newRangeLen, toRet.size()));
+			}
+
+			bytesCounted = curRangeEnd;
+		}
+
+		return toRet;
 	}
 
 	/**
@@ -858,7 +998,7 @@ public abstract class AbstractFile extends AbstractContent {
 		if (isDir()) {
 			return 0;
 		}
-		
+
 		// If the file is empty, just return that zero bytes were read.
 		if (getSize() == 0) {
 			return 0;
@@ -931,7 +1071,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * the case db path or an absolute path. When set, subsequent invocations of
 	 * read() will read the file in the local path.
 	 *
-	 * @param localPath  local path to be set
+	 * @param localPath local path to be set
 	 */
 	void setLocalFilePath(String localPath) {
 
@@ -1159,7 +1299,7 @@ public abstract class AbstractFile extends AbstractContent {
 				queryStr += ", ";
 			}
 			queryStr += "sha256 = '" + this.getSha256Hash() + "'";
-		}		
+		}
 		if (knownStateDirty) {
 			if (!queryStr.isEmpty()) {
 				queryStr += ", ";
@@ -1184,7 +1324,7 @@ public abstract class AbstractFile extends AbstractContent {
 			getSleuthkitCase().releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Get the uidStr.
 	 * 
@@ -1278,7 +1418,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER, Collections.emptyList());
 	}
 
 	/**
@@ -1323,7 +1463,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER, Collections.emptyList());
 	}
 
 	/**
