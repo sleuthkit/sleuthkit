@@ -39,7 +39,7 @@ public abstract class AbstractContent implements Content {
 	private final SleuthkitCase db;
 	private final long objId;
 	private final String name;
-	private Content parent;
+	private volatile Content parent;
 	private String uniquePath;
 	protected long parentId;
 	private volatile boolean hasChildren;
@@ -69,7 +69,9 @@ public abstract class AbstractContent implements Content {
 	 * interleaving forward slashes).
 	 */
 	@Override
-	public synchronized String getUniquePath() throws TskCoreException {
+	public String getUniquePath() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
 			uniquePath = "";
 			if (!name.isEmpty()) {
@@ -111,7 +113,9 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
-	public synchronized Content getParent() throws TskCoreException {
+	public Content getParent() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
 			ObjectInfo parentInfo;
 			parentInfo = db.getParentInfo(this);

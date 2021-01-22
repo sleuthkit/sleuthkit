@@ -59,8 +59,8 @@ public class BlackboardArtifact implements Content {
 	private final SleuthkitCase sleuthkitCase;
 	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
 	private boolean loadedCacheFromDb = false;
-	private Content parent;
-	private String uniquePath;
+	private volatile Content parent;
+	private volatile String uniquePath;
 
 	private byte[] contentBytes = null;
 
@@ -391,9 +391,10 @@ public class BlackboardArtifact implements Content {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Override
-	public synchronized String getUniquePath() throws TskCoreException {
-
-		// Return the path of the parrent file
+	public String getUniquePath() throws TskCoreException {
+		// Return the path of the parent file
+		// It is possible that multiple threads could be doing this calculation
+		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
 			uniquePath = "";
 			Content myParent = getParent();
@@ -405,7 +406,9 @@ public class BlackboardArtifact implements Content {
 	}
 
 	@Override
-	public synchronized Content getParent() throws TskCoreException {
+	public Content getParent() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
 			ObjectInfo parentInfo;
 			parentInfo = getSleuthkitCase().getParentInfo(this);

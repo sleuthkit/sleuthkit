@@ -34,7 +34,7 @@ public class Volume extends AbstractContent {
 	private long flags;
 	private String desc;
 	private volatile long volumeHandle = 0;
-	private String uniquePath;
+	private volatile String uniquePath;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
@@ -107,7 +107,9 @@ public class Volume extends AbstractContent {
 	}
 
 	@Override
-	public synchronized String getUniquePath() throws TskCoreException {
+	public String getUniquePath() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
 		if(uniquePath == null) {
 			uniquePath = "";
 			String name = getName();
