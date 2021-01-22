@@ -152,6 +152,7 @@ class CaseDatabaseFactory {
 			createIngestTables(stmt);
 			createAccountTables(stmt);
 			createEventTables(stmt);
+			createAttributeTables(stmt);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing tables", ex);
 		}
@@ -459,6 +460,20 @@ class CaseDatabaseFactory {
 			+ " event_description_id " + dbQueryHelper.getBigIntType() + " NOT NULL REFERENCES tsk_event_descriptions(event_description_id) ON DELETE CASCADE ,"
 			+ " time " + dbQueryHelper.getBigIntType() + " NOT NULL , "
 			+ " UNIQUE (event_type_id, event_description_id, time))");			
+	}
+
+	private void createAttributeTables(Statement stmt) throws SQLException {
+		/*
+		 * Binary representation of BYTEA is a bunch of bytes, which could
+		 * include embedded nulls so we have to pay attention to field length.
+		 * http://www.postgresql.org/docs/9.4/static/libpq-example.html
+		 */
+		stmt.execute("CREATE TABLE tsk_file_attributes (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "value_type INTEGER NOT NULL, value_byte " + dbQueryHelper.getBlobType() + ", "
+				+ "value_text TEXT, value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", value_double NUMERIC(20, 10), "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_files(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 	}
 	
 	/**
