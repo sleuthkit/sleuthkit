@@ -73,15 +73,18 @@ public abstract class AbstractContent implements Content {
 		// It is possible that multiple threads could be doing this calculation
 		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
-			uniquePath = "";
+			String tempUniquePath = "";
 			if (!name.isEmpty()) {
-				uniquePath = "/" + getName();
+				tempUniquePath = "/" + getName();
 			}
 
 			Content myParent = getParent();
 			if (myParent != null) {
-				uniquePath = myParent.getUniquePath() + uniquePath;
+				tempUniquePath = myParent.getUniquePath() + tempUniquePath;
 			}
+			
+			// Don't update uniquePath until it is complete.
+			uniquePath = tempUniquePath;
 		}
 		return uniquePath;
 	}

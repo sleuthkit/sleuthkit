@@ -396,11 +396,14 @@ public class BlackboardArtifact implements Content {
 		// It is possible that multiple threads could be doing this calculation
 		// simulateneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
-			uniquePath = "";
+			String tempUniquePath = "";
 			Content myParent = getParent();
 			if (myParent != null) {
-				uniquePath = myParent.getUniquePath();
+				tempUniquePath = myParent.getUniquePath();
 			}
+			
+			// Don't update uniquePath until it is complete.
+			uniquePath = tempUniquePath;
 		}
 		return uniquePath;
 	}
