@@ -514,10 +514,10 @@ public class Image extends AbstractContent implements DataSource {
 
 		return contentSize;
 	}
-	
+
 	/**
 	 * Sets the acquisition details field in the case database.
-	 * 
+	 *
 	 * @param details The acquisition details
 	 * 
 	 * @throws TskCoreException Thrown if the data can not be written
@@ -526,7 +526,66 @@ public class Image extends AbstractContent implements DataSource {
 	public void setAcquisitionDetails(String details) throws TskCoreException {
 		getSleuthkitCase().setAcquisitionDetails(this, details);
 	}
-	
+
+	/**
+	 * Sets the acquisition tool details such as its name, version number and
+	 * any settings used during the acquisition to acquire data.
+	 *
+	 * @param name     The name of the acquisition tool. May be NULL.
+	 * @param version  The acquisition tool version number. May be NULL.
+	 * @param settings The settings used by the acquisition tool. May be NULL.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	@Override
+	public void setAcquisitionToolDetails(String name, String version, String settings) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionToolDetails(this, name, version, settings);
+	}
+
+	/**
+	 * Gets the acquisition tool settings field from the case database.
+	 *
+	 * @return The acquisition tool settings. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolSettings() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_settings");
+	}
+
+	/**
+	 * Gets the acquisition tool name field from the case database.
+	 *
+	 * @return The acquisition tool name. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolName() throws TskCoreException{
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_name");
+	}
+
+	/**
+	 * Gets the acquisition tool version field from the case database.
+	 *
+	 * @return The acquisition tool version. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolVersion() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_version");
+	}
+
+	/**
+	 * Gets the added date field from the case database.
+	 *
+	 * @return The date time when the image was added in epoch seconds.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public Long getDateAdded() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoLong(this, "added_date_time");
+	}
+
 	/**
 	 * Gets the acquisition details field from the case database.
 	 * 
@@ -538,6 +597,23 @@ public class Image extends AbstractContent implements DataSource {
 	public String getAcquisitionDetails() throws TskCoreException {
 		return getSleuthkitCase().getAcquisitionDetails(this);
 	}	
+
+	/**
+	 * Updates the image's total size and sector size.This function may be used
+	 * to update the sizes after the image was created.
+	 *
+	 * Can only update the sizes if they were not set before. Will throw
+	 * TskCoreException if the values in the db are not 0 prior to this call.
+	 *
+	 * @param totalSize  The total size
+	 * @param sectorSize The sector size
+	 *
+	 * @throws TskCoreException If there is an error updating the case database.
+	 *
+	 */
+	public void setSizes(long totalSize, long sectorSize) throws TskCoreException {
+		getSleuthkitCase().setImageSizes(this, totalSize, sectorSize);
+	}
 
 	/**
 	 * Close a ResultSet.

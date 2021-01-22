@@ -26,11 +26,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.READ;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
  * This is a class that models reports.
@@ -236,6 +239,22 @@ public class Report implements Content {
 		return db.newBlackboardArtifact(artifactTypeID, objectId);
 	}
 
+
+	
+	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objectId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return resultAdded;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
+	}
+	
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());
@@ -282,6 +301,21 @@ public class Report implements Content {
 		return db.getMatchingArtifacts("WHERE obj_id = " + objectId); //NON-NLS
 	}
 
+	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objectId);
+	}
+	
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objectId,  artifactType.getTypeID());
+	}
+	
+	@Override
+	public Score getAggregateScore() throws TskCoreException {
+		return db.getScoringManager().getAggregateScore(objectId);
+	}
+	
 	@Override
 	public Set<String> getHashSetNames() throws TskCoreException {
 		return Collections.<String>emptySet();

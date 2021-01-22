@@ -74,6 +74,18 @@ public interface DataSource extends Content {
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
 	void setAcquisitionDetails(String details) throws TskCoreException;
+
+	/**
+	 * Sets the acquisition tool details such as its name, version number and
+	 * any settings used during the acquisition to acquire data.
+	 *
+	 * @param name     The name of the acquisition tool. May be NULL.
+	 * @param version  The acquisition tool version number. May be NULL.
+	 * @param settings The settings used by the acquisition tool. May be NULL.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	void setAcquisitionToolDetails(String name, String version, String settings) throws TskCoreException;
 	
 	/**
 	 * Gets the acquisition details field from the case database.
@@ -83,4 +95,40 @@ public interface DataSource extends Content {
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
 	String getAcquisitionDetails() throws TskCoreException;
+
+	/**
+	 * Gets the acquisition tool settings field from the case database.
+	 *
+	 * @return The acquisition tool settings. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	String getAcquisitionToolSettings() throws TskCoreException;
+
+	/**
+	 * Gets the acquisition tool name field from the case database.
+	 *
+	 * @return The acquisition tool name. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	String getAcquisitionToolName() throws TskCoreException;
+
+	/**
+	 * Gets the acquisition tool version field from the case database.
+	 *
+	 * @return The acquisition tool version. May be Null if not set. 
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	String getAcquisitionToolVersion() throws TskCoreException;
+
+	/**
+	 * Gets the added date field from the case database.
+	 *
+	 * @return The date time when the image was added in epoch seconds.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	Long getDateAdded() throws TskCoreException;
 }
