@@ -38,7 +38,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(FsContent.class.getName());
-	private String uniquePath;
+	private volatile String uniquePath;
 	private List<String> metaDataText = null;
 	private volatile FileSystem parentFileSystem;
 
@@ -259,7 +259,9 @@ public abstract class FsContent extends AbstractFile {
 	 * @throws TskCoreException if there is an error querying the case database.
 	 */
 	@Override
-	public synchronized String getUniquePath() throws TskCoreException {
+	public String getUniquePath() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(getFileSystem().getUniquePath());
