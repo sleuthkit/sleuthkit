@@ -2241,14 +2241,26 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-			String dateDataType = "BIGINT";
+			String dateDataType   = "BIGINT";
+			String bigIntDataType = "BIGINT";
+			String blobDataType   = "BYTEA";
+
 			if (this.dbType.equals(DbType.SQLITE)) {
-				dateDataType = "INTEGER";
+				dateDataType   = "INTEGER";
+				bigIntDataType = "INTEGER";
+				blobDataType   = "BLOB";
 			}
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType);
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_settings TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
+
+			statement.execute("CREATE TABLE tsk_file_attributes (obj_id " + bigIntDataType + " NOT NULL, "
+					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
+					+ "value_type INTEGER NOT NULL, value_byte " + blobDataType + ", "
+					+ "value_text TEXT, value_int32 INTEGER, value_int64 " + bigIntDataType + ", value_double NUMERIC(20, 10), "
+					+ "FOREIGN KEY(obj_id) REFERENCES tsk_files(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 
 			return new CaseDbSchemaVersionNumber(8, 7);
 
