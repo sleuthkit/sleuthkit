@@ -33,7 +33,7 @@ public class Host {
 	
 
 	Host(long id, String name) {
-		this(id, name, HostStatus.REGULAR);
+		this(id, name, HostStatus.ACTIVE);
 	}
 
 	Host(long id, String name, HostStatus status) {
@@ -94,7 +94,7 @@ public class Host {
 	 * Encapsulates status of host row.
 	 */
 	public enum HostStatus {
-		REGULAR(0, "Regular"),
+		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");
 		
