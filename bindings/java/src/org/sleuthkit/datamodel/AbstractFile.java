@@ -25,7 +25,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
@@ -90,6 +93,8 @@ public abstract class AbstractFile extends AbstractContent {
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
 	private final String extension;
+	private final List<Attribute> fileAttributesCache = new ArrayList<Attribute>();
+	private boolean loadedAttributesCacheFromDb = false;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -144,7 +149,8 @@ public abstract class AbstractFile extends AbstractContent {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType,
-			String extension) {
+			String extension, 
+			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
@@ -176,6 +182,10 @@ public abstract class AbstractFile extends AbstractContent {
 		this.mimeType = mimeType;
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
+		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
+			this.fileAttributesCache.addAll(fileAttributes);
+			loadedAttributesCacheFromDb = true;
+		}
 	}
 
 	/**
@@ -499,8 +509,78 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getSha256Hash() {
 		return this.sha256Hash;
+	}	
+	
+	/**
+	 * Gets the attributes of this File
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	public List<Attribute> getAttributes() throws TskCoreException {
+		synchronized (this) {
+			if (!loadedAttributesCacheFromDb) {
+				ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
+				fileAttributesCache.clear();
+				fileAttributesCache.addAll(attributes);
+				loadedAttributesCacheFromDb = true;
+			}
+			return Collections.unmodifiableList(fileAttributesCache);
+		}
 	}
 
+	/**
+	 * Adds a collection of attributes to this file in a single operation 
+	 * within a transaction supplied by the caller.
+	 *
+	 * @param attributes        The collection of attributes.
+	 * @param caseDbTransaction The transaction in the scope of which the
+	 *                          operation is to be performed, managed by the
+	 *                          caller. if Null is passed in a local transaction
+	 *							will be created and used. 
+	 *
+	 * @throws TskCoreException         If an error occurs and the attributes
+	 *                                  were not added to the artifact.
+	 * @throws IllegalArgumentException If <code>attributes</code> is
+	 *                                  null or empty.
+	 */
+	public void addAttributes(Collection<Attribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
+
+		if (Objects.isNull(attributes) || attributes.isEmpty()) {
+			throw new IllegalArgumentException("null or empty attributes passed to addAttributes");
+		}
+		boolean isLocalTransaction = Objects.isNull(caseDbTransaction);
+		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;		
+		SleuthkitCase.CaseDbConnection connection = isLocalTransaction ? localTransaction.getConnection() : caseDbTransaction.getConnection();
+		
+		try {
+			for (final Attribute attribute : attributes) {
+				attribute.setAttributeOwnerId(getId()); 
+				attribute.setCaseDatabase(getSleuthkitCase());
+				getSleuthkitCase().addFileAttribute(attribute, connection);
+			}
+			
+			if(isLocalTransaction) {
+				localTransaction.commit();
+				localTransaction = null;
+			}
+			// append the new attributes if cache is already loaded.
+			synchronized (this) {
+				if (loadedAttributesCacheFromDb) {
+					fileAttributesCache.addAll(attributes);
+				}
+			}
+		} catch (SQLException ex) {
+			if (isLocalTransaction && null != localTransaction) {
+				try {
+					localTransaction.rollback();
+				} catch (TskCoreException ex2) {
+					LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+			}
+			throw new TskCoreException("Error adding file attributes", ex);
+		}
+	}
+	
 	/**
 	 * Sets the known state for this file. Passed in value will be ignored if it
 	 * is "less" than the current state. A NOTABLE file cannot be downgraded to
@@ -1282,7 +1362,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, Collections.emptyList());
 	}
 
 	/**
@@ -1327,7 +1407,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, Collections.emptyList());
 	}
 
 	/**
