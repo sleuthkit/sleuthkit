@@ -212,6 +212,7 @@ public class SleuthkitCase {
 	private CaseDbAccessManager dbAccessManager;
 	private TaggingManager taggingMgr;
 	private ScoringManager scoringManager;
+	private HostManager	hostManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -391,6 +392,7 @@ public class SleuthkitCase {
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
 		scoringManager = new ScoringManager(this);
+		hostManager = new HostManager(this);
 	}
 
 	/**
@@ -512,6 +514,17 @@ public class SleuthkitCase {
 	 */
 	public ScoringManager getScoringManager() throws TskCoreException {
 		return scoringManager;
+	}
+	
+	/**
+	 * Gets the host manager for this case.
+	 *
+	 * @return The per case HostManager object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public HostManager getHostManager() throws TskCoreException {
+		return hostManager;
 	}
 	
 	/**
