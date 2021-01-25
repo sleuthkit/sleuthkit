@@ -195,13 +195,12 @@ Details about a device data source.
 ## TSK_EMAIL_MSG
 An email message found in an application file or database.
 
-### REQUIRED ATTRIBUTES
+### OPTIONAL ATTRIBUTES
 - At least one of:
 -  TSK_EMAIL_CONTENT_HTML (Representation of email as HTML)
 -  TSK_EMAIL_CONTENT_PLAIN (Representation of email as plain text)
 -  TSK_EMAIL_CONTENT_RTF (Representation of email as RTF)
 
-### OPTIONAL ATTRIBUTES
 - TSK_DATETIME_RCVD (When email message was received, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DATETIME_SENT (When email message was sent, in seconds since 1970-01-01T00:00:00Z)
 - TSK_EMAIL_BCC (BCC'd recipient, multiple recipients should be in a comma separated string)
@@ -413,15 +412,6 @@ Indication that the source file matches some set of criteria (possibly user defi
 - TSK_COMMENT (Comment on the reason that the source artifact is interesting)
 - TSK_CATEGORY (The set membership rule that was satisfied. I.e. a particular mime)
 
-
-
----
-## TSK_IP_DHCP
-DHCP information that is stored.
-
-### REQUIRED ATTRIBUTES
-- TSK_NAME (Description of Information)
-- TSK_VALUE (Value of Information)
 
 
 ---
