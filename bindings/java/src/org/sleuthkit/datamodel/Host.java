@@ -24,13 +24,11 @@ import java.util.Objects;
  *
  * Encapsulates a host.
  */
-public class Host {
+public final class Host {
 
 	private final long id;
-	private String name;
+	private final String name;
 	private HostStatus status;
-
-	
 
 	Host(long id, String name) {
 		this(id, name, HostStatus.ACTIVE);
@@ -42,22 +40,42 @@ public class Host {
 		this.status = status;
 	}
 
+	/**
+	 * Gets the row id for the host.
+	 *
+	 * @return Row id.
+	 */
 	public long getId() {
 		return id;
 	}
 
+	/**
+	 * Gets the name for the host.
+	 *
+	 * @return Host name.
+	 */
 	public String getName() {
 		return name;
 	}
 
-	public void setName(String name) {
-		this.name = name;
-	}
-
+	/**
+	 * Gets the status for the host.
+	 *
+	 * @return Host status.
+	 */
 	public HostStatus getStatus() {
 		return status;
 	}
 	
+	/**
+	 * Sets the status for the host.
+	 *
+	 * @param status Host status.
+	 */
+	public void setStatus(HostStatus status) {
+		this.status = status;
+	}
+		
 	@Override
 	public int hashCode() {
 		int hash = 5;

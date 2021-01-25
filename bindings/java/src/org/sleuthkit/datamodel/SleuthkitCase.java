@@ -2255,14 +2255,22 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		try {
 			String dateDataType = "BIGINT";
+			String primaryKeyType = "BIGSERIAL";
 			if (this.dbType.equals(DbType.SQLITE)) {
 				dateDataType = "INTEGER";
+				primaryKeyType = "INTEGER";
 			}
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType);
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_settings TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
 
+			// create host table.
+			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
+				+ "name TEXT NOT NULL, " // host name
+				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+				+ "UNIQUE(name)) ");
+			
 			return new CaseDbSchemaVersionNumber(8, 7);
 
 		} finally {

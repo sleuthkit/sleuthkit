@@ -35,7 +35,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  * Responsible for creating/updating/retrieving Hosts.
  *
  */
-public class HostManager {
+public final class HostManager {
 	
 	private static final Logger LOGGER = Logger.getLogger(HostManager.class.getName());
 
@@ -54,12 +54,13 @@ public class HostManager {
 	
 	/**
 	 * Get or create host with specified name.
-	 * 
-	 * @param name	Host name.
+	 *
+	 * @param name	       Host name.
 	 * @param transaction Database transaction to use.
-	 * 
-	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @return Host with the specified name.
+	 *
+	 * @throws TskCoreException
 	 */
 	Host getOrCreateHost(String name, CaseDbTransaction transaction) throws TskCoreException  {
 		
@@ -76,7 +77,7 @@ public class HostManager {
 			return host.get();
 		}
 
-		// could'nt find it, create a new host
+		// couldn't find it, create a new host
 		return createHost(name, connection);
 	}
 	
@@ -101,7 +102,7 @@ public class HostManager {
 			if (!rs.next()) {
 				return Optional.empty();	// no match found
 			} else {
-				return Optional.of(new Host(rs.getLong("id"), rs.getString("name")));
+				return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
@@ -159,7 +160,7 @@ public class HostManager {
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			while (rs.next()) {
-				hosts.add(new Host(rs.getLong("id"), rs.getString("name")));
+				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
 			}
 
 			return hosts;
