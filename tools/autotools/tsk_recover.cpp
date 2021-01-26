@@ -288,7 +288,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     if (fbuf[strlen(fbuf) - 1] != '/')
-        strncat(fbuf, "/", PATH_MAX - strlen(fbuf));
+        strncat(fbuf, "/", PATH_MAX - strlen(fbuf)-1);
 
     strncat(fbuf, a_fs_file->name->name, PATH_MAX - strlen(fbuf));
     
