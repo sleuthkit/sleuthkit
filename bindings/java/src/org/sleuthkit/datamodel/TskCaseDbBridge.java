@@ -800,13 +800,10 @@ class TskCaseDbBridge {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = caseDb.addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 			
-			//TBD: Need to get host by using the data source name and then use that host for creating the OS account below.
-			Host host = null;
-			
 			//  add the ownerUid to the database. Use that rowId 
 			long osAccountRowId = Strings.isNullOrEmpty(ownerUid) 
 								? OsAccount.NO_USER
-								: caseDb.getOsAccountManager().getOrCreateOsAccount(ownerUid, null, null, host, transaction).getId();
+								: caseDb.getOsAccountManager().createOrGetOsAccount(dataSourceObjId, ownerUid, null, null, transaction);
 			
 			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, uid_str, os_account_row_id)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS

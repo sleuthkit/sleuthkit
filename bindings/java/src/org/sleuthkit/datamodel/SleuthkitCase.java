@@ -212,9 +212,8 @@ public class SleuthkitCase {
 	private CaseDbAccessManager dbAccessManager;
 	private TaggingManager taggingMgr;
 	private ScoringManager scoringManager;
-	private OsAccountRealmManager osAccountRealmManager;
+	private HostManager	hostManager;
 	private OsAccountManager osAccountManager;
-	private HostManager hostManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -394,9 +393,8 @@ public class SleuthkitCase {
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
 		scoringManager = new ScoringManager(this);
-		osAccountRealmManager = new OsAccountRealmManager(this);
-		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
+		osAccountManager = new OsAccountManager(this);
 	}
 
 	/**
@@ -521,14 +519,14 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Gets the OS account realm manager for this case.
+	 * Gets the host manager for this case.
 	 *
-	 * @return The per case OsAccountRealmManager object.
+	 * @return The per case HostManager object.
 	 *
-	 * @throws TskCoreException
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public OsAccountRealmManager getOsAccountRealmManager() throws TskCoreException {
-		return osAccountRealmManager;
+	public HostManager getHostManager() throws TskCoreException {
+		return hostManager;
 	}
 	
 	/**
@@ -540,17 +538,6 @@ public class SleuthkitCase {
 	 */
 	public OsAccountManager getOsAccountManager() throws TskCoreException {
 		return osAccountManager;
-	}
-	
-	/**
-	 * Gets the Hosts manager for this case.
-	 *
-	 * @return The per case HostManager object.
-	 *
-	 * @throws TskCoreException
-	 */
-	public HostManager getHostManager() throws TskCoreException {
-		return hostManager;
 	}
 	
 	/**
@@ -2280,101 +2267,23 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-			String bigIntDataType = "BIGINT";
+			String dateDataType = "BIGINT";
 			String primaryKeyType = "BIGSERIAL";
 			if (this.dbType.equals(DbType.SQLITE)) {
-				bigIntDataType = "INTEGER";
+				dateDataType = "INTEGER";
 				primaryKeyType = "INTEGER";
 			}
-			
-			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ bigIntDataType);
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType);
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_settings TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
 
-			// create analysis results tables
-			statement.execute("CREATE TABLE tsk_analysis_results (obj_id " + bigIntDataType + " NOT NULL, "
-					+ "conclusion TEXT, "
-					+ "significance INTEGER NOT NULL, "
-					+ "confidence INTEGER NOT NULL, "
-					+ "configuration TEXT, justification TEXT, "
-					+ "ignore_score INTEGER DEFAULT 0, " // boolean	
-					+ "FOREIGN KEY(obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
-					+ ")");
-
-			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " NOT NULL, "
-					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "significance INTEGER NOT NULL, "
-					+ "confidence INTEGER NOT NULL, "
-					+ "UNIQUE (obj_id),"
-					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
-					+ ")");
-
 			// create host table.
 			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
-					+ "name TEXT NOT NULL, " // host name
-					+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
-					+ "UNIQUE(name)) ");
-
-			// Create OS Account and realted tables 
-			statement.execute("CREATE TABLE tsk_os_account_realms (id " + primaryKeyType + " PRIMARY KEY, "
-					+ "name TEXT NOT NULL, " // realm name - host name or domain name
-					+ "unique_id TEXT DEFAULT NULL, " // a sid/uid or some some other unique identifier, may be null
-					+ "host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm just comprises of a single host
-					+ "name_type INTEGER, " // indicates if the realm name was  was expressed or inferred 
-					+ "UNIQUE(name), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
-
-			statement.execute("CREATE TABLE tsk_os_accounts (id " + primaryKeyType + " PRIMARY KEY, "
-					+ "login_name TEXT, " // login name, if available, may be null
-					+ "full_name TEXT, " // full name, if available, may be null
-					+ "realm_id " + bigIntDataType + ", " // row id for the realm, may be null if only SID is known 
-					+ "unique_id TEXT, " // SID/UID, if available
-					+ "signature TEXT NOT NULL, " // realm/loginname or sid 
-					+ "status INTEGER, " // enabled/disabled/deleted
-					+ "admin INTEGER DEFAULT 0," // is admin account
-					+ "type INTEGER, " // service/interactive
-					+ "creation_date_time " + bigIntDataType + ", "
-					+ "UNIQUE(signature), "
-					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
-
-			statement.execute("CREATE TABLE tsk_os_account_attributes (id " + primaryKeyType + " PRIMARY KEY, "
-					+ "os_account_row_id " + bigIntDataType + " NOT NULL, "
-					+ "host_id " + bigIntDataType + " NOT NULL, "
-					+ "source_obj_id " + bigIntDataType + ", "
-					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
-					+ "value_type INTEGER NOT NULL, "
-					+ "value_byte " + bigIntDataType + ", "
-					+ "value_text TEXT, "
-					+ "value_int32 INTEGER, value_int64 " + bigIntDataType + ", "
-					+ "value_double NUMERIC(20, 10), "
-					+ "FOREIGN KEY(os_account_row_id) REFERENCES tsk_os_accounts(id), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "
-					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
-
-			statement.execute("CREATE TABLE tsk_os_account_instances (id " + primaryKeyType + " PRIMARY KEY, "
-					+ "os_account_row_id " + bigIntDataType + " NOT NULL, "
-					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "host_id " + bigIntDataType + " NOT NULL, "
-					+ "instance_type INTEGER NOT NULL, " // PerformedActionOn/ReferencedOn
-					+ "UNIQUE(os_account_row_id, data_source_obj_id, host_id), "
-					+ "FOREIGN KEY(os_account_row_id) REFERENCES tsk_os_accounts(id), "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
-
-			statement.execute("CREATE TABLE tsk_data_artifact_data (id " + bigIntDataType + " NOT NULL, "
-					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "os_account_row_id " + bigIntDataType + " NOT NULL, "
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(os_account_row_id) REFERENCES tsk_os_accounts(id)) ");
-
-			// add uid_str & os_account_row_id columns to tsk_files
-			statement.execute("ALTER TABLE tsk_files ADD COLUMN uid_str TEXT DEFAULT NULL");
-			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_row_id " + bigIntDataType + " REFERENCES tsk_os_accounts(id) DEFAULT NULL");
-
-
+				+ "name TEXT NOT NULL, " // host name
+				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+				+ "UNIQUE(name)) ");
+			
 			return new CaseDbSchemaVersionNumber(8, 7);
 
 		} finally {
