@@ -765,6 +765,7 @@ INPUT                  = main.dox \
                          artifact_catalog.dox \
                          insert_and_update_database.dox \
                          communications.dox \
+                         db_schema_8_6.dox \
 						 ../src
 
 # This tag can be used to specify the character encoding of the source files

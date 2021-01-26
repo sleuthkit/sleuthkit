@@ -62,8 +62,8 @@ public class BlackboardArtifact implements Content {
 	private final SleuthkitCase sleuthkitCase;
 	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
 	private boolean loadedCacheFromDb = false;
-	private Content parent;
-	private String uniquePath;
+	private volatile Content parent;
+	private volatile String uniquePath;
 
 	private byte[] contentBytes = null;
 
@@ -432,21 +432,27 @@ public class BlackboardArtifact implements Content {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Override
-	public synchronized String getUniquePath() throws TskCoreException {
-
-		// Return the path of the parrent file
+	public String getUniquePath() throws TskCoreException {
+		// Return the path of the parent file
+		// It is possible that multiple threads could be doing this calculation
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
-			uniquePath = "";
+			String tempUniquePath = "";
 			Content myParent = getParent();
 			if (myParent != null) {
-				uniquePath = myParent.getUniquePath();
+				tempUniquePath = myParent.getUniquePath();
 			}
+			
+			// Don't update uniquePath until it is complete.
+			uniquePath = tempUniquePath;
 		}
 		return uniquePath;
 	}
 
 	@Override
-	public synchronized Content getParent() throws TskCoreException {
+	public Content getParent() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
 			ObjectInfo parentInfo;
 			parentInfo = getSleuthkitCase().getParentInfo(this);
@@ -1363,11 +1369,6 @@ public class BlackboardArtifact implements Content {
 		 */
 		TSK_SCREEN_SHOTS(60, "TSK_SCREEN_SHOTS",
 				bundle.getString("BlackboardArtifact.tskScreenShots.text")),
-		/**
-		 * DHCP Information that is store for a device.
-		 */
-		TSK_IP_DHCP(61, "TSK_IP_DHCP",
-				bundle.getString("BlackboardArtifact.tskDhcpInfo.text")),
 		/**
 		 * Notifications Sent to User.
 		 */
