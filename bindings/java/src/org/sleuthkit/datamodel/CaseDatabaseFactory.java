@@ -423,16 +423,51 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 		
+		stmt.execute("CREATE TABLE tsk_os_account_realms (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "name TEXT NOT NULL, "	// realm name - host name or domain name
+				+ "unique_id TEXT DEFAULT NULL, "		// a sid/uid or some some other unique identifier, may be null
+				+ "host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm just comprises of a single host
+				+ "name_type INTEGER, "	// indicates if the realm name was  was expressed or inferred 
+				+ "UNIQUE(name), "
+				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
+		
 		stmt.execute("CREATE TABLE tsk_os_accounts (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "user_name TEXT, "	// username if available
-				+ "realm TEXT, "		// domain or host
+				+ "login_name TEXT, "	// login name, if available, may be null
+				+ "full_name TEXT, "	// full name, if available, may be null
+				+ "realm_id " + dbQueryHelper.getBigIntType() + ", "		// row id for the realm, may be null if only SID is known 
 				+ "unique_id TEXT, "	// SID/UID, if available
-				+ "signature TEXT NOT NULL, "	// realm/username or sid 
-				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + ","
-				+ "UNIQUE(data_source_obj_id, signature), "
-				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))");
+				+ "signature TEXT NOT NULL, "	// realm/loginname or sid 
+				+ "status INTEGER, "    // enabled/disabled/deleted
+				+ "admin INTEGER DEFAULT 0," // is admin account
+				+ "type INTEGER, "	// service/interactive
+				+ "creation_date_time " + dbQueryHelper.getBigIntType() + ", "		
+				+ "UNIQUE(signature), "
+				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
+		
+		stmt.execute("CREATE TABLE tsk_os_account_attributes (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "os_account_row_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
+				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", " 	
+				+ "attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "value_type INTEGER NOT NULL, "
+				+ "value_byte " + dbQueryHelper.getBlobType() + ", "
+				+ "value_text TEXT, "
+				+ "value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", "
+				+ "value_double NUMERIC(20, 10), "
+				+ "FOREIGN KEY(os_account_row_id) REFERENCES tsk_os_accounts(id), "
+				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "		
+				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");	
+		
+		stmt.execute("CREATE TABLE tsk_os_account_instances (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "os_account_row_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
+				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "instance_type INTEGER NOT NULL, "	// PerformedActionOn/ReferencedOn
+				+ "UNIQUE(os_account_row_id, data_source_obj_id, host_id), "
+				+ "FOREIGN KEY(os_account_row_id) REFERENCES tsk_os_accounts(id), "
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
+				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 		
 		stmt.execute("CREATE TABLE tsk_data_artifact_data (id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
