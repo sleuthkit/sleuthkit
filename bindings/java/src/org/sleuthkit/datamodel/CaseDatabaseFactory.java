@@ -150,6 +150,7 @@ class CaseDatabaseFactory {
 			createAnalysisResultsTables(stmt);
 			createTagTables(stmt);
 			createIngestTables(stmt);
+			createHostTables(stmt);
 			createAccountTables(stmt);
 			createEventTables(stmt);
 			createAttributeTables(stmt);
@@ -390,6 +391,15 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id) ON DELETE CASCADE);");
 	}
 	
+	private void createHostTables(Statement stmt) throws SQLException {
+
+		stmt.execute("CREATE TABLE tsk_hosts (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "name TEXT NOT NULL, " // host name
+				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+				+ "UNIQUE(name)) ");
+
+	}
+		
 	private void createAccountTables(Statement stmt) throws SQLException {
 		stmt.execute("CREATE TABLE account_types (account_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
