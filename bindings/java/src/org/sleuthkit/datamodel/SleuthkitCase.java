@@ -212,6 +212,7 @@ public class SleuthkitCase {
 	private CaseDbAccessManager dbAccessManager;
 	private TaggingManager taggingMgr;
 	private ScoringManager scoringManager;
+	private HostManager	hostManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -391,6 +392,7 @@ public class SleuthkitCase {
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
 		scoringManager = new ScoringManager(this);
+		hostManager = new HostManager(this);
 	}
 
 	/**
@@ -512,6 +514,17 @@ public class SleuthkitCase {
 	 */
 	public ScoringManager getScoringManager() throws TskCoreException {
 		return scoringManager;
+	}
+	
+	/**
+	 * Gets the host manager for this case.
+	 *
+	 * @return The per case HostManager object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public HostManager getHostManager() throws TskCoreException {
+		return hostManager;
 	}
 	
 	/**
@@ -2244,17 +2257,21 @@ public class SleuthkitCase {
 			String dateDataType   = "BIGINT";
 			String bigIntDataType = "BIGINT";
 			String blobDataType   = "BYTEA";
+			String primaryKeyType = "BIGSERIAL";
 
 			if (this.dbType.equals(DbType.SQLITE)) {
 				dateDataType   = "INTEGER";
 				bigIntDataType = "INTEGER";
 				blobDataType   = "BLOB";
+				primaryKeyType = "INTEGER";
 			}
+			
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType);
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_settings TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
 
+            // Create tsk file attributes table
 			statement.execute("CREATE TABLE tsk_file_attributes (obj_id " + bigIntDataType + " NOT NULL, "
 					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
 					+ "value_type INTEGER NOT NULL, value_byte " + blobDataType + ", "
@@ -2262,6 +2279,12 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_files(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 
+			// create host table.
+			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
+				+ "name TEXT NOT NULL, " // host name
+				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+				+ "UNIQUE(name)) ");
+			
 			return new CaseDbSchemaVersionNumber(8, 7);
 
 		} finally {
