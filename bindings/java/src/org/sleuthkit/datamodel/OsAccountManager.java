@@ -140,15 +140,15 @@ public final class OsAccountManager {
 			long parentObjId = 1;
 			int objTypeId = TskData.ObjectType.ARTIFACT.getObjectType();
 			
-			long objId = db.addObject(parentObjId, objTypeId, connection);
+			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
 			
-			String userInsertSQL = "INSERT INTO tsk_os_accounts(obj_id, login_name, realm_id, unique_id, signature)"
+			String userInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, unique_id, signature)"
 					+ " VALUES (?, ?, ?, ?, ?)"; // NON-NLS
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(userInsertSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
-			preparedStatement.setLong(1, objId);
+			preparedStatement.setLong(1, osAccountObjId);
 			
 			preparedStatement.setString(2, loginName);
 			if (!Objects.isNull(realm)) {
@@ -162,7 +162,7 @@ public final class OsAccountManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			return new OsAccount(db, objId, realm, loginName, uniqueId, signature);
+			return new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature);
 			
 		} catch (SQLException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
@@ -212,7 +212,7 @@ public final class OsAccountManager {
 		String whereHostClause = (host == null) 
 							? " realms.host_id IS NULL " 
 							: " realms.host_id = " + host.getId() + " ";
-		String queryString = "SELECT accounts.obj_id as obj_id, accounts.login_name, accounts.full_name, "
+		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 								+ " accounts.realm_id, accounts.unique_id, accounts.signature, "
 								+ "	accounts.type, accounts.status, accounts.admin, accounts.creation_date_time, "
 								+ " realms.name as realm_name, realms.unique_id as realm_unique_id, realms.host_id, realms.name_type "
@@ -280,24 +280,24 @@ public final class OsAccountManager {
 	/**
 	 * Get the OsAccount with the given object id.
 	 *
-	 * @param objId Obj id for the user account.
+	 * @param osAccountObjId Obj id for the user account.
 	 *
 	 * @return OsAccount.
 	 *
 	 * @throws TskCoreException         If there is an error getting the user.
 	 * @throws IllegalArgumentException If no matching user is found.
 	 */
-	public OsAccount getOsAccount(long objId) throws TskCoreException {
+	public OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			return getOsAccount(objId, connection);
+			return getOsAccount(osAccountObjId, connection);
 		}
 	}
 	
 	/**
 	 * Get the OsAccount with the given row id.
 	 *
-	 * @param objId Object id for the user account.
+	 * @param osAccountObjId Object id for the user account.
 	 * @param connection Database connection to use.
 	 *
 	 * @return OsAccount.
@@ -305,16 +305,16 @@ public final class OsAccountManager {
 	 * @throws TskCoreException         If there is an error getting the user.
 	 * @throws IllegalArgumentException If no matching user is found.
 	 */
-	private OsAccount getOsAccount(long objId, CaseDbConnection connection) throws TskCoreException {
+	private OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE obj_id = " + objId;
+				+ " WHERE os_account_obj_id = " + osAccountObjId;
 
 		try (	Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			if (!rs.next()) {
-				throw new IllegalArgumentException(String.format("No user found with obj id = %d ", objId));
+				throw new IllegalArgumentException(String.format("No user found with obj id = %d ", osAccountObjId));
 			} else {
 		
 				OsAccountRealm realm = null;
@@ -346,7 +346,7 @@ public final class OsAccountManager {
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			String userInsertSQL = "INSERT INTO tsk_os_account_instances(os_account_id, data_source_obj_id, host_id, instance_type)"
+			String userInsertSQL = "INSERT INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
 					+ " VALUES (?, ?, ?, ?)"; // NON-NLS
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(userInsertSQL, Statement.RETURN_GENERATED_KEYS);
@@ -378,7 +378,7 @@ public final class OsAccountManager {
 	
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
-				+ " ON instances.os_account_id = accounts.obj_id "
+				+ " ON instances.os_account_obj_id = accounts.os_account_obj_id "
 				+ " WHERE instances.host_id = " + host.getId();
 
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -557,7 +557,7 @@ public final class OsAccountManager {
 		try {
 			for (OsAccountAttribute accountAttribute : accountAttributes) {
 
-				String attributeInsertSQL = "INSERT INTO tsk_os_account_attributes(os_account_id, host_id, source_obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double)"
+				String attributeInsertSQL = "INSERT INTO tsk_os_account_attributes(os_account_obj_id, host_id, source_obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double)"
 						+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 
 				PreparedStatement preparedStatement = connection.getPreparedStatement(attributeInsertSQL, Statement.RETURN_GENERATED_KEYS);
@@ -627,7 +627,7 @@ public final class OsAccountManager {
 	 */
 	private OsAccount osAccountFromResultSet(ResultSet rs, OsAccountRealm realm) throws SQLException {
 		
-		OsAccount osAccount = new OsAccount(db, rs.getLong("obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"));
+		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"));
 		
 		// set other optional fields
 		int status = rs.getInt("status");

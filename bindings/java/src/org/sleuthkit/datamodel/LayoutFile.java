@@ -82,10 +82,9 @@ public class LayoutFile extends AbstractFile {
 	 * @param parentPath         The path of the parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
-	 * @param uidStr			 String UID of the user as found in in the file
+	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountId        Account id of the user in the tsk_os_accounts
-	 *                           table.
+	 * @param osAccountObjId     Obj id of the owner OS account.
 	 */
 	LayoutFile(SleuthkitCase db,
 			long objId,
@@ -98,10 +97,10 @@ public class LayoutFile extends AbstractFile {
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath, String mimeType,
-			String uidStr,
-			long osAccountId) {
+			String ownerUid,
+			long osAccountObjId) {
 			
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), uidStr, osAccountId, Collections.emptyList());
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), ownerUid, osAccountObjId, Collections.emptyList());
 	}
 
 	/**

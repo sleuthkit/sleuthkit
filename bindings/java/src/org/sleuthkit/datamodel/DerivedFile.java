@@ -83,10 +83,9 @@ public class DerivedFile extends AbstractFile {
 	 * @param encodingType		     The encoding type of the file.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
-	 * @param uidStr			 String UID of the user as found in in the file
+	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountId	 Row id of the user in the tsk_os_accounts
-	 *                           table.
+	 * @param osAccountObjId	 Obj id of the owner OS account.
 	 */
 	DerivedFile(SleuthkitCase db,
 			long objId,
@@ -103,13 +102,13 @@ public class DerivedFile extends AbstractFile {
 			String mimeType,
 			TskData.EncodingType encodingType,
 			String extension, 
-			String uidStr,
-			long osAccountId) {
+			String ownerUid,
+			long osAccountObjId) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountId, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 		setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}

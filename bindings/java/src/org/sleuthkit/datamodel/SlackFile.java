@@ -77,9 +77,9 @@ public class SlackFile extends FsContent {
 	 *                           yet been determined.
 	 * @param extension	         The extension part of the file name (not
 	 *                           including the '.'), can be null.
-	 * @param uidStr			 String UID of the user as found in in the file
+	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountId		 Id of the account in the tsk_os_accounts
+	 * @param osAccountObjId	 Obj id of the account in the tsk_os_accounts
 	 *                           table.
 	 * 
 	 */
@@ -97,9 +97,9 @@ public class SlackFile extends FsContent {
 			short modes, int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
 			String extension,
-			String uidStr,
-			long osAccountId) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountId, Collections.emptyList());
+			String ownerUid,
+			long osAccountObjId) {
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 	}
 
 	/**

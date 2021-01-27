@@ -74,10 +74,10 @@ public class LocalFile extends AbstractFile {
 	 * @param encodingType		     The encoding type of the file.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
-	 * @param uidStr			 String UID of the user as found in in the file
+	 * @param ownerUid			 String UID of the user as found in in the file
 	 *                           system, can be null.
-	 * @param osAccountId	     Account id of the user in the tsk_os_accounts
-	 *                           table.
+	 * @param osAccountObjId	 UID of the file owner as found in the file
+	 *                           system, can be null.
 	 */
 	LocalFile(SleuthkitCase db,
 			long objId,
@@ -93,11 +93,11 @@ public class LocalFile extends AbstractFile {
 			String localPath,
 			TskData.EncodingType encodingType,
 			String extension,
-			String uidStr,
-			long osAccountId) {
+			String ownerUid,
+			long osAccountObjId) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountId, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors, using 
 		// AbstractContent.UNKNOWN_ID as needed.

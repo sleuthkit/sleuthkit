@@ -106,10 +106,9 @@ public abstract class FsContent extends AbstractFile {
 	 *                           yet been determined.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
-	 * @param uidStr			 String UID of the user as found in in the file
+	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountId        Account id of the user in the tsk_os_accounts
-	 *                           table.
+	 * @param osAccountObjId     Obj id of the owner OS account.
 	 */
 	@SuppressWarnings("deprecation")
 	FsContent(SleuthkitCase db,
@@ -129,10 +128,10 @@ public abstract class FsContent extends AbstractFile {
 			String parentPath,
 			String mimeType,
 			String extension,
-			String uidStr,
-			long osAccountId,
+			String ownerUid,
+			long osAccountObjId,
 			List<Attribute> fileAttributes) {
-		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountId, fileAttributes);
+		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
 		this.fsObjId = fsObjId;
 	}
 

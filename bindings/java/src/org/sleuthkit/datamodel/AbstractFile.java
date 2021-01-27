@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
@@ -97,8 +98,9 @@ public abstract class AbstractFile extends AbstractContent {
 	private final List<Attribute> fileAttributesCache = new ArrayList<Attribute>();
 	private boolean loadedAttributesCacheFromDb = false;
 
-	private final String uidStr;	// SID/uid
-	private final long userRowId;
+	private final String ownerUid;	// string owner UID, for example a Windows SID.
+									// different from the numeric uid which is more common Unix style file systems.
+	private final long osAccountObjId; // obj id of the owner's OS account
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
@@ -135,8 +137,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param mimeType           The MIME type of the file, can be null.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
-	 * @param uidStr			 String uid/SID, can be null if not available.
-	 * @param userRowId	         The row id of user in tsk_os_accounts.
+	 * @param ownerUid			 Owner uid/SID, can be null if not available.
+	 * @param osAccountObjId	 Obj id of the owner OS account.
 	 * 
 	 */
 	AbstractFile(SleuthkitCase db,
@@ -156,8 +158,8 @@ public abstract class AbstractFile extends AbstractContent {
 			String parentPath,
 			String mimeType,
 			String extension,
-			String uidStr,
-			long userRowId,
+			String ownerUid,
+			long osAccountObjId,
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
@@ -190,8 +192,8 @@ public abstract class AbstractFile extends AbstractContent {
 		this.mimeType = mimeType;
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
-		this.uidStr = uidStr;
-		this.userRowId = userRowId;
+		this.ownerUid = ownerUid;
+		this.osAccountObjId = osAccountObjId;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1326,49 +1328,40 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Get the uidStr.
+	 * Get the owner uid.
 	 * 
-	 * @return String uid. Returns an empty string if no uid is recorded.
+	 * Note this is string uid, typically a Windows SID. This is different from 
+	 * the numeric uid commonly found on Unix style file systems.
+	 * 
+	 * @return Optional with owner uid.
 	 */
-	public String getUidStr() {
-		return Objects.nonNull(uidStr) ? uidStr
-				: "";
+	public Optional<String> getOwnerUid() {
+		return Optional.ofNullable(ownerUid);
 	}
 		
 	/**
-	 * Get the row id of the owing user. 
+	 * Get the obj id of the owner account. 
 	 * 
-	 * @return rowId, or OsAccount.NO_USER
+	 * @return Object id of the os account, or OsAccount.NO_USER
 	 */
-	public long getUserRowId() {
-		return userRowId;
+	public long getOsAccountObjId() {
+		return osAccountObjId;
 	}
 	
 	/**
-	 * Gets the user for the file.
+	 * Gets the owner account for the file.
 	 * 
 	 * @return OsAccount  
 	 * 
-	 * @throws TskCoreException  If there is an error getting the user
+	 * @throws TskCoreException  If there is an error getting the account.
 	 */
-	public OsAccount getUser() throws TskCoreException {
+	public OsAccount getOsAccount() throws TskCoreException {
 		
-		// run a query to get the user row id from the tsk_files
-		String queryStr = "SELECT os_account_id FROM tsk_files WHERE obj_id = " + this.getId();
-		try (SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = connection.executeQuery(statement, queryStr);) {
-
-			if (resultSet.next()) {
-					long userRowId = resultSet.getLong("os_account_id");
-					return getSleuthkitCase().getOsAccountManager().getOsAccount(userRowId);
-			} else {
-				throw new TskCoreException(String.format("Error getting user account id for file (obj_id = %d)", this.getId()));
-			}
-			
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting user account id for file (obj_id = %d)", this.getId()), ex);
-		} 
+		if (osAccountObjId == OsAccount.NO_USER) {
+			return null;
+		}
+		
+		return getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId);
 	}
 	
 	@Override

@@ -210,12 +210,12 @@ class CaseDatabaseFactory {
 				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, "
 				+ "known INTEGER, "
 				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
-				+ "uid_str TEXT, "
-				+ "os_account_id " + dbQueryHelper.getBigIntType() + ", "
+				+ "owner_uid TEXT, "
+				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(os_account_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE) " );
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) " );
 
 		stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 
@@ -431,7 +431,7 @@ class CaseDatabaseFactory {
 				+ "UNIQUE(name), "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
 		
-		stmt.execute("CREATE TABLE tsk_os_accounts (obj_id " + dbQueryHelper.getBigIntType() + ", "
+		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "login_name TEXT, "	// login name, if available, may be null
 				+ "full_name TEXT, "	// full name, if available, may be null
 				+ "realm_id " + dbQueryHelper.getBigIntType() + ", "		// row id for the realm, may be null if only SID is known 
@@ -441,13 +441,12 @@ class CaseDatabaseFactory {
 				+ "admin INTEGER DEFAULT 0," // is admin account
 				+ "type INTEGER, "	// service/interactive
 				+ "creation_date_time " + dbQueryHelper.getBigIntType() + ", "		
-				+ "UNIQUE(obj_id), "
 				+ "UNIQUE(signature), "
-				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 		
 		stmt.execute("CREATE TABLE tsk_os_account_attributes (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ "os_account_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
 				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", " 	
 				+ "attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
@@ -456,26 +455,26 @@ class CaseDatabaseFactory {
 				+ "value_text TEXT, "
 				+ "value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", "
 				+ "value_double NUMERIC(20, 10), "
-				+ "FOREIGN KEY(os_account_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
 				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "		
 				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");	
 		
 		stmt.execute("CREATE TABLE tsk_os_account_instances (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ "os_account_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
 				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "instance_type INTEGER NOT NULL, "	// PerformedActionOn/ReferencedOn
-				+ "UNIQUE(os_account_id, data_source_obj_id, host_id), "
-				+ "FOREIGN KEY(os_account_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 		
 		stmt.execute("CREATE TABLE tsk_data_artifact_data (id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "os_account_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(os_account_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE) ");	
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");	
 	}
 	
 	private void createEventTables(Statement stmt) throws SQLException {

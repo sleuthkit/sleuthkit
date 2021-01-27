@@ -804,11 +804,11 @@ class TskCaseDbBridge {
 			Host host = null;
 			
 			//  add the ownerUid to the database. Use that rowId 
-			long osAccountId = Strings.isNullOrEmpty(ownerUid) 
+			long osAccountObjId = Strings.isNullOrEmpty(ownerUid) 
 								? OsAccount.NO_USER
 								: caseDb.getOsAccountManager().getOrCreateOsAccount(ownerUid, null, null, host, transaction).getId();
 			
-			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, uid_str, os_account_id)"
+			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, owner_uid, os_account_obj_id)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(fileInsert, Statement.NO_GENERATED_KEYS);			
 			preparedStatement.clearParameters();
@@ -892,10 +892,10 @@ class TskCaseDbBridge {
 				preparedStatement.setNull(26, java.sql.Types.INTEGER);
 			}
 			
-			preparedStatement.setString(27, ownerUid); // uidStr
+			preparedStatement.setString(27, ownerUid); // ownerUid
 			
-			if (osAccountId != OsAccount.NO_USER) {
-				preparedStatement.setLong(28, osAccountId);
+			if (osAccountObjId != OsAccount.NO_USER) {
+				preparedStatement.setLong(28, osAccountObjId);
 			} else {
 				preparedStatement.setNull(28, java.sql.Types.BIGINT);
 			}
@@ -911,7 +911,7 @@ class TskCaseDbBridge {
 						TskData.TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
 						TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
 						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension, ownerUid, osAccountId);
+						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension, ownerUid, osAccountObjId);
 
 				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
 			}
