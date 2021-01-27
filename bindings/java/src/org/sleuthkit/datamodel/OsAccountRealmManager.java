@@ -32,8 +32,8 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 
 /**
- * Create/Retrieve/Update OS account realms.
- * 
+ * Create/Retrieve/Update OS account realms. Realms represent either an individual
+ * host with local accounts or a domain. 
  */
 public final class OsAccountRealmManager {
 
@@ -69,11 +69,10 @@ public final class OsAccountRealmManager {
 	
 	
 	/**
-	 * Get the realm with the given name and the given host.
-	 * If one does not exist.
+	 * Get or create the realm with the given name and scope for the given host.
 	 * 
 	 * @param realmName Realm name.
-	 * @param host Host for realm, may be null.
+	 * @param host Host that realm reference was found on.  May be null if you know the realm is a domain and not host-specific. 
 	 * @param transaction Transaction to use for connection.
 	 * 
 	 * @return OsAccountRealm Realm.
@@ -119,7 +118,7 @@ public final class OsAccountRealmManager {
 	 * Get or create with the given Windows SID. 
 	 * 
 	 * @param sid	SID.
-	 * @param host	Host, if the realm is restricted to a single host. May be null.
+	 * @param host	Host that the SID was located on.  Should not be null. 
 	 * @param transaction Transaction.
 	 * 
 	 * @return Realm.
@@ -313,8 +312,7 @@ public final class OsAccountRealmManager {
 	 * @param realmName  Realm name.
 	 * @param nameType   Name type.
 	 * @param uniqueId   SIS or some other unique id. May be null.
-	 * @param host       Host, if this realm encompasses a single host. May be
-	 *                   null.
+	 * @param host       Host that realm reference was found on.  Can be null if you know the realm is a domain and not host-specific. 
 	 * @param connection DB connection to use.
 	 *
 	 * @return OsAccountRealm Realm just created.
