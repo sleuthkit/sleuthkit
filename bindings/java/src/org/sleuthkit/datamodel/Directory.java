@@ -252,6 +252,6 @@ public class Directory extends FsContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
 			String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
 	}
 }

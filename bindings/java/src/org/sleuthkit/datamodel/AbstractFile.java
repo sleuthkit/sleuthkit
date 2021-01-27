@@ -1342,7 +1342,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Get the obj id of the owner account. 
 	 * 
-	 * @return Object id of the os account, or OsAccount.NO_USER
+	 * @return Object id of the os account, or OsAccount.NO_ACCOUNT
 	 */
 	public long getOsAccountObjId() {
 		return osAccountObjId;
@@ -1357,7 +1357,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public OsAccount getOsAccount() throws TskCoreException {
 		
-		if (osAccountObjId == OsAccount.NO_USER) {
+		if (osAccountObjId == OsAccount.NO_ACCOUNT) {
 			return null;
 		}
 		
@@ -1411,7 +1411,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER, Collections.emptyList());
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**
@@ -1456,7 +1456,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER, Collections.emptyList());
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**

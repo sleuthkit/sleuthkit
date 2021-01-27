@@ -6726,7 +6726,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
@@ -6741,7 +6741,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, null, parentPath, mimeType,
-					extension, OsAccount.NULL_UID_STR, OsAccount.NO_USER, fileAttributes);
+					extension, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
@@ -6895,7 +6895,7 @@ public class SleuthkitCase {
 						parent.getUniquePath(),
 						null,
 						OsAccount.NULL_UID_STR,
-						OsAccount.NO_USER));
+						OsAccount.NO_ACCOUNT));
 			}
 
 			transaction.commit();
@@ -7086,7 +7086,7 @@ public class SleuthkitCase {
 						parentPath,
 						null,
 						OsAccount.NULL_UID_STR,
-						OsAccount.NO_USER));
+						OsAccount.NO_ACCOUNT));
 			}
 
 			transaction.commit();
@@ -7238,7 +7238,7 @@ public class SleuthkitCase {
 			addFilePath(connection, newObjId, localPath, encodingType);
 
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			transaction.commit();
@@ -7551,7 +7551,7 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension, 
-					OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+					OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
 			getTimelineManager().addEventsForNewFile(localFile, connection);
 			return localFile;
 
@@ -7743,7 +7743,7 @@ public class SleuthkitCase {
 					parentPath,
 					null,
 					OsAccount.NULL_UID_STR,
-					OsAccount.NO_USER);
+					OsAccount.NO_ACCOUNT);
 
 			transaction.commit();
 			transaction = null;
@@ -9036,7 +9036,7 @@ public class SleuthkitCase {
 					
 					long osAccountObjId = rs.getInt("os_account_obj_id");
 					if (rs.wasNull()) {
-						osAccountObjId = OsAccount.NO_USER;
+						osAccountObjId = OsAccount.NO_ACCOUNT;
 					}
 		
 					LayoutFile lf = new LayoutFile(this,
@@ -9087,7 +9087,7 @@ public class SleuthkitCase {
 	org.sleuthkit.datamodel.File file(ResultSet rs, FileSystem fs) throws SQLException {
 		long osAccountObjId = rs.getInt("os_account_obj_id");
 		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_USER;
+			osAccountObjId = OsAccount.NO_ACCOUNT;
 		}
 				
 		org.sleuthkit.datamodel.File f = new org.sleuthkit.datamodel.File(this, rs.getLong("obj_id"), //NON-NLS
@@ -9120,7 +9120,7 @@ public class SleuthkitCase {
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
 		long osAccountObjId = rs.getInt("os_account_obj_id");
 		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_USER;
+			osAccountObjId = OsAccount.NO_ACCOUNT;
 		}
 		
 		Directory dir = new Directory(this, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
@@ -9273,7 +9273,7 @@ public class SleuthkitCase {
 		
 		long osAccountObjId = rs.getInt("os_account_obj_id");
 		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_USER;
+			osAccountObjId = OsAccount.NO_ACCOUNT;
 		}
 				
 		final DerivedFile df = new DerivedFile(this, objId, rs.getLong("data_source_obj_id"),
@@ -9332,7 +9332,7 @@ public class SleuthkitCase {
 		}
 		long osAccountObjId = rs.getInt("os_account_obj_id");
 		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_USER;
+			osAccountObjId = OsAccount.NO_ACCOUNT;
 		}
 		
 		LocalFile file = new LocalFile(this, objId, rs.getString("name"), //NON-NLS
@@ -9363,7 +9363,7 @@ public class SleuthkitCase {
 	org.sleuthkit.datamodel.SlackFile slackFile(ResultSet rs, FileSystem fs) throws SQLException {
 		long osAccountObjId = rs.getInt("os_account_obj_id");
 		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_USER;
+			osAccountObjId = OsAccount.NO_ACCOUNT;
 		}
 		org.sleuthkit.datamodel.SlackFile f = new org.sleuthkit.datamodel.SlackFile(this, rs.getLong("obj_id"), //NON-NLS
 				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
@@ -9433,7 +9433,7 @@ public class SleuthkitCase {
 						}
 						long osAccountObjId = rs.getInt("os_account_obj_id");
 						if (rs.wasNull()) {
-							osAccountObjId = OsAccount.NO_USER;
+							osAccountObjId = OsAccount.NO_ACCOUNT;
 						}
 						final LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 								rs.getLong("data_source_obj_id"), rs.getString("name"), type,

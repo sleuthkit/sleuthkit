@@ -805,7 +805,7 @@ class TskCaseDbBridge {
 			
 			//  add the ownerUid to the database. Use that rowId 
 			long osAccountObjId = Strings.isNullOrEmpty(ownerUid) 
-								? OsAccount.NO_USER
+								? OsAccount.NO_ACCOUNT
 								: caseDb.getOsAccountManager().getOrCreateOsAccount(ownerUid, null, null, host, transaction).getId();
 			
 			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, owner_uid, os_account_obj_id)"
@@ -894,7 +894,7 @@ class TskCaseDbBridge {
 			
 			preparedStatement.setString(27, ownerUid); // ownerUid
 			
-			if (osAccountObjId != OsAccount.NO_USER) {
+			if (osAccountObjId != OsAccount.NO_ACCOUNT) {
 				preparedStatement.setLong(28, osAccountObjId);
 			} else {
 				preparedStatement.setNull(28, java.sql.Types.BIGINT);

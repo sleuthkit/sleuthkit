@@ -312,7 +312,7 @@ public class DerivedFile extends AbstractFile {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
 				md5Hash, null, knownState,
-				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null, OsAccount.NULL_UID_STR, OsAccount.NO_USER);
+				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
 	}
 
 }

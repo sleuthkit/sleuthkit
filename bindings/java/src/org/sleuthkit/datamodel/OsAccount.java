@@ -33,7 +33,7 @@ import java.util.Set;
  */
 public final class OsAccount implements Content {
 
-	final static long NO_USER = -1;
+	final static long NO_ACCOUNT = -1;
 	final static String NULL_UID_STR = null;
 
 	private final SleuthkitCase sleuthkitCase;
