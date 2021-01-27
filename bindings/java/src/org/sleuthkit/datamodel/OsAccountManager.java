@@ -106,7 +106,6 @@ public final class OsAccountManager {
 	/**
 	 * Creates a user with the given uid, name, and realm.
 	 *
-	 * @param dataSourceId Data source object id.
 	 * @param uniqueId     User sid/uid. May be null/empty.
 	 * @param loginName    User name. may be null or empty.
 	 * @param realm	       Realm. May be null.
@@ -131,32 +130,40 @@ public final class OsAccountManager {
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			String userInsertSQL = "INSERT INTO tsk_os_accounts(login_name, realm_id, unique_id, signature)"
-					+ " VALUES (?, ?, ?, ?)"; // NON-NLS
+			
+			// first create a tsk_object for the OsAccount.
+			
+			// RAMAN TBD: need to get the correct parnt obj id.  
+			//            Create an Object Directory parent and used its id.
+			// RAMAN TBD: what is the object type ??
+			
+			long parentObjId = 1;
+			int objTypeId = TskData.ObjectType.ARTIFACT.getObjectType();
+			
+			long objId = db.addObject(parentObjId, objTypeId, connection);
+			
+			String userInsertSQL = "INSERT INTO tsk_os_accounts(obj_id, login_name, realm_id, unique_id, signature)"
+					+ " VALUES (?, ?, ?, ?, ?)"; // NON-NLS
 
-			PreparedStatement preparedStatement = connection.getPreparedStatement(userInsertSQL, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement preparedStatement = connection.getPreparedStatement(userInsertSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
-			preparedStatement.setString(1, loginName);
+			preparedStatement.setLong(1, objId);
+			
+			preparedStatement.setString(2, loginName);
 			if (!Objects.isNull(realm)) {
-				preparedStatement.setLong(2, realm.getId());
+				preparedStatement.setLong(3, realm.getId());
 			} else {
-				preparedStatement.setNull(2, java.sql.Types.BIGINT);
+				preparedStatement.setNull(3, java.sql.Types.BIGINT);
 			}
 
-			preparedStatement.setString(3, uniqueId);
-			preparedStatement.setString(4, signature);
+			preparedStatement.setString(4, uniqueId);
+			preparedStatement.setString(5, signature);
 
 			connection.executeUpdate(preparedStatement);
 
-			// Read back the row id
-			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
-				if (resultSet.next()) {
-					return new OsAccount(resultSet.getLong(1), realm, loginName, uniqueId, signature);
-				} else {
-					throw new SQLException("Error executing insert  OS account SQL: " + userInsertSQL);
-				}
-			}
+			return new OsAccount(db, objId, realm, loginName, uniqueId, signature);
+			
 		} catch (SQLException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
 			throw new TskCoreException(String.format("Error adding OS user account with uniqueId = %s, userName = %s", uniqueId, loginName), ex);
@@ -205,7 +212,7 @@ public final class OsAccountManager {
 		String whereHostClause = (host == null) 
 							? " realms.host_id IS NULL " 
 							: " realms.host_id = " + host.getId() + " ";
-		String queryString = "SELECT accounts.id as id, accounts.login_name, accounts.full_name, "
+		String queryString = "SELECT accounts.obj_id as obj_id, accounts.login_name, accounts.full_name, "
 								+ " accounts.realm_id, accounts.unique_id, accounts.signature, "
 								+ "	accounts.type, accounts.status, accounts.admin, accounts.creation_date_time, "
 								+ " realms.name as realm_name, realms.unique_id as realm_unique_id, realms.host_id, realms.name_type "
@@ -271,26 +278,26 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Get the OsAccount with the given row id.
+	 * Get the OsAccount with the given object id.
 	 *
-	 * @param accountRowId Row id for the user account.
+	 * @param objId Obj id for the user account.
 	 *
 	 * @return OsAccount.
 	 *
 	 * @throws TskCoreException         If there is an error getting the user.
 	 * @throws IllegalArgumentException If no matching user is found.
 	 */
-	public OsAccount getOsAccount(long accountRowId) throws TskCoreException {
+	public OsAccount getOsAccount(long objId) throws TskCoreException {
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			return getOsAccount(accountRowId, connection);
+			return getOsAccount(objId, connection);
 		}
 	}
 	
 	/**
 	 * Get the OsAccount with the given row id.
 	 *
-	 * @param accountRowId Row id for the user account.
+	 * @param objId Object id for the user account.
 	 * @param connection Database connection to use.
 	 *
 	 * @return OsAccount.
@@ -298,16 +305,16 @@ public final class OsAccountManager {
 	 * @throws TskCoreException         If there is an error getting the user.
 	 * @throws IllegalArgumentException If no matching user is found.
 	 */
-	private OsAccount getOsAccount(long accountRowId, CaseDbConnection connection) throws TskCoreException {
+	private OsAccount getOsAccount(long objId, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE id = " + accountRowId;
+				+ " WHERE obj_id = " + objId;
 
 		try (	Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			if (!rs.next()) {
-				throw new IllegalArgumentException(String.format("No user found with  row id = %d ", accountRowId));
+				throw new IllegalArgumentException(String.format("No user found with obj id = %d ", objId));
 			} else {
 		
 				OsAccountRealm realm = null;
@@ -339,7 +346,7 @@ public final class OsAccountManager {
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			String userInsertSQL = "INSERT INTO tsk_os_account_instances(os_account_row_id, data_source_obj_id, host_id, instance_type)"
+			String userInsertSQL = "INSERT INTO tsk_os_account_instances(os_account_id, data_source_obj_id, host_id, instance_type)"
 					+ " VALUES (?, ?, ?, ?)"; // NON-NLS
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(userInsertSQL, Statement.RETURN_GENERATED_KEYS);
@@ -371,7 +378,7 @@ public final class OsAccountManager {
 	
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
-				+ " ON instances.os_account_row_id = accounts.id "
+				+ " ON instances.os_account_id = accounts.obj_id "
 				+ " WHERE instances.host_id = " + host.getId();
 
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -535,72 +542,74 @@ public final class OsAccountManager {
 	
 	
 	/**
-	 * Adds a row to the tsk_os_account_attributes table for the given
+	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.
 	 *
-	 * @param account	       Account for whcih the attributes is being added.
+	 * @param account	       Account for which the attributes is being added.
 	 * @param accountAttribute Attribute to add.
-	 * @param transaction      Transaction.
 	 *
 	 * @throws TskCoreException,
 	 */
-	void addOsAccountAttribute(OsAccount account, OsAccountAttribute accountAttribute, CaseDbTransaction transaction) throws TskCoreException {
-		CaseDbConnection connection = transaction.getConnection();
+	void addOsAccountAttributes(OsAccount account, Set<OsAccountAttribute> accountAttributes) throws TskCoreException {
+		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseWriteLock();
+	
 		try {
+			for (OsAccountAttribute accountAttribute : accountAttributes) {
 
-			String attributeInsertSQL = "INSERT INTO tsk_os_account_attributes(os_account_row_id, host_id, source_obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
+				String attributeInsertSQL = "INSERT INTO tsk_os_account_attributes(os_account_id, host_id, source_obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double)"
+						+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 
-			PreparedStatement preparedStatement = connection.getPreparedStatement(attributeInsertSQL, Statement.RETURN_GENERATED_KEYS);
-			preparedStatement.clearParameters();
+				PreparedStatement preparedStatement = connection.getPreparedStatement(attributeInsertSQL, Statement.RETURN_GENERATED_KEYS);
+				preparedStatement.clearParameters();
 
-			preparedStatement.setLong(1, account.getId());
-			preparedStatement.setLong(2, accountAttribute.getHostId());
-			preparedStatement.setLong(3, accountAttribute.getAttributeOwnerId());
+				preparedStatement.setLong(1, account.getId());
+				preparedStatement.setLong(2, accountAttribute.getHostId());
+				preparedStatement.setLong(3, accountAttribute.getAttributeOwnerId());
 
-			preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
-			preparedStatement.setLong(5, accountAttribute.getAttributeType().getValueType().getType());
+				preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
+				preparedStatement.setLong(5, accountAttribute.getAttributeType().getValueType().getType());
 
-			if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
-				preparedStatement.setBytes(6, accountAttribute.getValueBytes());
-			} else {
-				preparedStatement.setBytes(6, null);
+				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+					preparedStatement.setBytes(6, accountAttribute.getValueBytes());
+				} else {
+					preparedStatement.setBytes(6, null);
+				}
+
+				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+						|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
+					preparedStatement.setString(7, accountAttribute.getValueString());
+				} else {
+					preparedStatement.setString(7, null);
+				}
+				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+					preparedStatement.setInt(8, accountAttribute.getValueInt());
+				} else {
+					preparedStatement.setNull(8, java.sql.Types.INTEGER);
+				}
+
+				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+						|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
+					preparedStatement.setLong(9, accountAttribute.getValueLong());
+				} else {
+					preparedStatement.setNull(9, java.sql.Types.BIGINT);
+				}
+
+				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+					preparedStatement.setDouble(10, accountAttribute.getValueDouble());
+				} else {
+					preparedStatement.setNull(10, java.sql.Types.DOUBLE);
+				}
+
+				connection.executeUpdate(preparedStatement);
+			
 			}
-
-			if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
-					|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
-				preparedStatement.setString(7, accountAttribute.getValueString());
-			} else {
-				preparedStatement.setString(7, null);
-			}
-			if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
-				preparedStatement.setInt(8, accountAttribute.getValueInt());
-			} else {
-				preparedStatement.setNull(8, java.sql.Types.INTEGER);
-			}
-
-			if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
-					|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
-				preparedStatement.setLong(9, accountAttribute.getValueLong());
-			} else {
-				preparedStatement.setNull(9, java.sql.Types.BIGINT);
-			}
-
-			if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
-				preparedStatement.setDouble(10, accountAttribute.getValueDouble());
-			} else {
-				preparedStatement.setNull(10, java.sql.Types.DOUBLE);
-			}
-
-			connection.executeUpdate(preparedStatement);
-
 		} catch (SQLException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
-			throw new TskCoreException(String.format("Error adding OS Account attribute of type = %d, value type = %d,  for account id = %d",
-					accountAttribute.getAttributeType().getTypeID(), accountAttribute.getAttributeType().getValueType().getType(), account.getId()),
-					ex);
-		} finally {
+			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
+		} 
+		
+		finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
 
@@ -618,7 +627,7 @@ public final class OsAccountManager {
 	 */
 	private OsAccount osAccountFromResultSet(ResultSet rs, OsAccountRealm realm) throws SQLException {
 		
-		OsAccount osAccount = new OsAccount(rs.getLong("id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"));
+		OsAccount osAccount = new OsAccount(db, rs.getLong("obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"));
 		
 		// set other optional fields
 		int status = rs.getInt("status");

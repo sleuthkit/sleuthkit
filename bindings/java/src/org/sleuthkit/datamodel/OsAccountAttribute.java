@@ -27,24 +27,24 @@ import org.sleuthkit.datamodel.BlackboardAttribute.Type;
  */
 public final class OsAccountAttribute extends AbstractAttribute {
 
-	private final long osAccountRowId;	// OS account to which this attribute belongs.
+	private final long osAccountId;	// OS account to which this attribute belongs.
 	private final long hostId; // Host to which this attribute applies.
 	private final long sourceObjId; // Object id of the source where the attribute was discoevered.
 
 	/**
 	 * Creates an os account attribute with int value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueInt	      Int value.
-	 * @param osAccountRowId Row id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param attributeType Attribute type.
+	 * @param valueInt	    Int value.
+	 * @param osAccountId	Id of account which the attribute pertains to.
+	 * @param sourceObjId   Object id of the source where the attribute was
+	 *                      found.
+	 * @param hostId        Host on which the attribute applies to.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountRowId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountId, long hostId, long sourceObjId) {
 		super(attributeType, valueInt);
 
-		this.osAccountRowId = osAccountRowId;
+		this.osAccountId = osAccountId;
 		this.hostId = hostId;
 		this.sourceObjId = sourceObjId;
 	}
@@ -52,17 +52,17 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	/**
 	 * Creates an os account attribute with long value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueLong	     Long value.
-	 * @param osAccountRowId Row id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param attributeType Attribute type.
+	 * @param valueLong	    Long value.
+	 * @param osAccountId   Id of account which the attribute pertains to.
+	 * @param sourceObjId   Object id of the source where the attribute was
+	 *                      found.
+	 * @param hostId        Host on which the attribute applies to.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountRowId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountId, long hostId, long sourceObjId) {
 		super(attributeType, valueLong);
 
-		this.osAccountRowId = osAccountRowId;
+		this.osAccountId = osAccountId;
 		this.hostId = hostId;
 		this.sourceObjId = sourceObjId;
 	}
@@ -70,17 +70,17 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	/**
 	 * Creates an os account attribute with double value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueDouble    Double value.
-	 * @param osAccountRowId Row id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param attributeType Attribute type.
+	 * @param valueDouble   Double value.
+	 * @param osAccountId   Id of account which the attribute pertains to.
+	 * @param sourceObjId   Object id of the source where the attribute was
+	 *                      found.
+	 * @param hostId        Host on which the attribute applies to.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountRowId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountId, long hostId, long sourceObjId) {
 		super(attributeType, valueDouble);
 
-		this.osAccountRowId = osAccountRowId;
+		this.osAccountId = osAccountId;
 		this.hostId = hostId;
 		this.sourceObjId = sourceObjId;
 	}
@@ -90,15 +90,15 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *
 	 * @param attributeType  Attribute type.
 	 * @param valueString    String value.
-	 * @param osAccountRowId Row id of account which the attribute pertains to.
+	 * @param osAccountId	 Id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
 	 * @param hostId         Host on which the attribute applies to.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountRowId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountId, long hostId, long sourceObjId) {
 		super(attributeType, valueString);
 
-		this.osAccountRowId = osAccountRowId;
+		this.osAccountId = osAccountId;
 		this.hostId = hostId;
 		this.sourceObjId = sourceObjId;
 	}
@@ -106,17 +106,17 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	/**
 	 * Creates an os account attribute with byte-array value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueBytes     Bytes value.
-	 * @param osAccountRowId Row id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param attributeType Attribute type.
+	 * @param valueBytes    Bytes value.
+	 * @param osAccountId   Id of account which the attribute pertains to.
+	 * @param sourceObjId   Object id of the source where the attribute was
+	 *                      found.
+	 * @param hostId        Host on which the attribute applies to.
 	 */
-	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountRowId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountId, long hostId, long sourceObjId) {
 		super(attributeType, valueBytes);
 
-		this.osAccountRowId = osAccountRowId;
+		this.osAccountId = osAccountId;
 		this.hostId = hostId;
 		this.sourceObjId = sourceObjId;
 	}
@@ -132,18 +132,18 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param valueString    String value.
 	 * @param valueBytes     Bytes value.
 	 * @param sleuthkitCase  Sleuthkit case.
-	 * @param osAccountRowId Row id of account which the attribute pertains to.
+	 * @param osAccountId    Id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
 	 * @param hostId         Host on which the attribute applies to.
 	 */
 	OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
-			SleuthkitCase sleuthkitCase, long osAccountRowId, long sourceObjId, long hostId) {
+			SleuthkitCase sleuthkitCase, long osAccountId, long sourceObjId, long hostId) {
 
-		super(osAccountRowId, attributeType,
+		super(osAccountId, attributeType,
 				valueInt, valueLong, valueDouble, valueString, valueBytes,
 				sleuthkitCase);
-		this.osAccountRowId = osAccountRowId;
+		this.osAccountId = osAccountId;
 		this.hostId = hostId;
 		this.sourceObjId = sourceObjId;
 	}
@@ -162,8 +162,8 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *
 	 * @return Account row id.
 	 */
-	public long getOsAccountRowId() {
-		return osAccountRowId;
+	public long getOsAccountId() {
+		return osAccountId;
 	}
 
 	/**

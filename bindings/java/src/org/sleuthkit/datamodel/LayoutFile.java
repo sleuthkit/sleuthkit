@@ -84,7 +84,7 @@ public class LayoutFile extends AbstractFile {
 	 *                           yet been determined.
 	 * @param uidStr			 String UID of the user as found in in the file
 	 *                           system, can be null.
-	 * @param osAccountRowId		 Row id of the user in the tsk_os_accounts
+	 * @param osAccountId        Account id of the user in the tsk_os_accounts
 	 *                           table.
 	 */
 	LayoutFile(SleuthkitCase db,
@@ -99,9 +99,9 @@ public class LayoutFile extends AbstractFile {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath, String mimeType,
 			String uidStr,
-			long osAccountRowId) {
+			long osAccountId) {
 			
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), uidStr, osAccountRowId, Collections.emptyList());
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), uidStr, osAccountId, Collections.emptyList());
 	}
 
 	/**

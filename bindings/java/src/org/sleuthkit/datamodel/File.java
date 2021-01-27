@@ -80,7 +80,7 @@ public class File extends FsContent {
 	 *                           including the '.'), can be null.
 	 * @param uidStr			 String UID of the user as found in in the file
 	 *                           system, can be null.
-	 * @param osAccountRowId	 Row id of the user in the tsk_os_accounts
+	 * @param osAccountId        Account id of the user in the tsk_os_accounts
 	 *                           table.
 	 */
 	File(SleuthkitCase db,
@@ -98,9 +98,9 @@ public class File extends FsContent {
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
 			String extension,
 			String uidStr,
-			long osAccountRowId,
+			long osAccountId,
 			List<Attribute> fileAttributes) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountRowId, fileAttributes);
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, uidStr, osAccountId, fileAttributes);
 	}
 
 	/**

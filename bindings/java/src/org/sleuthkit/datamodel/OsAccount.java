@@ -19,9 +19,11 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Abstracts an OS user account.
@@ -29,12 +31,14 @@ import java.util.Optional;
  * An OS user account may own files and (some) artifacts.
  *
  */
-public final class OsAccount {
+public final class OsAccount implements Content {
 
 	final static long NO_USER = -1;
 	final static String NULL_UID_STR = null;
 
-	private final long id;	// row id in the tsk_os_accounts table
+	private final SleuthkitCase sleuthkitCase;
+	
+	private final long objId;	
 	private final OsAccountRealm realm;		// realm where the username is unique - a domain or a host name, may be null
 	private final String loginName;	// user login name - may be null
 	private final String uniqueId;	// a unique user sid/uid, may be null
@@ -211,10 +215,11 @@ public final class OsAccount {
 	 * Constructs an OsAccount with a realm/username and unique id, and
 	 * signature
 	 */
-	OsAccount(long id, OsAccountRealm realm, String loginName, String uniqueId, String signature) {
+	OsAccount(SleuthkitCase sleuthkitCase, long objId, OsAccountRealm realm, String loginName, String uniqueId, String signature) {
 
-		this.id = id;
-
+		this.sleuthkitCase = sleuthkitCase;
+		
+		this.objId = objId;
 		this.realm = realm;
 		this.loginName = loginName;
 		this.uniqueId = uniqueId;
@@ -267,12 +272,13 @@ public final class OsAccount {
 	}
 
 	/**
-	 * Adds an account attribute to the account.
+	 * Adds account attributes to the account.
 	 *
-	 * @param osAccountAttribute Account attribute to add.
+	 * @param osAccountAttributes Collection of  attributes to add.
 	 */
-	void addAttribute(OsAccountAttribute osAccountAttribute) {
-		osAccountAttributes.add(osAccountAttribute);
+	void addAttributes(Set<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
+		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes);
+		osAccountAttributes.addAll(osAccountAttributes);
 	}
 
 	/**
@@ -281,7 +287,7 @@ public final class OsAccount {
 	 * @return Account id.
 	 */
 	public long getId() {
-		return id;
+		return objId;
 	}
 
 	/**
@@ -373,5 +379,171 @@ public final class OsAccount {
 	 */
 	public List<OsAccountAttribute> getOsAccountAttributes() {
 		return Collections.unmodifiableList(osAccountAttributes);
+	}
+	
+	/**
+	 * Gets the SleuthKit case  database for this
+	 * account.
+	 *
+	 * @return The SleuthKit case object.
+	 */
+	public SleuthkitCase getSleuthkitCase() {
+		return sleuthkitCase;
+	}
+	
+	
+	@Override
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public void close() {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public long getSize() {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public String getName() {
+		return signature;
+	}
+
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public Content getDataSource() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public List<Content> getChildren() throws TskCoreException {
+		return Collections.<Content>emptyList();
+	}
+
+	@Override
+	public boolean hasChildren() throws TskCoreException {
+		return false;
+	}
+
+	@Override
+	public int getChildrenCount() throws TskCoreException {
+		return 0;
+	}
+
+	@Override
+	public Content getParent() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return Collections.<Long>emptyList();
+	}
+
+	@Override
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public Score getAggregateScore() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public Set<String> getHashSetNames() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public long getArtifactsCount(int artifactTypeID) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public long getAllArtifactsCount() throws TskCoreException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 }

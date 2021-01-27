@@ -75,7 +75,7 @@ public class Directory extends FsContent {
 	 * @param parentPath         The path of the parent of the file.
 	 * @param uidStr			 String UID of the user as found in in the file
 	 *                           system, can be null.
-	 * @param osAccountRowId	 Row id of the user in the tsk_os_accounts
+	 * @param osAccountId	     Account id of the user in the tsk_os_accounts
 	 *                           table.
 	 */
 	Directory(SleuthkitCase db,
@@ -91,8 +91,8 @@ public class Directory extends FsContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, 
-			String uidStr, long osAccountRowId ) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, null, null, uidStr, osAccountRowId, Collections.emptyList());
+			String uidStr, long osAccountId ) {
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, null, null, uidStr, osAccountId, Collections.emptyList());
 	}
 
 	/**

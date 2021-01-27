@@ -1354,13 +1354,13 @@ public abstract class AbstractFile extends AbstractContent {
 	public OsAccount getUser() throws TskCoreException {
 		
 		// run a query to get the user row id from the tsk_files
-		String queryStr = "SELECT os_account_row_id FROM tsk_files WHERE obj_id = " + this.getId();
+		String queryStr = "SELECT os_account_id FROM tsk_files WHERE obj_id = " + this.getId();
 		try (SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryStr);) {
 
 			if (resultSet.next()) {
-					long userRowId = resultSet.getLong("os_account_row_id");
+					long userRowId = resultSet.getLong("os_account_id");
 					return getSleuthkitCase().getOsAccountManager().getOsAccount(userRowId);
 			} else {
 				throw new TskCoreException(String.format("Error getting user account id for file (obj_id = %d)", this.getId()));
