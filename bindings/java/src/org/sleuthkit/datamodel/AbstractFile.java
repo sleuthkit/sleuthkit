@@ -98,8 +98,9 @@ public abstract class AbstractFile extends AbstractContent {
 	private final List<Attribute> fileAttributesCache = new ArrayList<Attribute>();
 	private boolean loadedAttributesCacheFromDb = false;
 
-	private final String ownerUid;	// string owner UID, for example a Windows SID.
-									// different from the numeric uid which is more common Unix style file systems.
+	private final String ownerUid;	// string owner uid, for example a Windows SID.
+									// different from the numeric uid which is more commonly found 
+									// on Unix based file systems.
 	private final long osAccountObjId; // obj id of the owner's OS account
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -1330,8 +1331,9 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Get the owner uid.
 	 * 
-	 * Note this is string uid, typically a Windows SID. This is different from 
-	 * the numeric uid commonly found on Unix style file systems.
+	 * Note this is a string uid, typically a Windows SID. 
+	 * This is different from the numeric uid commonly found 
+	 * on Unix based file systems.
 	 * 
 	 * @return Optional with owner uid.
 	 */
