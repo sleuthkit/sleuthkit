@@ -447,7 +447,7 @@ class CaseDatabaseFactory {
 		
 		stmt.execute("CREATE TABLE tsk_os_account_attributes (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
+				+ "host_id " + dbQueryHelper.getBigIntType() + ", " 
 				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", " 	
 				+ "attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "value_type INTEGER NOT NULL, "

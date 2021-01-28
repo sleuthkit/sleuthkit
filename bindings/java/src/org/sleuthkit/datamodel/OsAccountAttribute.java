@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Optional;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
 
 /**
@@ -28,20 +29,21 @@ import org.sleuthkit.datamodel.BlackboardAttribute.Type;
 public final class OsAccountAttribute extends AbstractAttribute {
 
 	private final long osAccountObjId;	// OS account to which this attribute belongs.
-	private final long hostId; // Host to which this attribute applies.
+	private final Long hostId; // Host to which this attribute applies, may be null
 	private final long sourceObjId; // Object id of the source where the attribute was discoevered.
 
 	/**
 	 * Creates an os account attribute with int value.
 	 *
 	 * @param attributeType  Attribute type.
-	 * @param valueInt	     Int value.
+	 * @param valueInt	      Int value.
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param hostId         Id of host on which the attribute applies to. Pass
+	 *                       Null if it applies across hosts.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountObjId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueInt);
 
 		this.osAccountObjId = osAccountObjId;
@@ -57,9 +59,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param hostId         Id of host on which the attribute applies to. Pass
+	 *                       Null if it applies across hosts.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountObjId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueLong);
 
 		this.osAccountObjId = osAccountObjId;
@@ -75,9 +78,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param hostId         Id of host on which the attribute applies to. Pass
+	 *                       Null if it applies across hosts.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountObjId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueDouble);
 
 		this.osAccountObjId = osAccountObjId;
@@ -93,9 +97,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param hostId         Id of host on which the attribute applies to. Pass
+	 *                       Null if it applies across hosts.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountObjId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueString);
 
 		this.osAccountObjId = osAccountObjId;
@@ -111,9 +116,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param hostId         Id of host on which the attribute applies to. Pass
+	 *                       Null if it applies across hosts.
 	 */
-	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountObjId, long hostId, long sourceObjId) {
+	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueBytes);
 
 		this.osAccountObjId = osAccountObjId;
@@ -135,10 +141,11 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
-	 * @param hostId         Host on which the attribute applies to.
+	 * @param hostId         Id of host on which the attribute applies to. Pass
+	 *                       Null if it applies across hosts.
 	 */
 	OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
-			SleuthkitCase sleuthkitCase, long osAccountObjId, long sourceObjId, long hostId) {
+			SleuthkitCase sleuthkitCase, long osAccountObjId, long sourceObjId, Long hostId) {
 
 		super(osAccountObjId, attributeType,
 				valueInt, valueLong, valueDouble, valueString, valueBytes,
@@ -151,10 +158,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	/**
 	 * Get the host id for the account attribute.
 	 *
-	 * @return Host id.
+	 * @return Optional with Host id.
 	 */
-	long getHostId() {
-		return hostId;
+	Optional<Long> getHostId() {
+		return Optional.ofNullable(hostId);
 	}
 
 	/**

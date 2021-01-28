@@ -2345,7 +2345,7 @@ public class SleuthkitCase {
 
 			statement.execute("CREATE TABLE tsk_os_account_attributes (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "host_id " + bigIntDataType + " NOT NULL, "
+					+ "host_id " + bigIntDataType + ", "
 					+ "source_obj_id " + bigIntDataType + ", "
 					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
 					+ "value_type INTEGER NOT NULL, "

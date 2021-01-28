@@ -569,7 +569,11 @@ public final class OsAccountManager {
 				preparedStatement.clearParameters();
 
 				preparedStatement.setLong(1, account.getId());
-				preparedStatement.setLong(2, accountAttribute.getHostId());
+				if (accountAttribute.getHostId().isPresent()) {
+					preparedStatement.setLong(2, accountAttribute.getHostId().get());
+				} else {
+					preparedStatement.setNull(2, java.sql.Types.BIGINT);
+				}
 				preparedStatement.setLong(3, accountAttribute.getAttributeOwnerId());
 
 				preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
