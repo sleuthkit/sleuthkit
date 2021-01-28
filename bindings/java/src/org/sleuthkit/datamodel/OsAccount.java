@@ -38,7 +38,7 @@ public final class OsAccount implements Content {
 
 	private final SleuthkitCase sleuthkitCase;
 	
-	private final long objId;	
+	private final long osAccountobjId;	
 	private final OsAccountRealm realm;		// realm where the username is unique - a domain or a host name.
 	private final String loginName;	// user login name - may be null
 	private final String uniqueId;	// a unique user sid/uid, may be null
@@ -60,7 +60,7 @@ public final class OsAccount implements Content {
 		UNKNOWN(0, "Unknown"),
 		ACTIVE(1, "Active"),
 		DISABLED(2, "Disabled"),
-		DELETED(2, "Deleted");
+		DELETED(3, "Deleted");
 
 		private final int id;
 		private final String name;
@@ -213,13 +213,23 @@ public final class OsAccount implements Content {
 
 	/**
 	 * Constructs an OsAccount with a realm/username and unique id, and
-	 * signature
+	 * signature.
+	 *
+	 * @param sleuthkitCase  The SleuthKit case (case database) that contains
+	 *                       the artifact data.
+	 * @param osAccountobjId Obj id of the account in tsk_objects table.
+	 * @param realm	         Realm - defines the scope of this account.
+	 * @param loginName      Login name for the account. May be null.
+	 * @param uniqueId       An id unique within the realm - a SID or uid. May
+	 *                       be null, only if login name is not null.
+	 * @param signature	     A unique signature constructed from realm id and
+	 *                       loginName or uniqueId.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long objId, OsAccountRealm realm, String loginName, String uniqueId, String signature) {
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature) {
 
 		this.sleuthkitCase = sleuthkitCase;
 		
-		this.objId = objId;
+		this.osAccountobjId = osAccountobjId;
 		this.realm = realm;
 		this.loginName = loginName;
 		this.uniqueId = uniqueId;
@@ -298,7 +308,7 @@ public final class OsAccount implements Content {
 	 * @return Account id.
 	 */
 	public long getId() {
-		return objId;
+		return osAccountobjId;
 	}
 
 	/**

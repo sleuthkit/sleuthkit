@@ -1346,7 +1346,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * 
 	 * @return Object id of the os account, or OsAccount.NO_ACCOUNT
 	 */
-	public long getOsAccountObjId() {
+	long getOsAccountObjId() {
 		return osAccountObjId;
 	}
 	

@@ -24,7 +24,7 @@ package org.sleuthkit.datamodel;
  * extracted from a data source.
  *
  */
-public class DataArtifact extends BlackboardArtifact {
+public final class DataArtifact extends BlackboardArtifact {
 	
 	private final OsAccount osAccount;
 	

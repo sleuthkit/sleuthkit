@@ -219,7 +219,7 @@ public final class OsAccountManager {
 		
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 								+ " accounts.realm_id, accounts.unique_id, accounts.signature, "
-								+ "	accounts.type, accounts.status, accounts.admin, accounts.creation_date_time, "
+								+ "	accounts.type, accounts.status, accounts.admin, accounts.created_date, "
 								+ " realms.name as realm_name, realms.realm_addr as realm_addr, realms.host_id, realms.name_type "
 							+ " FROM tsk_os_accounts as accounts"
 							+ "		LEFT JOIN tsk_os_account_realms as realms"
@@ -490,7 +490,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	OsAccount getOrCreateOsAccountLogin(String loginName, String domainName, Host host, CaseDbTransaction transaction) throws TskCoreException {
+	OsAccount getOrCreateOsAccountByLogin(String loginName, String domainName, Host host, CaseDbTransaction transaction) throws TskCoreException {
 
 		CaseDbConnection connection = transaction.getConnection();
 
@@ -657,7 +657,7 @@ public final class OsAccountManager {
 										+ "		status = ?, "		// 5
 										+ "		admin = ?, "		// 6
 										+ "		type = ?, "			// 7
-										+ "		creation_date_time = ? "	//8
+										+ "		created_date = ? "	//8
 								+ " WHERE os_account_obj_id = ?";	//9
 			
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
@@ -723,7 +723,7 @@ public final class OsAccountManager {
 			osAccount.setOsAccountType(OsAccount.OsAccountType.fromID(type));
 		}
 		
-		long creationTime = rs.getLong("creation_date_time");
+		long creationTime = rs.getLong("created_date");
 		if (!rs.wasNull()) {
 			osAccount.setCreationTime(creationTime);
 		}
