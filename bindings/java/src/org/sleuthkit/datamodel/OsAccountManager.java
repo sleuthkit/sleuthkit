@@ -214,8 +214,9 @@ public final class OsAccountManager {
 	private OsAccount getOsAccountByUniqueId(String uniqueId, Host host, CaseDbConnection connection) throws TskCoreException {
 
 		String whereHostClause = (host == null) 
-							? " realms.host_id IS NULL " 
-							: " realms.host_id = " + host.getId() + " ";
+							? " 1 = 1 " 
+							: " ( realms.host_id = " + host.getId() + " OR realms.host_id IS NULL) ";
+		
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 								+ " accounts.realm_id, accounts.unique_id, accounts.signature, "
 								+ "	accounts.type, accounts.status, accounts.admin, accounts.creation_date_time, "

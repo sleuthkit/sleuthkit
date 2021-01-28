@@ -69,7 +69,7 @@ public final class OsAccountRealmManager {
 	
 	/**
 	 * Get the realm with the given name and the given host.
-	 * If one does not exist.
+	 * Creates one if one does not exist.
 	 * 
 	 * @param realmName Realm name.
 	 * @param host Host for realm, may be null.
@@ -87,29 +87,13 @@ public final class OsAccountRealmManager {
 		
 		CaseDbConnection connection = transaction.getConnection();
 		
-		String whereHostClause = (host == null) 
-							? " realms.host_id IS NULL " 
-							: " realms.host_id = " + host.getId() + " ";
-		String queryString = "SELECT * FROM tsk_os_account_realms as realms"
-				+ " WHERE " + whereHostClause
-				+ " AND LOWER(name) = LOWER('" + realmName + "')";
-				
-
-		try (Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-			
-			// RAMAN TBD: find the match that had the matching host and return that.  If none then return one with host null
-
-			if (rs.next()) {
-				return new OsAccountRealm(rs.getLong("id"),  rs.getString("name"), RealmNameType.fromID(rs.getInt("name_type")), rs.getString("unique_id"), host);
-			} else {
-				// create new 
-				return createRealm(realmName, RealmNameType.EXPRESSED, null, host, connection); 
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting account realm for with name = %s", realmName), ex);
+		OsAccountRealm accountRealm = getRealmByName(realmName, host, connection );
+		if (accountRealm != null) {
+			return accountRealm;
 		}
 		
+		// couldn't find a matching realm, create one.
+		return createRealm(realmName, RealmNameType.EXPRESSED, null, host, connection); 
 	}
 
 	
@@ -229,20 +213,32 @@ public final class OsAccountRealmManager {
 	private OsAccountRealm getRealmByUniqueId(String uniqueId, Host host, CaseDbConnection connection) throws TskCoreException {
 		
 		String whereHostClause = (host == null) 
-							? " realms.host_id IS NULL " 
-							: " realms.host_id = " + host.getId() + " ";
+							? " 1 = 1 " 
+							: " ( realms.host_id = " + host.getId() + " OR realms.host_id IS NULL) ";
 		String queryString = REALM_QUERY_STRING
-						+ " WHERE " + whereHostClause
-						+ " AND LOWER(realms.unique_id) = LOWER('"+ uniqueId + "')";
+						+ " WHERE LOWER(realms.unique_id) = LOWER('"+ uniqueId + "') "
+						+ " AND " + whereHostClause
+						+ " ORDER BY realms.host_id IS NOT NULL, realms.host_id";	// ensure that non null host_id is at the front
 				    
 		try (	Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			OsAccountRealm accountRealm = null;
-			if (rs.next()) { 
-				accountRealm = resultSetToAccountRealm(rs);
-			}
-
+			if (rs.next()) {
+				Host realmHost = null;
+				long hostId = rs.getLong("host_id");
+				if (!rs.wasNull()) {
+					if (host != null ) {
+						realmHost = host; // exact match on given host
+					} else {
+						realmHost = new Host(hostId, rs.getString("host_name"));
+					}
+				}
+				
+				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"),
+												RealmNameType.fromID(rs.getInt("name_type")),
+												rs.getString("realm_unique_id"), realmHost);
+			} 
 			return accountRealm;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error running the realms query = %s", queryString), ex);
@@ -250,7 +246,54 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Creates a OsAccountRealm from the resultset of a realms query.
+	 * Get the realm with the given name and specified host.
+	 * 
+	 * @param realmName Realm name.
+	 * @param host Host for realm, may be null.
+	 * @param connection Database connection to use.
+	 * 
+	 * @return OsAccountRealm, Null if no matching realm is found.
+	 * @throws TskCoreException.
+	 */
+	private OsAccountRealm getRealmByName(String realmName, Host host, CaseDbConnection connection) throws TskCoreException {
+		
+		String whereHostClause = (host == null) 
+							? " 1 = 1 " 
+							: " ( realms.host_id = " + host.getId() + " OR realms.host_id IS NULL ) ";
+		String queryString = REALM_QUERY_STRING
+				+ " WHERE LOWER(realms.name) = LOWER('" + realmName + "')"
+				+ " AND " + whereHostClause 
+				+ " ORDER BY realms.host_id IS NOT NULL, realms.host_id";	// ensure that non null host_id are at the front
+				
+		try (Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+			
+			OsAccountRealm accountRealm = null;
+			if (rs.next()) {
+				Host realmHost = null;
+				long hostId = rs.getLong("host_id");
+				if (!rs.wasNull()) {
+					if (host != null ) {
+						realmHost = host;
+					} else {
+						realmHost = new Host(hostId, rs.getString("host_name"));
+					}
+				}
+				
+				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"),
+												RealmNameType.fromID(rs.getInt("name_type")),
+												rs.getString("realm_unique_id"), realmHost);
+				
+			} 
+			return accountRealm;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting account realm for with name = %s", realmName), ex);
+		}
+	}
+	
+
+	/**
+	 * Creates a OsAccountRealm from the resultset of a REALM_QUERY_STRING query.
 	 * 
 	 * @param rs ResultSet
 	 * @return
