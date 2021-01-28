@@ -40,8 +40,8 @@ addons:
     - gettext
     - cppunit
     - afflib
-    taps: homebrew/cask-versions
-    casks: adoptopenjdk8
+#    taps: homebrew/cask-versions
+#    casks: adoptopenjdk8
 
 python:
   - "2.7"
@@ -58,8 +58,8 @@ before_script:
     fi
   - if [ $TRAVIS_OS_NAME = "osx" ]; then
         export PATH=${PATH}:/usr/local/opt/gettext/bin;
-        brew uninstall java --force;
-        brew cask uninstall java --force;
+#        brew uninstall java --force;
+#        brew cask uninstall java --force;
     fi
 
 script:
