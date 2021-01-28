@@ -200,7 +200,7 @@ public final class Blackboard {
 				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
 				+ " results.configuration AS configuration,  results.justification AS justification "
 				+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
-				+ " WHERE arts.artifact_obj_id = results.obj_id " //NON-NLS
+				+ " WHERE arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
 				+ " AND arts.artifact_type_id = types.artifact_type_id"
 				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
 

@@ -279,13 +279,13 @@ class CaseDatabaseFactory {
 	}
 	
 	private void createAnalysisResultsTables(Statement stmt) throws SQLException  {
-		stmt.execute("CREATE TABLE tsk_analysis_results (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+		stmt.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "conclusion TEXT, "
 				+ "significance INTEGER NOT NULL, "
 				+ "confidence INTEGER NOT NULL, "
 				+ "configuration TEXT, justification TEXT, "
 				+ "ignore_score INTEGER DEFAULT 0, " // boolean	
-				+ "FOREIGN KEY(obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
+				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
 				+ ")");		
 		
 		stmt.execute("CREATE TABLE tsk_aggregate_score( obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
@@ -470,7 +470,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 		
-		stmt.execute("CREATE TABLE tsk_data_artifact_data (id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+		stmt.execute("CREATE TABLE tsk_data_artifact ( "
 				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "

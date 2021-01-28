@@ -2293,13 +2293,13 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
 
 			// create analysis results tables
-			statement.execute("CREATE TABLE tsk_analysis_results (obj_id " + bigIntDataType + " NOT NULL, "
+			statement.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "conclusion TEXT, "
 					+ "significance INTEGER NOT NULL, "
 					+ "confidence INTEGER NOT NULL, "
 					+ "configuration TEXT, justification TEXT, "
 					+ "ignore_score INTEGER DEFAULT 0, " // boolean	
-					+ "FOREIGN KEY(obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
+					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
 					+ ")");
 
 			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " NOT NULL, "
@@ -2368,7 +2368,7 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
 					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 
-			statement.execute("CREATE TABLE tsk_data_artifact_data (id " + bigIntDataType + " NOT NULL, "
+			statement.execute("CREATE TABLE tsk_data_artifact ( "
 					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
@@ -11817,7 +11817,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (DEFAULT, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
-		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (obj_id, conclusion, significance, confidence, configuration, justification) " //NON-NLS
+		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (artifact_obj_id, conclusion, significance, confidence, configuration, justification) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
