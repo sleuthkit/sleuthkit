@@ -70,12 +70,16 @@ public final class OsAccountManager {
 
 		// ensure at least one of the two is supplied - unique id or a login name
 		if (Strings.isNullOrEmpty(uniqueAccountId) && Strings.isNullOrEmpty(loginName)) {
-			throw new IllegalArgumentException("Cannot create OS User with both uniqueId and loginName as null.");
+			throw new IllegalArgumentException("Cannot create OS account with both uniqueId and loginName as null.");
+		}
+		
+		if (Strings.isNullOrEmpty(realmName)) {
+			throw new IllegalArgumentException("Realm name is required to create an OS account.");
 		}
 
 		CaseDbConnection connection = transaction.getConnection();
 
-		OsAccount osAccount = null;
+		OsAccount osAccount;
 		// First search for user by uniqueId
 		if (!Strings.isNullOrEmpty(uniqueAccountId)) {
 			osAccount = getOsAccountByUniqueId(uniqueAccountId, host, connection);
@@ -85,11 +89,8 @@ public final class OsAccountManager {
 		}
 
 		// get/create the realm with given name
-		OsAccountRealm realm = null;
-		if (Strings.isNullOrEmpty(realmName) == false) {
-			realm = db.getOsAccountRealmManager().getOrCreateRealmByName(realmName, host, transaction);
-		}
-			
+		OsAccountRealm realm = db.getOsAccountRealmManager().getOrCreateRealmByName(realmName, host, transaction);
+		
 		// search by loginName
 		if (!Strings.isNullOrEmpty(loginName)) {
 			osAccount = getOsAccountByLoginName(loginName, realm, connection);
@@ -100,15 +101,14 @@ public final class OsAccountManager {
 
 		// couldn't find it, create a new account
 		return createOsAccount(uniqueAccountId, loginName, realm, connection);
-
 	}
 
 	/**
-	 * Creates a user with the given uid, name, and realm.
+	 * Creates a OS account with the given uid, name, and realm.
 	 *
-	 * @param uniqueId     User sid/uid. May be null/empty.
-	 * @param loginName    User name. may be null or empty.
-	 * @param realm	       Realm. May be null.
+	 * @param uniqueId     Account sid/uid. May be null.
+	 * @param loginName    Login name. May be null only if SID is not null.
+	 * @param realm	       Realm.
 	 * @param connection   Database connection to use.
 	 *
 	 * @return OS account.
@@ -117,15 +117,19 @@ public final class OsAccountManager {
 	 */
 	private OsAccount createOsAccount(String uniqueId, String loginName, OsAccountRealm realm, CaseDbConnection connection) throws TskCoreException {
 
+		if (Objects.isNull(realm)) {
+			throw new IllegalArgumentException("Cannot create an OS Account, realm is NULL.");
+		}
+		
+		// Create a signature.  This signature is simply to prevent duplicate accounts from being created.
+		// Signature is set to realmId/uniqueId or realmId/loginName
 		String signature;
 		if (Strings.isNullOrEmpty(uniqueId) == false) {
-			signature = uniqueId;
+			signature = String.format("%d/%s", realm.getId(), uniqueId);
+		} else if (Strings.isNullOrEmpty(loginName) == false)  {
+			signature = String.format("%d/%s", realm.getId(), loginName);
 		} else {
-			if (Objects.isNull(realm)) {
-				signature = loginName;
-			} else {
-				signature = String.format("%s/%s", realm.getName(), loginName);
-			}
+			throw new IllegalArgumentException("Cannot create OS Account, either a uniqueID or a login name must be provided.");
 		}
 
 		db.acquireSingleUserCaseWriteLock();
@@ -361,7 +365,7 @@ public final class OsAccountManager {
 			
 		} catch (SQLException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
-			throw new TskCoreException(String.format("Error adding os account instance for account = %s, host name = %s, data source object id = %d", osAccount.getSignature(), host.getName(), dataSourceObjId ), ex);
+			throw new TskCoreException(String.format("Error adding os account instance for account = %s, host name = %s, data source object id = %d", osAccount.getUniqueIdWithinRealm().orElse(osAccount.getLoginName().orElse("UNKNOWN")), host.getName(), dataSourceObjId ), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}

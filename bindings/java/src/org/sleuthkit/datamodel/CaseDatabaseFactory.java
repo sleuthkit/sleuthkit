@@ -436,7 +436,7 @@ class CaseDatabaseFactory {
 				+ "full_name TEXT, "	// full name, if available, may be null
 				+ "realm_id " + dbQueryHelper.getBigIntType() + ", "		// row id for the realm, may be null if only SID is known 
 				+ "unique_id TEXT, "	// SID/UID, if available
-				+ "signature TEXT NOT NULL, "	// realm/loginname or sid 
+				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either ‘realm_id/unique_id’ if unique_id is defined or realm_id/login_name’ if unique_id is not defined.
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "admin INTEGER DEFAULT 0," // is admin account
 				+ "type INTEGER, "	// service/interactive

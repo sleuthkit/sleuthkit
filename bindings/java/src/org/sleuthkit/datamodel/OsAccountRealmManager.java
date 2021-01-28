@@ -23,7 +23,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.RealmNameType;
@@ -85,22 +84,21 @@ public final class OsAccountRealmManager {
 		if (Strings.isNullOrEmpty(realmName)) {
 			throw new IllegalArgumentException("A realm name is required.");
 		}
-		if (Objects.isNull(host) ) {
-			throw new IllegalArgumentException("A host is required.");
-		}
 		
 		CaseDbConnection connection = transaction.getConnection();
 		
 		String whereHostClause = (host == null) 
 							? " realms.host_id IS NULL " 
 							: " realms.host_id = " + host.getId() + " ";
-		String queryString = "SELECT * FROM tsk_os_account_realms"
+		String queryString = "SELECT * FROM tsk_os_account_realms as realms"
 				+ " WHERE " + whereHostClause
-				+ " AND LOWER(name) = LOWER('" + realmName + "'";
+				+ " AND LOWER(name) = LOWER('" + realmName + "')";
 				
 
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
+			
+			// RAMAN TBD: find the match that had the matching host and return that.  If none then return one with host null
 
 			if (rs.next()) {
 				return new OsAccountRealm(rs.getLong("id"),  rs.getString("name"), RealmNameType.fromID(rs.getInt("name_type")), rs.getString("unique_id"), host);

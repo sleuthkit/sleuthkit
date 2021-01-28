@@ -36,7 +36,7 @@ public final class OsAccountRealm {
 
 	
 	
-	public OsAccountRealm(long id, String name, RealmNameType nameType, String uniqueId, Host host) {
+	OsAccountRealm(long id, String name, RealmNameType nameType, String uniqueId, Host host) {
 		this.id = id;
 		this.name = name;
 		this.uniqueId = uniqueId;

@@ -301,15 +301,6 @@ public final class OsAccount implements Content {
 	}
 
 	/**
-	 * Get the account signature.
-	 *
-	 * @return Account signature.
-	 */
-	public String getSignature() {
-		return signature;
-	}
-
-	/**
 	 * Get the account realm.
 	 *
 	 * @return Optional account realm.
@@ -341,7 +332,7 @@ public final class OsAccount implements Content {
 	 *
 	 * @return True if account is an admin account, false otherwise.
 	 */
-	public boolean isIsAdmin() {
+	public boolean isAdmin() {
 		return isAdmin;
 	}
 
