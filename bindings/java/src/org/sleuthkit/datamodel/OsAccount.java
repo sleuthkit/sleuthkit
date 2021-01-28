@@ -39,10 +39,10 @@ public final class OsAccount implements Content {
 	private final SleuthkitCase sleuthkitCase;
 	
 	private final long objId;	
-	private final OsAccountRealm realm;		// realm where the username is unique - a domain or a host name, may be null
+	private final OsAccountRealm realm;		// realm where the username is unique - a domain or a host name.
 	private final String loginName;	// user login name - may be null
 	private final String uniqueId;	// a unique user sid/uid, may be null
-	private final String signature; // something that uniquely identifies this user - either the uniqueId or the realmName/userName.
+	private String signature; // signature to prevent duplicates in database.
 
 	private String fullName;	// full name
 	private boolean isAdmin = false;	// is admin account.
@@ -272,6 +272,17 @@ public final class OsAccount implements Content {
 	}
 
 	/**
+	 * Set the signature.
+	 * 
+	 * signature may changes if the login name or unique id is updated after creation.
+	 * 
+	 * @param signature Signature.
+	 */
+	void setSignature(String signature) {
+		this.signature = signature;
+	}
+	
+	/**
 	 * Adds account attributes to the account.
 	 *
 	 * @param osAccountAttributes Collection of  attributes to add.
@@ -303,10 +314,10 @@ public final class OsAccount implements Content {
 	/**
 	 * Get the account realm.
 	 *
-	 * @return Optional account realm.
+	 * @return OsAccountRealm.
 	 */
-	public Optional<OsAccountRealm> getRealm() {
-		return Optional.ofNullable(realm);
+	public OsAccountRealm getRealm() {
+		return realm;
 	}
 
 	/**

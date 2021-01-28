@@ -625,6 +625,71 @@ public final class OsAccountManager {
 	}
 	
 	/**
+	 * Updates the database for the given OsAccount.
+	 *
+	 * @param osAccount   OsAccount that needs to be updated.
+	 * @param transaction Transaction to use.
+	 *
+	 * @return OsAccount Updated account.
+	 *
+	 * @throws TskCoreException
+	 */
+	OsAccount updateAccount(OsAccount osAccount, CaseDbTransaction transaction ) throws TskCoreException {
+		
+		CaseDbConnection connection = transaction.getConnection();
+		db.acquireSingleUserCaseWriteLock();
+		
+		String signature;
+		if (osAccount.getUniqueIdWithinRealm().isPresent())  {
+			signature = String.format("%d/%s", osAccount.getRealm().getId(), osAccount.getUniqueIdWithinRealm().get());
+		} else if (osAccount.getLoginName().isPresent() == false)  {
+			signature = String.format("%d/%s", osAccount.getRealm().getId(), osAccount.getLoginName().get());
+		} else {
+			throw new IllegalArgumentException("Cannot update OS Account, either a uniqueID or a login name must be provided.");
+		}
+		
+		try {
+			String updateSQL = "UPDATE tsk_os_accounts SET "
+										+ "		login_name = ?, "	// 1
+										+ "		unique_id = ?, "	// 2
+										+ "		signature = ?, "	// 3
+										+ "		full_name = ?, "	// 4
+										+ "		status = ?, "		// 5
+										+ "		admin = ?, "		// 6
+										+ "		type = ?, "			// 7
+										+ "		creation_date_time = ?, "	//8
+								+ " WHERE os_account_obj_id = ?";	//9
+			
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+
+			preparedStatement.setString(1, osAccount.getLoginName().orElse(null));
+			preparedStatement.setString(2, osAccount.getUniqueIdWithinRealm().orElse(null));
+			
+			osAccount.setSignature(signature);
+			preparedStatement.setString(3, signature);
+			
+			preparedStatement.setString(4, osAccount.getFullName().orElse(null));
+			
+			preparedStatement.setInt(5, osAccount.getOsAccountStatus().getId());
+			preparedStatement.setInt(6, osAccount.isAdmin() ? 1 : 0);
+			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
+			preparedStatement.setLong(8, osAccount.getCreationTime());
+			
+			preparedStatement.setLong(9, osAccount.getId());
+			
+			connection.executeUpdate(preparedStatement);
+			return osAccount;
+		}
+		catch (SQLException ex) {
+			Logger.getLogger(OsAccountManager.class.getName()).log(Level.SEVERE, null, ex);
+			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getUniqueIdWithinRealm().orElse("Unknown"), osAccount.getId()), ex);
+		}	finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+		
+	}
+	/**
 	 * Takes in a result with a row from tsk_os_accounts table and creates 
 	 * an OsAccount.
 	 * 
