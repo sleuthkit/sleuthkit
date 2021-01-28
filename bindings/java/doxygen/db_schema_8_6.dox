@@ -212,19 +212,19 @@ the org.sleuthkit.datamodel.CommunicationsManager API to create/access this type
 (see the \ref mod_compage page).
 
 ## accounts
-Stores accounts (email, phone number, etc.)
-- **account_id** - Id for this account (used in the account_relationships table)
+Stores communication accounts (email, phone number, etc.).  Note that this does not include OS accounts. 
+- **account_id** - Id for this account within the scope of the database (i.e. Row Id) (used in the account_relationships table)
 - **account_type_id** - The type of account (must match an account_type_id entry from the account_types table)
-- **account_unique_identifier** - The phone number/email/other identifier associated with the account (unique)
+- **account_unique_identifier** - The phone number/email/other identifier associated with the account that is unique within the Account Type. 
 
 ## account_types
-Types of accounts (Phone, email, Twitter, Facebook, etc.)
+Types of accounts and service providers (Phone, email, Twitter, Facebook, etc.)
 - **account_type_id** - Id for the type (this is used by the accounts table)
 - **type_name** - A string identifier for the type (unique)
 - **display_name** - A display name for the type (not unique, should be human readable)
 
 ## account_relationships
-Stores relationships between two accounts from the accounts table
+Stores non-directional relationships between two accounts if they communicated or had references to each other (such as contact book)
 - **relationship_id** -  Id for this relationship
 - **account1_id** - Id of the first participant (from account_id column in accounts table)
 - **account2_id** - Id of the second participant (from account_id column in accounts table)
