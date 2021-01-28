@@ -657,7 +657,7 @@ public final class OsAccountManager {
 										+ "		status = ?, "		// 5
 										+ "		admin = ?, "		// 6
 										+ "		type = ?, "			// 7
-										+ "		creation_date_time = ?, "	//8
+										+ "		creation_date_time = ? "	//8
 								+ " WHERE os_account_obj_id = ?";	//9
 			
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
@@ -704,6 +704,12 @@ public final class OsAccountManager {
 		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"));
 		
 		// set other optional fields
+		
+		String fullName = rs.getString("full_name");
+		if (!rs.wasNull()) {
+			osAccount.setFullName(fullName);
+		}
+		
 		int status = rs.getInt("status");
 		if (!rs.wasNull()) {
 			osAccount.setOsAccountStatus(OsAccount.OsAccountStatus.fromID(status));
