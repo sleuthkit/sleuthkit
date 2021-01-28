@@ -30,16 +30,16 @@ public final class OsAccountRealm {
 
 	private final long id;	// row id 
 	private final String name;
-	private final String uniqueId;
+	private final String realmAddr;
 	private final Host host;	// if the realm consists of a single host, may be null
 	private final RealmNameType nameType;	// if the realm is inferred
 
 	
 	
-	OsAccountRealm(long id, String name, RealmNameType nameType, String uniqueId, Host host) {
+	OsAccountRealm(long id, String name, RealmNameType nameType, String realmAddr, Host host) {
 		this.id = id;
 		this.name = name;
-		this.uniqueId = uniqueId;
+		this.realmAddr = realmAddr;
 		this.host = host;
 		this.nameType = nameType;
 	}
@@ -63,12 +63,12 @@ public final class OsAccountRealm {
 	}
 
 	/**
-	 * Get the realm uniqueId/SID.
+	 * Get the realm address.
 	 *
 	 * @return Optional realm unique id..
 	 */
-	public Optional<String> getUniqueId() {
-		return Optional.ofNullable(uniqueId);
+	public Optional<String> getRealmAddr() {
+		return Optional.ofNullable(realmAddr);
 	}
 
 	/**

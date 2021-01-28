@@ -425,10 +425,10 @@ class CaseDatabaseFactory {
 		
 		stmt.execute("CREATE TABLE tsk_os_account_realms (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "name TEXT NOT NULL, "	// realm name - host name or domain name
-				+ "unique_id TEXT DEFAULT NULL, "		// a sid/uid or some some other unique identifier, may be null
+				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
 				+ "host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm just comprises of a single host
 				+ "name_type INTEGER, "	// indicates if the realm name was  was expressed or inferred 
-				+ "UNIQUE(name), "
+				+ "UNIQUE(name, host_id), "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
 		
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "

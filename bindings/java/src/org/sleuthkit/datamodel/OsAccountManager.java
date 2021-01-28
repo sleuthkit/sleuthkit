@@ -220,7 +220,7 @@ public final class OsAccountManager {
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 								+ " accounts.realm_id, accounts.unique_id, accounts.signature, "
 								+ "	accounts.type, accounts.status, accounts.admin, accounts.creation_date_time, "
-								+ " realms.name as realm_name, realms.unique_id as realm_unique_id, realms.host_id, realms.name_type "
+								+ " realms.name as realm_name, realms.realm_addr as realm_addr, realms.host_id, realms.name_type "
 							+ " FROM tsk_os_accounts as accounts"
 							+ "		LEFT JOIN tsk_os_account_realms as realms"
 							+ " ON accounts.realm_id = realms.id"
@@ -238,7 +238,7 @@ public final class OsAccountManager {
 				if (!rs.wasNull()) {
 					realm = new OsAccountRealm(realmId, rs.getString("realm_name"), 
 									OsAccountRealm.RealmNameType.fromID(rs.getInt("name_type")), 
-									rs.getString("realm_unique_id"), host );
+									rs.getString("realm_addr"), host );
 				}
 
 				return osAccountFromResultSet(rs, realm);

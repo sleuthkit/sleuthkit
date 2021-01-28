@@ -120,7 +120,7 @@ public final class OsAccountRealmManager {
 		// RAMAN TBD: can the SID be parsed in some way to determine local vs domain ??
 		
 		// check if realm exists with this unique id
-		OsAccountRealm realm = getRealmByUniqueId(subAuthorityId, host, connection);
+		OsAccountRealm realm = getRealmByAddr(subAuthorityId, host, connection);
 		if (realm != null) {	
 			return realm;
 		}
@@ -167,7 +167,7 @@ public final class OsAccountRealmManager {
 	}
 	
 	private final String REALM_QUERY_STRING = "SELECT realms.id as realm_id, realms.name as realm_name,"
-			+ " realms.unique_id as realm_unique_id, realms.host_id, realms.name_type, "
+			+ " realms.realm_addr as realm_addr, realms.host_id, realms.name_type, "
 			+ " hosts.id, hosts.name as host_name "
 			+ " FROM tsk_os_account_realms as realms"
 			+ "		LEFT JOIN tsk_hosts as hosts"
@@ -201,7 +201,7 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Get the realm with the given unique id.
+	 * Get the realm with the given realm addr.
 	 * 
 	 * @param uniqueId Realm uniqueId/SID.
 	 * @param host Host for realm, may be null.
@@ -210,13 +210,13 @@ public final class OsAccountRealmManager {
 	 * @return OsAccountRealm.
 	 * @throws TskCoreException.
 	 */
-	private OsAccountRealm getRealmByUniqueId(String uniqueId, Host host, CaseDbConnection connection) throws TskCoreException {
+	private OsAccountRealm getRealmByAddr(String realmAddr, Host host, CaseDbConnection connection) throws TskCoreException {
 		
 		String whereHostClause = (host == null) 
 							? " 1 = 1 " 
 							: " ( realms.host_id = " + host.getId() + " OR realms.host_id IS NULL) ";
 		String queryString = REALM_QUERY_STRING
-						+ " WHERE LOWER(realms.unique_id) = LOWER('"+ uniqueId + "') "
+						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
 						+ " AND " + whereHostClause
 						+ " ORDER BY realms.host_id IS NOT NULL, realms.host_id";	// ensure that non null host_id is at the front
 				    
@@ -237,7 +237,7 @@ public final class OsAccountRealmManager {
 				
 				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"),
 												RealmNameType.fromID(rs.getInt("name_type")),
-												rs.getString("realm_unique_id"), realmHost);
+												rs.getString("realm_addr"), realmHost);
 			} 
 			return accountRealm;
 		} catch (SQLException ex) {
@@ -282,7 +282,7 @@ public final class OsAccountRealmManager {
 				
 				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"),
 												RealmNameType.fromID(rs.getInt("name_type")),
-												rs.getString("realm_unique_id"), realmHost);
+												rs.getString("realm_addr"), realmHost);
 				
 			} 
 			return accountRealm;
@@ -309,7 +309,7 @@ public final class OsAccountRealmManager {
 
 		return new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"),
 				RealmNameType.fromID(rs.getInt("name_type")),
-				rs.getString("realm_unique_id"), realmhost);
+				rs.getString("realm_addr"), realmhost);
 	}
 	
 	/**
@@ -318,7 +318,7 @@ public final class OsAccountRealmManager {
 	 * @return Collection of OsAccountRealm
 	 */
 //	Collection<OsAccountRealm> getRealms() throws TskCoreException {
-//		String queryString = "SELECT realms.id as realm_id, realms.name as realm_name, realms.unique_id as realm_unique_id, realms.host_id, realms.name_type, "
+//		String queryString = "SELECT realms.id as realm_id, realms.name as realm_name, realms.realm_addr as realm_addr, realms.host_id, realms.name_type, "
 //				+ " hosts.id, hosts.name as host_name "
 //				+ " FROM tsk_os_account_realms as realms"
 //				+ "		LEFT JOIN tsk_hosts as hosts"
@@ -338,7 +338,7 @@ public final class OsAccountRealmManager {
 //
 //				accountRealms.add(new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"),
 //						RealmNameType.fromID(rs.getInt("name_type")),
-//						rs.getString("realm_unique_id"), host));
+//						rs.getString("realm_addr"), host));
 //			}
 //
 //			return accountRealms;
@@ -353,7 +353,7 @@ public final class OsAccountRealmManager {
 	 *
 	 * @param realmName  Realm name.
 	 * @param nameType   Name type.
-	 * @param uniqueId   SIS or some other unique id. May be null.
+	 * @param realmAddr  SID or some other identifier. May be null.
 	 * @param host       Host, if this realm encompasses a single host. May be
 	 *                   null.
 	 * @param connection DB connection to use.
@@ -362,18 +362,18 @@ public final class OsAccountRealmManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private OsAccountRealm createRealm(String realmName, OsAccountRealm.RealmNameType nameType, String uniqueId,  Host host, CaseDbConnection connection) throws TskCoreException {
+	private OsAccountRealm createRealm(String realmName, OsAccountRealm.RealmNameType nameType, String realmAddr,  Host host, CaseDbConnection connection) throws TskCoreException {
 		
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			String realmInsertSQL = "INSERT INTO tsk_os_account_realms(name, unique_id, host_id, name_type)"
+			String realmInsertSQL = "INSERT INTO tsk_os_account_realms(name, realm_addr, host_id, name_type)"
 					+ " VALUES (?, ?, ?, ?)"; // NON-NLS
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(realmInsertSQL, Statement.RETURN_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
 			preparedStatement.setString(1, realmName);
-			preparedStatement.setString(2, uniqueId);
+			preparedStatement.setString(2, realmAddr);
 			if (host != null) {
 				preparedStatement.setLong(3, host.getId());
 			} else {
@@ -387,7 +387,7 @@ public final class OsAccountRealmManager {
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
 				if (resultSet.next()) {
 					long rowId = resultSet.getLong(1); ;//last_insert_rowid()
-					return  new OsAccountRealm(rowId, realmName, nameType, uniqueId, host);
+					return  new OsAccountRealm(rowId, realmName, nameType, realmAddr, host);
 				} else {
 					throw new SQLException("Error executing  " + realmInsertSQL);
 				}
