@@ -368,13 +368,12 @@ public class SleuthkitCase {
 		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
 
 		/*
-		 * The following methods need to be called before updateDatabaseSchema
-		 * due to the way that updateFromSchema2toSchema3 was implemented.
+		 * The database schema must be updated before loading blackboard artifact/attribute types
 		 */
+		updateDatabaseSchema(null);
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
-		updateDatabaseSchema(null);
 
 		try (CaseDbConnection connection = connections.getConnection()) {
 			initIngestModuleTypes(connection);
@@ -1072,11 +1071,13 @@ public class SleuthkitCase {
 			return schemaVersion;
 		}
 		Statement statement = null;
+		Statement statement2 = null;
 		Statement updateStatement = null;
 		ResultSet resultSet = null;
 		acquireSingleUserCaseWriteLock();
 		try {
 			statement = connection.createStatement();
+			statement2 = connection.createStatement();
 
 			// Add new tables for tags.
 			statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)"); //NON-NLS
@@ -1121,61 +1122,105 @@ public class SleuthkitCase {
 						+ " WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS
 			}
 			resultSet.close();
-			resultSet = null;
 
 			// Convert existing tag artifact and attribute rows to rows in the new tags tables.
-			// TODO: This code depends on prepared statements that could evolve with
-			// time, breaking this upgrade. The code that follows should be rewritten
-			// to do everything with SQL specific to case database schema version 2.
-			HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
-			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
-				Content content = getContentById(artifact.getObjectID());
-				String name = ""; //NON-NLS
-				String comment = ""; //NON-NLS
-				ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
-				for (BlackboardAttribute attribute : attributes) {
-					if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
-						name = attribute.getValueString();
-					} else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
-						comment = attribute.getValueString();
-					}
+			Map<String, Long> tagNames = new HashMap<>();
+			long tagNameCounter = 1;
+			
+			// Convert file tags.
+			// We need data from the TSK_TAG_NAME and TSK_COMMENT attributes, and need the file size from the tsk_files table.
+			resultSet = statement.executeQuery("SELECT * FROM \n" +
+				"(SELECT blackboard_artifacts.obj_id AS objId, blackboard_attributes.artifact_id AS artifactId, blackboard_attributes.value_text AS name\n" +
+				"FROM blackboard_artifacts INNER JOIN blackboard_attributes \n" +
+				"ON blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id \n" +
+				"WHERE blackboard_artifacts.artifact_type_id = " +
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + 
+					" AND blackboard_attributes.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID() 
+					+ ") AS tagNames \n" +
+				"INNER JOIN \n" +
+				"(SELECT tsk_files.obj_id as objId2, tsk_files.size AS fileSize \n" +
+				"FROM blackboard_artifacts INNER JOIN tsk_files \n" +
+				"ON blackboard_artifacts.obj_id = tsk_files.obj_id) AS fileData \n" +
+				"ON tagNames.objId = fileData.objId2 \n" +
+				"LEFT JOIN \n" +
+				"(SELECT value_text AS comment, artifact_id AS tagArtifactId FROM blackboard_attributes WHERE attribute_type_id = " + 
+					BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID() + ") AS tagComments \n" +
+				"ON tagNames.artifactId = tagComments.tagArtifactId");
+
+			while (resultSet.next()) {
+				long objId = resultSet.getLong("objId");
+				long fileSize = resultSet.getLong("fileSize");
+				String tagName = resultSet.getString("name");
+				String tagComment = resultSet.getString("comment");
+				if (tagComment == null) {
+					tagComment = "";
 				}
-				if (!name.isEmpty()) {
-					TagName tagName;
-					if (tagNames.containsKey(name)) {
-						tagName = tagNames.get(name);
+				
+				if (tagName != null && ! tagName.isEmpty()) {
+					// Get the index for the tag name, adding it to the database if needed.
+					long tagNameIndex;
+					if (tagNames.containsKey(tagName)) {
+						tagNameIndex = tagNames.get(tagName);
 					} else {
-						tagName = addTagName(name, "", TagName.HTML_COLOR.NONE); //NON-NLS
-						tagNames.put(name, tagName);
+						statement2.execute("INSERT INTO tag_names (display_name, description, color) " +
+							"VALUES(\"" + tagName + "\", \"\", \"None\")");
+						tagNames.put(tagName, tagNameCounter);
+						tagNameIndex = tagNameCounter;
+						tagNameCounter++;
 					}
-					addContentTag(content, tagName, comment, 0, content.getSize() - 1);
+					
+					statement2.execute("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) " +
+							"VALUES(" + objId + ", " + tagNameIndex + ", \"" + tagComment + "\", 0, " + fileSize + ")");
 				}
 			}
-			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
-				long taggedArtifactId = -1;
-				String name = ""; //NON-NLS
-				String comment = ""; //NON-NLS
-				ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
-				for (BlackboardAttribute attribute : attributes) {
-					if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
-						name = attribute.getValueString();
-					} else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
-						comment = attribute.getValueString();
-					} else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAGGED_ARTIFACT.getTypeID()) {
-						taggedArtifactId = attribute.getValueLong();
-					}
+			resultSet.close();
+			
+			// Convert artifact tags.
+			// We need data from the TSK_TAG_NAME, TSK_TAGGED_ARTIFACT, and TSK_COMMENT attributes.
+			resultSet = statement.executeQuery("SELECT * FROM \n" +
+				"(SELECT blackboard_artifacts.obj_id AS objId, blackboard_attributes.artifact_id AS artifactId, " +
+					"blackboard_attributes.value_text AS name\n" +
+				"FROM blackboard_artifacts INNER JOIN blackboard_attributes \n" +
+				"ON blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id \n" +
+				"WHERE blackboard_artifacts.artifact_type_id = " +
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + 
+					" AND blackboard_attributes.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID() 
+					+ ") AS tagNames \n" +
+				"INNER JOIN \n" +
+				"(SELECT value_int64 AS taggedArtifactId, artifact_id AS associatedArtifactId FROM blackboard_attributes WHERE attribute_type_id = " + 
+					BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TAGGED_ARTIFACT.getTypeID() + ") AS tagArtifacts \n" +
+				"ON tagNames.artifactId = tagArtifacts.associatedArtifactId \n" +
+				"LEFT JOIN \n" +
+				"(SELECT value_text AS comment, artifact_id AS commentArtifactId FROM blackboard_attributes WHERE attribute_type_id = " + 
+					BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID() + ") AS tagComments \n" +
+				"ON tagNames.artifactId = tagComments.commentArtifactId");
+			
+			while (resultSet.next()) {
+				long artifactId = resultSet.getLong("taggedArtifactId");
+				String tagName = resultSet.getString("name");
+				String tagComment = resultSet.getString("comment");
+				if (tagComment == null) {
+					tagComment = "";
 				}
-				if (taggedArtifactId != -1 && !name.isEmpty()) {
-					TagName tagName;
-					if (tagNames.containsKey(name)) {
-						tagName = tagNames.get(name);
+				if (tagName != null && ! tagName.isEmpty()) {
+					// Get the index for the tag name, adding it to the database if needed.
+					long tagNameIndex;
+					if (tagNames.containsKey(tagName)) {
+						tagNameIndex = tagNames.get(tagName);
 					} else {
-						tagName = addTagName(name, "", TagName.HTML_COLOR.NONE); //NON-NLS
-						tagNames.put(name, tagName);
+						statement2.execute("INSERT INTO tag_names (display_name, description, color) " +
+							"VALUES(\"" + tagName + "\", \"\", \"None\")");
+						tagNames.put(tagName, tagNameCounter);
+						tagNameIndex = tagNameCounter;
+						tagNameCounter++;
 					}
-					addBlackboardArtifactTag(getBlackboardArtifact(taggedArtifactId), tagName, comment);
+					
+					statement2.execute("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) " +
+							"VALUES(" + artifactId + ", " + tagNameIndex + ", \"" + tagComment + "\")");
 				}
-			}
+			}			
+			resultSet.close();
+			
 			statement.execute(
 					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
 					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
@@ -1191,7 +1236,7 @@ public class SleuthkitCase {
 			closeStatement(updateStatement);
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			connection.close();
+			closeStatement(statement2);
 			releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -2265,11 +2310,12 @@ public class SleuthkitCase {
 				blobDataType   = "BLOB";
 				primaryKeyType = "INTEGER";
 			}
-			
-			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType);
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType );
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_settings TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
+			
+			statement.execute("ALTER TABLE blackboard_artifact_types ADD COLUMN category_type INTEGER DEFAULT 0");
 
             // Create tsk file attributes table
 			statement.execute("CREATE TABLE tsk_file_attributes (obj_id " + bigIntDataType + " NOT NULL, "
