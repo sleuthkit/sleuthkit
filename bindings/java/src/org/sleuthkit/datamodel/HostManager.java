@@ -51,6 +51,54 @@ public final class HostManager {
 		this.db = skCase;
 	}
 	
+	/**
+	 * APTODO : using for testing - might be able to remove if desired
+	 * Get or create host with specified name.
+	 *
+	 * @param name	       Host name.
+	 *
+	 * @return Host with the specified name.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Host getOrCreateHost(String name) throws TskCoreException  {
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			Host host = getOrCreateHost(name, trans);
+			trans.commit();
+			return host;
+		} catch (TskCoreException ex) {
+			trans.rollback();
+			throw ex;
+		}
+	}	
+	
+	/**
+	 * Get all data sources associated with a given host.
+	 * 
+	 * @param host The host.
+	 * 
+	 * @return The list of data sources corresponding to the host.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public Set<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
+		String queryString = "SELECT * FROM data_source_info WHERE host_id = " + host.getId();
+
+		Set<DataSource> dataSources = new HashSet<>();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			while (rs.next()) {
+				dataSources.add(db.getDataSource(rs.getLong("obj_id")));
+			}
+
+			return dataSources;
+		} catch (SQLException | TskDataException ex) {
+			throw new TskCoreException(String.format("Error getting data sources for host " + host.getName()), ex);
+		}
+	}
 	
 	/**
 	 * Get or create host with specified name.
@@ -168,4 +216,34 @@ public final class HostManager {
 			throw new TskCoreException(String.format("Error getting hosts"), ex);
 		}
 	}
+	
+	/**
+	 * Get host for the given data source.
+	 * 
+	 * @param dataSource The data source to look up the host for.
+	 * 
+	 * @return Optional with host.  Optional.empty if no matching host is found.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	Host getHost(DataSource dataSource) throws TskCoreException {
+
+		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.status AS status FROM \n" +
+			"tsk_hosts INNER JOIN data_source_info \n" +
+			"ON tsk_hosts.id = data_source_info.host_id \n" +
+			"WHERE data_source_info.obj_id = " + dataSource.getId();
+
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (!rs.next()) {
+				throw new TskCoreException(String.format("Host not found for data source with ID = %d", dataSource.getId()));
+			} else {
+				return new Host(rs.getLong("hostId"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status")));
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
+		}
+	}	
 }

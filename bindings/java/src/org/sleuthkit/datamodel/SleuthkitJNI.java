@@ -438,10 +438,21 @@ public class SleuthkitJNI {
 		 * @throws TskCoreException if there is an error adding the image to
 		 *                          case database.
 		 */
-		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, SleuthkitCase skCase) throws TskCoreException {
+		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host, SleuthkitCase skCase) throws TskCoreException {
 			TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks());
 			try {
-				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);
+				if (host == null) {
+					String hostName;
+					if (imageFilePaths.size() > 0) {
+						String path = imageFilePaths.get(0);
+						hostName = (new java.io.File(path)).getName() + " Host";
+					} else {
+						hostName = "Image_" + deviceObjId + " Host";
+					}
+					host = skCase.getHostManager().getOrCreateHost(hostName);
+				}
+				
+				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false, host.getId());
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
 				long id = finishAddImgNat(tskAutoDbPointer);
 				dbHelper.finish();
@@ -532,7 +543,7 @@ public class SleuthkitJNI {
 				Image img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId);
 				run(deviceId, img, sectorSize, new DefaultAddDataSourceCallbacks());
 			}
-
+			
 			/**
 			 * Starts the process of adding an image to the case database.
 			 *
@@ -551,7 +562,35 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, Image image, int sectorSize, 
-					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {			
+					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {	
+				run(deviceId, image, sectorSize, null, addDataSourceCallbacks);
+			}			
+
+			/**
+			 * Starts the process of adding an image to the case database.
+			 *
+			 * @param deviceId       An ASCII-printable identifier for the
+			 *                       device associated with the image that
+			 *                       should be unique across multiple cases
+			 *                       (e.g., a UUID).
+			 * @param image          The image object (has already been added to the database)
+			 * @param sectorSize     The sector size (no longer used).
+			 * @param host           The host for this image (may be null).
+			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
+			 *
+			 * @throws TskCoreException if a critical error occurs within the
+			 *                          SleuthKit.
+			 * @throws TskDataException if a non-critical error occurs within
+			 *                          the SleuthKit (should be OK to continue
+			 *                          the process)
+			 */
+			public void run(String deviceId, Image image, int sectorSize, Host host,
+					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {	
+				
+				if (host == null) {
+					host = skCase.getHostManager().getOrCreateHost(image.getName() + " Host");
+				}
+				
 				dbHelper = new TskCaseDbBridge(skCase, addDataSourceCallbacks);
 				getTSKReadLock();
 				try {
@@ -562,7 +601,7 @@ public class SleuthkitJNI {
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
 							imageHandle = image.getImageHandle();
-							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
+							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans, host.getId());
 						}
 						if (0 == tskAutoDbPointer) {
 							throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
@@ -940,6 +979,29 @@ public class SleuthkitJNI {
 	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
 		String timeZone, String md5fromSettings, String sha1fromSettings, String sha256fromSettings, String deviceId) throws TskCoreException {
 		
+		return addImageToDatabase(skCase, imagePaths, sectorSize, timeZone, md5fromSettings, sha1fromSettings, sha256fromSettings, deviceId, null);
+	}	
+	
+	/**
+	 * Add an image to the database and return the open image.
+	 * 
+	 * @param skCase     The current case.
+	 * @param imagePaths The path(s) to the image (will just be the first for .e01, .001, etc).
+	 * @param sectorSize The sector size (0 for auto-detect).
+	 * @param timeZone   The time zone.
+	 * @param md5fromSettings        MD5 hash (if known).
+	 * @param sha1fromSettings       SHA1 hash (if known).
+	 * @param sha256fromSettings     SHA256 hash (if known).
+	 * @param deviceId   Device ID.
+	 * @param host       Host.
+	 * 
+	 * @return The Image object.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
+		String timeZone, String md5fromSettings, String sha1fromSettings, String sha256fromSettings, String deviceId, Host host) throws TskCoreException {
+		
 		// Open the image
 		long imageHandle = openImgNat(imagePaths, 1, sectorSize);
 		
@@ -967,10 +1029,21 @@ public class SleuthkitJNI {
 		//  Now save to database
 		CaseDbTransaction transaction = skCase.beginTransaction();
 		try {
+			if (host == null) {
+				String hostName;
+				if (computedPaths.size() > 0) {
+					String path = computedPaths.get(0);
+					hostName = (new java.io.File(path)).getName() + " Host";
+				} else {
+					hostName = "Image_" + deviceId + " Host";
+				}
+				host = skCase.getHostManager().getOrCreateHost(hostName, transaction);
+			}
+			
 			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize, 
 				size, null, computedPaths, 
 				timeZone, md5, sha1, sha256, 
-				deviceId, transaction);
+				deviceId, host, transaction);
 			if (!StringUtils.isEmpty(collectionDetails)) {
 				skCase.setAcquisitionDetails(img, collectionDetails);
 			}
@@ -2096,9 +2169,9 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	private static native long initAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans, long hostId) throws TskCoreException;
 
-	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans, long hostId) throws TskCoreException;
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
