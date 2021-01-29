@@ -1,5 +1,6 @@
 /*! \page db_schema_8_6_page TSK & Autopsy Database Schema (Schema version 8.6)
 
+[TOC]
 
 # Introduction
 
@@ -34,7 +35,7 @@ Name & Value pair table to store any information about the database.  For exampl
 ## tsk_objects 
 Every object (image, volume system, file, etc.) has an entry in this table.  This table allows you to find the parent of a given object and allows objects to be tagged and have children.  This table provides items with a unique object id.  The details of the object are in other tables.  
 - **obj_id** - Unique id 
-- **par_obj_id** - The object id of the parent object (null for root objects). The parent of a volume system is an image, the parent of a directory is a directory or filesystem, the parent of a filesystem is a volume or an image, etc.
+- **par_obj_id** - The object id of the parent object (NULL for root objects). The parent of a volume system is an image, the parent of a directory is a directory or filesystem, the parent of a filesystem is a volume or an image, etc.
 - **type** - Object type (as org.sleuthkit.datamodel.TskData.ObjectType enum).
 
 
@@ -46,7 +47,7 @@ Contains information about a data source, which could be an image.  This is wher
 - **time_zone** - Timezone that the data source was originally located in. 
 
 
-* Disk Image Tables
+# Disk Image Tables
 
 ## tsk_image_info 
 Contains information about each set of images that is stored in the database. 
@@ -69,7 +70,7 @@ Stores path(s) to file(s) on disk that make up an image set.
 ## tsk_vs_info
 Contains one row for every volume system found in the images.
 - **obj_id** - Id of volume system in tsk_objects
-- **vs_type** - Type of volume system / media management (as org.sleuthkit.datamodel.TskData.TSK_VS_TYPE_ENUM])
+- **vs_type** - Type of volume system / media management (as org.sleuthkit.datamodel.TskData.TSK_VS_TYPE_ENUM)
 - **img_offset** - Byte offset where VS starts in disk image
 - **block_size** - Size of blocks in bytes
 
@@ -80,18 +81,19 @@ Contains one row for every volume / partition in the images.
 - **start** - Sector offset of start of partition
 - **length** - Number of sectors in partition
 - **desc** - Description of partition (volume system type-specific)
-- **flags** - Flags for partition (as org.sleuthkit.datamodel.TskData.TSK_VS_PART_FLAG_ENUM])
+- **flags** - Flags for partition (as org.sleuthkit.datamodel.TskData.TSK_VS_PART_FLAG_ENUM)
 
 ## tsk_pool_info 
 Contains information about pools (for APFS, logical disk management, etc.)
-- TODO: Fill in columns
+- **obj_id** - Id of pool in tsk_objects
+- **pool_type** - Type of pool (as org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM)
 
 # File System Tables
 ## tsk_fs_info
 Contains one for for every file system in the images. 
 - **obj_id** - Id of filesystem in tsk_objects
 - **img_offset** - Byte offset that filesystem starts at
-- **fs_type** - Type of file system (as org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM])
+- **fs_type** - Type of file system (as org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM)
 - **block_size** - Size of each block (in bytes)
 - **block_count** - Number of blocks in filesystem
 - **root_inum** - Metadata address of root directory
@@ -183,11 +185,11 @@ Stores name value pairs associated with an artifact. Only one of the value colum
 - **context** - Additional context string
 - **attribute_type_id** - Id for the type of attribute (can be looked up in the blackboard_attribute_types)
 - **value_type** - The type of value (0 for string, 1 for int, 2 for long, 3 for double, 4 for byte array)
-- **value_byte** - A blob of binary data (should be empty unless the value type is byte)
-- **value_text** - A string of text (should be empty unless the value type is string)
-- **value_int32** - An integer (should be 0 unless the value type is int)
-- **value_int64** - A long integer (should be 0 unless the value type is long)
-- **value_double** - A double (should be 0.0 unless the value type is double)
+- **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
+- **value_text** - A string of text (should be NULL unless the value type is string)
+- **value_int32** - An integer (should be NULL unless the value type is int)
+- **value_int64** - A long integer (should be NULL unless the value type is long)
+- **value_double** - A double (should be NULL unless the value type is double)
 
 ## blackboard_artifact_types
 Types of artifacts
@@ -200,21 +202,36 @@ Types of artifacts
 Types of attribute
 - **attribute_type_id** - Id for the type (this is used by the blackboard_attributes table)
 - **type_name** - A string identifier for the type (unique)
-- **display_name - A display name for the type (not unique, should be human readable)
+- **display_name** - A display name for the type (not unique, should be human readable)
 
 
 
 # Communication Accounts
-TODO
-
-\ref mod_compage
+Stores data related to communications between two parties. It is highly recommended to use 
+the org.sleuthkit.datamodel.CommunicationsManager API to create/access this type of data
+(see the \ref mod_compage page).
 
 ## accounts
+Stores communication accounts (email, phone number, etc.).  Note that this does not include OS accounts. 
+- **account_id** - Id for this account within the scope of the database (i.e. Row Id) (used in the account_relationships table)
+- **account_type_id** - The type of account (must match an account_type_id entry from the account_types table)
+- **account_unique_identifier** - The phone number/email/other identifier associated with the account that is unique within the Account Type. 
 
 ## account_types
+Types of accounts and service providers (Phone, email, Twitter, Facebook, etc.)
+- **account_type_id** - Id for the type (this is used by the accounts table)
+- **type_name** - A string identifier for the type (unique)
+- **display_name** - A display name for the type (not unique, should be human readable)
 
 ## account_relationships
-
+Stores non-directional relationships between two accounts if they communicated or had references to each other (such as contact book)
+- **relationship_id** -  Id for this relationship
+- **account1_id** - Id of the first participant (from account_id column in accounts table)
+- **account2_id** - Id of the second participant (from account_id column in accounts table)
+- **relationship_source_obj_id** - Id of the artifact this relationship was derived from (artifact_id column from the blackboard_artifacts)
+- **date_time** - Time the communication took place, stored in number of seconds since Jan 1, 1970 UTC (NULL if unknown)
+- **relationship_type** - The type of relationship (as org.sleuthkit.datamodel.Relationship.Type)
+- **data_source_obj_id** - Id of the data source this relationship came from (from obj_id in data_source_info)
 
 # Timeline
 TODO
