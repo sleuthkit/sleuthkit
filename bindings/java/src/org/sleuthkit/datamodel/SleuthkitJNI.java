@@ -472,6 +472,7 @@ public class SleuthkitJNI {
 		 *                         unallocated space.
 		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
 		 *                         for FAT file systems.
+		 * @param host             The host for this image.
 		 * @param imageCopyPath    Path to which a copy of the image should be
 		 *                         written. Use the empty string to disable
 		 *                         image writing.
@@ -479,8 +480,8 @@ public class SleuthkitJNI {
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath, SleuthkitCase skCase) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath, skCase);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, Host host, String imageCopyPath, SleuthkitCase skCase) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, host, imageCopyPath, skCase);
 		}
 
 		/**
@@ -492,6 +493,7 @@ public class SleuthkitJNI {
 			private final String timeZone;
 			private final boolean addUnallocSpace;
 			private final boolean skipFatFsOrphans;
+			private Host host;
 			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
 			private long imageId = 0;
@@ -512,10 +514,11 @@ public class SleuthkitJNI {
 			 *                         written to. Use empty string to disable
 			 *                         image writing
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath, SleuthkitCase skCase) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, Host host, String imageWriterPath, SleuthkitCase skCase) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
 				this.skipFatFsOrphans = skipFatFsOrphans;
+				this.host = host;
 				this.imageWriterPath = imageWriterPath;
 				tskAutoDbPointer = 0;
 				this.isCanceled = false;
@@ -562,29 +565,6 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, Image image, int sectorSize, 
-					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {	
-				run(deviceId, image, sectorSize, null, addDataSourceCallbacks);
-			}			
-
-			/**
-			 * Starts the process of adding an image to the case database.
-			 *
-			 * @param deviceId       An ASCII-printable identifier for the
-			 *                       device associated with the image that
-			 *                       should be unique across multiple cases
-			 *                       (e.g., a UUID).
-			 * @param image          The image object (has already been added to the database)
-			 * @param sectorSize     The sector size (no longer used).
-			 * @param host           The host for this image (may be null).
-			 * @param addDataSourceCallbacks  The callbacks to use to send data to ingest (may do nothing).
-			 *
-			 * @throws TskCoreException if a critical error occurs within the
-			 *                          SleuthKit.
-			 * @throws TskDataException if a non-critical error occurs within
-			 *                          the SleuthKit (should be OK to continue
-			 *                          the process)
-			 */
-			public void run(String deviceId, Image image, int sectorSize, Host host,
 					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {	
 				
 				if (host == null) {
