@@ -96,12 +96,71 @@ public class OsAccountTest {
 	@After
 	public void tearDown() {
 	}
+
+	@Test
+	public void osAccountRealmTests() throws TskCoreException {
+		
+		
+		SleuthkitCase.CaseDbTransaction transaction = caseDB.beginTransaction();
+		
+		try {
+		// TEST: create a domain realm 
+		String realmName1 = "basis";
+		OsAccountRealm domainRealm1 = caseDB.getOsAccountRealmManager().getOrCreateRealmByName(realmName1, null, transaction);
+		assertEquals(domainRealm1.getName().equalsIgnoreCase(realmName1), true );
+		assertEquals(domainRealm1.getNameType(), OsAccountRealm.RealmNameType.EXPRESSED);
+		assertEquals(domainRealm1.getRealmAddr().orElse(null), null);	// verify there is no realm addr
+		
+		
+		
+		String realmName2 = "win-raman-abcd";
+		
+		String realmAddr2SubAuth = "S-1-5-18-2033736216-1234567890";	
+		String realmAddr2 = "S-1-5-18-2033736216-1234567890-5432109876";
+		
+		String hostName2 = "win-raman-abcd";
+		
+		// TEST: create a host
+		Host host2 = caseDB.getHostManager().getOrCreateHost(hostName2, transaction);
+		
+		// verify host name
+		assertEquals(host2.getName().equalsIgnoreCase(hostName2), true);
+
+		//TEST: create a local realm with single host
+		OsAccountRealm localRealm2 = caseDB.getOsAccountRealmManager().getOrCreateRealmByWindowsSid(realmAddr2, host2, transaction);
+		assertEquals(localRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
+		assertEquals(localRealm2.getHost().orElse(null).getName().equalsIgnoreCase(hostName2), true);
+		
+		
+		// update the a realm name
+		OsAccountRealm updatedRealm2 = caseDB.getOsAccountRealmManager().updateRealmName(localRealm2.getId(), realmName2, OsAccountRealm.RealmNameType.EXPRESSED, transaction);
+		
+		assertEquals(updatedRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
+		assertEquals(updatedRealm2.getName().equalsIgnoreCase(realmName2), true );
+		
+		
+		// get an existing realm - new SID but same sub authority as previously created realm.
+		String realmAddr3 = realmAddr2SubAuth + "-88888888";
+		
+		OsAccountRealm existingRealm3 = caseDB.getOsAccountRealmManager().getOrCreateRealmByWindowsSid(realmAddr3, null, transaction);
+		assertEquals(existingRealm3.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
+		assertEquals(existingRealm3.getName().equalsIgnoreCase(realmName2), true );
+		
+		
+		}
+		finally {
+			transaction.commit();
+		}
+		
+		
+	}
 	
 	@Test
 	public void basicOsAccountTests() throws TskCoreException {
 
 		SleuthkitCase.CaseDbTransaction transaction = caseDB.beginTransaction();
 
+		try {
 			String ownerUid1 = "S-1-5-32-544";
 			String ownerUid2 = "S-1-5-21-725345543-854245398-1060284298-1003";
 			String ownerUid3 = "S-1-5-21-725345543-854245398-1060284298-1004";
@@ -145,7 +204,11 @@ public class OsAccountTest {
 			assertEquals(osAccount1_copy1.getFullName().orElse("").equalsIgnoreCase(fullName1), true);
 			assertEquals(osAccount1_copy1.getCreationTime(), creationTime1);
 			
+		}
+		
+		finally {
 			transaction.commit();
+		}
 			
 	}
 }
