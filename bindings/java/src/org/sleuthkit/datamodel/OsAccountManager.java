@@ -137,11 +137,11 @@ public final class OsAccountManager {
 			
 			// first create a tsk_object for the OsAccount.
 			
-			// RAMAN TBD: need to get the correct parnt obj id.  
+			// RAMAN TODO: need to get the correct parent obj id.  
 			//            Create an Object Directory parent and used its id.
-			// RAMAN TBD: what is the object type ??
+			long parentObjId = 0;
 			
-			long parentObjId = 1;
+			// RAMAN TODO: what is the object type ??
 			int objTypeId = TskData.ObjectType.ARTIFACT.getObjectType();
 			
 			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);

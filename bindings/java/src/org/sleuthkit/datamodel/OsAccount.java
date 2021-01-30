@@ -19,7 +19,6 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -31,18 +30,21 @@ import java.util.Set;
  * An OS user account may own files and (some) artifacts.
  *
  */
-public final class OsAccount implements Content {
+public final class OsAccount extends AbstractContent {
 
 	final static long NO_ACCOUNT = -1;
 	final static String NULL_UID_STR = null;
 
 	private final SleuthkitCase sleuthkitCase;
 	
-	private final long osAccountobjId;	
+	private final long osAccountobjId;
 	private final OsAccountRealm realm;		// realm where the username is unique - a domain or a host name.
 	private final String loginName;	// user login name - may be null
 	private final String uniqueId;	// a unique user sid/uid, may be null
-	private String signature; // signature to prevent duplicates in database.
+	
+	private String signature;		// This exists only to prevent duplicates.  
+									// It is either ‘realm_id/unique_id’ if unique_id is defined,
+									// or realm_id/login_name’ if login_name is defined.
 
 	private String fullName;	// full name
 	private boolean isAdmin = false;	// is admin account.
@@ -226,9 +228,10 @@ public final class OsAccount implements Content {
 	 *                       loginName or uniqueId.
 	 */
 	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature) {
-
-		this.sleuthkitCase = sleuthkitCase;
 		
+		super(sleuthkitCase, osAccountobjId, signature);
+		
+		this.sleuthkitCase = sleuthkitCase;
 		this.osAccountobjId = osAccountobjId;
 		this.realm = realm;
 		this.loginName = loginName;
@@ -403,159 +406,34 @@ public final class OsAccount implements Content {
 		return sleuthkitCase;
 	}
 	
-	
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public void close() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public long getSize() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public <T> T accept(ContentVisitor<T> v) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public String getName() {
-		return signature;
-	}
-
-	@Override
-	public String getUniquePath() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public Content getDataSource() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return Collections.<Content>emptyList();
-	}
-
-	@Override
-	public boolean hasChildren() throws TskCoreException {
-		return false;
-	}
-
-	@Override
-	public int getChildrenCount() throws TskCoreException {
+		// No data to read. 
 		return 0;
 	}
 
 	@Override
-	public Content getParent() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	public void close() {
+		// nothing to close
 	}
 
 	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return Collections.<Long>emptyList();
+	public long getSize() {
+		// No data. 
+		return 0;
 	}
 
 	@Override
-	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public Score getAggregateScore() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public Set<String> getHashSetNames() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public long getArtifactsCount(int artifactTypeID) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public long getAllArtifactsCount() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	public <T> T accept(ContentVisitor<T> v) {
+		// TODO: need to implement this when OS Accounts are part of the Autopsy tree.
+		
+		throw new UnsupportedOperationException("Not supported yet."); 
 	}
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		// TODO: need to implement this when OS Accounts are part of the Autopsy tree.
+		
+		throw new UnsupportedOperationException("Not supported yet."); 
 	}
 }
