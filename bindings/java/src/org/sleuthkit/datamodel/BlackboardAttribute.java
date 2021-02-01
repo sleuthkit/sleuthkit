@@ -51,6 +51,8 @@ public class BlackboardAttribute extends AbstractAttribute{
 	private String context;
 	private String sources;
 	
+	private long artifactID;
+	
 	// Cached parent artifact. This field is populated lazily upon the first
 	// call to getParentArtifact().
 	private BlackboardArtifact parentArtifact;
@@ -254,7 +256,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 * @return The artifact id or zero if the artifact id has not been set.
 	 */
 	public long getArtifactID() {
-		return super.getAttributeOwnerId();
+		return artifactID;
 	}
 
 	/**
@@ -263,7 +265,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 * @param artifactID The artifact id.
 	 */
 	void setArtifactId(long artifactID) {
-		super.setAttributeOwnerId(artifactID);
+		this.artifactID = artifactID;
 	}
 
 	/**

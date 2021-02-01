@@ -28,6 +28,11 @@ import java.util.Objects;
 public class Attribute extends AbstractAttribute{
  
 	/**
+	 * The `parent` object of this Attribute.
+	 */
+	private long attributeParentId;
+	
+	/**
 	 * Constructs an attribute with an integer value. The attribute should be
 	 * added to an appropriate artifact.
 	 *
@@ -131,17 +136,19 @@ public class Attribute extends AbstractAttribute{
 	}
 
 	/**
-	 * Gets the owner Id of this attribute. An owner is defined as the Object
-	 * to which this attribute is associated with.
-	 * Eg: For a file Attribute, the owner id would be the file object id.
+	 * Gets the parent Id of this attribute. A parent is defined as the Object
+	 * to which this attribute is associated with. Eg: For a file Attribute the
+	 * attribute parent id would be the file object id.
 	 *
 	 * @return
 	 */
-	@Override
-	public long getAttributeOwnerId() {
-		return super.getAttributeOwnerId();
+	final public long getAttributeParentId() {
+		return this.attributeParentId;
 	}
 
+	final public void setAttributeParentId(long attributeParentId) {
+		this.attributeParentId = attributeParentId;
+	}
 
 	@Override
 	public int hashCode() {

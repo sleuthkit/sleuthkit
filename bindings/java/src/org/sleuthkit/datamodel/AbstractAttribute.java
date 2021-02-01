@@ -40,8 +40,6 @@ abstract class AbstractAttribute {
 
 	private SleuthkitCase sleuthkitCase;
 
-	private long attributeOwnerId;
-
 	
 	/**
 	 * Constructs an attribute with an integer value. The attribute should be
@@ -58,7 +56,6 @@ abstract class AbstractAttribute {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
-		this.attributeOwnerId = 0;
 		this.attributeType = attributeType;
 		this.valueInt = valueInt;
 		this.valueLong = 0;
@@ -86,7 +83,6 @@ abstract class AbstractAttribute {
 				&& attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
-		this.attributeOwnerId = 0;
 		this.attributeType = attributeType;
 		this.valueInt = 0;
 		this.valueLong = valueLong;
@@ -111,7 +107,6 @@ abstract class AbstractAttribute {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
-		this.attributeOwnerId = 0;
 		this.attributeType = attributeType;
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -137,7 +132,6 @@ abstract class AbstractAttribute {
 				&& attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
-		this.attributeOwnerId = 0;
 		this.attributeType = attributeType;
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -166,7 +160,6 @@ abstract class AbstractAttribute {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
-		this.attributeOwnerId = 0;
 		this.attributeType = attributeType;
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -199,7 +192,6 @@ abstract class AbstractAttribute {
 			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
 			SleuthkitCase sleuthkitCase) {
 
-		this.attributeOwnerId = attributeOwnerId;
 		this.attributeType = attributeType;
 		this.valueInt = valueInt;
 		this.valueLong = valueLong;
@@ -320,18 +312,6 @@ abstract class AbstractAttribute {
 		return Arrays.copyOf(valueBytes, valueBytes.length);
 	}
 
-	/**
-	 * Gets the owner Id of this attribute. An owner is defined as the Object
-	 * to which this attribute is associated with.
-	 * Eg: For a file Attribute, the owner id would be the file object id.
-	 *
-	 * Each implementation is expected to give a more specific name. 
-	 *
-	 * @return
-	 */
-	long getAttributeOwnerId() {
-		return this.attributeOwnerId;
-	}
 
 	SleuthkitCase getCaseDatabase() {
 		return this.sleuthkitCase;
@@ -347,16 +327,6 @@ abstract class AbstractAttribute {
 		this.sleuthkitCase = sleuthkitCase;
 	}
 
-	/**
-	 * Sets the owner id for this attribute.
-	 *
-	 * @param attributeOwnerId The attribute owner id.
-	 */
-	void setAttributeOwnerId(long attributeOwnerId) {
-		this.attributeOwnerId = attributeOwnerId;
-	}
-
- 
 	/**
 	 * Converts a byte array to a string.
 	 *

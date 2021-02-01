@@ -4113,7 +4113,7 @@ public class SleuthkitCase {
 		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE);
 		statement.clearParameters();
 
-		statement.setLong(1, attr.getAttributeOwnerId());
+		statement.setLong(1, attr.getAttributeParentId());
 		statement.setInt(2, attr.getAttributeType().getTypeID());
 		statement.setLong(3, attr.getAttributeType().getValueType().getType());
 
@@ -6673,7 +6673,7 @@ public class SleuthkitCase {
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
 			for (Attribute fileAttribute : fileAttributes) {
-				fileAttribute.setAttributeOwnerId(objectId); 
+				fileAttribute.setAttributeParentId(objectId);
 				fileAttribute.setCaseDatabase(this);
 				addFileAttribute(fileAttribute, connection);
 			}
