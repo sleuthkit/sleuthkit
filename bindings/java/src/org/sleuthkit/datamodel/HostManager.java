@@ -52,7 +52,6 @@ public final class HostManager {
 	}
 	
 	/**
-	 * APTODO : using for testing - might be able to remove if desired
 	 * Get or create host with specified name.
 	 *
 	 * @param name	       Host name.
