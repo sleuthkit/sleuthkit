@@ -2205,6 +2205,10 @@ public class SleuthkitCase {
 
 			statement.execute("ALTER TABLE tag_names ADD COLUMN rank INTEGER");
 
+			/* Update existing Project Vic tag names (from Image Gallery in Autopsy) 
+			 * to be part of a Tag Set. 
+			 * NOTE: These names are out of date and will not work with the Project VIC 
+			 * Report module. New cases will get the new names from Image Gallery. */
 			String insertStmt = "INSERT INTO tsk_tag_sets (name) VALUES ('Project VIC')";
 			if (getDatabaseType() == DbType.POSTGRESQL) {
 				statement.execute(insertStmt, Statement.RETURN_GENERATED_KEYS);
