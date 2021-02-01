@@ -234,22 +234,49 @@ Stores non-directional relationships between two accounts if they communicated o
 - **data_source_obj_id** - Id of the data source this relationship came from (from obj_id in data_source_info)
 
 # Timeline
-TODO
+Stores data used to populate various timelines. It is highly recommended to use 
+the org.sleuthkit.datamodel.TimelineManager API to create/access this type of data.
+
 ## tsk_event_types
+Stores the types for events. The super_type_id column is used to arrange the types into a tree.
+- **event_type_id** - Id for the type
+- **display_name** - Display name for the type (unique, should be human readable)
+- **super_type_id** - Parent type for this type (used for building heirarchy; references the event_type_id in this table)
 
 ## tsk_event_descriptions
+Stores descriptions of each event. Note that the combination of the full_description, content_obj_id, and artifact_id columns must be unique.
+- **event_description_id** - Id for this event description
+- **full_description** - Full length description of this event (required)
+- **med_description** - Medium length description of this event (may be null)
+- **short_description** - Short length description of this event (may be null)
+- **data_source_obj_id** -  Object id of the data source for  the event source (references obj_id column in data_source_info)
+- **content_obj_id** - Object id of the content that is either the direct or indirect source of this event (references obj_id column in tsk_objects)
+- **artifact_id** - Id of the artifact (references artifact_id column in blackboard_artifacts) that is the source of this event (may be null)
+- **hash_hit** - 1 if the file associated with this event has a hash set hit, 0 otherwise
+- **tagged** - 1 if the direct source of this event has been tagged, 0 otherwise
 
 ## tsk_events
-
+Stores each event.
+- **event_id** - Id for this event
+- **event_type_id** - Event type id (references event_type_id column in tsk_event_types)
+- **event_description_id** - Event description id (references event_description_id column in tsk_event_descriptions)
+- **time** -  Time this event occurred, in seconds from the UNIX epoch
 
 # Examiners and Reports
 
-TODO
-
 ## tsk_examiners
+Encapsulates the concept of an examiner associated with a case.
+- **examiner_id** - Id for the examiner
+- **login_name** - Login name for the examiner (must be unique)
+- **display_name** - Display name for the examiner (may be null)
 
 ## reports
-
+Stores information on generated reports.
+- **obj_id** - Id of the report
+- **path** - Full path to the report (including file name)
+- **crtime** - Time the report was created, in seconds from the UNIX epoch
+- **src_module_name** - Name of the module that created the report
+- **report_name** - Name of the report (can be empty string)
 
 # Tags 
 
