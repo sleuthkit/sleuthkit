@@ -2303,10 +2303,15 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-			String dateDataType = "BIGINT";
+			String dateDataType   = "BIGINT";
+			String bigIntDataType = "BIGINT";
+			String blobDataType   = "BYTEA";
 			String primaryKeyType = "BIGSERIAL";
+
 			if (this.dbType.equals(DbType.SQLITE)) {
-				dateDataType = "INTEGER";
+				dateDataType   = "INTEGER";
+				bigIntDataType = "INTEGER";
+				blobDataType   = "BLOB";
 				primaryKeyType = "INTEGER";
 			}
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN added_date_time "+ dateDataType );
@@ -2316,7 +2321,15 @@ public class SleuthkitCase {
 			
 			statement.execute("ALTER TABLE blackboard_artifact_types ADD COLUMN category_type INTEGER DEFAULT 0");
 
-			// Create host table.
+            // Create tsk file attributes table
+			statement.execute("CREATE TABLE tsk_file_attributes (obj_id " + bigIntDataType + " NOT NULL, "
+					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
+					+ "value_type INTEGER NOT NULL, value_byte " + blobDataType + ", "
+					+ "value_text TEXT, value_int32 INTEGER, value_int64 " + bigIntDataType + ", value_double NUMERIC(20, 10), "
+					+ "FOREIGN KEY(obj_id) REFERENCES tsk_files(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
+
+			// create host table.
 			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
 				+ "name TEXT NOT NULL, " // host name
 				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
