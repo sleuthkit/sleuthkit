@@ -39,6 +39,7 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	private final long objectId;
 	private final String deviceId;
 	private final String timezone;
+	private volatile Host host;
 
 	private static final Logger LOGGER = Logger.getLogger(LocalFilesDataSource.class.getName());
 
@@ -254,6 +255,23 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	public String getAcquisitionToolVersion() throws TskCoreException{
 		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_version");
 	}
+	
+	/**
+	 * Gets the host for this data source.
+	 * 
+	 * @return The host
+	 * 
+	 * @throws TskCoreException 
+	 */
+	@Override
+	public Host getHost() throws TskCoreException {
+		// This is a check-then-act race condition that may occasionally result
+		// in additional processing but is safer than using locks.
+		if (host == null) {
+			host = getSleuthkitCase().getHostManager().getHost(this);
+		}
+		return host;
+	}	
 
 	/**
 	 * Gets the added date field from the case database.
