@@ -6391,9 +6391,9 @@ public class SleuthkitCase {
 			// Create a host if needed
 			if (host == null) {
 				if (name.isEmpty()) {
-					getHostManager().getOrCreateHost("Image_" + newObjId + " Host", transaction);
+					host = getHostManager().getOrCreateHost("Image_" + newObjId + " Host", transaction);
 				} else {
-					getHostManager().getOrCreateHost(name + " Host", transaction);
+					host = getHostManager().getOrCreateHost(name + " Host", transaction);
 				}
 			}
 
