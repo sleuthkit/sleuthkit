@@ -2205,6 +2205,10 @@ public class SleuthkitCase {
 
 			statement.execute("ALTER TABLE tag_names ADD COLUMN rank INTEGER");
 
+			/* Update existing Project Vic tag names (from Image Gallery in Autopsy) 
+			 * to be part of a Tag Set. 
+			 * NOTE: These names are out of date and will not work with the Project VIC 
+			 * Report module. New cases will get the new names from Image Gallery. */
 			String insertStmt = "INSERT INTO tsk_tag_sets (name) VALUES ('Project VIC')";
 			if (getDatabaseType() == DbType.POSTGRESQL) {
 				statement.execute(insertStmt, Statement.RETURN_GENERATED_KEYS);
@@ -2810,7 +2814,29 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer.
 	 */
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
-		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, this);
+		return makeAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, null, imageCopyPath);
+	}	
+	
+	/**
+	 * Starts the multi-step process of adding an image data source to the case
+	 * by creating an object that can be used to control the process and get
+	 * progress messages from it.
+	 *
+	 * @param timeZone        The time zone of the image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 *                        unallocated space in the image.
+	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
+	 *                        file systems.
+	 * @param host            The host for this image (may be null).
+	 * @param imageCopyPath   Path to which a copy of the image should be
+	 *                        written. Use the empty string to disable image
+	 *                        writing.
+	 *
+	 * @return An object that encapsulates control of adding an image via the
+	 *         SleuthKit native code layer.
+	 */
+	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, Host host, String imageCopyPath) {
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, host, imageCopyPath, this);
 	}
 
 	/**
@@ -6175,19 +6201,49 @@ public class SleuthkitCase {
 	 * @throws TskCoreException if there is an error adding the data source.
 	 */
 	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootDirectoryName, String timeZone, CaseDbTransaction transaction) throws TskCoreException {
+		return addLocalFilesDataSource(deviceId, rootDirectoryName, timeZone, null, transaction);
+	}
+	
+	/**
+	 * Adds a local/logical files and/or directories data source.
+	 *
+	 * @param deviceId          An ASCII-printable identifier for the device
+	 *                          associated with the data source that is intended
+	 *                          to be unique across multiple cases (e.g., a
+	 *                          UUID).
+	 * @param rootDirectoryName The name for the root virtual directory for the
+	 *                          data source.
+	 * @param timeZone          The time zone used to process the data source,
+	 *                          may be the empty string.
+	 * @param host              The host for the data source (may be null)
+	 * @param transaction       A transaction in the scope of which the
+	 *                          operation is to be performed, managed by the
+	 *                          caller.
+	 *
+	 * @return The new local files data source.
+	 *
+	 * @throws TskCoreException if there is an error adding the data source.
+	 */
+	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootDirectoryName, String timeZone, Host host, CaseDbTransaction transaction) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
 		Statement statement = null;
 		try {
+			CaseDbConnection connection = transaction.getConnection();
+			
 			// Insert a row for the root virtual directory of the data source
 			// into the tsk_objects table.
-			CaseDbConnection connection = transaction.getConnection();
 			long newObjId = addObject(0, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 
+			// If no host was supplied, make one
+			if (host == null) {
+				host = getHostManager().getOrCreateHost("LogicalFileSet_" + newObjId + " Host", transaction);
+			}			
+			
 			// Insert a row for the virtual directory of the data source into
 			// the data_source_info table.
 			statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
-					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "');");
+			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone, host_id) "
+					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "', " + host.getId() + ");");
 
 			// Insert a row for the root virtual directory of the data source
 			// into the tsk_files table. Note that its data source object id is
@@ -6260,6 +6316,33 @@ public class SleuthkitCase {
 			String timezone, String md5, String sha1, String sha256,
 			String deviceId,
 			CaseDbTransaction transaction) throws TskCoreException {
+		return addImage(type, sectorSize, size, displayName, imagePaths, timezone, md5, sha1, sha256, deviceId, null, transaction);
+	}	
+	
+	/**
+	 * Add an image to the database.
+	 *
+	 * @param type        Type of image
+	 * @param sectorSize  Sector size
+	 * @param size        Image size
+	 * @param displayName Display name for the image
+	 * @param imagePaths  Image path(s)
+	 * @param timezone    Time zone
+	 * @param md5         MD5 hash
+	 * @param sha1        SHA1 hash
+	 * @param sha256      SHA256 hash
+	 * @param deviceId    Device ID
+	 * @param host        Host
+	 * @param transaction Case DB transaction
+	 *
+	 * @return the newly added Image
+	 *
+	 * @throws TskCoreException
+	 */
+	public Image addImage(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName, List<String> imagePaths,
+			String timezone, String md5, String sha1, String sha256,
+			String deviceId, Host host,
+			CaseDbTransaction transaction) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
 		Statement statement = null;
 		try {
@@ -6293,17 +6376,8 @@ public class SleuthkitCase {
 				preparedStatement.setLong(3, i);
 				connection.executeUpdate(preparedStatement);
 			}
-
-			// Add a row to data_source_info
-			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO);
-			statement = connection.createStatement();
-			preparedStatement.setLong(1, newObjId);
-			preparedStatement.setString(2, deviceId);
-			preparedStatement.setString(3, timezone);
-			preparedStatement.setLong(4, new Date().getTime());
-			connection.executeUpdate(preparedStatement);
-
-			// Create the new Image object
+			
+			// Create the display name
 			String name = displayName;
 			if (name == null || name.isEmpty()) {
 				if (imagePaths.size() > 0) {
@@ -6312,7 +6386,28 @@ public class SleuthkitCase {
 				} else {
 					name = "";
 				}
-			}			
+			}
+			
+			// Create a host if needed
+			if (host == null) {
+				if (name.isEmpty()) {
+					host = getHostManager().getOrCreateHost("Image_" + newObjId + " Host", transaction);
+				} else {
+					host = getHostManager().getOrCreateHost(name + " Host", transaction);
+				}
+			}
+
+			// Add a row to data_source_info
+			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO);
+			statement = connection.createStatement();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setString(2, deviceId);
+			preparedStatement.setString(3, timezone);
+			preparedStatement.setLong(4, new Date().getTime());
+			preparedStatement.setLong(5, host.getId());
+			connection.executeUpdate(preparedStatement);
+
+			// Create the new Image object
 			return new Image(this, newObjId, type.getValue(), deviceId, sectorSize, name,
 					imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, sha1, sha256, savedSize);
 		} catch (SQLException ex) {
@@ -8703,7 +8798,25 @@ public class SleuthkitCase {
 	 *                          database.
 	 */
 	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
-		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone, this);
+		return addImageInfo(deviceObjId, imageFilePaths, timeZone, null);
+	}	
+	
+	/**
+	 * Adds an image to the case database.
+	 *
+	 * @param deviceObjId    The object id of the device associated with the
+	 *                       image.
+	 * @param imageFilePaths The image file paths.
+	 * @param timeZone       The time zone for the image.
+	 * @param host           The host for this image.
+	 *
+	 * @return An Image object.
+	 *
+	 * @throws TskCoreException if there is an error adding the image to case
+	 *                          database.
+	 */
+	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host) throws TskCoreException {
+		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone, host, this);
 		return getImageById(imageId);
 	}
 
@@ -11847,7 +11960,7 @@ public class SleuthkitCase {
 		INSERT_IMAGE_NAME("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (?, ?, ?)"),
 		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone, added_date_time) VALUES (?, ?, ?, ?)"),
+		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone, added_date_time, host_id) VALUES (?, ?, ?, ?, ?)"),
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
@@ -13290,7 +13403,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, null, "", this);
 	}
 
 	/**

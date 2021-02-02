@@ -79,7 +79,7 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
     }
     m_callbackClass = (jclass)m_jniEnv->NewGlobalRef(localCallbackClass);
 
-    m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)J");
+    m_addImageMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addImageInfo", "(IJLjava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;J[Ljava/lang/String;)J");
     if (m_addImageMethodID == NULL) {
         return TSK_ERR;
     }
@@ -216,7 +216,7 @@ TskAutoDbJava::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const st
     }
 
     jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addImageMethodID,
-        type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj, imgNamesj);
+        type, ssize, tzj, size, md5j, sha1j, sha256j, devIdj, collj, m_hostId, imgNamesj);
     objId = (int64_t)objIdj;
 
     if (objId < 0) {
@@ -934,6 +934,10 @@ void TskAutoDbJava::close() {
 
 int64_t TskAutoDbJava::getImageID() {
     return m_curImgId;
+}
+
+void TskAutoDbJava::setHostId(long hostId) {
+    m_hostId = hostId;
 }
 
 void TskAutoDbJava::closeImage() {

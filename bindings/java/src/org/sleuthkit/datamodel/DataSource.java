@@ -131,4 +131,13 @@ public interface DataSource extends Content {
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
 	Long getDateAdded() throws TskCoreException;
+	
+	/**
+	 * Gets the host for this data source.
+	 * 
+	 * @return The host
+	 * 
+	 * @throws TskCoreException 
+	 */
+	Host getHost() throws TskCoreException;
 }
