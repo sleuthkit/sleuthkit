@@ -2311,7 +2311,7 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
 					+ ")");
 
-			// RAMAN TBD: need to add  UNIQUE (artifact_obj_id) constraint to blackboard_artifacts table 
+			// RAMAN TBD: need to add  UNIQUE (artifact_obj_id) constraint to blackboard_artifacts table for it to be FK
 			
 			// create host table.
 			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "

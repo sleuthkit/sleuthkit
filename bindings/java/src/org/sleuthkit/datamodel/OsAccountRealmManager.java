@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.RealmNameType;
@@ -49,65 +50,114 @@ public final class OsAccountRealmManager {
 	OsAccountRealmManager(SleuthkitCase skCase) {
 		this.db = skCase;
 	}
-	
+		
 	/**
-	 * 
-	 * @param realmName Realm Name.
-	 * @param nameType Realm name type.
-	 * @param uniqueId Unique sid/id for realm. May be null.
-	 * @param host Host, if this realm comprises of a single host. May be null.
-	 * @param transaction Transaction to use for database operation.
-	 * 
-	 * @return OsAccountRealm
-	 */
-//	OsAccountRealm addRealm(String realmName, OsAccountRealm.RealmNameType nameType, String uniqueId,  Host host, CaseDbTransaction transaction) throws TskCoreException {
-//		
-//		CaseDbConnection connection = transaction.getConnection();
-//		return createRealm(realmName, nameType,  uniqueId, host, connection );
-//	}
-	
-	
-	/**
-	 * Get or create the realm with the given name and scope for the given host.
-	 * 
+	 * Create the realm with the given name and scope for the given host. If a
+	 * realm with same name already exists, then the existing realm is returned.
+	 *
 	 * @param realmName Realm name.
-	 * @param host Host that realm reference was found on.  May be null if you know the realm is a domain and not host-specific. 
-	 * @param transaction Transaction to use for connection.
-	 * 
+	 * @param host      Host that realm reference was found on. May be null if
+	 *                  you know the realm is a domain and not host-specific.
+	 *
 	 * @return OsAccountRealm Realm.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException If there is an error creating the realm.
 	 */
-	OsAccountRealm getOrCreateRealmByName(String realmName, Host host, CaseDbTransaction transaction) throws TskCoreException {
+	public OsAccountRealm createRealmByName(String realmName, Host host) throws TskCoreException {
 		
 		if (Strings.isNullOrEmpty(realmName)) {
 			throw new IllegalArgumentException("A realm name is required.");
 		}
 		
-		CaseDbConnection connection = transaction.getConnection();
-		
-		OsAccountRealm accountRealm = getRealmByName(realmName, host, connection );
-		if (accountRealm != null) {
-			return accountRealm;
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			return createRealm(realmName, RealmNameType.EXPRESSED, null, host, connection);
+		} catch (SQLException ex) {
+			// Create may have failed if the realm already exists. try to get the realm by name.
+			try (CaseDbConnection connection = this.db.getConnection()) {
+				Optional<OsAccountRealm >accountRealm = this.getRealmByName(realmName, host, connection);
+				if (accountRealm.isPresent()) {
+					return accountRealm.get();
+				} else {
+					throw new TskCoreException(String.format("Error creating realm with name = %s", realmName), ex);
+				}
+			}
 		}
-		
-		// couldn't find a matching realm, create one.
-		return createRealm(realmName, RealmNameType.EXPRESSED, null, host, connection); 
 	}
 
+	/**
+	 * Get the realm with the given name and specified host.
+	 * 
+	 * @param realmName Realm name.
+	 * @param host Host for realm, may be null.
+	 * @param transaction Transaction to use for database connection.
+	 * 
+	 * @return OsAccountRealm, Optional.empty  if no matching realm is found.
+	 *
+	 * @throws TskCoreException If there is an error creating the realm.
+	 */
+	public Optional<OsAccountRealm> getRealmByName(String realmName, Host host, CaseDbTransaction transaction) throws TskCoreException {
+		
+		return this.getRealmByName(realmName, host, transaction.getConnection());
+	}
+	
 	
 	/**
-	 * Get or create with the given Windows SID. 
+	 * Create realm for the given Windows SID. The input SID is a user/group
+	 * SID. The domain SID is extracted from this incoming SID. If a realm
+	 * already exists for the given user/group SID, the existing realm is
+	 * returned.
 	 * 
-	 * @param sid	SID.
-	 * @param host	Host that the SID was located on.  Should not be null. 
-	 * @param transaction Transaction.
+	 * @param sid  User/group SID.
+	 * @param host Host for realm, may be null.
 	 * 
-	 * @return Realm.
-	 * @throws TskCoreException .
+	 * @return OsAccountRealm.
+	 * 
+	 * @throws TskCoreException If there is an error creating the realm.
 	 */
-	OsAccountRealm getOrCreateRealmByWindowsSid(String sid, Host host, CaseDbTransaction transaction) throws TskCoreException {
+	public OsAccountRealm createRealmByWindowsSid(String sid, Host host) throws TskCoreException {
 
+		if (Strings.isNullOrEmpty(sid)) {
+			throw new IllegalArgumentException("A SID is required.");
+		}
+		
+		// get subAuthority sid
+		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
+			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
+		}
+		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));
+		
+		// RAMAN TBD: can the SID be parsed in some way to determine local vs domain ??
+			
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			return createRealm("Unknown Domain Name", OsAccountRealm.RealmNameType.INFERRED, subAuthorityId, host, connection);
+		} catch (SQLException ex) {
+			// Create may have failed if the realm already exists. try to get the realm by name.
+			try (CaseDbConnection connection = this.db.getConnection()) {
+				Optional<OsAccountRealm >accountRealm = this.getRealmByAddr(subAuthorityId, host, connection);
+				if (accountRealm.isPresent()) {
+					return accountRealm.get();
+				} else {
+					throw new TskCoreException(String.format("Error creating realm with address = %s", subAuthorityId), ex);
+				}
+			}
+		}
+		
+	}
+	
+	/**
+	 * Get the realm for the given user/group SID. The input SID is a user/group
+	 * SID. The domain SID is extracted from this incoming SID.
+	 * 
+	 * @param sid user SID.
+	 * @param host Host for realm, may be null.
+	 * @param transaction Transaction to use for database connection.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no realm found with matching real address.
+	 * 
+	 * @throws TskCoreException
+	 */
+	public Optional<OsAccountRealm> getRealmByWindowsSid(String sid, Host host, CaseDbTransaction transaction) throws TskCoreException {
+		
 		// get subAuthority sid
 		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
 			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
@@ -115,19 +165,8 @@ public final class OsAccountRealmManager {
 		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));
 		
 		CaseDbConnection connection = transaction.getConnection();
-			
-		// RAMAN TBD: can the SID be parsed in some way to determine local vs domain ??
-		
-		// check if realm exists with this unique id
-		OsAccountRealm realm = getRealmByAddr(subAuthorityId, host, connection);
-		if (realm != null) {	
-			return realm;
-		}
-		
-		// don't have an existing realm with this ID, create one.
-		return createRealm("Unknown Domain Name", OsAccountRealm.RealmNameType.INFERRED, subAuthorityId, host, connection);
+		return this.getRealmByAddr(subAuthorityId, host, connection);
 	}
-	
 	
 	/**
 	 * Updates the realm name and name type for the the specified realm id.
@@ -135,17 +174,14 @@ public final class OsAccountRealmManager {
 	 * @param realmId Row id of realm to update.
 	 * @param realmName Realm name.
 	 * @param nameType Name type.
-	 * @param transaction Transaction to use. 
 	 * 
 	 * @return OsAccountRealm
 	 * @throws TskCoreException 
 	 */
-	OsAccountRealm updateRealmName(long realmId, String realmName, OsAccountRealm.RealmNameType nameType, CaseDbTransaction transaction) throws TskCoreException {
-		
-		CaseDbConnection connection = transaction.getConnection();
+	OsAccountRealm updateRealmName(long realmId, String realmName, OsAccountRealm.RealmNameType nameType) throws TskCoreException {
 		
 		db.acquireSingleUserCaseWriteLock();
-		try {
+		try (CaseDbConnection connection = db.getConnection())  {
 			String updateSQL = "UPDATE tsk_os_account_realms SET name = ?, name_type = ? WHERE id = ?";
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
@@ -200,16 +236,17 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Get the realm with the given realm addr.
+	 * Get the realm with the given realm address.
 	 * 
-	 * @param uniqueId Realm uniqueId/SID.
+	 * @param realmAddr Realm address.
 	 * @param host Host for realm, may be null.
 	 * @param connection Database connection to use.
 	 * 
-	 * @return OsAccountRealm.
+	 * @return Optional with OsAccountRealm, Optional.empty if no realm found with matching real address.
+	 * 
 	 * @throws TskCoreException.
 	 */
-	private OsAccountRealm getRealmByAddr(String realmAddr, Host host, CaseDbConnection connection) throws TskCoreException {
+	Optional<OsAccountRealm> getRealmByAddr(String realmAddr, Host host, CaseDbConnection connection) throws TskCoreException {
 		
 		String whereHostClause = (host == null) 
 							? " 1 = 1 " 
@@ -238,7 +275,7 @@ public final class OsAccountRealmManager {
 												RealmNameType.fromID(rs.getInt("name_type")),
 												rs.getString("realm_addr"), realmHost);
 			} 
-			return accountRealm;
+			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error running the realms query = %s", queryString), ex);
 		}
@@ -251,10 +288,10 @@ public final class OsAccountRealmManager {
 	 * @param host Host for realm, may be null.
 	 * @param connection Database connection to use.
 	 * 
-	 * @return OsAccountRealm, Null if no matching realm is found.
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
 	 * @throws TskCoreException.
 	 */
-	private OsAccountRealm getRealmByName(String realmName, Host host, CaseDbConnection connection) throws TskCoreException {
+	Optional<OsAccountRealm> getRealmByName(String realmName, Host host, CaseDbConnection connection) throws TskCoreException {
 		
 		String whereHostClause = (host == null) 
 							? " 1 = 1 " 
@@ -284,7 +321,7 @@ public final class OsAccountRealmManager {
 												rs.getString("realm_addr"), realmHost);
 				
 			} 
-			return accountRealm;
+			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting account realm for with name = %s", realmName), ex);
 		}
@@ -358,9 +395,10 @@ public final class OsAccountRealmManager {
 	 *
 	 * @return OsAccountRealm Realm just created.
 	 *
-	 * @throws TskCoreException
+	 * @throws SQLException If there is an SQL error in creating realm.
+	 * @throws TskCoreException If there is an internal error.
 	 */
-	private OsAccountRealm createRealm(String realmName, OsAccountRealm.RealmNameType nameType, String realmAddr,  Host host, CaseDbConnection connection) throws TskCoreException {
+	private OsAccountRealm createRealm(String realmName, OsAccountRealm.RealmNameType nameType, String realmAddr,  Host host, CaseDbConnection connection) throws TskCoreException, SQLException {
 		
 		db.acquireSingleUserCaseWriteLock();
 		try {
@@ -390,10 +428,7 @@ public final class OsAccountRealmManager {
 					throw new SQLException("Error executing  " + realmInsertSQL);
 				}
 			}
-		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
-			throw new TskCoreException(String.format("Error adding realm with name = %s", realmName), ex);
-		} finally {
+		}  finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}

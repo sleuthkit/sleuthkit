@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
@@ -30,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
  *
@@ -97,21 +99,70 @@ public class OsAccountTest {
 	public void tearDown() {
 	}
 
+	@Test 
+	public void hostTests() throws TskCoreException {
+		//SleuthkitCase.CaseDbTransaction transaction = caseDB.beginTransaction();
+		try {
+			String HOSTNAME1 = "host1";
+			
+			// Test: create a host
+			Host host1 = caseDB.getHostManager().createHost(HOSTNAME1);
+			assertEquals(host1.getName().equalsIgnoreCase(HOSTNAME1), true );
+			
+			
+			// Test: get a host we just created.
+			CaseDbTransaction transaction = caseDB.beginTransaction();
+			
+			
+			Optional<Host> optionalhost1 = caseDB.getHostManager().getHost(HOSTNAME1, transaction);
+			assertEquals(optionalhost1.isPresent(), true );
+			
+			
+			String HOSTNAME2 = "host2";
+			
+			// Get a host not yet created
+			Optional<Host> optionalhost2 = caseDB.getHostManager().getHost(HOSTNAME2, transaction);
+			assertEquals(optionalhost2.isPresent(), false );
+			
+			transaction.commit();
+			
+			// now create the second host
+			Host host2 = caseDB.getHostManager().createHost(HOSTNAME2);
+			assertEquals(host2.getName().equalsIgnoreCase(HOSTNAME2), true );
+			
+			
+			// now get it again, should be found this time
+			transaction = caseDB.beginTransaction();
+			optionalhost2 = caseDB.getHostManager().getHost(HOSTNAME2, transaction);
+			assertEquals(optionalhost2.isPresent(), true);
+			transaction.commit();
+			
+			// create a host that already exists - should transperently return the existting host.
+			Host host2_2 = caseDB.getHostManager().createHost(HOSTNAME2);
+			assertEquals(host2_2.getName().equalsIgnoreCase(HOSTNAME2), true );
+			
+		}
+		catch(Exception ex) {
+			//transaction.commit();
+		}
+	
+	}
 	@Test
 	public void osAccountRealmTests() throws TskCoreException {
 		
 		
-		SleuthkitCase.CaseDbTransaction transaction = caseDB.beginTransaction();
+		SleuthkitCase.CaseDbTransaction transaction = null;
 		
 		try {
 		// TEST: create a domain realm 
 		String realmName1 = "basis";
-		OsAccountRealm domainRealm1 = caseDB.getOsAccountRealmManager().getOrCreateRealmByName(realmName1, null, transaction);
+		OsAccountRealm domainRealm1 = caseDB.getOsAccountRealmManager().createRealmByName(realmName1, null);
+		
 		assertEquals(domainRealm1.getName().equalsIgnoreCase(realmName1), true );
 		assertEquals(domainRealm1.getNameType(), OsAccountRealm.RealmNameType.EXPRESSED);
 		assertEquals(domainRealm1.getRealmAddr().orElse(null), null);	// verify there is no realm addr
 		
-		
+	
 		
 		String realmName2 = "win-raman-abcd";
 		
@@ -120,36 +171,43 @@ public class OsAccountTest {
 		
 		String hostName2 = "win-raman-abcd";
 		
-		// TEST: create a host
-		Host host2 = caseDB.getHostManager().getOrCreateHost(hostName2, transaction);
-		
+	
+		//TEST: create a local realm with single host
+		// first create a host
+		Host host2 = caseDB.getHostManager().createHost(hostName2);
 		// verify host name
 		assertEquals(host2.getName().equalsIgnoreCase(hostName2), true);
-
-		//TEST: create a local realm with single host
-		OsAccountRealm localRealm2 = caseDB.getOsAccountRealmManager().getOrCreateRealmByWindowsSid(realmAddr2, host2, transaction);
+		
+		// create realm
+		OsAccountRealm localRealm2 = caseDB.getOsAccountRealmManager().createRealmByWindowsSid(realmAddr2, host2);
 		assertEquals(localRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
 		assertEquals(localRealm2.getHost().orElse(null).getName().equalsIgnoreCase(hostName2), true);
 		
 		
-		// update the a realm name
-		OsAccountRealm updatedRealm2 = caseDB.getOsAccountRealmManager().updateRealmName(localRealm2.getId(), realmName2, OsAccountRealm.RealmNameType.EXPRESSED, transaction);
 		
+		// update the a realm name
+		OsAccountRealm updatedRealm2 = caseDB.getOsAccountRealmManager().updateRealmName(localRealm2.getId(), realmName2, OsAccountRealm.RealmNameType.EXPRESSED);
 		assertEquals(updatedRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
 		assertEquals(updatedRealm2.getName().equalsIgnoreCase(realmName2), true );
+		
 		
 		
 		// get an existing realm - new SID but same sub authority as previously created realm.
 		String realmAddr3 = realmAddr2SubAuth + "-88888888";
 		
-		OsAccountRealm existingRealm3 = caseDB.getOsAccountRealmManager().getOrCreateRealmByWindowsSid(realmAddr3, null, transaction);
-		assertEquals(existingRealm3.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
-		assertEquals(existingRealm3.getName().equalsIgnoreCase(realmName2), true );
+		transaction = caseDB.beginTransaction();
+		Optional<OsAccountRealm> existingRealm3 = caseDB.getOsAccountRealmManager().getRealmByWindowsSid(realmAddr3, null, transaction);
+		assertEquals(existingRealm3.isPresent(), true);
+		assertEquals(existingRealm3.get().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
+		assertEquals(existingRealm3.get().getName().equalsIgnoreCase(realmName2), true );
 		
+		transaction.commit(); // faux commit
 		
 		}
 		finally {
-			transaction.commit();
+//			if (transaction != null) {
+//				transaction.commit();
+//			}
 		}
 		
 		
@@ -158,7 +216,7 @@ public class OsAccountTest {
 	@Test
 	public void basicOsAccountTests() throws TskCoreException {
 
-		SleuthkitCase.CaseDbTransaction transaction = caseDB.beginTransaction();
+		SleuthkitCase.CaseDbTransaction transaction = null;
 
 		try {
 			String ownerUid1 = "S-1-5-32-544";
@@ -171,15 +229,26 @@ public class OsAccountTest {
 			
 			Host host = null;
 			
-			OsAccount osAccount1 = caseDB.getOsAccountManager().getOrCreateOsAccount(ownerUid1, null, realmName1, host, transaction);
-			OsAccount osAccount2 = caseDB.getOsAccountManager().getOrCreateOsAccount(ownerUid2, null, realmName2, host, transaction);
-			OsAccount osAccount3 = caseDB.getOsAccountManager().getOrCreateOsAccount(ownerUid3, null, realmName2, host, transaction);
+			// create account realms
+			OsAccountRealm realm1 = caseDB.getOsAccountRealmManager().createRealmByName(realmName1, host);
+			OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().createRealmByName(realmName2, host);
+			
+			
+			
+			// create accounts
+			OsAccount osAccount1 = caseDB.getOsAccountManager().createOsAccount(ownerUid1, null, realmName1, host);
+			OsAccount osAccount2 = caseDB.getOsAccountManager().createOsAccount(ownerUid2, null, realmName2, host);
+			OsAccount osAccount3 = caseDB.getOsAccountManager().createOsAccount(ownerUid3, null, realmName2, host);
 				
 		
 			assertEquals(osAccount1.isAdmin(), false);
 			assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
 			assertEquals(osAccount1.getRealm().getName().equalsIgnoreCase(realmName1), true);
 			
+			
+			
+			
+			transaction = caseDB.beginTransaction(); // RAMAN TBD - does update need a transaction
 			
 			// Let's update osAccount1
 			String fullName1 = "Johnny Depp";
@@ -192,8 +261,16 @@ public class OsAccountTest {
 			
 			assertEquals(osAccount1.getCreationTime(), creationTime1);
 			
+			
+			transaction.commit();
+			transaction = null;
+			
+			transaction = caseDB.beginTransaction(); // RAMAN TBD
+			
+			
+			
 			// now try and create osAccount1 again - it should return the existing account
-			OsAccount osAccount1_copy1 = caseDB.getOsAccountManager().getOrCreateOsAccount(ownerUid1, null, realmName1, host, transaction);
+			OsAccount osAccount1_copy1 = caseDB.getOsAccountManager().createOsAccount(ownerUid1, null, realmName1, host);
 			
 			
 			assertEquals(osAccount1_copy1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
@@ -207,8 +284,10 @@ public class OsAccountTest {
 		}
 		
 		finally {
-			transaction.commit();
+			if (transaction != null) {
+				transaction.commit();
+			}
 		}
-			
+
 	}
 }
