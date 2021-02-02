@@ -145,12 +145,12 @@ class CaseDatabaseFactory {
 	 */
 	private void addTables(Connection conn) throws TskCoreException {
 		try (Statement stmt = conn.createStatement()) {
+			createHostTables(stmt);
 			createFileTables(stmt);
 			createArtifactTables(stmt);
 			createAnalysisResultsTables(stmt);
 			createTagTables(stmt);
 			createIngestTables(stmt);
-			createHostTables(stmt);
 			createAccountTables(stmt);
 			createEventTables(stmt);
 			createAttributeTables(stmt);
