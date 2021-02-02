@@ -2322,6 +2322,30 @@ public class SleuthkitCase {
 				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
 				+ "UNIQUE(name)) ");
 			
+			// Add host column and create a host for each existing data source.
+			// We will create a host for each device id so that related data sources will 
+			// be associated with the same host.
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN host_id INTEGER REFERENCES tsk_hosts(id)");
+			Statement updateStatement = connection.createStatement();
+			try (ResultSet resultSet = statement.executeQuery("SELECT obj_id, device_id FROM data_source_info")) {
+				Map<String, Long> hostMap = new HashMap<>();
+				long hostIndex = 1;
+				while (resultSet.next()) {
+					long objId = resultSet.getLong("obj_id");
+					String deviceId = resultSet.getString("device_id");
+					
+					if (! hostMap.containsKey(deviceId)) {
+						String hostName = "Host " + hostIndex;
+						updateStatement.execute("INSERT INTO tsk_hosts (name, status) VALUES ('" + hostName + "', 0)");
+						hostMap.put(deviceId, hostIndex);
+						hostIndex++;
+					}
+					updateStatement.execute("UPDATE data_source_info SET host_id = " + hostMap.get(deviceId) + " WHERE obj_id = " + objId);
+				}
+			} finally {
+				closeStatement(updateStatement);
+			}
+			
 			return new CaseDbSchemaVersionNumber(8, 7);
 
 		} finally {
