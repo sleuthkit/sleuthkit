@@ -392,7 +392,8 @@ public class BlackboardAttribute extends AbstractAttribute{
 			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
 			SleuthkitCase sleuthkitCase) {
 
-		super(artifactID, attributeType, valueInt, valueLong, valueDouble, valueString, valueBytes, sleuthkitCase);
+		super(attributeType, valueInt, valueLong, valueDouble, valueString, valueBytes, sleuthkitCase);
+		this.artifactID = artifactID;
 		this.sources = replaceNulls(source);
 		this.context = replaceNulls(context);
 	}

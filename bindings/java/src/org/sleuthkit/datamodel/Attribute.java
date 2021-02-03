@@ -33,6 +33,12 @@ public class Attribute extends AbstractAttribute{
 	private long attributeParentId;
 	
 	/**
+	 * Primary key in the respective attribute table.
+	 */
+	private long id;
+
+	
+	/**
 	 * Constructs an attribute with an integer value. The attribute should be
 	 * added to an appropriate artifact.
 	 *
@@ -129,10 +135,11 @@ public class Attribute extends AbstractAttribute{
 	 * @param sleuthkitCase    A reference to the SleuthkitCase object
 	 *                         representing the case database.
 	 */
-	Attribute(long attributeOwnerId, BlackboardAttribute.Type attributeType,  
+	Attribute(long id, long attributeOwnerId, BlackboardAttribute.Type attributeType,  
 			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
 			SleuthkitCase sleuthkitCase) {
-		super(attributeOwnerId, attributeType, valueInt, valueLong, valueDouble, valueString, valueBytes, sleuthkitCase);
+		super(attributeType, valueInt, valueLong, valueDouble, valueString, valueBytes, sleuthkitCase);
+		this.id = id;
 	}
 
 	/**
@@ -146,10 +153,33 @@ public class Attribute extends AbstractAttribute{
 		return this.attributeParentId;
 	}
 
-	final public void setAttributeParentId(long attributeParentId) {
+	/**
+	 * Set the parent id for this attribute. Parent is defined as the Object 
+	 * to which this attribute is associated with. 
+	 * @param attributeParentId 
+	 */
+	final void setAttributeParentId(long attributeParentId) {
 		this.attributeParentId = attributeParentId;
 	}
 
+	
+	/**
+	 * Returns the Id of the Attribute. 
+	 * @return 
+	 */
+	public long getId() {
+		return id;
+	}
+	
+	
+	/**
+	 * Set the id of the attribute
+	 * @param id 
+	 */
+	void setId(long id) {
+		this.id = id;
+	}
+	
 	@Override
 	public int hashCode() {
 		return Objects.hash(

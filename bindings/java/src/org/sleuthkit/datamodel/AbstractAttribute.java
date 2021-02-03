@@ -177,7 +177,6 @@ abstract class AbstractAttribute {
 	 * based on a query of the blackboard _attributes table in the case
 	 * database.
 	 *
-	 * @param attributeOwnerId The owner id for this attribute.
 	 * @param attributeTypeID  The attribute type id. 
 	 * @param valueType        The attribute value type.
 	 * @param valueInt         The value from the the value_int32 column.
@@ -188,7 +187,7 @@ abstract class AbstractAttribute {
 	 * @param sleuthkitCase    A reference to the SleuthkitCase object
 	 *                         representing the case database.
 	 */
-	AbstractAttribute(long attributeOwnerId, BlackboardAttribute.Type attributeType,
+	AbstractAttribute(BlackboardAttribute.Type attributeType,
 			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
 			SleuthkitCase sleuthkitCase) {
 
@@ -316,7 +315,7 @@ abstract class AbstractAttribute {
 	SleuthkitCase getCaseDatabase() {
 		return this.sleuthkitCase;
 	}
-
+	
 	/**
 	 * Sets the reference to the SleuthkitCase object that represents the case
 	 * database.
