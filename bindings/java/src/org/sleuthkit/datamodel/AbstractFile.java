@@ -1344,10 +1344,10 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Get the obj id of the owner account. 
 	 * 
-	 * @return Object id of the os account, or OsAccount.NO_ACCOUNT
+	 * @return Optional with Object id of the os account, or Optional.empty.
 	 */
-	long getOsAccountObjId() {
-		return osAccountObjId;
+	Optional<Long> getOsAccountObjId() {
+		return Optional.of(osAccountObjId);
 	}
 	
 	/**
@@ -1360,8 +1360,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public Optional<OsAccount> getOsAccount() throws TskCoreException {
 		
 		if (osAccountObjId == null) {
-			Optional.empty();
-			return null;
+			return Optional.empty();
 		}
 		
 		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));

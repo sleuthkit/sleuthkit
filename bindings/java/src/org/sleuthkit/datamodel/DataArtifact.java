@@ -37,10 +37,10 @@ public final class DataArtifact extends BlackboardArtifact {
 	 * 
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
-	 * @param artifactID       The unique id for this artifact
+	 * @param artifactID       The unique id for this artifact.
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
-	 * @param artifactObjId    The unique id this artifact, in tsk_objects
+	 * @param artifactObjId    The object id of artifact, in tsk_objects.
 	 * @param dataSourceObjId  Object ID of the datasource where the artifact
 	 *                         was found.
 	 * @param artifactTypeID   The type id of this artifact.
@@ -61,7 +61,7 @@ public final class DataArtifact extends BlackboardArtifact {
 	 *
 	 * @return Optional with OsAccount, Optional.empty if there is no account.
 	 *
-	 * @throws TskCoreException If there is an error getting the user
+	 * @throws TskCoreException If there is an error getting the account.
 	 */
 	public Optional<OsAccount> getOsAccount() throws TskCoreException {
 		return Optional.ofNullable(osAccount);
