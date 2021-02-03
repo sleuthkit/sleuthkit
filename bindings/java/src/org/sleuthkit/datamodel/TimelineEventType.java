@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018-2019 Basis Technology Corp.
+ * Copyright 2018-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -202,8 +202,12 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK,
-					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL, WEB_FORM_ADDRESSES);
+			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, 
+					WEB_COOKIE_ACCESSED, WEB_COOKIE_START, 
+					WEB_COOKIE_END, WEB_BOOKMARK,
+					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL, 
+					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED, 
+					WEB_FORM_AUTOFILL_ACCESSED);
 		}
 	};
 
@@ -221,7 +225,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				}
 			});
 
-			builder.add(CALL_LOG, DEVICES_ATTACHED, EMAIL,
+			builder.add(CALL_LOG, CALL_LOG_END, DEVICES_ATTACHED, EMAIL, EMAIL_RCVD,
 					EXIF, GPS_BOOKMARK, GPS_LAST_KNOWN_LOCATION, GPS_TRACKPOINT,
 					GPS_ROUTE, GPS_SEARCH, GPS_TRACK, INSTALLED_PROGRAM, LOG_ENTRY, MESSAGE,
 					METADATA_LAST_PRINTED, METADATA_LAST_SAVED, METADATA_CREATED, PROGRAM_EXECUTION,
@@ -258,7 +262,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			getBundle().getString("WebTypes.webCookies.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
-			new Type(TSK_DATETIME),
+			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
 	
 	TimelineEventType WEB_BOOKMARK = new URLArtifactEventType(10,
@@ -358,7 +362,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
 				}
 
-				return stringValueOf(phoneNumber);
+				return "Start: " + stringValueOf(phoneNumber);
 			},
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
 
@@ -376,7 +380,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				if (emailTo.length() > TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
 					emailTo = emailTo.substring(0, TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
 				}
-				return emailFrom + " to " + emailTo; // NON-NLS
+				return "Sent from: " + emailFrom + "Sent to: " + emailTo; // NON-NLS
 			},
 			new AttributeExtractor(new Type(TSK_SUBJECT)),
 			artf -> {
@@ -473,7 +477,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
 				final BlackboardAttribute value = getAttributeSafe(artf, new Type(TSK_VALUE));
 				final BlackboardAttribute count = getAttributeSafe(artf, new Type(TSK_COUNT));
-				return stringValueOf(name) + ":" + stringValueOf(value) + " count: " + stringValueOf(count); // NON-NLS
+				return stringValueOf(name) + ":" + stringValueOf(value); // NON-NLS
 			}, new EmptyExtractor(), new EmptyExtractor());
 
 	TimelineEventType WEB_FORM_ADDRESSES = new URLArtifactEventType(28,
@@ -569,6 +573,91 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				     }
 	                 return "";},
 			new AttributeExtractor(new Type(TSK_COMMENT)));
+	
+	TimelineEventType WEB_FORM_AUTOFILL_ACCESSED = new TimelineEventArtifactTypeImpl(37,
+		getBundle().getString("WebTypes.webFormAutofillAccessed.name"),
+		WEB_ACTIVITY,
+		new BlackboardArtifact.Type(TSK_WEB_FORM_AUTOFILL),
+		new Type(TSK_DATETIME_ACCESSED),
+		artf -> {
+			final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
+			final BlackboardAttribute value = getAttributeSafe(artf, new Type(TSK_VALUE));
+			final BlackboardAttribute count = getAttributeSafe(artf, new Type(TSK_COUNT));
+			return stringValueOf(name) + ":" + stringValueOf(value) + " Access count: " + stringValueOf(count); // NON-NLS
+		}, new EmptyExtractor(), new EmptyExtractor());
+	
+	TimelineEventType CALL_LOG_END = new TimelineEventArtifactTypeImpl(38,
+			getBundle().getString("MiscTypes.CallsEnd.name"), // NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_CALLLOG),
+			new Type(TSK_DATETIME_END),
+			new AttributeExtractor(new Type(TSK_NAME)),
+			artf -> {
+				BlackboardAttribute phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER));
+				if (phoneNumber == null) {
+					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_TO));
+				}
+				if (phoneNumber == null) {
+					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
+				}
+
+				return "End: " + stringValueOf(phoneNumber);
+			},
+			new AttributeExtractor(new Type(TSK_DIRECTION)));
+	
+	TimelineEventType EMAIL_RCVD = new TimelineEventArtifactTypeImpl(38,
+			getBundle().getString("MiscTypes.EmailRcvd.name"), // NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_EMAIL_MSG),
+			new Type(TSK_DATETIME_RCVD),
+			artf -> {
+				String emailFrom = stringValueOf(getAttributeSafe(artf, new Type(TSK_EMAIL_FROM)));
+				if (emailFrom.length() > TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
+					emailFrom = emailFrom.substring(0, TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
+				}
+				String emailTo = stringValueOf(getAttributeSafe(artf, new Type(TSK_EMAIL_TO)));
+				if (emailTo.length() > TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
+					emailTo = emailTo.substring(0, TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
+				}
+				return "Received from: " + emailFrom + " Received by: " + emailTo; // NON-NLS
+			},
+			new AttributeExtractor(new Type(TSK_SUBJECT)),
+			artf -> {
+				final BlackboardAttribute msgAttribute = getAttributeSafe(artf, new Type(TSK_EMAIL_CONTENT_PLAIN));
+				String msg = stringValueOf(msgAttribute);
+				if (msg.length() > TimelineEventArtifactTypeImpl.EMAIL_FULL_DESCRIPTION_LENGTH_MAX) {
+					msg = msg.substring(0, TimelineEventArtifactTypeImpl.EMAIL_FULL_DESCRIPTION_LENGTH_MAX);
+				}
+				return msg;
+			});
+	
+	TimelineEventType WEB_FORM_ADDRESSES_MODIFIED = new URLArtifactEventType(39,
+		getBundle().getString("WebTypes.webFormAddressModified.name"),//NON-NLS
+		WEB_ACTIVITY,
+		new BlackboardArtifact.Type(TSK_WEB_FORM_ADDRESS),
+		new Type(TSK_DATETIME_MODIFIED),
+		new Type(TSK_EMAIL));
+	
+	TimelineEventType WEB_COOKIE_ACCESSED = new URLArtifactEventType(40,
+		getBundle().getString("WebTypes.webCookiesAccessed.name"),// NON-NLS
+		WEB_ACTIVITY,
+		new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+		new Type(TSK_DATETIME_ACCESSED),
+		new Type(TSK_URL));
+		
+	TimelineEventType WEB_COOKIE_END = new URLArtifactEventType(41,
+		getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
+		WEB_ACTIVITY,
+		new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+		new Type(TSK_DATETIME_END),
+		new Type(TSK_URL));
+	
+	TimelineEventType WEB_COOKIE_START = new URLArtifactEventType(42,
+		getBundle().getString("WebTypes.webCookiesStart.name"),// NON-NLS
+		WEB_ACTIVITY,
+		new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+		new Type(TSK_DATETIME_START),
+		new Type(TSK_URL));
 			
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();

@@ -495,11 +495,12 @@ public final class TimelineManager {
 			// if no inserted rows, there is a conflict due to a duplicate event 
 			// description.  If that happens, return null as no id was inserted.
 			if (row < 1) {
-				throw new DuplicateException(String.format(
-						"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
-						fullDescription == null ? "<null>" : fullDescription,
-						fileObjId,
-						artifactID == null ? "<null>" : Long.toString(artifactID)));
+//				throw new DuplicateException(String.format(
+//						"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
+//						fullDescription == null ? "<null>" : fullDescription,
+//						fileObjId,
+//						artifactID == null ? "<null>" : Long.toString(artifactID)));
+
 			}
 
 			try (ResultSet generatedKeys = insertDescriptionStmt.getGeneratedKeys()) {
@@ -518,6 +519,31 @@ public final class TimelineManager {
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
+	}
+	
+	private long getEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
+			String fullDescription, String medDescription, String shortDescription, CaseDbConnection connection) throws SQLException {
+		
+		String query = "SELECT event_description_id FROM tsk_event_descriptions "
+				+ "WHERE data_source_obj_id = " + dataSourceObjId
+				+ " AND content_obj_id = " + fileObjId
+				+ " AND artifact_id = " + artifactID
+				+ " AND full_description " + (fullDescription != null ?  "= '" + fullDescription + "'" : "IS null")
+				+ " AND med_description " + (medDescription != null ?  "= '" + medDescription + "'" : "IS null")
+				+ " AND short_description " + (shortDescription != null ?  "= '" + shortDescription + "'" : "IS null");
+		
+		caseDB.acquireSingleUserCaseReadLock();
+		try(ResultSet resultSet = connection.createStatement().executeQuery(query)) {
+
+			if(resultSet.next()) {
+				long id = resultSet.getLong(1);
+				return id;
+			}
+		} finally {
+			caseDB.releaseSingleUserCaseReadLock();
+		}
+		
+		return -1;
 	}
 
 	Collection<TimelineEvent> addEventsForNewFile(AbstractFile file, CaseDbConnection connection) throws TskCoreException {

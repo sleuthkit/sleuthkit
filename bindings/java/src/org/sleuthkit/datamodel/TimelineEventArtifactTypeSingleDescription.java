@@ -44,7 +44,7 @@ class TimelineEventArtifactTypeSingleDescription extends TimelineEventArtifactTy
 		}
 
 		long time = timeAttribute.getValueLong();
-		return new TimelineEventDescriptionWithTime(time, null, null, description);
+		return new TimelineEventDescriptionWithTime(time, timeAttribute.getDisplayString(), null, description);
 	}
 
 	TimelineEventArtifactTypeSingleDescription(int typeID, String displayName,
