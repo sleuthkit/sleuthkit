@@ -7478,6 +7478,7 @@ public class SleuthkitCase {
 	 * @param atime        The accessed time of the file
 	 * @param mtime        The modified time of the file.
 	 * @param md5          The MD5 hash of the file
+	 * @param sha256       the SHA-256 hash of the file.
 	 * @param known        The known status of the file (can be null)
 	 * @param mimeType     The MIME type of the file
 	 * @param isFile       True, unless the file is a directory.
