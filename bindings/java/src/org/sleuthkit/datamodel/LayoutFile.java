@@ -84,7 +84,7 @@ public class LayoutFile extends AbstractFile {
 	 *                           yet been determined.
 	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountObjId     Obj id of the owner OS account.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
 	LayoutFile(SleuthkitCase db,
 			long objId,
@@ -98,7 +98,7 @@ public class LayoutFile extends AbstractFile {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath, String mimeType,
 			String ownerUid,
-			long osAccountObjId) {
+			Long osAccountObjId) {
 			
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), ownerUid, osAccountObjId, Collections.emptyList());
 	}

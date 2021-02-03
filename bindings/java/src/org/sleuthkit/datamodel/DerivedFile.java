@@ -85,7 +85,7 @@ public class DerivedFile extends AbstractFile {
 	 *                           including the '.'), can be null.
 	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountObjId	 Obj id of the owner OS account.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
 	DerivedFile(SleuthkitCase db,
 			long objId,
@@ -103,7 +103,7 @@ public class DerivedFile extends AbstractFile {
 			TskData.EncodingType encodingType,
 			String extension, 
 			String ownerUid,
-			long osAccountObjId) {
+			Long osAccountObjId) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,

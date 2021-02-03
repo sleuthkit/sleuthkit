@@ -9085,10 +9085,7 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 */
 	org.sleuthkit.datamodel.File file(ResultSet rs, FileSystem fs) throws SQLException {
-		long osAccountObjId = rs.getInt("os_account_obj_id");
-		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_ACCOUNT;
-		}
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
 				
 		org.sleuthkit.datamodel.File f = new org.sleuthkit.datamodel.File(this, rs.getLong("obj_id"), //NON-NLS
 				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS

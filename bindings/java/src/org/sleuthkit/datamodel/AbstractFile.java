@@ -101,7 +101,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private final String ownerUid;	// string owner uid, for example a Windows SID.
 									// different from the numeric uid which is more commonly found 
 									// on Unix based file systems.
-	private final long osAccountObjId; // obj id of the owner's OS account
+	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
@@ -139,7 +139,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
 	 * @param ownerUid			 Owner uid/SID, can be null if not available.
-	 * @param osAccountObjId	 Obj id of the owner OS account.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 * 
 	 */
 	AbstractFile(SleuthkitCase db,
@@ -160,7 +160,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String mimeType,
 			String extension,
 			String ownerUid,
-			long osAccountObjId,
+			Long osAccountObjId,
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
@@ -1352,18 +1352,19 @@ public abstract class AbstractFile extends AbstractContent {
 	
 	/**
 	 * Gets the owner account for the file.
-	 * 
-	 * @return OsAccount  
-	 * 
-	 * @throws TskCoreException  If there is an error getting the account.
+	 *
+	 * @return Optional with OsAccount, Optional.empty if there is no account.
+	 *
+	 * @throws TskCoreException If there is an error getting the account.
 	 */
-	public OsAccount getOsAccount() throws TskCoreException {
+	public Optional<OsAccount> getOsAccount() throws TskCoreException {
 		
-		if (osAccountObjId == OsAccount.NO_ACCOUNT) {
+		if (osAccountObjId == null) {
+			Optional.empty();
 			return null;
 		}
 		
-		return getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId);
+		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));
 	}
 	
 	@Override

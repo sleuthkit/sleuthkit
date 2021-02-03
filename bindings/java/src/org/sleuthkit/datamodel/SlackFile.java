@@ -79,8 +79,7 @@ public class SlackFile extends FsContent {
 	 *                           including the '.'), can be null.
 	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountObjId	 Obj id of the account in the tsk_os_accounts
-	 *                           table.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 * 
 	 */
 	SlackFile(SleuthkitCase db,
@@ -98,7 +97,7 @@ public class SlackFile extends FsContent {
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
 			String extension,
 			String ownerUid,
-			long osAccountObjId) {
+			Long osAccountObjId) {
 		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 	}
 

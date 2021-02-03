@@ -75,7 +75,7 @@ public class Directory extends FsContent {
 	 * @param parentPath         The path of the parent of the file.
 	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
-	 * @param osAccountObjId	 Obj id of the owner OS account.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
 	Directory(SleuthkitCase db,
 			long objId,
@@ -90,7 +90,7 @@ public class Directory extends FsContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, 
-			String ownerUid, long osAccountObjId ) {
+			String ownerUid, Long osAccountObjId ) {
 		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, null, null, ownerUid, osAccountObjId, Collections.emptyList());
 	}
 
