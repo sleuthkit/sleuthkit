@@ -227,7 +227,7 @@ public class LocalFile extends AbstractFile {
 				AbstractContent.UNKNOWN_ID, parentPath,
 				db.getDataSourceObjectId(objId),
 				localPath,
-				TskData.EncodingType.NONE, null, OsAccount.NULL_OWNER_ID, OsAccount.NO_ACCOUNT);
+				TskData.EncodingType.NONE, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 	}
 
 	/**

@@ -36,7 +36,7 @@ public final class OsAccount extends AbstractContent {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	final static Long NO_ACCOUNT = null;
-	final static String NULL_OWNER_ID = null;
+	final static String NO_OWNER_ID = null;
 
 	private final SleuthkitCase sleuthkitCase;
 	
