@@ -480,7 +480,8 @@ class CaseDatabaseFactory {
 		 * include embedded nulls so we have to pay attention to field length.
 		 * http://www.postgresql.org/docs/9.4/static/libpq-example.html
 		 */
-		stmt.execute("CREATE TABLE tsk_file_attributes (obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+		stmt.execute("CREATE TABLE tsk_file_attributes ( id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "attribute_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "value_type INTEGER NOT NULL, value_byte " + dbQueryHelper.getBlobType() + ", "
 				+ "value_text TEXT, value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", value_double NUMERIC(20, 10), "

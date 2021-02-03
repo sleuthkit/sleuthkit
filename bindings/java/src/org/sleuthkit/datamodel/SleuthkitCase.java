@@ -2322,7 +2322,8 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE blackboard_artifact_types ADD COLUMN category_type INTEGER DEFAULT 0");
 
             // Create tsk file attributes table
-			statement.execute("CREATE TABLE tsk_file_attributes (obj_id " + bigIntDataType + " NOT NULL, "
+			statement.execute("CREATE TABLE tsk_file_attributes (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "obj_id " + bigIntDataType + " NOT NULL, "
 					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
 					+ "value_type INTEGER NOT NULL, value_byte " + blobDataType + ", "
 					+ "value_text TEXT, value_int32 INTEGER, value_int64 " + bigIntDataType + ", value_double NUMERIC(20, 10), "
@@ -4139,7 +4140,7 @@ public class SleuthkitCase {
 		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE);
 		statement.clearParameters();
 
-		statement.setLong(1, attr.getAttributeOwnerId());
+		statement.setLong(1, attr.getAttributeParentId());
 		statement.setInt(2, attr.getAttributeType().getTypeID());
 		statement.setLong(3, attr.getAttributeType().getValueType().getType());
 
@@ -4174,7 +4175,11 @@ public class SleuthkitCase {
 			statement.setNull(8, java.sql.Types.DOUBLE);
 		}
  
-		connection.executeUpdate(statement);
+		connection.executeUpdate(statement);		
+		try (ResultSet resultSet = statement.getGeneratedKeys()) {
+			resultSet.next();
+			attr.setId(resultSet.getLong(1));
+		}		
 	}
 
 	/**
@@ -4647,7 +4652,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			Statement statement = connection.createStatement();
-			rs = connection.executeQuery(statement, "SELECT attrs.obj_id AS obj_id, "
+			rs = connection.executeQuery(statement, "SELECT attrs.id as id,  attrs.obj_id AS obj_id, "
 					+ "attrs.attribute_type_id AS attribute_type_id, "
 					+ "attrs.value_type AS value_type, attrs.value_byte AS value_byte, "
 					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
@@ -4671,6 +4676,7 @@ public class SleuthkitCase {
 				}
 
 				final Attribute attr = new Attribute(
+						rs.getLong("id"),
 						rs.getLong("obj_id"),
 						attributeType,
 						rs.getInt("value_int32"),
@@ -6768,7 +6774,7 @@ public class SleuthkitCase {
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
 			for (Attribute fileAttribute : fileAttributes) {
-				fileAttribute.setAttributeOwnerId(objectId); 
+				fileAttribute.setAttributeParentId(objectId);
 				fileAttribute.setCaseDatabase(this);
 				addFileAttribute(fileAttribute, connection);
 			}
