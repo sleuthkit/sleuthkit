@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Optional;
+
 
 /**
  * DataArtifact is a category of artifact types that are simply data directly
@@ -26,9 +28,28 @@ package org.sleuthkit.datamodel;
  */
 public final class DataArtifact extends BlackboardArtifact {
 	
+	// data artifacts may have a OS Account associated with them.
 	private final OsAccount osAccount;
 	
 	
+	/**
+	 *  Constructs a DataArtifact.
+	 * 
+	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
+	 *                         the artifact data.
+	 * @param artifactID       The unique id for this artifact
+	 * @param sourceObjId      The unique id of the content with which this
+	 *                         artifact is associated.
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact
+	 *                         was found.
+	 * @param artifactTypeID   The type id of this artifact.
+	 * @param artifactTypeName The type name of this artifact.
+	 * @param displayName      The display name of this artifact.
+	 * @param reviewStatus     The review status of this artifact.
+	 * @param osAccount        OsAccount associated with this artifact, may be
+	 *                         null.
+	 */
 	DataArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, OsAccount osAccount) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		this.osAccount = osAccount;
@@ -36,14 +57,14 @@ public final class DataArtifact extends BlackboardArtifact {
 	
 	
 	/**
-	 * Gets the user for this artifact.
+	 * Gets the OS Account for this artifact.
 	 *
-	 * @return OsAccount
+	 * @return Optional with OsAccount, Optional.empty if there is no account.
 	 *
 	 * @throws TskCoreException If there is an error getting the user
 	 */
-	public OsAccount getOsAccount() throws TskCoreException {
-		return osAccount;
+	public Optional<OsAccount> getOsAccount() throws TskCoreException {
+		return Optional.ofNullable(osAccount);
 	}
 	
 	

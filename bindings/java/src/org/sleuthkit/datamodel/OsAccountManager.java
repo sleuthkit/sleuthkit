@@ -90,7 +90,7 @@ public final class OsAccountManager {
 				realm = Optional.of(db.getOsAccountRealmManager().createRealmByName(realmName, host));
 			}
 
-			return createOsAccount(uniqueAccountId, loginName, realm.get(), connection);
+			return createOsAccount(uniqueAccountId, loginName, realm.get(), OsAccount.OsAccountStatus.UNKNOWN,  connection);
 		} catch (SQLException ex) {
 
 			// Create may fail if an OsAccount already exists. 
@@ -165,13 +165,14 @@ public final class OsAccountManager {
 	 * @param uniqueId     Account sid/uid. May be null.
 	 * @param loginName    Login name. May be null only if SID is not null.
 	 * @param realm	       Realm.
+	 * @param accountStatus Account status.
 	 * @param connection   Database connection to use.
 	 *
 	 * @return OS account.
 	 *
 	 * @throws TskCoreException
 	 */
-	private OsAccount createOsAccount(String uniqueId, String loginName, OsAccountRealm realm, CaseDbConnection connection) throws TskCoreException, SQLException {
+	private OsAccount createOsAccount(String uniqueId, String loginName, OsAccountRealm realm, OsAccount.OsAccountStatus accountStatus, CaseDbConnection connection) throws TskCoreException, SQLException {
 
 		if (Objects.isNull(realm)) {
 			throw new IllegalArgumentException("Cannot create an OS Account, realm is NULL.");
@@ -202,8 +203,8 @@ public final class OsAccountManager {
 			
 			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
 			
-			String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, unique_id, signature)"
-					+ " VALUES (?, ?, ?, ?, ?)"; // NON-NLS
+			String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, unique_id, signature, status)"
+					+ " VALUES (?, ?, ?, ?, ?, ?)"; // NON-NLS
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
@@ -219,11 +220,11 @@ public final class OsAccountManager {
 
 			preparedStatement.setString(4, uniqueId);
 			preparedStatement.setString(5, signature);
+			preparedStatement.setInt(6, accountStatus.getId());	
 
 			connection.executeUpdate(preparedStatement);
 
-			return new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature);
-			
+			return new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature, accountStatus );
 		}  finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -481,7 +482,7 @@ public final class OsAccountManager {
 				realm = Optional.of(db.getOsAccountRealmManager().createRealmByWindowsSid(sid, host));
 			}
 
-			return createOsAccount(sid, null, realm.get(), connection);
+			return createOsAccount(sid, null, realm.get(), OsAccount.OsAccountStatus.UNKNOWN, connection);
 		} catch (SQLException ex) {
 
 			// Create may fail if an OsAccount already exists. 
@@ -560,7 +561,7 @@ public final class OsAccountManager {
 				realm = Optional.of(db.getOsAccountRealmManager().createRealmByName(realmName, host));
 			}
 
-			return createOsAccount(null, loginName, realm.get(), connection);
+			return createOsAccount(null, loginName, realm.get(), OsAccount.OsAccountStatus.UNKNOWN, connection);
 		} catch (SQLException ex) {
 
 			// Create may fail if an OsAccount already exists. 
@@ -797,7 +798,7 @@ public final class OsAccountManager {
 	 */
 	private OsAccount osAccountFromResultSet(ResultSet rs, OsAccountRealm realm) throws SQLException {
 		
-		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"));
+		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"), OsAccount.OsAccountStatus.fromID(rs.getInt("status")));
 		
 		// set other optional fields
 		

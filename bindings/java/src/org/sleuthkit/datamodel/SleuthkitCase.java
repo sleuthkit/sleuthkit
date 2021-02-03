@@ -2330,10 +2330,10 @@ public class SleuthkitCase {
 
 			
 			statement.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + bigIntDataType + " PRIMARY KEY, "
-					+ "login_name TEXT, " // login name, if available, may be null
+					+ "login_name TEXT DEFAULT NULL, " // login name, if available, may be null
 					+ "full_name TEXT DEFAULT NULL, " // full name, if available, may be null
 					+ "realm_id " + bigIntDataType + ", " // row id for the realm, may be null if only SID is known 
-					+ "unique_id TEXT, " // SID/UID, if available
+					+ "unique_id TEXT DEFAULT NULL, " // SID/UID, if available
 					+ "signature TEXT NOT NULL, " // realm/loginname or sid 
 					+ "status INTEGER, " // enabled/disabled/deleted
 					+ "admin INTEGER DEFAULT 0," // is admin account
@@ -6060,7 +6060,7 @@ public class SleuthkitCase {
 			//extension, since this is not really file we just set it to null
 			statement.setString(21, null);
 			
-			statement.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+			statement.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 			
 			connection.executeUpdate(statement);
@@ -6196,7 +6196,7 @@ public class SleuthkitCase {
 			//extension, since this is a directory we just set it to null
 			statement.setString(21, null);
 
-			statement.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+			statement.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 			
 			connection.executeUpdate(statement);
@@ -6281,7 +6281,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(19, parentPath);
 			preparedStatement.setLong(20, newObjId);
 			preparedStatement.setString(21, null); //extension, just set it to null
-			preparedStatement.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+			preparedStatement.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 			preparedStatement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 			connection.executeUpdate(preparedStatement);
 
@@ -6726,7 +6726,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
+					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, OsAccount.NULL_OWNER_ID, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
@@ -6741,7 +6741,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, null, parentPath, mimeType,
-					extension, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT, fileAttributes);
+					extension, OsAccount.NULL_OWNER_ID, OsAccount.NO_ACCOUNT, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
@@ -6858,7 +6858,7 @@ public class SleuthkitCase {
 				//extension, since this is not a FS file we just set it to null
 				prepStmt.setString(21, null);
 				
-				prepStmt.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+				prepStmt.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 				prepStmt.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 				
 				connection.executeUpdate(prepStmt);
@@ -6894,7 +6894,7 @@ public class SleuthkitCase {
 						FileKnown.UNKNOWN,
 						parent.getUniquePath(),
 						null,
-						OsAccount.NULL_UID_STR,
+						OsAccount.NULL_OWNER_ID,
 						OsAccount.NO_ACCOUNT));
 			}
 
@@ -7047,7 +7047,7 @@ public class SleuthkitCase {
 				prepStmt.setLong(20, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
 				prepStmt.setString(21, extractExtension(carvedFile.getName())); //extension
 				
-				prepStmt.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+				prepStmt.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 				prepStmt.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 				
 				connection.executeUpdate(prepStmt);
@@ -7085,7 +7085,7 @@ public class SleuthkitCase {
 						FileKnown.UNKNOWN,
 						parentPath,
 						null,
-						OsAccount.NULL_UID_STR,
+						OsAccount.NULL_OWNER_ID,
 						OsAccount.NO_ACCOUNT));
 			}
 
@@ -7229,7 +7229,7 @@ public class SleuthkitCase {
 			//extension
 			statement.setString(21, extension);
 			
-			statement.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+			statement.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 
 			connection.executeUpdate(statement);
@@ -7238,7 +7238,7 @@ public class SleuthkitCase {
 			addFilePath(connection, newObjId, localPath, encodingType);
 
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
+					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NULL_OWNER_ID, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			transaction.commit();
@@ -7531,7 +7531,7 @@ public class SleuthkitCase {
 			final String extension = extractExtension(fileName);
 			statement.setString(21, extension);
 
-			statement.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+			statement.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 
 			connection.executeUpdate(statement);
@@ -7551,7 +7551,7 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension, 
-					OsAccount.NULL_UID_STR, OsAccount.NO_ACCOUNT);
+					OsAccount.NULL_OWNER_ID, OsAccount.NO_ACCOUNT);
 			getTimelineManager().addEventsForNewFile(localFile, connection);
 			return localFile;
 
@@ -7704,7 +7704,7 @@ public class SleuthkitCase {
 
 			prepStmt.setString(21, extractExtension(fileName)); 				//extension
 			
-			prepStmt.setString(22, OsAccount.NULL_UID_STR); // ownerUid
+			prepStmt.setString(22, OsAccount.NULL_OWNER_ID); // ownerUid
 			prepStmt.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 			
 			connection.executeUpdate(prepStmt);
@@ -7742,7 +7742,7 @@ public class SleuthkitCase {
 					FileKnown.UNKNOWN,
 					parentPath,
 					null,
-					OsAccount.NULL_UID_STR,
+					OsAccount.NULL_OWNER_ID,
 					OsAccount.NO_ACCOUNT);
 
 			transaction.commit();

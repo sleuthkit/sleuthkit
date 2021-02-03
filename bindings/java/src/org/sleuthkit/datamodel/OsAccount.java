@@ -33,7 +33,7 @@ import java.util.Set;
 public final class OsAccount extends AbstractContent {
 
 	final static long NO_ACCOUNT = -1;
-	final static String NULL_UID_STR = null;
+	final static String NULL_OWNER_ID = null;
 
 	private final SleuthkitCase sleuthkitCase;
 	
@@ -49,7 +49,7 @@ public final class OsAccount extends AbstractContent {
 	private String fullName;	// full name
 	private boolean isAdmin = false;	// is admin account.
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
-	private OsAccountStatus osAccountStatus = OsAccountStatus.UNKNOWN;
+	private OsAccountStatus osAccountStatus;
 	private long creationTime = 0;
 
 	private final List<OsAccountAttribute> osAccountAttributes = new ArrayList<>();
@@ -86,7 +86,7 @@ public final class OsAccount extends AbstractContent {
 		 *
 		 * @return
 		 */
-		String getName() {
+		public String getName() {
 			return name;
 		}
 
@@ -226,8 +226,9 @@ public final class OsAccount extends AbstractContent {
 	 *                       be null, only if login name is not null.
 	 * @param signature	     A unique signature constructed from realm id and
 	 *                       loginName or uniqueId.
+	 * @param accountStatus  Account status.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature) {
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature, OsAccountStatus accountStatus) {
 		
 		super(sleuthkitCase, osAccountobjId, signature);
 		
@@ -237,6 +238,7 @@ public final class OsAccount extends AbstractContent {
 		this.loginName = loginName;
 		this.uniqueId = uniqueId;
 		this.signature = signature;
+		this.osAccountStatus = accountStatus;
 	}
 
 	/**
@@ -402,6 +404,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @return The SleuthKit case object.
 	 */
+	@Override
 	public SleuthkitCase getSleuthkitCase() {
 		return sleuthkitCase;
 	}
