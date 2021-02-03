@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.Set;
 
 /**
@@ -31,6 +32,8 @@ import java.util.Set;
  *
  */
 public final class OsAccount extends AbstractContent {
+	
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	final static long NO_ACCOUNT = -1;
 	final static String NULL_OWNER_ID = null;
@@ -59,10 +62,10 @@ public final class OsAccount extends AbstractContent {
 	 * deleted.
 	 */
 	public enum OsAccountStatus {
-		UNKNOWN(0, "Unknown"),
-		ACTIVE(1, "Active"),
-		DISABLED(2, "Disabled"),
-		DELETED(3, "Deleted");
+		UNKNOWN(0, bundle.getString("OsAccountStatus.Unknown.text")),
+		ACTIVE(1, bundle.getString("OsAccountStatus.Active.text")),
+		DISABLED(2, bundle.getString("OsAccountStatus.Disabled.text")),
+		DELETED(3, bundle.getString("OsAccountStatus.Deleted.text"));
 
 		private final int id;
 		private final String name;
@@ -108,13 +111,13 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Encapsulates an account type - whether its an interactive login account
+	 * Encapsulates an account type - whether it's an interactive login account
 	 * or a service account.
 	 */
 	public enum OsAccountType {
-		UNKNOWN(0, "Unknown"),
-		SERVICE(1, "Service"),
-		INTERACTIVE(2, "Interactive");
+		UNKNOWN(0, bundle.getString("OsAccountType.Unknown.text")),
+		SERVICE(1, bundle.getString("OsAccountType.Service.text")),
+		INTERACTIVE(2, bundle.getString("OsAccountType.Interactive.text"));
 
 		private final int id;
 		private final String name;
@@ -167,8 +170,8 @@ public final class OsAccount extends AbstractContent {
 	 * just a reference to it was found on the host.
 	 */
 	public enum OsAccountInstanceType {
-		PERFORMED_ACTION_ON(0, "PerformedActionOn"), // the user performed actions on a host
-		REFERENCED_ON(1, "ReferencedOn");	// user was simply referenced on a host
+		PERFORMED_ACTION_ON(0, bundle.getString("OsAccountInstanceType.PerformedActionOn.text")), // the user performed actions on a host
+		REFERENCED_ON(1, bundle.getString("OsAccountInstanceType.ReferencedOn.text") );	// user was simply referenced on a host
 
 		private final int id;
 		private final String name;
