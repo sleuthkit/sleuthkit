@@ -221,9 +221,9 @@ public final class HostManager {
 	 * 
 	 * @param dataSource The data source to look up the host for.
 	 * 
-	 * @return Optional with host.  Optional.empty if no matching host is found.
+	 * @return The host for this data source (will not be null).
 	 * 
-	 * @throws TskCoreException 
+	 * @throws TskCoreException if no host is found or an error occurs.
 	 */
 	Host getHost(DataSource dataSource) throws TskCoreException {
 
