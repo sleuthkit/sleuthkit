@@ -2368,8 +2368,8 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
 					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 
-			statement.execute("CREATE TABLE tsk_data_artifact ( "
-					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
+			statement.execute("CREATE TABLE tsk_data_artifacts ( "
+					+ "artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");

@@ -265,7 +265,7 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Sets account type for the account.
 	 *
-	 * @param osAccountType Account type..
+	 * @param osAccountType Account type.
 	 */
 	public void setOsAccountType(OsAccountType osAccountType) {
 		this.osAccountType = osAccountType;
@@ -291,9 +291,10 @@ public final class OsAccount extends AbstractContent {
 
 	/**
 	 * Set the signature.
-	 * 
-	 * signature may changes if the login name or unique id is updated after creation.
-	 * 
+	 *
+	 * The signature may change if the login name or unique id is updated after
+	 * creation.
+	 *
 	 * @param signature Signature.
 	 */
 	void setSignature(String signature) {

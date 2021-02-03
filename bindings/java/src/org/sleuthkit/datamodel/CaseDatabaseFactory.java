@@ -470,8 +470,8 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 		
-		stmt.execute("CREATE TABLE tsk_data_artifact ( "
-				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+		stmt.execute("CREATE TABLE tsk_data_artifacts ( "
+				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");	
