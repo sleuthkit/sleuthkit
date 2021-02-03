@@ -146,8 +146,8 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 */
 	OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
 			SleuthkitCase sleuthkitCase, long osAccountObjId, long sourceObjId, Long hostId) {
-
-		super(osAccountObjId, attributeType,
+		
+		super( attributeType,
 				valueInt, valueLong, valueDouble, valueString, valueBytes,
 				sleuthkitCase);
 		this.osAccountObjId = osAccountObjId;

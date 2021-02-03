@@ -671,7 +671,7 @@ public final class OsAccountManager {
 				} else {
 					preparedStatement.setNull(2, java.sql.Types.BIGINT);
 				}
-				preparedStatement.setLong(3, accountAttribute.getAttributeOwnerId());
+				preparedStatement.setLong(3, accountAttribute.getSourceObjId());
 
 				preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
 				preparedStatement.setLong(5, accountAttribute.getAttributeType().getValueType().getType());
