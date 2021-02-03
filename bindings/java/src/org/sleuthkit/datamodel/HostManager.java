@@ -26,6 +26,7 @@ import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -70,6 +71,77 @@ public final class HostManager {
 			throw ex;
 		}
 	}	
+	
+	/**
+	 * Get or create host with specified name.
+	 *
+	 * @param name	       Host name.
+	 * @param transaction Database transaction to use.
+	 *
+	 * @return Host with the specified name.
+	 *
+	 * @throws TskCoreException
+	 * 
+	 * @deprecated This method has been deprecated.  
+	 * Callers should use getHost() followed by createHost if needed.
+	 */
+	// RAMAN TBD: this method need to be deleted when the client code in Sleuthkit 
+	//   is refactroed to use the get/create methods instead of getOrCreate
+	@Deprecated
+	Host getOrCreateHost(String name, CaseDbTransaction transaction) throws TskCoreException  {
+		
+		// must have a name
+		if (Strings.isNullOrEmpty(name) ) {
+			throw new IllegalArgumentException("Host name is required.");
+		}
+
+		CaseDbConnection connection = transaction.getConnection();
+
+		// First search for host by name
+		Optional<Host> host = getHost(name, connection);
+		if (host.isPresent()) {
+			return host.get();
+		}
+
+		// couldn't find it, create a new host
+		return createHost(name, connection);
+	}
+	
+	/**
+	 * Create a host with given name.
+	 * 
+	 * @param name Host name.
+	 * @param connection Database connection to use. 
+	 * @return Newly created host.
+	 * @throws TskCoreException 
+	 */
+	// RAMAN TBD: this method needs to be deleted when getOrCreateHost is deleted.
+	private Host createHost(String name, CaseDbConnection connection) throws TskCoreException {
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
+			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
+
+			preparedStatement.clearParameters();
+			preparedStatement.setString(1, name);
+
+			connection.executeUpdate(preparedStatement);
+
+			// Read back the row id
+			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
+				if (resultSet.next()) {
+					return new Host(resultSet.getLong(1), name); //last_insert_rowid()
+				} else {
+					throw new SQLException("Error executing  " + hostInsertSQL);
+				}
+			}
+		} catch (SQLException ex) {
+			LOGGER.log(Level.SEVERE, null, ex);
+			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+	}
 	
 	/**
 	 * Get all data sources associated with a given host.
