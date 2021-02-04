@@ -212,8 +212,8 @@ class CaseDatabaseFactory {
 				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, "
 				+ "known INTEGER, "
 				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
-				+ "owner_uid TEXT, "
-				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + ", "
+				+ "owner_uid TEXT DEFAULT NULL, "
+				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
@@ -281,7 +281,7 @@ class CaseDatabaseFactory {
 	}
 	
 	private void createAnalysisResultsTables(Statement stmt) throws SQLException  {
-		stmt.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+		stmt.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "conclusion TEXT, "
 				+ "significance INTEGER NOT NULL, "
 				+ "confidence INTEGER NOT NULL, "
@@ -290,7 +290,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
 				+ ")");		
 		
-		stmt.execute("CREATE TABLE tsk_aggregate_score( obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+		stmt.execute("CREATE TABLE tsk_aggregate_score( obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "significance INTEGER NOT NULL, "
 				+ "confidence INTEGER NOT NULL, "
@@ -442,7 +442,7 @@ class CaseDatabaseFactory {
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "admin INTEGER DEFAULT 0," // is admin account
 				+ "type INTEGER, "	// service/interactive
-				+ "created_date " + dbQueryHelper.getBigIntType() + ", "		
+				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "		
 				+ "UNIQUE(signature), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
@@ -474,7 +474,7 @@ class CaseDatabaseFactory {
 		
 		stmt.execute("CREATE TABLE tsk_data_artifacts ( "
 				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
-				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");	
 	}

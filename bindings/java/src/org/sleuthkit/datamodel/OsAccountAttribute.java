@@ -30,18 +30,18 @@ public final class OsAccountAttribute extends AbstractAttribute {
 
 	private final long osAccountObjId;	// OS account to which this attribute belongs.
 	private final Long hostId; // Host to which this attribute applies, may be null
-	private final long sourceObjId; // Object id of the source where the attribute was discoevered.
+	private final long sourceObjId; // Object id of the source where the attribute was discovered.
 
 	/**
 	 * Creates an os account attribute with int value.
 	 *
 	 * @param attributeType  Attribute type.
 	 * @param valueInt	      Int value.
-	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
+	 * @param osAccountObjId Obj id of account which the attribute pertains to. 
 	 * @param hostId         Id of host on which the attribute applies to. Pass
 	 *                       Null if it applies across hosts.
+	 * @param sourceObjId    Object id of the source where the attribute was
+	 *                       found.
 	 */
 	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueInt);
@@ -57,10 +57,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param attributeType  Attribute type.
 	 * @param valueLong	     Long value.
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
 	 * @param hostId         Id of host on which the attribute applies to. Pass
 	 *                       Null if it applies across hosts.
+	 * @param sourceObjId    Object id of the source where the attribute was
+	 *                       found.
 	 */
 	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueLong);
@@ -76,10 +76,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param attributeType  Attribute type.
 	 * @param valueDouble    Double value.
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
 	 * @param hostId         Id of host on which the attribute applies to. Pass
 	 *                       Null if it applies across hosts.
+	 * @param sourceObjId    Object id of the source where the attribute was
+	 *                       found.
 	 */
 	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueDouble);
@@ -95,10 +95,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param attributeType  Attribute type.
 	 * @param valueString    String value.
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
 	 * @param hostId         Id of host on which the attribute applies to. Pass
 	 *                       Null if it applies across hosts.
+	 * @param sourceObjId    Object id of the source where the attribute was
+	 *                       found.
 	 */
 	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueString);
@@ -114,10 +114,10 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param attributeType  Attribute type.
 	 * @param valueBytes     Bytes value.
 	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
 	 * @param hostId         Id of host on which the attribute applies to. Pass
 	 *                       Null if it applies across hosts.
+	 * @param sourceObjId    Object id of the source where the attribute was
+	 *                       found.
 	 */
 	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountObjId, Long hostId, long sourceObjId) {
 		super(attributeType, valueBytes);
@@ -145,7 +145,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *                       Null if it applies across hosts.
 	 */
 	OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
-			SleuthkitCase sleuthkitCase, long osAccountObjId, long sourceObjId, Long hostId) {
+			SleuthkitCase sleuthkitCase, long osAccountObjId, Long hostId, long sourceObjId) {
 		
 		super( attributeType,
 				valueInt, valueLong, valueDouble, valueString, valueBytes,

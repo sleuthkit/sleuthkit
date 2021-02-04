@@ -252,14 +252,14 @@ public class OsAccountTest {
 			
 			// Let's update osAccount1
 			String fullName1 = "Johnny Depp";
-			long creationTime1 = 1611858618;
+			Long creationTime1 = 1611858618L;
 			osAccount1.setCreationTime(creationTime1);
 			osAccount1.setFullName(fullName1);
 			osAccount1.setIsAdmin(true);
 			
 			osAccount1 = caseDB.getOsAccountManager().updateAccount(osAccount1, transaction);
 			
-			assertEquals(osAccount1.getCreationTime(), creationTime1);
+			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);
 			
 			
 			transaction.commit();
@@ -279,7 +279,7 @@ public class OsAccountTest {
 			
 			assertEquals(osAccount1_copy1.isAdmin(), true); // should be true now
 			assertEquals(osAccount1_copy1.getFullName().orElse("").equalsIgnoreCase(fullName1), true);
-			assertEquals(osAccount1_copy1.getCreationTime(), creationTime1);
+			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);
 			
 		}
 		

@@ -2357,7 +2357,7 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 
 			// create analysis results tables
-			statement.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + bigIntDataType + " NOT NULL, "
+			statement.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "conclusion TEXT, "
 					+ "significance INTEGER NOT NULL, "
 					+ "confidence INTEGER NOT NULL, "
@@ -2366,7 +2366,7 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
 					+ ")");
 
-			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " NOT NULL, "
+			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "significance INTEGER NOT NULL, "
 					+ "confidence INTEGER NOT NULL, "
@@ -2383,7 +2383,7 @@ public class SleuthkitCase {
 					+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
 					+ "UNIQUE(name)) ");
 
-			// Create OS Account and realted tables 
+			// Create OS Account and related tables 
 			statement.execute("CREATE TABLE tsk_os_account_realms (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "name TEXT NOT NULL, " // realm name - host name or domain name
 					+ "realm_addr TEXT DEFAULT NULL, " // a sid/uid or some some other unique identifier, may be null
@@ -2402,7 +2402,7 @@ public class SleuthkitCase {
 					+ "status INTEGER, " // enabled/disabled/deleted
 					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
-					+ "created_date " + bigIntDataType + ", "
+					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
 					+ "UNIQUE(signature), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
@@ -2434,13 +2434,13 @@ public class SleuthkitCase {
 
 			statement.execute("CREATE TABLE tsk_data_artifacts ( "
 					+ "artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
-					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "os_account_obj_id " + bigIntDataType + ", "
 					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");
 
 			// add owner_uid & os_account_obj_id columns to tsk_files
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN owner_uid TEXT DEFAULT NULL");
-			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_obj_id " + bigIntDataType + " REFERENCES tsk_os_accounts(os_account_obj_id) DEFAULT NULL");
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_obj_id " + bigIntDataType + " DEFAULT NULL REFERENCES tsk_os_accounts(os_account_obj_id) DEFAULT NULL");
 
 
 			return new CaseDbSchemaVersionNumber(8, 7);
@@ -9212,10 +9212,7 @@ public class SleuthkitCase {
 						parentPath = "/"; //NON-NLS
 					}
 					
-					long osAccountObjId = rs.getInt("os_account_obj_id");
-					if (rs.wasNull()) {
-						osAccountObjId = OsAccount.NO_ACCOUNT;
-					}
+					Long osAccountObjId = rs.getLong("os_account_obj_id");
 		
 					LayoutFile lf = new LayoutFile(this,
 							rs.getLong("obj_id"), //NON-NLS
@@ -9293,10 +9290,7 @@ public class SleuthkitCase {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
-		long osAccountObjId = rs.getInt("os_account_obj_id");
-		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_ACCOUNT;
-		}
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
 		
 		Directory dir = new Directory(this, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
@@ -9446,10 +9440,7 @@ public class SleuthkitCase {
 			parentPath = "";
 		}
 		
-		long osAccountObjId = rs.getInt("os_account_obj_id");
-		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_ACCOUNT;
-		}
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
 				
 		final DerivedFile df = new DerivedFile(this, objId, rs.getLong("data_source_obj_id"),
 				rs.getString("name"), //NON-NLS
@@ -9505,10 +9496,7 @@ public class SleuthkitCase {
 		if (null == parentPath) {
 			parentPath = "";
 		}
-		long osAccountObjId = rs.getInt("os_account_obj_id");
-		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_ACCOUNT;
-		}
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
 		
 		LocalFile file = new LocalFile(this, objId, rs.getString("name"), //NON-NLS
 				TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
@@ -9536,10 +9524,7 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 */
 	org.sleuthkit.datamodel.SlackFile slackFile(ResultSet rs, FileSystem fs) throws SQLException {
-		long osAccountObjId = rs.getInt("os_account_obj_id");
-		if (rs.wasNull()) {
-			osAccountObjId = OsAccount.NO_ACCOUNT;
-		}
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
 		org.sleuthkit.datamodel.SlackFile f = new org.sleuthkit.datamodel.SlackFile(this, rs.getLong("obj_id"), //NON-NLS
 				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
@@ -9606,10 +9591,7 @@ public class SleuthkitCase {
 						if (parentPath == null) {
 							parentPath = "";
 						}
-						long osAccountObjId = rs.getInt("os_account_obj_id");
-						if (rs.wasNull()) {
-							osAccountObjId = OsAccount.NO_ACCOUNT;
-						}
+						Long osAccountObjId = rs.getLong("os_account_obj_id");
 						final LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 								rs.getLong("data_source_obj_id"), rs.getString("name"), type,
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),

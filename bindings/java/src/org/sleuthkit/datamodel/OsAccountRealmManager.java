@@ -57,7 +57,7 @@ public final class OsAccountRealmManager {
 	 *
 	 * @param realmName Realm name.
 	 * @param host      Host that realm reference was found on. May be null if
-	 *                  you know the realm is a domain and not host-specific.
+	 *                  the realm is a domain and not host-specific.
 	 *
 	 * @return OsAccountRealm Realm.
 	 *
@@ -78,7 +78,7 @@ public final class OsAccountRealmManager {
 				if (accountRealm.isPresent()) {
 					return accountRealm.get();
 				} else {
-					throw new TskCoreException(String.format("Error creating realm with name = %s", realmName), ex);
+					throw new TskCoreException(String.format("Error creating realm with name = %s and host name = %s", realmName, (host != null ? host.getName() : "null")), ex);
 				}
 			}
 		}
@@ -121,17 +121,14 @@ public final class OsAccountRealmManager {
 		}
 		
 		// get subAuthority sid
-		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
-			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
-		}
-		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));
+		String subAuthorityId = getSubAuthorityId(sid);
 		
 		// RAMAN TBD: can the SID be parsed in some way to determine local vs domain ??
 			
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return createRealm("Unknown Domain Name", OsAccountRealm.RealmNameType.INFERRED, subAuthorityId, host, connection);
 		} catch (SQLException ex) {
-			// Create may have failed if the realm already exists. try to get the realm by name.
+			// Create may have failed if the realm already exists. try to get the realm by addr.
 			try (CaseDbConnection connection = this.db.getConnection()) {
 				Optional<OsAccountRealm >accountRealm = this.getRealmByAddr(subAuthorityId, host, connection);
 				if (accountRealm.isPresent()) {
@@ -148,8 +145,8 @@ public final class OsAccountRealmManager {
 	 * Get the realm for the given user/group SID. The input SID is a user/group
 	 * SID. The domain SID is extracted from this incoming SID.
 	 * 
-	 * @param sid user SID.
-	 * @param host Host for realm, may be null.
+	 * @param sid         User SID.
+	 * @param host        Host for realm, may be null.
 	 * @param transaction Transaction to use for database connection.
 	 * 
 	 * @return Optional with OsAccountRealm, Optional.empty if no realm found with matching real address.
@@ -159,10 +156,7 @@ public final class OsAccountRealmManager {
 	public Optional<OsAccountRealm> getRealmByWindowsSid(String sid, Host host, CaseDbTransaction transaction) throws TskCoreException {
 		
 		// get subAuthority sid
-		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
-			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
-		}
-		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));
+		String subAuthorityId = getSubAuthorityId(sid);
 		
 		CaseDbConnection connection = transaction.getConnection();
 		return this.getRealmByAddr(subAuthorityId, host, connection);
@@ -194,14 +188,13 @@ public final class OsAccountRealmManager {
 
 			return getRealm(realmId, connection );
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
 			throw new TskCoreException(String.format("Error updating realm with name = %s, id = %d", realmName, realmId), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 	
-	private final String REALM_QUERY_STRING = "SELECT realms.id as realm_id, realms.name as realm_name,"
+	private final static String REALM_QUERY_STRING = "SELECT realms.id as realm_id, realms.name as realm_name,"
 			+ " realms.realm_addr as realm_addr, realms.host_id, realms.name_type, "
 			+ " hosts.id, hosts.name as host_name "
 			+ " FROM tsk_os_account_realms as realms"
@@ -227,6 +220,8 @@ public final class OsAccountRealmManager {
 			OsAccountRealm accountRealm = null;
 			if (rs.next()) { 
 				accountRealm = resultSetToAccountRealm(rs);
+			} else {
+				throw new TskCoreException(String.format("No realm found with id = %d", id));
 			}
 
 			return accountRealm;
@@ -248,6 +243,8 @@ public final class OsAccountRealmManager {
 	 */
 	Optional<OsAccountRealm> getRealmByAddr(String realmAddr, Host host, CaseDbConnection connection) throws TskCoreException {
 		
+		// If a host is specified, we want to match the realm with matching name and specified host, or a realm with matching name and no host.
+		// If no host is specified, then we return the first realm with matching name.
 		String whereHostClause = (host == null) 
 							? " 1 = 1 " 
 							: " ( realms.host_id = " + host.getId() + " OR realms.host_id IS NULL) ";
@@ -277,7 +274,8 @@ public final class OsAccountRealmManager {
 			} 
 			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error running the realms query = %s", queryString), ex);
+			throw new TskCoreException(String.format("Error running the realms query = %s with realmaddr = %s and host name = %s", 
+														queryString, realmAddr, (host != null ? host.getName() : "Null")  ), ex);
 		}
 	}
 	
@@ -293,6 +291,8 @@ public final class OsAccountRealmManager {
 	 */
 	Optional<OsAccountRealm> getRealmByName(String realmName, Host host, CaseDbConnection connection) throws TskCoreException {
 		
+		// If a host is specified, we want to match the realm with matching name and specified host, or a realm with matching name and no host.
+		// If no host is specified, then we return the first realm with matching name.
 		String whereHostClause = (host == null) 
 							? " 1 = 1 " 
 							: " ( realms.host_id = " + host.getId() + " OR realms.host_id IS NULL ) ";
@@ -348,11 +348,11 @@ public final class OsAccountRealmManager {
 				rs.getString("realm_addr"), realmhost);
 	}
 	
-	/**
-	 * Get all realms.
-	 * 
-	 * @return Collection of OsAccountRealm
-	 */
+//	/**
+//	 * Get all realms.
+//	 * 
+//	 * @return Collection of OsAccountRealm
+//	 */
 //	Collection<OsAccountRealm> getRealms() throws TskCoreException {
 //		String queryString = "SELECT realms.id as realm_id, realms.name as realm_name, realms.realm_addr as realm_addr, realms.host_id, realms.name_type, "
 //				+ " hosts.id, hosts.name as host_name "
@@ -421,15 +421,27 @@ public final class OsAccountRealmManager {
 
 			// Read back the row id
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
-				if (resultSet.next()) {
-					long rowId = resultSet.getLong(1); ;//last_insert_rowid()
-					return  new OsAccountRealm(rowId, realmName, nameType, realmAddr, host);
-				} else {
-					throw new SQLException("Error executing  " + realmInsertSQL);
-				}
+				long rowId = resultSet.getLong(1); // last_insert_rowid()
+				return  new OsAccountRealm(rowId, realmName, nameType, realmAddr, host);
 			}
 		}  finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+	}
+	
+	/**
+	 * Gets the sub authority id from the given SID.
+	 * 
+	 * @param sid SID
+	 * 
+	 * @return Sub-authority id string.
+	 */
+	private String getSubAuthorityId(String sid) {
+			if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
+			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
+		}
+		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));
+		
+		return subAuthorityId;
 	}
 }

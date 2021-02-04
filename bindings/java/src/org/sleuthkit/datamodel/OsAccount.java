@@ -53,7 +53,7 @@ public final class OsAccount extends AbstractContent {
 	private boolean isAdmin = false;	// is admin account.
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
 	private OsAccountStatus osAccountStatus;
-	private long creationTime = 0;
+	private Long creationTime = null;
 
 	private final List<OsAccountAttribute> osAccountAttributes = new ArrayList<>();
 
@@ -132,7 +132,7 @@ public final class OsAccount extends AbstractContent {
 		 *
 		 * @return Account type id.
 		 */
-		int getId() {
+		public int getId() {
 			return id;
 		}
 
@@ -141,7 +141,7 @@ public final class OsAccount extends AbstractContent {
 		 *
 		 * @return Account type name.
 		 */
-		String getName() {
+		public String getName() {
 			return name;
 		}
 
@@ -371,8 +371,8 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @return Account creation time, returns 0 if creation time is not known.
 	 */
-	public long getCreationTime() {
-		return creationTime;
+	public Optional<Long> getCreationTime() {
+		return Optional.of(creationTime);
 	}
 
 	/**
