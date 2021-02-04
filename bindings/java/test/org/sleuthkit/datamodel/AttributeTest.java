@@ -112,37 +112,49 @@ public class AttributeTest {
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
-
+		// Add a root folder
 		FsContent root = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, fs, Collections.emptyList(), trans);
 
-
+		// Add a dir - no attributes 
 		FsContent windows = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "Windows", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, root, Collections.emptyList(), trans);
 		
+		// Add dllhosts.exe file to the above dir
 		FsContent dllhosts = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "dllhosts.exe", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short)0, 200, 0, 0, 0, 0, testMD5, null, "Applicatione/Exe" , true, windows, fileAttributes, trans);
 
+		// add another no attribute file to the same folder
 		FsContent _nofile = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "nofile.exe", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short)0, 200, 0, 0, 0, 0, null, null, "Applicatione/Exe" , true, windows, Collections.emptyList(), trans);
 
+		// Add additional attributes to dllhosts file - within the same transaction. 
 		dllhosts.addAttributes(fileAttributes2, trans);
+		
+		long firstFileAttributeId  = fileAttributes.get(0).getId();
+		
+		assertEquals("Assert that the first file attribute has a db generated id",true, firstFileAttributeId > 0);
+		
 		trans.commit();
  
 		assertEquals(2, dllhosts.getAttributes().size());
-
+		assertEquals(firstFileAttributeId, dllhosts.getAttributes().get(0).getId());
+		
+		
+		// Lookup the file by Md5 and assert it has 2 attributes 
 		List<AbstractFile> matchingFiles = caseDB.findFilesByMd5(testMD5);
 		assertEquals(1, matchingFiles.size());
 		assertEquals(2, matchingFiles.get(0).getAttributes().size());
+		assertEquals(firstFileAttributeId, matchingFiles.get(0).getAttributes().get(0).getId());
 
 		List<AbstractFile> nofile = caseDB.findFiles(fs.getDataSource(), "nofile.exe");
 		assertEquals(1, nofile.size());
 		assertEquals(0, nofile.get(0).getAttributes().size());
-
+ 
 
 	}
 }

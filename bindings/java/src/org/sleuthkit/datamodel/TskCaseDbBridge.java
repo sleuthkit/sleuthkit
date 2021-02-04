@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.base.Strings;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -26,9 +27,11 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,6 +58,8 @@ class TskCaseDbBridge {
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
     private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
     
+	private final Map<String, OsAccount> ownerIdToAccountMap = new HashMap<>();
+	
     private static final long BATCH_FILE_THRESHOLD = 500;
     private final Queue<FileInfo> batchedFiles = new LinkedList<>();
     private final Queue<LayoutRangeInfo> batchedLayoutRanges = new LinkedList<>();
@@ -308,6 +313,7 @@ class TskCaseDbBridge {
      * @param seq         The sequence number from fs_file->meta->seq. 
      * @param parMetaAddr The metadata address of the parent
      * @param parSeq      The parent sequence number if NTFS, -1 otherwise.
+	 * @param ownerUid	  String uid of the file owner.  May be an empty string.
      * 
      * @return 0 if successful, -1 if not
      */
@@ -321,7 +327,7 @@ class TskCaseDbBridge {
         long crtime, long ctime, long atime, long mtime,
         int meta_mode, int gid, int uid,
         String escaped_path, String extension, 
-        long seq, long parMetaAddr, long parSeq) {
+        long seq, long parMetaAddr, long parSeq, String ownerUid) {
         
         // Add the new file to the list
         batchedFiles.add(new FileInfo(parentObjId,
@@ -334,7 +340,7 @@ class TskCaseDbBridge {
                 crtime, ctime, atime, mtime,
                 meta_mode, gid, uid,
                 escaped_path, extension,
-                seq, parMetaAddr, parSeq));
+                seq, parMetaAddr, parSeq, ownerUid));
         
         // Add the current files to the database if we've exceeded the threshold or if we
         // have the root folder.
@@ -353,6 +359,50 @@ class TskCaseDbBridge {
     private long addBatchedFilesToDb() {
         List<Long> newObjIds = new ArrayList<>();
         try {
+			
+			// loop through the batch, and make sure owner accounts exist for all the files in the batch.
+			// If not, create accounts.
+			Iterator<FileInfo> it = batchedFiles.iterator();
+
+			beginTransaction();
+			while (it.hasNext()) {
+				FileInfo fileInfo = it.next();
+				String ownerUid = fileInfo.ownerUid;
+				if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) {
+					// first check the owner id is in the map, if found, then continue
+					if (this.ownerIdToAccountMap.containsKey(ownerUid)) {
+						continue;
+					}
+
+					// RAMAN TBD: Need to get host by using the data source name and then use that host for creating the OS account below.
+					Host host = null;
+
+					// query the DB to get the owner account
+					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getOsAccount(ownerUid, host, trans);
+					if (ownerAccount.isPresent()) {
+						// found account - add to map 
+						ownerIdToAccountMap.put(ownerUid, ownerAccount.get());
+					} else {
+
+						// account not found in the database,  create the account and add to map
+						commitTransaction();
+
+						// RAMAN TBD: what should this realm name be?
+						String realmName = "DUMMY";
+
+						// create the account
+						OsAccount newAccount = caseDb.getOsAccountManager().createOsAccount(ownerUid, null, realmName, host);
+						ownerIdToAccountMap.put(ownerUid, newAccount);
+
+						beginTransaction();
+					}
+				}
+			}
+			commitTransaction();
+			
+			
+			
+			
             beginTransaction();
             FileInfo fileInfo;
             while ((fileInfo = batchedFiles.poll()) != null) {
@@ -363,6 +413,17 @@ class TskCaseDbBridge {
                         computedParentObjId = getParentObjId(fileInfo);
                     }
 
+					Long ownerAccountObjId = OsAccount.NO_ACCOUNT;
+					if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) {
+						if (ownerIdToAccountMap.containsKey(fileInfo.ownerUid)) {
+						ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
+						} else {
+							// Error - owner should be in the map at this point!!
+							throw new TskCoreException(String.format("Failed to add file. Owner account not found for file with parent object ID: %d, name: %s, owner id: %s", fileInfo.parentObjId, fileInfo.name, fileInfo.ownerUid));
+						}
+					}
+					
+					
                     long objId = addFileToDb(computedParentObjId, 
                         fileInfo.fsObjId, fileInfo.dataSourceObjId,
                         fileInfo.fsType,
@@ -373,7 +434,7 @@ class TskCaseDbBridge {
                         fileInfo.crtime, fileInfo.ctime, fileInfo.atime, fileInfo.mtime,
                         fileInfo.meta_mode, fileInfo.gid, fileInfo.uid,
                         null, TskData.FileKnown.UNKNOWN,
-                        fileInfo.escaped_path, fileInfo.extension, 
+                        fileInfo.escaped_path, fileInfo.extension, fileInfo.ownerUid, ownerAccountObjId,
                         false, trans);
                     if (fileInfo.fsObjId != fileInfo.parentObjId) {
                         // Add new file ID to the list to send to ingest unless it is the root folder
@@ -488,7 +549,7 @@ class TskCaseDbBridge {
                 null, null, null, null,
                 null, null, null,
                 null, TskData.FileKnown.UNKNOWN,
-                null, null, 
+                null, null, null, OsAccount.NO_ACCOUNT,
                 true, trans);
             commitTransaction();
 
@@ -608,9 +669,9 @@ class TskCaseDbBridge {
         ParentCacheKey(long fsObjId, long metaAddr, long seqNum, String path) {
             this.fsObjId = fsObjId;
             this.metaAddr = metaAddr;
-            if (fsIdToFsType.containsKey(fsObjId) 
-                    && (fsIdToFsType.get(fsObjId).equals(TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS)
-                        || fsIdToFsType.get(fsObjId).equals(TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS_DETECT))) {
+            if (ownerIdToAccountMap.containsKey(fsObjId) 
+                    && (ownerIdToAccountMap.get(fsObjId).equals(TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS)
+                        || ownerIdToAccountMap.get(fsObjId).equals(TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS_DETECT))) {
                 this.seqNum = seqNum;
             } else {
                 this.seqNum = 0;
@@ -694,6 +755,7 @@ class TskCaseDbBridge {
         long seq;
         long parMetaAddr;
         long parSeq;
+		String ownerUid;
         
         FileInfo(long parentObjId, 
             long fsObjId, long dataSourceObjId,
@@ -705,7 +767,7 @@ class TskCaseDbBridge {
             long crtime, long ctime, long atime, long mtime,
             int meta_mode, int gid, int uid,
             String escaped_path, String extension, 
-            long seq, long parMetaAddr, long parSeq) {
+            long seq, long parMetaAddr, long parSeq, String ownerUid) {
             
             this.parentObjId = parentObjId;
             this.fsObjId = fsObjId;
@@ -733,6 +795,7 @@ class TskCaseDbBridge {
             this.seq = seq;
             this.parMetaAddr = parMetaAddr;
             this.parSeq = parSeq;
+			this.ownerUid = ownerUid;
         }
     }
 	
@@ -770,6 +833,8 @@ class TskCaseDbBridge {
 	 * @param known           The file known status.
 	 * @param escaped_path    The escaped path to the file.
 	 * @param extension       The file extension.
+	 * @param ownerUid        Unique id of the file owner.
+	 * @param ownerAcctObjId  Object id of the owner account.
 	 * @param hasLayout       True if this is a layout file, false otherwise.
 	 * @param transaction     The open transaction.
 	 *
@@ -787,8 +852,8 @@ class TskCaseDbBridge {
 			Long crtime, Long ctime, Long atime, Long mtime,
 			Integer meta_mode, Integer gid, Integer uid,
 			String md5, TskData.FileKnown known,
-			String escaped_path, String extension,
-			boolean hasLayout, CaseDbTransaction transaction) throws TskCoreException {
+			String escaped_path, String extension, String ownerUid, Long ownerAcctObjId,
+			boolean hasLayout,  CaseDbTransaction transaction) throws TskCoreException {
 
 		try {
 			SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
@@ -796,9 +861,9 @@ class TskCaseDbBridge {
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = caseDb.addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-			
-			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
+				
+			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, owner_uid, os_account_obj_id)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(fileInsert, Statement.NO_GENERATED_KEYS);			
 			preparedStatement.clearParameters();
 			
@@ -880,6 +945,15 @@ class TskCaseDbBridge {
 			} else {
 				preparedStatement.setNull(26, java.sql.Types.INTEGER);
 			}
+			
+			preparedStatement.setString(27, ownerUid); // ownerUid
+			
+			if (ownerAcctObjId != OsAccount.NO_ACCOUNT) {
+				preparedStatement.setLong(28, ownerAcctObjId); //
+			} else {
+				preparedStatement.setNull(28, java.sql.Types.BIGINT);
+			}
+			
 			connection.executeUpdate(preparedStatement);
 
 			// If this is not a slack file create the timeline events
@@ -892,7 +966,7 @@ class TskCaseDbBridge {
 						TskData.TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
 						TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
 						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension);
+						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension, ownerUid, ownerAcctObjId);
 
 				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
 			}

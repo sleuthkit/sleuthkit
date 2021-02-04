@@ -18,6 +18,12 @@ Some general notes on this schema:
 - The Blackboard is used to store artifacts, which contain attributes (name/value pairs).  Artifacts are used to store data types that do not have more formal tables. Module writers can make whatever artifact types they want. See \ref mod_bbpage for more details. 
 - The Sleuth Kit will make virtual files to span the unallocated space.  They will have a naming format of 'Unalloc_[PARENT-OBJECT-ID]_[BYTE-START]_[BYTE-END]'.
 
+# Schema Information
+
+- <b>Autopsy versions: </b> Autopsy 4.18
+- <b>Changes from version 8.5:</b>
+ - New column for SHA-256 hash in tsk_files
+
 
 # General Information Tables 
 ## tsk_db_info 

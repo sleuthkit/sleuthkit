@@ -212,7 +212,9 @@ public class SleuthkitCase {
 	private CaseDbAccessManager dbAccessManager;
 	private TaggingManager taggingMgr;
 	private ScoringManager scoringManager;
-	private HostManager	hostManager;
+	private OsAccountRealmManager osAccountRealmManager;
+	private OsAccountManager osAccountManager;
+	private HostManager hostManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -391,6 +393,8 @@ public class SleuthkitCase {
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
 		scoringManager = new ScoringManager(this);
+		osAccountRealmManager = new OsAccountRealmManager(this);
+		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
 	}
 
@@ -516,11 +520,33 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Gets the host manager for this case.
+	 * Gets the OS account realm manager for this case.
+	 *
+	 * @return The per case OsAccountRealmManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public OsAccountRealmManager getOsAccountRealmManager() throws TskCoreException {
+		return osAccountRealmManager;
+	}
+	
+	/**
+	 * Gets the OS account manager for this case.
+	 *
+	 * @return The per case OsAccountManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public OsAccountManager getOsAccountManager() throws TskCoreException {
+		return osAccountManager;
+	}
+	
+	/**
+	 * Gets the Hosts manager for this case.
 	 *
 	 * @return The per case HostManager object.
 	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @throws TskCoreException
 	 */
 	public HostManager getHostManager() throws TskCoreException {
 		return hostManager;
@@ -2322,19 +2348,50 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE blackboard_artifact_types ADD COLUMN category_type INTEGER DEFAULT 0");
 
             // Create tsk file attributes table
-			statement.execute("CREATE TABLE tsk_file_attributes (obj_id " + bigIntDataType + " NOT NULL, "
+			statement.execute("CREATE TABLE tsk_file_attributes (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "obj_id " + bigIntDataType + " NOT NULL, "
 					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
 					+ "value_type INTEGER NOT NULL, value_byte " + blobDataType + ", "
 					+ "value_text TEXT, value_int32 INTEGER, value_int64 " + bigIntDataType + ", value_double NUMERIC(20, 10), "
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_files(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 
+			// create analysis results tables
+			statement.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
+					+ "conclusion TEXT, "
+					+ "significance INTEGER NOT NULL, "
+					+ "confidence INTEGER NOT NULL, "
+					+ "configuration TEXT, justification TEXT, "
+					+ "ignore_score INTEGER DEFAULT 0, " // boolean	
+					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
+					+ ")");
+
+			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " PRIMARY KEY, "
+					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "significance INTEGER NOT NULL, "
+					+ "confidence INTEGER NOT NULL, "
+					+ "UNIQUE (obj_id),"
+					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
+					+ ")");
+
+			// RAMAN TBD: need to add  UNIQUE (artifact_obj_id) constraint to blackboard_artifacts table for it to be FK
+			
 			// create host table.
 			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
-				+ "name TEXT NOT NULL, " // host name
-				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
-				+ "UNIQUE(name)) ");
-			
+					+ "name TEXT NOT NULL, " // host name
+					+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+					+ "UNIQUE(name)) ");
+
+			// Create OS Account and related tables 
+			statement.execute("CREATE TABLE tsk_os_account_realms (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "name TEXT NOT NULL, " // realm name - host name or domain name
+					+ "realm_addr TEXT DEFAULT NULL, " // a sid/uid or some some other unique identifier, may be null
+					+ "host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm just comprises of a single host
+					+ "name_type INTEGER, " // indicates if the realm name was  was expressed or inferred 
+					+ "UNIQUE(name, host_id), "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
+
 			// Add host column and create a host for each existing data source.
 			// We will create a host for each device id so that related data sources will 
 			// be associated with the same host.
@@ -2359,6 +2416,55 @@ public class SleuthkitCase {
 				closeStatement(updateStatement);
 			}
 			
+			statement.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + bigIntDataType + " PRIMARY KEY, "
+					+ "login_name TEXT DEFAULT NULL, " // login name, if available, may be null
+					+ "full_name TEXT DEFAULT NULL, " // full name, if available, may be null
+					+ "realm_id " + bigIntDataType + ", " // row id for the realm, may be null if only SID is known 
+					+ "unique_id TEXT DEFAULT NULL, " // SID/UID, if available
+					+ "signature TEXT NOT NULL, " // realm/loginname or sid 
+					+ "status INTEGER, " // enabled/disabled/deleted
+					+ "admin INTEGER DEFAULT 0," // is admin account
+					+ "type INTEGER, " // service/interactive
+					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
+					+ "UNIQUE(signature), "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
+
+			statement.execute("CREATE TABLE tsk_os_account_attributes (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "host_id " + bigIntDataType + ", "
+					+ "source_obj_id " + bigIntDataType + ", "
+					+ "attribute_type_id " + bigIntDataType + " NOT NULL, "
+					+ "value_type INTEGER NOT NULL, "
+					+ "value_byte " + bigIntDataType + ", "
+					+ "value_text TEXT, "
+					+ "value_int32 INTEGER, value_int64 " + bigIntDataType + ", "
+					+ "value_double NUMERIC(20, 10), "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
+
+			statement.execute("CREATE TABLE tsk_os_account_instances (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "host_id " + bigIntDataType + " NOT NULL, "
+					+ "instance_type INTEGER NOT NULL, " // PerformedActionOn/ReferencedOn
+					+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
+
+			statement.execute("CREATE TABLE tsk_data_artifacts ( "
+					+ "artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
+					+ "os_account_obj_id " + bigIntDataType + ", "
+					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");
+
+			// add owner_uid & os_account_obj_id columns to tsk_files
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN owner_uid TEXT DEFAULT NULL");
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_obj_id " + bigIntDataType + " DEFAULT NULL REFERENCES tsk_os_accounts(os_account_obj_id) DEFAULT NULL");
+
 			return new CaseDbSchemaVersionNumber(8, 7);
 
 		} finally {
@@ -2902,6 +3008,8 @@ public class SleuthkitCase {
 							}
 							break;
 						case REPORT:
+							break;
+						case OS_ACCOUNT:
 							break;
 						default:
 							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
@@ -4163,7 +4271,7 @@ public class SleuthkitCase {
 		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE);
 		statement.clearParameters();
 
-		statement.setLong(1, attr.getAttributeOwnerId());
+		statement.setLong(1, attr.getAttributeParentId());
 		statement.setInt(2, attr.getAttributeType().getTypeID());
 		statement.setLong(3, attr.getAttributeType().getValueType().getType());
 
@@ -4198,7 +4306,11 @@ public class SleuthkitCase {
 			statement.setNull(8, java.sql.Types.DOUBLE);
 		}
  
-		connection.executeUpdate(statement);
+		connection.executeUpdate(statement);		
+		try (ResultSet resultSet = statement.getGeneratedKeys()) {
+			resultSet.next();
+			attr.setId(resultSet.getLong(1));
+		}		
 	}
 
 	/**
@@ -4671,7 +4783,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			Statement statement = connection.createStatement();
-			rs = connection.executeQuery(statement, "SELECT attrs.obj_id AS obj_id, "
+			rs = connection.executeQuery(statement, "SELECT attrs.id as id,  attrs.obj_id AS obj_id, "
 					+ "attrs.attribute_type_id AS attribute_type_id, "
 					+ "attrs.value_type AS value_type, attrs.value_byte AS value_byte, "
 					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
@@ -4695,6 +4807,7 @@ public class SleuthkitCase {
 				}
 
 				final Attribute attr = new Attribute(
+						rs.getLong("id"),
 						rs.getLong("obj_id"),
 						attributeType,
 						rs.getInt("value_int32"),
@@ -5995,8 +6108,8 @@ public class SleuthkitCase {
 
 			// Insert a row for the virtual directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id,extension)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id,extension,owner_uid, os_account_obj_id)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
@@ -6061,8 +6174,13 @@ public class SleuthkitCase {
 
 			//extension, since this is not really file we just set it to null
 			statement.setString(21, null);
+			
+			statement.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
+			
 			connection.executeUpdate(statement);
 
+			
 			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
 					metaType, dirFlag, metaFlags, null, null, FileKnown.UNKNOWN,
 					parentPath);
@@ -6140,8 +6258,8 @@ public class SleuthkitCase {
 
 			// Insert a row for the local directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
@@ -6193,6 +6311,9 @@ public class SleuthkitCase {
 			//extension, since this is a directory we just set it to null
 			statement.setString(21, null);
 
+			statement.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
+			
 			connection.executeUpdate(statement);
 
 			return new LocalDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
@@ -6274,8 +6395,8 @@ public class SleuthkitCase {
 			// its own object id.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path,
 			// dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime,
-			// atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id, extension)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+			// atime, mtime, md5, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?)
 			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
@@ -6305,6 +6426,8 @@ public class SleuthkitCase {
 			preparedStatement.setString(19, parentPath);
 			preparedStatement.setLong(20, newObjId);
 			preparedStatement.setString(21, null); //extension, just set it to null
+			preparedStatement.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+			preparedStatement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 			connection.executeUpdate(preparedStatement);
 
 			return new LocalFilesDataSource(this, newObjId, newObjId, deviceId, rootDirectoryName, dirType, metaType, dirFlag, metaFlags, timeZone, null, null, FileKnown.UNKNOWN, parentPath);
@@ -6753,7 +6876,7 @@ public class SleuthkitCase {
 			} else {
 				parentPath = "/";
 			}
-
+			
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE);
 			statement.clearParameters();
 			statement.setLong(1, objectId);											// obj_is
@@ -6787,12 +6910,12 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension);
+					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
 			for (Attribute fileAttribute : fileAttributes) {
-				fileAttribute.setAttributeOwnerId(objectId); 
+				fileAttribute.setAttributeParentId(objectId);
 				fileAttribute.setCaseDatabase(this);
 				addFileAttribute(fileAttribute, connection);
 			}
@@ -6802,8 +6925,8 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, null, parentPath, mimeType,
-					extension, fileAttributes);
-	
+					extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, fileAttributes);
+
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
 		} finally {
@@ -6890,8 +7013,8 @@ public class SleuthkitCase {
 				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
 				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
 				 * ctime, crtime, atime, mtime, md5, known, mime_type,
-				 * parent_path, data_source_obj_id,extension) VALUES (?, ?, ?,
-				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+				 * parent_path, data_source_obj_id,extension, owner_uid, os_account_obj_id) VALUES (?, ?, ?,
+				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?)
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
@@ -6918,6 +7041,10 @@ public class SleuthkitCase {
 
 				//extension, since this is not a FS file we just set it to null
 				prepStmt.setString(21, null);
+				
+				prepStmt.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+				prepStmt.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
+				
 				connection.executeUpdate(prepStmt);
 
 				/*
@@ -6950,7 +7077,9 @@ public class SleuthkitCase {
 						null, null,
 						FileKnown.UNKNOWN,
 						parent.getUniquePath(),
-						null));
+						null,
+						OsAccount.NO_OWNER_ID,
+						OsAccount.NO_ACCOUNT));
 			}
 
 			transaction.commit();
@@ -7071,8 +7200,8 @@ public class SleuthkitCase {
 				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
 				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
 				 * ctime, crtime, atime, mtime, md5, known, mime_type,
-				 * parent_path, data_source_obj_id,extenion) VALUES (?, ?, ?, ?,
-				 * ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+				 * parent_path, data_source_obj_id,extenion, owner_uid, os_account_obj_id) 
+				 * VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
@@ -7101,6 +7230,10 @@ public class SleuthkitCase {
 				prepStmt.setString(19, parentPath); // parent path
 				prepStmt.setLong(20, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
 				prepStmt.setString(21, extractExtension(carvedFile.getName())); //extension
+				
+				prepStmt.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+				prepStmt.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
+				
 				connection.executeUpdate(prepStmt);
 
 				/*
@@ -7135,7 +7268,9 @@ public class SleuthkitCase {
 						null, null,
 						FileKnown.UNKNOWN,
 						parentPath,
-						null));
+						null,
+						OsAccount.NO_OWNER_ID,
+						OsAccount.NO_ACCOUNT));
 			}
 
 			transaction.commit();
@@ -7277,6 +7412,9 @@ public class SleuthkitCase {
 			final String extension = extractExtension(fileName);
 			//extension
 			statement.setString(21, extension);
+			
+			statement.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
 
 			connection.executeUpdate(statement);
 
@@ -7284,7 +7422,7 @@ public class SleuthkitCase {
 			addFilePath(connection, newObjId, localPath, encodingType);
 
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			transaction.commit();
@@ -7394,7 +7532,7 @@ public class SleuthkitCase {
 			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
 			final String extension = extractExtension(derivedFile.getName());
 			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
-					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, derivedFile.getOwnerUid().orElse(null), derivedFile.getOsAccountObjId().orElse(null));
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -7496,6 +7634,7 @@ public class SleuthkitCase {
 	 * @param atime        The accessed time of the file
 	 * @param mtime        The modified time of the file.
 	 * @param md5          The MD5 hash of the file
+	 * @param sha256       the SHA-256 hash of the file.
 	 * @param known        The known status of the file (can be null)
 	 * @param mimeType     The MIME type of the file
 	 * @param isFile       True, unless the file is a directory.
@@ -7525,8 +7664,8 @@ public class SleuthkitCase {
 			// Insert a row for the local/logical file into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, known, mime_type,
-			// parent_path, data_source_obj_id,extension)
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+			// parent_path, data_source_obj_id,extension, uid_str, os_account_obj_id)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, objectId);
@@ -7577,6 +7716,9 @@ public class SleuthkitCase {
 			final String extension = extractExtension(fileName);
 			statement.setString(21, extension);
 
+			statement.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
+
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
 			LocalFile localFile = new LocalFile(this,
@@ -7593,7 +7735,8 @@ public class SleuthkitCase {
 					parent.getId(), parentPath,
 					dataSourceObjId,
 					localPath,
-					encodingType, extension);
+					encodingType, extension, 
+					OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 			getTimelineManager().addEventsForNewFile(localFile, connection);
 			return localFile;
 
@@ -7705,8 +7848,8 @@ public class SleuthkitCase {
 			 * tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type,
 			 * meta_type, dir_flags, meta_flags, size, ctime, crtime, atime,
 			 * mtime, md5, known, mime_type, parent_path,
-			 * data_source_obj_id,extenion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
-			 * ?, ?, ?, ?, ?, ?, ?,?)
+			 * data_source_obj_id,extenion, owner_uid, os_account_obj_id) 
+			 * VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			 */
 			PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			prepStmt.clearParameters();
@@ -7745,6 +7888,10 @@ public class SleuthkitCase {
 			prepStmt.setLong(20, parent.getDataSource().getId()); // data_source_obj_id
 
 			prepStmt.setString(21, extractExtension(fileName)); 				//extension
+			
+			prepStmt.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
+			prepStmt.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
+			
 			connection.executeUpdate(prepStmt);
 
 			/*
@@ -7779,7 +7926,9 @@ public class SleuthkitCase {
 					null, null,
 					FileKnown.UNKNOWN,
 					parentPath,
-					null);
+					null,
+					OsAccount.NO_OWNER_ID,
+					OsAccount.NO_ACCOUNT);
 
 			transaction.commit();
 			transaction = null;
@@ -9087,6 +9236,9 @@ public class SleuthkitCase {
 					if (parentPath == null) {
 						parentPath = "/"; //NON-NLS
 					}
+					
+					Long osAccountObjId = rs.getLong("os_account_obj_id");
+		
 					LayoutFile lf = new LayoutFile(this,
 							rs.getLong("obj_id"), //NON-NLS
 							rs.getLong("data_source_obj_id"),
@@ -9096,7 +9248,9 @@ public class SleuthkitCase {
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
 							rs.getLong("size"), //NON-NLS
 							rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
-							rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type")); //NON-NLS
+							rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), parentPath, 
+							rs.getString("mime_type"), 
+							rs.getString("owner_uid"), osAccountObjId ); //NON-NLS
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;
@@ -9131,6 +9285,8 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 */
 	org.sleuthkit.datamodel.File file(ResultSet rs, FileSystem fs) throws SQLException {
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
+				
 		org.sleuthkit.datamodel.File f = new org.sleuthkit.datamodel.File(this, rs.getLong("obj_id"), //NON-NLS
 				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
@@ -9142,7 +9298,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), Collections.emptyList()); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), rs.getString("owner_uid"), osAccountObjId, Collections.emptyList()); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -9159,6 +9315,8 @@ public class SleuthkitCase {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
+		
 		Directory dir = new Directory(this, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
 				rs.getInt("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
@@ -9169,7 +9327,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path")); //NON-NLS
+				rs.getString("parent_path"), rs.getString("owner_uid"), osAccountObjId); //NON-NLS
 		dir.setFileSystem(fs);
 		return dir;
 	}
@@ -9306,6 +9464,9 @@ public class SleuthkitCase {
 		if (parentPath == null) {
 			parentPath = "";
 		}
+		
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
+				
 		final DerivedFile df = new DerivedFile(this, objId, rs.getLong("data_source_obj_id"),
 				rs.getString("name"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
@@ -9315,7 +9476,8 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentPath, localPath, parentId, rs.getString("mime_type"),
-				encodingType, rs.getString("extension"));
+				encodingType, rs.getString("extension"), 
+				rs.getString("owner_uid"), osAccountObjId);
 		return df;
 	}
 
@@ -9359,6 +9521,8 @@ public class SleuthkitCase {
 		if (null == parentPath) {
 			parentPath = "";
 		}
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
+		
 		LocalFile file = new LocalFile(this, objId, rs.getString("name"), //NON-NLS
 				TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
@@ -9368,7 +9532,8 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("mime_type"), rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentId, parentPath, rs.getLong("data_source_obj_id"),
-				localPath, encodingType, rs.getString("extension"));
+				localPath, encodingType, rs.getString("extension"),
+				rs.getString("owner_uid"), osAccountObjId);
 		return file;
 	}
 
@@ -9384,6 +9549,7 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 */
 	org.sleuthkit.datamodel.SlackFile slackFile(ResultSet rs, FileSystem fs) throws SQLException {
+		Long osAccountObjId = rs.getLong("os_account_obj_id");
 		org.sleuthkit.datamodel.SlackFile f = new org.sleuthkit.datamodel.SlackFile(this, rs.getLong("obj_id"), //NON-NLS
 				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
@@ -9395,7 +9561,8 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), rs.getString("sha256"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), 
+				rs.getString("owner_uid"), osAccountObjId); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -9449,6 +9616,7 @@ public class SleuthkitCase {
 						if (parentPath == null) {
 							parentPath = "";
 						}
+						Long osAccountObjId = rs.getLong("os_account_obj_id");
 						final LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 								rs.getLong("data_source_obj_id"), rs.getString("name"), type,
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
@@ -9457,7 +9625,8 @@ public class SleuthkitCase {
 								rs.getLong("size"),
 								rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
 								rs.getString("md5"), rs.getString("sha256"),
-								FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"));
+								FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"), 
+								rs.getString("owner_uid"), osAccountObjId);
 						children.add(lf);
 						break;
 					}
@@ -11830,7 +11999,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (DEFAULT, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
-		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (obj_id, conclusion, significance, confidence, configuration, justification) " //NON-NLS
+		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (artifact_obj_id, conclusion, significance, confidence, configuration, justification) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
@@ -11866,8 +12035,8 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
-		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id,extension) " //NON-NLS
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id  ) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, mime_type, parent_path, extension)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
