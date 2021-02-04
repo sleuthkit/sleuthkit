@@ -292,9 +292,14 @@ Defines what tag names the user has created and can therefore be applied.
 - display_name - Display name of tag
 - description  - Description  (can be empty string)
 - color - Color choice for tag (can be empty string)
+- knownStatus - Stores whether a tag is notable/bad (as org.sleuthkit.datamodel.TskData.FileKnown enum)
+- tag_set_id - Id of the tag set this tag name belons to (references tag_set_id in tsk_tag_sets, may be null)
+- rank - Used to order the tag names for a given tag set for display purposes
 
 ## tsk_tag_sets
-TODO
+Used to group entries from the tag_names table.
+- tag_set_id - Id of the tag set
+- name - Name of the tag set (unique, should be human readable)
 
 ## content_tags table
 One row for each file tagged.  
@@ -316,12 +321,10 @@ One row for each artifact that is tagged.
 # Ingest Module Status
 These tables keep track in Autopsy which modules were run on the data sources.
 
-TODO
-
 ## ingest_module_types table
-Defines the types of ingest modules supported. 
-- type_id 
-- type_name 
+Defines the types of ingest modules supported. Must exactly match the names and ordering in the org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType enum.
+- type_id - Id for the ingest module type
+- type_name - Internal name for the ingest module type
 
 ## ingest_modules
 Defines which modules were installed.  One row for each module. 
@@ -332,9 +335,9 @@ Defines which modules were installed.  One row for each module.
 - version 
 
 ## ingest_job_status_types table
-- type_id 
-- type_name 
-
+Defines the status options for ingest jobs. Must match the names and ordering in the org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType enum.
+- type_id - Id for the ingest job status type
+- type_name - Internal name for the ingest job status type
 
 ##  ingest_jobs
 One row is created each time ingest is started, which is a set of modules in a pipeline. 
