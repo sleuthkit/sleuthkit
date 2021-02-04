@@ -242,17 +242,17 @@ public final class Blackboard {
 		return getAnalysisResultsWhere(whereClause);
 	}
 	
-	/**
-	 * Get all analysis results of a given type, for a given data source.
-	 *
-	 * @param dataSourceObjId Data source to look under.
-	 * @param artifactTypeId  Type of results to get.
-	 *
-	 * @return list of analysis results.
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core.
-	 */
+//	/**
+//	 * Get all analysis results of a given type, for a given data source.
+//	 *
+//	 * @param dataSourceObjId Data source to look under.
+//	 * @param artifactTypeId  Type of results to get.
+//	 *
+//	 * @return list of analysis results.
+//	 *
+//	 * @throws TskCoreException exception thrown if a critical error occurs
+//	 *                          within TSK core.
+//	 */
 
 // To keep the public API footprint minimal and necessary, this API is commented out 
 // till Autopsy implements and intgerates the concept of AnalysisResults. 
