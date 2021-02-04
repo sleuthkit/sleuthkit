@@ -461,7 +461,7 @@ public final class TimelineManager {
 	 * @throws TskCoreException
 	 * @throws DuplicateException
 	 */
-	private long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
+	private Long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
 			String fullDescription, String medDescription, String shortDescription,
 			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException, DuplicateException {
 		String tableValuesClause
@@ -495,23 +495,14 @@ public final class TimelineManager {
 			// if no inserted rows, there is a conflict due to a duplicate event 
 			// description.  If that happens, return null as no id was inserted.
 			if (row < 1) {
-//				throw new DuplicateException(String.format(
-//						"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
-//						fullDescription == null ? "<null>" : fullDescription,
-//						fileObjId,
-//						artifactID == null ? "<null>" : Long.toString(artifactID)));
-
+				return null;
 			}
 
 			try (ResultSet generatedKeys = insertDescriptionStmt.getGeneratedKeys()) {
 				if (generatedKeys.next()) {
 					return generatedKeys.getLong(1);
 				} else {
-					throw new DuplicateException(String.format(
-							"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
-							fullDescription == null ? "<null>" : fullDescription,
-							fileObjId,
-							artifactID == null ? "<null>" : Long.toString(artifactID)));
+					return null;
 				}
 			}
 		} catch (SQLException ex) {
@@ -521,16 +512,14 @@ public final class TimelineManager {
 		}
 	}
 	
-	private long getEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
-			String fullDescription, String medDescription, String shortDescription, CaseDbConnection connection) throws SQLException {
+	private Long getEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
+			String fullDescription, CaseDbConnection connection) throws TskCoreException {
 		
 		String query = "SELECT event_description_id FROM tsk_event_descriptions "
 				+ "WHERE data_source_obj_id = " + dataSourceObjId
 				+ " AND content_obj_id = " + fileObjId
 				+ " AND artifact_id = " + artifactID
-				+ " AND full_description " + (fullDescription != null ?  "= '" + fullDescription + "'" : "IS null")
-				+ " AND med_description " + (medDescription != null ?  "= '" + medDescription + "'" : "IS null")
-				+ " AND short_description " + (shortDescription != null ?  "= '" + shortDescription + "'" : "IS null");
+				+ " AND full_description " + (fullDescription != null ?  "= '" + fullDescription + "'" : "IS null");
 		
 		caseDB.acquireSingleUserCaseReadLock();
 		try(ResultSet resultSet = connection.createStatement().executeQuery(query)) {
@@ -539,11 +528,13 @@ public final class TimelineManager {
 				long id = resultSet.getLong(1);
 				return id;
 			}
-		} finally {
+		} catch(SQLException ex) {
+			throw new TskCoreException(String.format("Failed to get description, dataSource=%d, fileObjId=%d, artifactId=%d", dataSourceObjId, fileObjId, artifactID), ex);
+		}finally {
 			caseDB.releaseSingleUserCaseReadLock();
 		}
 		
-		return -1;
+		return null;
 	}
 
 	Collection<TimelineEvent> addEventsForNewFile(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
@@ -814,9 +805,14 @@ public final class TimelineManager {
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = caseDB.getConnection();) {
 
-			long descriptionID = addEventDescription(dataSourceObjectID, fileObjId, artifactID,
-					fullDescription, medDescription, shortDescription,
-					hasHashHits, tagged, connection);
+			Long descriptionID = addEventDescription(dataSourceObjectID, fileObjId, artifactID,
+				fullDescription, medDescription, shortDescription,
+				hasHashHits, tagged, connection);
+			
+			if(descriptionID == null) {
+				descriptionID = getEventDescription(dataSourceObjectID, fileObjId, artifactID,
+					fullDescription, connection);
+			}
 
 			long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
 
