@@ -198,7 +198,7 @@ public final class HostManager {
 	 * @return Collection of hosts.
 	 * @throws TskCoreException 
 	 */
-	Set<Host> getHosts() throws TskCoreException {
+	public Set<Host> getHosts() throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_hosts";
 
 		Set<Host> hosts = new HashSet<>();
