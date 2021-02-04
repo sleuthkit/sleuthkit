@@ -46,6 +46,7 @@ import org.junit.runners.Suite;
 	CommunicationsManagerTest.class, 
 	CaseDbSchemaVersionNumberTest.class,
 	AttributeTest.class,
+	OsAccountTest.class,
 
 //  Note: these tests have dependencies on images being placed in the input folder: nps-2009-canon2-gen6, ntfs1-gen, and small2	
 //	org.sleuthkit.datamodel.TopDownTraversal.class, 
