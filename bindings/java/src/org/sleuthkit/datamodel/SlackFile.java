@@ -77,6 +77,10 @@ public class SlackFile extends FsContent {
 	 *                           yet been determined.
 	 * @param extension	         The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param ownerUid			 UID of the file owner as found in the file
+	 *                           system, can be null.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
+	 * 
 	 */
 	SlackFile(SleuthkitCase db,
 			long objId,
@@ -91,8 +95,10 @@ public class SlackFile extends FsContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
-			String extension) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, Collections.emptyList());
+			String extension,
+			String ownerUid,
+			Long osAccountObjId) {
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 	}
 
 	/**

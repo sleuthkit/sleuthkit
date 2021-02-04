@@ -111,6 +111,8 @@ class TskAutoDbJava :public TskAuto {
 
     int64_t getImageID();
 
+    void setHostId(long hostId);
+
     TSK_RETVAL_ENUM initializeJni(JNIEnv *, jobject);
 
   private:
@@ -137,6 +139,7 @@ class TskAutoDbJava :public TskAuto {
     int64_t m_maxChunkSize; ///< Max number of unalloc bytes to process before writing to the database, even if there is no natural break. -1 for no chunking
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
+    int64_t m_hostId;      ///< ID of host for this image (already in database)
 
     // These are used to write unallocated blocks for pools at the end of the add image
     // process. We can't load the pool_info objects directly from the database so we will

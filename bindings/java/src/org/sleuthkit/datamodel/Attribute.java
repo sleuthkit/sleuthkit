@@ -28,6 +28,17 @@ import java.util.Objects;
 public class Attribute extends AbstractAttribute{
  
 	/**
+	 * The `parent` object of this Attribute.
+	 */
+	private long attributeParentId;
+	
+	/**
+	 * Primary key in the respective attribute table.
+	 */
+	private long id;
+
+	
+	/**
 	 * Constructs an attribute with an integer value. The attribute should be
 	 * added to an appropriate artifact.
 	 *
@@ -124,25 +135,51 @@ public class Attribute extends AbstractAttribute{
 	 * @param sleuthkitCase    A reference to the SleuthkitCase object
 	 *                         representing the case database.
 	 */
-	Attribute(long attributeOwnerId, BlackboardAttribute.Type attributeType,  
+	Attribute(long id, long attributeOwnerId, BlackboardAttribute.Type attributeType,  
 			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
 			SleuthkitCase sleuthkitCase) {
-		super(attributeOwnerId, attributeType, valueInt, valueLong, valueDouble, valueString, valueBytes, sleuthkitCase);
+		super(attributeType, valueInt, valueLong, valueDouble, valueString, valueBytes, sleuthkitCase);
+		this.id = id;
 	}
 
 	/**
-	 * Gets the owner Id of this attribute. An owner is defined as the Object
-	 * to which this attribute is associated with.
-	 * Eg: For a file Attribute, the owner id would be the file object id.
+	 * Gets the parent Id of this attribute. A parent is defined as the Object
+	 * to which this attribute is associated with. Eg: For a file Attribute the
+	 * attribute parent id would be the file object id.
 	 *
 	 * @return
 	 */
-	@Override
-	public long getAttributeOwnerId() {
-		return super.getAttributeOwnerId();
+	final public long getAttributeParentId() {
+		return this.attributeParentId;
 	}
 
+	/**
+	 * Set the parent id for this attribute. Parent is defined as the Object 
+	 * to which this attribute is associated with. 
+	 * @param attributeParentId 
+	 */
+	final void setAttributeParentId(long attributeParentId) {
+		this.attributeParentId = attributeParentId;
+	}
 
+	
+	/**
+	 * Returns the Id of the Attribute. 
+	 * @return 
+	 */
+	public long getId() {
+		return id;
+	}
+	
+	
+	/**
+	 * Set the id of the attribute
+	 * @param id 
+	 */
+	void setId(long id) {
+		this.id = id;
+	}
+	
 	@Override
 	public int hashCode() {
 		return Objects.hash(

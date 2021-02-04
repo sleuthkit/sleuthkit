@@ -43,6 +43,7 @@ public class Image extends AbstractContent implements DataSource {
 	private long size;
 	private final String[] paths;
 	private volatile long imageHandle = 0;
+	private volatile Host host = null;
 	private final String deviceId, timezone;
 	private String md5, sha1, sha256;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -596,6 +597,23 @@ public class Image extends AbstractContent implements DataSource {
 	@Override
 	public String getAcquisitionDetails() throws TskCoreException {
 		return getSleuthkitCase().getAcquisitionDetails(this);
+	}	
+	
+	/**
+	 * Gets the host for this data source.
+	 * 
+	 * @return The host
+	 * 
+	 * @throws TskCoreException 
+	 */
+	@Override
+	public Host getHost() throws TskCoreException {
+		// This is a check-then-act race condition that may occasionally result
+		// in additional processing but is safer than using locks.
+		if (host == null) {
+			host = getSleuthkitCase().getHostManager().getHost(this);
+		}
+		return host;
 	}	
 
 	/**

@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -29,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
@@ -96,6 +98,10 @@ public abstract class AbstractFile extends AbstractContent {
 	private final List<Attribute> fileAttributesCache = new ArrayList<Attribute>();
 	private boolean loadedAttributesCacheFromDb = false;
 
+	private final String ownerUid;	// string owner uid, for example a Windows SID.
+									// different from the numeric uid which is more commonly found 
+									// on Unix based file systems.
+	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
@@ -130,8 +136,11 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           unknown (default)
 	 * @param parentPath
 	 * @param mimeType           The MIME type of the file, can be null.
-	 * @param extension		        The extension part of the file name (not
+	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param ownerUid			 Owner uid/SID, can be null if not available.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
+	 * 
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
@@ -149,7 +158,9 @@ public abstract class AbstractFile extends AbstractContent {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType,
-			String extension, 
+			String extension,
+			String ownerUid,
+			Long osAccountObjId,
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
@@ -182,6 +193,8 @@ public abstract class AbstractFile extends AbstractContent {
 		this.mimeType = mimeType;
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
+		this.ownerUid = ownerUid;
+		this.osAccountObjId = osAccountObjId;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -554,7 +567,7 @@ public abstract class AbstractFile extends AbstractContent {
 		
 		try {
 			for (final Attribute attribute : attributes) {
-				attribute.setAttributeOwnerId(getId()); 
+				attribute.setAttributeParentId(getId()); 
 				attribute.setCaseDatabase(getSleuthkitCase());
 				getSleuthkitCase().addFileAttribute(attribute, connection);
 			}
@@ -1315,6 +1328,44 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 	}
 
+	/**
+	 * Get the owner uid.
+	 * 
+	 * Note this is a string uid, typically a Windows SID. 
+	 * This is different from the numeric uid commonly found 
+	 * on Unix based file systems.
+	 * 
+	 * @return Optional with owner uid.
+	 */
+	public Optional<String> getOwnerUid() {
+		return Optional.ofNullable(ownerUid);
+	}
+		
+	/**
+	 * Get the obj id of the owner account. 
+	 * 
+	 * @return Optional with Object id of the os account, or Optional.empty.
+	 */
+	Optional<Long> getOsAccountObjId() {
+		return Optional.of(osAccountObjId);
+	}
+	
+	/**
+	 * Gets the owner account for the file.
+	 *
+	 * @return Optional with OsAccount, Optional.empty if there is no account.
+	 *
+	 * @throws TskCoreException If there is an error getting the account.
+	 */
+	public Optional<OsAccount> getOsAccount() throws TskCoreException {
+		
+		if (osAccountObjId == null) {
+			return Optional.empty();
+		}
+		
+		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));
+	}
+	
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		// don't let them make more than 1 GEN_INFO
@@ -1362,7 +1413,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, Collections.emptyList());
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**
@@ -1407,7 +1458,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, Collections.emptyList());
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**

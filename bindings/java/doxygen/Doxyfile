@@ -765,8 +765,9 @@ INPUT                  = main.dox \
                          artifact_catalog.dox \
                          insert_and_update_database.dox \
                          communications.dox \
-                         db_schema_8_6.dox \
-						 ../src
+                         schema/schema_list.dox \
+                         schema/db_schema_8_6.dox \
+                         ../src
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
