@@ -2987,6 +2987,8 @@ public class SleuthkitCase {
 							break;
 						case REPORT:
 							break;
+						case OS_ACCOUNT:
+							break;
 						default:
 							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
 					}
