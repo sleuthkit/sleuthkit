@@ -78,6 +78,9 @@ public class File extends FsContent {
 	 *                           yet been determined.
 	 * @param extension	         The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param ownerUid			 UID of the file owner as found in the file
+	 *                           system, can be null.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
 	File(SleuthkitCase db,
 			long objId,
@@ -93,8 +96,10 @@ public class File extends FsContent {
 			short modes, int uid, int gid,
 			String md5Hash, String sha256Hash, FileKnown knownState, String parentPath, String mimeType,
 			String extension,
+			String ownerUid,
+			Long osAccountObjId,
 			List<Attribute> fileAttributes) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, fileAttributes);
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
 	}
 
 	/**
@@ -248,6 +253,6 @@ public class File extends FsContent {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, mimeType, null, Collections.emptyList());
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, mimeType, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 }

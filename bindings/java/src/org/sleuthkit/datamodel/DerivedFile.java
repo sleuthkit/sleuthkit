@@ -83,6 +83,9 @@ public class DerivedFile extends AbstractFile {
 	 * @param encodingType		     The encoding type of the file.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param ownerUid			 UID of the file owner as found in the file
+	 *                           system, can be null.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
 	DerivedFile(SleuthkitCase db,
 			long objId,
@@ -98,12 +101,14 @@ public class DerivedFile extends AbstractFile {
 			long parentId,
 			String mimeType,
 			TskData.EncodingType encodingType,
-			String extension) {
+			String extension, 
+			String ownerUid,
+			Long osAccountObjId) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 		setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}
@@ -307,7 +312,7 @@ public class DerivedFile extends AbstractFile {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
 				md5Hash, null, knownState,
-				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null);
+				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 	}
 
 }

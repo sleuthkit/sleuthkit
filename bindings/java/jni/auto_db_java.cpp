@@ -110,7 +110,7 @@ TskAutoDbJava::initializeJni(JNIEnv * jniEnv, jobject jobj) {
         return TSK_ERR;
     }
 
-    m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;JJJ)J");
+    m_addFileMethodID = m_jniEnv->GetMethodID(m_callbackClass, "addFile", "(JJJIIILjava/lang/String;JJIIIIJJJJJIIILjava/lang/String;Ljava/lang/String;JJJLjava/lang/String;)J");
     if (m_addFileMethodID == NULL) {
         return TSK_ERR;
     }
@@ -631,6 +631,17 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
     }
     TSK_INUM_T par_meta_addr = fs_file->name->par_addr;
  
+	char *sid_str = NULL;
+	jstring sidj = NULL;	// return null across JNI if sid is not available
+	
+	if (tsk_fs_file_get_owner_sid(fs_file, &sid_str) == 0) {
+		if (createJString(sid_str, sidj) != TSK_OK) {
+			free(sid_str);
+			return TSK_ERR;
+		}
+		free(sid_str);	
+	}
+		
     // Add the file to the database
     jlong ret_val = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
         parObjId, fsObjId,
@@ -643,7 +654,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
         meta_mode, gid, uid, 
         pathj, extj, 
-        (uint64_t)meta_seq, par_meta_addr, par_seqj);
+        (uint64_t)meta_seq, par_meta_addr, par_seqj, sidj);
 
     if (ret_val < 0) {
         free(name);
@@ -690,7 +701,7 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
             (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
             meta_mode, gid, uid, // md5TextPtr, known,
             pathj, slackExtj, 
-            (uint64_t)meta_seq, par_meta_addr, par_seqj);
+            (uint64_t)meta_seq, par_meta_addr, par_seqj, sidj);
 
         if (ret_val < 0) {
             free(name);
