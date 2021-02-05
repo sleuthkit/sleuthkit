@@ -250,15 +250,16 @@ public final class HostManager {
 	private Optional<Host> getHost(String name, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts"
-				+ " WHERE LOWER(name) = LOWER('" + name + "')";
-		try (
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
+				+ " WHERE LOWER(name) = LOWER(?)";
+		try (PreparedStatement s = connection.prepareStatement(queryString, 0)) {
+			s.setString(1, name);
+			try (ResultSet rs = s.executeQuery()) {
 
-			if (!rs.next()) {
-				return Optional.empty();	// no match found
-			} else {
-				return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+				if (!rs.next()) {
+					return Optional.empty();	// no match found
+				} else {
+					return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
