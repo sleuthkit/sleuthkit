@@ -327,12 +327,12 @@ Defines the types of ingest modules supported. Must exactly match the names and 
 - type_name - Internal name for the ingest module type
 
 ## ingest_modules
-Defines which modules were installed.  One row for each module. 
-- ingest_module_id 
-- display_name 
-- unique_name 
-- type_id 
-- version 
+Defines which modules were installed and run on at least one data source.  One row for each module. 
+- ingest_module_id - Id of the ingest module
+- display_name - Display name for the ingest module (should be human readable)
+- unique_name - Unique name for the ingest module
+- type_id - Type of ingest module (references type_id from ingest_module_types)
+- version - Version of the ingest module
 
 ## ingest_job_status_types table
 Defines the status options for ingest jobs. Must match the names and ordering in the org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType enum.
@@ -351,10 +351,9 @@ One row is created each time ingest is started, which is a set of modules in a p
 
 ##  ingest_job_modules
 Defines the order of the modules in a given pipeline (i.e. ingest_job)
-- ingest_job_id 
-- ingest_module_id 
-- pipeline_position 
-
+- ingest_job_id - Id for the ingest job (references ingest_job_id in ingest_jobs)
+- ingest_module_id - Id of the ingest module (references ingest_module_id in ingest_modules)
+- pipeline_position - Order that the ingest module will be run
 
 
 */
