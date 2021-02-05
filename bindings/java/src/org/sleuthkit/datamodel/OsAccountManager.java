@@ -189,7 +189,7 @@ public final class OsAccountManager {
 			throw new IllegalArgumentException("Cannot create an OS Account, realm is NULL.");
 		}
 		
-		String signature = makeAccountSignature(realm, uniqueId, loginName);
+		String signature = makeAccountSignature(uniqueId, loginName);
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
@@ -735,7 +735,7 @@ public final class OsAccountManager {
 		CaseDbConnection connection = transaction.getConnection();
 		db.acquireSingleUserCaseWriteLock();
 		
-		String signature = makeAccountSignature(osAccount.getRealm(), osAccount.getUniqueIdWithinRealm().orElse(null), osAccount.getLoginName().orElse(null));
+		String signature = makeAccountSignature(osAccount.getUniqueIdWithinRealm().orElse(null), osAccount.getLoginName().orElse(null));
 		
 		try {
 			String updateSQL = "UPDATE tsk_os_accounts SET "
@@ -823,22 +823,21 @@ public final class OsAccountManager {
 	/**
 	 * Created an account signature for an OS Account. This signature is simply
 	 * to prevent duplicate accounts from being created. Signature is set to:
-	 * realmId/uniqueId: if the account has a uniqueId, otherwise
-	 * realmId/loginName: if the account has a login name.
+	 * uniqueId: if the account has a uniqueId, otherwise
+	 * loginName: if the account has a login name.
 	 *
-	 * @param realm     Account realm
 	 * @param uniqueId  Unique id.
 	 * @param loginName Login name.
 	 *
 	 * @return Account signature.
 	 */
-	private String makeAccountSignature(OsAccountRealm realm, String uniqueId,  String loginName) {
+	private String makeAccountSignature(String uniqueId,  String loginName) {
 		// Create a signature. 
 		String signature;
 		if (Strings.isNullOrEmpty(uniqueId) == false) {
-			signature = String.format("%d/%s", realm.getId(), uniqueId);
+			signature = uniqueId; 
 		} else if (Strings.isNullOrEmpty(loginName) == false)  {
-			signature = String.format("%d/%s", realm.getId(), loginName);
+			signature = loginName; 
 		} else {
 			throw new IllegalArgumentException("OS Account must have either a uniqueID or a login name.");
 		}

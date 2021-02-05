@@ -437,14 +437,14 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null
 				+ "full_name TEXT DEFAULT NULL, "	// full name, if available, may be null
-				+ "realm_id " + dbQueryHelper.getBigIntType() + ", "		// row id for the realm, may be null if only SID is known 
+				+ "realm_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "		// realm for the account 
 				+ "unique_id TEXT DEFAULT NULL, "	// SID/UID, if available
-				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either ‘realm_id/unique_id’ if unique_id is defined or realm_id/login_name’ if unique_id is not defined.
+				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "admin INTEGER DEFAULT 0," // is admin account
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "		
-				+ "UNIQUE(signature), "
+				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 		

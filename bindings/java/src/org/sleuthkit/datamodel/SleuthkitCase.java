@@ -2420,14 +2420,14 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "login_name TEXT DEFAULT NULL, " // login name, if available, may be null
 					+ "full_name TEXT DEFAULT NULL, " // full name, if available, may be null
-					+ "realm_id " + bigIntDataType + ", " // row id for the realm, may be null if only SID is known 
+					+ "realm_id " + bigIntDataType + " NOT NULL, " // realm for the account
 					+ "unique_id TEXT DEFAULT NULL, " // SID/UID, if available
-					+ "signature TEXT NOT NULL, " // realm/loginname or sid 
+					+ "signature TEXT NOT NULL, " // This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 					+ "status INTEGER, " // enabled/disabled/deleted
 					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
-					+ "UNIQUE(signature), "
+					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 
