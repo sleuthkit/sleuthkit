@@ -158,8 +158,8 @@ public class OsAccountTest {
 		String realmName1 = "basis";
 		OsAccountRealm domainRealm1 = caseDB.getOsAccountRealmManager().createRealmByName(realmName1, null);
 		
-		assertEquals(domainRealm1.getName().equalsIgnoreCase(realmName1), true );
-		assertEquals(domainRealm1.getNameType(), OsAccountRealm.RealmNameType.EXPRESSED);
+		assertEquals(domainRealm1.getRealmName().orElse("").equalsIgnoreCase(realmName1), true );
+		assertEquals(domainRealm1.getScopeConfidence(), OsAccountRealm.ScopeConfidence.KNOWN);
 		assertEquals(domainRealm1.getRealmAddr().orElse(null), null);	// verify there is no realm addr
 		
 	
@@ -181,14 +181,14 @@ public class OsAccountTest {
 		// create realm
 		OsAccountRealm localRealm2 = caseDB.getOsAccountRealmManager().createRealmByWindowsSid(realmAddr2, host2);
 		assertEquals(localRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
-		assertEquals(localRealm2.getHost().orElse(null).getName().equalsIgnoreCase(hostName2), true);
+		assertEquals(localRealm2.getScopeHost().orElse(null).getName().equalsIgnoreCase(hostName2), true);
 		
 		
 		
 		// update the a realm name
-		OsAccountRealm updatedRealm2 = caseDB.getOsAccountRealmManager().updateRealmName(localRealm2.getId(), realmName2, OsAccountRealm.RealmNameType.EXPRESSED);
+		OsAccountRealm updatedRealm2 = caseDB.getOsAccountRealmManager().updateRealmName(localRealm2.getId(), realmName2, OsAccountRealm.ScopeConfidence.KNOWN);
 		assertEquals(updatedRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
-		assertEquals(updatedRealm2.getName().equalsIgnoreCase(realmName2), true );
+		assertEquals(updatedRealm2.getRealmName().orElse("").equalsIgnoreCase(realmName2), true );
 		
 		
 		
@@ -199,7 +199,7 @@ public class OsAccountTest {
 		Optional<OsAccountRealm> existingRealm3 = caseDB.getOsAccountRealmManager().getRealmByWindowsSid(realmAddr3, null, transaction);
 		assertEquals(existingRealm3.isPresent(), true);
 		assertEquals(existingRealm3.get().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2SubAuth), true );
-		assertEquals(existingRealm3.get().getName().equalsIgnoreCase(realmName2), true );
+		assertEquals(existingRealm3.get().getRealmName().orElse("").equalsIgnoreCase(realmName2), true );
 		
 		transaction.commit(); // faux commit
 		
@@ -243,7 +243,7 @@ public class OsAccountTest {
 		
 			assertEquals(osAccount1.isAdmin(), false);
 			assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
-			assertEquals(osAccount1.getRealm().getName().equalsIgnoreCase(realmName1), true);
+			assertEquals(osAccount1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 			
 			
 			
@@ -274,7 +274,7 @@ public class OsAccountTest {
 			
 			
 			assertEquals(osAccount1_copy1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
-			assertEquals(osAccount1_copy1.getRealm().getName().equalsIgnoreCase(realmName1), true);
+			assertEquals(osAccount1_copy1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 			
 			
 			assertEquals(osAccount1_copy1.isAdmin(), true); // should be true now

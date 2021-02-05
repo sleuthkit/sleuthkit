@@ -426,12 +426,13 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 		
 		stmt.execute("CREATE TABLE tsk_os_account_realms (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ "name TEXT NOT NULL, "	// realm name - host name or domain name
+				+ "realm_name TEXT DEFAULT NULL, "	// realm name - for a domain realm, may be null
 				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
-				+ "host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm just comprises of a single host
-				+ "name_type INTEGER, "	// indicates if the realm name was  was expressed or inferred 
-				+ "UNIQUE(name, host_id), "
-				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
+				+ "realm_signature TEXT NOT NULL, "	// is either the realm_addr or the realm_addr, one of them must be known.  This is used to prevent duplicates.
+				+ "scope_host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm scope is a single host
+				+ "scope_confidence INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "UNIQUE(realm_signature, scope_host_id), "
+				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 		
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null

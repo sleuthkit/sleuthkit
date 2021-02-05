@@ -2385,12 +2385,13 @@ public class SleuthkitCase {
 
 			// Create OS Account and related tables 
 			statement.execute("CREATE TABLE tsk_os_account_realms (id " + primaryKeyType + " PRIMARY KEY, "
-					+ "name TEXT NOT NULL, " // realm name - host name or domain name
-					+ "realm_addr TEXT DEFAULT NULL, " // a sid/uid or some some other unique identifier, may be null
-					+ "host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm just comprises of a single host
-					+ "name_type INTEGER, " // indicates if the realm name was  was expressed or inferred 
-					+ "UNIQUE(name, host_id), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
+				+ "realm_name TEXT DEFAULT NULL, "	// realm name - for a domain realm, may be null
+				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
+				+ "realm_signature TEXT NOT NULL, "	// is either the realm_addr or the realm_addr, one of them must be known.  This is used to prevent duplicates.
+				+ "scope_host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm scope is a single host
+				+ "name_type INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "UNIQUE(realm_signature, scope_host_id), "
+				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 
 			// Add host column and create a host for each existing data source.
 			// We will create a host for each device id so that related data sources will 

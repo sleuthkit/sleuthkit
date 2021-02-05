@@ -21,27 +21,39 @@ package org.sleuthkit.datamodel;
 import java.util.Optional;
 
 /**
- * Encapsulates the scope of an OsAccount. An account is unique within a realm.
+ * Realm encapsulates the scope of an OsAccount. An account is unique within a realm.
  *
- * The realm may be comprised of a single host, say for a local account, or a
- * domain.
+ * A realm may be host scoped, say for a local standalone computer, or 
+ * domain scoped.
  */
 public final class OsAccountRealm {
 
 	private final long id;	// row id 
-	private final String name;
-	private final String realmAddr;
+	private String realmName; // realm name - may be updated later.
+	private String realmAddr; // realm address - may be updated later. 
+	private String signature; // either realm name or address 
 	private final Host host;	// if the realm consists of a single host, may be null
-	private final RealmNameType nameType;	// if the realm is inferred
+	private final ScopeConfidence scopeConfidence;
 
 	
 	
-	OsAccountRealm(long id, String name, RealmNameType nameType, String realmAddr, Host host) {
+	/**
+	 * Creates OsAccountRealm.
+	 * 
+	 * @param id Row Id.
+	 * @param realmName Realm name, may be null.
+	 * @param realmAddr Unique numeric address for realm, may be null only if realm name is not null.
+	 * @param signature Either the address or the name.
+	 * @param host Host if the realm is host scoped.
+	 * @param scopeConfidence  Scope confidence.
+	 */
+	OsAccountRealm(long id, String realmName, String realmAddr, String signature, Host host, ScopeConfidence scopeConfidence) {
 		this.id = id;
-		this.name = name;
+		this.realmName = realmName;
 		this.realmAddr = realmAddr;
+		this.signature = signature;
 		this.host = host;
-		this.nameType = nameType;
+		this.scopeConfidence = scopeConfidence;
 	}
 
 	/**
@@ -56,85 +68,95 @@ public final class OsAccountRealm {
 	/**
 	 * Get the realm name.
 	 *
-	 * @return Realm name.
+	 * @return Optional with realm name.
 	 */
-	public String getName() {
-		return name;
+	public Optional<String> getRealmName() {
+		return Optional.ofNullable(realmName);
 	}
 
 	/**
 	 * Get the realm address.
 	 *
-	 * @return Optional realm unique id..
+	 * @return Optional realm unique address.
 	 */
 	public Optional<String> getRealmAddr() {
 		return Optional.ofNullable(realmAddr);
 	}
 
 	/**
-	 * Get the realm host, if it's a single host realm.
+	 * Get the realm signature.
+	 *
+	 * @return Realm signature.
+	 */
+	String getSignature() {
+		return signature;
+	}
+	
+	/**
+	 * Get the realm scope host, if it's a single host realm.
 	 * 
 	 * @return Optional host.
 	 */
-	public Optional<Host> getHost() {
+	public Optional<Host> getScopeHost() {
 		return Optional.ofNullable(host);
 	}
 
 	/**
-	 * Get realm name type.
+	 * Get realm scope confidence.
 	 * 
-	 * @return Realm name type. 
+	 * @return Realm scope confidence. 
 	 */
-	public RealmNameType getNameType() {
-		return nameType;
+	public ScopeConfidence getScopeConfidence() {
+		return scopeConfidence;
 	}
 	
 	
 	/**
-	 * Enum to encapsulate realm name type. 
-	 * 
-	 * Realm name may be explicitly expressed, say in an event log.
-	 * Occasionally, a name may be inferred  (e.g. for stand alone machines)
+	 * Enum to encapsulate scope confidence.
+	 *
+	 * We may know for sure that a realm is domain scope or host scope, based
+	 * on where it is found. Occasionally, we may have to infer or assume a scope to
+	 * initially create a realm.
 	 */
-	public enum RealmNameType {
-		EXPRESSED(0, "Expressed"),	// realm name was explicitly expressed 
-		INFERRED(1, "Inferred");	// name is inferred
+	public enum ScopeConfidence {
+		KNOWN(0, "Known"),			// realm scope is known for sure.
+		INFERRED(1, "Inferred");	// realm scope is inferred
 
 		private final int id;
 		private final String name; 
 
-		RealmNameType(int id, String name) {
+		ScopeConfidence(int id, String name) {
 			this.id = id;
 			this.name = name;
 		}
 
 		/**
-		 * Get the id of the realm name type.
+		 * Get the id of the realm scope confidence.
 		 * 
-		 * @return Realm name type id.
+		 * @return Realm scope confidence id.
 		 */
 		public int getId() {
 			return id;
 		}
 		
 		/**
-		 * Get the realm name type name.
+		 * Get the realm scope confidence name.
 		 * 
-		 * @return Realm name type name.
+		 * @return Realm scope confidence name.
 		 */
 		String getName() {
 			return name;
 		}
 		
 		/**
-		 * Gets a realm name type enum by id. 
+		 * Gets a realm scope confidence enum by id. 
 		 * 
-		 * @param typeId Realm name type id.
+		 * @param typeId Realm scope confidence id.
 		 * 
-		 * @return RealmNameType enum.
+		 * @return ScopeConfidence enum.
 		 */
-		public static RealmNameType fromID(int typeId) {
-			for (RealmNameType statusType : RealmNameType.values()) {
+		public static ScopeConfidence fromID(int typeId) {
+			for (ScopeConfidence statusType : ScopeConfidence.values()) {
 				if (statusType.ordinal() == typeId) {
 					return statusType;
 				}
