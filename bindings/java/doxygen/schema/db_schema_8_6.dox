@@ -341,13 +341,13 @@ Defines the status options for ingest jobs. Must match the names and ordering in
 
 ##  ingest_jobs
 One row is created each time ingest is started, which is a set of modules in a pipeline. 
-- ingest_job_id 
-- obj_id 
-- host_name 
-- start_date_time 
-- end_date_time 
-- status_id 
-- settings_dir 
+- ingest_job_id - Id of the ingest job
+- obj_id - Id of the data source ingest is being run on
+- host_name - Name of the host that is running this ingest job
+- start_date_time - Time the ingest job started (stored in number of milliseconds since Jan 1, 1970 UTC)
+- end_date_time - Time the ingest job finished (stored in number of milliseconds since Jan 1, 1970 UTC)
+- status_id - Ingest job status (references type_id from ingest_job_status_types)
+- settings_dir - Directory of the job's settings (may be an empty string)
 
 ##  ingest_job_modules
 Defines the order of the modules in a given pipeline (i.e. ingest_job)
