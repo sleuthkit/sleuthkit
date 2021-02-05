@@ -39,7 +39,6 @@ class TimelineEventArtifactTypeSingleDescription extends TimelineEventArtifactTy
 		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
 
 		if (timeAttribute == null) {
-			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.toString()); // NON-NLS
 			return null;
 		}
 

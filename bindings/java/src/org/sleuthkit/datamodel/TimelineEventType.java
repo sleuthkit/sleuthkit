@@ -202,11 +202,11 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, 
-					WEB_COOKIE_ACCESSED, WEB_COOKIE_START, 
+			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE,
+					WEB_COOKIE_ACCESSED,
 					WEB_COOKIE_END, WEB_BOOKMARK,
-					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL, 
-					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED, 
+					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL,
+					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED,
 					WEB_FORM_AUTOFILL_ACCESSED);
 		}
 	};
@@ -238,15 +238,15 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	TimelineEventType FILE_MODIFIED = new FilePathEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
 			HierarchyLevel.EVENT, FILE_SYSTEM);
-	
+
 	TimelineEventType FILE_ACCESSED = new FilePathEventType(5,
 			getBundle().getString("FileSystemTypes.fileAccessed.name"), // NON-NLS
 			HierarchyLevel.EVENT, FILE_SYSTEM);
-	
+
 	TimelineEventType FILE_CREATED = new FilePathEventType(6,
 			getBundle().getString("FileSystemTypes.fileCreated.name"), // NON-NLS
 			HierarchyLevel.EVENT, FILE_SYSTEM);
-	
+
 	TimelineEventType FILE_CHANGED = new FilePathEventType(7,
 			getBundle().getString("FileSystemTypes.fileChanged.name"), // NON-NLS
 			HierarchyLevel.EVENT, FILE_SYSTEM);
@@ -257,28 +257,28 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_WEB_DOWNLOAD),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-	
+
 	TimelineEventType WEB_COOKIE = new URLArtifactEventType(9,
 			getBundle().getString("WebTypes.webCookies.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
-	
+
 	TimelineEventType WEB_BOOKMARK = new URLArtifactEventType(10,
 			getBundle().getString("WebTypes.webBookmarks.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_BOOKMARK),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
-	
+
 	TimelineEventType WEB_HISTORY = new URLArtifactEventType(11,
 			getBundle().getString("WebTypes.webHistory.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-	
+
 	TimelineEventType WEB_SEARCH = new URLArtifactEventType(12,
 			getBundle().getString("WebTypes.webSearch.name"), // NON-NLS
 			WEB_ACTIVITY,
@@ -330,7 +330,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				final BlackboardAttribute longStart = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE_START));
 				final BlackboardAttribute latEnd = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE_END));
 				final BlackboardAttribute longEnd = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE_END));
-				return String.format("from %1$s %2$s to %3$s %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
+				return String.format("From latitude: %1$s longitude: %2$s To latitude: %3$s longitude: %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
 			});
 
 	@SuppressWarnings("deprecation")
@@ -343,7 +343,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			artf -> {
 				final BlackboardAttribute longitude = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE));
 				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
-				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
+				return "Latitude: " + stringValueOf(latitude) + " Longitude: " + stringValueOf(longitude); // NON-NLS
 			},
 			new EmptyExtractor());
 
@@ -362,7 +362,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
 				}
 
-				return "Start: " + stringValueOf(phoneNumber);
+				return "Phone Number: " + stringValueOf(phoneNumber);
 			},
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
 
@@ -486,7 +486,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_WEB_FORM_ADDRESS),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_EMAIL));
-	
+
 	TimelineEventType GPS_BOOKMARK = new TimelineEventArtifactTypeImpl(29,
 			getBundle().getString("MiscTypes.GPSBookmark.name"), // NON-NLS
 			MISC_TYPES,
@@ -496,7 +496,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			artf -> {
 				final BlackboardAttribute longitude = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE));
 				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
-				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
+				return "Latitude: " + stringValueOf(latitude) + " Longitude: " + stringValueOf(longitude); // NON-NLS
 			},
 			new EmptyExtractor());
 
@@ -509,7 +509,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			artf -> {
 				final BlackboardAttribute longitude = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE));
 				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
-				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
+				return "Latitude: " + stringValueOf(latitude) + " Longitude: " + stringValueOf(longitude); // NON-NLS
 			},
 			new EmptyExtractor());
 
@@ -522,7 +522,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			artf -> {
 				final BlackboardAttribute longitude = getAttributeSafe(artf, new Type(TSK_GEO_LONGITUDE));
 				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
-				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
+				return "Latitude: " + stringValueOf(latitude) + " Longitude: " + stringValueOf(longitude); // NON-NLS
 			},
 			new EmptyExtractor());
 
@@ -531,34 +531,39 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_GPS_TRACK),
 			new Type(TSK_NAME));
-	
+
 	TimelineEventType METADATA_LAST_PRINTED = new TimelineEventArtifactTypeImpl(33,
 			getBundle().getString("MiscTypes.metadataLastPrinted.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA),
 			new BlackboardAttribute.Type(TSK_LAST_PRINTED_DATETIME),
-            artf -> {return getBundle().getString("MiscTypes.metadataLastPrinted.name");},
-	        new EmptyExtractor(),
-	        new EmptyExtractor());
-
+			artf -> {
+				return getBundle().getString("MiscTypes.metadataLastPrinted.name");
+			},
+			new EmptyExtractor(),
+			new EmptyExtractor());
 
 	TimelineEventType METADATA_LAST_SAVED = new TimelineEventArtifactTypeImpl(34,
 			getBundle().getString("MiscTypes.metadataLastSaved.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA),
 			new BlackboardAttribute.Type(TSK_DATETIME_MODIFIED),
-            artf -> {return getBundle().getString("MiscTypes.metadataLastSaved.name");},
-	        new EmptyExtractor(),
-	       new EmptyExtractor());
+			artf -> {
+				return getBundle().getString("MiscTypes.metadataLastSaved.name");
+			},
+			new EmptyExtractor(),
+			new EmptyExtractor());
 
 	TimelineEventType METADATA_CREATED = new TimelineEventArtifactTypeImpl(35,
 			getBundle().getString("MiscTypes.metadataCreated.name"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_METADATA),
 			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
-            artf -> {return getBundle().getString("MiscTypes.metadataCreated.name");},
-	        new EmptyExtractor(),
-	        new EmptyExtractor());
+			artf -> {
+				return getBundle().getString("MiscTypes.metadataCreated.name");
+			},
+			new EmptyExtractor(),
+			new EmptyExtractor());
 
 	TimelineEventType PROGRAM_EXECUTION = new TimelineEventArtifactTypeImpl(36,
 			getBundle().getString("MiscTypes.programexecuted.name"),// NON-NLS
@@ -566,26 +571,27 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_PROG_RUN),
 			new Type(TSK_DATETIME),
 			new AttributeExtractor(new Type(TSK_PROG_NAME)),
-            artf -> {
-	                 String userName = stringValueOf(getAttributeSafe(artf, new Type(TSK_USER_NAME)));
-				     if (userName != null) {
-					    return userName;
-				     }
-	                 return "";},
+			artf -> {
+				String userName = stringValueOf(getAttributeSafe(artf, new Type(TSK_USER_NAME)));
+				if (userName != null) {
+					return userName;
+				}
+				return "";
+			},
 			new AttributeExtractor(new Type(TSK_COMMENT)));
-	
+
 	TimelineEventType WEB_FORM_AUTOFILL_ACCESSED = new TimelineEventArtifactTypeImpl(37,
-		getBundle().getString("WebTypes.webFormAutofillAccessed.name"),
-		WEB_ACTIVITY,
-		new BlackboardArtifact.Type(TSK_WEB_FORM_AUTOFILL),
-		new Type(TSK_DATETIME_ACCESSED),
-		artf -> {
-			final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
-			final BlackboardAttribute value = getAttributeSafe(artf, new Type(TSK_VALUE));
-			final BlackboardAttribute count = getAttributeSafe(artf, new Type(TSK_COUNT));
-			return stringValueOf(name) + ":" + stringValueOf(value) + " Access count: " + stringValueOf(count); // NON-NLS
-		}, new EmptyExtractor(), new EmptyExtractor());
-	
+			getBundle().getString("WebTypes.webFormAutofillAccessed.name"),
+			WEB_ACTIVITY,
+			new BlackboardArtifact.Type(TSK_WEB_FORM_AUTOFILL),
+			new Type(TSK_DATETIME_ACCESSED),
+			artf -> {
+				final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
+				final BlackboardAttribute value = getAttributeSafe(artf, new Type(TSK_VALUE));
+				final BlackboardAttribute count = getAttributeSafe(artf, new Type(TSK_COUNT));
+				return stringValueOf(name) + ":" + stringValueOf(value) + " Access count: " + stringValueOf(count); // NON-NLS
+			}, new EmptyExtractor(), new EmptyExtractor());
+
 	TimelineEventType CALL_LOG_END = new TimelineEventArtifactTypeImpl(38,
 			getBundle().getString("MiscTypes.CallsEnd.name"), // NON-NLS
 			MISC_TYPES,
@@ -601,11 +607,11 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER_FROM));
 				}
 
-				return "End: " + stringValueOf(phoneNumber);
+				return "Phone number: " + stringValueOf(phoneNumber);
 			},
 			new AttributeExtractor(new Type(TSK_DIRECTION)));
-	
-	TimelineEventType EMAIL_RCVD = new TimelineEventArtifactTypeImpl(38,
+
+	TimelineEventType EMAIL_RCVD = new TimelineEventArtifactTypeImpl(39,
 			getBundle().getString("MiscTypes.EmailRcvd.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_EMAIL_MSG),
@@ -619,7 +625,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				if (emailTo.length() > TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX) {
 					emailTo = emailTo.substring(0, TimelineEventArtifactTypeImpl.EMAIL_TO_FROM_LENGTH_MAX);
 				}
-				return "Received from: " + emailFrom + " Received by: " + emailTo; // NON-NLS
+				return "Message from: " + emailFrom + " To: " + emailTo; // NON-NLS
 			},
 			new AttributeExtractor(new Type(TSK_SUBJECT)),
 			artf -> {
@@ -630,35 +636,28 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				}
 				return msg;
 			});
-	
-	TimelineEventType WEB_FORM_ADDRESSES_MODIFIED = new URLArtifactEventType(39,
-		getBundle().getString("WebTypes.webFormAddressModified.name"),//NON-NLS
-		WEB_ACTIVITY,
-		new BlackboardArtifact.Type(TSK_WEB_FORM_ADDRESS),
-		new Type(TSK_DATETIME_MODIFIED),
-		new Type(TSK_EMAIL));
-	
-	TimelineEventType WEB_COOKIE_ACCESSED = new URLArtifactEventType(40,
-		getBundle().getString("WebTypes.webCookiesAccessed.name"),// NON-NLS
-		WEB_ACTIVITY,
-		new BlackboardArtifact.Type(TSK_WEB_COOKIE),
-		new Type(TSK_DATETIME_ACCESSED),
-		new Type(TSK_URL));
-		
-	TimelineEventType WEB_COOKIE_END = new URLArtifactEventType(41,
-		getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
-		WEB_ACTIVITY,
-		new BlackboardArtifact.Type(TSK_WEB_COOKIE),
-		new Type(TSK_DATETIME_END),
-		new Type(TSK_URL));
-	
-	TimelineEventType WEB_COOKIE_START = new URLArtifactEventType(42,
-		getBundle().getString("WebTypes.webCookiesStart.name"),// NON-NLS
-		WEB_ACTIVITY,
-		new BlackboardArtifact.Type(TSK_WEB_COOKIE),
-		new Type(TSK_DATETIME_START),
-		new Type(TSK_URL));
-			
+
+	TimelineEventType WEB_FORM_ADDRESSES_MODIFIED = new URLArtifactEventType(40,
+			getBundle().getString("WebTypes.webFormAddressModified.name"),//NON-NLS
+			WEB_ACTIVITY,
+			new BlackboardArtifact.Type(TSK_WEB_FORM_ADDRESS),
+			new Type(TSK_DATETIME_MODIFIED),
+			new Type(TSK_EMAIL));
+
+	TimelineEventType WEB_COOKIE_ACCESSED = new URLArtifactEventType(41,
+			getBundle().getString("WebTypes.webCookiesAccessed.name"),// NON-NLS
+			WEB_ACTIVITY,
+			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+			new Type(TSK_DATETIME_ACCESSED),
+			new Type(TSK_URL));
+
+	TimelineEventType WEB_COOKIE_END = new URLArtifactEventType(42,
+			getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
+			WEB_ACTIVITY,
+			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+			new Type(TSK_DATETIME_END),
+			new Type(TSK_URL));
+
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();
 	}

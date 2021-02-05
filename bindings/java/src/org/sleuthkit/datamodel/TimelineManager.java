@@ -512,28 +512,41 @@ public final class TimelineManager {
 		}
 	}
 	
+	/**
+	 * Returns an event description id for an existing event.
+	 * 
+	 * @param dataSourceObjId	Existing data source object id
+	 * @param fileObjId			Existing content object id
+	 * @param artifactID		Existing artifact id
+	 * @param fullDescription	Full event description
+	 * @param connection		Database connection
+	 * 
+	 * @return The id of an existing description or null if none what found.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	private Long getEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
 			String fullDescription, CaseDbConnection connection) throws TskCoreException {
-		
+
 		String query = "SELECT event_description_id FROM tsk_event_descriptions "
 				+ "WHERE data_source_obj_id = " + dataSourceObjId
 				+ " AND content_obj_id = " + fileObjId
 				+ " AND artifact_id = " + artifactID
-				+ " AND full_description " + (fullDescription != null ?  "= '" + fullDescription + "'" : "IS null");
-		
-		caseDB.acquireSingleUserCaseReadLock();
-		try(ResultSet resultSet = connection.createStatement().executeQuery(query)) {
+				+ " AND full_description " + (fullDescription != null ? "= '" + fullDescription + "'" : "IS null");
 
-			if(resultSet.next()) {
+		caseDB.acquireSingleUserCaseReadLock();
+		try (ResultSet resultSet = connection.createStatement().executeQuery(query)) {
+
+			if (resultSet.next()) {
 				long id = resultSet.getLong(1);
 				return id;
 			}
-		} catch(SQLException ex) {
+		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to get description, dataSource=%d, fileObjId=%d, artifactId=%d", dataSourceObjId, fileObjId, artifactID), ex);
-		}finally {
+		} finally {
 			caseDB.releaseSingleUserCaseReadLock();
 		}
-		
+
 		return null;
 	}
 
@@ -667,7 +680,7 @@ public final class TimelineManager {
 							.ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
 					duplicateExists = true;
-					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make artifact event duplicate"), ex);
+					logger.log(Level.INFO, getDuplicateExceptionMessage(artifact, "Attempt to make artifact event duplicate"), ex);
 				}
 			}
 
@@ -676,7 +689,7 @@ public final class TimelineManager {
 				try {
 					addOtherEventDesc(artifact).ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
-					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make 'other' artifact event duplicate"), ex);
+					logger.log(Level.INFO, getDuplicateExceptionMessage(artifact, "Attempt to make 'other' artifact event duplicate"), ex);
 				}
 			}
 		}
