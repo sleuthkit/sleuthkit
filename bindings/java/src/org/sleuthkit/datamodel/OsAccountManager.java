@@ -201,7 +201,7 @@ public final class OsAccountManager {
 			long parentObjId = 0;
 			
 			// RAMAN TODO: what is the object type ??
-			int objTypeId = TskData.ObjectType.ARTIFACT.getObjectType();
+			int objTypeId = TskData.ObjectType.OS_ACCOUNT.getObjectType();
 			
 			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
 			

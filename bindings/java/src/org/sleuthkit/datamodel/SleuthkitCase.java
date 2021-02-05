@@ -2392,6 +2392,29 @@ public class SleuthkitCase {
 					+ "UNIQUE(name, host_id), "
 					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
 
+			// Add host column and create a host for each existing data source.
+			// We will create a host for each device id so that related data sources will 
+			// be associated with the same host.
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN host_id INTEGER REFERENCES tsk_hosts(id)");
+			Statement updateStatement = connection.createStatement();
+			try (ResultSet resultSet = statement.executeQuery("SELECT obj_id, device_id FROM data_source_info")) {
+				Map<String, Long> hostMap = new HashMap<>();
+				long hostIndex = 1;
+				while (resultSet.next()) {
+					long objId = resultSet.getLong("obj_id");
+					String deviceId = resultSet.getString("device_id");
+					
+					if (! hostMap.containsKey(deviceId)) {
+						String hostName = "Host " + hostIndex;
+						updateStatement.execute("INSERT INTO tsk_hosts (name, status) VALUES ('" + hostName + "', 0)");
+						hostMap.put(deviceId, hostIndex);
+						hostIndex++;
+					}
+					updateStatement.execute("UPDATE data_source_info SET host_id = " + hostMap.get(deviceId) + " WHERE obj_id = " + objId);
+				}
+			} finally {
+				closeStatement(updateStatement);
+			}
 			
 			statement.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "login_name TEXT DEFAULT NULL, " // login name, if available, may be null
@@ -2441,7 +2464,6 @@ public class SleuthkitCase {
 			// add owner_uid & os_account_obj_id columns to tsk_files
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN owner_uid TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_obj_id " + bigIntDataType + " DEFAULT NULL REFERENCES tsk_os_accounts(os_account_obj_id) DEFAULT NULL");
-
 
 			return new CaseDbSchemaVersionNumber(8, 7);
 
@@ -2986,6 +3008,8 @@ public class SleuthkitCase {
 							}
 							break;
 						case REPORT:
+							break;
+						case OS_ACCOUNT:
 							break;
 						default:
 							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);

@@ -187,7 +187,7 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE data_source_info (obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, device_id TEXT NOT NULL, "
 				+ "time_zone TEXT NOT NULL, acquisition_details TEXT, added_date_time "+ dbQueryHelper.getBigIntType() + ", "
 				+ "acquisition_tool_settings TEXT, acquisition_tool_name TEXT, acquisition_tool_version TEXT, "
-				+ "host_id " + dbQueryHelper.getBigIntType() + ", "
+				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 
