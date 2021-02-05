@@ -293,7 +293,8 @@ public final class HostManager {
 	/**
 	 * Get all hosts with a particular status.
 	 *
-	 * @param status The status to filter on.
+	 * @param status The status to filter on (if null, this will search for
+	 *               hosts with status IS NULL).
 	 *
 	 * @return Collection of hosts.
 	 *
@@ -301,7 +302,7 @@ public final class HostManager {
 	 */
 	public Set<Host> getHostsByStatus(HostStatus status) throws TskCoreException {
 		boolean nullStatus = status == null;
-		String whereStatement = nullStatus ? " status = NULL " : " status = ? ";
+		String whereStatement = nullStatus ? " status IS NULL " : " status = ? ";
 		String queryString = "SELECT * FROM tsk_hosts WHERE " + whereStatement;
 
 		Set<Host> hosts = new HashSet<>();
