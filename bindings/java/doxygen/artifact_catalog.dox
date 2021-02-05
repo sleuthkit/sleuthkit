@@ -776,8 +776,8 @@ A Web cookie found.
 - TSK_VALUE (The Web cookie value attribute)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_DATETIME_ACCESSED (Datetime the Web Cookie was last accessed, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DATETIME_CREATED (Datetime the Web cookie was created, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_START (Datetime the Web cookie session was started, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DATETIME_END (Expiration datetime of the Web cookie, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DOMAIN (The domain the Web cookie serves)
 - TSK_PROG_NAME (Name of the application or application extractor that stored the Web cookie)
