@@ -297,7 +297,7 @@ Defines what tag names the user has created and can therefore be applied.
 - rank - Used to order the tag names for a given tag set for display purposes
 
 ## tsk_tag_sets
-Used to group entries from the tag_names table.
+Used to group entries from the tag_names table. An object can have only one tag from a tag set at a time. 
 - tag_set_id - Id of the tag set
 - name - Name of the tag set (unique, should be human readable)
 
