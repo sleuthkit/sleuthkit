@@ -364,7 +364,6 @@ class TskCaseDbBridge {
 			// If not, create accounts.
 			Iterator<FileInfo> it = batchedFiles.iterator();
 
-			beginTransaction();
 			while (it.hasNext()) {
 				FileInfo fileInfo = it.next();
 				String ownerUid = fileInfo.ownerUid;
@@ -378,14 +377,13 @@ class TskCaseDbBridge {
 					Host host = null;
 
 					// query the DB to get the owner account
-					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getOsAccount(ownerUid, host, trans);
+					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getOsAccount(ownerUid, host);
 					if (ownerAccount.isPresent()) {
 						// found account - add to map 
 						ownerIdToAccountMap.put(ownerUid, ownerAccount.get());
 					} else {
 
 						// account not found in the database,  create the account and add to map
-						commitTransaction();
 
 						// RAMAN TBD: what should this realm name be?
 						String realmName = "DUMMY";
@@ -393,13 +391,9 @@ class TskCaseDbBridge {
 						// create the account
 						OsAccount newAccount = caseDb.getOsAccountManager().createOsAccount(ownerUid, null, realmName, host);
 						ownerIdToAccountMap.put(ownerUid, newAccount);
-
-						beginTransaction();
 					}
 				}
 			}
-			commitTransaction();
-			
 			
 			
 			

@@ -31,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
-import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
  * Responsible for creating/updating/retrieving the OS accounts for files
@@ -132,14 +131,13 @@ public final class OsAccountManager {
 	 * @param realmName       Realm within which the accountId & login name is
 	 *                        unique.
 	 * @param host            Host for the realm, may be null.
-	 * @param transaction     Transaction to use for database operation.
 	 *
 	 * @return Optional with OsAccount matching the given uniqueId, or
 	 *         realm/login name. Optional.empty if no match is found.
 	 * 
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
-	public Optional<OsAccount> getOsAccount(String uniqueAccountId, String loginName, String realmName, Host host, CaseDbTransaction transaction) throws TskCoreException {
+	public Optional<OsAccount> getOsAccount(String uniqueAccountId, String loginName, String realmName, Host host) throws TskCoreException {
 
 		// ensure at least one of the two is supplied - unique id or a login name
 		if (Strings.isNullOrEmpty(uniqueAccountId) && Strings.isNullOrEmpty(loginName)) {
@@ -150,8 +148,9 @@ public final class OsAccountManager {
 			throw new IllegalArgumentException("Realm name is required to create an OS account.");
 		}
 
+		try (CaseDbConnection connection = db.getConnection()) {
 		if (!Strings.isNullOrEmpty(uniqueAccountId)) {
-			Optional<OsAccount> osAccount = this.getOsAccountByUniqueId(uniqueAccountId, host, transaction.getConnection());
+			Optional<OsAccount> osAccount = this.getOsAccountByUniqueId(uniqueAccountId, host, connection);
 			if (osAccount.isPresent()) {
 				return osAccount;
 			}
@@ -159,15 +158,16 @@ public final class OsAccountManager {
 		
 		if (!Strings.isNullOrEmpty(loginName)) {
 			// first get the realm 
-			Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getRealmByName(realmName, host, transaction);
+			Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getRealmByName(realmName, host, connection);
 			if (!realm.isPresent()) {
 				throw new TskCoreException(String.format("No realm found with name %s", realmName));
 			}
 
-			return getOsAccountByLoginName(loginName, realm.get(), transaction.getConnection());
+			return getOsAccountByLoginName(loginName, realm.get(), connection);
 		}
 		
 		return Optional.empty();
+		}
 	}
 	
 	/**
@@ -237,17 +237,17 @@ public final class OsAccountManager {
 	 *
 	 * @param uniqueId    Account sid/uid.
 	 * @param host        Host for account realm, may be null.
-	 * @param transaction Transaction to use for database connection.
-	 *
 	 *
 	 * @return Optional with OsAccount, Optional.empty if no matching account is
 	 *         found.
 	 *
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
-	public Optional<OsAccount> getOsAccount(String uniqueId, Host host, CaseDbTransaction transaction) throws TskCoreException {
+	public Optional<OsAccount> getOsAccount(String uniqueId, Host host) throws TskCoreException {
 
-		return getOsAccountByUniqueId(uniqueId, host, transaction.getConnection());
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getOsAccountByUniqueId(uniqueId, host, connection);
+		}
 	}
 
 	/**
@@ -474,10 +474,10 @@ public final class OsAccountManager {
 		try (CaseDbConnection connection = this.db.getConnection()) {
 
 			// get the realm with given address
-			realm = db.getOsAccountRealmManager().getRealmByAddr(sid, host, connection);
+			realm = db.getOsAccountRealmManager().getWindowsRealm(sid, null, host);
 			if (!realm.isPresent()) {
 				// realm was not found, create it.
-				realm = Optional.of(db.getOsAccountRealmManager().createRealmByWindowsSid(sid, host));
+				realm = Optional.of(db.getOsAccountRealmManager().createWindowsRealm(sid, null, host, OsAccountRealm.RealmScope.UNKNOWN ));
 			}
 
 			return createOsAccount(sid, null, realm.get(), OsAccount.OsAccountStatus.UNKNOWN, connection);
@@ -505,24 +505,23 @@ public final class OsAccountManager {
 	 * 
 	 * @param sid         Account SID.
 	 * @param host        Host for the realm.
-	 * @param transaction Transaction to use.
 	 * 
 	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount is found.
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public Optional<OsAccount> getOsAccountByWindowsSID(String sid, Host host, CaseDbTransaction transaction) throws TskCoreException {
-
-		CaseDbConnection connection = transaction.getConnection();
-
+	public Optional<OsAccount> getOsAccountByWindowsSID(String sid, Host host) throws TskCoreException {
+		
 		// first get the realm for the given sid
-		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getRealmByWindowsSid(sid, host, transaction);
+		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getWindowsRealm(sid, null, host);
 		if (!realm.isPresent()) {	
 			throw new TskCoreException(String.format("No realm found for SID %s", sid));
 		}
 		
 		// search by SID
-		return getOsAccountByUniqueId(sid, host, connection);
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getOsAccountByUniqueId(sid, host, connection);
+		}
 	}
 	
 	/**
@@ -555,7 +554,6 @@ public final class OsAccountManager {
 			// get the realm with given name
 			realm = db.getOsAccountRealmManager().getRealmByName(realmName, host, connection);
 			if (!realm.isPresent()) {
-				// RAMAN TBD:  confirm this with Brian
 				realm = Optional.of(db.getOsAccountRealmManager().createRealmByName(realmName, host));
 			}
 
@@ -583,24 +581,24 @@ public final class OsAccountManager {
 	 * @param loginName   Account SID.
 	 * @param realmName   Domain name.
 	 * @param host        Host for the realm.
-	 * @param transaction Transaction to use.
 	 *
 	 * @return Optional with OsAccount, Optional.empty if no matching OS account
 	 *         is found.
 	 *
 	 * @throws TskCoreException
 	 */
-	public Optional<OsAccount> getOsAccountByLogin(String loginName, String realmName, Host host, CaseDbTransaction transaction) throws TskCoreException {
+	public Optional<OsAccount> getOsAccountByLogin(String loginName, String realmName, Host host) throws TskCoreException {
 
-		CaseDbConnection connection = transaction.getConnection();
+		try (CaseDbConnection connection = db.getConnection()) {
 
-		// first get the realm 
-		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getRealmByName(realmName, host, transaction);
-		if (!realm.isPresent()) {
-			throw new TskCoreException(String.format("No realm found with name %s", realmName));
+			// first get the realm 
+			Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getRealmByName(realmName, host, connection);
+			if (!realm.isPresent()) {
+				throw new TskCoreException(String.format("No realm found with name %s", realmName));
+			}
+
+			return getOsAccountByLoginName(loginName, realm.get(), connection);
 		}
-
-		return getOsAccountByLoginName(loginName, realm.get(), connection);
 	}
 	
 	/**
@@ -608,19 +606,15 @@ public final class OsAccountManager {
 	 * 
 	 * @param accountObjId Object id of the account to update.
 	 * @param loginName    Account login name.
-	 * @param transaction  Transaction
 	 *
 	 * 
 	 * @return OsAccount Updated account.
 	 * 
 	 * @throws TskCoreException 
 	 */
-	private OsAccount updateOsAccountLoginName(long accountObjId, String loginName, CaseDbTransaction transaction) throws TskCoreException {
+	private OsAccount updateOsAccountLoginName(long accountObjId, String loginName) throws TskCoreException {
 		
-		CaseDbConnection connection = transaction.getConnection();
-		
-		db.acquireSingleUserCaseWriteLock();
-		try {
+		try (CaseDbConnection connection = db.getConnection()) {
 			String updateSQL = "UPDATE tsk_os_accounts SET login_name = ? WHERE os_account_obj_id = ?";
 					
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
@@ -724,20 +718,17 @@ public final class OsAccountManager {
 	 * Updates the database for the given OsAccount.
 	 *
 	 * @param osAccount   OsAccount that needs to be updated.
-	 * @param transaction Transaction to use.
 	 *
 	 * @return OsAccount Updated account.
 	 *
 	 * @throws TskCoreException
 	 */
-	OsAccount updateAccount(OsAccount osAccount, CaseDbTransaction transaction ) throws TskCoreException {
-		
-		CaseDbConnection connection = transaction.getConnection();
-		db.acquireSingleUserCaseWriteLock();
+	OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
 		
 		String signature = makeAccountSignature(osAccount.getUniqueIdWithinRealm().orElse(null), osAccount.getLoginName().orElse(null));
 		
-		try {
+		db.acquireSingleUserCaseWriteLock();
+		try(CaseDbConnection connection = db.getConnection()) {
 			String updateSQL = "UPDATE tsk_os_accounts SET "
 										+ "		login_name = ?, "	// 1
 										+ "		unique_id = ?, "	// 2

@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -32,8 +33,9 @@ public final class OsAccountRealm {
 	private String realmName; // realm name - may be updated later.
 	private String realmAddr; // realm address - may be updated later. 
 	private String signature; // either realm name or address 
-	private final Host host;	// if the realm consists of a single host, may be null
-	private final ScopeConfidence scopeConfidence;
+	private Host host;	// if the realm consists of a single host, may be null
+	private ScopeConfidence scopeConfidence; // confidence in realm scope.
+	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
 	
 	
@@ -112,6 +114,60 @@ public final class OsAccountRealm {
 	
 	
 	/**
+	 * Enum to encapsulate a realm scope.
+	 *
+	 * Scope of a realm may extend to a single host (local) 
+	 * or to a domain.
+	 */
+	public enum RealmScope {
+		UNKNOWN(0, "Unknown"),			// realm scope is unknown.
+		LOCAL(1, "Local"),				// realm scope is a single host.
+		DOMAIN(2, "Domain");			// realm scope is a domain.
+		
+		private final int id;
+		private final String name; 
+
+		RealmScope(int id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		/**
+		 * Get the id of the realm scope.
+		 * 
+		 * @return Realm scope id.
+		 */
+		public int getId() {
+			return id;
+		}
+		
+		/**
+		 * Get the realm scope name.
+		 * 
+		 * @return Realm scope name.
+		 */
+		String getName() {
+			return name;
+		}
+		
+		/**
+		 * Gets a realm scope confidence enum by id. 
+		 * 
+		 * @param typeId Realm scope confidence id.
+		 * 
+		 * @return ScopeConfidence enum.
+		 */
+		public static RealmScope fromID(int typeId) {
+			for (RealmScope scopeType : RealmScope.values()) {
+				if (scopeType.ordinal() == typeId) {
+					return scopeType;
+				}
+			}
+			return null;
+		}
+	}
+	
+	/**
 	 * Enum to encapsulate scope confidence.
 	 *
 	 * We may know for sure that a realm is domain scope or host scope, based
@@ -165,4 +221,52 @@ public final class OsAccountRealm {
 		}
 	}
 	
+	/**
+	 * Set the realmName if it is not already set.
+	 * 
+	 * @param name Realm name to set.
+	 */
+	public void setRealmName(String name) {
+		if (Objects.isNull(this.realmName) && Objects.nonNull(name)) {
+			this.realmName = name;
+			this.isDirty = true;
+		}
+	}
+
+	/**
+	 * Set the realm addr if it is not already set.
+	 *
+	 * @param addr Realm addr to set.
+	 */
+	public void setRealmAddr(String addr) {
+		if (Objects.isNull(this.realmAddr) && Objects.nonNull(addr)) {
+			this.realmAddr = addr;
+			this.signature = addr;	// update signature also, addr is more definitive than name.
+			this.isDirty = true;
+		}
+	}
+
+	/**
+	 * Set the realm scope host if it is not already set.
+	 *
+	 * @param host Realm scope host to set.
+	 */
+	public void setHost(Host host) {
+		if (Objects.isNull(this.host) && Objects.nonNull(host)) {
+			this.host = host;
+			this.isDirty = true;
+		}
+	}
+
+	/**
+	 * Set the realm scope confidence if it is different from current value..
+	 *
+	 * @param scopeConfidence Realm scope confidence to set.
+	 */
+	public void setScopeConfidence(ScopeConfidence scopeConfidence) {
+		if (this.scopeConfidence.getId() != scopeConfidence.getId()) {
+			this.scopeConfidence = scopeConfidence;
+			this.isDirty = true;
+		}
+	}
 }
