@@ -293,7 +293,7 @@ Defines what tag names the user has created and can therefore be applied.
 - description  - Description  (can be empty string)
 - color - Color choice for tag (can be empty string)
 - knownStatus - Stores whether a tag is notable/bad (as org.sleuthkit.datamodel.TskData.FileKnown enum)
-- tag_set_id - Id of the tag set this tag name belons to (references tag_set_id in tsk_tag_sets, may be null)
+- tag_set_id - Id of the tag set this tag name belongs to (references tag_set_id in tsk_tag_sets, may be null)
 - rank - Used to order the tag names for a given tag set for display purposes
 
 ## tsk_tag_sets
@@ -353,7 +353,7 @@ One row is created each time ingest is started, which is a set of modules in a p
 Defines the order of the modules in a given pipeline (i.e. ingest_job)
 - ingest_job_id - Id for the ingest job (references ingest_job_id in ingest_jobs)
 - ingest_module_id - Id of the ingest module (references ingest_module_id in ingest_modules)
-- pipeline_position - Order that the ingest module will be run
+- pipeline_position - Order that the ingest module was run
 
 
 */
