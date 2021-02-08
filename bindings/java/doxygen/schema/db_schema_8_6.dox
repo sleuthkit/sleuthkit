@@ -28,8 +28,9 @@ Some general notes on this schema:
 # General Information Tables 
 ## tsk_db_info 
 Metadata about the database.
-- **schema_ver** - Version of the database schema used to create database (must be 2 in this case)
+- **schema_ver** - Major version number of the current database schema
 - **tsk_ver** - Version of TSK used to create database
+- **schema_minor_version** - Minor version number of the current database schema
 
 ## tsk_db_info_extended
 Name & Value pair table to store any information about the database.  For example, which schema it was created with. etc. 
@@ -51,6 +52,7 @@ Contains information about a data source, which could be an image.  This is wher
 - **obj_id** - Id of image/data source in tsk_objects
 - **device_id** - Unique ID (GUID) for the device that contains the data source. 
 - **time_zone** - Timezone that the data source was originally located in. 
+- **acquisition_details** - Notes on the acquisition of the data source
 
 
 # Disk Image Tables
@@ -62,8 +64,10 @@ Contains information about each set of images that is stored in the database.
 - **ssize** - Sector size of device in bytes
 - **tzone** - Timezone where image is from (the same format that TSK tools want as input)
 - **size** - Size of the original image (in bytes) 
-- **md5** - Hash of the image.  Currently, this is populated only if the input image is E01. 
-- **display_name** - display name of the image. 
+- **md5** - MD5 hash of the image (for compressed data such as E01, the hashes are of the decompressed image, not the E01 itself)
+- **sha1** - SHA-1 hash of the image
+- **sha256** - SHA-256 hash of the image
+- **display_name** - display name of the image
 
 ## tsk_image_names
 Stores path(s) to file(s) on disk that make up an image set.
@@ -98,6 +102,7 @@ Contains information about pools (for APFS, logical disk management, etc.)
 ## tsk_fs_info
 Contains one for for every file system in the images. 
 - **obj_id** - Id of filesystem in tsk_objects
+- **data_source_obj_id** - Id of the data source for this file system
 - **img_offset** - Byte offset that filesystem starts at
 - **fs_type** - Type of file system (as org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM)
 - **block_size** - Size of each block (in bytes)
@@ -111,12 +116,13 @@ Contains one for for every file system in the images.
 Contains one for for every file found in the images.  Has the basic metadata for the file. 
 - **obj_id** - Id of file in tsk_objects
 - **fs_obj_id** - Id of filesystem in tsk_objects (NULL if file is not located in a file system -- carved in unpartitioned space, etc.)
-- **type** - Type of file: filesystem, carved, etc. (as org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM enum)
+- **data_source_obj_id** - Id of the data source for this file
 - **attr_type** - Type of attribute (as org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM)
 - **attr_id** - Id of attribute
 - **name** - Name of attribute. Will be NULL if attribute doesn't have a name.  Must not have any slashes in it. 
 - **meta_addr** - Address of the metadata structure that the name points to.
-- **meta_seq** - Sequence of the metadata address - New in V3
+- **meta_seq** - Sequence of the metadata address
+- **type** - Type of file: filesystem, carved, etc. (as org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM enum)
 - **has_layout** - True if file has an entry in tsk_file_layout
 - **has_path** - True if file has an entry in tsk_files_path
 - **dir_type** - File type information: directory, file, etc. (as org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM)
@@ -132,9 +138,11 @@ Contains one for for every file found in the images.  Has the basic metadata for
 - **uid** - Owner id
 - **gid** - Group id
 - **md5** - MD5 hash of file contents
+- **sha256** - SHA-256 hash of file contents
 - **known** - Known status of file (as org.sleuthkit.datamodel.TskData.FileKnown)
 - **parent_path** - full path of parent folder. Must begin and end with a '/' (Note that a single '/' is valid).
 - **mime_type** - MIME type of the file content, if it has been detected. 
+- **extension** - File extension
 
 ## tsk_file_layout
 Stores the layout of a file within the image.  A file will have one or more rows in this table depending on how fragmented it was. All file types use this table (file system, carved, unallocated blocks, etc.).
@@ -176,25 +184,29 @@ NOTE: This table is not used in any code.
 
 
 # Blackboard Tables 
-The \ref mod_bbpage is used to store results from analysis modules. 
+The \ref mod_bbpage "Blackboard" is used to store results from analysis modules. 
 
 ## blackboard_artifacts
 Stores artifacts associated with objects.
 - **artifact_id** - Id of the artifact (assigned by the database)
 - **obj_id** - Id of the associated object
 - **artifact_type_id** - Id for the type of artifact (can be looked up in the blackboard_artifact_types table)
+- **data_source_obj_id** - Id of the data source for this artifact
+- **artifact_type_id** - Type of artifact (references artifact_type_id in blackboard_artifact_types)
+- **review_status_id** - Review status (references review_status_id in review_statuses)
 
 ## blackboard_attributes
-Stores name value pairs associated with an artifact. Only one of the value columns should be populated
+Stores name value pairs associated with an artifact. Only one of the value columns should be populated.
 - **artifact_id** - Id of the associated artifact.
+- **artifact_type_id** - Artifact type of the associated artifact.
 - **source** - Source string, should be module name that created the entry.
 - **context** - Additional context string
 - **attribute_type_id** - Id for the type of attribute (can be looked up in the blackboard_attribute_types)
-- **value_type** - The type of value (0 for string, 1 for int, 2 for long, 3 for double, 4 for byte array)
+- **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
 - **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
 - **value_text** - A string of text (should be NULL unless the value type is string)
 - **value_int32** - An integer (should be NULL unless the value type is int)
-- **value_int64** - A long integer (should be NULL unless the value type is long)
+- **value_int64** - A long integer / timestamp (should be NULL unless the value type is long)
 - **value_double** - A double (should be NULL unless the value type is double)
 
 ## blackboard_artifact_types
@@ -202,7 +214,7 @@ Types of artifacts
 - **artifact_type_id** - Id for the type (this is used by the blackboard_artifacts table)
 - **type_name** - A string identifier for the type (unique)
 - **display_name** - A display name for the type (not unique, should be human readable)
-
+- **value_type** - Expected type of data for this attribute type (see blackboard_attributes)
 
 ## blackboard_attribute_types
 Types of attribute
@@ -309,6 +321,7 @@ One row for each file tagged.
 - comment  - optional comment 
 - begin_byte_offset - optional byte offset into file that was tagged
 - end_byte_offset - optional byte ending offset into file that was tagged
+- **examiner_id** - Examiner that tagged the artifact (references examiner_id in tsk_examiners)
 
 ## blackboard_artifact_tags table
 One row for each artifact that is tagged.
@@ -316,6 +329,7 @@ One row for each artifact that is tagged.
 - artifact_id - Artifact ID of artifact that was tagged
 - tag_name_id - Tag name that was used
 - comment - optional comment
+- **examiner_id** - Examiner that tagged the artifact (references examiner_id in tsk_examiners)
 
 
 # Ingest Module Status
