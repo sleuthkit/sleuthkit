@@ -145,24 +145,30 @@ class CaseDatabaseFactory {
 	 */
 	private void addTables(Connection conn) throws TskCoreException {
 		try (Statement stmt = conn.createStatement()) {
+			createTskObjects(stmt);
 			createHostTables(stmt);
+			createAccountTables(stmt);
 			createFileTables(stmt);
 			createArtifactTables(stmt);
 			createAnalysisResultsTables(stmt);
 			createTagTables(stmt);
 			createIngestTables(stmt);
-			createAccountTables(stmt);
 			createEventTables(stmt);
 			createAttributeTables(stmt);
+			createAccountInstancesAndArtifacts(stmt);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing tables", ex);
 		}
 	}
 	
-	private void createFileTables(Statement stmt) throws SQLException {
+	// tsk_objects is referenced by many other tables and should be created first
+	private void createTskObjects(Statement stmt) throws SQLException {
 		// The UNIQUE here on the object ID is to create an index
 		stmt.execute("CREATE TABLE tsk_objects (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, par_obj_id " + dbQueryHelper.getBigIntType() 
 				+ ", type INTEGER NOT NULL, UNIQUE (obj_id), FOREIGN KEY (par_obj_id) REFERENCES tsk_objects (obj_id) ON DELETE CASCADE)");
+	}
+	
+	private void createFileTables(Statement stmt) throws SQLException {
 
 		stmt.execute("CREATE TABLE tsk_image_info (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, type INTEGER, ssize INTEGER, " 
 				+ "tzone TEXT, size " + dbQueryHelper.getBigIntType() + ", md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, "
@@ -405,15 +411,18 @@ class CaseDatabaseFactory {
 
 	}
 		
+	// Must be called after tsk_hosts and tsk_objects have been created.
 	private void createAccountTables(Statement stmt) throws SQLException {
 		stmt.execute("CREATE TABLE account_types (account_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
 
+		// References account_types
 		stmt.execute("CREATE TABLE accounts (account_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL, "
 				+ "UNIQUE(account_type_id, account_unique_identifier), "
 				+ "FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))");
 
+		// References accounts, tsk_objects
 		stmt.execute("CREATE TABLE account_relationships (relationship_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, "
 				+ "relationship_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
@@ -425,6 +434,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 		
+		// References tsk_hosts
 		stmt.execute("CREATE TABLE tsk_os_account_realms (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "realm_name TEXT DEFAULT NULL, "	// realm name - for a domain realm, may be null
 				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
@@ -434,6 +444,7 @@ class CaseDatabaseFactory {
 				+ "UNIQUE(realm_signature, scope_host_id), "
 				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 		
+		// References tsk_objects, tsk_os_account_realms
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null
 				+ "full_name TEXT DEFAULT NULL, "	// full name, if available, may be null
@@ -448,6 +459,11 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 		
+	}
+	// Must be called after createAccountTables() and blackboard_attribute_types, blackboard_artifacts creation.
+	private void createAccountInstancesAndArtifacts(Statement stmt) throws SQLException {
+		
+		// References tsk_os_accounts, tsk_hosts, tsk_objects, blackboard_attribute_types
 		stmt.execute("CREATE TABLE tsk_os_account_attributes (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "host_id " + dbQueryHelper.getBigIntType() + ", " 
@@ -463,6 +479,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "		
 				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");	
 		
+		// References tsk_os_accounts, tsk_objects, tsk_hosts
 		stmt.execute("CREATE TABLE tsk_os_account_instances (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
@@ -473,6 +490,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 		
+		// References blackboard_artifacts, tsk_os_accounts
 		stmt.execute("CREATE TABLE tsk_data_artifacts ( "
 				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + ", "
