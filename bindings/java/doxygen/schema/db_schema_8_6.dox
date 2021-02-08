@@ -222,6 +222,11 @@ Types of attribute
 - **type_name** - A string identifier for the type (unique)
 - **display_name** - A display name for the type (not unique, should be human readable)
 
+## review_statuses
+Review status of an artifact. Should mirror the org.sleuthkit.datamodel.BlackboardArtifact.ReviewStatus enum.
+- **review_status_id** - Id of the status 
+- **review_status_name** - Internal name of the status
+- **display_name** - Display name (should be human readable)
 
 
 # Communication Accounts
