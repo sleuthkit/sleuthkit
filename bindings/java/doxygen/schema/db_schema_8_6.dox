@@ -193,7 +193,7 @@ Stores artifacts associated with objects.
 - **artifact_type_id** - Id for the type of artifact (can be looked up in the blackboard_artifact_types table)
 - **data_source_obj_id** - Id of the data source for this artifact
 - **artifact_type_id** - Type of artifact (references artifact_type_id in blackboard_artifact_types)
-- **review_status_id** - (references review_status_id in review_statuses)
+- **review_status_id** - Review status (references review_status_id in review_statuses)
 
 ## blackboard_attributes
 Stores name value pairs associated with an artifact. Only one of the value columns should be populated.
@@ -202,7 +202,7 @@ Stores name value pairs associated with an artifact. Only one of the value colum
 - **source** - Source string, should be module name that created the entry.
 - **context** - Additional context string
 - **attribute_type_id** - Id for the type of attribute (can be looked up in the blackboard_attribute_types)
-- **value_type** - The type of value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
+- **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
 - **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
 - **value_text** - A string of text (should be NULL unless the value type is string)
 - **value_int32** - An integer (should be NULL unless the value type is int)
