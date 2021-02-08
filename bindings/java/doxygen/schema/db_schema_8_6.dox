@@ -28,9 +28,9 @@ Some general notes on this schema:
 # General Information Tables 
 ## tsk_db_info 
 Metadata about the database.
-- **schema_ver** - Major version number of the database schema used to create database
+- **schema_ver** - Major version number of the current database schema
 - **tsk_ver** - Version of TSK used to create database
-- **schema_minor_version** - Minor version number of the database schema used to create database
+- **schema_minor_version** - Minor version number of the current database schema
 
 ## tsk_db_info_extended
 Name & Value pair table to store any information about the database.  For example, which schema it was created with. etc. 
@@ -64,7 +64,7 @@ Contains information about each set of images that is stored in the database.
 - **ssize** - Sector size of device in bytes
 - **tzone** - Timezone where image is from (the same format that TSK tools want as input)
 - **size** - Size of the original image (in bytes) 
-- **md5** - MD5 hash of the image
+- **md5** - MD5 hash of the image (for compressed data such as E01, the hashes are of the decompressed image, not the E01 itself)
 - **sha1** - SHA-1 hash of the image
 - **sha256** - SHA-256 hash of the image
 - **display_name** - display name of the image
