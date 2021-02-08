@@ -123,13 +123,14 @@ public final class TimelineManager {
 		try (final CaseDbConnection con = caseDB.getConnection();
 				final Statement statement = con.createStatement()) {
 			for (TimelineEventType type : PREDEFINED_EVENT_TYPES) {
-				con.executeUpdate(statement,
-						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) "
+				String query = " INTO tsk_event_types(event_type_id, display_name, super_type_id) "
 								+ "VALUES( " + type.getTypeID() + ", '"
 								+ escapeSingleQuotes(type.getDisplayName()) + "',"
 								+ type.getParent().getTypeID()
-								+ ")")); //NON-NLS
-				eventTypeIDMap.put(type.getTypeID(), type);
+								+ ")";
+				con.executeUpdate(statement,
+						insertOrIgnore(query)); //NON-NLS
+				eventTypeIDMap.put(type.getTypeID(), type);	
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to initialize timeline event types", ex); // NON-NLS
