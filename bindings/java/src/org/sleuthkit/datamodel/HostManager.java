@@ -256,7 +256,7 @@ public final class HostManager {
 		try (PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS)) {
 			s.clearParameters();
 			s.setString(1, name);
-			
+
 			try (ResultSet rs = s.executeQuery()) {
 				if (!rs.next()) {
 					return Optional.empty();	// no match found
@@ -270,26 +270,22 @@ public final class HostManager {
 	}
 
 	/**
-	 * Get all hosts.
+	 * Get all hosts that have a status of ACTIVE.
 	 *
-	 * @return Collection of hosts.
+	 * @return Collection of hosts that have ACTIVE status.
 	 *
 	 * @throws TskCoreException
 	 */
 	public List<Host> getHosts() throws TskCoreException {
-		String queryString = "SELECT * FROM tsk_hosts WHERE status = ? ";
+		String queryString = "SELECT * FROM tsk_hosts WHERE status = " + HostStatus.ACTIVE.getId();
 
 		List<Host> hosts = new ArrayList<>();
 		try (CaseDbConnection connection = this.db.getConnection();
-				PreparedStatement preparedStatement = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS)) {
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
 
-			preparedStatement.clearParameters();
-			preparedStatement.setInt(1, HostStatus.ACTIVE.getId());
-
-			try (ResultSet rs = preparedStatement.executeQuery()) {
-				while (rs.next()) {
-					hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
-				}
+			while (rs.next()) {
+				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
 			}
 
 			return hosts;
