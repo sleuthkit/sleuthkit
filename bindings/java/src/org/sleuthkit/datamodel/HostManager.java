@@ -23,7 +23,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -251,10 +253,11 @@ public final class HostManager {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)";
-		try (PreparedStatement s = connection.prepareStatement(queryString, 0)) {
+		try (PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS)) {
+			s.clearParameters();
 			s.setString(1, name);
+			
 			try (ResultSet rs = s.executeQuery()) {
-
 				if (!rs.next()) {
 					return Optional.empty();	// no match found
 				} else {
@@ -273,46 +276,15 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Set<Host> getHosts() throws TskCoreException {
-		String queryString = "SELECT * FROM tsk_hosts";
+	public List<Host> getHosts() throws TskCoreException {
+		String queryString = "SELECT * FROM tsk_hosts WHERE status = ? ";
 
-		Set<Host> hosts = new HashSet<>();
+		List<Host> hosts = new ArrayList<>();
 		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
+				PreparedStatement preparedStatement = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS)) {
 
-			while (rs.next()) {
-				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
-			}
-
-			return hosts;
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting hosts"), ex);
-		}
-	}
-
-	/**
-	 * Get all hosts with a particular status.
-	 *
-	 * @param status The status to filter on (if null, this will search for
-	 *               hosts with status IS NULL).
-	 *
-	 * @return Collection of hosts.
-	 *
-	 * @throws TskCoreException
-	 */
-	public Set<Host> getHostsByStatus(HostStatus status) throws TskCoreException {
-		boolean nullStatus = status == null;
-		String whereStatement = nullStatus ? " status IS NULL " : " status = ? ";
-		String queryString = "SELECT * FROM tsk_hosts WHERE " + whereStatement;
-
-		Set<Host> hosts = new HashSet<>();
-		try (CaseDbConnection connection = this.db.getConnection();
-				PreparedStatement preparedStatement = connection.prepareStatement(queryString, 0)) {
-
-			if (!nullStatus) {
-				preparedStatement.setInt(1, status.getId());
-			}
+			preparedStatement.clearParameters();
+			preparedStatement.setInt(1, HostStatus.ACTIVE.getId());
 
 			try (ResultSet rs = preparedStatement.executeQuery()) {
 				while (rs.next()) {
