@@ -96,14 +96,14 @@ public final class OsAccountManager {
 
 	
 	/**
-	 * Creates an OS account with given unique id or given realm and login name.
+	 * Creates an OS account with Windows-specific data. 
 	 * If an account already exists with the given id or realm/login, then the
-	 * existing OS account is returned.
+	 * existing OS account is returned.  
 	 *
-	 * @param sid           Account sid/uid.
-	 * @param loginName     Login name.
+	 * @param sid           Account sid/uid, can be null if loginName is supplied. 
+	 * @param loginName     Login name, can be null if sid is supplied. 
 	 * @param realmName     Realm within which the accountId or login name is
-	 *                      unique.
+	 *                      unique. Can be null if sid is supplied. 
 	 * @param referringHost Host referring the account.
 	 * @param realmScope    Realm scope.
 	 *
@@ -125,6 +125,7 @@ public final class OsAccountManager {
 		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(loginName)) {
 			throw new IllegalArgumentException("Cannot create OS account with both uniqueId and loginName as null.");
 		}
+		// @@@ This can be null if sid is given. 
 		if (Strings.isNullOrEmpty(realmName)) {
 			throw new IllegalArgumentException("Realm name is required to create an OS account.");
 		}
@@ -486,12 +487,12 @@ public final class OsAccountManager {
 	
 		
 	/**
-	 * Gets an OS account with the given SID or login name and the given realm.
+	 * Gets an OS account using Windows-specific data. 
 	 * 
-	 * @param sid           Account sid/uid.
-	 * @param loginName     Login name.
+	 * @param sid           Account SID, maybe null if loginName is supplied.
+	 * @param loginName     Login name, maybe null if sid is supplied. 
 	 * @param realmName     Realm within which the accountId or login name is
-	 *                      unique.
+	 *                      unique.  Can be null if sid is supplied. 
 	 * @param referringHost Host referring the account.
 	 *
 	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount is found.
