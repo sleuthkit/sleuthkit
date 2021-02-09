@@ -253,7 +253,8 @@ public final class HostManager {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)";
-		try (PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS)) {
+		try {
+			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS);
 			s.clearParameters();
 			s.setString(1, name);
 
