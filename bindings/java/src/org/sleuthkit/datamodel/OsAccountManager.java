@@ -59,24 +59,26 @@ public final class OsAccountManager {
 	 * existing OS account is returned.
 	 *
 	 * @param uniqueAccountId Account sid/uid.
-	 * @param realmId       Realm id.
+	 * @param realm           Account realm.
 	 * 
 	 * @return OsAccount.
 	 *
 	 * @throws TskCoreException If there is an error in creating the OSAccount.
 	 *
 	 */
-	OsAccount createOsAccount(String uniqueAccountId,  long realmId) throws TskCoreException {
+	OsAccount createOsAccount(String uniqueAccountId,  OsAccountRealm realm) throws TskCoreException {
 
 		// ensure unique id is provided
 		if (Strings.isNullOrEmpty(uniqueAccountId)) {
 			throw new IllegalArgumentException("Cannot create OS account with null uniqueId.");
 		}
 		
+		if (realm == null) {
+			throw new IllegalArgumentException("Cannot create OS account without a realm.");
+		}
+		
 		try (CaseDbConnection connection = this.db.getConnection();) {
 
-			OsAccountRealm realm = db.getOsAccountRealmManager().getRealm(realmId, connection);
-				
 			// try to create account
 			try {
 				return createOsAccount(uniqueAccountId, null, realm, OsAccount.OsAccountStatus.UNKNOWN, connection);
@@ -89,7 +91,7 @@ public final class OsAccountManager {
 				}
 
 				// create failed for some other reason, throw an exception
-				throw new TskCoreException(String.format("Error creating OsAccount with uniqueAccountId = %s in realm id = %d", uniqueAccountId, realmId), ex);
+				throw new TskCoreException(String.format("Error creating OsAccount with uniqueAccountId = %s in realm id = %d", uniqueAccountId, realm.getId()), ex);
 			}
 		} 
 	}
@@ -301,7 +303,7 @@ public final class OsAccountManager {
 	 * Gets a OS Account by the realm and unique id.
 	 *
 	 * @param uniqueId   Account unique id.
-	 * @param realm      Account Realm.
+	 * @param realm      Account realm.
 	 *
 	 * @return Optional with OsAccount, Optional.empty, if no user is found with
 	 *         matching realm and unique id.
@@ -331,8 +333,8 @@ public final class OsAccountManager {
 	/**
 	 * Gets a OS Account by the realm and login name.
 	 *
-	 * @param loginName  Login name.
-	 * @param realmId	 Realm id.
+	 * @param loginName Login name.
+	 * @param realm     Account realm.
 	 *
 	 * @return Optional with OsAccount, Optional.empty, if no user is found with
 	 *         matching realm and login name.
