@@ -41,6 +41,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
@@ -532,8 +533,9 @@ public final class TimelineManager {
 		String query = "SELECT event_description_id FROM tsk_event_descriptions "
 				+ "WHERE data_source_obj_id = " + dataSourceObjId
 				+ " AND content_obj_id = " + fileObjId
-				+ " AND artifact_id = " + artifactID
-				+ " AND full_description " + (fullDescription != null ? "= '" + fullDescription + "'" : "IS null");
+				+ " AND artifact_id " + (artifactID != null ? " = " + artifactID : "IS null")
+				+ " AND full_description " + (fullDescription != null ? "= '"
+					+ SleuthkitCase.escapeSingleQuotes(fullDescription) + "'" : "IS null");
 
 		caseDB.acquireSingleUserCaseReadLock();
 		try (ResultSet resultSet = connection.createStatement().executeQuery(query)) {
@@ -594,27 +596,34 @@ public final class TimelineManager {
 		Set<TimelineEvent> events = new HashSet<>();
 		caseDB.acquireSingleUserCaseWriteLock();
 		try {
-			long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
+			Long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
 					description, null, null, false, false, connection);
+			
+			if(descriptionID == null) {
+				descriptionID = getEventDescription(file.getDataSourceObjectId(), fileObjId, null, description, connection);
+			}
+			if(descriptionID != null) {
+				for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
+					Long time = timeEntry.getValue();
+					if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
+						TimelineEventType type = timeEntry.getKey();
+						long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
-			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
-				Long time = timeEntry.getValue();
-				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
-					TimelineEventType type = timeEntry.getKey();
-					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
-
-					/*
-					 * Last two flags indicating hasTags and hasHashHits are
-					 * both set to false with the assumption that this is not
-					 * possible for a new file. See JIRA-5407
-					 */
-					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
-							description, null, null, false, false));
-				} else {
-					if (time >= MAX_TIMESTAMP_TO_ADD) {
-						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
+						/*
+						 * Last two flags indicating hasTags and hasHashHits are
+						 * both set to false with the assumption that this is not
+						 * possible for a new file. See JIRA-5407
+						 */
+						events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
+								description, null, null, false, false));
+					} else {
+						if (time >= MAX_TIMESTAMP_TO_ADD) {
+							logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
+						}
 					}
-				}
+				} 
+			} else {
+				throw new TskCoreException(String.format("Failed to get event description for file id = %d", fileObjId));
 			}
 		} catch (DuplicateException dupEx) {
 			logger.log(Level.SEVERE, "Attempt to make file event duplicate.", dupEx);
@@ -681,7 +690,7 @@ public final class TimelineManager {
 							.ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
 					duplicateExists = true;
-					logger.log(Level.INFO, getDuplicateExceptionMessage(artifact, "Attempt to make artifact event duplicate"), ex);
+					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make artifact event duplicate"), ex);
 				}
 			}
 
@@ -690,7 +699,7 @@ public final class TimelineManager {
 				try {
 					addOtherEventDesc(artifact).ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
-					logger.log(Level.INFO, getDuplicateExceptionMessage(artifact, "Attempt to make 'other' artifact event duplicate"), ex);
+					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make 'other' artifact event duplicate"), ex);
 				}
 			}
 		}
@@ -826,13 +835,17 @@ public final class TimelineManager {
 			if(descriptionID == null) {
 				descriptionID = getEventDescription(dataSourceObjectID, fileObjId, artifactID,
 					fullDescription, connection);
+			} 
+
+			if(descriptionID != null) {
+				long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
+
+				event = new TimelineEvent(eventID, dataSourceObjectID, fileObjId, artifactID,
+						time, eventType, fullDescription, medDescription, shortDescription,
+						hasHashHits, tagged);
+			} else {
+				throw new TskCoreException(String.format("Failed to get event description for file id = %d, artifactId %d", fileObjId, artifactID));
 			}
-
-			long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
-
-			event = new TimelineEvent(eventID, dataSourceObjectID, fileObjId, artifactID,
-					time, eventType, fullDescription, medDescription, shortDescription,
-					hasHashHits, tagged);
 
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
