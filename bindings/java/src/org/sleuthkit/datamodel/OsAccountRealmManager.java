@@ -50,13 +50,14 @@ public final class OsAccountRealmManager {
 	}
 		
 	/**
-	 * Create realm for the Windows. The input SID is a user/group SID. The
+	 * Create realm based on Windows information. The input SID is a user/group SID. The
 	 * domain SID is extracted from this incoming SID.
 	 *
 	 * @param accountSid    User/group SID. May be null only if name is not null.
 	 * @param realmName     Realm name. May be null only if SID is not null.
 	 * @param referringHost Host where realm reference is found.
-	 * @param realmScope    Scope of realm.
+	 * @param realmScope    Scope of realm. Use UNKNOWN if you are not sure and the 
+	 *                      method will try to detect the correct scope. 
 	 *
 	 * @return OsAccountRealm.
 	 * 
@@ -347,7 +348,10 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Check is there is any realm with a known host scope matching the given host.  
+	 * Check is there is any realm with a host-scope and KNOWN confidence for the given host.  
+	 * If we can assume that a host will have only a single host-scoped realm, then you can 
+	 * assume a new realm is domain-scoped when this method returns true.  I.e. once we know
+	 * the host-scoped realm, then everything else is domain-scoped. 
 	 * 
 	 * @param host Host for which to look for a realm.
 	 * 

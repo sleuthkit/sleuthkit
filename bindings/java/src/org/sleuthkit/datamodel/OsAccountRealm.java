@@ -27,14 +27,19 @@ import java.util.Optional;
  *
  * A realm may be host scoped, say for a local standalone computer, or 
  * domain scoped.
+ *
+ * Many times, we may learn about the existence of a realm without fully understanding
+ * it. Such as when we find a Windows SID before we've parsed the registry to know if
+ * it is for the local computer or domain. By default, a realm is created with a 
+ * host-level scope and a confidence of "inferred". 
  */
 public final class OsAccountRealm {
 
 	private final long id;	// row id 
-	private String realmName; // realm name - may be updated later.
-	private String realmAddr; // realm address - may be updated later. 
-	private String signature; // either realm name or address 
-	private final Host host;	// if the realm consists of a single host, may be null
+	private String realmName; // realm name - may be updated later. For example, a Windows domain name. 
+	private String realmAddr; // realm address - may be updated later.  For example, the numbers and dashes in a Windows SID.
+	private String signature; // either realm address or name (if address is not known)
+	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
@@ -78,7 +83,7 @@ public final class OsAccountRealm {
 	}
 
 	/**
-	 * Get the realm address.
+	 * Get the realm address, such as part of a Windows SID. 
 	 *
 	 * @return Optional realm unique address.
 	 */
@@ -98,7 +103,7 @@ public final class OsAccountRealm {
 	/**
 	 * Get the realm scope host, if it's a single host realm.
 	 * 
-	 * @return Optional host.
+	 * @return Optional host. Is empty if the scope of the realm is domain-scoped.
 	 */
 	public Optional<Host> getScopeHost() {
 		return Optional.ofNullable(host);
