@@ -215,6 +215,7 @@ public class SleuthkitCase {
 	private OsAccountRealmManager osAccountRealmManager;
 	private OsAccountManager osAccountManager;
 	private HostManager hostManager;
+	private PersonManager personManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -396,6 +397,7 @@ public class SleuthkitCase {
 		osAccountRealmManager = new OsAccountRealmManager(this);
 		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
+		personManager = new PersonManager(this);
 	}
 
 	/**
@@ -551,6 +553,17 @@ public class SleuthkitCase {
 	public HostManager getHostManager() throws TskCoreException {
 		return hostManager;
 	}
+	
+	/**
+	 * Gets the Person manager for this case.
+	 *
+	 * @return The per case PersonManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public PersonManager getPersonManager() throws TskCoreException {
+		return personManager;
+	}	
 	
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
@@ -2377,10 +2390,17 @@ public class SleuthkitCase {
 
 			// RAMAN TBD: need to add  UNIQUE (artifact_obj_id) constraint to blackboard_artifacts table for it to be FK
 			
-			// create host table.
+			// Create person table.
+			statement.execute("CREATE TABLE tsk_persons (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "name TEXT NOT NULL, " // person name
+					+ "UNIQUE(name)) ");
+			
+			// Create host table.
 			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "name TEXT NOT NULL, " // host name
 					+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+					+ "person_id INTEGER, "
+					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "UNIQUE(name)) ");
 
 			// Create OS Account and related tables 
@@ -2426,8 +2446,10 @@ public class SleuthkitCase {
 					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
+					+ "person_id INTEGER, "
 					+ "UNIQUE(signature), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 
 			statement.execute("CREATE TABLE tsk_os_account_attributes (id " + primaryKeyType + " PRIMARY KEY, "

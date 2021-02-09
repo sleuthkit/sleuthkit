@@ -404,14 +404,21 @@ class CaseDatabaseFactory {
 	
 	private void createHostTables(Statement stmt) throws SQLException {
 
+		stmt.execute("CREATE TABLE tsk_persons (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "name TEXT NOT NULL, " // person name
+				+ "UNIQUE(name)) ");
+		
+		// References tsk_persons
 		stmt.execute("CREATE TABLE tsk_hosts (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "name TEXT NOT NULL, " // host name
 				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+				+ "person_id INTEGER, "
+				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "UNIQUE(name)) ");
 
 	}
 		
-	// Must be called after tsk_hosts and tsk_objects have been created.
+	// Must be called after tsk_persons, tsk_hosts and tsk_objects have been created.
 	private void createAccountTables(Statement stmt) throws SQLException {
 		stmt.execute("CREATE TABLE account_types (account_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
@@ -443,7 +450,7 @@ class CaseDatabaseFactory {
 				+ "UNIQUE(name, host_id), "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
 		
-		// References tsk_objects, tsk_os_account_realms
+		// References tsk_objects, tsk_os_account_realms, tsk_persons
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null
 				+ "full_name TEXT DEFAULT NULL, "	// full name, if available, may be null
@@ -453,9 +460,11 @@ class CaseDatabaseFactory {
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "admin INTEGER DEFAULT 0," // is admin account
 				+ "type INTEGER, "	// service/interactive
-				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "		
+				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "	
+				+ "person_id INTEGER, "
 				+ "UNIQUE(signature), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 		
 	}
