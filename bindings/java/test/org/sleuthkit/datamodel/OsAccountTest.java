@@ -210,28 +210,19 @@ public class OsAccountTest {
 	public void basicOsAccountTests() throws TskCoreException {
 
 		try {
-			String ownerUid1 = "S-1-5-32-544";
-			String ownerUid2 = "S-1-5-21-725345543-854245398-1060284298-1003";
-			String ownerUid3 = "S-1-5-21-725345543-854245398-1060284298-1004";
+			//String ownerUid1 = "S-1-5-32-544"; // special short SIDS not handled yet
 			
+			// Create an account in a local scoped realm.
 			
-			String realmName1 = "Realm1";
-			String realmName2 = "Realm2";
+			String ownerUid1 = "S-1-5-32-111111111-222222222-3333333333-0001";
+			String realmName1 = "realm1";
 			
-			Host host = null;
+			String hostname1 = "host1";
+			Host host1 = caseDB.getHostManager().createHost(hostname1);
 			
-			// create account realms
-			OsAccountRealm realm1 = caseDB.getOsAccountRealmManager().createRealmByName(realmName1, host);
-			OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().createRealmByName(realmName2, host);
+			OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+			OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 			
-			
-			
-			// create accounts
-			OsAccount osAccount1 = caseDB.getOsAccountManager().createOsAccount(ownerUid1, null, realmName1, host);
-			OsAccount osAccount2 = caseDB.getOsAccountManager().createOsAccount(ownerUid2, null, realmName2, host);
-			OsAccount osAccount3 = caseDB.getOsAccountManager().createOsAccount(ownerUid3, null, realmName2, host);
-				
-		
 			assertEquals(osAccount1.isAdmin(), false);
 			assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
 			assertEquals(osAccount1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
@@ -244,12 +235,13 @@ public class OsAccountTest {
 			osAccount1.setFullName(fullName1);
 			osAccount1.setIsAdmin(true);
 			
-			osAccount1 = caseDB.getOsAccountManager().updateAccount(osAccount1);
+			osAccount1 = osAccount1.update();
 			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);
+			assertEquals(osAccount1.getFullName().orElse(null).equalsIgnoreCase(fullName1), true );
 			
 			
 			// now try and create osAccount1 again - it should return the existing account
-			OsAccount osAccount1_copy1 = caseDB.getOsAccountManager().createOsAccount(ownerUid1, null, realmName1, host);
+			OsAccount osAccount1_copy1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 			
 			
 			assertEquals(osAccount1_copy1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
@@ -259,6 +251,33 @@ public class OsAccountTest {
 			assertEquals(osAccount1_copy1.isAdmin(), true); // should be true now
 			assertEquals(osAccount1_copy1.getFullName().orElse("").equalsIgnoreCase(fullName1), true);
 			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);
+			
+			
+			// Create two new accounts on a new domain realm
+			String ownerUid2 = "S-1-5-21-725345543-854245398-1060284298-1003";
+			String ownerUid3 = "S-1-5-21-725345543-854245398-1060284298-1004";
+	
+			String realmName2 = "basis";
+			
+			String hostname2 = "host2";
+			String hostname3 = "host3";
+			Host host2 = caseDB.getHostManager().createHost(hostname2);
+			Host host3 = caseDB.getHostManager().createHost(hostname3);
+		
+			OsAccountRealm domainRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid2, realmName2, host2, OsAccountRealm.RealmScope.DOMAIN);
+		
+			// create accounts in this domain scoped realm
+			OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid2, null, realmName2, host2, OsAccountRealm.RealmScope.DOMAIN);
+			OsAccount osAccount3 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid3, null, realmName2, host3, OsAccountRealm.RealmScope.DOMAIN);
+			
+			assertEquals(osAccount2.isAdmin(), false);
+			assertEquals(osAccount2.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+			assertEquals(osAccount2.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName2), true);
+			
+			
+			assertEquals(osAccount3.isAdmin(), false);
+			assertEquals(osAccount3.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid3), true);
+			assertEquals(osAccount3.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName2), true);
 			
 		}
 		

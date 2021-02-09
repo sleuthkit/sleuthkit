@@ -53,21 +53,23 @@ class TskCaseDbBridge {
     private final SleuthkitCase caseDb;
     private CaseDbTransaction trans = null;
     private final AddDataSourceCallbacks addDataSourceCallbacks;
+	private final Host imageHost;
     
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
     private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
     
-	private final Map<String, OsAccount> ownerIdToAccountMap = new HashMap<>();
+    private final Map<String, OsAccount> ownerIdToAccountMap = new HashMap<>();
 	
     private static final long BATCH_FILE_THRESHOLD = 500;
     private final Queue<FileInfo> batchedFiles = new LinkedList<>();
     private final Queue<LayoutRangeInfo> batchedLayoutRanges = new LinkedList<>();
     private final List<Long> layoutFileIds = new ArrayList<>();
     
-    TskCaseDbBridge(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
+    TskCaseDbBridge(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks, Host host) {
         this.caseDb = caseDb;
         this.addDataSourceCallbacks = addDataSourceCallbacks;
+		imageHost = host;
         trans = null;
     }
     
@@ -373,30 +375,29 @@ class TskCaseDbBridge {
 						continue;
 					}
 
-					// RAMAN TBD: Need to get host by using the data source name and then use that host for creating the OS account below.
-					Host host = null;
-
 					// query the DB to get the owner account
-					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getOsAccount(ownerUid, host);
+					
+					// RAMAN TBD: what should be realm name used here
+					String realmName = "DUMMY";
+					
+					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getWindowsAccount(ownerUid, null, realmName, imageHost);
 					if (ownerAccount.isPresent()) {
 						// found account - add to map 
 						ownerIdToAccountMap.put(ownerUid, ownerAccount.get());
 					} else {
-
 						// account not found in the database,  create the account and add to map
-
-						// RAMAN TBD: what should this realm name be?
-						String realmName = "DUMMY";
-
-						// create the account
-						OsAccount newAccount = caseDb.getOsAccountManager().createOsAccount(ownerUid, null, realmName, host);
+						// Currently we expect only NTFS systems to provide a windows style SID as owner id.
+						
+						// RAMAN TBD: how to handle well known short SIDs - they don't have any domain.
+						
+						OsAccount newAccount = caseDb.getOsAccountManager().createWindowsAccount(ownerUid, null, realmName, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
 						ownerIdToAccountMap.put(ownerUid, newAccount);
 					}
 				}
 			}
 			
 			
-			
+					
             beginTransaction();
             FileInfo fileInfo;
             while ((fileInfo = batchedFiles.poll()) != null) {

@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.base.Strings;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -33,8 +34,8 @@ public final class OsAccountRealm {
 	private String realmName; // realm name - may be updated later.
 	private String realmAddr; // realm address - may be updated later. 
 	private String signature; // either realm name or address 
-	private Host host;	// if the realm consists of a single host, may be null
-	private ScopeConfidence scopeConfidence; // confidence in realm scope.
+	private final Host host;	// if the realm consists of a single host, may be null
+	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
 	
@@ -229,6 +230,7 @@ public final class OsAccountRealm {
 	public void setRealmName(String name) {
 		if (Objects.isNull(this.realmName) && Objects.nonNull(name)) {
 			this.realmName = name;
+			updateSignature();
 			this.isDirty = true;
 		}
 	}
@@ -241,32 +243,45 @@ public final class OsAccountRealm {
 	public void setRealmAddr(String addr) {
 		if (Objects.isNull(this.realmAddr) && Objects.nonNull(addr)) {
 			this.realmAddr = addr;
-			this.signature = addr;	// update signature also, addr is more definitive than name.
+			updateSignature();
 			this.isDirty = true;
 		}
 	}
 
 	/**
-	 * Set the realm scope host if it is not already set.
-	 *
-	 * @param host Realm scope host to set.
+	 * Updates the signature with realm address or realm name.
 	 */
-	public void setHost(Host host) {
-		if (Objects.isNull(this.host) && Objects.nonNull(host)) {
-			this.host = host;
-			this.isDirty = true;
+	private void updateSignature() {
+		// realm addr is more definitive and has higher priority.
+		if (!Strings.isNullOrEmpty(realmAddr) ) {
+			signature = realmAddr;
 		}
+		else if (!Strings.isNullOrEmpty(realmName) ) {
+			signature = realmName;
+		}	
 	}
+	
+//	/**
+//	 * Set the realm scope host if it is not already set.
+//	 *
+//	 * @param host Realm scope host to set.
+//	 */
+//	public void setHost(Host host) {
+//		if (Objects.isNull(this.host) && Objects.nonNull(host)) {
+//			this.host = host;
+//			this.isDirty = true;
+//		}
+//	}
 
-	/**
-	 * Set the realm scope confidence if it is different from current value..
-	 *
-	 * @param scopeConfidence Realm scope confidence to set.
-	 */
-	public void setScopeConfidence(ScopeConfidence scopeConfidence) {
-		if (this.scopeConfidence.getId() != scopeConfidence.getId()) {
-			this.scopeConfidence = scopeConfidence;
-			this.isDirty = true;
-		}
-	}
+//	/**
+//	 * Set the realm scope confidence if it is different from current value..
+//	 *
+//	 * @param scopeConfidence Realm scope confidence to set.
+//	 */
+//	public void setScopeConfidence(ScopeConfidence scopeConfidence) {
+//		if (this.scopeConfidence.getId() != scopeConfidence.getId()) {
+//			this.scopeConfidence = scopeConfidence;
+//			this.isDirty = true;
+//		}
+//	}
 }

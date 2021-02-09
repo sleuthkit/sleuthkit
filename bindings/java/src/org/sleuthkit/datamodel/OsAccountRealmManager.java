@@ -75,7 +75,7 @@ public final class OsAccountRealmManager {
 	
 	
 	/**
-	 * Create realm for the Windows . The input SID is a user/group SID. The
+	 * Create realm for the Windows. The input SID is a user/group SID. The
 	 * domain SID is extracted from this incoming SID.
 	 *
 	 * @param accountSid    User/group SID. May be null only if name is not null.
@@ -169,18 +169,44 @@ public final class OsAccountRealmManager {
 		}
 		
 		try (CaseDbConnection connection = this.db.getConnection()) {
-
-			// If a accountSID is provided , search for realm by addr.
-			if (Strings.isNullOrEmpty(accountSid)) {
-				// get realm addr from the account SID.
-				String subAuthorityId = getSubAuthorityId(accountSid);
-				return this.getRealmByAddr(subAuthorityId, referringHost, connection);
-			}
-
-			// No realm addr, Search  by name	
-			return this.getRealmByName(realmName, referringHost, connection);
-
+			return getWindowsRealm(accountSid, realmName, referringHost, connection);
 		}
+	}
+	
+	
+	/**
+	 * Get a windows realm by the account SID, or the domain name.
+	 * The input SID is an user/group account SID. The domain SID is extracted from this incoming SID.
+	 * 
+	 * @param accountSid  Account SID, may be null.
+	 * @param realmName   Realm name, may be null only if accountSid is not
+	 *                    null.
+	 * @param referringHost Referring Host.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
+	 * 
+	 * @throws TskCoreException
+	 */
+	Optional<OsAccountRealm> getWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException {
+		
+		if (referringHost == null) {
+			throw new IllegalArgumentException("A referring host is required get a realm.");
+		}
+		
+		// need at least one of the two, the addr or name to look up
+		if (Strings.isNullOrEmpty(accountSid) && Strings.isNullOrEmpty(realmName)) {
+			throw new IllegalArgumentException("Realm address or name is required get a realm.");
+		}
+		
+		// If a accountSID is provided , search for realm by addr.
+		if (!Strings.isNullOrEmpty(accountSid)) {
+			// get realm addr from the account SID.
+			String subAuthorityId = getSubAuthorityId(accountSid);
+			return this.getRealmByAddr(subAuthorityId, referringHost, connection);
+		}
+
+		// No realm addr, Search  by name	
+		return this.getRealmByName(realmName, referringHost, connection);
 	}
 	
 	/**
@@ -506,7 +532,7 @@ public final class OsAccountRealmManager {
 	 * @return Sub-authority id string.
 	 */
 	private String getSubAuthorityId(String sid) {
-			if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
+		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
 			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
 		}
 		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));

@@ -41,13 +41,14 @@ public final class OsAccount extends AbstractContent {
 	private final SleuthkitCase sleuthkitCase;
 	
 	private final long osAccountobjId;
-	private final OsAccountRealm realm;		// realm where the username is unique - a domain or a host name.
-	private final String loginName;	// user login name - may be null
-	private final String uniqueId;	// a unique user sid/uid, may be null
+	private final OsAccountRealm realm;		// realm where the loginname/uniqueId is unique - a domain or a host name.
+	private String loginName;	// user login name - may be null
+	private String uniqueId;	// a unique user sid/uid, may be null
 	
-	private String signature;		// This exists only to prevent duplicates.  
-									// It is either ‘realm_id/unique_id’ if unique_id is defined,
-									// or realm_id/login_name’ if login_name is defined.
+	private String signature;		// This exists only to prevent duplicates.
+									// Together realm_id & signature must be unique for each account.
+									// It is either unique_id if unique_id is defined,
+									// or the login_name if login_name is defined.
 
 	private String fullName;	// full name
 	private boolean isAdmin = false;	// is admin account.
@@ -56,7 +57,10 @@ public final class OsAccount extends AbstractContent {
 	private Long creationTime = null;
 
 	private final List<OsAccountAttribute> osAccountAttributes = new ArrayList<>();
+	
+	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
+	
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
 	 * deleted.
@@ -245,12 +249,40 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
+	 * Set the account login name.
+	 * 
+	 * @param loginName Login name to set.
+	 */
+	public void setLoginName(String loginName) {
+		if (this.loginName == null) {
+			this.loginName = loginName;
+			this.isDirty = true;
+		}
+	}
+
+	/**
+	 * Set the account unique id.
+	 * 
+	 * @param uniqueId Id to set.
+	 */
+	public void setUniqueId(String uniqueId) {
+		if (this.uniqueId == null) {
+			this.uniqueId = uniqueId;
+			this.isDirty = true;
+		}
+	}
+	
+	
+	/**
 	 * Sets the account user's full name.
 	 *
 	 * @param fullName Full name.
 	 */
 	public void setFullName(String fullName) {
-		this.fullName = fullName;
+		if (this.fullName == null) {
+			this.fullName = fullName;
+			this.isDirty = true;
+		}
 	}
 
 	/**
@@ -260,6 +292,7 @@ public final class OsAccount extends AbstractContent {
 	 */
 	public void setIsAdmin(boolean isAdmin) {
 		this.isAdmin = isAdmin;
+		this.isDirty = true;
 	}
 
 	/**
@@ -269,6 +302,7 @@ public final class OsAccount extends AbstractContent {
 	 */
 	public void setOsAccountType(OsAccountType osAccountType) {
 		this.osAccountType = osAccountType;
+		this.isDirty = true;
 	}
 
 	/**
@@ -285,8 +319,11 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @param creationTime Creation time.
 	 */
-	public void setCreationTime(long creationTime) {
-		this.creationTime = creationTime;
+	public void setCreationTime(Long creationTime) {
+		if (this.creationTime == null) {
+			this.creationTime = creationTime;
+			this.isDirty = true;
+		}
 	}
 
 	/**
@@ -300,17 +337,47 @@ public final class OsAccount extends AbstractContent {
 	void setSignature(String signature) {
 		this.signature = signature;
 	}
+
+	
+	/**
+	 * Reset the dirty flag. Indicates that the account has been updated in the
+	 * database.
+	 * 
+	 */
+	void resetDirty() {
+		this.isDirty = false;
+	}
+	
 	
 	/**
 	 * Adds account attributes to the account.
 	 *
 	 * @param osAccountAttributes Collection of  attributes to add.
 	 */
-	void addAttributes(Set<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
+	public void addAttributes(Set<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
 		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes);
 		osAccountAttributes.addAll(osAccountAttributes);
 	}
 
+	
+	/**
+	 * Updates the account in the database.
+	 *
+	 * @return OsAccount Updated account.
+	 *
+	 * @throws TskCoreException If there is an error in updating the account.
+	 */
+	public OsAccount update() throws TskCoreException {
+
+		if (this.isDirty) {
+			OsAccount updatedAccount = sleuthkitCase.getOsAccountManager().updateAccount(this);
+			updatedAccount.resetDirty();
+			return updatedAccount;
+		} else {
+			return this;
+		}
+	}
+	
 	/**
 	 * Get the account id.
 	 *
