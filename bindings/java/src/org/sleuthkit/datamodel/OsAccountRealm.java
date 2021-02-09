@@ -64,7 +64,7 @@ public final class OsAccountRealm {
 	 * 
 	 * @return Realm id.
 	 */
-	public long getId() {
+	long getId() {
 		return id;
 	}
 

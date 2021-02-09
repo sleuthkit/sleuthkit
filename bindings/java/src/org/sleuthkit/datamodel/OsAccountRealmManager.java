@@ -107,7 +107,7 @@ public final class OsAccountRealmManager {
 		// get subAuthority sid
 		String realmAddr = null;
 		if (!Strings.isNullOrEmpty(accountSid)) {
-			realmAddr = getSubAuthorityId(accountSid);
+			realmAddr = getWindowsSubAuthorityId(accountSid);
 		}
 		
 		String signature = getRealmSignature(realmAddr, realmName);
@@ -173,7 +173,7 @@ public final class OsAccountRealmManager {
 		// If a accountSID is provided , search for realm by addr.
 		if (!Strings.isNullOrEmpty(accountSid)) {
 			// get realm addr from the account SID.
-			String subAuthorityId = getSubAuthorityId(accountSid);
+			String subAuthorityId = getWindowsSubAuthorityId(accountSid);
 			return this.getRealmByAddr(subAuthorityId, referringHost, connection);
 		}
 
@@ -503,7 +503,7 @@ public final class OsAccountRealmManager {
 	 * 
 	 * @return Sub-authority id string.
 	 */
-	private String getSubAuthorityId(String sid) {
+	private String getWindowsSubAuthorityId(String sid) {
 		
 		// RAMAN TBD: this fails for short WellKnown SIDs
 		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
