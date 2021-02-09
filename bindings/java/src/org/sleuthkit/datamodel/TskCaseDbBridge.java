@@ -369,7 +369,8 @@ class TskCaseDbBridge {
 			while (it.hasNext()) {
 				FileInfo fileInfo = it.next();
 				String ownerUid = fileInfo.ownerUid;
-				if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) {
+				if ((Strings.isNullOrEmpty(fileInfo.ownerUid) == false) 
+						 && (org.apache.commons.lang3.StringUtils.countMatches(ownerUid, "-") >= 5 )) { // RAMAN TBD: we dont know yet how to handle short Well known SIDs.
 					// first check the owner id is in the map, if found, then continue
 					if (this.ownerIdToAccountMap.containsKey(ownerUid)) {
 						continue;
@@ -383,8 +384,6 @@ class TskCaseDbBridge {
 					} else {
 						// account not found in the database,  create the account and add to map
 						// Currently we expect only NTFS systems to provide a windows style SID as owner id.
-						// RAMAN TBD: how to handle well known short SIDs - they don't have any domain.
-						
 						OsAccount newAccount = caseDb.getOsAccountManager().createWindowsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
 						ownerIdToAccountMap.put(ownerUid, newAccount);
 					}
@@ -404,9 +403,10 @@ class TskCaseDbBridge {
                     }
 
 					Long ownerAccountObjId = OsAccount.NO_ACCOUNT;
-					if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) {
+					if ((Strings.isNullOrEmpty(fileInfo.ownerUid) == false)
+						&& (org.apache.commons.lang3.StringUtils.countMatches(fileInfo.ownerUid, "-") >= 5 ) ){ // RAMAN TBD: we dont know yet how to handle short Well known SIDs.
 						if (ownerIdToAccountMap.containsKey(fileInfo.ownerUid)) {
-						ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
+							ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
 						} else {
 							// Error - owner should be in the map at this point!!
 							throw new TskCoreException(String.format("Failed to add file. Owner account not found for file with parent object ID: %d, name: %s, owner id: %s", fileInfo.parentObjId, fileInfo.name, fileInfo.ownerUid));
