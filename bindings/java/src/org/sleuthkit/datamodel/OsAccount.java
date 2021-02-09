@@ -26,10 +26,14 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 /**
- * Abstracts an OS user account.
+ * Abstracts an OS user account. OS Accounts have a scope,
+ * which is defined by their parent OsAccountRealm.
  *
  * An OS user account may own files and (some) artifacts.
  *
+ * OsAcounts can be created with minimal data and updated 
+ * as more is learned. Caller must call update() to save
+ * any new data. 
  */
 public final class OsAccount extends AbstractContent {
 	
@@ -40,7 +44,7 @@ public final class OsAccount extends AbstractContent {
 
 	private final SleuthkitCase sleuthkitCase;
 	
-	private final long osAccountobjId;
+	private final long osAccountobjId;	// Object ID within the database
 	private final OsAccountRealm realm;		// realm where the loginname/uniqueId is unique - a domain or a host name.
 	private String loginName;	// user login name - may be null
 	private String uniqueId;	// a unique user sid/uid, may be null
@@ -50,7 +54,7 @@ public final class OsAccount extends AbstractContent {
 									// It is either unique_id if unique_id is defined,
 									// or the login_name if login_name is defined.
 
-	private String fullName;	// full name
+	private String fullName;	// full name, may be null
 	private boolean isAdmin = false;	// is admin account.
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
 	private OsAccountStatus osAccountStatus;
@@ -171,7 +175,7 @@ public final class OsAccount extends AbstractContent {
 	 * where the instance was found.
 	 *
 	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host.
+	 * just a reference to it was found on the host (such as in a log file)
 	 */
 	public enum OsAccountInstanceType {
 		PERFORMED_ACTION_ON(0, bundle.getString("OsAccountInstanceType.PerformedActionOn.text")), // the user performed actions on a host
@@ -249,7 +253,7 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Set the account login name.
+	 * Set the account login name, such as "jdoe".
 	 * 
 	 * @param loginName Login name to set.
 	 */
@@ -261,7 +265,7 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Set the account unique id.
+	 * Set the account unique id, such as SID or UID
 	 * 
 	 * @param uniqueId Id to set.
 	 */
@@ -274,7 +278,7 @@ public final class OsAccount extends AbstractContent {
 	
 	
 	/**
-	 * Sets the account user's full name.
+	 * Sets the account user's full name, such as "John Doe"
 	 *
 	 * @param fullName Full name.
 	 */
@@ -350,7 +354,8 @@ public final class OsAccount extends AbstractContent {
 	
 	
 	/**
-	 * Adds account attributes to the account.
+	 * Adds account attributes to the account. Attributes can be at
+	 * a host-level or domain-level (for domain-scoped accounts).
 	 *
 	 * @param osAccountAttributes Collection of  attributes to add.
 	 */
@@ -361,7 +366,8 @@ public final class OsAccount extends AbstractContent {
 
 	
 	/**
-	 * Updates the account in the database.
+	 * Updates the account in the database. This must be called after calling
+	 * any of the 'set' methods. 
 	 *
 	 * @return OsAccount Updated account.
 	 *
@@ -379,7 +385,7 @@ public final class OsAccount extends AbstractContent {
 	}
 	
 	/**
-	 * Get the account id.
+	 * Get the account Object Id that is unique within the scope of the case.
 	 *
 	 * @return Account id.
 	 */
@@ -388,7 +394,7 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get the unique identifier for the account. 
+	 * Get the unique identifier for the account, such as UID or SID.
 	 * The id is unique within the account realm.
 	 *
 	 * @return Optional unique identifier.
@@ -407,7 +413,7 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get account login name.
+	 * Get account login name, such as "jdoe"
 	 *
 	 * @return Optional login name.
 	 */
@@ -416,7 +422,7 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get account user full name.
+	 * Get account user full name, such as "John Doe"
 	 *
 	 * @return Optional with full name.
 	 */
