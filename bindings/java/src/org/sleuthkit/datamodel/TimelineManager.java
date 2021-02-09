@@ -680,7 +680,7 @@ public final class TimelineManager {
 							.ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
 					duplicateExists = true;
-					logger.log(Level.INFO, getDuplicateExceptionMessage(artifact, "Attempt to make artifact event duplicate"), ex);
+					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make artifact event duplicate"), ex);
 				}
 			}
 
@@ -689,7 +689,7 @@ public final class TimelineManager {
 				try {
 					addOtherEventDesc(artifact).ifPresent(newEvents::add);
 				} catch (DuplicateException ex) {
-					logger.log(Level.INFO, getDuplicateExceptionMessage(artifact, "Attempt to make 'other' artifact event duplicate"), ex);
+					logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make 'other' artifact event duplicate"), ex);
 				}
 			}
 		}
