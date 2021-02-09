@@ -254,10 +254,10 @@ public final class OsAccountRealm {
 	}
 
 	/**
-	 * Updates the signature with realm address or realm name.
+	 * Updates the realm signature.
 	 */
 	private void updateSignature() {
-		signature = OsAccountRealmManager.getRealmSignature(realmAddr, realmName);
+		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
 	}
 	
 //	/**

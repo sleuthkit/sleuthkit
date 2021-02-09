@@ -111,7 +111,7 @@ public final class OsAccountRealmManager {
 			realmAddr = getWindowsSubAuthorityId(accountSid);
 		}
 		
-		String signature = getRealmSignature(realmAddr, realmName);
+		String signature = makeRealmSignature(realmAddr, realmName, scopeHost);
 		
 		// create a realm
 		return createRealm(realmName, realmAddr, signature, scopeHost, scopeConfidence);
@@ -519,24 +519,28 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Determines the realm signature based on given realm address and name.
+	 * Makes a realm signature based on given realm address, name scope host.
 	 *
-	 * If the address known, it is used for unique signature, otherwise the name
-	 * is used.
+	 * The signature is  primarily to provide uniqueness in the database.
+	 * 
+	 * Signature is built as:
+	 *  (addr|name)_(hostId|"DOMAIN")
 	 *
-	 * @param realmAddr Realm address.
-	 * @param realmName Realm name.
+	 * @param realmAddr Realm address, may be null.
+	 * @param realmName Realm name, may be null only if address is not null.
+	 * @param scopeHost Realm scope host. May be null.
 	 * 
 	 * @return Realm Signature.
 	 */
-	static String getRealmSignature(String realmAddr, String realmName) {
-		
-		if (!Strings.isNullOrEmpty(realmAddr)) {
-			return realmAddr;
-		} else if (!Strings.isNullOrEmpty(realmName)) {
-			return realmName;
-		} else {
-			throw new IllegalArgumentException(String.format("Realm address and name can't both be null."));
+	static String makeRealmSignature(String realmAddr, String realmName, Host scopeHost) {
+
+		// need at least one of the two, the addr or name to look up
+		if (Strings.isNullOrEmpty(realmAddr) && Strings.isNullOrEmpty(realmName)) {
+			throw new IllegalArgumentException("Realm address and name can't both be null.");
 		}
+		
+		String signature = String.format("%s_%s", !Strings.isNullOrEmpty(realmAddr) ?  realmAddr : realmName,
+												scopeHost != null ? scopeHost.getId() : "DOMAIN");
+		return signature;
 	}
 }

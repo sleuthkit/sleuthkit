@@ -438,10 +438,10 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_os_account_realms (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "realm_name TEXT DEFAULT NULL, "	// realm name - for a domain realm, may be null
 				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
-				+ "realm_signature TEXT NOT NULL, "	// is either the realm_addr or the realm_addr, one of them must be known.  This is used to prevent duplicates.
+				+ "realm_signature TEXT NOT NULL, "	// Signature exists only to prevent duplicates. It is  made up of realm address/name and scope host
 				+ "scope_host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm scope is a single host
 				+ "scope_confidence INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
-				+ "UNIQUE(realm_signature, scope_host_id), "
+				+ "UNIQUE(realm_signature), "
 				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 		
 		// References tsk_objects, tsk_os_account_realms
