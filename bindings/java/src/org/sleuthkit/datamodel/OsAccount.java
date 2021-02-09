@@ -260,6 +260,7 @@ public final class OsAccount extends AbstractContent {
 	public void setLoginName(String loginName) {
 		if (this.loginName == null) {
 			this.loginName = loginName;
+			updateSignature();
 			this.isDirty = true;
 		}
 	}
@@ -272,6 +273,7 @@ public final class OsAccount extends AbstractContent {
 	public void setUniqueId(String uniqueId) {
 		if (this.uniqueId == null) {
 			this.uniqueId = uniqueId;
+			updateSignature();
 			this.isDirty = true;
 		}
 	}
@@ -328,18 +330,6 @@ public final class OsAccount extends AbstractContent {
 			this.creationTime = creationTime;
 			this.isDirty = true;
 		}
-	}
-
-	/**
-	 * Set the signature.
-	 *
-	 * The signature may change if the login name or unique id is updated after
-	 * creation.
-	 *
-	 * @param signature Signature.
-	 */
-	void setSignature(String signature) {
-		this.signature = signature;
 	}
 
 	
@@ -422,6 +412,16 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
+	 * Get the account signature.
+	 *
+	 * @return Account signature.
+	 */
+	String getSignature() {
+		return signature;
+	}
+
+	
+	/**
 	 * Get account user full name, such as "John Doe"
 	 *
 	 * @return Optional with full name.
@@ -473,6 +473,13 @@ public final class OsAccount extends AbstractContent {
 	 */
 	public List<OsAccountAttribute> getOsAccountAttributes() {
 		return Collections.unmodifiableList(osAccountAttributes);
+	}
+	
+	/**
+	 * Updates the account signature with unique id or name.
+	 */
+	private void updateSignature() {
+		signature = OsAccountManager.getAccountSignature(this.uniqueId, this.loginName);
 	}
 	
 	/**

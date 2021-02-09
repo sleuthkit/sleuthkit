@@ -376,21 +376,16 @@ class TskCaseDbBridge {
 					}
 
 					// query the DB to get the owner account
-					
-					// RAMAN TBD: what should be realm name used here
-					String realmName = "DUMMY";
-					
-					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getWindowsAccount(ownerUid, null, realmName, imageHost);
+					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getWindowsAccount(ownerUid, null, null, imageHost);
 					if (ownerAccount.isPresent()) {
 						// found account - add to map 
 						ownerIdToAccountMap.put(ownerUid, ownerAccount.get());
 					} else {
 						// account not found in the database,  create the account and add to map
 						// Currently we expect only NTFS systems to provide a windows style SID as owner id.
-						
 						// RAMAN TBD: how to handle well known short SIDs - they don't have any domain.
 						
-						OsAccount newAccount = caseDb.getOsAccountManager().createWindowsAccount(ownerUid, null, realmName, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+						OsAccount newAccount = caseDb.getOsAccountManager().createWindowsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
 						ownerIdToAccountMap.put(ownerUid, newAccount);
 					}
 				}

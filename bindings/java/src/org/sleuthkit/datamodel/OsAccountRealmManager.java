@@ -50,31 +50,6 @@ public final class OsAccountRealmManager {
 	}
 		
 	/**
-	 * Create the realm with the given name and scope for the given host. If a
-	 * realm with same name already exists, then the existing realm is returned.
-	 *
-	 * @param realmName Realm name.
-	 * @param host      Host that realm reference was found on. May be null if
-	 *                  the realm is a domain and not host-specific.
-	 *
-	 * @return OsAccountRealm Realm.
-	 *
-	 * @throws TskCoreException If there is an error creating the realm.
-	 */
-	
-	// RAMAN TBD: does this go away ??? Confirm with Brian.
-	public OsAccountRealm createRealmByName(String realmName, Host host) throws TskCoreException {
-		
-		if (Strings.isNullOrEmpty(realmName)) {
-			throw new IllegalArgumentException("A realm name is required.");
-		}
-		
-		return createRealm(realmName, null, realmName, host, ScopeConfidence.KNOWN);
-		
-	}
-	
-	
-	/**
 	 * Create realm for the Windows. The input SID is a user/group SID. The
 	 * domain SID is extracted from this incoming SID.
 	 *
@@ -131,14 +106,11 @@ public final class OsAccountRealmManager {
 		
 		// get subAuthority sid
 		String realmAddr = null;
-		String signature;
 		if (!Strings.isNullOrEmpty(accountSid)) {
 			realmAddr = getSubAuthorityId(accountSid);
-			signature = realmAddr;
 		}
-		else {
-			signature = realmName;
-		}
+		
+		String signature = getRealmSignature(realmAddr, realmName);
 		
 		// create a realm
 		return createRealm(realmName, realmAddr, signature, scopeHost, scopeConfidence);
@@ -532,11 +504,35 @@ public final class OsAccountRealmManager {
 	 * @return Sub-authority id string.
 	 */
 	private String getSubAuthorityId(String sid) {
+		
+		// RAMAN TBD: this fails for short WellKnown SIDs
 		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
 			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
 		}
 		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));
 		
 		return subAuthorityId;
+	}
+	
+	/**
+	 * Determines the realm signature based on given realm address and name.
+	 *
+	 * If the address known, it is used for unique signature, otherwise the name
+	 * is used.
+	 *
+	 * @param realmAddr Realm address.
+	 * @param realmName Realm name.
+	 * 
+	 * @return Realm Signature.
+	 */
+	static String getRealmSignature(String realmAddr, String realmName) {
+		
+		if (!Strings.isNullOrEmpty(realmAddr)) {
+			return realmAddr;
+		} else if (!Strings.isNullOrEmpty(realmName)) {
+			return realmName;
+		} else {
+			throw new IllegalArgumentException(String.format("Realm address and name can't both be null."));
+		}
 	}
 }

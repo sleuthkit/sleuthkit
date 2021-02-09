@@ -252,13 +252,7 @@ public final class OsAccountRealm {
 	 * Updates the signature with realm address or realm name.
 	 */
 	private void updateSignature() {
-		// realm addr is more definitive and has higher priority.
-		if (!Strings.isNullOrEmpty(realmAddr) ) {
-			signature = realmAddr;
-		}
-		else if (!Strings.isNullOrEmpty(realmName) ) {
-			signature = realmName;
-		}	
+		signature = OsAccountRealmManager.getRealmSignature(realmAddr, realmName);
 	}
 	
 //	/**

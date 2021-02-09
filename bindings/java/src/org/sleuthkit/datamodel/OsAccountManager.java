@@ -125,9 +125,9 @@ public final class OsAccountManager {
 		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(loginName)) {
 			throw new IllegalArgumentException("Cannot create OS account with both uniqueId and loginName as null.");
 		}
-		// @@@ This can be null if sid is given. 
-		if (Strings.isNullOrEmpty(realmName)) {
-			throw new IllegalArgumentException("Realm name is required to create an OS account.");
+		// Realm name is required if the sid is null. 
+		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(realmName)) {
+			throw new IllegalArgumentException("Realm name or SID is required to create a Windows account.");
 		}
 
 		Optional<OsAccountRealm> realm = Optional.empty();
@@ -190,7 +190,7 @@ public final class OsAccountManager {
 			throw new IllegalArgumentException("Cannot create an OS Account, realm is NULL.");
 		}
 		
-		String signature = makeAccountSignature(uniqueId, loginName);
+		String signature = getAccountSignature(uniqueId, loginName);
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
@@ -201,9 +201,7 @@ public final class OsAccountManager {
 			//            Create an Object Directory parent and used its id.
 			long parentObjId = 0;
 			
-			// RAMAN TODO: what is the object type ??
 			int objTypeId = TskData.ObjectType.OS_ACCOUNT.getObjectType();
-			
 			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
 			
 			String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, unique_id, signature, status)"
@@ -371,7 +369,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException         If there is an error getting the account.
 	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
-	public OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
+	OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return getOsAccount(osAccountObjId, connection);
@@ -632,15 +630,13 @@ public final class OsAccountManager {
 	/**
 	 * Updates the database for the given OsAccount.
 	 *
-	 * @param osAccount   OsAccount that needs to be updated.
+	 * @param osAccount   OsAccount that needs to be updated in the database.
 	 *
 	 * @return OsAccount Updated account.
 	 *
 	 * @throws TskCoreException
 	 */
 	OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
-		
-		String signature = makeAccountSignature(osAccount.getUniqueIdWithinRealm().orElse(null), osAccount.getLoginName().orElse(null));
 		
 		db.acquireSingleUserCaseWriteLock();
 		try(CaseDbConnection connection = db.getConnection()) {
@@ -661,8 +657,7 @@ public final class OsAccountManager {
 			preparedStatement.setString(1, osAccount.getLoginName().orElse(null));
 			preparedStatement.setString(2, osAccount.getUniqueIdWithinRealm().orElse(null));
 			
-			osAccount.setSignature(signature);
-			preparedStatement.setString(3, signature);
+			preparedStatement.setString(3, osAccount.getSignature());
 			
 			preparedStatement.setString(4, osAccount.getFullName().orElse(null));
 			
@@ -737,7 +732,7 @@ public final class OsAccountManager {
 	 *
 	 * @return Account signature.
 	 */
-	private String makeAccountSignature(String uniqueId,  String loginName) {
+	static String getAccountSignature(String uniqueId,  String loginName) {
 		// Create a signature. 
 		String signature;
 		if (Strings.isNullOrEmpty(uniqueId) == false) {
