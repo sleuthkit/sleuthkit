@@ -167,7 +167,9 @@ public final class OsAccountManager {
 				}
 
 				// create failed for some other reason, throw an exception
-				throw new TskCoreException(String.format("Error creating OsAccount with loginName = %s", loginName), ex);
+				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %d", 
+															(sid != null) ? sid : "Null", (loginName != null) ? loginName : "Null", 
+															(realmName != null) ? realmName : "Null", referringHost), ex);
 
 			}
 		} 
