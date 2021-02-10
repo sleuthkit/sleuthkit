@@ -231,9 +231,12 @@ public class OsAccountTest {
 			// Let's update osAccount1
 			String fullName1 = "Johnny Depp";
 			Long creationTime1 = 1611858618L;
-			osAccount1.setCreationTime(creationTime1);
+			boolean isChanged = osAccount1.setCreationTime(creationTime1);
+			assertEquals(isChanged, true);
+			
 			osAccount1.setFullName(fullName1);
 			osAccount1.setIsAdmin(true);
+			
 			
 			osAccount1 = osAccount1.update();
 			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);

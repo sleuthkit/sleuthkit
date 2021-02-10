@@ -228,29 +228,42 @@ public final class OsAccountRealm {
 	}
 	
 	/**
-	 * Set the realmName if it is not already set.
-	 * 
+	 * Set the realm name if it is not already set.
+	 *
 	 * @param name Realm name to set.
+	 *
+	 * @return Returns true of the name is set, false if the name was not
+	 *         changed.
 	 */
-	public void setRealmName(String name) {
+	public boolean setRealmName(String name) {
 		if (Objects.isNull(this.realmName) && Objects.nonNull(name)) {
 			this.realmName = name;
 			updateSignature();
 			this.isDirty = true;
+			
+			return true;
 		}
+		
+		return false;
 	}
 
 	/**
-	 * Set the realm addr if it is not already set.
+	 * Set the realm address if it is not already set.
 	 *
-	 * @param addr Realm addr to set.
+	 * @param addr Realm address to set.
+	 *
+	 * @return Returns true of the address is set, false if the address was not
+	 *         changed.
 	 */
-	public void setRealmAddr(String addr) {
+	public boolean setRealmAddr(String addr) {
 		if (Objects.isNull(this.realmAddr) && Objects.nonNull(addr)) {
 			this.realmAddr = addr;
 			updateSignature();
 			this.isDirty = true;
+			return true;
 		}
+		
+		return false;
 	}
 
 	/**

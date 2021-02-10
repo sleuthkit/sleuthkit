@@ -55,9 +55,9 @@ public final class OsAccount extends AbstractContent {
 									// or the login_name if login_name is defined.
 
 	private String fullName;	// full name, may be null
-	private boolean isAdmin = false;	// is admin account.
+	private Boolean isAdmin = null;	// is admin account.
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
-	private OsAccountStatus osAccountStatus;
+	private OsAccountStatus osAccountStatus = null;
 	private Long creationTime = null;
 
 	private final List<OsAccountAttribute> osAccountAttributes = new ArrayList<>();
@@ -253,83 +253,128 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Set the account login name, such as "jdoe".
-	 * 
+	 * Set the account login name, such as "jdoe", if not already set.
+	 *
 	 * @param loginName Login name to set.
+	 *
+	 * @return Returns true of the login name is set, false if the name was not
+	 *         changed.
 	 */
-	public void setLoginName(String loginName) {
+	public boolean setLoginName(String loginName) {
 		if (this.loginName == null) {
 			this.loginName = loginName;
 			updateSignature();
 			this.isDirty = true;
+			return true;
 		}
+		return false;
 	}
 
 	/**
-	 * Set the account unique id, such as SID or UID
+	 * Set the account unique id, such as SID or UID, if not already set.
 	 * 
 	 * @param uniqueId Id to set.
+	 * 
+	 * @return Returns true of the unique id is set, false if the unique id was not
+	 *         changed.
 	 */
-	public void setUniqueId(String uniqueId) {
+	public boolean setUniqueId(String uniqueId) {
 		if (this.uniqueId == null) {
 			this.uniqueId = uniqueId;
 			updateSignature();
 			this.isDirty = true;
+			return true;
 		}
+		return false;
 	}
 	
 	
 	/**
-	 * Sets the account user's full name, such as "John Doe"
+	 * Sets the account user's full name, such as "John Doe", if it is not
+	 * already set.
 	 *
 	 * @param fullName Full name.
+	 *
+	 * @return Returns true of the name is set, false if the name was not
+	 *         changed.
 	 */
-	public void setFullName(String fullName) {
+	public boolean setFullName(String fullName) {
 		if (this.fullName == null) {
 			this.fullName = fullName;
 			this.isDirty = true;
+			return true;
 		}
+		return false;
 	}
 
 	/**
-	 * Sets the admin flag for the account.
+	 * Sets the admin status for the account, if it is not already set.
 	 *
 	 * @param isAdmin Flag to indicate if the account is an admin account.
+	 * 
+	 * @return Returns true of the admin status is set, false if the status was not
+	 *         changed.
 	 */
-	public void setIsAdmin(boolean isAdmin) {
-		this.isAdmin = isAdmin;
-		this.isDirty = true;
+	public boolean setIsAdmin(boolean isAdmin) {
+		if (this.isAdmin == null) {
+			this.isAdmin = isAdmin;
+			this.isDirty = true;
+			return true;
+		}
+		return false;
 	}
 
 	/**
-	 * Sets account type for the account.
+	 * Sets account type for the account, if it has not already been set.
 	 *
 	 * @param osAccountType Account type.
+	 *
+	 * @return Returns true of the account type is set, false if the account
+	 *         type was not changed.
 	 */
-	public void setOsAccountType(OsAccountType osAccountType) {
-		this.osAccountType = osAccountType;
-		this.isDirty = true;
+	public boolean setOsAccountType(OsAccountType osAccountType) {
+		if (this.osAccountType == null) {
+			this.osAccountType = osAccountType;
+			this.isDirty = true;
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
-	 * Sets account status for the account.
+	 * Sets account status for the account, if it is not already set.
 	 *
 	 * @param osAccountStatus Account status.
+	 * 
+	 * @return Returns true of the account status is set, false if the account
+	 *         status was not changed.
 	 */
-	public void setOsAccountStatus(OsAccountStatus osAccountStatus) {
-		this.osAccountStatus = osAccountStatus;
+	public boolean setOsAccountStatus(OsAccountStatus osAccountStatus) {
+		if (this.osAccountStatus == null) {
+			this.osAccountStatus = osAccountStatus;
+			this.isDirty = true;
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
-	 * Set account creation time.
+	 * Set account creation time, if not already set.
 	 *
 	 * @param creationTime Creation time.
+	 * 
+	 * @return Returns true of the creation time is set, false if the time was not
+	 *         changed.
 	 */
-	public void setCreationTime(Long creationTime) {
+	public boolean setCreationTime(Long creationTime) {
 		if (this.creationTime == null) {
 			this.creationTime = creationTime;
 			this.isDirty = true;
+			return true;
 		}
+		return false;
 	}
 
 	
@@ -436,7 +481,7 @@ public final class OsAccount extends AbstractContent {
 	 * @return True if account is an admin account, false otherwise.
 	 */
 	public boolean isAdmin() {
-		return isAdmin;
+		return (isAdmin != null) ? isAdmin : false;
 	}
 
 	/**
