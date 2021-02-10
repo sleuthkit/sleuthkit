@@ -183,32 +183,40 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Updates the realm name and name type for the the specified realm id.
+	 * Updates the specified realm in the database.
 	 * 
-	 * @param realmId Row id of realm to update.
-	 * @param realmName Realm name.
-	 * @param nameType Name type.
+	 * @param realm Realm to update.
 	 * 
-	 * @return OsAccountRealm
+	 * @return OsAccountRealm Updated realm.
+	 * 
 	 * @throws TskCoreException 
 	 */
-	OsAccountRealm updateRealmName(long realmId, String realmName, OsAccountRealm.ScopeConfidence nameType) throws TskCoreException {
+	OsAccountRealm updateRealm(OsAccountRealm realm) throws TskCoreException {
+		
+		// do nothing if the realm is not dirty.
+		if (!realm.isDirty()) {
+			return realm;
+		}
 		
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection())  {
-			String updateSQL = "UPDATE tsk_os_account_realms SET realm_name = ?, scope_confidence = ? WHERE id = ?";
+			// We only alow realm addr, name and signature to be updated at this time. 
+			String updateSQL = "UPDATE tsk_os_account_realms SET realm_name = ?,  realm_addr = ?, realm_signature = ? WHERE id = ?";
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
-			preparedStatement.setString(1, realmName);
-			preparedStatement.setInt(2, nameType.getId());
-			preparedStatement.setLong(3, realmId);
+			preparedStatement.setString(1, realm.getRealmName().orElse(null));
+			preparedStatement.setString(2, realm.getRealmAddr().orElse(null));
+			preparedStatement.setString(3, realm.getSignature());
+			
+			preparedStatement.setLong(4, realm.getId());
 			
 			connection.executeUpdate(preparedStatement);
-
-			return getRealm(realmId, connection );
+			
+			realm.resetDirty();
+			return realm;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating realm with name = %s, id = %d", realmName, realmId), ex);
+			throw new TskCoreException(String.format("Error updating realm with id = %d, name = %s, addr = %s", realm.getId(), realm.getRealmName().orElse("Null"), realm.getRealmAddr().orElse("Null") ), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}

@@ -642,6 +642,11 @@ public final class OsAccountManager {
 	 */
 	OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
 		
+		// do nothing if the account is not dirty.
+		if (!osAccount.isDirty()) {
+			return osAccount;
+		}
+		
 		db.acquireSingleUserCaseWriteLock();
 		try(CaseDbConnection connection = db.getConnection()) {
 			String updateSQL = "UPDATE tsk_os_accounts SET "
@@ -673,6 +678,8 @@ public final class OsAccountManager {
 			preparedStatement.setLong(9, osAccount.getId());
 			
 			connection.executeUpdate(preparedStatement);
+			
+			osAccount.resetDirty();
 			return osAccount;
 		}
 		catch (SQLException ex) {
