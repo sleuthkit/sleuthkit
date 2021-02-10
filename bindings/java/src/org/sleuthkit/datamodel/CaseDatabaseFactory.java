@@ -409,6 +409,39 @@ class CaseDatabaseFactory {
 				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
 				+ "UNIQUE(name)) ");
 
+		stmt.execute("CREATE TABLE  tsk_host_addresses (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "address_type INTEGER NOT NULL, "
+				+ "address TEXT NOT NULL, "
+				+ "UNIQUE(address_type, address)) ");
+
+		stmt.execute("CREATE TABLE  tsk_host_address_map  (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", " // object id of the source where this mapping was found.
+				+ "time " + dbQueryHelper.getBigIntType() + ", " // time at which the mapping existed
+				+ "UNIQUE(host_id, address_id, time), "
+				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+				+ "FOREIGN KEY(address_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+		// stores associations between DNS name and IP address
+		stmt.execute("CREATE TABLE  tsk_host_address_name_map (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "dns_address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "ip_address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "source TEXT, "
+				+ "time " + dbQueryHelper.getBigIntType() + ", " // time at which the mapping existed
+				+ "UNIQUE(dns_address_id, ip_address_id, time), "
+				+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id) )");
+
+		// maps an address to an artifact using it 
+		stmt.execute("CREATE TABLE  tsk_host_address_usage   (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "UNIQUE(address_id, artifact_obj_id), "
+				+ "FOREIGN KEY(address_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) )");
+		
 	}
 		
 	// Must be called after tsk_hosts and tsk_objects have been created.

@@ -2466,6 +2466,42 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN owner_uid TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_obj_id " + bigIntDataType + " DEFAULT NULL REFERENCES tsk_os_accounts(os_account_obj_id) DEFAULT NULL");
 
+			
+			// create host address tables
+			statement.execute("CREATE TABLE  tsk_host_addresses (id " + bigIntDataType + " PRIMARY KEY, "
+					+ "address_type INTEGER NOT NULL, "
+					+ "address TEXT NOT NULL, "
+					+ "UNIQUE(address_type, address)) ");
+
+			statement.execute("CREATE TABLE  tsk_host_address_map  (id " + bigIntDataType + " PRIMARY KEY, "
+					+ "host_id " + bigIntDataType + " NOT NULL, "
+					+ "address_id " + bigIntDataType + " NOT NULL, "
+					+ "source_obj_id " + bigIntDataType + ", " // object id of the source where this mapping was found.
+					+ "time " + bigIntDataType + ", " // time at which the mapping existed
+					+ "UNIQUE(host_id, address_id, time), "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+					+ "FOREIGN KEY(address_id) REFERENCES tsk_host_addresses(id), "
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+			// stores associations between DNS name and IP address
+			statement.execute("CREATE TABLE  tsk_host_address_name_map (id " + bigIntDataType + " PRIMARY KEY, "
+					+ "dns_address_id " + bigIntDataType + " NOT NULL, "
+					+ "ip_address_id " + bigIntDataType + " NOT NULL, "
+					+ "source TEXT, "
+					+ "time " + bigIntDataType + ", " // time at which the mapping existed
+					+ "UNIQUE(dns_address_id, ip_address_id, time), "
+					+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id), "
+					+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id) )");
+
+			// maps an address to an artifact using it 
+			statement.execute("CREATE TABLE  tsk_host_address_usage   (id " + bigIntDataType + " PRIMARY KEY, "
+					+ "address_id " + bigIntDataType + " NOT NULL, "
+					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "UNIQUE(address_id, artifact_obj_id), "
+					+ "FOREIGN KEY(address_id) REFERENCES tsk_host_addresses(id), "
+					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) )");
+		
+		
 			return new CaseDbSchemaVersionNumber(8, 7);
 
 		} finally {
