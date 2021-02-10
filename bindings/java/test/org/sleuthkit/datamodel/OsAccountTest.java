@@ -148,8 +148,8 @@ public class OsAccountTest {
 		Host host1 = caseDB.getHostManager().createHost(HOSTNAME1);
 			
 		String realmName1 = "basis";
-		String realmSID1 =  "S-1-5-18-1111111111-2222222222-3333333333";
-		String realmAddr1 = "S-1-5-18-1111111111-2222222222";	
+		String realmSID1 =  "S-1-5-21-1111111111-2222222222-3333333333";
+		String realmAddr1 = "S-1-5-21-1111111111-2222222222";	
 		
 		OsAccountRealm domainRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(realmSID1, realmName1, host1, OsAccountRealm.RealmScope.DOMAIN);
 		
@@ -377,10 +377,31 @@ public class OsAccountTest {
 			}
 
 			
+			// Test some other special account.
+			{
+				String hostname4 = "host444";
+				Host host4 = caseDB.getHostManager().createHost(hostname4);
+
+				String specialSid1 = "S-1-5-80-3696737894-3623014651-202832235-645492566-13622391";
+				String specialSid2 = "S-1-5-82-4003674586-223046494-4022293810-2417516693-151509167";
+				String specialSid3 = "S-1-5-90-0-2";
+				String specialSid4 = "S-1-5-96-0-3";
+				
+
+				OsAccount specialAccount1 = caseDB.getOsAccountManager().createWindowsAccount(specialSid1, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount2 = caseDB.getOsAccountManager().createWindowsAccount(specialSid2, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount3 = caseDB.getOsAccountManager().createWindowsAccount(specialSid3, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount4 = caseDB.getOsAccountManager().createWindowsAccount(specialSid4, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				
+
+				assertEquals(specialAccount1.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(specialAccount2.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(specialAccount3.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(specialAccount4.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				
+				
+			}
 			
-			
-			
-			// RAMAN TBD: add other special accounts
 		}
 		
 		finally {

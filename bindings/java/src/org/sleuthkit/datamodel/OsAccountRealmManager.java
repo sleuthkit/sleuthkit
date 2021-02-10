@@ -37,16 +37,21 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
  */
 public final class OsAccountRealmManager {
 	
-	
-	// Some Windows accounts have special SIDS.
-	// we need to identify those and handle them differently for regular 
-	// user account SIDs
+	// Some windows SID indicate special account.
+	// These should be handled differently from regular user accounts.
 	private static final Set<String> SPECIAL_SIDS = ImmutableSet.of(
 			"S-1-5-18",	// LOCAL_SYSTEM_ACCOUNT
 			"S-1-5-19", // LOCAL_SERVICE_ACCOUNT
 			"S-1-5-20" // NETWORK_SERVICE_ACCOUNT
+	);
+	private static final Set<String> SPECIAL_SID_PREFIXES = ImmutableSet.of(
+			"S-1-5-80",	// Virtual Service accounts
+			"S-1-5-82", // AppPoolIdentity Virtual accounts. 
+			"S-1-5-83", // Virtual Machine  Virtual Accounts.
+			"S-1-5-90", // Windows Manager Virtual Accounts. 
+			"S-1-5-96" // Font Drive Host Virtual Accounts.
 			);
-
+	
 	// Special Windows Accounts with short SIDS are given a special realm "address".
 	private final static String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
 	
@@ -534,8 +539,8 @@ public final class OsAccountRealmManager {
 	private String getWindowsRealmAddress(String sid) {
 		
 		String realmAddr;
-
-		if (SPECIAL_SIDS.contains(sid)) {
+		
+		if (isWindowsSpecialSid(sid)) {
 			realmAddr = SPECIAL_WINDOWS_REALM_ADDR;
 		} else {
 			// regular SIDs should have at least 5 components: S-1-x-y-z
@@ -549,6 +554,24 @@ public final class OsAccountRealmManager {
 		return realmAddr;
 	}
 	
+	/**
+	 * Checks if the given SID is a special Windows SID.
+	 * 
+	 * @param sid SID to check.
+	 * 
+	 * @return True if the SID is a Windows special SID, false otherwise 
+	 */
+	private boolean isWindowsSpecialSid(String sid) {
+		if (SPECIAL_SIDS.contains(sid)) {
+			return true;
+		}
+		for (String specialPrefix: SPECIAL_SID_PREFIXES) {
+			if (sid.startsWith(specialPrefix)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/**
 	 * Makes a realm signature based on given realm address, name scope host.
