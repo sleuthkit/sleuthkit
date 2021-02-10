@@ -148,6 +148,44 @@ public final class HostManager {
 		}
 	}
 
+	public Host updateHost(Host newHost) throws TskCoreException, IllegalArgumentException {
+		if (newHost == null) {
+			throw new IllegalArgumentException("No host argument provided.");
+		} else if (newHost.getName() == null) {
+			throw new IllegalArgumentException(String.format("Host with id %d has no name", newHost.getId()));
+		}
+
+		CaseDbConnection connection = this.db.getConnection();
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			String hostInsertSQL = "UPDATE tsk_hosts \n"
+					+ "SET name = ? \n"
+					+ "WHERE id = ?";
+			
+			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
+
+			preparedStatement.clearParameters();
+			preparedStatement.setString(1, newHost.getName());
+			preparedStatement.setLong(2, newHost.getId());
+
+			connection.executeUpdate(preparedStatement);
+
+			return getHost(newHost.getId(), connection).orElseThrow(() -> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "));
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+
+		UPDATE tsk_hosts 
+		SET name =  
+		 
+		'new name' 
+WHERE id = 1;
+
+		SELECT id, name, status FROM tsk_hosts WHERE id = 1;
+	}
+
 	/**
 	 * Get all data sources associated with a given host.
 	 *
@@ -227,7 +265,7 @@ public final class HostManager {
 	/**
 	 * Get host with given name.
 	 *
-	 * @param name        Host name to look for.
+	 * @param name Host name to look for.
 	 *
 	 * @return Optional with host. Optional.empty if no matching host is found.
 	 *
@@ -235,7 +273,7 @@ public final class HostManager {
 	 */
 	public Optional<Host> getHost(String name) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-		return getHost(name, connection);
+			return getHost(name, connection);
 		}
 	}
 
@@ -267,6 +305,32 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
+		}
+	}
+
+	/**
+	 * Get host with given id.
+	 *
+	 * @param id	        The id of the host.
+	 * @param connection Database connection to use.
+	 *
+	 * @return Optional with host. Optional.empty if no matching host is found.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Optional<Host> getHost(long id, CaseDbConnection connection) throws TskCoreException {
+
+		String queryString = "SELECT * FROM tsk_hosts WHERE id = " + id;
+		try (Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+			} else {
+				return Optional.empty();
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting host with id: " + id), ex);
 		}
 	}
 
