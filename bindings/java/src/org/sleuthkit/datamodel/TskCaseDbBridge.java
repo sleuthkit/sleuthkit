@@ -53,21 +53,23 @@ class TskCaseDbBridge {
     private final SleuthkitCase caseDb;
     private CaseDbTransaction trans = null;
     private final AddDataSourceCallbacks addDataSourceCallbacks;
+	private final Host imageHost;
     
     private final Map<Long, Long> fsIdToRootDir = new HashMap<>();
     private final Map<Long, TskData.TSK_FS_TYPE_ENUM> fsIdToFsType = new HashMap<>();
     private final Map<ParentCacheKey, Long> parentDirCache = new HashMap<>();
     
-	private final Map<String, OsAccount> ownerIdToAccountMap = new HashMap<>();
+    private final Map<String, OsAccount> ownerIdToAccountMap = new HashMap<>();
 	
     private static final long BATCH_FILE_THRESHOLD = 500;
     private final Queue<FileInfo> batchedFiles = new LinkedList<>();
     private final Queue<LayoutRangeInfo> batchedLayoutRanges = new LinkedList<>();
     private final List<Long> layoutFileIds = new ArrayList<>();
     
-    TskCaseDbBridge(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks) {
+    TskCaseDbBridge(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks, Host host) {
         this.caseDb = caseDb;
         this.addDataSourceCallbacks = addDataSourceCallbacks;
+		imageHost = host;
         trans = null;
     }
     
@@ -364,45 +366,32 @@ class TskCaseDbBridge {
 			// If not, create accounts.
 			Iterator<FileInfo> it = batchedFiles.iterator();
 
-			beginTransaction();
 			while (it.hasNext()) {
 				FileInfo fileInfo = it.next();
 				String ownerUid = fileInfo.ownerUid;
-				if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) {
+				if ((Strings.isNullOrEmpty(fileInfo.ownerUid) == false) 
+						 && (org.apache.commons.lang3.StringUtils.countMatches(ownerUid, "-") >= 5 )) { // RAMAN TBD: we dont know yet how to handle short Well known SIDs.
 					// first check the owner id is in the map, if found, then continue
 					if (this.ownerIdToAccountMap.containsKey(ownerUid)) {
 						continue;
 					}
 
-					// RAMAN TBD: Need to get host by using the data source name and then use that host for creating the OS account below.
-					Host host = null;
-
 					// query the DB to get the owner account
-					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getOsAccount(ownerUid, host, trans);
+					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getWindowsAccount(ownerUid, null, null, imageHost);
 					if (ownerAccount.isPresent()) {
 						// found account - add to map 
 						ownerIdToAccountMap.put(ownerUid, ownerAccount.get());
 					} else {
-
 						// account not found in the database,  create the account and add to map
-						commitTransaction();
-
-						// RAMAN TBD: what should this realm name be?
-						String realmName = "DUMMY";
-
-						// create the account
-						OsAccount newAccount = caseDb.getOsAccountManager().createOsAccount(ownerUid, null, realmName, host);
+						// Currently we expect only NTFS systems to provide a windows style SID as owner id.
+						OsAccount newAccount = caseDb.getOsAccountManager().createWindowsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
 						ownerIdToAccountMap.put(ownerUid, newAccount);
-
-						beginTransaction();
 					}
 				}
 			}
-			commitTransaction();
 			
 			
-			
-			
+					
             beginTransaction();
             FileInfo fileInfo;
             while ((fileInfo = batchedFiles.poll()) != null) {
@@ -414,9 +403,10 @@ class TskCaseDbBridge {
                     }
 
 					Long ownerAccountObjId = OsAccount.NO_ACCOUNT;
-					if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) {
+					if ((Strings.isNullOrEmpty(fileInfo.ownerUid) == false)
+						&& (org.apache.commons.lang3.StringUtils.countMatches(fileInfo.ownerUid, "-") >= 5 ) ){ // RAMAN TBD: we dont know yet how to handle short Well known SIDs.
 						if (ownerIdToAccountMap.containsKey(fileInfo.ownerUid)) {
-						ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
+							ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
 						} else {
 							// Error - owner should be in the map at this point!!
 							throw new TskCoreException(String.format("Failed to add file. Owner account not found for file with parent object ID: %d, name: %s, owner id: %s", fileInfo.parentObjId, fileInfo.name, fileInfo.ownerUid));

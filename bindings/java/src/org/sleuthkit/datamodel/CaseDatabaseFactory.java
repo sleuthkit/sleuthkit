@@ -436,25 +436,26 @@ class CaseDatabaseFactory {
 		
 		// References tsk_hosts
 		stmt.execute("CREATE TABLE tsk_os_account_realms (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
-				+ "name TEXT NOT NULL, "	// realm name - host name or domain name
+				+ "realm_name TEXT DEFAULT NULL, "	// realm name - for a domain realm, may be null
 				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
-				+ "host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm just comprises of a single host
-				+ "name_type INTEGER, "	// indicates if the realm name was  was expressed or inferred 
-				+ "UNIQUE(name, host_id), "
-				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
+				+ "realm_signature TEXT NOT NULL, "	// Signature exists only to prevent duplicates. It is  made up of realm address/name and scope host
+				+ "scope_host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm scope is a single host
+				+ "scope_confidence INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "UNIQUE(realm_signature), "
+				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 		
 		// References tsk_objects, tsk_os_account_realms
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null
 				+ "full_name TEXT DEFAULT NULL, "	// full name, if available, may be null
-				+ "realm_id " + dbQueryHelper.getBigIntType() + ", "		// row id for the realm, may be null if only SID is known 
+				+ "realm_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "		// realm for the account 
 				+ "unique_id TEXT DEFAULT NULL, "	// SID/UID, if available
-				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either ‘realm_id/unique_id’ if unique_id is defined or realm_id/login_name’ if unique_id is not defined.
+				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "admin INTEGER DEFAULT 0," // is admin account
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "		
-				+ "UNIQUE(signature), "
+				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 		

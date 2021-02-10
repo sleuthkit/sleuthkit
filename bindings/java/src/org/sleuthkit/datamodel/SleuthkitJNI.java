@@ -439,7 +439,7 @@ public class SleuthkitJNI {
 		 *                          case database.
 		 */
 		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host, SleuthkitCase skCase) throws TskCoreException {
-			TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks());
+			
 			try {
 				if (host == null) {
 					String hostName;
@@ -451,7 +451,7 @@ public class SleuthkitJNI {
 					}
 					host = skCase.getHostManager().getOrCreateHost(hostName);
 				}
-				
+				TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks(), host);
 				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false, host.getId());
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
 				long id = finishAddImgNat(tskAutoDbPointer);
@@ -571,7 +571,7 @@ public class SleuthkitJNI {
 					host = skCase.getHostManager().getOrCreateHost(image.getName() + " Host");
 				}
 				
-				dbHelper = new TskCaseDbBridge(skCase, addDataSourceCallbacks);
+				dbHelper = new TskCaseDbBridge(skCase, addDataSourceCallbacks, host);
 				getTSKReadLock();
 				try {
 					long imageHandle = 0;

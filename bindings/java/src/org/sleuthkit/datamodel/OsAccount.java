@@ -26,10 +26,14 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 /**
- * Abstracts an OS user account.
+ * Abstracts an OS user account. OS Accounts have a scope,
+ * which is defined by their parent OsAccountRealm.
  *
  * An OS user account may own files and (some) artifacts.
  *
+ * OsAcounts can be created with minimal data and updated 
+ * as more is learned. Caller must call update() to save
+ * any new data. 
  */
 public final class OsAccount extends AbstractContent {
 	
@@ -40,23 +44,27 @@ public final class OsAccount extends AbstractContent {
 
 	private final SleuthkitCase sleuthkitCase;
 	
-	private final long osAccountobjId;
-	private final OsAccountRealm realm;		// realm where the username is unique - a domain or a host name.
-	private final String loginName;	// user login name - may be null
-	private final String uniqueId;	// a unique user sid/uid, may be null
+	private final long osAccountobjId;	// Object ID within the database
+	private final OsAccountRealm realm;		// realm where the loginname/uniqueId is unique - a domain or a host name.
+	private String loginName;	// user login name - may be null
+	private String uniqueId;	// a unique user sid/uid, may be null
 	
-	private String signature;		// This exists only to prevent duplicates.  
-									// It is either ‘realm_id/unique_id’ if unique_id is defined,
-									// or realm_id/login_name’ if login_name is defined.
+	private String signature;		// This exists only to prevent duplicates.
+									// Together realm_id & signature must be unique for each account.
+									// It is either unique_id if unique_id is defined,
+									// or the login_name if login_name is defined.
 
-	private String fullName;	// full name
-	private boolean isAdmin = false;	// is admin account.
+	private String fullName;	// full name, may be null
+	private Boolean isAdmin = null;	// is admin account.
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
-	private OsAccountStatus osAccountStatus;
+	private OsAccountStatus osAccountStatus = null;
 	private Long creationTime = null;
 
 	private final List<OsAccountAttribute> osAccountAttributes = new ArrayList<>();
+	
+	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
+	
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
 	 * deleted.
@@ -167,7 +175,7 @@ public final class OsAccount extends AbstractContent {
 	 * where the instance was found.
 	 *
 	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host.
+	 * just a reference to it was found on the host (such as in a log file)
 	 */
 	public enum OsAccountInstanceType {
 		PERFORMED_ACTION_ON(0, bundle.getString("OsAccountInstanceType.PerformedActionOn.text")), // the user performed actions on a host
@@ -245,74 +253,174 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Sets the account user's full name.
+	 * Set the account login name, such as "jdoe", if not already set.
 	 *
-	 * @param fullName Full name.
+	 * @param loginName Login name to set.
+	 *
+	 * @return Returns true of the login name is set, false if the name was not
+	 *         changed.
 	 */
-	public void setFullName(String fullName) {
-		this.fullName = fullName;
+	public boolean setLoginName(String loginName) {
+		if (this.loginName == null) {
+			this.loginName = loginName;
+			updateSignature();
+			this.isDirty = true;
+			return true;
+		}
+		return false;
 	}
 
 	/**
-	 * Sets the admin flag for the account.
-	 *
-	 * @param isAdmin Flag to indicate if the account is an admin account.
+	 * Set the account unique id, such as SID or UID, if not already set.
+	 * 
+	 * @param uniqueId Id to set.
+	 * 
+	 * @return Returns true of the unique id is set, false if the unique id was not
+	 *         changed.
 	 */
-	public void setIsAdmin(boolean isAdmin) {
-		this.isAdmin = isAdmin;
-	}
-
-	/**
-	 * Sets account type for the account.
-	 *
-	 * @param osAccountType Account type.
-	 */
-	public void setOsAccountType(OsAccountType osAccountType) {
-		this.osAccountType = osAccountType;
-	}
-
-	/**
-	 * Sets account status for the account.
-	 *
-	 * @param osAccountStatus Account status.
-	 */
-	public void setOsAccountStatus(OsAccountStatus osAccountStatus) {
-		this.osAccountStatus = osAccountStatus;
-	}
-
-	/**
-	 * Set account creation time.
-	 *
-	 * @param creationTime Creation time.
-	 */
-	public void setCreationTime(long creationTime) {
-		this.creationTime = creationTime;
-	}
-
-	/**
-	 * Set the signature.
-	 *
-	 * The signature may change if the login name or unique id is updated after
-	 * creation.
-	 *
-	 * @param signature Signature.
-	 */
-	void setSignature(String signature) {
-		this.signature = signature;
+	public boolean setUniqueId(String uniqueId) {
+		if (this.uniqueId == null) {
+			this.uniqueId = uniqueId;
+			updateSignature();
+			this.isDirty = true;
+			return true;
+		}
+		return false;
 	}
 	
+	
 	/**
-	 * Adds account attributes to the account.
+	 * Sets the account user's full name, such as "John Doe", if it is not
+	 * already set.
+	 *
+	 * @param fullName Full name.
+	 *
+	 * @return Returns true of the name is set, false if the name was not
+	 *         changed.
+	 */
+	public boolean setFullName(String fullName) {
+		if (this.fullName == null) {
+			this.fullName = fullName;
+			this.isDirty = true;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Sets the admin status for the account, if it is not already set.
+	 *
+	 * @param isAdmin Flag to indicate if the account is an admin account.
+	 * 
+	 * @return Returns true of the admin status is set, false if the status was not
+	 *         changed.
+	 */
+	public boolean setIsAdmin(boolean isAdmin) {
+		if (this.isAdmin == null) {
+			this.isAdmin = isAdmin;
+			this.isDirty = true;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Sets account type for the account, if it has not already been set.
+	 *
+	 * @param osAccountType Account type.
+	 *
+	 * @return Returns true of the account type is set, false if the account
+	 *         type was not changed.
+	 */
+	public boolean setOsAccountType(OsAccountType osAccountType) {
+		if (this.osAccountType == null) {
+			this.osAccountType = osAccountType;
+			this.isDirty = true;
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Sets account status for the account, if it is not already set.
+	 *
+	 * @param osAccountStatus Account status.
+	 * 
+	 * @return Returns true of the account status is set, false if the account
+	 *         status was not changed.
+	 */
+	public boolean setOsAccountStatus(OsAccountStatus osAccountStatus) {
+		if (this.osAccountStatus == null) {
+			this.osAccountStatus = osAccountStatus;
+			this.isDirty = true;
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Set account creation time, if not already set.
+	 *
+	 * @param creationTime Creation time.
+	 * 
+	 * @return Returns true of the creation time is set, false if the time was not
+	 *         changed.
+	 */
+	public boolean setCreationTime(Long creationTime) {
+		if (this.creationTime == null) {
+			this.creationTime = creationTime;
+			this.isDirty = true;
+			return true;
+		}
+		return false;
+	}
+
+	
+	/**
+	 * Reset the dirty flag. Indicates that the account has been updated in the
+	 * database.
+	 * 
+	 */
+	void resetDirty() {
+		this.isDirty = false;
+	}
+	
+	
+	/**
+	 * Adds account attributes to the account. Attributes can be at
+	 * a host-level or domain-level (for domain-scoped accounts).
 	 *
 	 * @param osAccountAttributes Collection of  attributes to add.
 	 */
-	void addAttributes(Set<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
+	public void addAttributes(Set<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
 		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes);
 		osAccountAttributes.addAll(osAccountAttributes);
 	}
 
+	
 	/**
-	 * Get the account id.
+	 * Updates the account in the database. This must be called after calling
+	 * any of the 'set' methods. 
+	 *
+	 * @return OsAccount Updated account.
+	 *
+	 * @throws TskCoreException If there is an error in updating the account.
+	 */
+	public OsAccount update() throws TskCoreException {
+
+		if (this.isDirty) {
+			OsAccount updatedAccount = sleuthkitCase.getOsAccountManager().updateAccount(this);
+			updatedAccount.resetDirty();
+			return updatedAccount;
+		} else {
+			return this;
+		}
+	}
+	
+	/**
+	 * Get the account Object Id that is unique within the scope of the case.
 	 *
 	 * @return Account id.
 	 */
@@ -321,7 +429,7 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get the unique identifier for the account. 
+	 * Get the unique identifier for the account, such as UID or SID.
 	 * The id is unique within the account realm.
 	 *
 	 * @return Optional unique identifier.
@@ -340,7 +448,7 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get account login name.
+	 * Get account login name, such as "jdoe"
 	 *
 	 * @return Optional login name.
 	 */
@@ -349,7 +457,17 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get account user full name.
+	 * Get the account signature.
+	 *
+	 * @return Account signature.
+	 */
+	String getSignature() {
+		return signature;
+	}
+
+	
+	/**
+	 * Get account user full name, such as "John Doe"
 	 *
 	 * @return Optional with full name.
 	 */
@@ -363,7 +481,7 @@ public final class OsAccount extends AbstractContent {
 	 * @return True if account is an admin account, false otherwise.
 	 */
 	public boolean isAdmin() {
-		return isAdmin;
+		return (isAdmin != null) ? isAdmin : false;
 	}
 
 	/**
@@ -400,6 +518,13 @@ public final class OsAccount extends AbstractContent {
 	 */
 	public List<OsAccountAttribute> getOsAccountAttributes() {
 		return Collections.unmodifiableList(osAccountAttributes);
+	}
+	
+	/**
+	 * Updates the account signature with unique id or name.
+	 */
+	private void updateSignature() {
+		signature = OsAccountManager.getAccountSignature(this.uniqueId, this.loginName);
 	}
 	
 	/**
