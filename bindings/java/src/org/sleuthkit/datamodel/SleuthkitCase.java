@@ -57,7 +57,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -6915,7 +6914,7 @@ public class SleuthkitCase {
 			final String extension = extractExtension(fileName);
 			statement.setString(24, extension);
 			statement.setString(25, ownerUid);
-			if (Objects.nonNull(osAccountObjId)) {
+			if (null != osAccountObjId) {
 				statement.setLong(26, osAccountObjId);
 			} else {
 				statement.setNull(26, java.sql.Types.BIGINT); // osAccountObjId
