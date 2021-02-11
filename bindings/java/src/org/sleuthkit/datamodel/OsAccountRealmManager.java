@@ -19,11 +19,13 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -34,7 +36,25 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
  * host with local accounts or a domain. 
  */
 public final class OsAccountRealmManager {
-
+	
+	// Some windows SID indicate special account.
+	// These should be handled differently from regular user accounts.
+	private static final Set<String> SPECIAL_SIDS = ImmutableSet.of(
+			"S-1-5-18",	// LOCAL_SYSTEM_ACCOUNT
+			"S-1-5-19", // LOCAL_SERVICE_ACCOUNT
+			"S-1-5-20" // NETWORK_SERVICE_ACCOUNT
+	);
+	private static final Set<String> SPECIAL_SID_PREFIXES = ImmutableSet.of(
+			"S-1-5-80",	// Virtual Service accounts
+			"S-1-5-82", // AppPoolIdentity Virtual accounts. 
+			"S-1-5-83", // Virtual Machine  Virtual Accounts.
+			"S-1-5-90", // Windows Manager Virtual Accounts. 
+			"S-1-5-96" // Font Drive Host Virtual Accounts.
+			);
+	
+	// Special Windows Accounts with short SIDS are given a special realm "address".
+	private final static String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
+	
 	private static final Logger LOGGER = Logger.getLogger(OsAccountRealmManager.class.getName());
 
 	private final SleuthkitCase db;
@@ -91,7 +111,7 @@ public final class OsAccountRealmManager {
 			case UNKNOWN:
 			default:
 				// check if the referring host already has a realm
-				boolean isHostRealmKnown = this.isHostRealmKnown(referringHost);
+				boolean isHostRealmKnown = isHostRealmKnown(referringHost);
 				if (isHostRealmKnown) {
 					scopeHost = null;	// the realm does not scope to the referring host since it already has one.
 					scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;
@@ -103,12 +123,16 @@ public final class OsAccountRealmManager {
 
 		}
 		
-		// RAMAN TBD: can the SID be parsed in some way to determine local vs domain ??
-		
-		// get subAuthority sid
+		// get windows realm address from sid
 		String realmAddr = null;
 		if (!Strings.isNullOrEmpty(accountSid)) {
-			realmAddr = getWindowsSubAuthorityId(accountSid);
+			realmAddr = getWindowsRealmAddress(accountSid);
+			
+			// if the account is special windows account, create a local realm for it.
+			if (realmAddr.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
+				scopeHost = referringHost;
+				scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;
+			}
 		}
 		
 		String signature = makeRealmSignature(realmAddr, realmName, scopeHost);
@@ -174,8 +198,8 @@ public final class OsAccountRealmManager {
 		// If a accountSID is provided , search for realm by addr.
 		if (!Strings.isNullOrEmpty(accountSid)) {
 			// get realm addr from the account SID.
-			String subAuthorityId = getWindowsSubAuthorityId(accountSid);
-			return this.getRealmByAddr(subAuthorityId, referringHost, connection);
+			String realmAddr = getWindowsRealmAddress(accountSid);
+			return this.getRealmByAddr(realmAddr, referringHost, connection);
 		}
 
 		// No realm addr, Search  by name	
@@ -367,9 +391,11 @@ public final class OsAccountRealmManager {
 	 */
 	private boolean isHostRealmKnown(Host host) throws TskCoreException {
 	
+		// check if this host has a local known realm aleady, other than the special windows realm.
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE realms.scope_host_id = " + host.getId()
-				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId();
+				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
+				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ SPECIAL_WINDOWS_REALM_ADDR + "') ";
 
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -509,23 +535,52 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Gets the sub authority id from the given SID.
+	 * Get the windows realm address from the given SID.
+	 * 
+	 * For all regular account SIDs, the realm address is the sub-authority SID.
+	 * For special Windows account the realm address is a special address.
 	 * 
 	 * @param sid SID
 	 * 
-	 * @return Sub-authority id string.
+	 * @return Realm address for the SID.
 	 */
-	private String getWindowsSubAuthorityId(String sid) {
+	private String getWindowsRealmAddress(String sid) {
 		
-		// RAMAN TBD: this fails for short WellKnown SIDs
-		if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 5 ) {
-			throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
+		String realmAddr;
+		
+		if (isWindowsSpecialSid(sid)) {
+			realmAddr = SPECIAL_WINDOWS_REALM_ADDR;
+		} else {
+			// regular SIDs should have at least 5 components: S-1-x-y-z
+			if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 4) {
+				throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
+			}
+			// get the sub authority SID
+			realmAddr = sid.substring(0, sid.lastIndexOf('-'));
 		}
-		String subAuthorityId = sid.substring(0, sid.lastIndexOf('-'));
-		
-		return subAuthorityId;
+
+		return realmAddr;
 	}
 	
+	/**
+	 * Checks if the given SID is a special Windows SID.
+	 * 
+	 * @param sid SID to check.
+	 * 
+	 * @return True if the SID is a Windows special SID, false otherwise 
+	 */
+	private boolean isWindowsSpecialSid(String sid) {
+		if (SPECIAL_SIDS.contains(sid)) {
+			return true;
+		}
+		for (String specialPrefix: SPECIAL_SID_PREFIXES) {
+			if (sid.startsWith(specialPrefix)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Makes a realm signature based on given realm address, name scope host.
 	 *
