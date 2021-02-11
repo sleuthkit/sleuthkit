@@ -379,6 +379,16 @@ public final class OsAccount extends AbstractContent {
 
 	
 	/**
+	 * Get the dirty flag. Indicates whether the account has any changes that need
+	 * to be updated in the database.
+	 *
+	 * @return True if the object is dirty, false otherwise.
+	 */
+	boolean isDirty() {
+		return isDirty;
+	}
+	
+	/**
 	 * Reset the dirty flag. Indicates that the account has been updated in the
 	 * database.
 	 * 
@@ -399,26 +409,7 @@ public final class OsAccount extends AbstractContent {
 		osAccountAttributes.addAll(osAccountAttributes);
 	}
 
-	
-	/**
-	 * Updates the account in the database. This must be called after calling
-	 * any of the 'set' methods. 
-	 *
-	 * @return OsAccount Updated account.
-	 *
-	 * @throws TskCoreException If there is an error in updating the account.
-	 */
-	public OsAccount update() throws TskCoreException {
-
-		if (this.isDirty) {
-			OsAccount updatedAccount = sleuthkitCase.getOsAccountManager().updateAccount(this);
-			updatedAccount.resetDirty();
-			return updatedAccount;
-		} else {
-			return this;
-		}
-	}
-	
+		
 	/**
 	 * Get the account Object Id that is unique within the scope of the case.
 	 *
