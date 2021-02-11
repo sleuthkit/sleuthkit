@@ -130,18 +130,17 @@ class TskCaseDbBridge {
      * @param sha256      SHA256 hash.
      * @param deviceId    Device ID.
      * @param collectionDetails  The collection details.
-     * @param hostId      Host ID.
      * @param paths       Data source path(s)
      * 
      * @return The object ID of the new image or -1 if an error occurred
      */
     long addImageInfo(int type, long ssize, String timezone, 
             long size, String md5, String sha1, String sha256, String deviceId, 
-            String collectionDetails, long hostId, String[] paths) {    
+            String collectionDetails, String[] paths) {    
         try {
             beginTransaction();
             long objId = addImageToDb(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
-                    timezone, md5, sha1, sha256, deviceId, collectionDetails, hostId, trans);
+                    timezone, md5, sha1, sha256, deviceId, collectionDetails, trans);
             for (int i = 0;i < paths.length;i++) {
                 addImageNameToDb(objId, paths[i], i, trans);
             }
@@ -986,7 +985,7 @@ class TskCaseDbBridge {
 	 */
 	private long addImageToDb(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size,
 			String timezone, String md5, String sha1, String sha256,
-			String deviceId, String collectionDetails, long hostId,
+			String deviceId, String collectionDetails,
 			CaseDbTransaction transaction) throws TskCoreException {
 		try {
 			// Insert a row for the Image into the tsk_objects table.
@@ -1020,7 +1019,7 @@ class TskCaseDbBridge {
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
 			preparedStatement.setString(4, collectionDetails);
-			preparedStatement.setLong(5, hostId);
+			preparedStatement.setLong(5, imageHost.getId());
 			connection.executeUpdate(preparedStatement);
 
 			return newObjId;
