@@ -93,34 +93,46 @@ public final class PersonManager {
 	}
 	
 	/**
-	 * Update the name of the person with the given id.
+	 * Update the database to match the given Person.
 	 * 
-	 * @param id Id of the person to update.
-	 * @param newName New name for the person.
+	 * @param person The person to update.
+	 * 
+	 * @return person The person that was updated.
 	 * 
 	 * @throws TskCoreException 
+	 * @throws IllegalArgumentException If name field of the person is empty.
 	 */
-	public void updatePerson(long id, String newName) throws TskCoreException {
+	public Person updatePerson(Person person) throws TskCoreException {
+		
+		// Must have a non-empty name
+		if (Strings.isNullOrEmpty(person.getName())) {
+			throw new IllegalArgumentException("Name field for person with ID " + person.getId() + " is null/empty. Will not update database.");
+		}
+		
 		String queryString = "UPDATE tsk_persons"
-				+ " SET name = ? WHERE id = " + id;
+				+ " SET name = ? WHERE id = " + person.getId();
 		try {
 			CaseDbConnection connection = this.db.getConnection();
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
 			s.clearParameters();
-			s.setString(1, newName);
+			s.setString(1, person.getName());
 			s.executeUpdate();
+			return person;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating person with id = %d to name %s", id, newName), ex);
+			throw new TskCoreException(String.format("Error updating person with id = %d", person.getId()), ex);
 		}		
 	}
 	
 	/**
 	 * Delete a person.
+	 * Name comparison is case-insensitive.
 	 * 
 	 * @param name Name of the person to delete
+	 * 
+	 * @throws TskCoreException 
 	 */
 	public void deletePerson(String name) throws TskCoreException {
-				String queryString = "DELETE FROm tsk_persons"
+				String queryString = "DELETE FROM tsk_persons"
 				+ " WHERE LOWER(name) = LOWER(?)";
 		try {
 			CaseDbConnection connection = this.db.getConnection();
@@ -135,6 +147,7 @@ public final class PersonManager {
 	
 	/**
 	 * Get person with given name.
+	 * Name comparison is case-insensitive.
 	 *
 	 * @param name        Person name to look for.
 	 *
@@ -150,33 +163,40 @@ public final class PersonManager {
 	
 	/**
 	 * Create a person with specified name. If a person already exists with the
-	 * given name, it returns the existing person.
+	 * given name, it returns the existing person. Name comparison is case-insensitive.
 	 *
 	 * @param name	Person name.
 	 *
 	 * @return Person with the specified name.
 	 *
 	 * @throws TskCoreException
+	 * @throws IllegalArgumentException If name field of the person is empty.
 	 */
-	public Person createPerson(String name) throws TskCoreException {
+	public Person createPerson(String name) throws TskCoreException, IllegalArgumentException {
 
 		// Must have a name
 		if (Strings.isNullOrEmpty(name)) {
-			throw new IllegalArgumentException("Host name is required.");
+			throw new IllegalArgumentException("Non-empty name is required.");
 		}
 
 		CaseDbConnection connection = this.db.getConnection();
 		db.acquireSingleUserCaseWriteLock();
 		try {
+			// First try to load it from the database. This is a case-insensitive look-up
+			// to attempt to prevent having two entries with the same lower-case name.
+			Optional<Person> person = getPerson(name, connection);
+			if (person.isPresent()) {
+				return person.get();
+			}
+
+			// Attempt to insert the new Person.
 			String personInsertSQL = "INSERT INTO tsk_persons(name) VALUES (?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(personInsertSQL, Statement.RETURN_GENERATED_KEYS);
-
 			preparedStatement.clearParameters();
 			preparedStatement.setString(1, name);
-
 			connection.executeUpdate(preparedStatement);
 
-			// Read back the row id
+			// Read back the row id.
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
 				if (resultSet.next()) {
 					return new Person(resultSet.getLong(1), name); //last_insert_rowid()
@@ -185,8 +205,9 @@ public final class PersonManager {
 				}
 			}
 		} catch (SQLException ex) {
-			// The insert may have failed because this person already exists, so try getting the person now.
-			Optional<Person> person = this.getPerson(name, connection);
+			// The insert may have failed because this person was just added on another thread, so try getting the person again.
+			// (Note: the SingleUserCaseWriteLock is a no-op for multi-user cases so acquiring it does not prevent this situation)
+			Optional<Person> person = getPerson(name, connection);
 			if (person.isPresent()) {
 				return person.get();
 			} else {
@@ -199,6 +220,7 @@ public final class PersonManager {
 	
 	/**
 	 * Get person with given name.
+	 * Name comparison is case-insensitive.
 	 *
 	 * @param name       Person name to look for.
 	 * @param connection Database connection to use.

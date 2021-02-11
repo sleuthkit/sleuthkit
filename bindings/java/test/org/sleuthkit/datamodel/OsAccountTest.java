@@ -147,6 +147,32 @@ public class OsAccountTest {
 		}
 	
 	}
+	
+	@Test 
+	public void personTests() throws TskCoreException {
+		String personName1 = "John Doe";
+		String personName2 = "Jane Doe";
+		
+		org.sleuthkit.datamodel.PersonManager pm = caseDB.getPersonManager();
+		
+		Person p1 = pm.createPerson(personName1);
+		assertEquals(personName1.equals(p1.getName()), true);
+		
+		Optional<Person> p1opt = pm.getPerson(personName1.toLowerCase());
+		assertEquals(p1opt.isPresent(), true);
+		
+		p1.setName(personName2);
+		assertEquals(personName2.equals(p1.getName()), true);
+		
+		pm.updatePerson(p1);
+		Optional<Person> p2opt = pm.getPerson(personName2.toUpperCase());
+		assertEquals(p2opt.isPresent(), true);
+		
+		pm.deletePerson(p1.getName());
+		p2opt = pm.getPerson(personName2);
+		assertEquals(p2opt.isPresent(), false);
+	}
+	
 	@Test
 	public void osAccountRealmTests() throws TskCoreException {
 		

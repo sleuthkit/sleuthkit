@@ -26,7 +26,7 @@ import java.util.Objects;
 public final class Person {
 
 	private final long id;
-	private final String name;
+	private String name;
 
 	Person(long id, String name) {
 		this.id = id;
@@ -50,6 +50,16 @@ public final class Person {
 	public String getName() {
 		return name;
 	}
+	
+	/**
+	 * Sets the name for the person.
+	 * Does not update the database.
+	 *
+	 * @param newName The new name.
+	 */
+	public void setName(String newName) {
+		this.name = newName;
+	}	
 		
 	@Override
 	public int hashCode() {
