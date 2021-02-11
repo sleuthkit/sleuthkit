@@ -2405,12 +2405,13 @@ public class SleuthkitCase {
 
 			// Create OS Account and related tables 
 			statement.execute("CREATE TABLE tsk_os_account_realms (id " + primaryKeyType + " PRIMARY KEY, "
-					+ "name TEXT NOT NULL, " // realm name - host name or domain name
-					+ "realm_addr TEXT DEFAULT NULL, " // a sid/uid or some some other unique identifier, may be null
-					+ "host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm just comprises of a single host
-					+ "name_type INTEGER, " // indicates if the realm name was  was expressed or inferred 
-					+ "UNIQUE(name, host_id), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) )");
+				+ "realm_name TEXT DEFAULT NULL, "	// realm name - for a domain realm, may be null
+				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
+				+ "realm_signature TEXT NOT NULL, "		// Signature exists only to prevent duplicates. It is  made up of realm address/name and scope host
+				+ "scope_host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm scope is a single host
+				+ "name_type INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "UNIQUE(realm_signature), "
+				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 
 			// Add host column and create a host for each existing data source.
 			// We will create a host for each device id so that related data sources will 
@@ -2439,15 +2440,15 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "login_name TEXT DEFAULT NULL, " // login name, if available, may be null
 					+ "full_name TEXT DEFAULT NULL, " // full name, if available, may be null
-					+ "realm_id " + bigIntDataType + ", " // row id for the realm, may be null if only SID is known 
+					+ "realm_id " + bigIntDataType + " NOT NULL, " // realm for the account
 					+ "unique_id TEXT DEFAULT NULL, " // SID/UID, if available
-					+ "signature TEXT NOT NULL, " // realm/loginname or sid 
+					+ "signature TEXT NOT NULL, " // This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 					+ "status INTEGER, " // enabled/disabled/deleted
 					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
 					+ "person_id INTEGER, "
-					+ "UNIQUE(signature), "
+					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");

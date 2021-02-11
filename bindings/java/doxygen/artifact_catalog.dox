@@ -52,7 +52,7 @@ Details about System/aplication/file backups.
   TSK_DATETIME
   
 ### OPTIONAL ATTRIBUTES
-- TSK_DATETIME_ENDED (Date/Time the backup ended)
+- TSK_DATETIME_END (Date/Time the backup ended)
 
 
 
@@ -547,7 +547,7 @@ Details about an operating system recovered from the data source.
 
 
 ---
-## TSK_PROG_NOTIFICATION
+## TSK_PROG_NOTIFICATIONS
 Notifications to the user.
 
 ### REQUIRED ATTRIBUTES

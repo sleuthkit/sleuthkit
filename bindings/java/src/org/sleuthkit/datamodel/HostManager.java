@@ -228,15 +228,15 @@ public final class HostManager {
 	 * Get host with given name.
 	 *
 	 * @param name        Host name to look for.
-	 * @param transaction Database transaction to use.
 	 *
 	 * @return Optional with host. Optional.empty if no matching host is found.
 	 *
 	 * @throws TskCoreException
 	 */
-	public Optional<Host> getHost(String name, CaseDbTransaction transaction) throws TskCoreException {
-
-		return getHost(name, transaction.getConnection());
+	public Optional<Host> getHost(String name) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+		return getHost(name, connection);
+		}
 	}
 
 	/**
