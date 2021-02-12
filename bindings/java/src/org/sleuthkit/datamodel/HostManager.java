@@ -200,11 +200,11 @@ public final class HostManager {
 	 * @throws TskCoreException
 	 */
 	public Long deleteHost(String name) throws TskCoreException {
-		if (name != null) {
+		if (name == null) {
 			throw new IllegalArgumentException("Name provided must be non-null");
 		}
 
-		String queryString = "SELECT d.obj_id FROM data_source_info d INNER JOIN tsk_hosts h WHERE LOWER(h.name)=LOWER(?)";
+		String queryString = "SELECT h.id FROM data_source_info d INNER JOIN tsk_hosts h ON d.host_id = h.id WHERE LOWER(h.name)=LOWER(?)";
 		String deleteString = "DELETE FROM tsk_hosts WHERE LOWER(name) = LOWER(?)";
 
 		CaseDbTransaction trans = this.db.beginTransaction();
@@ -215,7 +215,7 @@ public final class HostManager {
 			query.setString(1, name);
 			try (ResultSet queryResults = query.executeQuery()) {
 				if (queryResults.next()) {
-					throw new TskCoreException(String.format("Host with name '%s' has child data sources and cannot be deleted."));
+					throw new TskCoreException(String.format("Host with name '%s' has child data sources and cannot be deleted.", name));
 				}
 			}
 
