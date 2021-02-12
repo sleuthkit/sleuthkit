@@ -4648,7 +4648,7 @@ public class SleuthkitCase {
 	/**
 	 * Add an artifact type with the given name. Will return an artifact Type.
 	 * 
-	 * This assumes that the artifact type being added has the category EXTRACTED_DATA.
+	 * This assumes that the artifact type being added has the category DATA_ARTIFACT.
 	 *
 	 * @param artifactTypeName System (unique) name of artifact
 	 * @param displayName      Display (non-unique) name of artifact
@@ -4661,7 +4661,7 @@ public class SleuthkitCase {
 	 */
 	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName) throws TskCoreException, TskDataException {
 		
-		return addBlackboardArtifactType(artifactTypeName, displayName, BlackboardArtifact.Category.EXTRACTED_DATA);
+		return addBlackboardArtifactType(artifactTypeName, displayName, BlackboardArtifact.Category.DATA_ARTIFACT);
 	}
 
 	/**
@@ -5048,7 +5048,7 @@ public class SleuthkitCase {
 	 */
 	DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long obj_id, long data_source_obj_id, OsAccount account, CaseDbConnection connection) throws TskCoreException {
 		
-		if (artifactType.getCategory() != BlackboardArtifact.Category.EXTRACTED_DATA) {
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of the ExtractedData category. ", artifactType.getTypeName()) );
 		}
 		

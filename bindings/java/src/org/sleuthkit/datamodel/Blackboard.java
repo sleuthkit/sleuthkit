@@ -106,7 +106,7 @@ public final class Blackboard {
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.
 	 *
-	 * This assumes that the artifact type is of category EXTRACTED_DATA.
+	 * This assumes that the artifact type is of category DATA_ARTIFACT.
 	 *
 	 * @param typeName    The type name of the artifact type.
 	 * @param displayName The display name of the artifact type.
@@ -118,7 +118,7 @@ public final class Blackboard {
 	 */
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
 
-		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.EXTRACTED_DATA);
+		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.DATA_ARTIFACT);
 	}
 
 	/**
