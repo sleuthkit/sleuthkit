@@ -6851,6 +6851,7 @@ public class SleuthkitCase {
 			FsContent fileSystemFile = addFileSystemFile(dataSourceObjId, fsObjId, fileName,
 					metaAddr, metaSeq, attrType, attrId, dirFlag, metaFlags, size,
 					ctime, crtime, atime, mtime, null, null, null, isFile, parent,
+					OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT,
 					Collections.emptyList(), transaction);
 			
 			transaction.commit();
@@ -6893,6 +6894,9 @@ public class SleuthkitCase {
 	 * @param isFile          True, unless the file is a directory.
 	 * @param parent          The parent of the file (e.g., a virtual
 	 *                        directory).
+	 * @param ownerUid        UID of the file owner as found in the file system,
+	 *                        can be null.
+	 * @param osAccountObjId  Obj id of the owner OS account, may be null.
 	 * @param fileAttributes  A list of file attributes. May be empty.
 	 * @param transaction     A caller-managed transaction within which the add
 	 *                        file operations are performed.
@@ -6908,7 +6912,9 @@ public class SleuthkitCase {
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, String sha256Hash, String mimeType,
-			boolean isFile, Content parent, List<Attribute> fileAttributes, CaseDbTransaction transaction) throws TskCoreException {
+			boolean isFile, Content parent, String ownerUid,
+			Long osAccountObjId, List<Attribute> fileAttributes, 
+			CaseDbTransaction transaction) throws TskCoreException {
 
 		TimelineManager timelineManager = getTimelineManager();
 
@@ -6961,11 +6967,17 @@ public class SleuthkitCase {
 			statement.setString(23, parentPath);
 			final String extension = extractExtension(fileName);
 			statement.setString(24, extension);
+			statement.setString(25, ownerUid);
+			if (null != osAccountObjId) {
+				statement.setLong(26, osAccountObjId);
+			} else {
+				statement.setNull(26, java.sql.Types.BIGINT); // osAccountObjId
+			}
 
 			connection.executeUpdate(statement);
 
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
+					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, ownerUid, osAccountObjId);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
@@ -6980,7 +6992,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, null, parentPath, mimeType,
-					extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, fileAttributes);
+					extension, ownerUid, osAccountObjId, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
@@ -12092,8 +12104,8 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id  ) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, mime_type, parent_path, extension)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, mime_type, parent_path, extension, owner_uid, os_account_obj_id )"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS

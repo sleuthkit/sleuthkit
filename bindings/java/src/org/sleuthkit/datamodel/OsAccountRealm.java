@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.base.Strings;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -43,17 +42,20 @@ public final class OsAccountRealm {
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
+
+
 	
 	
 	/**
 	 * Creates OsAccountRealm.
 	 * 
-	 * @param id Row Id.
-	 * @param realmName Realm name, may be null.
-	 * @param realmAddr Unique numeric address for realm, may be null only if realm name is not null.
-	 * @param signature Either the address or the name.
-	 * @param host Host if the realm is host scoped.
-	 * @param scopeConfidence  Scope confidence.
+	 * @param id              Row Id.
+	 * @param realmName       Realm name, may be null.
+	 * @param realmAddr       Unique numeric address for realm, may be null only
+	 *                        if realm name is not null.
+	 * @param signature       Either the address or the name.
+	 * @param host            Host if the realm is host scoped.
+	 * @param scopeConfidence Scope confidence.
 	 */
 	OsAccountRealm(long id, String realmName, String realmAddr, String signature, Host host, ScopeConfidence scopeConfidence) {
 		this.id = id;
@@ -265,13 +267,32 @@ public final class OsAccountRealm {
 		
 		return false;
 	}
-
+	
 	/**
-	 * Updates the realm signature.
+	 * Get the dirty flag. Indicates whether the realm has any changes that need
+	 * to be updated in the database.
+	 *
+	 * @return True if the object is dirty, false otherwise.
+	 */
+	boolean isDirty() {
+		return isDirty;
+	}
+		
+	/**
+	 * Reset the dirty flag. Indicates that the realm has been updated in the
+	 * database.
+	 */
+	void resetDirty() {
+		this.isDirty = false;
+	}
+	
+	/**
+	 * Updates the signature with realm address or realm name.
 	 */
 	private void updateSignature() {
 		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
 	}
+	
 	
 //	/**
 //	 * Set the realm scope host if it is not already set.
