@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.collect.ImmutableSet;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -696,10 +697,10 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
+	 * 
+	 * @deprecated Use the newDataArtifact() API to create an artifact with attributes.
 	 */
-	// TODO: this method needs to be removed.  
-	// The caller should instead use the newDataArtifact() api.
-	// 
+	@Deprecated
 	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, final CaseDbTransaction transaction) throws TskCoreException {
 
@@ -797,15 +798,51 @@ public final class Blackboard {
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, OsAccount osAccount, final CaseDbTransaction transaction) throws TskCoreException {
 
-		DataArtifact dataArtifact = caseDb.newDataArtifact(artifactType, sourceObjId,
-				dataSourceObjId, osAccount, transaction.getConnection());
-
-		
-		if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
-			dataArtifact.addAttributes(attributes, transaction);
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
 		}
-		
-		return dataArtifact;
+
+		caseDb.acquireSingleUserCaseWriteLock();
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			long artifact_obj_id = caseDb.addObject(sourceObjId, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
+			PreparedStatement statement = caseDb.createInsertArtifactStatement(artifactType.getTypeID(), sourceObjId, artifact_obj_id, dataSourceObjId, connection);
+
+			connection.executeUpdate(statement);
+			try (ResultSet resultSet = statement.getGeneratedKeys()) {
+				resultSet.next();
+				DataArtifact dataArtifact = new DataArtifact(caseDb, resultSet.getLong(1), //last_insert_rowid()
+									sourceObjId, artifact_obj_id, dataSourceObjId, artifactType.getTypeID(), 
+									artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, 
+									osAccount, true);
+				
+				// Add a row in tsk_data_artifact
+				String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
+
+				statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
+				statement.clearParameters();
+
+				statement.setLong(1, artifact_obj_id);
+				if (osAccount != null) {
+					statement.setLong(2, osAccount.getId());
+				} else {
+					statement.setNull(2, java.sql.Types.BIGINT);
+				}
+				
+				connection.executeUpdate(statement);
+
+				// if attributes are provided, add them to the artifact.
+				if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
+					dataArtifact.addAttributes(attributes, transaction);
+				}
+
+				return dataArtifact;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating a data artifact with type id = %d, objId = %d, and data source oj id = %d ", artifactType.getTypeID(), sourceObjId, dataSourceObjId), ex);
+		} finally {
+			caseDb.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	/**

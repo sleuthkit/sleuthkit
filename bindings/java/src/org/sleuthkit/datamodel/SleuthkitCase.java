@@ -5030,60 +5030,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates a new data artifact.
-	 * 
-	 * Inserts a row in the blackboard_artifacts.
-	 * And inserts a row in the tsk_data_artifacts table.
-	 *
-	 * @param artifactType       Data artifact type.
-	 * @param obj_id             Object id of parent.
-	 * @param data_source_obj_id Data source object id.
-	 * @param account            Os Account associated with the artifact. May be
-	 *                           null.
-	 * @param connection         Database connection to use.
-	 *
-	 * @return DataArtifact
-	 *
-	 * @throws TskCoreException
-	 */
-	DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long obj_id, long data_source_obj_id, OsAccount account, CaseDbConnection connection) throws TskCoreException {
-		
-		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
-			throw new TskCoreException(String.format("Artifact type (name = %s) is not of the ExtractedData category. ", artifactType.getTypeName()) );
-		}
-		
-		acquireSingleUserCaseWriteLock();
-		try  {
-			long artifact_obj_id = addObject(obj_id, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
-			PreparedStatement statement = createInsertArtifactStatement(artifactType.getTypeID(), obj_id, artifact_obj_id, data_source_obj_id, connection);
-			
-			connection.executeUpdate(statement);
-			try (ResultSet resultSet = statement.getGeneratedKeys()) {
-				resultSet.next();
-				DataArtifact dataArtifact = new DataArtifact(this, resultSet.getLong(1), //last_insert_rowid()
-						obj_id, artifact_obj_id, data_source_obj_id, artifactType.getTypeID(), artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, account, true);
-
-				// add a row to the tsk_data_artifact table
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_ARTIFACT);
-				statement.setLong(1, artifact_obj_id);
-				if (account != null) {
-					statement.setLong(2, account.getId());
-				} else {
-					statement.setNull(2, java.sql.Types.BIGINT);
-				}
-
-				connection.executeUpdate(statement);
-
-				return dataArtifact;
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error creating a data artifact with type id = %d, obj_id = %d, and data source onj id = %d ", artifactType.getTypeID(), obj_id, data_source_obj_id), ex );
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-	
-	/**
 	 * Creates a new analysis result by inserting a row in the artifacts table
 	 * and a corresponding row in the tsk_analysis_results table.
 	 *
@@ -12228,9 +12174,8 @@ public class SleuthkitCase {
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?"),
-		SELECT_TAG_NAME_BY_NAME("SELECT * FROM tag_names where display_name = ?"),
-		INSERT_DATA_ARTIFACT("INSERT INTO tsk_data_artifact (artifact_obj_id, os_account_obj_id) VALUES (?, ?)"),;
-
+		SELECT_TAG_NAME_BY_NAME("SELECT * FROM tag_names where display_name = ?");
+		
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {
