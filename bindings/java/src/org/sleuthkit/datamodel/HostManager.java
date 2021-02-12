@@ -148,6 +148,16 @@ public final class HostManager {
 		}
 	}
 
+	/**
+	 * Updates host in database based on the host object provided.
+	 *
+	 * @param newHost The host to be updated.
+	 *
+	 * @return The newly returned host.
+	 *
+	 * @throws TskCoreException
+	 * @throws IllegalArgumentException
+	 */
 	public Host updateHost(Host newHost) throws TskCoreException, IllegalArgumentException {
 		if (newHost == null) {
 			throw new IllegalArgumentException("No host argument provided.");
@@ -161,7 +171,7 @@ public final class HostManager {
 			String hostInsertSQL = "UPDATE tsk_hosts \n"
 					+ "SET name = ? \n"
 					+ "WHERE id = ?";
-			
+
 			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
 
 			preparedStatement.clearParameters();
@@ -170,20 +180,72 @@ public final class HostManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			return getHost(newHost.getId(), connection).orElseThrow(() -> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "));
+			return getHost(newHost.getId(), connection).orElseThrow(()
+					-> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "))));
+
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
+			throw new TskCoreException(String.format("Error updating host with name = %s", newHost.getName()), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+	}
 
-		UPDATE tsk_hosts 
-		SET name =  
-		 
-		'new name' 
-WHERE id = 1;
+	/**
+	 * Delete a host. Name comparison is case-insensitive.
+	 *
+	 * @param name Name of the host to delete.
+	 *
+	 * @return The id of the deleted host or null if no host was deleted.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Long deleteHost(String name) throws TskCoreException {
+		if (name != null) {
+			throw new IllegalArgumentException("Name provided must be non-null");
+		}
 
-		SELECT id, name, status FROM tsk_hosts WHERE id = 1;
+		String queryString = "SELECT d.obj_id FROM data_source_info d INNER JOIN tsk_hosts h WHERE LOWER(h.name)=LOWER(?)";
+		String deleteString = "DELETE FROM tsk_hosts WHERE LOWER(name) = LOWER(?)";
+
+		CaseDbTransaction trans = this.db.beginTransaction();
+		try {
+			// check if host has any child data sources.  if so, don't delete and throw exception.
+			PreparedStatement query = trans.getConnection().getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			query.clearParameters();
+			query.setString(1, name);
+			try (ResultSet queryResults = query.executeQuery()) {
+				if (queryResults.next()) {
+					throw new TskCoreException(String.format("Host with name '%s' has child data sources and cannot be deleted."));
+				}
+			}
+
+			// otherwise, delete the host
+			PreparedStatement update = trans.getConnection().getPreparedStatement(deleteString, Statement.RETURN_GENERATED_KEYS);
+			update.clearParameters();
+			update.setString(1, name);
+			int numUpdated = update.executeUpdate();
+			
+			// get ids for deleted.
+			Long hostId = null;
+
+			if (numUpdated > 0) {
+				try (ResultSet updateResult = update.getGeneratedKeys()) {
+					if (updateResult.next()) {
+						hostId = updateResult.getLong(1);
+					}
+				}
+			}
+
+			trans.commit();
+			return hostId;
+			
+		} catch (TskCoreException ex) {
+			trans.rollback();
+			throw ex;
+		} catch (SQLException ex) {
+			trans.rollback();
+			throw new TskCoreException(String.format("Error deleting host with name %s", name), ex);
+		}
 	}
 
 	/**
