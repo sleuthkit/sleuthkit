@@ -697,6 +697,9 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
 	 */
+	// TODO: this method needs to be removed.  
+	// The caller should instead use the newDataArtifact() api.
+	// 
 	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, final CaseDbTransaction transaction) throws TskCoreException {
 
@@ -736,7 +739,75 @@ public final class Blackboard {
 		}
 	}
 
+	/**
+	 * Add a new data artifact with the given type.
+	 *
+	 * @param artifactType    The type of the data artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 * @param attributes      The attributes. May be empty or null.
+	 * @param osAccount       The OS account associated with the artifact. May
+	 *                        be null.
+	 *
+	 * @return DataArtifact A new data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurs within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
 
+		CaseDbTransaction transaction = caseDb.beginTransaction();
+		try {
+			DataArtifact dataArtifact = newDataArtifact(artifactType, sourceObjId, dataSourceObjId,
+					attributes, osAccount, transaction);
+			transaction.commit();
+			return dataArtifact;
+		} catch (TskCoreException ex) {
+			try {
+				transaction.rollback();
+			} catch (TskCoreException ex2) {
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
+						+ "Error invoking newDataArtifact with dataSourceObjId: " + dataSourceObjId + ",  sourceObjId: " + sourceObjId, ex2);
+			}
+			throw ex;
+		}
+	}
+	
+	
+	/**
+	 * Add a new data artifact with the given type.
+	 *
+	 * This api executes in the context of the given transaction.
+	 *
+	 * @param artifactType    The type of the data artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 * @param attributes      The attributes. May be empty or null.
+	 * @param osAccount       The OS account associated with the artifact. May
+	 *                        be null.
+	 * @param transaction     The transaction in the scope of which the
+	 *                        operation is to be performed.
+	 *
+	 * @return DataArtifact New blackboard artifact
+	 *
+	 * @throws TskCoreException If a critical error occurs within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, OsAccount osAccount, final CaseDbTransaction transaction) throws TskCoreException {
+
+		DataArtifact dataArtifact = caseDb.newDataArtifact(artifactType, sourceObjId,
+				dataSourceObjId, osAccount, transaction.getConnection());
+
+		
+		if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
+			dataArtifact.addAttributes(attributes, transaction);
+		}
+		
+		return dataArtifact;
+	}
+	
 	/**
 	 * Event published by SleuthkitCase when one or more artifacts are posted. A
 	 * posted artifact is complete (all attributes have been added) and ready

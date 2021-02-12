@@ -698,6 +698,13 @@ public class BlackboardArtifact implements Content {
 			throw new TskCoreException("Error adding analysis result.", ex);
 		}
 	}
+	
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
+
+		return sleuthkitCase.getBlackboard().newDataArtifact(artifactType, this.getObjectID(), this.getDataSource().getId(), attributesList, osAccount);
+	}
+
 	/**
 	 * Create and add an artifact associated with this content to the blackboard
 	 *
