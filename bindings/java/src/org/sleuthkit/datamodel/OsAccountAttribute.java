@@ -30,7 +30,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 
 	private final long osAccountObjId;	// OS account to which this attribute belongs.
 	private final Long hostId; // Host to which this attribute applies, may be null
-	private final long sourceObjId; // Object id of the source where the attribute was discovered.
+	private final Long sourceObjId; // Object id of the source where the attribute was discovered.
 
 	/**
 	 * Creates an os account attribute with int value.
@@ -43,7 +43,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountObjId, Long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountObjId, Long hostId, Long sourceObjId) {
 		super(attributeType, valueInt);
 
 		this.osAccountObjId = osAccountObjId;
@@ -62,7 +62,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountObjId, Long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountObjId, Long hostId, Long sourceObjId) {
 		super(attributeType, valueLong);
 
 		this.osAccountObjId = osAccountObjId;
@@ -81,7 +81,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountObjId, Long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountObjId, Long hostId, Long sourceObjId) {
 		super(attributeType, valueDouble);
 
 		this.osAccountObjId = osAccountObjId;
@@ -100,7 +100,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountObjId, Long hostId, long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountObjId, Long hostId, Long sourceObjId) {
 		super(attributeType, valueString);
 
 		this.osAccountObjId = osAccountObjId;
@@ -119,7 +119,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 * @param sourceObjId    Object id of the source where the attribute was
 	 *                       found.
 	 */
-	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountObjId, Long hostId, long sourceObjId) {
+	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountObjId, Long hostId, Long sourceObjId) {
 		super(attributeType, valueBytes);
 
 		this.osAccountObjId = osAccountObjId;
@@ -178,7 +178,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *
 	 * @return Object id of source.
 	 */
-	public long getSourceObjId() {
+	public Long getSourceObjId() {
 		return sourceObjId;
 	}
 
