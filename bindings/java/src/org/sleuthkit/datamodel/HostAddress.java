@@ -25,18 +25,27 @@ import java.util.Objects;
  * Abstracts an address associated with a host. A host may have multiple
  * addressed of different types associated with it ant a give time.
  */
-public class HostAddress /* RAMAN TBD: implements Content */ {
-
+public class HostAddress extends AbstractContent {
+	
+    private final SleuthkitCase sleuthkitCase;
 	private final long id;
 	private final HostAddressType addressType;
 	private final String address;
+	
 
-	HostAddress(long id, HostAddressType type, String address) {
+			/**
+			 * 	 * @param signature	     A unique signature constructed from realm id and
+	 *                       loginName or uniqueId.
+			 */
+	HostAddress(SleuthkitCase skCase, long id, HostAddressType type, String address) {
+		super(skCase, id, address + "(" + type.getName() + ")");
+		this.sleuthkitCase = skCase;
 		this.id = id;
 		this.addressType = type;
 		this.address = address;
 	}
 
+	@Override
 	public long getId() {
 		return id;
 	}
@@ -48,7 +57,7 @@ public class HostAddress /* RAMAN TBD: implements Content */ {
 	public String getAddress() {
 		return address;
 	}
-
+	
 	@Override
 	public int hashCode() {
 		int hash = 7;
@@ -86,16 +95,56 @@ public class HostAddress /* RAMAN TBD: implements Content */ {
 	}
 
 	/**
+	 * Gets the SleuthKit case  database for this
+	 * account.
+	 *
+	 * @return The SleuthKit case object.
+	 */
+	@Override
+	public SleuthkitCase getSleuthkitCase() {
+		return sleuthkitCase;
+	}
+	
+	@Override
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		// No data to read. 
+		return 0;
+	}
+
+	@Override
+	public void close() {
+		// Nothing to close
+	}
+
+	@Override
+	public long getSize() {
+		return 0;
+	}
+	
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		// TODO		
+		throw new UnsupportedOperationException("Not supported yet."); 
+	}
+
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
+		// TODO
+		throw new UnsupportedOperationException("Not supported yet."); 
+	}	
+
+	/**
 	 * A host may have different types of addresses at a given point in time.
 	 */
 	public enum HostAddressType {
-		DNS(1, "DNS"),
+		DNS_AUTO(0, "DNS Auto Detection"), // Used to auto-select the DNS type from HOSTNAME, IPV4, and IPV6 when creating HostAddresses
+		HOSTNAME(1, "Host Name"),
 		IPV4(2, "IPv4"),
 		IPV6(3, "IPv6"),
-		ETHERNETMAC(4, "Ethernet MAC"),
-		WIFIMAC(5, "WiFi MAC"),
-		BLUETOOTHMAC(6, "BlueTooth MAC");
-
+		ETHERNET_MAC(4, "Ethernet MAC"),
+		WIFI_MAC(5, "WiFi MAC"),
+		BLUETOOTH_MAC(6, "BlueTooth MAC");
+		
 		private final int id;
 		private final String name;
 
