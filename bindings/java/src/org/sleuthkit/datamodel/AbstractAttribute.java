@@ -26,7 +26,7 @@ import java.util.Objects;
  * functionality for a name value pair with type safety (analogous to a C union)
  *
  */
-abstract class AbstractAttribute {
+public abstract class AbstractAttribute {
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray(); 
 

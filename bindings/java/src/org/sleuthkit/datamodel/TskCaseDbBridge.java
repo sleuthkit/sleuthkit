@@ -369,8 +369,7 @@ class TskCaseDbBridge {
 			while (it.hasNext()) {
 				FileInfo fileInfo = it.next();
 				String ownerUid = fileInfo.ownerUid;
-				if ((Strings.isNullOrEmpty(fileInfo.ownerUid) == false) 
-						 && (org.apache.commons.lang3.StringUtils.countMatches(ownerUid, "-") >= 5 )) { // RAMAN TBD: we dont know yet how to handle short Well known SIDs.
+				if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false)  { 
 					// first check the owner id is in the map, if found, then continue
 					if (this.ownerIdToAccountMap.containsKey(ownerUid)) {
 						continue;
@@ -403,8 +402,7 @@ class TskCaseDbBridge {
                     }
 
 					Long ownerAccountObjId = OsAccount.NO_ACCOUNT;
-					if ((Strings.isNullOrEmpty(fileInfo.ownerUid) == false)
-						&& (org.apache.commons.lang3.StringUtils.countMatches(fileInfo.ownerUid, "-") >= 5 ) ){ // RAMAN TBD: we dont know yet how to handle short Well known SIDs.
+					if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) { 
 						if (ownerIdToAccountMap.containsKey(fileInfo.ownerUid)) {
 							ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
 						} else {
