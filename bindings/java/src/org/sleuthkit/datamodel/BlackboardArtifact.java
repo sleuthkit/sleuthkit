@@ -698,6 +698,13 @@ public class BlackboardArtifact implements Content {
 			throw new TskCoreException("Error adding analysis result.", ex);
 		}
 	}
+	
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
+
+		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
+	}
+
 	/**
 	 * Create and add an artifact associated with this content to the blackboard
 	 *
@@ -910,7 +917,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The display name of the type.
 		 */
 		public Type(int typeID, String typeName, String displayName) {
-			this(typeID, typeName, displayName, Category.EXTRACTED_DATA);
+			this(typeID, typeName, displayName, Category.DATA_ARTIFACT);
 		}
 
 		/**
@@ -1423,7 +1430,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The type display name.
 		 */
 		private ARTIFACT_TYPE(int typeId, String label, String displayName) {
-			this(typeId, label, displayName, Category.EXTRACTED_DATA);
+			this(typeId, label, displayName, Category.DATA_ARTIFACT);
 		}
 
 		/**
@@ -1540,7 +1547,7 @@ public class BlackboardArtifact implements Content {
 	 */
 	public enum Category {
 
-		EXTRACTED_DATA(0, "EXTRACTED_DATA", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.ExtractedData")), // artifact is data that is directly/indirectly extracted from a data source.
+		DATA_ARTIFACT(0, "DATA_ARTIFACT", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.DataArtifact")), // artifact is data that is directly/indirectly extracted from a data source.
 		ANALYSIS_RESULT(1, "ANALYSIS_RESULT", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.AnalysisResult")); // artifacts represents outcome of analysis of data.
 
 		private final Integer id;

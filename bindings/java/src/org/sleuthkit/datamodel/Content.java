@@ -179,7 +179,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Create and add an analysis result associated with this content.
 	 *
 	 *
-	 * @param artifactType	  Type of analysis result artifact to create.
+	 * @param artifactType	 Type of analysis result artifact to create.
 	 * @param score          Score associated with this analysis.
 	 * @param conclusion     Conclusion from the analysis, may be empty.
 	 * @param configuration  Configuration element associated with this
@@ -195,6 +195,21 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
 
+	/**
+	 * Create and add a data artifact associated with this content.
+	 *
+	 * @param artifactType   Type of analysis result artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 * @param osAccount      The OS account associated with the artifact. May be
+	 *                       null.
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException;
+	
 	/**
 	 * Returns the final score for the content object.
 	 * 
