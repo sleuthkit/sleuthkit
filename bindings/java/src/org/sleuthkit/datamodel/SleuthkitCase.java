@@ -4648,7 +4648,7 @@ public class SleuthkitCase {
 	/**
 	 * Add an artifact type with the given name. Will return an artifact Type.
 	 * 
-	 * This assumes that the artifact type being added has the category EXTRACTED_DATA.
+	 * This assumes that the artifact type being added has the category DATA_ARTIFACT.
 	 *
 	 * @param artifactTypeName System (unique) name of artifact
 	 * @param displayName      Display (non-unique) name of artifact
@@ -4661,7 +4661,7 @@ public class SleuthkitCase {
 	 */
 	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName) throws TskCoreException, TskDataException {
 		
-		return addBlackboardArtifactType(artifactTypeName, displayName, BlackboardArtifact.Category.EXTRACTED_DATA);
+		return addBlackboardArtifactType(artifactTypeName, displayName, BlackboardArtifact.Category.DATA_ARTIFACT);
 	}
 
 	/**
@@ -12175,7 +12175,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?"),
 		SELECT_TAG_NAME_BY_NAME("SELECT * FROM tag_names where display_name = ?");
-
+		
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {

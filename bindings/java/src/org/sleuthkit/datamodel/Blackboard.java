@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.collect.ImmutableSet;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -106,7 +107,7 @@ public final class Blackboard {
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.
 	 *
-	 * This assumes that the artifact type is of category EXTRACTED_DATA.
+	 * This assumes that the artifact type is of category DATA_ARTIFACT.
 	 *
 	 * @param typeName    The type name of the artifact type.
 	 * @param displayName The display name of the artifact type.
@@ -118,7 +119,7 @@ public final class Blackboard {
 	 */
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
 
-		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.EXTRACTED_DATA);
+		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.DATA_ARTIFACT);
 	}
 
 	/**
@@ -696,7 +697,10 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
+	 * 
+	 * @deprecated Use the newDataArtifact() API to create an artifact with attributes.
 	 */
+	@Deprecated
 	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, final CaseDbTransaction transaction) throws TskCoreException {
 
@@ -736,7 +740,111 @@ public final class Blackboard {
 		}
 	}
 
+	/**
+	 * Add a new data artifact with the given type.
+	 *
+	 * @param artifactType    The type of the data artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 * @param attributes      The attributes. May be empty or null.
+	 * @param osAccount       The OS account associated with the artifact. May
+	 *                        be null.
+	 *
+	 * @return DataArtifact A new data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurs within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
 
+		CaseDbTransaction transaction = caseDb.beginTransaction();
+		try {
+			DataArtifact dataArtifact = newDataArtifact(artifactType, sourceObjId, dataSourceObjId,
+					attributes, osAccount, transaction);
+			transaction.commit();
+			return dataArtifact;
+		} catch (TskCoreException ex) {
+			try {
+				transaction.rollback();
+			} catch (TskCoreException ex2) {
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
+						+ "Error invoking newDataArtifact with dataSourceObjId: " + dataSourceObjId + ",  sourceObjId: " + sourceObjId, ex2);
+			}
+			throw ex;
+		}
+	}
+	
+	
+	/**
+	 * Add a new data artifact with the given type.
+	 *
+	 * This api executes in the context of the given transaction.
+	 *
+	 * @param artifactType    The type of the data artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 * @param attributes      The attributes. May be empty or null.
+	 * @param osAccount       The OS account associated with the artifact. May
+	 *                        be null.
+	 * @param transaction     The transaction in the scope of which the
+	 *                        operation is to be performed.
+	 *
+	 * @return DataArtifact New blackboard artifact
+	 *
+	 * @throws TskCoreException If a critical error occurs within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, OsAccount osAccount, final CaseDbTransaction transaction) throws TskCoreException {
+
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
+		}
+
+		caseDb.acquireSingleUserCaseWriteLock();
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			long artifact_obj_id = caseDb.addObject(sourceObjId, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
+			PreparedStatement statement = caseDb.createInsertArtifactStatement(artifactType.getTypeID(), sourceObjId, artifact_obj_id, dataSourceObjId, connection);
+
+			connection.executeUpdate(statement);
+			try (ResultSet resultSet = statement.getGeneratedKeys()) {
+				resultSet.next();
+				DataArtifact dataArtifact = new DataArtifact(caseDb, resultSet.getLong(1), //last_insert_rowid()
+									sourceObjId, artifact_obj_id, dataSourceObjId, artifactType.getTypeID(), 
+									artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, 
+									osAccount, true);
+				
+				// Add a row in tsk_data_artifact
+				String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
+
+				statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
+				statement.clearParameters();
+
+				statement.setLong(1, artifact_obj_id);
+				if (osAccount != null) {
+					statement.setLong(2, osAccount.getId());
+				} else {
+					statement.setNull(2, java.sql.Types.BIGINT);
+				}
+				
+				connection.executeUpdate(statement);
+
+				// if attributes are provided, add them to the artifact.
+				if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
+					dataArtifact.addAttributes(attributes, transaction);
+				}
+
+				return dataArtifact;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating a data artifact with type id = %d, objId = %d, and data source oj id = %d ", artifactType.getTypeID(), sourceObjId, dataSourceObjId), ex);
+		} finally {
+			caseDb.releaseSingleUserCaseWriteLock();
+		}
+	}
+	
 	/**
 	 * Event published by SleuthkitCase when one or more artifacts are posted. A
 	 * posted artifact is complete (all attributes have been added) and ready
