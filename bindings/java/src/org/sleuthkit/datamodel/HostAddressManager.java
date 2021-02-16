@@ -52,134 +52,10 @@ public class HostAddressManager {
 	 */
 	HostAddressManager(SleuthkitCase skCase) {
 		this.db = skCase;
-	}
-	
-	private HostAddress testCreate(String name, HostAddressType type) throws Exception {
-		System.out.println("Creating HostAddress with name: " + name + " and type: " + type.getName() + "...");
-		HostAddress addr = createHostAddress(type, name);
-		System.out.println("   Success - ID: " + addr.getId() + ", name: " + addr.getAddress() + ", type: " + addr.getAddressType().getName());
-		return addr;
-	}
-
-	
-	private HostAddress testGet(String name, HostAddressType type) throws Exception {
-		System.out.println("Getting HostAddress with name: " + name + " and type: " + type.getName() + "...");
-		Optional<HostAddress> optAddr = getHostAddress(type, name);
-		if (optAddr.isPresent()) {
-			HostAddress addr = optAddr.get();
-			System.out.println("   Success - ID: " + addr.getId() + ", name: " + addr.getAddress() + " , type: " + addr.getAddressType().getName());
-			return addr;
-		} else {
-			System.out.println("   Failed to get HostAddress");
-		}
-		return null;
-	}
-	
-	private HostAddress testGet(long id) throws Exception {
-		System.out.println("Getting HostAddress with ID: " + id + "...");
-		HostAddress addr = getHostAddress(id);
-		System.out.println("   Success - ID: " + addr.getId() + ", name: " + addr.getAddress() + " , type: " + addr.getAddressType().getName());
-		return addr;
-	}
-	
-	private void testHostMap(Host host, HostAddress addr, Content content) throws Exception {
-		System.out.println("Mapping address " + addr.getAddress() + " to host " + host.getName());
-		mapHostToAddress(host, addr, 0, content);
-		
-		System.out.println("HostAddresses for host " + host.getName() + ":");
-		for(HostAddress addr2 : getHostAddresses(host)) {
-			System.out.println("  " + addr2.getId() + ", " + addr2.getAddress());
-		}
-	}
-	
-	private void testIpMap(HostAddress ipAddr, HostAddress hostAddr, Content content) throws Exception {
-		try {
-			System.out.println("\nMapping IP: " + ipAddr.getAddress() + " to host: " + hostAddr.getAddress() + "...");
-			addHostNameToIpMapping(hostAddr, ipAddr, 0, content);
-		} catch (IllegalArgumentException ex) {
-			// Expected failure for bad data
-			System.out.println("   Failed - " + 
-				ex.getLocalizedMessage());
-		} catch (Exception ex) {
-			throw ex;
-		}
-		
-		System.out.println("IP addresses for host  " + hostAddr.getAddress() + ":");
-		for(HostAddress addr:getIp(hostAddr.getAddress())) {
-			System.out.println("   " + addr.getId() + ": " + addr.getAddress());
-		}
-		
-		System.out.println("Host names for IP " + ipAddr.getAddress() + ":");
-		for(HostAddress addr:getHostNameByIp(ipAddr.getAddress())) {
-			System.out.println("   " + addr.getId() + ": " + addr.getAddress());
-		}
-	}
-	
-	public void runTests() {
-		try {
-			System.out.println("\n############### Testing HostAddressManager ###############\n");
-			
-			String ipv4Str = "11.22.33.44";
-			String ipv4Str2 = "55.66.77.88";
-			String ipv6Str = "2001:0db8:85a3:0000:0000:8a2e:0370:6666";
-			String ipv6Str2 = "2001:0db8:85a3:0000:0000:8a3e:0370:7777";
-			String hostnameStr = "basis.com";
-			String hostnameStr2 = "google.com";
-			String macAddr = "00:0a:95:9d:68:16";
-
-			System.out.println("\n##### Testing create()");
-			testCreate(ipv4Str, HostAddressType.IPV4);
-			testCreate(ipv4Str, HostAddressType.IPV4);
-			testCreate(ipv6Str, HostAddressType.IPV6);
-			testCreate(hostnameStr, HostAddressType.HOSTNAME);
-			testCreate(macAddr, HostAddressType.WIFI_MAC);
-			testCreate(ipv4Str2, HostAddressType.DNS_AUTO);
-			testCreate(ipv6Str2, HostAddressType.DNS_AUTO);
-			HostAddress hostname2 = testCreate(hostnameStr2, HostAddressType.DNS_AUTO);
-			testCreate("h'%%'st'na m'e", HostAddressType.ETHERNET_MAC);
-			
-			System.out.println("\n##### Testing get()");
-			HostAddress v4Addr = testGet(ipv4Str, HostAddressType.IPV4);
-			HostAddress v6Addr = testGet(ipv6Str, HostAddressType.IPV6);
-			HostAddress hostname1 = testGet(hostnameStr, HostAddressType.HOSTNAME);
-			HostAddress wifiAddr = testGet(macAddr, HostAddressType.WIFI_MAC);
-			HostAddress v4Addr2 = testGet(ipv4Str2, HostAddressType.DNS_AUTO);
-			testGet(ipv6Str2, HostAddressType.DNS_AUTO);
-			testGet(hostnameStr2, HostAddressType.DNS_AUTO);
-			testGet("badName", HostAddressType.ETHERNET_MAC);
-			testGet(v4Addr.getId());
-			testGet(wifiAddr.getId());
-			
-			// Make a few hosts
-			Host v4Host = db.getHostManager().createHost("Host for IPV4");
-			Host wifiHost = db.getHostManager().createHost("Host for WIFI");
-			
-			// Make a data source to use as content for everything
-			SleuthkitCase.CaseDbTransaction trans = db.beginTransaction();
-			DataSource ds = db.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
-			trans.commit();
-			
-			// Make an artifact for testing (? thought I needed this for tsk_host_address_usage but that isn't implemented)
-			BlackboardArtifact art = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_FILE, ds.getId());
-			
-			System.out.println("\n##### Testing host map");
-			testHostMap(v4Host, v4Addr, ds);
-			testHostMap(wifiHost, wifiAddr, ds);
-			
-			System.out.println("\n##### Testing IP map");
-			testIpMap(v4Addr, hostname1, ds);
-			testIpMap(v4Addr2, hostname1, ds);
-			testIpMap(v6Addr, hostname2, ds);
-			testIpMap(wifiAddr, hostname1, ds);
-			testIpMap(v4Addr, wifiAddr, ds);
-			
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}	
-	}
+	}	
 	
 	/**
-	 * Gets a address record with given type and address.
+	 * Gets an address record with given type and address.
 	 * 
 	 * @param type Address type.
 	 * @param address Address.
@@ -195,7 +71,7 @@ public class HostAddressManager {
 	}
 	
 	/**
-	 * Gets a address record with given type and address.
+	 * Gets an address record with given type and address.
 	 * 
 	 * @param type Address type.
 	 * @param address Address.
@@ -256,13 +132,14 @@ public class HostAddressManager {
 	}
 	
 	/**
-	 * Insert  a row in the tsk_host_addresses with the given type and address.
+	 * Insert a row in the tsk_host_addresses with the given type and address.
 	 * 
 	 * @param type Address type.
 	 * @param address Address.
 	 * @param connection Database connection to use.
 	 * 
 	 * @return HostAddress.
+	 * 
 	 * @throws TskCoreException 
 	 */
 	private HostAddress createHostAddress(HostAddress.HostAddressType type, String address, CaseDbConnection connection) throws TskCoreException {
@@ -358,7 +235,6 @@ public class HostAddressManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host addresses"), ex);
 		}
-		
 	} 
 	
 	/**
@@ -404,17 +280,17 @@ public class HostAddressManager {
 	/**
 	 * Adds a row to the ipAddress table.
 	 * 
-	 * @param dnsNameAddress
-	 * @param ipAddress
-	 * @param time
-	 * @param source
+	 * @param dnsNameAddress The DNS name.
+	 * @param ipAddress      An IP address associated with the DNS name.
+	 * @param time           Timestamp when this relationship was true.
+	 * @param source         The source.
 	 * 
 	 * @throws TskCoreException 
 	 */
 	void addHostNameToIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, long time,  Content source) throws TskCoreException {
 		
 		if (dnsNameAddress.getAddressType() != HostAddress.HostAddressType.HOSTNAME) {
-			throw new IllegalArgumentException("A DNS Name address is expected.");
+			throw new IllegalArgumentException("A host name address is expected.");
 		}
 		if ((ipAddress.getAddressType() != HostAddress.HostAddressType.IPV4) && (ipAddress.getAddressType() != HostAddress.HostAddressType.IPV6))  {
 			throw new IllegalArgumentException("An IPv4/IPv6 address is expected.");
@@ -458,8 +334,6 @@ public class HostAddressManager {
 				+ " ON map.dns_address_id = addresses.id "
 				+ " WHERE addresses.address_type = " + HostAddress.HostAddressType.HOSTNAME.getId()
 				+ " AND LOWER( addresses.address) = LOWER('" + hostname + "')";
-
-		System.out.println("*** getIpQuery: " + queryString);
 		
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -490,8 +364,6 @@ public class HostAddressManager {
 				+ " WHERE ( addresses.address_type = " + HostAddress.HostAddressType.IPV4.getId()
 				+ " OR  addresses.address_type = " + HostAddress.HostAddressType.IPV6.getId() + ")"
 				+ " AND LOWER( addresses.address) = LOWER('" + ipAddress + "')";
-
-		System.out.println("*** getHostNameByIpQuery: " + queryString);
 		
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -510,10 +382,10 @@ public class HostAddressManager {
 	/**
 	 * Associate the given artifact with a HostAddress.
 	 * 
+	 * @param artifact    The artifact to associate the host address with.
 	 * @param hostAddress The host address.
-	 * @param artifact    The artifact to associate it with.
 	 */	
-	void addUsage(HostAddress hostAddress, BlackboardArtifact artifact) throws TskCoreException {
+	void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
 		final String insertSQL = insertOrIgnore(" INTO tsk_host_address_usage(addr_obj_id, artifact_obj_id) "
 											+ " VALUES(" + hostAddress.getId() + ", " + artifact.getId() + ") ");
 
@@ -521,8 +393,6 @@ public class HostAddressManager {
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement()) {
 				connection.executeUpdate(s, insertSQL);
-
-
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), artifact.getId()), ex);
 		}
