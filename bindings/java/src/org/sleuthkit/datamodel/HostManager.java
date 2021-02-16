@@ -304,7 +304,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException if no host is found or an error occurs.
 	 */
-	Host getHost(DataSource dataSource) throws TskCoreException {
+	public Host getHost(DataSource dataSource) throws TskCoreException {
 
 		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.status AS status FROM \n"
 				+ "tsk_hosts INNER JOIN data_source_info \n"

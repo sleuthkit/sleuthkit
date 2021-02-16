@@ -459,8 +459,9 @@ public final class OsAccountManager {
 	 * @param host Host for which to look accounts for.
 	 * 
 	 * @return Set of OsAccounts, may be empty.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	Set<OsAccount>  getAcccounts(Host host) throws TskCoreException {
+	public Set<OsAccount> getAccounts(Host host) throws TskCoreException {
 	
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
@@ -487,6 +488,34 @@ public final class OsAccountManager {
 		}
 	}
 	
+	/**
+	 * Get all accounts.
+	 * 
+	 * @return Set of OsAccounts, may be empty.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public Set<OsAccount> getAccounts() throws TskCoreException{
+		String queryString = "SELECT * FROM tsk_os_accounts as accounts ";
+
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			Set<OsAccount> accounts = new HashSet<>();
+			while (rs.next()) {
+				OsAccountRealm realm = null;
+				long realmId = rs.getLong("realm_id");
+				if (!rs.wasNull()) {
+					realm = db.getOsAccountRealmManager().getRealm(realmId, connection);
+				}
+
+				accounts.add(osAccountFromResultSet(rs, realm));
+			} 
+			return accounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS accounts"), ex);
+		}
+	}
 		
 	/**
 	 * Gets an OS account using Windows-specific data. 

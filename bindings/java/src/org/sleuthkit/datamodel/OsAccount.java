@@ -481,7 +481,7 @@ public final class OsAccount extends AbstractContent {
 	 * @return Account creation time, returns 0 if creation time is not known.
 	 */
 	public Optional<Long> getCreationTime() {
-		return Optional.of(creationTime);
+		return Optional.ofNullable(creationTime);
 	}
 
 	/**
