@@ -21,22 +21,24 @@ package org.sleuthkit.datamodel;
 import java.util.Objects;
 
 /**
- *
  * Abstracts an address associated with a host. A host may have multiple
  * addressed of different types associated with it ant a give time.
  */
 public class HostAddress extends AbstractContent {
-	
-    private final SleuthkitCase sleuthkitCase;
+
+	private final SleuthkitCase sleuthkitCase;
 	private final long id;
 	private final HostAddressType addressType;
 	private final String address;
-	
 
-			/**
-			 * 	 * @param signature	     A unique signature constructed from realm id and
-	 *                       loginName or uniqueId.
-			 */
+	/**
+	 * Create a HostAddress object.
+	 *
+	 * @param skCase  Case the host address belongs to.
+	 * @param id      Id of the host address in the database.
+	 * @param type    Type of host address.
+	 * @param address The host address value.
+	 */
 	HostAddress(SleuthkitCase skCase, long id, HostAddressType type, String address) {
 		super(skCase, id, address + "(" + type.getName() + ")");
 		this.sleuthkitCase = skCase;
@@ -57,7 +59,7 @@ public class HostAddress extends AbstractContent {
 	public String getAddress() {
 		return address;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		int hash = 7;
@@ -82,21 +84,20 @@ public class HostAddress extends AbstractContent {
 		if (this.id != other.id) {
 			return false;
 		}
-		
+
 		if (this.addressType != other.addressType) {
 			return false;
 		}
-		
+
 		if ((this.address == null) ? (other.address != null) : !this.address.equals(other.address)) {
 			return false;
 		}
-		
+
 		return true;
 	}
 
 	/**
-	 * Gets the SleuthKit case  database for this
-	 * account.
+	 * Gets the SleuthKit case database for this account.
 	 *
 	 * @return The SleuthKit case object.
 	 */
@@ -104,7 +105,7 @@ public class HostAddress extends AbstractContent {
 	public SleuthkitCase getSleuthkitCase() {
 		return sleuthkitCase;
 	}
-	
+
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// No data to read. 
@@ -120,18 +121,18 @@ public class HostAddress extends AbstractContent {
 	public long getSize() {
 		return 0;
 	}
-	
+
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		// TODO		
-		throw new UnsupportedOperationException("Not supported yet."); 
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		// TODO
-		throw new UnsupportedOperationException("Not supported yet."); 
-	}	
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
 
 	/**
 	 * A host may have different types of addresses at a given point in time.
@@ -144,7 +145,7 @@ public class HostAddress extends AbstractContent {
 		ETHERNET_MAC(4, "Ethernet MAC"),
 		WIFI_MAC(5, "WiFi MAC"),
 		BLUETOOTH_MAC(6, "BlueTooth MAC");
-		
+
 		private final int id;
 		private final String name;
 
