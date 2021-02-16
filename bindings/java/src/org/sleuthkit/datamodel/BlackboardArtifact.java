@@ -702,7 +702,7 @@ public class BlackboardArtifact implements Content {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
 
-		return sleuthkitCase.getBlackboard().newDataArtifact(artifactType, this.getObjectID(), this.getDataSource().getId(), attributesList, osAccount);
+		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
 
 	/**
