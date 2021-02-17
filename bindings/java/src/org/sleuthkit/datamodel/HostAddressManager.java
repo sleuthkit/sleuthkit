@@ -186,7 +186,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void mapHostToAddress(Host host, HostAddress hostAddress, long time, Content source) throws TskCoreException {
+	void mapHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
 
 		String insertSQL = insertOrIgnore(" INTO tsk_host_address_map(host_id, addr_obj_id, source_obj_id, time) "
 				+ " VALUES(?, ?, ?, ?) ");
@@ -234,7 +234,7 @@ public class HostAddressManager {
 
 			return addresses;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting host addresses"), ex);
+			throw new TskCoreException(String.format("Error getting host addresses for host " + host.getName()), ex);
 		}
 	}
 
@@ -256,10 +256,10 @@ public class HostAddressManager {
 	/**
 	 * Gets an address for the given object id.
 	 *
-	 * @param id
-	 * @param connection
+	 * @param id Id of the host address.
+	 * @param connection Current connection
 	 *
-	 * @return
+	 * @return The corresponding HostAddress.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -290,7 +290,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void addHostNameToIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, long time, Content source) throws TskCoreException {
+	void addHostNameToIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source) throws TskCoreException {
 
 		if (dnsNameAddress.getAddressType() != HostAddress.HostAddressType.HOSTNAME) {
 			throw new IllegalArgumentException("A host name address is expected.");
@@ -351,11 +351,11 @@ public class HostAddressManager {
 	}
 
 	/**
-	 * Gets the host HOSTNAME names for a given IP address.
+	 * Gets the host names for a given IP address.
 	 *
-	 * @param dnsName HOSTNAME name to look for.
+	 * @param ipAddress IP address to look for.
 	 *
-	 * @return IP Address, if found.
+	 * @return All corresponding host names.
 	 *
 	 * @throws TskCoreException
 	 */

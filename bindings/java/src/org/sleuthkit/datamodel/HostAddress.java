@@ -22,9 +22,9 @@ import java.util.Objects;
 
 /**
  * Abstracts an address associated with a host. A host may have multiple
- * addressed of different types associated with it ant a give time.
+ * addressed of different types associated with it at a given time.
  */
-public class HostAddress extends AbstractContent {
+public final class HostAddress extends AbstractContent {
 
 	private final SleuthkitCase sleuthkitCase;
 	private final long id;
