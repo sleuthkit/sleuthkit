@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -495,7 +496,7 @@ public final class OsAccountManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Set<OsAccount> getAccounts() throws TskCoreException{
-		String queryString = "SELECT * FROM tsk_os_accounts as accounts ";
+		String queryString = "SELECT * FROM tsk_os_accounts";
 
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -700,7 +701,11 @@ public final class OsAccountManager {
 			preparedStatement.setString(4, osAccount.getFullName().orElse(null));
 			
 			preparedStatement.setInt(5, osAccount.getOsAccountStatus().getId());
-			preparedStatement.setInt(6, osAccount.isAdmin() ? 1 : 0);
+			if(osAccount.isAdmin().isPresent()) {
+				preparedStatement.setInt(6, osAccount.isAdmin().get() ? 1 : 0);
+			} else {
+				preparedStatement.setNull(6, Types.INTEGER);
+			}
 			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
 
 			preparedStatement.setLong(8, osAccount.getCreationTime().orElse(null));
@@ -739,14 +744,11 @@ public final class OsAccountManager {
 		if (!rs.wasNull()) {
 			osAccount.setFullName(fullName);
 		}
-		
-		int status = rs.getInt("status");
-		if (!rs.wasNull()) {
-			osAccount.setOsAccountStatus(OsAccount.OsAccountStatus.fromID(status));
-		}
-		
+
 		int admin = rs.getInt("admin");
-		osAccount.setIsAdmin(admin != 0);
+		if (!rs.wasNull()) {	
+			osAccount.setIsAdmin(admin != 0);
+		}
 		
 		int type = rs.getInt("type");
 		if (!rs.wasNull()) {

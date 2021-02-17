@@ -471,8 +471,8 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @return True if account is an admin account, false otherwise.
 	 */
-	public boolean isAdmin() {
-		return (isAdmin != null) ? isAdmin : false;
+	public Optional<Boolean> isAdmin() {
+		return Optional.ofNullable(isAdmin);
 	}
 
 	/**
