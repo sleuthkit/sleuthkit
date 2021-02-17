@@ -145,6 +145,7 @@ public final class HostManager {
 		String queryString = "SELECT * FROM data_source_info WHERE host_id = " + host.getId();
 
 		Set<DataSource> dataSources = new HashSet<>();
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -156,6 +157,8 @@ public final class HostManager {
 			return dataSources;
 		} catch (SQLException | TskDataException ex) {
 			throw new TskCoreException(String.format("Error getting data sources for host " + host.getName()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -169,8 +172,11 @@ public final class HostManager {
 	 * @throws TskCoreException
 	 */
 	public Optional<Host> getHost(String name) throws TskCoreException {
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			return getHost(name, connection);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -216,6 +222,7 @@ public final class HostManager {
 		String queryString = "SELECT * FROM tsk_hosts WHERE status = " + HostStatus.ACTIVE.getId();
 
 		List<Host> hosts = new ArrayList<>();
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -227,6 +234,8 @@ public final class HostManager {
 			return hosts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting hosts"), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -246,6 +255,7 @@ public final class HostManager {
 				+ "ON tsk_hosts.id = data_source_info.host_id \n"
 				+ "WHERE data_source_info.obj_id = " + dataSource.getId();
 
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -257,6 +267,8 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 }
