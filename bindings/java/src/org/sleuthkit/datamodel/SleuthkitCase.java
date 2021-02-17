@@ -11879,7 +11879,7 @@ public class SleuthkitCase {
 			try {
 				return getPooledConnection();
 			} catch (SQLException exp) {
-				throw new TskCoreException(exp.getMessage(), exp);
+				throw new TskCoreException(exp.getMessage());
 			}
 		}
 
