@@ -662,6 +662,8 @@ class CaseDatabaseFactory {
 			StringBuilder url = new StringBuilder();
 			url.append(JDBC_BASE_URI)
 				.append(info.getHost())
+				.append(":")
+				.append(info.getPort())
 				.append('/') // NON-NLS
 				.append(encodedDbName);
 			
