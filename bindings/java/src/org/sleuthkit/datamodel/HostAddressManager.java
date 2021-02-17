@@ -53,7 +53,7 @@ public class HostAddressManager {
 	HostAddressManager(SleuthkitCase skCase) {
 		this.db = skCase;
 	}
-
+	
 	/**
 	 * Gets an address record with given type and address.
 	 *
@@ -200,7 +200,11 @@ public class HostAddressManager {
 			preparedStatement.setLong(1, host.getId());
 			preparedStatement.setLong(2, hostAddress.getId());
 			preparedStatement.setLong(3, source.getId());
-			preparedStatement.setLong(4, time);
+			if (time != null) {
+				preparedStatement.setLong(4, time);
+			} else {
+				preparedStatement.setNull(4, java.sql.Types.BIGINT);
+			}
 
 			connection.executeUpdate(preparedStatement);
 		} catch (SQLException ex) {
@@ -311,7 +315,11 @@ public class HostAddressManager {
 			preparedStatement.setLong(1, dnsNameAddress.getId());
 			preparedStatement.setLong(2, ipAddress.getId());
 			preparedStatement.setLong(3, source.getId());
-			preparedStatement.setLong(4, time);
+			if (time != null) {
+				preparedStatement.setLong(4, time);
+			} else {
+				preparedStatement.setNull(4, java.sql.Types.BIGINT);
+			}
 
 			connection.executeUpdate(preparedStatement);
 		} catch (SQLException ex) {
