@@ -45,6 +45,9 @@ public class OsAccountTest {
 
 
 	private static String dbPath = null;
+	
+	private static Image image;
+	
 	private static FileSystem fs = null;
 
 	public OsAccountTest (){
@@ -69,9 +72,9 @@ public class OsAccountTest {
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
-			Image img = caseDB.addImage(TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT, 512, 1024, "", Collections.emptyList(), "America/NewYork", null, null, null, "first", trans);
+			image = caseDB.addImage(TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT, 512, 1024, "", Collections.emptyList(), "America/NewYork", null, null, null, "first", trans);
 
-			fs = caseDB.addFileSystem(img.getId(), 0, TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_RAW, 0, 0, 0, 0, 0, "", trans);
+			fs = caseDB.addFileSystem(image.getId(), 0, TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_RAW, 0, 0, 0, 0, 0, "", trans);
 
 			trans.commit();
 
@@ -410,5 +413,32 @@ public class OsAccountTest {
 		}
 
 	}
+	
+	
+	@Test
+	public void osAccountInstanceTests() throws TskCoreException {
+
+		String ownerUid1 = "S-1-5-32-111111111-222222222-3333333333-0001";
+		String realmName1 = "realm1111";
+
+		String hostname1 = "host1111";
+		Host host1 = caseDB.getHostManager().createHost(hostname1);
+
+		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+
+		// Test: add an instance
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image.getId(), OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+
+		// Test: add an existing instance - should be a no-op.
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image.getId(), OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+
+		// Test: create account instance on a new host
+		String hostname2 = "host2222";
+		Host host2 = caseDB.getHostManager().createHost(hostname2);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image.getId(), OsAccount.OsAccountInstanceType.REFERENCED_ON);
+
+	}
+	
 	
 }
