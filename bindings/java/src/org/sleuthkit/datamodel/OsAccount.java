@@ -469,10 +469,11 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Check if account is an admin account.
 	 *
-	 * @return True if account is an admin account, false otherwise.
+	 * @return Optional with isAdmin status. If the value is not
+	 * present the status is unknown.
 	 */
-	public boolean isAdmin() {
-		return (isAdmin != null) ? isAdmin : false;
+	public Optional<Boolean> isAdmin() {
+		return Optional.ofNullable(isAdmin);
 	}
 
 	/**
@@ -481,7 +482,7 @@ public final class OsAccount extends AbstractContent {
 	 * @return Account creation time, returns 0 if creation time is not known.
 	 */
 	public Optional<Long> getCreationTime() {
-		return Optional.of(creationTime);
+		return Optional.ofNullable(creationTime);
 	}
 
 	/**

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,9 +23,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
+import java.sql.Types;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -423,8 +422,6 @@ public final class OsAccountManager {
 		}
 	}
 	
-
-	
 	/**
 	 * Get the account instance for given account, host and data source id.
 	 *
@@ -527,8 +524,9 @@ public final class OsAccountManager {
 	 * @param host Host for which to look accounts for.
 	 * 
 	 * @return Set of OsAccounts, may be empty.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	Set<OsAccount>  getAcccounts(Host host) throws TskCoreException {
+	public Set<OsAccount> getAccounts(Host host) throws TskCoreException {
 	
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
@@ -555,6 +553,34 @@ public final class OsAccountManager {
 		}
 	}
 	
+	/**
+	 * Get all accounts.
+	 * 
+	 * @return Set of OsAccounts, may be empty.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public Set<OsAccount> getAccounts() throws TskCoreException{
+		String queryString = "SELECT * FROM tsk_os_accounts";
+
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			Set<OsAccount> accounts = new HashSet<>();
+			while (rs.next()) {
+				OsAccountRealm realm = null;
+				long realmId = rs.getLong("realm_id");
+				if (!rs.wasNull()) {
+					realm = db.getOsAccountRealmManager().getRealm(realmId, connection);
+				}
+
+				accounts.add(osAccountFromResultSet(rs, realm));
+			} 
+			return accounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS accounts"), ex);
+		}
+	}
 		
 	/**
 	 * Gets an OS account using Windows-specific data. 
@@ -739,7 +765,11 @@ public final class OsAccountManager {
 			preparedStatement.setString(4, osAccount.getFullName().orElse(null));
 			
 			preparedStatement.setInt(5, osAccount.getOsAccountStatus().getId());
-			preparedStatement.setInt(6, osAccount.isAdmin() ? 1 : 0);
+			if(osAccount.isAdmin().isPresent()) {
+				preparedStatement.setInt(6, osAccount.isAdmin().get() ? 1 : 0);
+			} else {
+				preparedStatement.setNull(6, Types.INTEGER);
+			}
 			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
 
 			preparedStatement.setLong(8, osAccount.getCreationTime().orElse(null));
@@ -778,14 +808,11 @@ public final class OsAccountManager {
 		if (!rs.wasNull()) {
 			osAccount.setFullName(fullName);
 		}
-		
-		int status = rs.getInt("status");
-		if (!rs.wasNull()) {
-			osAccount.setOsAccountStatus(OsAccount.OsAccountStatus.fromID(status));
-		}
-		
+
 		int admin = rs.getInt("admin");
-		osAccount.setIsAdmin(admin != 0);
+		if (!rs.wasNull()) {	
+			osAccount.setIsAdmin(admin != 0);
+		}
 		
 		int type = rs.getInt("type");
 		if (!rs.wasNull()) {
