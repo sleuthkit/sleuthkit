@@ -40,8 +40,6 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  */
 public final class HostManager {
 
-	private static final Logger LOGGER = Logger.getLogger(HostManager.class.getName());
-
 	private final SleuthkitCase db;
 
 	/**
@@ -68,6 +66,28 @@ public final class HostManager {
 	}
 
 	/**
+	 * Create a host with specified name. If a host already exists with the
+	 * given name, it returns the existing host.
+	 *
+	 * @param name	Host name.
+	 *
+	 * @return Host with the specified name.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Host createHost(String name) throws TskCoreException {
+		CaseDbTransaction transaction = db.beginTransaction();
+		try {
+			Host host = createHost(name, transaction);
+			transaction.commit();
+			return host;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+	
+	/**
 	 * Create a host with given name. If the host already exists, the existing
 	 * host will be returned.
 	 *
@@ -79,6 +99,11 @@ public final class HostManager {
 	 * @throws TskCoreException
 	 */
 	Host createHost(String name, CaseDbTransaction trans) throws TskCoreException {
+		// must have a name
+		if (Strings.isNullOrEmpty(name)) {
+			throw new IllegalArgumentException("Host name is required.");
+		}
+		
 		CaseDbConnection connection = trans.getConnection();
 		try {
 			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
@@ -135,55 +160,6 @@ public final class HostManager {
 	}
 
 	/**
-	 * Create a host with specified name. If a host already exists with the
-	 * given name, it returns the existing host.
-	 *
-	 * @param name	Host name.
-	 *
-	 * @return Host with the specified name.
-	 *
-	 * @throws TskCoreException
-	 */
-	public Host createHost(String name) throws TskCoreException {
-
-		// must have a name
-		if (Strings.isNullOrEmpty(name)) {
-			throw new IllegalArgumentException("Host name is required.");
-		}
-
-		CaseDbConnection connection = this.db.getConnection();
-		db.acquireSingleUserCaseWriteLock();
-		try {
-			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
-			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
-
-			preparedStatement.clearParameters();
-			preparedStatement.setString(1, name);
-
-			connection.executeUpdate(preparedStatement);
-
-			// Read back the row id
-			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
-				if (resultSet.next()) {
-					return new Host(resultSet.getLong(1), name); //last_insert_rowid()
-				} else {
-					throw new SQLException("Error executing  " + hostInsertSQL);
-				}
-			}
-		} catch (SQLException ex) {
-			// may have failed because it already exists. So try getting the host.
-			Optional<Host> host = this.getHost(name, connection);
-			if (host.isPresent()) {
-				return host.get();
-			} else {
-				throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
-			}
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
 	 * Get host with given name.
 	 *
 	 * @param name        Host name to look for.
@@ -194,7 +170,7 @@ public final class HostManager {
 	 */
 	public Optional<Host> getHost(String name) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-		return getHost(name, connection);
+			return getHost(name, connection);
 		}
 	}
 
