@@ -469,7 +469,8 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Check if account is an admin account.
 	 *
-	 * @return True if account is an admin account, false otherwise.
+	 * @return Optional with isAdmin status. If the value is not
+	 * present the status is unknown.
 	 */
 	public Optional<Boolean> isAdmin() {
 		return Optional.ofNullable(isAdmin);
