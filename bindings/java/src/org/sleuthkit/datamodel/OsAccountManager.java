@@ -26,9 +26,11 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
@@ -45,7 +47,8 @@ public final class OsAccountManager {
 
 	private final SleuthkitCase db;
 
-	private final Map<OsAccountInstanceCacheKey, Long> osAccountInstanceCache = new HashMap<>();
+	//private final Map<OsAccountInstanceCacheKey, Long> osAccountInstanceCache = new HashMap<>();
+	private final NavigableSet<OsAccountInstanceCacheKey> osAccountInstanceCache = new ConcurrentSkipListSet<>();
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
 	 *
@@ -477,7 +480,7 @@ public final class OsAccountManager {
 
 		// check cache first
 		OsAccountInstanceCacheKey accountInstancekey = new OsAccountInstanceCacheKey(osAccount.getId(), host.getId(), dataSourceObjId);
-        if (osAccountInstanceCache.containsKey(accountInstancekey)) {
+        if (osAccountInstanceCache.contains(accountInstancekey)) {
             return;
         }
 			
@@ -498,19 +501,15 @@ public final class OsAccountManager {
 			
 			connection.executeUpdate(preparedStatement);
 			
-			ResultSet resultSet = preparedStatement.getGeneratedKeys();
-			resultSet.next();
-			long instanceId = resultSet.getLong(1); //last_insert_rowid()
-			
 			// add to the cache.
-            this.osAccountInstanceCache.put(accountInstancekey, instanceId);
+            osAccountInstanceCache.add(accountInstancekey);
 			
 		} catch (SQLException ex) {
 			// Create may fail if an OsAccount instance already exists. 
 			Optional<Long> instanceId = getOsAccountInstanceId(osAccount, host, dataSourceObjId, connection);
 			if (instanceId.isPresent()) {
 				//add to the cache.
-				osAccountInstanceCache.put(accountInstancekey, instanceId.get());
+				osAccountInstanceCache.add(accountInstancekey);
 				return;
 			}
 
@@ -828,7 +827,7 @@ public final class OsAccountManager {
 	/**
 	 * Key for the OS account instance cache.
 	 */
-	private class OsAccountInstanceCacheKey {
+	private final class OsAccountInstanceCacheKey implements Comparable<OsAccountInstanceCacheKey> {
 
 		long accountObjId;
 		long hostId;
@@ -878,6 +877,18 @@ public final class OsAccountManager {
 				return false;
 			}
 			return true;
+		}
+
+		@Override
+		public int compareTo(OsAccountInstanceCacheKey other) {
+			
+			if (this.accountObjId != other.accountObjId) {
+				 return Long.compare(this.accountObjId, other.accountObjId);
+			}
+			if (this.hostId != other.hostId) {
+				return Long.compare(this.hostId, other.hostId);
+			}
+			return Long.compare(this.datasourceObjId, other.datasourceObjId);
 		}
 
 	}
