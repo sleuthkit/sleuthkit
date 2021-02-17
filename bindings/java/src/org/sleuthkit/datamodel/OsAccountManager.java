@@ -396,7 +396,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException         If there is an error getting the account.
 	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
-	private OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
+	OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE os_account_obj_id = " + osAccountObjId;
