@@ -48,6 +48,7 @@ public class ArtifactTest {
 
 
 	private static String dbPath = null;
+	private static Image image = null;
 	private static FileSystem fs = null;
 	
 	
@@ -74,9 +75,9 @@ public class ArtifactTest {
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
-			Image img = caseDB.addImage(TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT, 512, 1024, "", Collections.emptyList(), "America/NewYork", null, null, null, "first", trans);
+			image = caseDB.addImage(TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT, 512, 1024, "", Collections.emptyList(), "America/NewYork", null, null, null, "first", trans);
 
-			fs = caseDB.addFileSystem(img.getId(), 0, TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_RAW, 0, 0, 0, 0, 0, "", trans);
+			fs = caseDB.addFileSystem(image.getId(), 0, TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_RAW, 0, 0, 0, 0, 0, "", trans);
 
 			trans.commit();
 
@@ -155,20 +156,22 @@ public class ArtifactTest {
 		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
-
-		// now add an artifact to abc.text
+		// create a 2nd account on the same host
+		String ownerUid2 = "S-1-5-32-111111111-222222222-3333333333-0009";
+		OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid2, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		
+		
+		// now find the file abc.text
 		List<AbstractFile> abctextfiles = caseDB.findFiles(fs.getDataSource(), "abc.txt");
 		assertEquals(1, abctextfiles.size());
 	
 		AbstractFile abcTextFile = abctextfiles.get(0);
 		
-		// add a new data artifact to the file 
-		//BlackboardArtifact newArtifact;
+		// create an attribute for the artifact
         Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
         attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD, MODULE_NAME, "keyword1"));
         
-		// attach an analysis result to the file. 
+		// Test: attach an analysis result to the file. 
 		AnalysisResultAdded analysisResultAdded = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), new Score(Score.Significance.MEDIUM, Score.Confidence.HIGH), "Keyword hit found", "", "", attributes);
    
 		assertEquals(analysisResultAdded.getAnalysisResult().getScore().getSignificance().getId(), Score.Significance.MEDIUM.getId());
@@ -176,10 +179,40 @@ public class ArtifactTest {
 		
 		assertEquals(analysisResultAdded.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"), true);
 		
-		// add a data artifact to the file
+		// Test: add a new data artifact to the file
         DataArtifact dataArtifact1 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH), Collections.emptyList(), osAccount1);
         
 		assertEquals(dataArtifact1.getOsAccount().isPresent(), true);
 		assertEquals(dataArtifact1.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+		
+		
+		// Test: add a second data artifact to file - associate it with a different account
+		DataArtifact dataArtifact2 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CLIPBOARD_CONTENT), Collections.emptyList(), osAccount2);
+		assertEquals(dataArtifact2.getOsAccount().isPresent(), true);
+		assertEquals(dataArtifact2.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+				
+				
+		// and two more 
+		DataArtifact dataArtifact3 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT), Collections.emptyList(), osAccount2);
+		DataArtifact dataArtifact4 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT), Collections.emptyList(), osAccount2);
+
+		
+		// TEST: get all TSK_GPS_SEARCH data artifacts in the data source
+		List<DataArtifact> gpsArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID(), image.getId());
+		assertEquals(gpsArtifacts.size(), 1);
+		// verify the account 
+		assertEquals(gpsArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+		
+		
+		// TES: get all data artifacts of type TSK_YARA_HIT
+		List<DataArtifact> yaraHitArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT.getTypeID(), image.getId());
+		assertEquals(yaraHitArtifacts.size(), 2);
+		// verify the account on each
+		assertEquals(yaraHitArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+		assertEquals(yaraHitArtifacts.get(1).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+		
+		
+		
+		
 	}
 }

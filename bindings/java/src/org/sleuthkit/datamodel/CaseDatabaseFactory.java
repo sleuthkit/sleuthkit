@@ -409,6 +409,39 @@ class CaseDatabaseFactory {
 				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
 				+ "UNIQUE(name)) ");
 
+		stmt.execute("CREATE TABLE  tsk_host_addresses (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "address_type INTEGER NOT NULL, "
+				+ "address TEXT NOT NULL, "
+				+ "UNIQUE(address_type, address)) ");
+
+		stmt.execute("CREATE TABLE tsk_host_address_map  (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "addr_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", " // object id of the source where this mapping was found.
+				+ "time " + dbQueryHelper.getBigIntType() + ", " // time at which the mapping existed
+				+ "UNIQUE(host_id, addr_obj_id, time), "
+				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+		// stores associations between DNS name and IP address
+		stmt.execute("CREATE TABLE tsk_host_address_dns_ip_map (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "dns_address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "ip_address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", "
+				+ "time " + dbQueryHelper.getBigIntType() + ", " // time at which the mapping existed
+				+ "UNIQUE(dns_address_id, ip_address_id, time), "
+				+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id),"
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+		// maps an address to an artifact using it 
+		stmt.execute("CREATE TABLE  tsk_host_address_usage (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "addr_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) )");		
 	}
 		
 	// Must be called after tsk_hosts and tsk_objects have been created.
@@ -452,7 +485,7 @@ class CaseDatabaseFactory {
 				+ "unique_id TEXT DEFAULT NULL, "	// SID/UID, if available
 				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 				+ "status INTEGER, "    // enabled/disabled/deleted
-				+ "admin INTEGER DEFAULT 0," // is admin account
+				+ "admin INTEGER," // is admin account
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "		
 				+ "UNIQUE(signature, realm_id), "
@@ -662,6 +695,8 @@ class CaseDatabaseFactory {
 			StringBuilder url = new StringBuilder();
 			url.append(JDBC_BASE_URI)
 				.append(info.getHost())
+				.append(":")
+				.append(info.getPort())
 				.append('/') // NON-NLS
 				.append(encodedDbName);
 			

@@ -160,7 +160,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *
 	 * @return Optional with Host id.
 	 */
-	Optional<Long> getHostId() {
+	public Optional<Long> getHostId() {
 		return Optional.ofNullable(hostId);
 	}
 

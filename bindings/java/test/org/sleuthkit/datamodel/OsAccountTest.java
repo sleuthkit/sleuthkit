@@ -45,6 +45,9 @@ public class OsAccountTest {
 
 
 	private static String dbPath = null;
+	
+	private static Image image;
+	
 	private static FileSystem fs = null;
 
 	public OsAccountTest (){
@@ -69,9 +72,9 @@ public class OsAccountTest {
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
-			Image img = caseDB.addImage(TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT, 512, 1024, "", Collections.emptyList(), "America/NewYork", null, null, null, "first", trans);
+			image = caseDB.addImage(TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT, 512, 1024, "", Collections.emptyList(), "America/NewYork", null, null, null, "first", trans);
 
-			fs = caseDB.addFileSystem(img.getId(), 0, TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_RAW, 0, 0, 0, 0, 0, "", trans);
+			fs = caseDB.addFileSystem(image.getId(), 0, TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_RAW, 0, 0, 0, 0, 0, "", trans);
 
 			trans.commit();
 
@@ -138,6 +141,47 @@ public class OsAccountTest {
 		}
 	
 	}
+	
+	@Test 
+	public void hostAddressTests() throws TskCoreException {
+		String ipv4Str = "11.22.33.44";
+		String ipv6Str = "2001:0db8:85a3:0000:0000:8a2e:0370:6666";
+		String hostnameStr = "basis.com";
+		
+		// Test creation
+		HostAddress ipv4addr = caseDB.getHostAddressManager().createHostAddress(HostAddress.HostAddressType.IPV4, ipv4Str);
+		assertEquals(ipv4addr.getAddress().equalsIgnoreCase(ipv4Str), true);
+		
+		HostAddress addr2 = caseDB.getHostAddressManager().createHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6Str);
+		assertEquals(addr2.getAddress().equalsIgnoreCase(ipv6Str), true);
+		assertEquals(HostAddress.HostAddressType.IPV6.equals(addr2.getAddressType()), true);
+		
+		HostAddress hostAddr = caseDB.getHostAddressManager().createHostAddress(HostAddress.HostAddressType.DNS_AUTO, hostnameStr);
+		assertEquals(hostAddr.getAddress().equalsIgnoreCase(hostnameStr), true);
+		assertEquals(HostAddress.HostAddressType.HOSTNAME.equals(hostAddr.getAddressType()), true);
+		
+		// Test get
+		Optional<HostAddress> addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.IPV4, ipv4Str);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		// Test host map
+		Host host = caseDB.getHostManager().createHost("TestHostAddress");
+		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
+		trans.commit();
+		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, 0, ds);
+		java.util.Set<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
+		assertEquals(hostAddrs.size() == 1, true);
+		
+		// Test IP mapping
+		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, 0, ds);
+		java.util.Set<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIp(hostAddr.getAddress());
+		assertEquals(ipForHostSet.size() == 1, true);
+		java.util.Set<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
+		assertEquals(hostForIpSet.size() == 1, true);
+
+	}
+	
 	@Test
 	public void osAccountRealmTests() throws TskCoreException {
 		
@@ -224,7 +268,7 @@ public class OsAccountTest {
 			OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 			OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 			
-			assertEquals(osAccount1.isAdmin(), false);
+			assertEquals(osAccount1.isAdmin().orElse(Boolean.FALSE).equals(Boolean.FALSE), true); // did not set the admin flag.
 			assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
 			assertEquals(osAccount1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 			
@@ -236,7 +280,7 @@ public class OsAccountTest {
 			assertEquals(isChanged, true);
 			
 			osAccount1.setFullName(fullName1);
-			osAccount1.setIsAdmin(true);
+			osAccount1.setIsAdmin(true); // set admin flag
 			
 			
 			osAccount1 = caseDB.getOsAccountManager().updateAccount(osAccount1);
@@ -252,7 +296,7 @@ public class OsAccountTest {
 			assertEquals(osAccount1_copy1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 			
 			
-			assertEquals(osAccount1_copy1.isAdmin(), true); // should be true now
+			assertEquals(osAccount1_copy1.isAdmin().orElse(Boolean.FALSE).equals(Boolean.TRUE), true); // isAdmin should be true now
 			assertEquals(osAccount1_copy1.getFullName().orElse("").equalsIgnoreCase(fullName1), true);
 			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);
 			
@@ -274,12 +318,12 @@ public class OsAccountTest {
 			OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid2, null, realmName2, host2, OsAccountRealm.RealmScope.DOMAIN);
 			OsAccount osAccount3 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid3, null, realmName2, host3, OsAccountRealm.RealmScope.DOMAIN);
 			
-			assertEquals(osAccount2.isAdmin(), false);
+			assertEquals(osAccount2.isAdmin().orElse(Boolean.FALSE).equals(Boolean.FALSE), true);
 			assertEquals(osAccount2.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
 			assertEquals(osAccount2.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName2), true);
 			
 			
-			assertEquals(osAccount3.isAdmin(), false);
+			assertEquals(osAccount3.isAdmin().orElse(Boolean.FALSE).equals(Boolean.FALSE), true);
 			assertEquals(osAccount3.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid3), true);
 			assertEquals(osAccount3.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName2), true);
 			
@@ -318,17 +362,17 @@ public class OsAccountTest {
 
 				assertEquals(osAccount1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 				assertEquals(osAccount1.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true);
-				assertEquals(osAccount1.isAdmin(), false);
+				assertEquals(osAccount1.isAdmin().orElse(Boolean.FALSE).equals(Boolean.FALSE), true);
 				assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(sid1), true);
 
 				assertEquals(osAccount2.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 				assertEquals(osAccount2.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true);
-				assertEquals(osAccount2.isAdmin(), false);
+				assertEquals(osAccount2.isAdmin().orElse(Boolean.FALSE).equals(Boolean.FALSE), true);
 				assertEquals(osAccount2.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(sid2), true);
 
 				assertEquals(osAccount3.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 				assertEquals(osAccount3.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true);
-				assertEquals(osAccount3.isAdmin(), false);
+				assertEquals(osAccount3.isAdmin().orElse(Boolean.FALSE).equals(Boolean.FALSE), true);
 				assertEquals(osAccount3.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(sid3), true);
 			}
 			
@@ -410,5 +454,32 @@ public class OsAccountTest {
 		}
 
 	}
+	
+	
+	@Test
+	public void osAccountInstanceTests() throws TskCoreException {
+
+		String ownerUid1 = "S-1-5-32-111111111-222222222-3333333333-0001";
+		String realmName1 = "realm1111";
+
+		String hostname1 = "host1111";
+		Host host1 = caseDB.getHostManager().createHost(hostname1);
+
+		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+
+		// Test: add an instance
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image.getId(), OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+
+		// Test: add an existing instance - should be a no-op.
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image.getId(), OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+
+		// Test: create account instance on a new host
+		String hostname2 = "host2222";
+		Host host2 = caseDB.getHostManager().createHost(hostname2);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image.getId(), OsAccount.OsAccountInstanceType.REFERENCED_ON);
+
+	}
+	
 	
 }
