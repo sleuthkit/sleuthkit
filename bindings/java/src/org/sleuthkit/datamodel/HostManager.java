@@ -277,11 +277,8 @@ public final class HostManager {
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			return getHost(name, connection);
-<<<<<<< HEAD
-=======
 		} finally {
 			db.releaseSingleUserCaseReadLock();
->>>>>>> 6a4bcf671fa73f808458dea6e9f7919d156cf319
 		}
 	}
 
