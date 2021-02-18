@@ -59,11 +59,14 @@ public final class PersonManager {
 	public void addPersonToHost(long host_id, long person_id) throws TskCoreException {
 		String queryString = "UPDATE tsk_hosts SET person_id = " + person_id 
 				+ " WHERE id = " + host_id;
+		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();) {
 				s.executeUpdate(queryString);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting persons"), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 	
@@ -78,6 +81,7 @@ public final class PersonManager {
 		String queryString = "SELECT * FROM tsk_persons";
 
 		List<Person> persons = new ArrayList<>();
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -89,6 +93,8 @@ public final class PersonManager {
 			return persons;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting persons"), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -111,8 +117,8 @@ public final class PersonManager {
 		
 		String queryString = "UPDATE tsk_persons"
 				+ " SET name = ? WHERE id = " + person.getId();
-		try {
-			CaseDbConnection connection = this.db.getConnection();
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = db.getConnection()) {
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
 			s.clearParameters();
 			s.setString(1, person.getName());
@@ -120,7 +126,9 @@ public final class PersonManager {
 			return person;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating person with id = %d", person.getId()), ex);
-		}		
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	/**
@@ -132,17 +140,20 @@ public final class PersonManager {
 	 * @throws TskCoreException 
 	 */
 	public void deletePerson(String name) throws TskCoreException {
-				String queryString = "DELETE FROM tsk_persons"
+		String queryString = "DELETE FROM tsk_persons"
 				+ " WHERE LOWER(name) = LOWER(?)";
-		try {
-			CaseDbConnection connection = this.db.getConnection();
+		
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = db.getConnection()) {
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
 			s.clearParameters();
 			s.setString(1, name);
 			s.executeUpdate();
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting person with name %s", name), ex);
-		}	
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	/**
@@ -156,8 +167,11 @@ public final class PersonManager {
 	 * @throws TskCoreException
 	 */
 	public Optional<Person> getPerson(String name) throws TskCoreException {
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return getPerson(name, connection);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}	
 	
@@ -214,6 +228,7 @@ public final class PersonManager {
 				throw new TskCoreException(String.format("Error adding person with name = %s", name), ex);
 			}
 		} finally {
+			connection.close();
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
