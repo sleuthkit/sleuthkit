@@ -80,10 +80,12 @@ public final class HostManager {
 		try {
 			Host host = createHost(name, transaction);
 			transaction.commit();
+			transaction = null;
 			return host;
-		} catch (TskCoreException ex) {
-			transaction.rollback();
-			throw ex;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 	}
 	
