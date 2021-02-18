@@ -1017,7 +1017,7 @@ public class SleuthkitJNI {
 				} else {
 					hostName = "Image_" + deviceId + " Host";
 				}
-				host = skCase.getHostManager().getOrCreateHost(hostName, transaction);
+				host = skCase.getHostManager().createHost(hostName, transaction);
 			}
 			
 			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize, 

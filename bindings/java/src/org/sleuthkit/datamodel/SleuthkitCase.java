@@ -6393,6 +6393,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException if there is an error adding the data source.
 	 */
 	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootDirectoryName, String timeZone, Host host, CaseDbTransaction transaction) throws TskCoreException {
+
 		acquireSingleUserCaseWriteLock();
 		Statement statement = null;
 		try {
@@ -6404,7 +6405,7 @@ public class SleuthkitCase {
 
 			// If no host was supplied, make one
 			if (host == null) {
-				host = getHostManager().getOrCreateHost("LogicalFileSet_" + newObjId + " Host", transaction);
+				host = getHostManager().createHost("LogicalFileSet_" + newObjId + " Host", transaction);
 			}			
 			
 			// Insert a row for the virtual directory of the data source into
@@ -6561,9 +6562,9 @@ public class SleuthkitCase {
 			// Create a host if needed
 			if (host == null) {
 				if (name.isEmpty()) {
-					host = getHostManager().getOrCreateHost("Image_" + newObjId + " Host", transaction);
+					host = getHostManager().createHost("Image_" + newObjId + " Host", transaction);
 				} else {
-					host = getHostManager().getOrCreateHost(name + " Host", transaction);
+					host = getHostManager().createHost(name + " Host", transaction);
 				}
 			}
 
