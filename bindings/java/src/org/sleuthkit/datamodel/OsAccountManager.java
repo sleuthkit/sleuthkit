@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,10 +23,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.HashSet;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
@@ -43,6 +46,8 @@ public final class OsAccountManager {
 
 	private final SleuthkitCase db;
 
+	//private final Map<OsAccountInstanceCacheKey, Long> osAccountInstanceCache = new HashMap<>();
+	private final NavigableSet<OsAccountInstanceCacheKey> osAccountInstanceCache = new ConcurrentSkipListSet<>();
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
 	 *
@@ -391,7 +396,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException         If there is an error getting the account.
 	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
-	private OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
+	OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE os_account_obj_id = " + osAccountObjId;
@@ -418,18 +423,66 @@ public final class OsAccountManager {
 	}
 	
 	/**
-	 * Adds a row to the tsk_os_account_instances table.
+	 * Get the account instance for given account, host and data source id.
 	 *
-	 * @param osAccount Account for which an instance needs to be added.
-	 * @param host     Host on which the instance is found.
-	 * @param dataSourceObjId Object id of the data source where the instance is found.
-	 * @param instanceType Instance type.
-	 * @param connection   Database connection to use.
+	 * @param osAccount       Account to check for.
+	 * @param host            Host Host for the account instance.
+	 * @param dataSourceObjId Data source object id.
+	 * @param connection      Database connection to use.
+	 *
+	 * @return Optional with id of the account instance. Optional.empty() if no
+	 *         matching instance is found.
 	 *
 	 * @throws TskCoreException
 	 */
-	void addOsAccountInstance(OsAccount osAccount, Host host, long dataSourceObjId, OsAccount.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	private Optional<Long> getOsAccountInstanceId(OsAccount osAccount, Host host, long dataSourceObjId, CaseDbConnection connection) throws TskCoreException {
 
+		String queryString = "SELECT * FROM tsk_os_account_instances"
+				+ " WHERE os_account_obj_id = " + osAccount.getId()
+				+ " AND data_source_obj_id = " + dataSourceObjId
+				+ " AND host_id = " + host.getId();
+
+		try (Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.ofNullable(rs.getLong("id"));
+			}
+			return Optional.empty();
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting account instance with account obj id = %d, data source obj id = %d, host  = %s ", osAccount.getId(), dataSourceObjId, host.getName()), ex);
+		}
+	}
+	
+	/**
+	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
+	 * instance already exists in the table.
+	 *
+	 * @param osAccount       Account for which an instance needs to be added.
+	 * @param host            Host on which the instance is found.
+	 * @param dataSourceObjId Object id of the data source where the instance is
+	 *                        found.
+	 * @param instanceType    Instance type.
+	 *
+	 * @throws TskCoreException
+	 */
+	public void createOsAccountInstance(OsAccount osAccount, Host host, long dataSourceObjId, OsAccount.OsAccountInstanceType instanceType) throws TskCoreException {
+
+		if (osAccount == null) {
+			throw new IllegalArgumentException("Cannot find account instance with null account.");
+		}
+		if (host == null) {
+			throw new IllegalArgumentException("Cannot find account instance with null host.");
+		}
+
+		// check cache first
+		OsAccountInstanceCacheKey accountInstancekey = new OsAccountInstanceCacheKey(osAccount.getId(), host.getId(), dataSourceObjId);
+        if (osAccountInstanceCache.contains(accountInstancekey)) {
+            return;
+        }
+			
+		// create the instance 
+		CaseDbConnection connection = this.db.getConnection();
 		db.acquireSingleUserCaseWriteLock();
 		try {
 			String accountInsertSQL = "INSERT INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
@@ -445,10 +498,22 @@ public final class OsAccountManager {
 			
 			connection.executeUpdate(preparedStatement);
 			
+			// add to the cache.
+            osAccountInstanceCache.add(accountInstancekey);
+			
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
-			throw new TskCoreException(String.format("Error adding os account instance for account = %s, host name = %s, data source object id = %d", osAccount.getUniqueIdWithinRealm().orElse(osAccount.getLoginName().orElse("UNKNOWN")), host.getName(), dataSourceObjId ), ex);
+			// Create may fail if an OsAccount instance already exists. 
+			Optional<Long> instanceId = getOsAccountInstanceId(osAccount, host, dataSourceObjId, connection);
+			if (instanceId.isPresent()) {
+				//add to the cache.
+				osAccountInstanceCache.add(accountInstancekey);
+				return;
+			}
+
+			// create failed due to a real error - throw it up.
+			throw new TskCoreException(String.format("Error adding os account instance for account = %s, host name = %s, data source object id = %d", osAccount.getUniqueIdWithinRealm().orElse(osAccount.getLoginName().orElse("UNKNOWN")), host.getName(), dataSourceObjId), ex);
 		} finally {
+			connection.close();
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -459,8 +524,9 @@ public final class OsAccountManager {
 	 * @param host Host for which to look accounts for.
 	 * 
 	 * @return Set of OsAccounts, may be empty.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	Set<OsAccount>  getAcccounts(Host host) throws TskCoreException {
+	public Set<OsAccount> getAccounts(Host host) throws TskCoreException {
 	
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
@@ -487,6 +553,34 @@ public final class OsAccountManager {
 		}
 	}
 	
+	/**
+	 * Get all accounts.
+	 * 
+	 * @return Set of OsAccounts, may be empty.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public Set<OsAccount> getAccounts() throws TskCoreException{
+		String queryString = "SELECT * FROM tsk_os_accounts";
+
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			Set<OsAccount> accounts = new HashSet<>();
+			while (rs.next()) {
+				OsAccountRealm realm = null;
+				long realmId = rs.getLong("realm_id");
+				if (!rs.wasNull()) {
+					realm = db.getOsAccountRealmManager().getRealm(realmId, connection);
+				}
+
+				accounts.add(osAccountFromResultSet(rs, realm));
+			} 
+			return accounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS accounts"), ex);
+		}
+	}
 		
 	/**
 	 * Gets an OS account using Windows-specific data. 
@@ -642,6 +736,11 @@ public final class OsAccountManager {
 	 */
 	OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
 		
+		// do nothing if the account is not dirty.
+		if (!osAccount.isDirty()) {
+			return osAccount;
+		}
+		
 		db.acquireSingleUserCaseWriteLock();
 		try(CaseDbConnection connection = db.getConnection()) {
 			String updateSQL = "UPDATE tsk_os_accounts SET "
@@ -666,13 +765,19 @@ public final class OsAccountManager {
 			preparedStatement.setString(4, osAccount.getFullName().orElse(null));
 			
 			preparedStatement.setInt(5, osAccount.getOsAccountStatus().getId());
-			preparedStatement.setInt(6, osAccount.isAdmin() ? 1 : 0);
+			if(osAccount.isAdmin().isPresent()) {
+				preparedStatement.setInt(6, osAccount.isAdmin().get() ? 1 : 0);
+			} else {
+				preparedStatement.setNull(6, Types.INTEGER);
+			}
 			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
 
 			preparedStatement.setLong(8, osAccount.getCreationTime().orElse(null));
 			preparedStatement.setLong(9, osAccount.getId());
 			
 			connection.executeUpdate(preparedStatement);
+			
+			osAccount.resetDirty();
 			return osAccount;
 		}
 		catch (SQLException ex) {
@@ -703,14 +808,11 @@ public final class OsAccountManager {
 		if (!rs.wasNull()) {
 			osAccount.setFullName(fullName);
 		}
-		
-		int status = rs.getInt("status");
-		if (!rs.wasNull()) {
-			osAccount.setOsAccountStatus(OsAccount.OsAccountStatus.fromID(status));
-		}
-		
+
 		int admin = rs.getInt("admin");
-		osAccount.setIsAdmin(admin != 0);
+		if (!rs.wasNull()) {	
+			osAccount.setIsAdmin(admin != 0);
+		}
 		
 		int type = rs.getInt("type");
 		if (!rs.wasNull()) {
@@ -747,5 +849,74 @@ public final class OsAccountManager {
 			throw new IllegalArgumentException("OS Account must have either a uniqueID or a login name.");
 		}
 		return signature;
+	}
+	
+	/**
+	 * Key for the OS account instance cache.
+	 */
+	private final class OsAccountInstanceCacheKey implements Comparable<OsAccountInstanceCacheKey> {
+
+		long accountObjId;
+		long hostId;
+		long datasourceObjId;
+
+		/**
+		 * Create the key into the OS Account instance cache.
+		 *
+		 * @param accountObjId    Account object id.
+		 * @param hostId          Host id.
+		 * @param datasourceObjId Data source obj id.
+		 */
+		OsAccountInstanceCacheKey(long accountObjId, long hostId, long datasourceObjId) {
+			this.accountObjId = accountObjId;
+			this.hostId = hostId;
+			this.datasourceObjId = datasourceObjId;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 5;
+			hash = 67 * hash + (int) (this.accountObjId ^ (this.accountObjId >>> 32));
+			hash = 67 * hash + (int) (this.hostId ^ (this.hostId >>> 32));
+			hash = 67 * hash + (int) (this.datasourceObjId ^ (this.datasourceObjId >>> 32));
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final OsAccountInstanceCacheKey other = (OsAccountInstanceCacheKey) obj;
+			if (this.accountObjId != other.accountObjId) {
+				return false;
+			}
+			if (this.hostId != other.hostId) {
+				return false;
+			}
+			if (this.datasourceObjId != other.datasourceObjId) {
+				return false;
+			}
+			return true;
+		}
+
+		@Override
+		public int compareTo(OsAccountInstanceCacheKey other) {
+			
+			if (this.accountObjId != other.accountObjId) {
+				 return Long.compare(this.accountObjId, other.accountObjId);
+			}
+			if (this.hostId != other.hostId) {
+				return Long.compare(this.hostId, other.hostId);
+			}
+			return Long.compare(this.datasourceObjId, other.datasourceObjId);
+		}
+
 	}
 }

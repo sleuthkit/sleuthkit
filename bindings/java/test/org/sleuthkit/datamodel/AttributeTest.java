@@ -115,22 +115,23 @@ public class AttributeTest {
 		// Add a root folder
 		FsContent root = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
-				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, fs, Collections.emptyList(), trans);
+				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, fs, null, null, Collections.emptyList(), trans);
 
 		// Add a dir - no attributes 
 		FsContent windows = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "Windows", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
-				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, root, Collections.emptyList(), trans);
-		
+				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, root, "S-1-5-80-956008885-3418522649-1831038044-1853292631-227147846", null, Collections.emptyList(), trans);
+
 		// Add dllhosts.exe file to the above dir
 		FsContent dllhosts = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "dllhosts.exe", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
-				(short)0, 200, 0, 0, 0, 0, testMD5, null, "Applicatione/Exe" , true, windows, fileAttributes, trans);
+				(short) 0, 200, 0, 0, 0, 0, testMD5, null, "Applicatione/Exe", true, windows, "S-1-5-32-544", null, fileAttributes, trans);
 
 		// add another no attribute file to the same folder
 		FsContent _nofile = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "nofile.exe", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
-				(short)0, 200, 0, 0, 0, 0, null, null, "Applicatione/Exe" , true, windows, Collections.emptyList(), trans);
+				(short) 0, 200, 0, 0, 0, 0, null, null, "Applicatione/Exe", true, windows, null, null, Collections.emptyList(), trans);
+		
 
 		// Add additional attributes to dllhosts file - within the same transaction. 
 		dllhosts.addAttributes(fileAttributes2, trans);

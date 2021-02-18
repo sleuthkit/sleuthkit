@@ -49,13 +49,14 @@ public final class DataArtifact extends BlackboardArtifact {
 	 * @param reviewStatus     The review status of this artifact.
 	 * @param osAccount        OsAccount associated with this artifact, may be
 	 *                         null.
+	 * @param isNew            The object is newly created.
 	 */
-	DataArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, OsAccount osAccount) {
-		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
+	DataArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, OsAccount osAccount, boolean isNew) {
+		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.osAccount = osAccount;
 	}
 	
-	
+		
 	/**
 	 * Gets the OS Account for this artifact.
 	 *

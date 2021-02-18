@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.collect.ImmutableSet;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -106,7 +107,7 @@ public final class Blackboard {
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.
 	 *
-	 * This assumes that the artifact type is of category EXTRACTED_DATA.
+	 * This assumes that the artifact type is of category DATA_ARTIFACT.
 	 *
 	 * @param typeName    The type name of the artifact type.
 	 * @param displayName The display name of the artifact type.
@@ -118,7 +119,7 @@ public final class Blackboard {
 	 */
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
 
-		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.EXTRACTED_DATA);
+		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.DATA_ARTIFACT);
 	}
 
 	/**
@@ -347,6 +348,122 @@ public final class Blackboard {
 		return analysisResults;
 	}
 
+	
+	private final static String DATA_ARTIFACT_QUERY_STRING = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
+				+ "artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, " //NON-NLS
+				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
+				+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
+			    + " data_artifacts.os_account_obj_id as os_account_obj_id " //NON-NLS
+				+ " FROM blackboard_artifacts AS artifacts, tsk_data_artifacts AS data_artifacts, blackboard_artifact_types AS types " //NON-NLS
+				+ " WHERE artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
+				+ " AND artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
+				+ " AND artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID(); //NON-NLS
+	
+	
+	/**
+	 * Get all data artifacts of a given type for a given data source.
+	 *
+	 * @param artifactTypeID  Artifact type to get.
+	 * @param dataSourceObjId Data source to look under.
+	 *
+	 * @return List of data artifacts. May be an empty list.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public List<DataArtifact> getDataArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			String whereClause = "artifacts.data_source_obj_id = " + dataSourceObjId
+					+ " AND artifacts.artifact_type_id = " + artifactTypeID;
+
+			return getDataArtifactsWhere(whereClause, connection);
+		}
+	}
+	
+	
+	/**
+	 * Get all data artifacts of a given type.
+	 *
+	 * @param artifactTypeID  Artifact type to get.
+	 *
+	 * @return List of data artifacts. May be an empty list.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public List<DataArtifact> getDataArtifacts(int artifactTypeID) throws TskCoreException {
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			String whereClause =  " artifacts.artifact_type_id = " + artifactTypeID;
+			
+			return getDataArtifactsWhere(whereClause, connection);
+		}
+	}
+	
+	
+	/**
+	 * Get all data artifacts matching the given where sub-clause. Uses the
+	 * given database connection to execute the query.
+	 *
+	 * @param whereClause SQL Where sub-clause, specifies conditions to match.
+	 * @param connection  Database connection to use.
+	 *
+	 * @return List of data artifacts. May be an empty list.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	private List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
+
+		final String queryString = DATA_ARTIFACT_QUERY_STRING
+				+ " AND ( " + whereClause + " )";
+
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+
+			List<DataArtifact> dataArtifacts = resultSetToDataArtifacts(resultSet, connection);
+			return dataArtifacts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting data artifacts with queryString = %s", queryString), ex);
+		}
+	}
+	
+	/**
+	 * Creates DataArtifacts objects for the resultset of a table query of the
+	 * form "SELECT * FROM blackboard_artifacts JOIN data_artifacts WHERE ...".
+	 *
+	 * @param resultSet  A result set from a query of the blackboard_artifacts
+	 *                   table of the form "SELECT * FROM blackboard_artifacts,
+	 *                   tsk_data_artifacts WHERE ...".
+	 * @param connection Database connection.
+	 *
+	 * @return A list of DataArtifact objects.
+	 *
+	 * @throws SQLException     Thrown if there is a problem iterating through
+	 *                          the result set.
+	 * @throws TskCoreException Thrown if there is an error looking up the
+	 *                          artifact type id.
+	 */
+	private List<DataArtifact> resultSetToDataArtifacts(ResultSet resultSet, CaseDbConnection connection) throws SQLException, TskCoreException {
+		ArrayList<DataArtifact> dataArtifacts = new ArrayList<>();
+
+		while (resultSet.next()) {
+			OsAccount osAccount = null;
+			
+			long accountObjId = resultSet.getLong("os_account_obj_id");
+			if (resultSet.wasNull() == false) {	
+				osAccount = this.caseDb.getOsAccountManager().getOsAccount(accountObjId, connection);
+			}
+			
+			dataArtifacts.add(new DataArtifact(caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"),
+					resultSet.getLong("artifact_obj_id"), resultSet.getLong("data_source_obj_id"),
+					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
+					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")), osAccount, false));
+		} //end for each resultSet
+
+		return dataArtifacts;
+	}
+	
+	
 	/**
 	 * Gets an attribute type, creating it if it does not already exist. Use
 	 * this method to define custom attribute types.
@@ -696,7 +813,10 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
+	 * 
+	 * @deprecated Use the newDataArtifact() API to create an artifact with attributes.
 	 */
+	@Deprecated
 	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, final CaseDbTransaction transaction) throws TskCoreException {
 
@@ -736,7 +856,111 @@ public final class Blackboard {
 		}
 	}
 
+	/**
+	 * Add a new data artifact with the given type.
+	 *
+	 * @param artifactType    The type of the data artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 * @param attributes      The attributes. May be empty or null.
+	 * @param osAccount       The OS account associated with the artifact. May
+	 *                        be null.
+	 *
+	 * @return DataArtifact A new data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurs within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
 
+		CaseDbTransaction transaction = caseDb.beginTransaction();
+		try {
+			DataArtifact dataArtifact = newDataArtifact(artifactType, sourceObjId, dataSourceObjId,
+					attributes, osAccount, transaction);
+			transaction.commit();
+			return dataArtifact;
+		} catch (TskCoreException ex) {
+			try {
+				transaction.rollback();
+			} catch (TskCoreException ex2) {
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
+						+ "Error invoking newDataArtifact with dataSourceObjId: " + dataSourceObjId + ",  sourceObjId: " + sourceObjId, ex2);
+			}
+			throw ex;
+		}
+	}
+	
+	
+	/**
+	 * Add a new data artifact with the given type.
+	 *
+	 * This api executes in the context of the given transaction.
+	 *
+	 * @param artifactType    The type of the data artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 * @param attributes      The attributes. May be empty or null.
+	 * @param osAccount       The OS account associated with the artifact. May
+	 *                        be null.
+	 * @param transaction     The transaction in the scope of which the
+	 *                        operation is to be performed.
+	 *
+	 * @return DataArtifact New blackboard artifact
+	 *
+	 * @throws TskCoreException If a critical error occurs within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, OsAccount osAccount, final CaseDbTransaction transaction) throws TskCoreException {
+
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
+		}
+
+		caseDb.acquireSingleUserCaseWriteLock();
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			long artifact_obj_id = caseDb.addObject(sourceObjId, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
+			PreparedStatement statement = caseDb.createInsertArtifactStatement(artifactType.getTypeID(), sourceObjId, artifact_obj_id, dataSourceObjId, connection);
+
+			connection.executeUpdate(statement);
+			try (ResultSet resultSet = statement.getGeneratedKeys()) {
+				resultSet.next();
+				DataArtifact dataArtifact = new DataArtifact(caseDb, resultSet.getLong(1), //last_insert_rowid()
+									sourceObjId, artifact_obj_id, dataSourceObjId, artifactType.getTypeID(), 
+									artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, 
+									osAccount, true);
+				
+				// Add a row in tsk_data_artifact
+				String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
+
+				statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
+				statement.clearParameters();
+
+				statement.setLong(1, artifact_obj_id);
+				if (osAccount != null) {
+					statement.setLong(2, osAccount.getId());
+				} else {
+					statement.setNull(2, java.sql.Types.BIGINT);
+				}
+				
+				connection.executeUpdate(statement);
+
+				// if attributes are provided, add them to the artifact.
+				if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
+					dataArtifact.addAttributes(attributes, transaction);
+				}
+
+				return dataArtifact;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating a data artifact with type id = %d, objId = %d, and data source oj id = %d ", artifactType.getTypeID(), sourceObjId, dataSourceObjId), ex);
+		} finally {
+			caseDb.releaseSingleUserCaseWriteLock();
+		}
+	}
+	
 	/**
 	 * Event published by SleuthkitCase when one or more artifacts are posted. A
 	 * posted artifact is complete (all attributes have been added) and ready

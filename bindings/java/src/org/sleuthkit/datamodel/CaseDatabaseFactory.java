@@ -459,7 +459,7 @@ class CaseDatabaseFactory {
 				+ "unique_id TEXT DEFAULT NULL, "	// SID/UID, if available
 				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 				+ "status INTEGER, "    // enabled/disabled/deleted
-				+ "admin INTEGER DEFAULT 0," // is admin account
+				+ "admin INTEGER," // is admin account
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "	
 				+ "person_id INTEGER, "	
@@ -671,6 +671,8 @@ class CaseDatabaseFactory {
 			StringBuilder url = new StringBuilder();
 			url.append(JDBC_BASE_URI)
 				.append(info.getHost())
+				.append(":")
+				.append(info.getPort())
 				.append('/') // NON-NLS
 				.append(encodedDbName);
 			
