@@ -6851,7 +6851,7 @@ public class SleuthkitCase {
 			FsContent fileSystemFile = addFileSystemFile(dataSourceObjId, fsObjId, fileName,
 					metaAddr, metaSeq, attrType, attrId, dirFlag, metaFlags, size,
 					ctime, crtime, atime, mtime, null, null, null, isFile, parent,
-					OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT,
+					OsAccount.NO_OWNER_ID, null,
 					Collections.emptyList(), transaction);
 			
 			transaction.commit();
@@ -6896,7 +6896,7 @@ public class SleuthkitCase {
 	 *                        directory).
 	 * @param ownerUid        UID of the file owner as found in the file system,
 	 *                        can be null.
-	 * @param osAccountObjId  Obj id of the owner OS account, may be null.
+	 * @param osAccount       OS account of owner, may be null.
 	 * @param fileAttributes  A list of file attributes. May be empty.
 	 * @param transaction     A caller-managed transaction within which the add
 	 *                        file operations are performed.
@@ -6913,7 +6913,7 @@ public class SleuthkitCase {
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, String sha256Hash, String mimeType,
 			boolean isFile, Content parent, String ownerUid,
-			Long osAccountObjId, List<Attribute> fileAttributes, 
+			OsAccount osAccount, List<Attribute> fileAttributes, 
 			CaseDbTransaction transaction) throws TskCoreException {
 
 		TimelineManager timelineManager = getTimelineManager();
@@ -6968,16 +6968,17 @@ public class SleuthkitCase {
 			final String extension = extractExtension(fileName);
 			statement.setString(24, extension);
 			statement.setString(25, ownerUid);
-			if (null != osAccountObjId) {
-				statement.setLong(26, osAccountObjId);
+			if (null != osAccount) {
+				statement.setLong(26, osAccount.getId());
 			} else {
 				statement.setNull(26, java.sql.Types.BIGINT); // osAccountObjId
 			}
 
 			connection.executeUpdate(statement);
 
+			Long osAccountId = (osAccount != null) ? osAccount.getId() : null;
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, ownerUid, osAccountObjId);
+					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, ownerUid, osAccountId);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
@@ -6992,7 +6993,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, null, parentPath, mimeType,
-					extension, ownerUid, osAccountObjId, fileAttributes);
+					extension, ownerUid, osAccountId, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
