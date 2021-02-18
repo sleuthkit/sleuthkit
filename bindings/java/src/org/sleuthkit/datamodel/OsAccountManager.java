@@ -768,11 +768,16 @@ public final class OsAccountManager {
 			if(osAccount.isAdmin().isPresent()) {
 				preparedStatement.setInt(6, osAccount.isAdmin().get() ? 1 : 0);
 			} else {
-				preparedStatement.setNull(6, Types.INTEGER);
+				preparedStatement.setNull(6, Types.NULL);
 			}
 			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
 
-			preparedStatement.setLong(8, osAccount.getCreationTime().orElse(null));
+			Optional<Long> creationTime = osAccount.getCreationTime();
+			if(creationTime.isPresent()) {
+				preparedStatement.setLong(8, osAccount.getCreationTime().get());
+			} else {
+				preparedStatement.setNull(8, Types.NULL);
+			}
 			preparedStatement.setLong(9, osAccount.getId());
 			
 			connection.executeUpdate(preparedStatement);
