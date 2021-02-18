@@ -215,6 +215,7 @@ public class SleuthkitCase {
 	private OsAccountRealmManager osAccountRealmManager;
 	private OsAccountManager osAccountManager;
 	private HostManager hostManager;
+	private HostAddressManager hostAddressManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -396,6 +397,7 @@ public class SleuthkitCase {
 		osAccountRealmManager = new OsAccountRealmManager(this);
 		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
+		hostAddressManager = new HostAddressManager(this);
 	}
 
 	/**
@@ -551,6 +553,17 @@ public class SleuthkitCase {
 	public HostManager getHostManager() throws TskCoreException {
 		return hostManager;
 	}
+	
+	/**
+	 * Gets the HostAddress manager for this case.
+	 *
+	 * @return The per case HostAddressManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public HostAddressManager getHostAddressManager() throws TskCoreException {
+		return hostAddressManager;
+	}	
 	
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
@@ -2362,8 +2375,7 @@ public class SleuthkitCase {
 					+ "significance INTEGER NOT NULL, "
 					+ "confidence INTEGER NOT NULL, "
 					+ "configuration TEXT, justification TEXT, "
-					+ "ignore_score INTEGER DEFAULT 0, " // boolean	
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
+					+ "ignore_score INTEGER DEFAULT 0 " // boolean	
 					+ ")");
 
 			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " PRIMARY KEY, "
@@ -2459,13 +2471,49 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_data_artifacts ( "
 					+ "artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "os_account_obj_id " + bigIntDataType + ", "
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");
 
 			// add owner_uid & os_account_obj_id columns to tsk_files
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN owner_uid TEXT DEFAULT NULL");
-			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_obj_id " + bigIntDataType + " DEFAULT NULL REFERENCES tsk_os_accounts(os_account_obj_id) DEFAULT NULL");
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN os_account_obj_id " + bigIntDataType + " DEFAULT NULL REFERENCES tsk_os_accounts(os_account_obj_id) ");
 
+			
+			// create host address tables
+			statement.execute("CREATE TABLE tsk_host_addresses (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "address_type INTEGER NOT NULL, "
+					+ "address TEXT NOT NULL, "
+					+ "UNIQUE(address_type, address)) ");
+
+			statement.execute("CREATE TABLE tsk_host_address_map (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "host_id " + bigIntDataType + " NOT NULL, "
+					+ "addr_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "source_obj_id " + bigIntDataType + ", " // object id of the source where this mapping was found.
+					+ "time " + bigIntDataType + ", " // time at which the mapping existed
+					+ "UNIQUE(host_id, addr_obj_id, time), "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+			// stores associations between DNS name and IP address
+			statement.execute("CREATE TABLE tsk_host_address_dns_ip_map (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "dns_address_id " + bigIntDataType + " NOT NULL, "
+					+ "ip_address_id " + bigIntDataType + " NOT NULL, "
+					+ "source_obj_id " + bigIntDataType + ", "
+					+ "time " + bigIntDataType + ", " // time at which the mapping existed
+					+ "UNIQUE(dns_address_id, ip_address_id, time), "
+					+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id), "
+					+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id),"
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+			// maps an address to an artifact using it 
+			statement.execute("CREATE TABLE tsk_host_address_usage (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "addr_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
+					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) )");
+		
+		
 			return new CaseDbSchemaVersionNumber(8, 7);
 
 		} finally {
@@ -3011,6 +3059,8 @@ public class SleuthkitCase {
 						case REPORT:
 							break;
 						case OS_ACCOUNT:
+							break;
+						case HOST_ADDRESS:
 							break;
 						default:
 							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
@@ -5551,6 +5601,9 @@ public class SleuthkitCase {
 				break;
 			case REPORT:
 				content = getReportById(id);
+				break;
+			case HOST_ADDRESS:
+				content = hostAddressManager.getHostAddress(id);
 				break;
 			default:
 				throw new TskCoreException("Could not obtain Content object with ID: " + id);

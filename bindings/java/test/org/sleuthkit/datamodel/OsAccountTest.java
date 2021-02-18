@@ -141,6 +141,47 @@ public class OsAccountTest {
 		}
 	
 	}
+	
+	@Test 
+	public void hostAddressTests() throws TskCoreException {
+		String ipv4Str = "11.22.33.44";
+		String ipv6Str = "2001:0db8:85a3:0000:0000:8a2e:0370:6666";
+		String hostnameStr = "basis.com";
+		
+		// Test creation
+		HostAddress ipv4addr = caseDB.getHostAddressManager().createHostAddress(HostAddress.HostAddressType.IPV4, ipv4Str);
+		assertEquals(ipv4addr.getAddress().equalsIgnoreCase(ipv4Str), true);
+		
+		HostAddress addr2 = caseDB.getHostAddressManager().createHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6Str);
+		assertEquals(addr2.getAddress().equalsIgnoreCase(ipv6Str), true);
+		assertEquals(HostAddress.HostAddressType.IPV6.equals(addr2.getAddressType()), true);
+		
+		HostAddress hostAddr = caseDB.getHostAddressManager().createHostAddress(HostAddress.HostAddressType.DNS_AUTO, hostnameStr);
+		assertEquals(hostAddr.getAddress().equalsIgnoreCase(hostnameStr), true);
+		assertEquals(HostAddress.HostAddressType.HOSTNAME.equals(hostAddr.getAddressType()), true);
+		
+		// Test get
+		Optional<HostAddress> addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.IPV4, ipv4Str);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		// Test host map
+		Host host = caseDB.getHostManager().createHost("TestHostAddress");
+		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
+		trans.commit();
+		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, 0, ds);
+		java.util.Set<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
+		assertEquals(hostAddrs.size() == 1, true);
+		
+		// Test IP mapping
+		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, 0, ds);
+		java.util.Set<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIp(hostAddr.getAddress());
+		assertEquals(ipForHostSet.size() == 1, true);
+		java.util.Set<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
+		assertEquals(hostForIpSet.size() == 1, true);
+
+	}
+	
 	@Test
 	public void osAccountRealmTests() throws TskCoreException {
 		
