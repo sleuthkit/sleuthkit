@@ -514,15 +514,6 @@ public final class OsAccount extends AbstractContent {
 	}
 	
 	/**
-	 * Updates the database for the given OsAccount.
-	 * 
-	 * @throws TskCoreException 
-	 */
-	public void update() throws TskCoreException {
-		sleuthkitCase.getOsAccountManager().updateAccount(this);
-	}
-	
-	/**
 	 * Updates the account signature with unique id or name.
 	 */
 	private void updateSignature() {

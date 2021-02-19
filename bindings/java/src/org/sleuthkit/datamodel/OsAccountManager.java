@@ -30,8 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 
@@ -41,8 +39,6 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
  *
  */
 public final class OsAccountManager {
-
-	private static final Logger LOGGER = Logger.getLogger(OsAccountManager.class.getName());
 
 	private final SleuthkitCase db;
 
@@ -673,9 +669,13 @@ public final class OsAccountManager {
 				if (accountAttribute.getHostId().isPresent()) {
 					preparedStatement.setLong(2, accountAttribute.getHostId().get());
 				} else {
-					preparedStatement.setNull(2, java.sql.Types.BIGINT);
+					preparedStatement.setNull(2, java.sql.Types.NULL);
 				}
-				preparedStatement.setLong(3, accountAttribute.getSourceObjId());
+				if(accountAttribute.getSourceObjId().isPresent()) {
+					preparedStatement.setLong(3, accountAttribute.getSourceObjId().get());
+				}else {
+					preparedStatement.setNull(4, java.sql.Types.NULL);
+				}
 
 				preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
 				preparedStatement.setLong(5, accountAttribute.getAttributeType().getValueType().getType());
@@ -695,27 +695,26 @@ public final class OsAccountManager {
 				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
 					preparedStatement.setInt(8, accountAttribute.getValueInt());
 				} else {
-					preparedStatement.setNull(8, java.sql.Types.INTEGER);
+					preparedStatement.setNull(8, java.sql.Types.NULL);
 				}
 
 				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
 						|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
 					preparedStatement.setLong(9, accountAttribute.getValueLong());
 				} else {
-					preparedStatement.setNull(9, java.sql.Types.BIGINT);
+					preparedStatement.setNull(9, java.sql.Types.NULL);
 				}
 
 				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
 					preparedStatement.setDouble(10, accountAttribute.getValueDouble());
 				} else {
-					preparedStatement.setNull(10, java.sql.Types.DOUBLE);
+					preparedStatement.setNull(10, java.sql.Types.NULL);
 				}
 
 				connection.executeUpdate(preparedStatement);
 			
 			}
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
 			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
 		} 
 		
@@ -734,7 +733,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
+	public OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
 		
 		// do nothing if the account is not dirty.
 		if (!osAccount.isDirty()) {
@@ -786,7 +785,6 @@ public final class OsAccountManager {
 			return osAccount;
 		}
 		catch (SQLException ex) {
-			Logger.getLogger(OsAccountManager.class.getName()).log(Level.SEVERE, null, ex);
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getUniqueIdWithinRealm().orElse("Unknown"), osAccount.getId()), ex);
 		}	finally {
 			db.releaseSingleUserCaseWriteLock();
