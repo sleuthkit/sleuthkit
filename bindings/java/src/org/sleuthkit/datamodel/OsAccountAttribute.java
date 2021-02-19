@@ -45,8 +45,8 @@ public final class OsAccountAttribute extends AbstractAttribute {
 		super(attributeType, valueInt);
 
 		this.osAccountObjId = osAccount.getId();
-		this.hostId = host.getId();
-		this.sourceObjId = sourceObj.getId();
+		this.hostId = (host != null ? host.getId() : null);
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
