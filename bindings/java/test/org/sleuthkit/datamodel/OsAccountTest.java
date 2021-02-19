@@ -194,12 +194,12 @@ public class OsAccountTest {
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
 		trans.commit();
-		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, 0, ds);
+		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, (long) 0, ds);
 		java.util.Set<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
 		assertEquals(hostAddrs.size() == 1, true);
 		
 		// Test IP mapping
-		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, 0, ds);
+		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, (long) 0, ds);
 		java.util.Set<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIp(hostAddr.getAddress());
 		assertEquals(ipForHostSet.size() == 1, true);
 		java.util.Set<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
