@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -195,14 +196,14 @@ public class OsAccountTest {
 		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
 		trans.commit();
 		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, (long) 0, ds);
-		java.util.Set<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
+		List<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
 		assertEquals(hostAddrs.size() == 1, true);
 		
 		// Test IP mapping
 		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, (long) 0, ds);
-		java.util.Set<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIp(hostAddr.getAddress());
+		List<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIp(hostAddr.getAddress());
 		assertEquals(ipForHostSet.size() == 1, true);
-		java.util.Set<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
+		List<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
 		assertEquals(hostForIpSet.size() == 1, true);
 	}
 	
@@ -493,15 +494,15 @@ public class OsAccountTest {
 		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// Test: add an instance
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image.getId(), OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
 
 		// Test: add an existing instance - should be a no-op.
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image.getId(), OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
 
 		// Test: create account instance on a new host
 		String hostname2 = "host2222";
 		Host host2 = caseDB.getHostManager().createHost(hostname2);
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image.getId(), OsAccount.OsAccountInstanceType.REFERENCED_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image, OsAccount.OsAccountInstanceType.REFERENCED_ON);
 
 	}
 	

@@ -26,9 +26,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -220,14 +220,14 @@ public class HostAddressManager {
 	 *
 	 * @param host Host to get addresses for.
 	 *
-	 * @return Collection of addresses, may be empty.
+	 * @return List of addresses, may be empty.
 	 */
-	Set<HostAddress> getHostAddresses(Host host) throws TskCoreException {
+	List<HostAddress> getHostAddresses(Host host) throws TskCoreException {
 
 		String queryString = "SELECT addr_obj_id FROM tsk_host_address_map "
 				+ " WHERE host_id = " + host.getId();
 
-		Set<HostAddress> addresses = new HashSet<>();
+		List<HostAddress> addresses = new ArrayList<>();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -334,11 +334,11 @@ public class HostAddressManager {
 	 *
 	 * @param hostname HOSTNAME name to look for.
 	 *
-	 * @return Collection of IP Addresses mapped to this dns name. May be empty.
+	 * @return List of IP Addresses mapped to this dns name. May be empty.
 	 *
 	 * @throws TskCoreException
 	 */
-	Set<HostAddress> getIp(String hostname) throws TskCoreException {
+	List<HostAddress> getIp(String hostname) throws TskCoreException {
 		String queryString = "SELECT ip_address_id FROM tsk_host_address_dns_ip_map as map "
 				+ " JOIN tsk_host_addresses as addresses "
 				+ " ON map.dns_address_id = addresses.id "
@@ -348,7 +348,7 @@ public class HostAddressManager {
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
-			Set<HostAddress> IpAddresses = new HashSet<>();
+			List<HostAddress> IpAddresses = new ArrayList<>();
 			while (rs.next()) {
 				IpAddresses.add(HostAddressManager.this.getHostAddress(rs.getLong("ip_address_id"), connection));
 			}
@@ -367,7 +367,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Set<HostAddress> getHostNameByIp(String ipAddress) throws TskCoreException {
+	List<HostAddress> getHostNameByIp(String ipAddress) throws TskCoreException {
 		String queryString = "SELECT dns_address_id FROM tsk_host_address_dns_ip_map as map "
 				+ " JOIN tsk_host_addresses as addresses "
 				+ " ON map.ip_address_id = addresses.id "
@@ -379,7 +379,7 @@ public class HostAddressManager {
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
-			Set<HostAddress> dnsNames = new HashSet<>();
+			List<HostAddress> dnsNames = new ArrayList<>();
 			while (rs.next()) {
 				dnsNames.add(HostAddressManager.this.getHostAddress(rs.getLong("dns_address_id"), connection));
 			}

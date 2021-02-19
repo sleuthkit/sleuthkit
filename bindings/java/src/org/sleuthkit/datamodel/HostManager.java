@@ -24,12 +24,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.Host.HostStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -143,10 +139,10 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Set<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
+	public List<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
 		String queryString = "SELECT * FROM data_source_info WHERE host_id = " + host.getId();
 
-		Set<DataSource> dataSources = new HashSet<>();
+		List<DataSource> dataSources = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
