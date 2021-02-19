@@ -64,7 +64,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 
 		this.osAccountObjId = osAccount.getId();
 		this.hostId = (host != null ? host.getId() : null);
-		this.sourceObjId = sourceObj.getId();
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
@@ -82,7 +82,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 
 		this.osAccountObjId = osAccount.getId();
 		this.hostId = (host != null ? host.getId() : null);
-		this.sourceObjId = sourceObj.getId();
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
@@ -100,7 +100,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 
 		this.osAccountObjId = osAccount.getId();
 		this.hostId = (host != null ? host.getId() : null);
-		this.sourceObjId = sourceObj.getId();
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
@@ -118,7 +118,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 
 		this.osAccountObjId = osAccount.getId();
 		this.hostId = (host != null ? host.getId() : null);
-		this.sourceObjId = sourceObj.getId();
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
@@ -145,7 +145,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 				sleuthkitCase);
 		this.osAccountObjId = osAccount.getId();
 		this.hostId = (host != null ? host.getId() : null);
-		this.sourceObjId = sourceObj.getId();
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**

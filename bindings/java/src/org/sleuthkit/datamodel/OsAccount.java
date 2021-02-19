@@ -399,7 +399,7 @@ public final class OsAccount extends AbstractContent {
 	
 	
 	/**
-	 * Adds account attributes to the account.Attributes can be at
+	 * Adds account attributes to the account. Attributes can be at
 	 * a host-level or domain-level (for domain-scoped accounts).
 	 *
 	 * @param osAccountAttributes Collection of  attributes to add.
