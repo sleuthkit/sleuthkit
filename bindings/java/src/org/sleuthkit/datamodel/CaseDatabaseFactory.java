@@ -474,6 +474,7 @@ class CaseDatabaseFactory {
 				+ "realm_signature TEXT NOT NULL, "	// Signature exists only to prevent duplicates. It is  made up of realm address/name and scope host
 				+ "scope_host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm scope is a single host
 				+ "scope_confidence INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "status INTEGER DEFAULT 0, " // to indicate if the realm was merged/deleted
 				+ "UNIQUE(realm_signature), "
 				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 		
@@ -487,7 +488,8 @@ class CaseDatabaseFactory {
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "admin INTEGER," // is admin account
 				+ "type INTEGER, "	// service/interactive
-				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "		
+				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
+				+ "status INTEGER DEFAULT 0, " // to indicate if the account was merged/deleted
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");

@@ -293,6 +293,40 @@ public final class OsAccountRealm {
 		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
 	}
 	
+	/**
+	 * Encapsulates status of realm row.
+	 */
+	public enum RealmStatus {
+		ACTIVE(0, "Active"),
+		MERGED(1, "Merged"),
+		DELETED(2, "Deleted");	
+
+		private final int id;
+		private final String name;
+
+		RealmStatus(int id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		public int getId() {
+			return id;
+		}
+
+		String getName() {
+			return name;
+		}
+
+		public static RealmStatus fromID(int typeId) {
+			for (RealmStatus type : RealmStatus.values()) {
+				if (type.ordinal() == typeId) {
+					return type;
+				}
+			}
+			return null;
+		}
+	}
+	
 	
 //	/**
 //	 * Set the realm scope host if it is not already set.

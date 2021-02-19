@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 
 /**
@@ -232,7 +233,6 @@ public final class OsAccountRealmManager {
 			preparedStatement.setString(1, realm.getRealmName().orElse(null));
 			preparedStatement.setString(2, realm.getRealmAddr().orElse(null));
 			preparedStatement.setString(3, realm.getSignature());
-			
 			preparedStatement.setLong(4, realm.getId());
 			
 			connection.executeUpdate(preparedStatement);
@@ -605,5 +605,28 @@ public final class OsAccountRealmManager {
 		String signature = String.format("%s_%s", !Strings.isNullOrEmpty(realmAddr) ?  realmAddr : realmName,
 												scopeHost != null ? scopeHost.getId() : "DOMAIN");
 		return signature;
+	}
+	
+	public void mergeRealms(OsAccountRealm source, OsAccountRealm dest) throws TskCoreException {
+		
+		CaseDbTransaction trans = null;
+		try {
+			trans = db.beginTransaction();
+			
+			// Update accounts
+			
+			// Update the status
+			CaseDbConnection connection = trans.getConnection();
+			try (Statement statement = connection.createStatement()) {
+				String updateStr = "UPDATE tsk_os_account_realms SET status = " + OsAccountRealm.RealmStatus.MERGED.getId() + " WHERE id = " + source.getId();
+				connection.executeUpdate(statement, updateStr);
+			} catch (SQLException ex) {
+				throw new TskCoreException ("Error updating status of realm with id: " + source.getId());
+			}
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
 	}
 }

@@ -2402,6 +2402,7 @@ public class SleuthkitCase {
 				+ "realm_signature TEXT NOT NULL, "		// Signature exists only to prevent duplicates. It is  made up of realm address/name and scope host
 				+ "scope_host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm scope is a single host
 				+ "name_type INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "status INTEGER DEFAULT 0, " // to indicate if the realm was merged/deleted
 				+ "UNIQUE(realm_signature), "
 				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 
@@ -2439,6 +2440,7 @@ public class SleuthkitCase {
 					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
+					+ "status INTEGER DEFAULT 0, " // to indicate if the account was merged/deleted
 					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
