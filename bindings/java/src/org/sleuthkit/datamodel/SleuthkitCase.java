@@ -68,6 +68,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Category;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
@@ -215,6 +216,7 @@ public class SleuthkitCase {
 	private OsAccountRealmManager osAccountRealmManager;
 	private OsAccountManager osAccountManager;
 	private HostManager hostManager;
+	private PersonManager personManager;
 	private HostAddressManager hostAddressManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
@@ -397,6 +399,7 @@ public class SleuthkitCase {
 		osAccountRealmManager = new OsAccountRealmManager(this);
 		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
+		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this);
 	}
 
@@ -554,6 +557,17 @@ public class SleuthkitCase {
 		return hostManager;
 	}
 	
+	/**
+	 * Gets the Person manager for this case.
+	 *
+	 * @return The per case PersonManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public PersonManager getPersonManager() throws TskCoreException {
+		return personManager;
+	}
+		
 	/**
 	 * Gets the HostAddress manager for this case.
 	 *
@@ -2389,10 +2403,17 @@ public class SleuthkitCase {
 
 			// RAMAN TBD: need to add  UNIQUE (artifact_obj_id) constraint to blackboard_artifacts table for it to be FK
 			
-			// create host table.
+			// Create person table.
+			statement.execute("CREATE TABLE tsk_persons (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "name TEXT NOT NULL, " // person name
+					+ "UNIQUE(name)) ");
+			
+			// Create host table.
 			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "name TEXT NOT NULL, " // host name
 					+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+					+ "person_id INTEGER, "
+					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "UNIQUE(name)) ");
 
 			// Create OS Account and related tables 
@@ -2439,8 +2460,10 @@ public class SleuthkitCase {
 					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
+					+ "person_id INTEGER, "
 					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 
 			statement.execute("CREATE TABLE tsk_os_account_attributes (id " + primaryKeyType + " PRIMARY KEY, "
@@ -5852,20 +5875,32 @@ public class SleuthkitCase {
 	 *                          core and file could not be queried
 	 */
 	public BlackboardArtifact getArtifactById(long id) throws TskCoreException {
+		
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ARTIFACT_OBJ_ID);
+			// get the artifact type.
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_TYPE_BY_ARTIFACT_OBJ_ID);
 			statement.clearParameters();
 			statement.setLong(1, id);
+			
 			rs = connection.executeQuery(statement);
-			List<BlackboardArtifact> artifacts = resultSetToArtifacts(rs);
-			if (artifacts.size() > 0) {
-				return artifacts.get(0);
-			} else {
-				return null;
+			if (!rs.next()) {
+				throw new TskCoreException("Error getting artifacttype for artifact with artifact_obj_id = " + id);
 			}
+		
+			// based on the artifact type category, get the analysis result or the data artifact
+			BlackboardArtifact.Type artifactType = getArtifactType(rs.getInt("artifact_type_id"));
+			switch (artifactType.getCategory()) {
+				case ANALYSIS_RESULT:
+					return blackboard.getAnalysisResultById(id);
+				case DATA_ARTIFACT:
+					return blackboard.getDataArtifactById(id);
+				default:
+					throw new TskCoreException(String.format("Unknown artifact category for artifact with artifact_obj_id = %d, and artifact type = %s", id, artifactType.getTypeName()));
+			}
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifacts by artifact_obj_id, artifact_obj_id = " + id, ex);
 		} finally {
@@ -12062,6 +12097,8 @@ public class SleuthkitCase {
 				+ "AND tsk_files.type = ? )"), //NON-NLS
 		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 		SELECT_ARTIFACT_BY_ARTIFACT_OBJ_ID("SELECT * FROM blackboard_artifacts WHERE artifact_obj_id = ? LIMIT 1"),
+		SELECT_ARTIFACT_TYPE_BY_ARTIFACT_OBJ_ID("SELECT artifact_type_id FROM blackboard_artifacts WHERE artifact_obj_id = ? LIMIT 1"),
+		
 		SELECT_ARTIFACT_BY_ARTIFACT_ID("SELECT * FROM blackboard_artifacts WHERE artifact_id = ? LIMIT 1"),
 		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS

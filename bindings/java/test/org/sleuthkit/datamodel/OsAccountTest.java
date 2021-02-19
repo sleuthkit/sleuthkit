@@ -143,6 +143,31 @@ public class OsAccountTest {
 	}
 	
 	@Test 
+	public void personTests() throws TskCoreException {
+		String personName1 = "John Doe";
+		String personName2 = "Jane Doe";
+		
+		org.sleuthkit.datamodel.PersonManager pm = caseDB.getPersonManager();
+		
+		Person p1 = pm.createPerson(personName1);
+		assertEquals(personName1.equals(p1.getName()), true);
+		
+		Optional<Person> p1opt = pm.getPerson(personName1.toLowerCase());
+		assertEquals(p1opt.isPresent(), true);
+		
+		p1.setName(personName2);
+		assertEquals(personName2.equals(p1.getName()), true);
+		
+		pm.updatePerson(p1);
+		Optional<Person> p2opt = pm.getPerson(personName2.toUpperCase());
+		assertEquals(p2opt.isPresent(), true);
+		
+		pm.deletePerson(p1.getName());
+		p2opt = pm.getPerson(personName2);
+		assertEquals(p2opt.isPresent(), false);
+	}
+		
+	@Test 
 	public void hostAddressTests() throws TskCoreException {
 		String ipv4Str = "11.22.33.44";
 		String ipv6Str = "2001:0db8:85a3:0000:0000:8a2e:0370:6666";
@@ -169,17 +194,16 @@ public class OsAccountTest {
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
 		trans.commit();
-		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, 0, ds);
+		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, (long) 0, ds);
 		java.util.Set<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
 		assertEquals(hostAddrs.size() == 1, true);
 		
 		// Test IP mapping
-		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, 0, ds);
+		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, (long) 0, ds);
 		java.util.Set<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIp(hostAddr.getAddress());
 		assertEquals(ipForHostSet.size() == 1, true);
 		java.util.Set<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
 		assertEquals(hostForIpSet.size() == 1, true);
-
 	}
 	
 	@Test
