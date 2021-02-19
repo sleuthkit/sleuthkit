@@ -615,6 +615,7 @@ public final class OsAccountRealmManager {
 			
 			// Update accounts
 			
+			
 			// Update the status
 			CaseDbConnection connection = trans.getConnection();
 			try (Statement statement = connection.createStatement()) {

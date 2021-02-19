@@ -489,7 +489,6 @@ class CaseDatabaseFactory {
 				+ "admin INTEGER," // is admin account
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
-				+ "status INTEGER DEFAULT 0, " // to indicate if the account was merged/deleted
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");

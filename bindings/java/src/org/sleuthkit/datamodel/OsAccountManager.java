@@ -553,6 +553,44 @@ public final class OsAccountManager {
 		}
 	}
 	
+	void mergeAccountsForRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm, CaseDbConnection connection) throws TskCoreException {
+		Set<OsAccount> destinationAccounts = getAccounts(destRealm, connection);
+		Set<OsAccount> sourceAccounts = getAccounts(sourceRealm, connection);
+		
+		
+		
+	}
+	
+	private void mergeAccounts(OsAccount sourceAccount, OsAccount destAccount, CaseDbConnection connection) throws TskCoreException {
+		//if (destAccount)
+	}
+	
+	/**
+	 * Get all accounts associated with the given realm.
+	 * 
+	 * @param realm Realm for which to look accounts for.
+	 * 
+	 * @return Set of OsAccounts, may be empty.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	private Set<OsAccount> getAccounts(OsAccountRealm realm, CaseDbConnection connection) throws TskCoreException {
+	
+		String queryString = "SELECT * FROM tsk_os_accounts"
+				+ " WHERE realm_id = " + realm.getId();
+
+		try (Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			Set<OsAccount> accounts = new HashSet<>();
+			while (rs.next()) {
+				accounts.add(osAccountFromResultSet(rs, realm));
+			} 
+			return accounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS accounts for realm id = %d", realm.getId()), ex);
+		}
+	}
+	
 	/**
 	 * Get all accounts.
 	 * 
@@ -742,7 +780,30 @@ public final class OsAccountManager {
 		}
 		
 		db.acquireSingleUserCaseWriteLock();
-		try(CaseDbConnection connection = db.getConnection()) {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return updateAccount(osAccount, connection);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+	}
+		
+	/**
+	 * Updates the database for the given OsAccount.
+	 *
+	 * @param osAccount   OsAccount that needs to be updated in the database.
+	 *
+	 * @return OsAccount Updated account.
+	 *
+	 * @throws TskCoreException
+	 */
+	OsAccount updateAccount(OsAccount osAccount, CaseDbConnection connection) throws TskCoreException {
+		
+		// do nothing if the account is not dirty.
+		if (!osAccount.isDirty()) {
+			return osAccount;
+		}
+		
+		try {
 			String updateSQL = "UPDATE tsk_os_accounts SET "
 										+ "		login_name = ?, "	// 1
 										+ "		unique_id = ?, "	// 2
@@ -781,10 +842,7 @@ public final class OsAccountManager {
 			return osAccount;
 		}
 		catch (SQLException ex) {
-			Logger.getLogger(OsAccountManager.class.getName()).log(Level.SEVERE, null, ex);
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getUniqueIdWithinRealm().orElse("Unknown"), osAccount.getId()), ex);
-		}	finally {
-			db.releaseSingleUserCaseWriteLock();
 		}
 		
 	}
