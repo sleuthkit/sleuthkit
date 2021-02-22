@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,124 +35,117 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	/**
 	 * Creates an os account attribute with int value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueInt	      Int value.
-	 * @param osAccountObjId Obj id of account which the attribute pertains to. 
-	 * @param hostId         Id of host on which the attribute applies to. Pass
-	 *                       Null if it applies across hosts.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
+	 * @param attributeType Attribute type.
+	 * @param valueInt      Int value.
+	 * @param osAccount     Account which the attribute pertains to.
+	 * @param host          Host on which the attribute applies to. Pass Null if
+	 * @param sourceObj     Source where the attribute was found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long osAccountObjId, Long hostId, Long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, OsAccount osAccount, Host host, Content sourceObj) {
 		super(attributeType, valueInt);
 
-		this.osAccountObjId = osAccountObjId;
-		this.hostId = hostId;
-		this.sourceObjId = sourceObjId;
+		this.osAccountObjId = osAccount.getId();
+		this.hostId = (host != null ? host.getId() : null);
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
 	 * Creates an os account attribute with long value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueLong	     Long value.
-	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param hostId         Id of host on which the attribute applies to. Pass
-	 *                       Null if it applies across hosts.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
+	 * @param attributeType Attribute type.
+	 * @param valueLong     Long value.
+	 * @param osAccount     Account which the attribute pertains to.
+	 * @param host          Host on which the attribute applies to. Pass Null if
+	 *                      it applies across hosts.
+	 * @param sourceObj     Source where the attribute was found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, long osAccountObjId, Long hostId, Long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, OsAccount osAccount, Host host, Content sourceObj) {
 		super(attributeType, valueLong);
 
-		this.osAccountObjId = osAccountObjId;
-		this.hostId = hostId;
-		this.sourceObjId = sourceObjId;
+		this.osAccountObjId = osAccount.getId();
+		this.hostId = (host != null ? host.getId() : null);
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
 	 * Creates an os account attribute with double value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueDouble    Double value.
-	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param hostId         Id of host on which the attribute applies to. Pass
-	 *                       Null if it applies across hosts.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
+	 * @param attributeType Attribute type.
+	 * @param valueDouble   Double value.
+	 * @param osAccount     Account which the attribute pertains to.
+	 * @param host          Host on which the attribute applies to. Pass Null if
+	 *                      it applies across hosts.
+	 * @param sourceObj     Source where the attribute was found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, long osAccountObjId, Long hostId, Long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, OsAccount osAccount, Host host, Content sourceObj) {
 		super(attributeType, valueDouble);
 
-		this.osAccountObjId = osAccountObjId;
-		this.hostId = hostId;
-		this.sourceObjId = sourceObjId;
+		this.osAccountObjId = osAccount.getId();
+		this.hostId = (host != null ? host.getId() : null);
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
 	 * Creates an os account attribute with string value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueString    String value.
-	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param hostId         Id of host on which the attribute applies to. Pass
-	 *                       Null if it applies across hosts.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
+	 * @param attributeType Attribute type.
+	 * @param valueString   String value.
+	 * @param osAccount     Account which the attribute pertains to.
+	 * @param host          Host on which the attribute applies to. Pass Null if
+	 *                      applies across hosts.
+	 * @param sourceObj     Source where the attribute was found.
 	 */
-	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, long osAccountObjId, Long hostId, Long sourceObjId) {
+	public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, OsAccount osAccount, Host host, Content sourceObj) {
 		super(attributeType, valueString);
 
-		this.osAccountObjId = osAccountObjId;
-		this.hostId = hostId;
-		this.sourceObjId = sourceObjId;
+		this.osAccountObjId = osAccount.getId();
+		this.hostId = (host != null ? host.getId() : null);
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
 	 * Creates an os account attribute with byte-array value.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueBytes     Bytes value.
-	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param hostId         Id of host on which the attribute applies to. Pass
-	 *                       Null if it applies across hosts.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
+	 * @param attributeType Attribute type.
+	 * @param valueBytes    Bytes value.
+	 * @param osAccount     Account which the attribute pertains to.
+	 * @param host          Host on which the attribute applies to. Pass Null if
+	 *                      it applies across hosts.
+	 * @param sourceObj     Source where the attribute was found.
 	 */
-	public OsAccountAttribute(Type attributeType, byte[] valueBytes, long osAccountObjId, Long hostId, Long sourceObjId) {
+	public OsAccountAttribute(Type attributeType, byte[] valueBytes, OsAccount osAccount, Host host, Content sourceObj) {
 		super(attributeType, valueBytes);
 
-		this.osAccountObjId = osAccountObjId;
-		this.hostId = hostId;
-		this.sourceObjId = sourceObjId;
+		this.osAccountObjId = osAccount.getId();
+		this.hostId = (host != null ? host.getId() : null);
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
 	 * Constructor to be used when creating an attribute after reading the data
 	 * from the table.
 	 *
-	 * @param attributeType  Attribute type.
-	 * @param valueInt       Int value.
-	 * @param valueLong      Long value.
-	 * @param valueDouble    Double value.
-	 * @param valueString    String value.
-	 * @param valueBytes     Bytes value.
-	 * @param sleuthkitCase  Sleuthkit case.
-	 * @param osAccountObjId Obj id of account which the attribute pertains to.
-	 * @param sourceObjId    Object id of the source where the attribute was
-	 *                       found.
-	 * @param hostId         Id of host on which the attribute applies to. Pass
-	 *                       Null if it applies across hosts.
+	 * @param attributeType Attribute type.
+	 * @param valueInt      Int value.
+	 * @param valueLong     Long value.
+	 * @param valueDouble   Double value.
+	 * @param valueString   String value.
+	 * @param valueBytes    Bytes value.
+	 * @param sleuthkitCase Sleuthkit case.
+	 * @param osAccount     Account which the attribute pertains to.
+	 * @param host          Host on which the attribute applies to. Pass Null if
+	 *                      it applies across hosts.
+	 * @param sourceObj     Source where the attribute was found.
 	 */
 	OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
-			SleuthkitCase sleuthkitCase, long osAccountObjId, Long hostId, long sourceObjId) {
-		
-		super( attributeType,
+			SleuthkitCase sleuthkitCase, OsAccount osAccount, Host host, Content sourceObj) {
+
+		super(attributeType,
 				valueInt, valueLong, valueDouble, valueString, valueBytes,
 				sleuthkitCase);
-		this.osAccountObjId = osAccountObjId;
-		this.hostId = hostId;
-		this.sourceObjId = sourceObjId;
+		this.osAccountObjId = osAccount.getId();
+		this.hostId = (host != null ? host.getId() : null);
+		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
 	/**
@@ -178,8 +171,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *
 	 * @return Object id of source.
 	 */
-	public Long getSourceObjId() {
-		return sourceObjId;
+	public Optional<Long> getSourceObjId() {
+		return Optional.ofNullable(sourceObjId);
 	}
-
 }

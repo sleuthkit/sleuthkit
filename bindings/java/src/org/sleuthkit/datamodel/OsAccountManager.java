@@ -24,14 +24,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 
@@ -42,11 +42,8 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
  */
 public final class OsAccountManager {
 
-	private static final Logger LOGGER = Logger.getLogger(OsAccountManager.class.getName());
-
 	private final SleuthkitCase db;
 
-	//private final Map<OsAccountInstanceCacheKey, Long> osAccountInstanceCache = new HashMap<>();
 	private final NavigableSet<OsAccountInstanceCacheKey> osAccountInstanceCache = new ConcurrentSkipListSet<>();
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
@@ -458,25 +455,27 @@ public final class OsAccountManager {
 	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
 	 * instance already exists in the table.
 	 *
-	 * @param osAccount       Account for which an instance needs to be added.
-	 * @param host            Host on which the instance is found.
-	 * @param dataSourceObjId Object id of the data source where the instance is
-	 *                        found.
-	 * @param instanceType    Instance type.
+	 * @param osAccount    Account for which an instance needs to be added.
+	 * @param host         Host on which the instance is found.
+	 * @param dataSource   Data source where the instance is found.
+	 * @param instanceType Instance type.
 	 *
 	 * @throws TskCoreException
 	 */
-	public void createOsAccountInstance(OsAccount osAccount, Host host, long dataSourceObjId, OsAccount.OsAccountInstanceType instanceType) throws TskCoreException {
+	public void createOsAccountInstance(OsAccount osAccount, Host host, Content dataSource, OsAccount.OsAccountInstanceType instanceType) throws TskCoreException {
 
 		if (osAccount == null) {
-			throw new IllegalArgumentException("Cannot find account instance with null account.");
+			throw new IllegalArgumentException("Cannot create account instance with null account.");
 		}
 		if (host == null) {
-			throw new IllegalArgumentException("Cannot find account instance with null host.");
+			throw new IllegalArgumentException("Cannot create account instance with null host.");
+		}
+		if (host == null) {
+			throw new IllegalArgumentException("Cannot create account instance with null data source.");
 		}
 
 		// check cache first
-		OsAccountInstanceCacheKey accountInstancekey = new OsAccountInstanceCacheKey(osAccount.getId(), host.getId(), dataSourceObjId);
+		OsAccountInstanceCacheKey accountInstancekey = new OsAccountInstanceCacheKey(osAccount.getId(), host.getId(), dataSource.getId());
         if (osAccountInstanceCache.contains(accountInstancekey)) {
             return;
         }
@@ -492,7 +491,7 @@ public final class OsAccountManager {
 			preparedStatement.clearParameters();
 
 			preparedStatement.setLong(1, osAccount.getId());
-			preparedStatement.setLong(2, dataSourceObjId);
+			preparedStatement.setLong(2, dataSource.getId());
 			preparedStatement.setLong(3, host.getId());
 			preparedStatement.setInt(4, instanceType.getId());
 			
@@ -503,7 +502,7 @@ public final class OsAccountManager {
 			
 		} catch (SQLException ex) {
 			// Create may fail if an OsAccount instance already exists. 
-			Optional<Long> instanceId = getOsAccountInstanceId(osAccount, host, dataSourceObjId, connection);
+			Optional<Long> instanceId = getOsAccountInstanceId(osAccount, host, dataSource.getId(), connection);
 			if (instanceId.isPresent()) {
 				//add to the cache.
 				osAccountInstanceCache.add(accountInstancekey);
@@ -511,7 +510,7 @@ public final class OsAccountManager {
 			}
 
 			// create failed due to a real error - throw it up.
-			throw new TskCoreException(String.format("Error adding os account instance for account = %s, host name = %s, data source object id = %d", osAccount.getUniqueIdWithinRealm().orElse(osAccount.getLoginName().orElse("UNKNOWN")), host.getName(), dataSourceObjId), ex);
+			throw new TskCoreException(String.format("Error adding os account instance for account = %s, host name = %s, data source object id = %d", osAccount.getUniqueIdWithinRealm().orElse(osAccount.getLoginName().orElse("UNKNOWN")), host.getName(), dataSource.getId()), ex);
 		} finally {
 			connection.close();
 			db.releaseSingleUserCaseWriteLock();
@@ -526,7 +525,7 @@ public final class OsAccountManager {
 	 * @return Set of OsAccounts, may be empty.
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public Set<OsAccount> getAccounts(Host host) throws TskCoreException {
+	public List<OsAccount> getAccounts(Host host) throws TskCoreException {
 	
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
@@ -537,7 +536,7 @@ public final class OsAccountManager {
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
-			Set<OsAccount> accounts = new HashSet<>();
+			List<OsAccount> accounts = new ArrayList<>();
 			while (rs.next()) {
 				OsAccountRealm realm = null;
 				long realmId = rs.getLong("realm_id");
@@ -559,14 +558,14 @@ public final class OsAccountManager {
 	 * @return Set of OsAccounts, may be empty.
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public Set<OsAccount> getAccounts() throws TskCoreException{
+	public List<OsAccount> getAccounts() throws TskCoreException{
 		String queryString = "SELECT * FROM tsk_os_accounts";
 
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
-			Set<OsAccount> accounts = new HashSet<>();
+			List<OsAccount> accounts = new ArrayList<>();
 			while (rs.next()) {
 				OsAccountRealm realm = null;
 				long realmId = rs.getLong("realm_id");
@@ -652,11 +651,11 @@ public final class OsAccountManager {
 	 * attribute.
 	 *
 	 * @param account	       Account for which the attributes is being added.
-	 * @param accountAttribute Attribute to add.
+	 * @param accountAttribute List of attributes to add.
 	 *
 	 * @throws TskCoreException,
 	 */
-	void addOsAccountAttributes(OsAccount account, Set<OsAccountAttribute> accountAttributes) throws TskCoreException {
+	void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
 		
 		db.acquireSingleUserCaseWriteLock();
 	
@@ -673,9 +672,13 @@ public final class OsAccountManager {
 				if (accountAttribute.getHostId().isPresent()) {
 					preparedStatement.setLong(2, accountAttribute.getHostId().get());
 				} else {
-					preparedStatement.setNull(2, java.sql.Types.BIGINT);
+					preparedStatement.setNull(2, java.sql.Types.NULL);
 				}
-				preparedStatement.setLong(3, accountAttribute.getSourceObjId());
+				if(accountAttribute.getSourceObjId().isPresent()) {
+					preparedStatement.setLong(3, accountAttribute.getSourceObjId().get());
+				}else {
+					preparedStatement.setNull(3, java.sql.Types.NULL);
+				}
 
 				preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
 				preparedStatement.setLong(5, accountAttribute.getAttributeType().getValueType().getType());
@@ -695,27 +698,26 @@ public final class OsAccountManager {
 				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
 					preparedStatement.setInt(8, accountAttribute.getValueInt());
 				} else {
-					preparedStatement.setNull(8, java.sql.Types.INTEGER);
+					preparedStatement.setNull(8, java.sql.Types.NULL);
 				}
 
 				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
 						|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
 					preparedStatement.setLong(9, accountAttribute.getValueLong());
 				} else {
-					preparedStatement.setNull(9, java.sql.Types.BIGINT);
+					preparedStatement.setNull(9, java.sql.Types.NULL);
 				}
 
 				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
 					preparedStatement.setDouble(10, accountAttribute.getValueDouble());
 				} else {
-					preparedStatement.setNull(10, java.sql.Types.DOUBLE);
+					preparedStatement.setNull(10, java.sql.Types.NULL);
 				}
 
 				connection.executeUpdate(preparedStatement);
 			
 			}
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
 			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
 		} 
 		
@@ -734,7 +736,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
+	public OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
 		
 		// do nothing if the account is not dirty.
 		if (!osAccount.isDirty()) {
@@ -768,11 +770,16 @@ public final class OsAccountManager {
 			if(osAccount.isAdmin().isPresent()) {
 				preparedStatement.setInt(6, osAccount.isAdmin().get() ? 1 : 0);
 			} else {
-				preparedStatement.setNull(6, Types.INTEGER);
+				preparedStatement.setNull(6, Types.NULL);
 			}
 			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
 
-			preparedStatement.setLong(8, osAccount.getCreationTime().orElse(null));
+			Optional<Long> creationTime = osAccount.getCreationTime();
+			if(creationTime.isPresent()) {
+				preparedStatement.setLong(8, osAccount.getCreationTime().get());
+			} else {
+				preparedStatement.setNull(8, Types.NULL);
+			}
 			preparedStatement.setLong(9, osAccount.getId());
 			
 			connection.executeUpdate(preparedStatement);
@@ -781,7 +788,6 @@ public final class OsAccountManager {
 			return osAccount;
 		}
 		catch (SQLException ex) {
-			Logger.getLogger(OsAccountManager.class.getName()).log(Level.SEVERE, null, ex);
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getUniqueIdWithinRealm().orElse("Unknown"), osAccount.getId()), ex);
 		}	finally {
 			db.releaseSingleUserCaseWriteLock();

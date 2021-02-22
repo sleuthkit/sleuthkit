@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 /**
  * Abstracts an OS user account. OS Accounts have a scope,
@@ -399,12 +398,16 @@ public final class OsAccount extends AbstractContent {
 	
 	
 	/**
-	 * Adds account attributes to the account. Attributes can be at
-	 * a host-level or domain-level (for domain-scoped accounts).
+	 * Adds account attributes to the account. Attributes can be at a host-level
+	 * or domain-level (for domain-scoped accounts).
 	 *
-	 * @param osAccountAttributes Collection of  attributes to add.
+	 * @param osAccountAttributes List of attributes to add.
+	 *
+	 * @throws TskCoreException
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public void addAttributes(Set<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
+	public void addAttributes(List<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
 		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes);
 		osAccountAttributes.addAll(osAccountAttributes);
 	}
