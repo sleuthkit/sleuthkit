@@ -27,7 +27,7 @@ import java.util.Objects;
 public final class Host {
 
 	private final long id;
-	private final String name;
+	private String name;
 	private HostStatus status;
 
 	Host(long id, String name) {
@@ -58,6 +58,15 @@ public final class Host {
 		return name;
 	}
 
+	/**
+	 * Sets the name for the host.
+	 * @param newName The new name.
+	 */
+	public void setName(String newName) {
+		this.name = newName;
+	}
+	
+	
 	/**
 	 * Gets the status for the host.
 	 *
