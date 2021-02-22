@@ -24,8 +24,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 
 /**
@@ -46,29 +48,6 @@ public final class PersonManager {
 		this.db = skCase;
 	}
 	
-	/** 
-	 * FOR TESTING ONLY
-	 * Simple method to add a person to a host in order to test
-	 * that deletion of persons is working as expected.
-	 * 
-	 * @param host_id
-	 * @param person_id 
-	 * 
-	 * @throws TskCoreException 
-	 */
-	public void addPersonToHost(long host_id, long person_id) throws TskCoreException {
-		String queryString = "UPDATE tsk_hosts SET person_id = " + person_id 
-				+ " WHERE id = " + host_id;
-		db.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();) {
-				s.executeUpdate(queryString);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting persons"), ex);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
-		}
-	}
 	
 	/**
 	 * Get all persons in the database.
@@ -230,6 +209,38 @@ public final class PersonManager {
 		} finally {
 			connection.close();
 			db.releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	
+	
+	/**
+	 * Get all hosts associated with the given person.
+	 *
+	 * @param person The person.
+	 *
+	 * @return The list of hosts corresponding to the person.
+	 *
+	 * @throws TskCoreException
+	 */
+	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
+		String queryString = "SELECT * FROM tsk_hosts WHERE person_id = " + person.getId();
+
+		List<Host> hosts = new ArrayList<>();
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			while (rs.next()) {
+				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+			}
+
+			return hosts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting host for data source: " + person.getName()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	

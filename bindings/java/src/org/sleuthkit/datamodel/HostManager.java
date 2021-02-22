@@ -87,13 +87,13 @@ public final class HostManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Create a host with given name. If the host already exists, the existing
 	 * host will be returned.
 	 *
-	 * @param name       Host name.
-	 * @param trans      Database transaction to use.
+	 * @param name  Host name.
+	 * @param trans Database transaction to use.
 	 *
 	 * @return Newly created host.
 	 *
@@ -104,7 +104,7 @@ public final class HostManager {
 		if (Strings.isNullOrEmpty(name)) {
 			throw new IllegalArgumentException("Host name is required.");
 		}
-		
+
 		CaseDbConnection connection = trans.getConnection();
 		Savepoint savepoint = null;
 		try {
@@ -133,7 +133,7 @@ public final class HostManager {
 					throw new TskCoreException(String.format("Error adding host with name = %s and unable to rollback", name), ex);
 				}
 			}
-			
+
 			// It may be the case that the host already exists, so try to get it.
 			Optional<Host> optHost = getHost(name, connection);
 			if (optHost.isPresent()) {
@@ -141,7 +141,7 @@ public final class HostManager {
 			}
 			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
 		}
-	}	
+	}
 
 	/**
 	 * Get all data sources associated with a given host.
@@ -176,7 +176,7 @@ public final class HostManager {
 	/**
 	 * Get host with given name.
 	 *
-	 * @param name        Host name to look for.
+	 * @param name Host name to look for.
 	 *
 	 * @return Optional with host. Optional.empty if no matching host is found.
 	 *
@@ -280,6 +280,36 @@ public final class HostManager {
 			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Set host's parent person.
+	 *
+	 * @param host   The host whose parent will be set.
+	 * @param person The person to be a parent or null to remove any parent
+	 *               person reference from this host.
+	 *
+	 * @throws IllegalArgumentException
+	 * @throws TskCoreException
+	 */
+	public void setPerson(Host host, Person person) throws IllegalArgumentException, TskCoreException {
+		if (host == null) {
+			throw new IllegalArgumentException("host must be non-null.");
+		}
+
+		String queryString = (person == null)
+				? String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getId())
+				: String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getId(), host.getId());
+
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();) {
+			s.executeUpdate(queryString);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting persons"), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 }
