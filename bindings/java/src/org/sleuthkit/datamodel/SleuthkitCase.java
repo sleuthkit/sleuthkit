@@ -3016,29 +3016,7 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer.
 	 */
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
-		return makeAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, null, imageCopyPath);
-	}	
-	
-	/**
-	 * Starts the multi-step process of adding an image data source to the case
-	 * by creating an object that can be used to control the process and get
-	 * progress messages from it.
-	 *
-	 * @param timeZone        The time zone of the image.
-	 * @param addUnallocSpace Set to true to create virtual files for
-	 *                        unallocated space in the image.
-	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
-	 *                        file systems.
-	 * @param host            The host for this image (may be null).
-	 * @param imageCopyPath   Path to which a copy of the image should be
-	 *                        written. Use the empty string to disable image
-	 *                        writing.
-	 *
-	 * @return An object that encapsulates control of adding an image via the
-	 *         SleuthKit native code layer.
-	 */
-	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, Host host, String imageCopyPath) {
-		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, host, imageCopyPath, this);
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, this);
 	}
 
 	/**
@@ -13701,7 +13679,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, null, "", this);
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
 	}
 
 	/**

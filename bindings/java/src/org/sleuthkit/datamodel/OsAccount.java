@@ -405,6 +405,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public void addAttributes(List<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
 		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes);
