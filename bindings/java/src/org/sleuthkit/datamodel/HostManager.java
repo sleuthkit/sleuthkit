@@ -87,13 +87,13 @@ public final class HostManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Create a host with given name. If the host already exists, the existing
 	 * host will be returned.
 	 *
-	 * @param name       Host name.
-	 * @param trans      Database transaction to use.
+	 * @param name  Host name.
+	 * @param trans Database transaction to use.
 	 *
 	 * @return Newly created host.
 	 *
@@ -104,7 +104,7 @@ public final class HostManager {
 		if (Strings.isNullOrEmpty(name)) {
 			throw new IllegalArgumentException("Host name is required.");
 		}
-		
+
 		CaseDbConnection connection = trans.getConnection();
 		Savepoint savepoint = null;
 		try {
@@ -133,7 +133,7 @@ public final class HostManager {
 					throw new TskCoreException(String.format("Error adding host with name = %s and unable to rollback", name), ex);
 				}
 			}
-			
+
 			// It may be the case that the host already exists, so try to get it.
 			Optional<Host> optHost = getHost(name, connection);
 			if (optHost.isPresent()) {
@@ -141,7 +141,119 @@ public final class HostManager {
 			}
 			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
 		}
-	}	
+	}
+
+	/**
+	 * Updates host in database based on the host object provided.
+	 *
+	 * @param newHost The host to be updated.
+	 *
+	 * @return The newly returned host.
+	 *
+	 * @throws TskCoreException
+	 * @throws IllegalArgumentException
+	 */
+	public Host updateHost(Host newHost) throws TskCoreException, IllegalArgumentException {
+		if (newHost == null) {
+			throw new IllegalArgumentException("No host argument provided.");
+		} else if (newHost.getName() == null) {
+			throw new IllegalArgumentException(String.format("Host with id %d has no name", newHost.getId()));
+		}
+
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = db.getConnection()) {
+			String hostInsertSQL = "UPDATE tsk_hosts \n"
+					+ "SET name = ? \n"
+					+ "WHERE id = ?";
+
+			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
+
+			preparedStatement.clearParameters();
+			preparedStatement.setString(1, newHost.getName());
+			preparedStatement.setLong(2, newHost.getId());
+
+			connection.executeUpdate(preparedStatement);
+
+			return getHost(newHost.getId(), connection).orElseThrow(()
+					-> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "))));
+
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error updating host with name = %s", newHost.getName()), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Delete a host. Name comparison is case-insensitive.
+	 *
+	 * @param name Name of the host to delete.
+	 *
+	 * @return The id of the deleted host or null if no host was deleted.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Long deleteHost(String name) throws TskCoreException {
+		if (name == null) {
+			throw new IllegalArgumentException("Name provided must be non-null");
+		}
+
+		// query to check if there are any dependencies on this host.  If so, don't delete.
+		String queryString = "SELECT COUNT(*) AS count FROM\n"
+				+ "(SELECT obj_id AS id, host_id FROM data_source_info\n"
+				+ "UNION\n"
+				+ "SELECT id, scope_host_id AS host_id FROM tsk_os_account_realms\n"
+				+ "UNION\n"
+				+ "SELECT id, host_id FROM tsk_os_account_attributes\n"
+				+ "UNION\n"
+				+ "SELECT id, host_id FROM tsk_os_account_instances\n"
+				+ "UNION\n"
+				+ "SELECT id, host_id FROM tsk_host_address_map) children\n"
+				+ "INNER JOIN tsk_hosts h ON children.host_id = h.id WHERE LOWER(h.name)=LOWER(?)";
+
+		String deleteString = "DELETE FROM tsk_hosts WHERE LOWER(name) = LOWER(?)";
+
+		CaseDbTransaction trans = this.db.beginTransaction();
+		try {
+			// check if host has any child data sources.  if so, don't delete and throw exception.
+			PreparedStatement query = trans.getConnection().getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			query.clearParameters();
+			query.setString(1, name);
+			try (ResultSet queryResults = query.executeQuery()) {
+				if (queryResults.next() && queryResults.getLong("count") > 0) {
+					throw new TskCoreException(String.format("Host with name '%s' has child data and cannot be deleted.", name));
+				}
+			}
+
+			// otherwise, delete the host
+			PreparedStatement update = trans.getConnection().getPreparedStatement(deleteString, Statement.RETURN_GENERATED_KEYS);
+			update.clearParameters();
+			update.setString(1, name);
+			int numUpdated = update.executeUpdate();
+
+			// get ids for deleted.
+			Long hostId = null;
+
+			if (numUpdated > 0) {
+				try (ResultSet updateResult = update.getGeneratedKeys()) {
+					if (updateResult.next()) {
+						hostId = updateResult.getLong(1);
+					}
+				}
+			}
+
+			trans.commit();
+			trans = null;
+
+			return hostId;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error deleting host with name %s", name), ex);
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
 
 	/**
 	 * Get all data sources associated with a given host.
@@ -152,10 +264,10 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Set<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
+	public List<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
 		String queryString = "SELECT * FROM data_source_info WHERE host_id = " + host.getId();
 
-		Set<DataSource> dataSources = new HashSet<>();
+		List<DataSource> dataSources = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -176,7 +288,7 @@ public final class HostManager {
 	/**
 	 * Get host with given name.
 	 *
-	 * @param name        Host name to look for.
+	 * @param name Host name to look for.
 	 *
 	 * @return Optional with host. Optional.empty if no matching host is found.
 	 *
@@ -219,6 +331,32 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
+		}
+	}
+
+	/**
+	 * Get host with given id.
+	 *
+	 * @param id	        The id of the host.
+	 * @param connection Database connection to use.
+	 *
+	 * @return Optional with host. Optional.empty if no matching host is found.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Optional<Host> getHost(long id, CaseDbConnection connection) throws TskCoreException {
+
+		String queryString = "SELECT * FROM tsk_hosts WHERE id = " + id;
+		try (Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+			} else {
+				return Optional.empty();
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting host with id: " + id), ex);
 		}
 	}
 
