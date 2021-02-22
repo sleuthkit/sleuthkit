@@ -160,9 +160,8 @@ public final class HostManager {
 			throw new IllegalArgumentException(String.format("Host with id %d has no name", newHost.getId()));
 		}
 
-		CaseDbConnection connection = this.db.getConnection();
 		db.acquireSingleUserCaseWriteLock();
-		try {
+		try (CaseDbConnection connection = db.getConnection()) {
 			String hostInsertSQL = "UPDATE tsk_hosts \n"
 					+ "SET name = ? \n"
 					+ "WHERE id = ?";
@@ -199,7 +198,19 @@ public final class HostManager {
 			throw new IllegalArgumentException("Name provided must be non-null");
 		}
 
-		String queryString = "SELECT h.id FROM data_source_info d INNER JOIN tsk_hosts h ON d.host_id = h.id WHERE LOWER(h.name)=LOWER(?)";
+		// query to check if there are any dependencies on this host.  If so, don't delete.
+		String queryString = "SELECT COUNT(*) AS count FROM\n"
+				+ "(SELECT obj_id AS id, host_id FROM data_source_info\n"
+				+ "UNION\n"
+				+ "SELECT id, scope_host_id AS host_id FROM tsk_os_account_realms\n"
+				+ "UNION\n"
+				+ "SELECT id, host_id FROM tsk_os_account_attributes\n"
+				+ "UNION\n"
+				+ "SELECT id, host_id FROM tsk_os_account_instances\n"
+				+ "UNION\n"
+				+ "SELECT id, host_id FROM tsk_host_address_map) children\n"
+				+ "INNER JOIN tsk_hosts h ON children.host_id = h.id WHERE LOWER(h.name)=LOWER('')";
+
 		String deleteString = "DELETE FROM tsk_hosts WHERE LOWER(name) = LOWER(?)";
 
 		CaseDbTransaction trans = this.db.beginTransaction();
@@ -209,8 +220,8 @@ public final class HostManager {
 			query.clearParameters();
 			query.setString(1, name);
 			try (ResultSet queryResults = query.executeQuery()) {
-				if (queryResults.next()) {
-					throw new TskCoreException(String.format("Host with name '%s' has child data sources and cannot be deleted.", name));
+				if (queryResults.next() && queryResults.getLong("count") > 0) {
+					throw new TskCoreException(String.format("Host with name '%s' has child data and cannot be deleted.", name));
 				}
 			}
 
@@ -233,7 +244,7 @@ public final class HostManager {
 
 			trans.commit();
 			trans = null;
-			
+
 			return hostId;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting host with name %s", name), ex);
