@@ -319,6 +319,30 @@ public final class Blackboard {
 	}
 	
 	/**
+	 * Get the analysis results by its artifact_obj_id.
+	 *
+	 * @param artifactObjId  Artifact object id of the analysis result.
+	 *
+	 * @return AnalysisResult.
+	 *
+	 * @throws TskCoreException If a critical error occurred within TSK core.
+	 */
+	AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
+		
+		String whereClause = " arts.artifact_obj_id = " + artifactObjId; 
+		List<AnalysisResult> results = getAnalysisResultsWhere(whereClause);
+		
+		if (results.isEmpty()) { // throw an error if no analysis result found by id.
+			throw new TskCoreException(String.format("Error getting analysis result with id = '%d'", artifactObjId));
+		}
+		if (results.size() > 1) { // should not happen - throw an error
+			throw new TskCoreException(String.format("Multiple analysis results found with id = '%d'", artifactObjId));
+		}
+		
+		return results.get(0);
+	}
+	
+	/**
 	 * Creates AnalysisResult objects for the result set of a table query of the
 	 * form "SELECT * FROM blackboard_artifacts JOIN WHERE XYZ".
 	 *
@@ -354,10 +378,12 @@ public final class Blackboard {
 				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 				+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
 			    + " data_artifacts.os_account_obj_id as os_account_obj_id " //NON-NLS
-				+ " FROM blackboard_artifacts AS artifacts, tsk_data_artifacts AS data_artifacts, blackboard_artifact_types AS types " //NON-NLS
-				+ " WHERE artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
-				+ " AND artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
-				+ " AND artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID(); //NON-NLS
+				+ " FROM blackboard_artifacts AS artifacts "
+				+ " JOIN blackboard_artifact_types AS types " //NON-NLS
+				+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
+				+ " LEFT JOIN tsk_data_artifacts AS data_artifacts "
+				+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
+				+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID(); //NON-NLS
 	
 	
 	/**
@@ -396,6 +422,32 @@ public final class Blackboard {
 			String whereClause =  " artifacts.artifact_type_id = " + artifactTypeID;
 			
 			return getDataArtifactsWhere(whereClause, connection);
+		}
+	}
+	
+	/**
+	 * Get the data artifact with the given artifact obj id.
+	 *
+	 * @param artifactObjId  Object id of the data artifact to get.
+	 *
+	 * @return Data artifact with given artifact object id.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	DataArtifact getDataArtifactById(long artifactObjId) throws TskCoreException {
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			String whereClause = " artifacts.artifact_obj_id = " + artifactObjId;
+
+			List<DataArtifact> artifacts = getDataArtifactsWhere(whereClause, connection);
+			if (artifacts.isEmpty()) { // throw an error if no analysis result found by id.
+				throw new TskCoreException(String.format("Error getting data artifact with id = '%d'", artifactObjId));
+			}
+			if (artifacts.size() > 1) { // should not happen - throw an error
+				throw new TskCoreException(String.format("Multiple data artifacts found with id = '%d'", artifactObjId));
+			}
+
+			return artifacts.get(0);
 		}
 	}
 	

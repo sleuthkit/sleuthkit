@@ -404,14 +404,54 @@ class CaseDatabaseFactory {
 	
 	private void createHostTables(Statement stmt) throws SQLException {
 
+		stmt.execute("CREATE TABLE tsk_persons (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "name TEXT NOT NULL, " // person name
+				+ "UNIQUE(name)) ");
+		
+		// References tsk_persons
 		stmt.execute("CREATE TABLE tsk_hosts (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "name TEXT NOT NULL, " // host name
 				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+				+ "person_id INTEGER, "
+				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "UNIQUE(name)) ");
 
+		stmt.execute("CREATE TABLE  tsk_host_addresses (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "address_type INTEGER NOT NULL, "
+				+ "address TEXT NOT NULL, "
+				+ "UNIQUE(address_type, address)) ");
+
+		stmt.execute("CREATE TABLE tsk_host_address_map  (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "addr_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", " // object id of the source where this mapping was found.
+				+ "time " + dbQueryHelper.getBigIntType() + ", " // time at which the mapping existed
+				+ "UNIQUE(host_id, addr_obj_id, time), "
+				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+		// stores associations between DNS name and IP address
+		stmt.execute("CREATE TABLE tsk_host_address_dns_ip_map (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "dns_address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "ip_address_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "source_obj_id " + dbQueryHelper.getBigIntType() + ", "
+				+ "time " + dbQueryHelper.getBigIntType() + ", " // time at which the mapping existed
+				+ "UNIQUE(dns_address_id, ip_address_id, time), "
+				+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id),"
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+
+		// maps an address to an artifact using it 
+		stmt.execute("CREATE TABLE  tsk_host_address_usage (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "addr_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
+				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) )");		
 	}
 		
-	// Must be called after tsk_hosts and tsk_objects have been created.
+	// Must be called after tsk_persons, tsk_hosts and tsk_objects have been created.
 	private void createAccountTables(Statement stmt) throws SQLException {
 		stmt.execute("CREATE TABLE account_types (account_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
@@ -444,7 +484,7 @@ class CaseDatabaseFactory {
 				+ "UNIQUE(realm_signature), "
 				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
 		
-		// References tsk_objects, tsk_os_account_realms
+		// References tsk_objects, tsk_os_account_realms, tsk_persons
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null
 				+ "full_name TEXT DEFAULT NULL, "	// full name, if available, may be null
@@ -454,9 +494,11 @@ class CaseDatabaseFactory {
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "admin INTEGER," // is admin account
 				+ "type INTEGER, "	// service/interactive
-				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "		
+				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "	
+				+ "person_id INTEGER, "	
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 		
 	}

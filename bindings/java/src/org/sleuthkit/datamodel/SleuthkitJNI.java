@@ -452,7 +452,7 @@ public class SleuthkitJNI {
 					host = skCase.getHostManager().getOrCreateHost(hostName);
 				}
 				TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks(), host);
-				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false, host.getId());
+				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
 				long id = finishAddImgNat(tskAutoDbPointer);
 				dbHelper.finish();
@@ -472,7 +472,6 @@ public class SleuthkitJNI {
 		 *                         unallocated space.
 		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
 		 *                         for FAT file systems.
-		 * @param host             The host for this image.
 		 * @param imageCopyPath    Path to which a copy of the image should be
 		 *                         written. Use the empty string to disable
 		 *                         image writing.
@@ -480,8 +479,8 @@ public class SleuthkitJNI {
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, Host host, String imageCopyPath, SleuthkitCase skCase) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, host, imageCopyPath, skCase);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath, SleuthkitCase skCase) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath, skCase);
 		}
 
 		/**
@@ -493,7 +492,6 @@ public class SleuthkitJNI {
 			private final String timeZone;
 			private final boolean addUnallocSpace;
 			private final boolean skipFatFsOrphans;
-			private Host host;
 			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
 			private long imageId = 0;
@@ -514,11 +512,10 @@ public class SleuthkitJNI {
 			 *                         written to. Use empty string to disable
 			 *                         image writing
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, Host host, String imageWriterPath, SleuthkitCase skCase) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath, SleuthkitCase skCase) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
 				this.skipFatFsOrphans = skipFatFsOrphans;
-				this.host = host;
 				this.imageWriterPath = imageWriterPath;
 				tskAutoDbPointer = 0;
 				this.isCanceled = false;
@@ -567,11 +564,7 @@ public class SleuthkitJNI {
 			public void run(String deviceId, Image image, int sectorSize, 
 					AddDataSourceCallbacks addDataSourceCallbacks) throws TskCoreException, TskDataException {	
 				
-				if (host == null) {
-					host = skCase.getHostManager().getOrCreateHost(image.getName() + " Host");
-				}
-				
-				dbHelper = new TskCaseDbBridge(skCase, addDataSourceCallbacks, host);
+				dbHelper = new TskCaseDbBridge(skCase, addDataSourceCallbacks, image.getHost());
 				getTSKReadLock();
 				try {
 					long imageHandle = 0;
@@ -581,7 +574,7 @@ public class SleuthkitJNI {
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
 							imageHandle = image.getImageHandle();
-							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans, host.getId());
+							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 						}
 						if (0 == tskAutoDbPointer) {
 							throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
@@ -1017,7 +1010,7 @@ public class SleuthkitJNI {
 				} else {
 					hostName = "Image_" + deviceId + " Host";
 				}
-				host = skCase.getHostManager().getOrCreateHost(hostName, transaction);
+				host = skCase.getHostManager().createHost(hostName, transaction);
 			}
 			
 			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize, 
@@ -2149,9 +2142,9 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	private static native long initAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans, long hostId) throws TskCoreException;
+	private static native long initAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
-	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans, long hostId) throws TskCoreException;
+	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
