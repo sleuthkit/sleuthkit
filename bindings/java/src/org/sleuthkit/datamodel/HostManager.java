@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import com.google.common.base.Strings;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Savepoint;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -103,7 +104,9 @@ public final class HostManager {
 		}
 		
 		CaseDbConnection connection = trans.getConnection();
+		Savepoint savepoint = null;
 		try {
+			savepoint = connection.getConnection().setSavepoint();
 			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
 
@@ -121,6 +124,14 @@ public final class HostManager {
 				}
 			}
 		} catch (SQLException ex) {
+			if (savepoint != null) {
+				try {
+					connection.getConnection().rollback(savepoint);
+				} catch (SQLException ex2) {
+					throw new TskCoreException(String.format("Error adding host with name = %s and unable to rollback", name), ex);
+				}
+			}
+			
 			// It may be the case that the host already exists, so try to get it.
 			Optional<Host> optHost = getHost(name, connection);
 			if (optHost.isPresent()) {
