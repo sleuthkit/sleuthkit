@@ -87,13 +87,13 @@ public final class HostManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Create a host with given name. If the host already exists, the existing
 	 * host will be returned.
 	 *
-	 * @param name       Host name.
-	 * @param trans      Database transaction to use.
+	 * @param name  Host name.
+	 * @param trans Database transaction to use.
 	 *
 	 * @return Newly created host.
 	 *
@@ -104,7 +104,7 @@ public final class HostManager {
 		if (Strings.isNullOrEmpty(name)) {
 			throw new IllegalArgumentException("Host name is required.");
 		}
-		
+
 		CaseDbConnection connection = trans.getConnection();
 		Savepoint savepoint = null;
 		try {
@@ -133,7 +133,7 @@ public final class HostManager {
 					throw new TskCoreException(String.format("Error adding host with name = %s and unable to rollback", name), ex);
 				}
 			}
-			
+
 			// It may be the case that the host already exists, so try to get it.
 			Optional<Host> optHost = getHost(name, connection);
 			if (optHost.isPresent()) {
@@ -141,7 +141,7 @@ public final class HostManager {
 			}
 			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
 		}
-	}	
+	}
 
 	/**
 	 * Updates host in database based on the host object provided.
@@ -219,7 +219,7 @@ public final class HostManager {
 			update.clearParameters();
 			update.setString(1, name);
 			int numUpdated = update.executeUpdate();
-			
+
 			// get ids for deleted.
 			Long hostId = null;
 
@@ -232,14 +232,15 @@ public final class HostManager {
 			}
 
 			trans.commit();
-			return hostId;
+			trans = null;
 			
-		} catch (TskCoreException ex) {
-			trans.rollback();
-			throw ex;
+			return hostId;
 		} catch (SQLException ex) {
-			trans.rollback();
 			throw new TskCoreException(String.format("Error deleting host with name %s", name), ex);
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
 		}
 	}
 
