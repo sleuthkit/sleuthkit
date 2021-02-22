@@ -264,10 +264,10 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Set<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
+	public List<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
 		String queryString = "SELECT * FROM data_source_info WHERE host_id = " + host.getId();
 
-		Set<DataSource> dataSources = new HashSet<>();
+		List<DataSource> dataSources = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
