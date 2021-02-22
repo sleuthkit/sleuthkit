@@ -209,7 +209,7 @@ public final class HostManager {
 				+ "SELECT id, host_id FROM tsk_os_account_instances\n"
 				+ "UNION\n"
 				+ "SELECT id, host_id FROM tsk_host_address_map) children\n"
-				+ "INNER JOIN tsk_hosts h ON children.host_id = h.id WHERE LOWER(h.name)=LOWER('')";
+				+ "INNER JOIN tsk_hosts h ON children.host_id = h.id WHERE LOWER(h.name)=LOWER(?)";
 
 		String deleteString = "DELETE FROM tsk_hosts WHERE LOWER(name) = LOWER(?)";
 
