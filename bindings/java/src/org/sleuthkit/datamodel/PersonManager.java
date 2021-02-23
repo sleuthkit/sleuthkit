@@ -24,10 +24,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 
 /**
@@ -47,14 +45,13 @@ public final class PersonManager {
 	PersonManager(SleuthkitCase skCase) {
 		this.db = skCase;
 	}
-	
-	
+
 	/**
 	 * Get all persons in the database.
-	 * 
+	 *
 	 * @return List of persons
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public List<Person> getPersons() throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_persons";
@@ -76,24 +73,24 @@ public final class PersonManager {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Update the database to match the given Person.
-	 * 
+	 *
 	 * @param person The person to update.
-	 * 
+	 *
 	 * @return person The person that was updated.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 * @throws IllegalArgumentException If name field of the person is empty.
 	 */
 	public Person updatePerson(Person person) throws TskCoreException {
-		
+
 		// Must have a non-empty name
 		if (Strings.isNullOrEmpty(person.getName())) {
 			throw new IllegalArgumentException("Name field for person with ID " + person.getId() + " is null/empty. Will not update database.");
 		}
-		
+
 		String queryString = "UPDATE tsk_persons"
 				+ " SET name = ? WHERE id = " + person.getId();
 		db.acquireSingleUserCaseWriteLock();
@@ -109,19 +106,18 @@ public final class PersonManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
-	 * Delete a person.
-	 * Name comparison is case-insensitive.
-	 * 
+	 * Delete a person. Name comparison is case-insensitive.
+	 *
 	 * @param name Name of the person to delete
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public void deletePerson(String name) throws TskCoreException {
 		String queryString = "DELETE FROM tsk_persons"
 				+ " WHERE LOWER(name) = LOWER(?)";
-		
+
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
@@ -134,14 +130,14 @@ public final class PersonManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
-	 * Get person with given name.
-	 * Name comparison is case-insensitive.
+	 * Get person with given name. Name comparison is case-insensitive.
 	 *
-	 * @param name        Person name to look for.
+	 * @param name Person name to look for.
 	 *
-	 * @return Optional with person. Optional.empty if no matching person is found.
+	 * @return Optional with person. Optional.empty if no matching person is
+	 *         found.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -152,11 +148,12 @@ public final class PersonManager {
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Create a person with specified name. If a person already exists with the
-	 * given name, it returns the existing person. Name comparison is case-insensitive.
+	 * given name, it returns the existing person. Name comparison is
+	 * case-insensitive.
 	 *
 	 * @param name	Person name.
 	 *
@@ -211,9 +208,7 @@ public final class PersonManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
-	
-	
-	
+
 	/**
 	 * Get all hosts associated with the given person.
 	 *
@@ -224,7 +219,9 @@ public final class PersonManager {
 	 * @throws TskCoreException
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
-		String queryString = "SELECT * FROM tsk_hosts WHERE person_id = " + person.getId();
+		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getId();
+		
+		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
 
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
@@ -243,8 +240,7 @@ public final class PersonManager {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
-	
+
 	/**
 	 * Get person for the given host or null if no associated person.
 	 *
@@ -252,7 +248,7 @@ public final class PersonManager {
 	 *
 	 * @return The parent person or empty if no parent person.
 	 *
-	 * @throws TskCoreException if  error occurs.
+	 * @throws TskCoreException if error occurs.
 	 */
 	public Optional<Person> getPerson(Host host) throws TskCoreException {
 
@@ -277,15 +273,15 @@ public final class PersonManager {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
-	 * Get person with given name.
-	 * Name comparison is case-insensitive.
+	 * Get person with given name. Name comparison is case-insensitive.
 	 *
 	 * @param name       Person name to look for.
 	 * @param connection Database connection to use.
 	 *
-	 * @return Optional with person. Optional.empty if no matching person is found.
+	 * @return Optional with person. Optional.empty if no matching person is
+	 *         found.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -308,6 +304,6 @@ public final class PersonManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting person with name = %s", name), ex);
 		}
-	}	
-	
+	}
+
 }
