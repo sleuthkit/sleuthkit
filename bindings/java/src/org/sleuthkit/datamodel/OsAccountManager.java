@@ -747,6 +747,7 @@ public final class OsAccountManager {
 				+ " ON attributes.host_id = hosts.id "
 				+ " WHERE os_account_obj_id = " + account.getId();
 
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -775,6 +776,9 @@ public final class OsAccountManager {
 			return attributes;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account attributes for account obj id = %d", account.getId()), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
