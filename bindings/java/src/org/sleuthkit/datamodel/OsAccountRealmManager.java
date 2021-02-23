@@ -614,7 +614,7 @@ public final class OsAccountRealmManager {
 			trans = db.beginTransaction();
 			
 			// Update accounts
-			
+			db.getOsAccountManager().mergeAccountsForRealms(source, dest, trans.getConnection());
 			
 			// Update the status
 			CaseDbConnection connection = trans.getConnection();
