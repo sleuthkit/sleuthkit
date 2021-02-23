@@ -1185,6 +1185,9 @@ public class BlackboardAttribute extends AbstractAttribute{
 		TSK_HOST(154, "TSK_HOST",
 				bundle.getString("BlackboardAttribute.tskHost.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_HOME_DIR(155, "TSK_HOME_DIR",
+				bundle.getString("BlackboardAttribute.tskHomeDir.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		;
 
 		private final int typeID;

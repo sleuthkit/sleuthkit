@@ -68,6 +68,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Category;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
@@ -215,6 +216,7 @@ public class SleuthkitCase {
 	private OsAccountRealmManager osAccountRealmManager;
 	private OsAccountManager osAccountManager;
 	private HostManager hostManager;
+	private PersonManager personManager;
 	private HostAddressManager hostAddressManager;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
@@ -397,6 +399,7 @@ public class SleuthkitCase {
 		osAccountRealmManager = new OsAccountRealmManager(this);
 		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
+		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this);
 	}
 
@@ -554,6 +557,17 @@ public class SleuthkitCase {
 		return hostManager;
 	}
 	
+	/**
+	 * Gets the Person manager for this case.
+	 *
+	 * @return The per case PersonManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public PersonManager getPersonManager() throws TskCoreException {
+		return personManager;
+	}
+		
 	/**
 	 * Gets the HostAddress manager for this case.
 	 *
@@ -2389,10 +2403,17 @@ public class SleuthkitCase {
 
 			// RAMAN TBD: need to add  UNIQUE (artifact_obj_id) constraint to blackboard_artifacts table for it to be FK
 			
-			// create host table.
+			// Create person table.
+			statement.execute("CREATE TABLE tsk_persons (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "name TEXT NOT NULL, " // person name
+					+ "UNIQUE(name)) ");
+			
+			// Create host table.
 			statement.execute("CREATE TABLE tsk_hosts (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "name TEXT NOT NULL, " // host name
 					+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+					+ "person_id INTEGER, "
+					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "UNIQUE(name)) ");
 
 			// Create OS Account and related tables 
@@ -2441,8 +2462,10 @@ public class SleuthkitCase {
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
 					+ "status INTEGER DEFAULT 0, " // to indicate if the account was merged/deleted
+					+ "person_id INTEGER, "
 					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
 
 			statement.execute("CREATE TABLE tsk_os_account_attributes (id " + primaryKeyType + " PRIMARY KEY, "
@@ -2995,29 +3018,7 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer.
 	 */
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
-		return makeAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, null, imageCopyPath);
-	}	
-	
-	/**
-	 * Starts the multi-step process of adding an image data source to the case
-	 * by creating an object that can be used to control the process and get
-	 * progress messages from it.
-	 *
-	 * @param timeZone        The time zone of the image.
-	 * @param addUnallocSpace Set to true to create virtual files for
-	 *                        unallocated space in the image.
-	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
-	 *                        file systems.
-	 * @param host            The host for this image (may be null).
-	 * @param imageCopyPath   Path to which a copy of the image should be
-	 *                        written. Use the empty string to disable image
-	 *                        writing.
-	 *
-	 * @return An object that encapsulates control of adding an image via the
-	 *         SleuthKit native code layer.
-	 */
-	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, Host host, String imageCopyPath) {
-		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, host, imageCopyPath, this);
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, this);
 	}
 
 	/**
@@ -5854,20 +5855,32 @@ public class SleuthkitCase {
 	 *                          core and file could not be queried
 	 */
 	public BlackboardArtifact getArtifactById(long id) throws TskCoreException {
+		
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ARTIFACT_OBJ_ID);
+			// get the artifact type.
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_TYPE_BY_ARTIFACT_OBJ_ID);
 			statement.clearParameters();
 			statement.setLong(1, id);
+			
 			rs = connection.executeQuery(statement);
-			List<BlackboardArtifact> artifacts = resultSetToArtifacts(rs);
-			if (artifacts.size() > 0) {
-				return artifacts.get(0);
-			} else {
-				return null;
+			if (!rs.next()) {
+				throw new TskCoreException("Error getting artifacttype for artifact with artifact_obj_id = " + id);
 			}
+		
+			// based on the artifact type category, get the analysis result or the data artifact
+			BlackboardArtifact.Type artifactType = getArtifactType(rs.getInt("artifact_type_id"));
+			switch (artifactType.getCategory()) {
+				case ANALYSIS_RESULT:
+					return blackboard.getAnalysisResultById(id);
+				case DATA_ARTIFACT:
+					return blackboard.getDataArtifactById(id);
+				default:
+					throw new TskCoreException(String.format("Unknown artifact category for artifact with artifact_obj_id = %d, and artifact type = %s", id, artifactType.getTypeName()));
+			}
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifacts by artifact_obj_id, artifact_obj_id = " + id, ex);
 		} finally {
@@ -6853,7 +6866,7 @@ public class SleuthkitCase {
 			FsContent fileSystemFile = addFileSystemFile(dataSourceObjId, fsObjId, fileName,
 					metaAddr, metaSeq, attrType, attrId, dirFlag, metaFlags, size,
 					ctime, crtime, atime, mtime, null, null, null, isFile, parent,
-					OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT,
+					OsAccount.NO_OWNER_ID, null,
 					Collections.emptyList(), transaction);
 			
 			transaction.commit();
@@ -6898,7 +6911,7 @@ public class SleuthkitCase {
 	 *                        directory).
 	 * @param ownerUid        UID of the file owner as found in the file system,
 	 *                        can be null.
-	 * @param osAccountObjId  Obj id of the owner OS account, may be null.
+	 * @param osAccount       OS account of owner, may be null.
 	 * @param fileAttributes  A list of file attributes. May be empty.
 	 * @param transaction     A caller-managed transaction within which the add
 	 *                        file operations are performed.
@@ -6915,7 +6928,7 @@ public class SleuthkitCase {
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, String sha256Hash, String mimeType,
 			boolean isFile, Content parent, String ownerUid,
-			Long osAccountObjId, List<Attribute> fileAttributes, 
+			OsAccount osAccount, List<Attribute> fileAttributes, 
 			CaseDbTransaction transaction) throws TskCoreException {
 
 		TimelineManager timelineManager = getTimelineManager();
@@ -6970,16 +6983,17 @@ public class SleuthkitCase {
 			final String extension = extractExtension(fileName);
 			statement.setString(24, extension);
 			statement.setString(25, ownerUid);
-			if (null != osAccountObjId) {
-				statement.setLong(26, osAccountObjId);
+			if (null != osAccount) {
+				statement.setLong(26, osAccount.getId());
 			} else {
 				statement.setNull(26, java.sql.Types.BIGINT); // osAccountObjId
 			}
 
 			connection.executeUpdate(statement);
 
+			Long osAccountId = (osAccount != null) ? osAccount.getId() : null;
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, ownerUid, osAccountObjId);
+					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, ownerUid, osAccountId);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
 			
@@ -6994,7 +7008,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, null, parentPath, mimeType,
-					extension, ownerUid, osAccountObjId, fileAttributes);
+					extension, ownerUid, osAccountId, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
@@ -12063,6 +12077,8 @@ public class SleuthkitCase {
 				+ "AND tsk_files.type = ? )"), //NON-NLS
 		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 		SELECT_ARTIFACT_BY_ARTIFACT_OBJ_ID("SELECT * FROM blackboard_artifacts WHERE artifact_obj_id = ? LIMIT 1"),
+		SELECT_ARTIFACT_TYPE_BY_ARTIFACT_OBJ_ID("SELECT artifact_type_id FROM blackboard_artifacts WHERE artifact_obj_id = ? LIMIT 1"),
+		
 		SELECT_ARTIFACT_BY_ARTIFACT_ID("SELECT * FROM blackboard_artifacts WHERE artifact_id = ? LIMIT 1"),
 		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
@@ -13665,7 +13681,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, null, "", this);
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
 	}
 
 	/**

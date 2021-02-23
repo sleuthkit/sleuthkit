@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2021-2021 Basis Technology Corp.
+ * Copyright 2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,27 +21,20 @@ package org.sleuthkit.datamodel;
 import java.util.Objects;
 
 /**
- *
- * Encapsulates a host.
+ * Encapsulates a person.
  */
-public final class Host {
+public final class Person {
 
 	private final long id;
 	private String name;
-	private HostStatus status;
 
-	Host(long id, String name) {
-		this(id, name, HostStatus.ACTIVE);
-	}
-
-	Host(long id, String name, HostStatus status) {
+	Person(long id, String name) {
 		this.id = id;
 		this.name = name;
-		this.status = status;
 	}
 
 	/**
-	 * Gets the row id for the host.
+	 * Gets the row id for the person.
 	 *
 	 * @return Row id.
 	 */
@@ -50,40 +43,23 @@ public final class Host {
 	}
 
 	/**
-	 * Gets the name for the host.
+	 * Gets the name for the person.
 	 *
-	 * @return Host name.
+	 * @return Person name.
 	 */
 	public String getName() {
 		return name;
 	}
-
+	
 	/**
-	 * Sets the name for the host.
+	 * Sets the name for the person.
+	 * Does not update the database.
+	 *
 	 * @param newName The new name.
 	 */
 	public void setName(String newName) {
 		this.name = newName;
-	}
-	
-	
-	/**
-	 * Gets the status for the host.
-	 *
-	 * @return Host status.
-	 */
-	public HostStatus getStatus() {
-		return status;
-	}
-	
-	/**
-	 * Sets the status for the host.
-	 *
-	 * @param status Host status.
-	 */
-	public void setStatus(HostStatus status) {
-		this.status = status;
-	}
+	}	
 		
 	@Override
 	public int hashCode() {
@@ -105,7 +81,7 @@ public final class Host {
 			return false;
 		}
 
-		final Host other = (Host) obj;
+		final Person other = (Person) obj;
 		if (this.id != other.id) {
 			return false;
 		}
@@ -117,39 +93,5 @@ public final class Host {
 		return true;
 	}
 
-	/**
-	 * Encapsulates status of host row.
-	 */
-	public enum HostStatus {
-		ACTIVE(0, "Active"),
-		MERGED(1, "Merged"),
-		DELETED(2, "Deleted");
-		
 
-		private final int id;
-		private final String name;
-
-		HostStatus(int id, String name) {
-			this.id = id;
-			this.name = name;
-		}
-
-		public int getId() {
-			return id;
-		}
-
-		String getName() {
-			return name;
-		}
-
-		public static HostStatus fromID(int typeId) {
-			for (HostStatus type : HostStatus.values()) {
-				if (type.ordinal() == typeId) {
-					return type;
-				}
-			}
-			return null;
-		}
-	}
-	
 }
