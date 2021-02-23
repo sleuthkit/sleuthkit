@@ -728,6 +728,61 @@ public final class OsAccountManager {
 	}
 	
 	/**
+	 * Get the OS account attributes for the given account.
+	 * 
+	 * @param account Account to get the attributes for.
+	 * 
+	 * @return List of attributes, may be an empty list.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	List<OsAccountAttribute> getOsAccountAttributes(OsAccount account) throws TskCoreException {
+		
+		String queryString = "SELECT attributes.os_account_obj_id as os_account_obj_id, attributes.host_id as host_id, attributes.source_obj_id as source_obj_id, "
+				+ " attributes.attribute_type_id as attribute_type_id,  attributes.value_type as value_type, attributes.value_byte as value_byte, "
+				+ " attributes.value_text as value_text, attributes.value_int32 as value_int32, attributes.value_int64 as value_int64, attributes.value_double as value_double, "
+				+ " hosts.id, hosts.name as host_name, hosts.status as host_status "
+				+ " FROM tsk_os_account_attributes as attributes"
+				+ "		LEFT JOIN tsk_hosts as hosts "
+				+ " ON attributes.host_id = hosts.id "
+				+ " WHERE os_account_obj_id = " + account.getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			List<OsAccountAttribute> attributes = new ArrayList<>();
+			while (rs.next()) {
+				
+				Host host = null;
+				long hostId = rs.getLong("host_id");
+				if (!rs.wasNull()) {
+					host = new Host(hostId, rs.getString("host_name"), Host.HostStatus.fromID(rs.getInt("host_status")));
+				}
+		
+				Content sourceContent = null;
+				long sourceObjId = rs.getLong("source_obj_id");
+				if (!rs.wasNull()) {
+					sourceContent = this.db.getContentById(sourceObjId);
+				}
+				BlackboardAttribute.Type attributeType = db.getAttributeType(rs.getInt("attribute_type_id"));
+				OsAccountAttribute attribute = new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"), 
+														rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
+														db, account, host, sourceContent );
+			
+				attributes.add(attribute);
+			} 
+			return attributes;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS account attributes for account obj id = %d", account.getId()), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	/**
 	 * Updates the database for the given OsAccount.
 	 *
 	 * @param osAccount   OsAccount that needs to be updated in the database.

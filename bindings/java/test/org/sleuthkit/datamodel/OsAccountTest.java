@@ -19,9 +19,11 @@
 package org.sleuthkit.datamodel;
 
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
@@ -503,7 +505,41 @@ public class OsAccountTest {
 		String hostname2 = "host2222";
 		Host host2 = caseDB.getHostManager().createHost(hostname2);
 		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image, OsAccount.OsAccountInstanceType.REFERENCED_ON);
-
+	
+		
+		List<OsAccountAttribute> accountAttributes = new ArrayList<>();
+		Long resetTime1 = 1611859999L;	
+		
+		// TBD: perhaps add some files to the case and then use one of the files as the source of attributes.
+		
+		OsAccountAttribute attrib1 = new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
+		accountAttributes.add(attrib1);
+		
+		String hint = "HINT";
+		OsAccountAttribute attrib2 = new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
+		accountAttributes.add(attrib2);
+		
+		// add attributes to account.
+		osAccount1.addAttributes(accountAttributes);
+		
+		
+		// now get the account with same sid,  and get its attribuites and verify.
+		Optional<OsAccount> existingAccount1 = caseDB.getOsAccountManager().getOsAccountByUniqueId(osAccount1.getUniqueIdWithinRealm().get(), osAccount1.getRealm());
+		List<OsAccountAttribute> existingAccountAttribs  = existingAccount1.get().getOsAccountAttributes();
+		
+		
+		assertEquals(existingAccountAttribs.size(), 2);
+		for (OsAccountAttribute attr: existingAccountAttribs) {
+			if (attr.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()) {
+				assertEquals(attr.getValueLong(), resetTime1.longValue() );
+				
+			} else if (attr.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()) {
+				assertEquals(attr.getValueString().equalsIgnoreCase(hint), true );
+			}
+			
+		}
+		
+		
 	}
 	
 	
