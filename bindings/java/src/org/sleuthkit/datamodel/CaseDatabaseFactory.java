@@ -496,7 +496,6 @@ class CaseDatabaseFactory {
 				+ "admin INTEGER," // is admin account
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
-				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "	
 				+ "person_id INTEGER, "	
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "

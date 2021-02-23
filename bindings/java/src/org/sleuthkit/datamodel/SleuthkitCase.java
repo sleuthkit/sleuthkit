@@ -2461,7 +2461,6 @@ public class SleuthkitCase {
 					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
-					+ "status INTEGER DEFAULT 0, " // to indicate if the account was merged/deleted
 					+ "person_id INTEGER, "
 					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
