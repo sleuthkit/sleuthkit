@@ -24,7 +24,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -196,7 +198,7 @@ public final class OsAccountManager {
 		}
 		
 		String signature = getAccountSignature(uniqueId, loginName);
-
+		OsAccount account;
 		db.acquireSingleUserCaseWriteLock();
 		try {
 			
@@ -230,10 +232,12 @@ public final class OsAccountManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			return new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature, accountStatus );
+			account = new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature, accountStatus );
 		}  finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+		fireCreationEvent(account);
+		return account;
 	}
 
 	/**
@@ -374,7 +378,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException         If there is an error getting the account.
 	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
-	OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
+	public OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return getOsAccount(osAccountObjId, connection);
@@ -722,6 +726,7 @@ public final class OsAccountManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 
+		fireChangeEvent(account);
 	}
 	
 	/**
@@ -782,7 +787,6 @@ public final class OsAccountManager {
 			connection.executeUpdate(preparedStatement);
 			
 			osAccount.resetDirty();
-			return osAccount;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getUniqueIdWithinRealm().orElse("Unknown"), osAccount.getId()), ex);
@@ -790,6 +794,8 @@ public final class OsAccountManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 		
+		fireChangeEvent(osAccount);
+		return osAccount;
 	}
 	/**
 	 * Takes in a result with a row from tsk_os_accounts table and creates 
@@ -828,6 +834,24 @@ public final class OsAccountManager {
 		}
 
 		return osAccount;
+	}
+	
+	/**
+	 * Fires an OsAccountAddedEvent for the given OsAccount.
+	 * 
+	 * @param account Newly created account. 
+	 */
+	private void fireCreationEvent(OsAccount account) {
+		db.fireTSKEvent(new OsAccountsAddedEvent(Collections.singletonList(account)));
+	}
+	
+	/**
+	 * Fires an OsAccountChangeEvent for the given OsAccount.
+	 * 
+	 * @param account Updated account.
+	 */
+	private void fireChangeEvent(OsAccount account) {
+		db.fireTSKEvent(new OsAccountsChangedEvent(Collections.singletonList(account)));
 	}
 	
 	/**
@@ -921,5 +945,57 @@ public final class OsAccountManager {
 			return Long.compare(this.datasourceObjId, other.datasourceObjId);
 		}
 
+	}
+	
+	/**
+	 * Event fired by OsAccountManager to indicate that a new OsAccount was
+	 * created.
+	 */
+	public static final class OsAccountsAddedEvent {
+		private final List<OsAccount> accountList;
+		
+		/**
+		 * Constructs a new AddedEvent
+		 * 
+		 * @param accountList List newly created accounts.
+		 */
+		OsAccountsAddedEvent(List<OsAccount> accountList) {
+			this.accountList = accountList;
+		}
+		
+		/**
+		 * Returns a list of the added OsAccounts.
+		 * 
+		 * @return List of OsAccounts.
+		 */
+		public List<OsAccount> getOsAcounts() {
+			return Collections.unmodifiableList(accountList);
+		}
+	}
+	
+	/**
+	 * Event fired by OsAccount Manager to indicate that an OsAccount was
+	 * updated.
+	 */
+	public static final class OsAccountsChangedEvent {
+		private final List<OsAccount> accountList;
+		
+		/**
+		 * Constructs a new ChangeEvent
+		 * 
+		 * @param accountList List newly created accounts.
+		 */
+		OsAccountsChangedEvent(List<OsAccount> accountList) {
+			this.accountList = accountList;
+		}
+		
+		/**
+		 * Returns a list of the updated OsAccounts.
+		 * 
+		 * @return List of OsAccounts.
+		 */
+		public List<OsAccount> getOsAcounts() {
+			return Collections.unmodifiableList(accountList);
+		}
 	}
 }
