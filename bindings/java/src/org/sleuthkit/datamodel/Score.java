@@ -22,10 +22,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /**
- * Encapsulates either an analysis result score or the final score of Content. 
+ * Encapsulates either an analysis result score or the aggregate score of Content. 
  * A score measures how likely the Content object is to be relevant to an investigation.
  * Relevance is determined by a series of analysis techniques, each of which has a score. 
- * The final score for an item is then determined based on its analysis results.
+ * The aggregate score for an item is then determined based on its analysis results.
  *
  * A score has two primary fields: Significance and Confidence. Significance is based on 
  * what the analysis technique is measuring and if its goal is to detect good, bad, or 
