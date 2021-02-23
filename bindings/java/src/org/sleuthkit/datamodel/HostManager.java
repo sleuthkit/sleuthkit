@@ -419,6 +419,41 @@ public final class HostManager {
 		}
 	}
 
+	
+	/**
+	 * Get person for the given host or null if no associated person.
+	 *
+	 * @param host The host.
+	 *
+	 * @return The parent person or empty if no parent person.
+	 *
+	 * @throws TskCoreException if error occurs.
+	 */
+	public Optional<Person> getPerson(Host host) throws TskCoreException {
+
+		String queryString = "SELECT p.id AS personId, p.name AS name FROM \n"
+				+ "tsk_persons p INNER JOIN tsk_hosts h\n"
+				+ "ON p.id = h.person_id \n"
+				+ "WHERE h.id = " + host.getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.of(new Person(rs.getLong("personId"), rs.getString("name")));
+			} else {
+				return Optional.empty();
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting person for host with ID = %d", host.getId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	
 	/**
 	 * Set host's parent person.
 	 *
