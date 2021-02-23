@@ -23,7 +23,7 @@ package org.sleuthkit.datamodel;
  * that was applied to some data (i.e. Content) to determine the data's
  * relevance.  The result should have a conclusion and a relevance 
  * score. The score of the AnalysisResult will be used to calculate
- * the final score of the parent data.  Additional metadata can be
+ * the aggregate score of the parent data.  Additional metadata can be
  * stored as BlackboardAttributes.
  *
  */
@@ -90,7 +90,7 @@ public class AnalysisResult extends BlackboardArtifact {
 
 	/**
 	 * Sets if this result is to be ignored when calculating
-     * the final score of the parent object. 
+     * the aggregate score of the parent object. 
 	 *
 	 * @param ignore if the result should be ignored or not.
 	 */
