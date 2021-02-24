@@ -497,8 +497,8 @@ public final class OsAccountManager {
         }
 			
 		// create the instance 
-		CaseDbConnection connection = this.db.getConnection();
 		db.acquireSingleUserCaseWriteLock();
+		CaseDbConnection connection = this.db.getConnection(); // not in try-with-resource because it's used in the catch block.
 		try {
 			String accountInsertSQL = "INSERT INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
 					+ " VALUES (?, ?, ?, ?)"; // NON-NLS

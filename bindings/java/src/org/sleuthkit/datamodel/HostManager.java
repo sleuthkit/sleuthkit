@@ -106,7 +106,6 @@ public final class HostManager {
 		CaseDbConnection connection = trans.getConnection();
 		Savepoint savepoint = null;
 		
-		db.acquireSingleUserCaseWriteLock();
 		try {
 			savepoint = connection.getConnection().setSavepoint();
 			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
@@ -140,9 +139,7 @@ public final class HostManager {
 				return optHost.get();
 			}
 			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
-		}
+		} 
 	}
 
 	/**
@@ -215,8 +212,6 @@ public final class HostManager {
 
 		String deleteString = "DELETE FROM tsk_hosts WHERE LOWER(name) = LOWER(?)";
 
-		db.acquireSingleUserCaseWriteLock();
-		
 		CaseDbTransaction trans = this.db.beginTransaction();
 		try {
 			// check if host has any child data sources.  if so, don't delete and throw exception.
@@ -256,7 +251,6 @@ public final class HostManager {
 			if (trans != null) {
 				trans.rollback();
 			}
-			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 

@@ -175,10 +175,11 @@ public final class OsAccountRealmManager {
 	 * Get a windows realm by the account SID, or the domain name.
 	 * The input SID is an user/group account SID. The domain SID is extracted from this incoming SID.
 	 * 
-	 * @param accountSid  Account SID, may be null.
-	 * @param realmName   Realm name, may be null only if accountSid is not
-	 *                    null.
+	 * @param accountSid    Account SID, may be null.
+	 * @param realmName     Realm name, may be null only if accountSid is not
+	 *                      null.
 	 * @param referringHost Referring Host.
+	 * @param connection    Database connection to use.
 	 * 
 	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
 	 * 
