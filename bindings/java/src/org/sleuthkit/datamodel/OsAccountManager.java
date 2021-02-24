@@ -842,7 +842,7 @@ public final class OsAccountManager {
 	 * @param account Newly created account. 
 	 */
 	private void fireCreationEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsAddedEvent(Collections.singletonList(account)));
+		db.fireTSKEvent(new OsAccountsCreationEvent(Collections.singletonList(account)));
 	}
 	
 	/**
@@ -851,7 +851,7 @@ public final class OsAccountManager {
 	 * @param account Updated account.
 	 */
 	private void fireChangeEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsChangedEvent(Collections.singletonList(account)));
+		db.fireTSKEvent(new OsAccountsUpdateEvent(Collections.singletonList(account)));
 	}
 	
 	/**
@@ -951,7 +951,7 @@ public final class OsAccountManager {
 	 * Event fired by OsAccountManager to indicate that a new OsAccount was
 	 * created.
 	 */
-	public static final class OsAccountsAddedEvent {
+	public static final class OsAccountsCreationEvent {
 		private final List<OsAccount> accountList;
 		
 		/**
@@ -959,7 +959,7 @@ public final class OsAccountManager {
 		 * 
 		 * @param accountList List newly created accounts.
 		 */
-		OsAccountsAddedEvent(List<OsAccount> accountList) {
+		OsAccountsCreationEvent(List<OsAccount> accountList) {
 			this.accountList = accountList;
 		}
 		
@@ -977,7 +977,7 @@ public final class OsAccountManager {
 	 * Event fired by OsAccount Manager to indicate that an OsAccount was
 	 * updated.
 	 */
-	public static final class OsAccountsChangedEvent {
+	public static final class OsAccountsUpdateEvent {
 		private final List<OsAccount> accountList;
 		
 		/**
@@ -985,7 +985,7 @@ public final class OsAccountManager {
 		 * 
 		 * @param accountList List newly created accounts.
 		 */
-		OsAccountsChangedEvent(List<OsAccount> accountList) {
+		OsAccountsUpdateEvent(List<OsAccount> accountList) {
 			this.accountList = accountList;
 		}
 		
