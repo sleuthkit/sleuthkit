@@ -25,12 +25,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -282,6 +280,7 @@ public final class OsAccountManager {
 							+ " WHERE " + whereHostClause
 							+ "		AND LOWER(accounts.unique_id) = LOWER('" + uniqueId + "')";
 		
+		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -299,6 +298,9 @@ public final class OsAccountManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for unique id = %s and host = %s", uniqueId, (host != null ? host.getName() : "null")), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -320,6 +322,7 @@ public final class OsAccountManager {
 				+ " WHERE LOWER(unique_id) = LOWER('" + uniqueId + "')" 
 				+ " AND realm_id = " + realm.getId();
 		
+		db.acquireSingleUserCaseReadLock();
 		try (  CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -331,6 +334,9 @@ public final class OsAccountManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for realm = %s and uniqueId = %s.", (realm != null) ? realm.getSignature() : "NULL", uniqueId), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -351,6 +357,7 @@ public final class OsAccountManager {
 				+ " WHERE LOWER(login_name) = LOWER('" + loginName + "')" 
 				+ " AND realm_id = " + realm.getId();
 		
+		db.acquireSingleUserCaseReadLock();
 		try (	CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -362,6 +369,8 @@ public final class OsAccountManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for realm = %s and loginName = %s.", (realm != null) ? realm.getSignature() : "NULL", loginName), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -398,6 +407,7 @@ public final class OsAccountManager {
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE os_account_obj_id = " + osAccountObjId;
 
+		db.acquireSingleUserCaseReadLock();
 		try (	Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -416,6 +426,9 @@ public final class OsAccountManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting account with obj id = %d ", osAccountObjId), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -439,6 +452,7 @@ public final class OsAccountManager {
 				+ " AND data_source_obj_id = " + dataSourceObjId
 				+ " AND host_id = " + host.getId();
 
+		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -448,6 +462,8 @@ public final class OsAccountManager {
 			return Optional.empty();
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting account instance with account obj id = %d, data source obj id = %d, host  = %s ", osAccount.getId(), dataSourceObjId, host.getName()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -532,6 +548,8 @@ public final class OsAccountManager {
 				+ " ON instances.os_account_obj_id = accounts.os_account_obj_id "
 				+ " WHERE instances.host_id = " + host.getId();
 
+		
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -550,6 +568,9 @@ public final class OsAccountManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS accounts for host id = %d", host.getId()), ex);
 		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
+		}
 	}
 	
 	/**
@@ -561,6 +582,7 @@ public final class OsAccountManager {
 	public List<OsAccount> getAccounts() throws TskCoreException{
 		String queryString = "SELECT * FROM tsk_os_accounts";
 
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -578,6 +600,9 @@ public final class OsAccountManager {
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS accounts"), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 		

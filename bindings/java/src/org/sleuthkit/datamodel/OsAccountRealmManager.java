@@ -278,6 +278,7 @@ public final class OsAccountRealmManager {
 		String queryString = REALM_QUERY_STRING
 					+ " WHERE realms.id = " + id;
 		
+		db.acquireSingleUserCaseReadLock();
 		try (	Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 			OsAccountRealm accountRealm = null;
@@ -290,6 +291,9 @@ public final class OsAccountRealmManager {
 			return accountRealm;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error running the realms query = %s", queryString), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -316,6 +320,7 @@ public final class OsAccountRealmManager {
 						+ " AND " + whereHostClause
 						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
 				    
+		db.acquireSingleUserCaseReadLock();
 		try (	Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -337,8 +342,10 @@ public final class OsAccountRealmManager {
 			} 
 			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error running the realms query = %s with realmaddr = %s and host name = %s", 
-														queryString, realmAddr, (host != null ? host.getName() : "Null")  ), ex);
+			throw new TskCoreException(String.format("Error running the realms query = %s with realmaddr = %s and host name = %s",
+					queryString, realmAddr, (host != null ? host.getName() : "Null")), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -356,14 +363,15 @@ public final class OsAccountRealmManager {
 		
 		// If a host is specified, we want to match the realm with matching name and specified host, or a realm with matching name and no host.
 		// If no host is specified, then we return the first realm with matching name.
-		String whereHostClause = (host == null) 
-							? " 1 = 1 " 
-							: " ( realms.scope_host_id = " + host.getId() + " OR realms.scope_host_id IS NULL ) ";
+		String whereHostClause = (host == null)
+				? " 1 = 1 "
+				: " ( realms.scope_host_id = " + host.getId() + " OR realms.scope_host_id IS NULL ) ";
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
-				+ " AND " + whereHostClause 
+				+ " AND " + whereHostClause
 				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
-				
+
+		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 			
@@ -387,6 +395,8 @@ public final class OsAccountRealmManager {
 			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting account realm for with name = %s", realmName), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -408,6 +418,7 @@ public final class OsAccountRealmManager {
 				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
 				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ SPECIAL_WINDOWS_REALM_ADDR + "') ";
 
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -416,6 +427,9 @@ public final class OsAccountRealmManager {
 			return rs.next();
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting account realm for with host = %s", host.getName()), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 
 	}
@@ -452,6 +466,7 @@ public final class OsAccountRealmManager {
 //				+ "		LEFT JOIN tsk_hosts as hosts"
 //				+ " ON realms.scope_host_id = hosts.id";
 //
+//		db.acquireSingleUserCaseReadLock();
 //		try (CaseDbConnection connection = this.db.getConnection();
 //				Statement s = connection.createStatement();
 //				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -472,6 +487,9 @@ public final class OsAccountRealmManager {
 //			return accountRealms;
 //		} catch (SQLException ex) {
 //			throw new TskCoreException(String.format("Error running the realms query = %s", queryString), ex);
+//		}
+//		finally {
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 	

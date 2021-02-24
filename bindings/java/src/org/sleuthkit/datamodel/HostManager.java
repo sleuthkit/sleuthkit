@@ -105,6 +105,8 @@ public final class HostManager {
 
 		CaseDbConnection connection = trans.getConnection();
 		Savepoint savepoint = null;
+		
+		db.acquireSingleUserCaseWriteLock();
 		try {
 			savepoint = connection.getConnection().setSavepoint();
 			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
@@ -138,6 +140,8 @@ public final class HostManager {
 				return optHost.get();
 			}
 			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -211,6 +215,8 @@ public final class HostManager {
 
 		String deleteString = "DELETE FROM tsk_hosts WHERE LOWER(name) = LOWER(?)";
 
+		db.acquireSingleUserCaseWriteLock();
+		
 		CaseDbTransaction trans = this.db.beginTransaction();
 		try {
 			// check if host has any child data sources.  if so, don't delete and throw exception.
@@ -250,6 +256,7 @@ public final class HostManager {
 			if (trans != null) {
 				trans.rollback();
 			}
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -293,12 +300,9 @@ public final class HostManager {
 	 * @throws TskCoreException
 	 */
 	public Optional<Host> getHost(String name) throws TskCoreException {
-		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			return getHost(name, connection);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
-		}
+		} 
 	}
 
 	/**
@@ -315,6 +319,8 @@ public final class HostManager {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)";
+		
+		db.acquireSingleUserCaseReadLock();
 		try {
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS);
 			s.clearParameters();
@@ -329,6 +335,9 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -345,6 +354,8 @@ public final class HostManager {
 	private Optional<Host> getHost(long id, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts WHERE id = " + id;
+		
+		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -355,6 +366,9 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with id: " + id), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
