@@ -195,15 +195,26 @@ public final class OsAccountRealmManager {
 			throw new IllegalArgumentException("Realm address or name is required get a realm.");
 		}
 		
-		// If a accountSID is provided , search for realm by addr.
+		// If an accountSID is provided search for realm by addr.
 		if (!Strings.isNullOrEmpty(accountSid)) {
 			// get realm addr from the account SID.
 			String realmAddr = getWindowsRealmAddress(accountSid);
-			return this.getRealmByAddr(realmAddr, referringHost, connection);
+			Optional<OsAccountRealm> realm = getRealmByAddr(realmAddr, referringHost, connection);
+			if (realm.isPresent()) {
+				return realm;
+			}
 		}
 
-		// No realm addr, Search  by name	
-		return this.getRealmByName(realmName, referringHost, connection);
+		// No realm addr so search by name.
+		Optional<OsAccountRealm> realm = getRealmByName(realmName, referringHost, connection);
+		if (realm.isPresent() && !Strings.isNullOrEmpty(accountSid)) {
+			// If we were given an accountSID, make sure there isn't one set on the matching realm.
+			// We know it won't match because the previous search by SID failed.
+			if (realm.get().getRealmAddr().isPresent()) {
+				return Optional.empty();
+			}
+		}
+		return realm;
 	}
 	
 	/**
