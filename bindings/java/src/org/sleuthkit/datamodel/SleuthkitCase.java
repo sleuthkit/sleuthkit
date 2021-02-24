@@ -4590,7 +4590,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
 	 */
-	private BlackboardAttribute.Type getAttributeType(int typeID) throws TskCoreException {
+	BlackboardAttribute.Type getAttributeType(int typeID) throws TskCoreException {
 		if (this.typeIdToAttributeTypeMap.containsKey(typeID)) {
 			return this.typeIdToAttributeTypeMap.get(typeID);
 		}
