@@ -1546,7 +1546,7 @@ public class BlackboardArtifact implements Content {
 	 * data.
 	 */
 	public enum Category {
-
+                // NOTE: The schema code defaults to '0', so that code must be updated too if DATA_ARTIFACT changes from being 0
 		DATA_ARTIFACT(0, "DATA_ARTIFACT", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.DataArtifact")), // artifact is data that is directly/indirectly extracted from a data source.
 		ANALYSIS_RESULT(1, "ANALYSIS_RESULT", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.AnalysisResult")); // artifacts represents outcome of analysis of data.
 
