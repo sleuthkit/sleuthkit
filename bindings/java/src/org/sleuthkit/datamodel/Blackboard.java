@@ -283,9 +283,12 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<AnalysisResult> getAnalysisResultsWhere(String whereClause) throws TskCoreException {
-		
+		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			return getAnalysisResultsWhere(whereClause, connection);
+		}
+		finally {
+			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
 	/**
@@ -305,7 +308,6 @@ public final class Blackboard {
 		final String queryString = ANALYSIS_RESULT_QUERY_STRING
 				+ " AND " + whereClause;
 							
-		caseDb.acquireSingleUserCaseReadLock();
 		try (	Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
 			
@@ -313,8 +315,6 @@ public final class Blackboard {
 			return analysisResults;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting analysis results for WHERE caluse = '%s'", whereClause), ex);
-		} finally {
-			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -398,11 +398,15 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<DataArtifact> getDataArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = "artifacts.data_source_obj_id = " + dataSourceObjId
 					+ " AND artifacts.artifact_type_id = " + artifactTypeID;
 
 			return getDataArtifactsWhere(whereClause, connection);
+		}
+		finally {
+			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -418,10 +422,14 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<DataArtifact> getDataArtifacts(int artifactTypeID) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause =  " artifacts.artifact_type_id = " + artifactTypeID;
 			
 			return getDataArtifactsWhere(whereClause, connection);
+		}
+		finally {
+			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -436,6 +444,7 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	DataArtifact getDataArtifactById(long artifactObjId) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = " artifacts.artifact_obj_id = " + artifactObjId;
 
@@ -448,6 +457,8 @@ public final class Blackboard {
 			}
 
 			return artifacts.get(0);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
 	

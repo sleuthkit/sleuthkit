@@ -7614,7 +7614,7 @@ public class SleuthkitCase {
 			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
 			final String extension = extractExtension(derivedFile.getName());
 			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
-					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, derivedFile.getOwnerUid().orElse(null), derivedFile.getOsAccountObjId().orElse(null));
+					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, derivedFile.getOwnerUid().orElse(null), derivedFile.getOsAccountObjectId().orElse(null));
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
