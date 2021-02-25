@@ -199,7 +199,7 @@ public class HostAddressManager {
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, host.getId());
 			preparedStatement.setLong(2, hostAddress.getId());
-				preparedStatement.setLong(3, source.getId());
+			preparedStatement.setLong(3, source.getId());
 			if (time != null) {
 				preparedStatement.setLong(4, time);
 			} else {
