@@ -113,30 +113,32 @@ public class ArtifactTest {
 		fileAttributes2.add(new Attribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SSID), "S-1-15-3443-2233"));
 
 
+		long dataSourceObjectId = fs.getDataSource().getId();
+		
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
 		// Add a root folder
-		FsContent _root = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "", 0, 0,
+		FsContent _root = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, fs, null, null, Collections.emptyList(), trans);
 
 		// Add a dir - no attributes 
-		FsContent _windows = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "Windows", 0, 0,
+		FsContent _windows = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "Windows", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, _root, "S-1-5-80-956008885-3418522649-1831038044-1853292631-227147846", null, Collections.emptyList(), trans);
 
 		// Add dllhosts.exe file to the above dir
-		FsContent _dllhosts = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "dllhosts.exe", 0, 0,
+		FsContent _dllhosts = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "dllhosts.exe", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short) 0, 200, 0, 0, 0, 0, testMD5, null, "Applicatione/Exe", true, _windows, "S-1-5-32-544", null, fileAttributes, trans);
 
 		// add another no attribute file to the same folder
-		FsContent _nofile = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "nofile.exe", 0, 0,
+		FsContent _nofile = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "nofile.exe", 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 				(short) 0, 200, 0, 0, 0, 0, null, null, "Applicatione/Exe", true, _windows, null, null, Collections.emptyList(), trans);
 		
 		// add another no attribute file to same folder
-		FsContent _abcTextFile = caseDB.addFileSystemFile(fs.getDataSource().getId(), fs.getId(), "abc.txt", 0, 0,
+		FsContent _abcTextFile = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "abc.txt", 0, 0,
 					TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 					(short) 0, 200, 0, 0, 0, 0, null, null, "Text/Plain", true, _windows, null, null, Collections.emptyList(), trans);
 			
