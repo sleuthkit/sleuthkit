@@ -1346,8 +1346,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * 
 	 * @return Optional with Object id of the os account, or Optional.empty.
 	 */
-	Optional<Long> getOsAccountObjId() {
-		return Optional.of(osAccountObjId);
+	public Optional<Long> getOsAccountObjId() {
+		return Optional.ofNullable(osAccountObjId);
 	}
 	
 	/**
