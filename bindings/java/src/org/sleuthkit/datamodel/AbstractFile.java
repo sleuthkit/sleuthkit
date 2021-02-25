@@ -138,9 +138,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param mimeType           The MIME type of the file, can be null.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
-	 * @param ownerUid			 Owner uid/SID, can be null if not available.
-	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
-	 * 
+	 * @param ownerUid           Owner uid/SID, can be null if not available.
+	 * @param osAccountObjectId	 Object Id of the owner OsAccount, may be null.
+	 *
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
@@ -160,7 +160,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String mimeType,
 			String extension,
 			String ownerUid,
-			Long osAccountObjId,
+			Long osAccountObjectId,
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
@@ -194,7 +194,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
 		this.ownerUid = ownerUid;
-		this.osAccountObjId = osAccountObjId;
+		this.osAccountObjId = osAccountObjectId;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1342,11 +1342,11 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 		
 	/**
-	 * Get the obj id of the owner account. 
+	 * Get the Object Id of the owner account. 
 	 * 
-	 * @return Optional with Object id of the os account, or Optional.empty.
+	 * @return Optional with Object Id of the OsAccount, or Optional.empty.
 	 */
-	public Optional<Long> getOsAccountObjId() {
+	public Optional<Long> getOsAccountObjectId() {
 		return Optional.ofNullable(osAccountObjId);
 	}
 	
