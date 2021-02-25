@@ -119,7 +119,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	HostAddress createHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
+	public HostAddress createHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
 		CaseDbConnection connection = this.db.getConnection();
 		try {
 			return HostAddressManager.this.createHostAddress(type, address, connection);
@@ -189,7 +189,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void mapHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
+	public void mapHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
 
 		String insertSQL = insertOrIgnore(" INTO tsk_host_address_map(host_id, addr_obj_id, source_obj_id, time) "
 				+ " VALUES(?, ?, ?, ?) ");
@@ -305,7 +305,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void addHostNameToIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source) throws TskCoreException {
+	public void addHostNameToIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source) throws TskCoreException {
 
 		if (dnsNameAddress.getAddressType() != HostAddress.HostAddressType.HOSTNAME) {
 			throw new IllegalArgumentException("A host name address is expected.");
@@ -414,7 +414,7 @@ public class HostAddressManager {
 	 * @param artifact    The artifact to associate the host address with.
 	 * @param hostAddress The host address.
 	 */
-	void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
+	public void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
 		final String insertSQL = insertOrIgnore(" INTO tsk_host_address_usage(addr_obj_id, artifact_obj_id) "
 				+ " VALUES(" + hostAddress.getId() + ", " + artifact.getId() + ") ");
 
