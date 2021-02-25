@@ -635,6 +635,9 @@ public final class OsAccountRealmManager {
 			} catch (SQLException ex) {
 				throw new TskCoreException ("Error updating status of realm with id: " + source.getId());
 			}
+			
+			trans.commit();
+			trans = null;
 		} finally {
 			if (trans != null) {
 				trans.rollback();

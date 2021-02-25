@@ -554,10 +554,13 @@ public final class OsAccountManager {
 	}
 	
 	void mergeAccountsForRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm, CaseDbConnection connection) throws TskCoreException {
+		System.out.println("### Merging accounts from realm " + sourceRealm.getId() + " into realm " + destRealm.getId());
 		Set<OsAccount> destinationAccounts = getAccounts(destRealm, connection);
 		Set<OsAccount> sourceAccounts = getAccounts(sourceRealm, connection);
 		
 		for (OsAccount sourceAccount : sourceAccounts) {
+			System.out.println("### Processing account " + sourceAccount.getId());
+			
 			
 			// First a check for the case where the source account has both the login name and unique ID set and
 			// we have separate matches in the destination account for both. If we find this case, we need to first merge
@@ -569,7 +572,9 @@ public final class OsAccountManager {
 								|| p.getLoginName().equals(sourceAccount.getLoginName()))
 						.collect(Collectors.toList());
 				if (duplicateDestAccounts.size() > 1) {
+					System.out.println("### Found destination accounts that need to be combined due to source account " + sourceAccount.getId());
 					OsAccount combinedDestAccount = duplicateDestAccounts.get(0);
+					duplicateDestAccounts.remove(combinedDestAccount);
 					for (OsAccount dupeDestAccount : duplicateDestAccounts) {
 						mergeAccounts(dupeDestAccount, combinedDestAccount, connection);
 					}
@@ -603,9 +608,11 @@ public final class OsAccountManager {
 			
 			// If we found a match, merge the accounts. Otherwise simply update the realm id
 			if (matchingDestAccount != null) {
+				System.out.println("### Found a match - will merge account " + sourceAccount.getId() + " into " + matchingDestAccount.getId());
 				mergeAccounts(sourceAccount, matchingDestAccount, connection);
 			} else {
-				String query = "UPDATE tsk_os_accounts SET realm_id = " + destRealm.getId() + " WHERE os_account_obj_id = " + 1;
+				System.out.println("### Did not find a match - move account " + sourceAccount.getId() + " into realm " + destRealm.getId());
+				String query = "UPDATE tsk_os_accounts SET realm_id = " + destRealm.getId() + " WHERE os_account_obj_id = " + sourceAccount.getId();
 				try (Statement s = connection.createStatement()) {
 					System.out.println("### Query: " + query);
 					s.executeUpdate(query);
@@ -629,12 +636,14 @@ public final class OsAccountManager {
 	 * @throws TskCoreException 
 	 */
 	private void mergeAccounts(OsAccount sourceAccount, OsAccount destAccount, CaseDbConnection connection) throws TskCoreException {
-		// Merge data from sourceAccount into matchingDestAccount
+		// Merge data from sourceAccount into matchingDestAccount. Does not update the database.
+		System.out.println("### Merging account " + sourceAccount.getId() + " into account " + destAccount.getId());
 		mergeOsAccountObjects(sourceAccount, destAccount, connection);
 		
-		// Update references
 		String query = "";
 		try (Statement s = connection.createStatement()) {
+			
+			// Update all references
 			query = makeOsAccountUpdateQuery("tsk_os_account_attributes", sourceAccount, destAccount);
 			System.out.println("### Query: " + query);
 			s.executeUpdate(query);
@@ -666,11 +675,19 @@ public final class OsAccountManager {
 			System.out.println("### Query: " + query);
 			s.executeUpdate(query);		
 			
+			// Delete the source account
+			query = "DELETE FROM tsk_os_accounts WHERE os_account_obj_id = " + sourceAccount.getId();
+			System.out.println("### Query: " + query);
+			s.executeUpdate(query);	
+			
+			// Update the destination account. Note that this must be done after deleting
+			// the source account to prevent conflicts when merging two accounts in the
+			// same realm.
+			updateAccount(destAccount, connection);
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error executing SQL update: " + query, ex);
 		}
-		
-		// MERGETODO mark sourceAccount as merged
 	}
 	
 	private String makeOsAccountUpdateQuery(String tableName, OsAccount sourceAccountInstance, OsAccount destAccount) {
@@ -678,37 +695,37 @@ public final class OsAccountManager {
 	}
 	
 	/**
-	 * Copy all fields from sourceAccountInstance that are not set in matchingDestAccount
+	 * Copy all fields from sourceAccount that are not set in matchingDestAccount.
+	 * Does not update the database.
 	 * 
-	 * @param sourceAccountInstance
+	 * @param sourceAccount
 	 * @param destAccount 
 	 */
-	private void mergeOsAccountObjects(OsAccount sourceAccountInstance, OsAccount destAccount, CaseDbConnection connection) throws TskCoreException {
+	private void mergeOsAccountObjects(OsAccount sourceAccount, OsAccount destAccount, CaseDbConnection connection) throws TskCoreException {
 		// Copy any fields that aren't set in the destination to the value from the source account.
-		if (!destAccount.getLoginName().isPresent() && sourceAccountInstance.getLoginName().isPresent()) {
-			destAccount.setLoginName(sourceAccountInstance.getLoginName().get());
+		if (!destAccount.getLoginName().isPresent() && sourceAccount.getLoginName().isPresent()) {
+			System.out.println("### Copying login name " + sourceAccount.getLoginName().get() + " into account " + destAccount.getId());
+			destAccount.setLoginName(sourceAccount.getLoginName().get());
 		}
 		
-		if (!destAccount.getUniqueIdWithinRealm().isPresent() && sourceAccountInstance.getUniqueIdWithinRealm().isPresent()) {
-			destAccount.setUniqueId(sourceAccountInstance.getUniqueIdWithinRealm().get());
+		if (!destAccount.getUniqueIdWithinRealm().isPresent() && sourceAccount.getUniqueIdWithinRealm().isPresent()) {
+			System.out.println("### Copying unique id " + sourceAccount.getUniqueIdWithinRealm().get() + " into account " + destAccount.getId());
+			destAccount.setUniqueId(sourceAccount.getUniqueIdWithinRealm().get());
 		}
 		
-		if (!destAccount.getFullName().isPresent() && sourceAccountInstance.getFullName().isPresent()) {
-			destAccount.setFullName(sourceAccountInstance.getFullName().get());
+		if (!destAccount.getFullName().isPresent() && sourceAccount.getFullName().isPresent()) {
+			destAccount.setFullName(sourceAccount.getFullName().get());
 		}
 		
-		if (!destAccount.isAdmin().isPresent() && sourceAccountInstance.isAdmin().isPresent()) {
-			destAccount.setIsAdmin(sourceAccountInstance.isAdmin().get());
+		if (!destAccount.isAdmin().isPresent() && sourceAccount.isAdmin().isPresent()) {
+			destAccount.setIsAdmin(sourceAccount.isAdmin().get());
 		}
 		
-		if (!destAccount.getCreationTime().isPresent() && sourceAccountInstance.getCreationTime().isPresent()) {
-			destAccount.setCreationTime(sourceAccountInstance.getCreationTime().get());
+		if (!destAccount.getCreationTime().isPresent() && sourceAccount.getCreationTime().isPresent()) {
+			destAccount.setCreationTime(sourceAccount.getCreationTime().get());
 		}
 		
 		// MERGETODO handle persons
-		
-		updateAccount(destAccount, connection);
-		updateAccount(sourceAccountInstance, connection);
 	}
 	
 	/**
