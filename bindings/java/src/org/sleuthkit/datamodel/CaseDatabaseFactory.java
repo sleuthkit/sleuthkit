@@ -518,7 +518,7 @@ class CaseDatabaseFactory {
 				+ "value_double NUMERIC(20, 10), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), " 
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
-				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "		
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL, "		
 				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");	
 		
 		// References tsk_os_accounts, tsk_objects, tsk_hosts
