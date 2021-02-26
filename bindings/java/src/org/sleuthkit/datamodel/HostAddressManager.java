@@ -92,6 +92,7 @@ public class HostAddressManager {
 			queryString += " AND address_type = " + type.getId();
 		}
 
+		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -102,6 +103,8 @@ public class HostAddressManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host address with type = %s and address = %s", type.getName(), address), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -116,7 +119,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	HostAddress createHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
+	public HostAddress createHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
 		CaseDbConnection connection = this.db.getConnection();
 		try {
 			return HostAddressManager.this.createHostAddress(type, address, connection);
@@ -186,7 +189,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void mapHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
+	public void mapHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
 
 		String insertSQL = insertOrIgnore(" INTO tsk_host_address_map(host_id, addr_obj_id, source_obj_id, time) "
 				+ " VALUES(?, ?, ?, ?) ");
@@ -228,6 +231,8 @@ public class HostAddressManager {
 				+ " WHERE host_id = " + host.getId();
 
 		List<HostAddress> addresses = new ArrayList<>();
+		
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -239,6 +244,9 @@ public class HostAddressManager {
 			return addresses;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host addresses for host " + host.getName()), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -271,6 +279,7 @@ public class HostAddressManager {
 		String queryString = "SELECT * FROM tsk_host_addresses"
 				+ " WHERE id = " + id;
 
+		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -281,6 +290,8 @@ public class HostAddressManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host address with id = %d", id), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -294,7 +305,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void addHostNameToIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source) throws TskCoreException {
+	public void addHostNameToIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source) throws TskCoreException {
 
 		if (dnsNameAddress.getAddressType() != HostAddress.HostAddressType.HOSTNAME) {
 			throw new IllegalArgumentException("A host name address is expected.");
@@ -345,6 +356,7 @@ public class HostAddressManager {
 				+ " WHERE addresses.address_type = " + HostAddress.HostAddressType.HOSTNAME.getId()
 				+ " AND LOWER( addresses.address) = LOWER('" + hostname + "')";
 
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -355,6 +367,9 @@ public class HostAddressManager {
 			return IpAddresses;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host addresses for host name: " + hostname), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -375,6 +390,7 @@ public class HostAddressManager {
 				+ " OR  addresses.address_type = " + HostAddress.HostAddressType.IPV6.getId() + ")"
 				+ " AND LOWER( addresses.address) = LOWER('" + ipAddress + "')";
 
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -387,6 +403,9 @@ public class HostAddressManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host addresses for IP address: " + ipAddress), ex);
 		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
+		}
 	}
 
 	/**
@@ -395,7 +414,7 @@ public class HostAddressManager {
 	 * @param artifact    The artifact to associate the host address with.
 	 * @param hostAddress The host address.
 	 */
-	void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
+	public void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
 		final String insertSQL = insertOrIgnore(" INTO tsk_host_address_usage(addr_obj_id, artifact_obj_id) "
 				+ " VALUES(" + hostAddress.getId() + ", " + artifact.getId() + ") ");
 
