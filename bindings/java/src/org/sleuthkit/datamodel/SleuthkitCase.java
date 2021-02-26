@@ -12954,9 +12954,9 @@ public class SleuthkitCase {
 		 *
 		 */
 		void close() {
-			synchronized(threadsWithOpenTransactionLock) {
-				this.connection.close();
-				sleuthkitCase.releaseSingleUserCaseWriteLock();
+			this.connection.close();
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
+			synchronized (threadsWithOpenTransactionLock) {
 				threadsWithOpenTransaction.remove(Thread.currentThread().getId());
 			}
 		}
