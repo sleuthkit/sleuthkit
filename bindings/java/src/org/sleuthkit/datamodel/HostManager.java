@@ -421,7 +421,7 @@ public final class HostManager {
 
 	
 	/**
-	 * Get person for the given host or null if no associated person.
+	 * Get person for the given host or empty if no associated person.
 	 *
 	 * @param host The host.
 	 *
