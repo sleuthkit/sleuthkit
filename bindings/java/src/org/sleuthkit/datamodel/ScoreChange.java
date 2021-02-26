@@ -39,7 +39,7 @@ final public class ScoreChange {
 		return dataSourceObjectId;
 	}
 
-	public long getObjId() {
+	public long getObjectId() {
 		return objId;
 	}
 
