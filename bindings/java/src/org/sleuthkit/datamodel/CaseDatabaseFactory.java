@@ -223,7 +223,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) " );
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id)) " ); 
 
 		stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 
@@ -516,9 +516,9 @@ class CaseDatabaseFactory {
 				+ "value_text TEXT, "
 				+ "value_int32 INTEGER, value_int64 " + dbQueryHelper.getBigIntType() + ", "
 				+ "value_double NUMERIC(20, 10), "
-				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), " 
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
-				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "		
+				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "		
 				+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");	
 		
 		// References tsk_os_accounts, tsk_objects, tsk_hosts
@@ -528,8 +528,8 @@ class CaseDatabaseFactory {
 				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "instance_type INTEGER NOT NULL, "	// PerformedActionOn/ReferencedOn
 				+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
-				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), " 
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 		
 		// References blackboard_artifacts, tsk_os_accounts
@@ -537,7 +537,7 @@ class CaseDatabaseFactory {
 				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");	
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id)) ");	
 	}
 	
 	private void createEventTables(Statement stmt) throws SQLException {

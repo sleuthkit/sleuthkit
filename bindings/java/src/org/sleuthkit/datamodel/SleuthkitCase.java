@@ -2476,9 +2476,9 @@ public class SleuthkitCase {
 					+ "value_text TEXT, "
 					+ "value_int32 INTEGER, value_int64 " + bigIntDataType + ", "
 					+ "value_double NUMERIC(20, 10), "
-					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), "
 					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 
 			statement.execute("CREATE TABLE tsk_os_account_instances (id " + primaryKeyType + " PRIMARY KEY, "
@@ -2487,14 +2487,14 @@ public class SleuthkitCase {
 					+ "host_id " + bigIntDataType + " NOT NULL, "
 					+ "instance_type INTEGER NOT NULL, " // PerformedActionOn/ReferencedOn
 					+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
-					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), "
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 
 			statement.execute("CREATE TABLE tsk_data_artifacts ( "
 					+ "artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "os_account_obj_id " + bigIntDataType + ", "
-					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id)) ");
 
 			// add owner_uid & os_account_obj_id columns to tsk_files
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN owner_uid TEXT DEFAULT NULL");
