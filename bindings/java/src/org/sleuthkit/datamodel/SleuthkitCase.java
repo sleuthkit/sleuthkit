@@ -2424,7 +2424,7 @@ public class SleuthkitCase {
 				+ "scope_host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm scope is a single host
 				+ "name_type INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
 				+ "UNIQUE(realm_signature), "
-				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
+				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) ON DELETE CASCADE )");
 
 			// Add host column and create a host for each existing data source.
 			// We will create a host for each device id so that related data sources will 
@@ -2464,7 +2464,7 @@ public class SleuthkitCase {
 					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
-					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
+					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id)  ON DELETE CASCADE )");
 
 			statement.execute("CREATE TABLE tsk_os_account_attributes (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
@@ -2477,8 +2477,8 @@ public class SleuthkitCase {
 					+ "value_int32 INTEGER, value_int64 " + bigIntDataType + ", "
 					+ "value_double NUMERIC(20, 10), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id)  ON DELETE CASCADE, "
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 
 			statement.execute("CREATE TABLE tsk_os_account_instances (id " + primaryKeyType + " PRIMARY KEY, "
@@ -2488,8 +2488,8 @@ public class SleuthkitCase {
 					+ "instance_type INTEGER NOT NULL, " // PerformedActionOn/ReferencedOn
 					+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) ON DELETE CASCADE)");
 
 			statement.execute("CREATE TABLE tsk_data_artifacts ( "
 					+ "artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
