@@ -2513,9 +2513,9 @@ public class SleuthkitCase {
 					+ "source_obj_id " + bigIntDataType + ", " // object id of the source where this mapping was found.
 					+ "time " + bigIntDataType + ", " // time at which the mapping existed
 					+ "UNIQUE(host_id, addr_obj_id, time), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL )");
 
 			// stores associations between DNS name and IP address
 			statement.execute("CREATE TABLE tsk_host_address_dns_ip_map (id " + primaryKeyType + " PRIMARY KEY, "
@@ -2524,17 +2524,17 @@ public class SleuthkitCase {
 					+ "source_obj_id " + bigIntDataType + ", "
 					+ "time " + bigIntDataType + ", " // time at which the mapping existed
 					+ "UNIQUE(dns_address_id, ip_address_id, time), "
-					+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id), "
-					+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id),"
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+					+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE,"
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL )");
 
 			// maps an address to an artifact using it 
 			statement.execute("CREATE TABLE tsk_host_address_usage (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "addr_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "UNIQUE(addr_obj_id, artifact_obj_id), "
-					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) )");
+					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");
 		
 		
 			return new CaseDbSchemaVersionNumber(8, 7);
