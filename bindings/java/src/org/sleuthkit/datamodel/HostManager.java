@@ -27,7 +27,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.sleuthkit.datamodel.Host.HostStatus;
+import org.sleuthkit.datamodel.Host.HostDbStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
@@ -324,7 +324,7 @@ public final class HostManager {
 				if (!rs.next()) {
 					return Optional.empty();	// no match found
 				} else {
-					return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+					return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status"))));
 				}
 			}
 		} catch (SQLException ex) {
@@ -354,7 +354,7 @@ public final class HostManager {
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			if (rs.next()) {
-				return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+				return Optional.of(new Host(rs.getLong("id"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status"))));
 			} else {
 				return Optional.empty();
 			}
@@ -374,7 +374,7 @@ public final class HostManager {
 	 * @throws TskCoreException
 	 */
 	public List<Host> getHosts() throws TskCoreException {
-		String queryString = "SELECT * FROM tsk_hosts WHERE status = " + HostStatus.ACTIVE.getId();
+		String queryString = "SELECT * FROM tsk_hosts WHERE db_status = " + HostDbStatus.ACTIVE.getId();
 
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
@@ -383,7 +383,7 @@ public final class HostManager {
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			while (rs.next()) {
-				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status"))));
 			}
 
 			return hosts;
@@ -405,7 +405,7 @@ public final class HostManager {
 	 */
 	public Host getHost(DataSource dataSource) throws TskCoreException {
 
-		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.status AS status FROM \n"
+		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.db_status AS db_status FROM \n"
 				+ "tsk_hosts INNER JOIN data_source_info \n"
 				+ "ON tsk_hosts.id = data_source_info.host_id \n"
 				+ "WHERE data_source_info.obj_id = " + dataSource.getId();
@@ -418,7 +418,7 @@ public final class HostManager {
 			if (!rs.next()) {
 				throw new TskCoreException(String.format("Host not found for data source with ID = %d", dataSource.getId()));
 			} else {
-				return new Host(rs.getLong("hostId"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status")));
+				return new Host(rs.getLong("hostId"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status")));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
