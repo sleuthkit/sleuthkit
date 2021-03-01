@@ -79,6 +79,7 @@ public final class HostManager {
 			Host host = createHost(name, transaction);
 			transaction.commit();
 			transaction = null;
+			fireCreationEvent(host);
 			return host;
 		} finally {
 			if (transaction != null) {
@@ -160,6 +161,7 @@ public final class HostManager {
 			throw new IllegalArgumentException(String.format("Host with id %d has no name", newHost.getId()));
 		}
 
+		Host updatedHost = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			String hostInsertSQL = "UPDATE tsk_hosts \n"
@@ -174,7 +176,7 @@ public final class HostManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			return getHost(newHost.getId(), connection).orElseThrow(()
+			updatedHost = getHost(newHost.getId(), connection).orElseThrow(()
 					-> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "))));
 
 		} catch (SQLException ex) {
@@ -182,6 +184,11 @@ public final class HostManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+		
+		if (updatedHost != null) {
+			fireChangeEvent(updatedHost);
+		}
+		return updatedHost;
 	}
 
 	/**
@@ -244,7 +251,8 @@ public final class HostManager {
 
 			trans.commit();
 			trans = null;
-
+			
+			fireDeletedEvent(new Host(hostId, name));
 			return hostId;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting host with name %s", name), ex);
@@ -332,6 +340,21 @@ public final class HostManager {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get host with the given id.
+	 *
+	 * @param id The id of the host.
+	 *
+	 * @return Optional with host. Optional.empty if no matching host is found.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Optional<Host> getHost(long id) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getHost(id, connection);
 		}
 	}
 
@@ -493,47 +516,76 @@ public final class HostManager {
 		db.fireTSKEvent(new HostCreationEvent(Collections.singletonList(added)));
 	}
 
-	private void fireChangeEvent(Host changedHost) {
-		db.fireTSKEvent(new HostChangeEvent(Collections.singletonList(changedHost)));
+	private void fireChangeEvent(Host newValue) {
+		db.fireTSKEvent(new HostUpdateEvent(Collections.singletonList(newValue)));
 	}
 
 	private void fireDeletedEvent(Host deleted) {
 		db.fireTSKEvent(new HostDeletionEvent(Collections.singletonList(deleted)));
 	}
 
-	
+	/**
+	 * Base event for all host events
+	 */
 	static class BaseHostEvent {
 
 		private final List<Host> hosts;
 
+		/**
+		 * Main constructor.
+		 * @param hosts The hosts that are objects of the event.
+		 */
 		BaseHostEvent(List<Host> hosts) {
 			this.hosts = Collections.unmodifiableList(new ArrayList<>(hosts));
 		}
 
+		/**
+		 * @return The hosts effected in the event.
+		 */
 		public List<Host> getHosts() {
 			return hosts;
 		}
 	}
 
+	/**
+	 * Event fired when hosts are created.
+	 */
 	public static final class HostCreationEvent extends BaseHostEvent {
 
+		/**
+		 * Main constructor.
+		 * @param hosts The added hosts.
+		 */
 		HostCreationEvent(List<Host> hosts) {
 			super(hosts);
 		}
 	}
 
-	public static final class HostChangeEvent extends BaseHostEvent {
+	/**
+	 * Event fired when hosts are updated.
+	 */
+	public static final class HostUpdateEvent extends BaseHostEvent {
 
-		HostChangeEvent(List<Host> hosts) {
+		/**
+		 * Main constructor.
+		 * @param hosts The new values for the hosts that were changed.
+		 */
+		HostUpdateEvent(List<Host> hosts) {
 			super(hosts);
 		}
 	}
 
+	/**
+	 * Event fired when hosts are deleted.
+	 */
 	public static final class HostDeletionEvent extends BaseHostEvent {
 
+		/**
+		 * Main constructor.
+		 * @param hosts The hosts that were deleted.
+		 */
 		HostDeletionEvent(List<Host> hosts) {
 			super(hosts);
 		}
 	}
-
 }

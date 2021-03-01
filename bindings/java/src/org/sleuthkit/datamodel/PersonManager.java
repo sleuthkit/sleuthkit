@@ -100,12 +100,14 @@ public final class PersonManager {
 			s.clearParameters();
 			s.setString(1, person.getName());
 			s.executeUpdate();
-			return person;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating person with id = %d", person.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+		
+		fireChangeEvent(person);
+		return person;
 	}
 
 	/**
@@ -119,16 +121,27 @@ public final class PersonManager {
 		String queryString = "DELETE FROM tsk_persons"
 				+ " WHERE LOWER(name) = LOWER(?)";
 
+		Person deletedPerson = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
-			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS);
 			s.clearParameters();
 			s.setString(1, name);
 			s.executeUpdate();
+			
+			try (ResultSet resultSet = s.getGeneratedKeys()) {
+				if (resultSet.next()) {
+					deletedPerson = new Person(resultSet.getLong(1), name);
+				}
+			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting person with name %s", name), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
+		}
+		
+		if (deletedPerson != null) {
+			fireDeletedEvent(deletedPerson);
 		}
 	}
 
@@ -170,6 +183,7 @@ public final class PersonManager {
 			throw new IllegalArgumentException("Non-empty name is required.");
 		}
 
+		Person toReturn = null;
 		CaseDbConnection connection = this.db.getConnection();
 		db.acquireSingleUserCaseWriteLock();
 		try {
@@ -190,7 +204,7 @@ public final class PersonManager {
 			// Read back the row id.
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
 				if (resultSet.next()) {
-					return new Person(resultSet.getLong(1), name); //last_insert_rowid()
+					toReturn = new Person(resultSet.getLong(1), name); //last_insert_rowid()
 				} else {
 					throw new SQLException("Error executing SQL: " + personInsertSQL);
 				}
@@ -208,6 +222,11 @@ public final class PersonManager {
 			connection.close();
 			db.releaseSingleUserCaseWriteLock();
 		}
+		
+		if (toReturn != null) {
+			fireCreationEvent(toReturn);
+		}
+		return toReturn;
 	}
 
 	/**
@@ -274,49 +293,78 @@ public final class PersonManager {
 		}
 	}
 
-	
 	private void fireCreationEvent(Person added) {
 		db.fireTSKEvent(new PersonCreationEvent(Collections.singletonList(added)));
 	}
 
-	private void fireChangeEvent(Person changedPerson) {
-		db.fireTSKEvent(new PersonChangeEvent(Collections.singletonList(changedPerson)));
+	private void fireChangeEvent(Person newValue) {
+		db.fireTSKEvent(new PersonUpdateEvent(Collections.singletonList(newValue)));
 	}
 
 	private void fireDeletedEvent(Person deleted) {
 		db.fireTSKEvent(new PersonDeletionEvent(Collections.singletonList(deleted)));
 	}
 
-	
+	/**
+	 * Base event for all person events
+	 */
 	static class BasePersonEvent {
 
 		private final List<Person> persons;
 
+		/**
+		 * Main constructor.
+		 * @param persons The persons that are objects of the event.
+		 */
 		BasePersonEvent(List<Person> persons) {
 			this.persons = Collections.unmodifiableList(new ArrayList<>(persons));
 		}
 
+		/**
+		 * @return The persons effected in the event.
+		 */
 		public List<Person> getPersons() {
 			return persons;
 		}
 	}
 
+	/**
+	 * Event fired when persons are created.
+	 */
 	public static final class PersonCreationEvent extends BasePersonEvent {
 
+		/**
+		 * Main constructor.
+		 * @param persons The added persons.
+		 */
 		PersonCreationEvent(List<Person> persons) {
 			super(persons);
 		}
 	}
 
-	public static final class PersonChangeEvent extends BasePersonEvent {
+	/**
+	 * Event fired when persons are updated.
+	 */
+	public static final class PersonUpdateEvent extends BasePersonEvent {
 
-		PersonChangeEvent(List<Person> persons) {
+		/**
+		 * Main constructor.
+		 * @param persons The new values for the persons that were changed.
+		 */
+		PersonUpdateEvent(List<Person> persons) {
 			super(persons);
 		}
 	}
 
+	/**
+	 * Event fired when persons are deleted.
+	 */
 	public static final class PersonDeletionEvent extends BasePersonEvent {
 
+		/**
+		 * Main constructor.
+		 * @param persons The persons that were deleted.
+		 */
 		PersonDeletionEvent(List<Person> persons) {
 			super(persons);
 		}
