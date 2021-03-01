@@ -84,7 +84,7 @@ public class HostAddressManager {
 	 */
 	private Optional<HostAddress> getHostAddress(HostAddress.HostAddressType type, String address, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_host_addresses"
-				+ " WHERE LOWER(address) = LOWER('" + address + "')";
+				+ " WHERE LOWER(address) = LOWER(?)";
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
 			queryString += " AND address_type IN (" + HostAddress.HostAddressType.IPV4.getId() + ", " + HostAddress.HostAddressType.IPV6.getId()
 					+ ", " + HostAddress.HostAddressType.HOSTNAME.getId() + ")";
@@ -93,13 +93,16 @@ public class HostAddressManager {
 		}
 
 		db.acquireSingleUserCaseReadLock();
-		try (Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
-			if (!rs.next()) {
-				return Optional.empty();	// no match found
-			} else {
-				return Optional.of(new HostAddress(db, rs.getLong("id"), HostAddressType.fromID(rs.getInt("address_type")), address));
+		try {
+			PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			query.clearParameters();
+			query.setString(1, address);
+			try (ResultSet rs = query.executeQuery()) {
+				if (!rs.next()) {
+					return Optional.empty();	// no match found
+				} else {
+					return Optional.of(new HostAddress(db, rs.getLong("id"), HostAddressType.fromID(rs.getInt("address_type")), address));
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host address with type = %s and address = %s", type.getName(), address), ex);
@@ -354,17 +357,20 @@ public class HostAddressManager {
 				+ " JOIN tsk_host_addresses as addresses "
 				+ " ON map.dns_address_id = addresses.id "
 				+ " WHERE addresses.address_type = " + HostAddress.HostAddressType.HOSTNAME.getId()
-				+ " AND LOWER( addresses.address) = LOWER('" + hostname + "')";
+				+ " AND LOWER( addresses.address) = LOWER(?)";
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
+		try (CaseDbConnection connection = this.db.getConnection()){
 			List<HostAddress> IpAddresses = new ArrayList<>();
-			while (rs.next()) {
-				IpAddresses.add(HostAddressManager.this.getHostAddress(rs.getLong("ip_address_id"), connection));
+			PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			query.clearParameters();
+			query.setString(1, hostname);
+			try (ResultSet rs = query.executeQuery()) {
+				while (rs.next()) {
+					IpAddresses.add(HostAddressManager.this.getHostAddress(rs.getLong("ip_address_id"), connection));
+				}
+				return IpAddresses;
 			}
-			return IpAddresses;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host addresses for host name: " + hostname), ex);
 		}
@@ -388,18 +394,20 @@ public class HostAddressManager {
 				+ " ON map.ip_address_id = addresses.id "
 				+ " WHERE ( addresses.address_type = " + HostAddress.HostAddressType.IPV4.getId()
 				+ " OR  addresses.address_type = " + HostAddress.HostAddressType.IPV6.getId() + ")"
-				+ " AND LOWER( addresses.address) = LOWER('" + ipAddress + "')";
+				+ " AND LOWER( addresses.address) = LOWER(?)";
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
+		try (CaseDbConnection connection = this.db.getConnection()){
 			List<HostAddress> dnsNames = new ArrayList<>();
-			while (rs.next()) {
-				dnsNames.add(HostAddressManager.this.getHostAddress(rs.getLong("dns_address_id"), connection));
+			PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			query.clearParameters();
+			query.setString(1, ipAddress);
+			try (ResultSet rs = query.executeQuery()) {
+				while (rs.next()) {
+					dnsNames.add(HostAddressManager.this.getHostAddress(rs.getLong("dns_address_id"), connection));
+				}
+				return dnsNames;
 			}
-			return dnsNames;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host addresses for IP address: " + ipAddress), ex);
 		}
