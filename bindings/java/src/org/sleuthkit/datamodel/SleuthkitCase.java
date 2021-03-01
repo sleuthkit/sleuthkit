@@ -2393,6 +2393,7 @@ public class SleuthkitCase {
 					+ ")");
 
 			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " PRIMARY KEY, "
+					+ "version INTEGER NOT NULL DEFAULT 1, "	// for optimistic row locking 
 					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "significance INTEGER NOT NULL, "
 					+ "confidence INTEGER NOT NULL, "

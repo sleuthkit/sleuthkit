@@ -23,7 +23,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 import org.sleuthkit.datamodel.Score.Confidence;
 import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -61,7 +63,8 @@ public class ScoringManager {
 	 */
 	public Score getAggregateScore(long objId) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getAggregateScore(objId, connection);
+			Pair<Score, Integer> scoreAndVersion = getAggregateScoreAndVersion(objId, connection);
+			return scoreAndVersion.getLeft();
 		}
 	}
 
@@ -76,10 +79,10 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Score getAggregateScore(long objId, CaseDbTransaction transaction) throws TskCoreException {
-		CaseDbConnection connection = transaction.getConnection();
-		return getAggregateScore(objId, connection);
-	}
+//	private Score getAggregateScore(long objId, CaseDbTransaction transaction) throws TskCoreException {
+//		CaseDbConnection connection = transaction.getConnection();
+//		return getAggregateScore(objId, connection);
+//	}
 
 	/**
 	 * Get the aggregate score for the given object.
@@ -87,21 +90,21 @@ public class ScoringManager {
 	 * @param objId Object id.
 	 * @param connection Connection to use for the query.
 	 *
-	 * @return Score, if it is found, Score(UNKNOWN,NONE) otherwise.
+	 * @return Score and its version, if it is found, Score(UNKNOWN, NONE) otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
-		String queryString = "SELECT significance, confidence FROM tsk_aggregate_score WHERE obj_id = " + objId;
+	private Pair<Score, Integer> getAggregateScoreAndVersion(long objId, CaseDbConnection connection) throws TskCoreException {
+		String queryString = "SELECT version, significance, confidence FROM tsk_aggregate_score WHERE obj_id = " + objId;
 
 		try {
 			db.acquireSingleUserCaseReadLock();
 
 			try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
 				if (rs.next()) {
-					return new Score(Significance.fromID(rs.getInt("significance")), Confidence.fromID(rs.getInt("confidence")));
+					return Pair.of(new Score(Significance.fromID(rs.getInt("significance")), Confidence.fromID(rs.getInt("confidence"))), rs.getInt("version"));
 				} else {
-					return new Score(Significance.UNKNOWN, Confidence.NONE);
+					return Pair.of(new Score(Significance.UNKNOWN, Confidence.NONE), 0);
 				}
 			} catch (SQLException ex) {
 				throw new TskCoreException("SQLException thrown while running query: " + queryString, ex);
@@ -114,47 +117,52 @@ public class ScoringManager {
 	/**
 	 * Inserts or updates the score for the given object.
 	 *
-	 * @param objId Object id of the object.
+	 * @param objId              Object id of the object.
 	 * @param dataSourceObjectId Data source object id.
-	 * @param score  Score to be inserted/updated.
-	 * @param transaction Transaction to use for the update.
+	 * @param score              Score to be inserted/updated.
+	 * @param version            Current version of score to be updated.
+	 * @param transaction        Transaction to use for the update.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is an error in core TSK.
+	 * @throws SQLException     If there is an SQL error, for example, the
+	 *                          record with specified version was not found.
 	 */
-	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, CaseDbTransaction transaction) throws TskCoreException {
+	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, int version, CaseDbTransaction transaction) throws TskCoreException, SQLException {
 		CaseDbConnection connection = transaction.getConnection();
-		setAggregateScore(objId, dataSourceObjectId, score, connection);
+		setAggregateScore(objId, dataSourceObjectId, score, version, connection);
 	}
 
 	/**
 	 * Inserts or updates the score for the given object.
 	 *
-	 * @param objId Object id of the object.
+	 * @param objId              Object id of the object.
 	 * @param dataSourceObjectId Data source object id.
-	 * @param score  Score to be inserted/updated.
-	 * @param connection Connection to use for the update.
+	 * @param score              Score to be inserted/updated.
+	 * @param version            Current version of score to be updated.
+	 * @param connection         Connection to use for the update.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is an error in core TSK.
+	 * @throws SQLException     If there is an SQL error, for example, the
+	 *                          record with specified version was not found.
 	 */
-	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, int version, CaseDbConnection connection) throws TskCoreException, SQLException {
 
+		// insert or update score
 		String query = String.format("INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , confidence) VALUES (%d, %d, %d, %d)"
-				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = %d, confidence = %d",
-				objId, dataSourceObjectId, score.getSignificance().getId(), score.getConfidence().getId(), score.getSignificance().getId(), score.getConfidence().getId() );
+				+ " ON CONFLICT (obj_id) DO UPDATE SET version = %d, significance = %d, confidence = %d WHERE version = %d",
+				objId, dataSourceObjectId, score.getSignificance().getId(), score.getConfidence().getId(), 
+				version + 1, score.getSignificance().getId(), score.getConfidence().getId(), version );
 
 		try {
 			db.acquireSingleUserCaseWriteLock();
 
 			try (Statement updateStatement = connection.createStatement()) {
 				updateStatement.executeUpdate(query);
-			} catch (SQLException ex) {
-				throw new TskCoreException("Error updating  aggregate score, query: " + query, ex);//NON-NLS
-			}
+			} 
 
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-
 	}
 
 
@@ -174,22 +182,38 @@ public class ScoringManager {
 	 */
 	Score updateAggregateScore(long objId, long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
 
-		// Get the current score 
-		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
+		// We use a version based optimistic row locking to prevent simultaneous updates to aggregate score. 
+		// If another thread interrupts the update, we get a SQLException and retry. 
+		int numRetries = 0;
+		while (++numRetries < 10) {
+			try {
 
-		// If current score is Unknown And newscore is not Unknown - allow None (good) to be recorded
-		// or if the new score is higher than the current score
-		if  ( (currentScore.compareTo(Score.SCORE_UNKNOWN) == 0 && resultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
-			  || (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
-			ScoringManager.this.setAggregateScore(objId, dataSourceObjectId, resultScore, transaction);
-			
-			// register score change in the transaction.
-			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, resultScore));
-			return resultScore;
-		} else {
-			// return the current score
-			return currentScore;
+				// Get the current score and it's version
+				Pair<Score, Integer> currentScoreAndVersion = ScoringManager.this.getAggregateScoreAndVersion(objId, transaction.getConnection());
+
+				Score currentScore = currentScoreAndVersion.getKey();
+				Integer currentScoreVersion = currentScoreAndVersion.getRight();
+
+				// If current score is Unknown And newscore is not Unknown - allow None (good) to be recorded
+				// or if the new score is higher than the current score
+				if ((currentScore.compareTo(Score.SCORE_UNKNOWN) == 0 && resultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
+						|| (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
+
+					ScoringManager.this.setAggregateScore(objId, dataSourceObjectId, resultScore, currentScoreVersion, transaction);
+
+					// register score change in the transaction.
+					transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, resultScore));
+					return resultScore;
+				} else {
+					// return the current score
+					return currentScore;
+				}
+			} catch (SQLException ex) {
+				LOGGER.log(Level.WARNING, String.format("Error trying to update aggregate score for objId = %d, data source object id = %d.  Will try again. ", objId, dataSourceObjectId), ex);
+			}
 		}
+		// give up after max retries
+		throw new TskCoreException(String.format("Failed to update aggregate score for objId = %d, data source object id = %d, after %d retries. ", objId, dataSourceObjectId, numRetries));
 	}
 
 	/**
