@@ -4360,7 +4360,11 @@ public class SleuthkitCase {
  
 		connection.executeUpdate(statement);		
 		try (ResultSet resultSet = statement.getGeneratedKeys()) {
-			resultSet.next();
+			if(!resultSet.next()) {
+				throw new TskCoreException(String.format("Failed to insert file attribute "
+						+ "with id=%d. The expected key was not generated", attr.getId()));
+			}
+			
 			attr.setId(resultSet.getLong(1));
 		}		
 	}
