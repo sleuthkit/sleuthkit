@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,10 +185,16 @@ public class ScoringManager {
 
 		// We use a version based optimistic row locking to prevent simultaneous updates to aggregate score. 
 		// If another thread interrupts the update, we get a SQLException and retry. 
+		
+		CaseDbConnection connection = transaction.getConnection();
+		Savepoint savepoint = null;
+		
 		int numRetries = 0;
 		while (++numRetries < 10) {
 			try {
-
+				// set a savepoint in case we need to rollback to it. 
+				savepoint = transaction.getConnection().getConnection().setSavepoint();
+				
 				// Get the current score and it's version
 				Pair<Score, Integer> currentScoreAndVersion = ScoringManager.this.getAggregateScoreAndVersion(objId, transaction.getConnection());
 
@@ -210,6 +217,16 @@ public class ScoringManager {
 				}
 			} catch (SQLException ex) {
 				LOGGER.log(Level.WARNING, String.format("Error trying to update aggregate score for objId = %d, data source object id = %d.  Will try again. ", objId, dataSourceObjectId), ex);
+				
+				// roll back to the save point
+				if (savepoint != null) {
+					try {
+						connection.getConnection().rollback(savepoint);
+						savepoint = null;
+					} catch (SQLException ex2) {
+						throw new TskCoreException(String.format("Error updating aggregate score for objId = %d and unable to rollback to savepoint.", objId), ex);
+					}
+				}
 			}
 		}
 		// give up after max retries
