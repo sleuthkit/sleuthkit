@@ -123,6 +123,14 @@ public final class OsAccountRealm {
 		return scopeConfidence;
 	}
 	
+	/**
+	 * Get the realm scope.
+	 * 
+	 * @return Realm scope.
+	 */
+	public RealmScope getScope() {
+		return getScopeHost().isPresent() ? RealmScope.LOCAL : RealmScope.DOMAIN; 
+	}
 	
 	/**
 	 * Enum to encapsulate a realm scope.
@@ -157,7 +165,7 @@ public final class OsAccountRealm {
 		 * 
 		 * @return Realm scope name.
 		 */
-		String getName() {
+		public String getName() {
 			return name;
 		}
 		
