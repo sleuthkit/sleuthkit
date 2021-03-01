@@ -25,6 +25,7 @@ import java.sql.Savepoint;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.sleuthkit.datamodel.Host.HostStatus;
@@ -105,7 +106,7 @@ public final class HostManager {
 
 		CaseDbConnection connection = trans.getConnection();
 		Savepoint savepoint = null;
-		
+
 		try {
 			savepoint = connection.getConnection().setSavepoint();
 			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
@@ -139,7 +140,7 @@ public final class HostManager {
 				return optHost.get();
 			}
 			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
-		} 
+		}
 	}
 
 	/**
@@ -296,7 +297,7 @@ public final class HostManager {
 	public Optional<Host> getHost(String name) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
 			return getHost(name, connection);
-		} 
+		}
 	}
 
 	/**
@@ -313,7 +314,7 @@ public final class HostManager {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)";
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try {
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS);
@@ -329,8 +330,7 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
@@ -348,7 +348,7 @@ public final class HostManager {
 	private Optional<Host> getHost(long id, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts WHERE id = " + id;
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -360,8 +360,7 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with id: " + id), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
@@ -427,7 +426,6 @@ public final class HostManager {
 		}
 	}
 
-	
 	/**
 	 * Get person for the given host or empty if no associated person.
 	 *
@@ -460,8 +458,7 @@ public final class HostManager {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
-	
+
 	/**
 	 * Set host's parent person.
 	 *
@@ -491,4 +488,52 @@ public final class HostManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
+
+	private void fireCreationEvent(Host added) {
+		db.fireTSKEvent(new HostCreationEvent(Collections.singletonList(added)));
+	}
+
+	private void fireChangeEvent(Host changedHost) {
+		db.fireTSKEvent(new HostChangeEvent(Collections.singletonList(changedHost)));
+	}
+
+	private void fireDeletedEvent(Host deleted) {
+		db.fireTSKEvent(new HostDeletionEvent(Collections.singletonList(deleted)));
+	}
+
+	
+	static class BaseHostEvent {
+
+		private final List<Host> hosts;
+
+		BaseHostEvent(List<Host> hosts) {
+			this.hosts = Collections.unmodifiableList(new ArrayList<>(hosts));
+		}
+
+		public List<Host> getHosts() {
+			return hosts;
+		}
+	}
+
+	public static final class HostCreationEvent extends BaseHostEvent {
+
+		HostCreationEvent(List<Host> hosts) {
+			super(hosts);
+		}
+	}
+
+	public static final class HostChangeEvent extends BaseHostEvent {
+
+		HostChangeEvent(List<Host> hosts) {
+			super(hosts);
+		}
+	}
+
+	public static final class HostDeletionEvent extends BaseHostEvent {
+
+		HostDeletionEvent(List<Host> hosts) {
+			super(hosts);
+		}
+	}
+
 }

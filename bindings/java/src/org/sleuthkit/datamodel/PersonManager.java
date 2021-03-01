@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -273,4 +274,51 @@ public final class PersonManager {
 		}
 	}
 
+	
+	private void fireCreationEvent(Person added) {
+		db.fireTSKEvent(new PersonCreationEvent(Collections.singletonList(added)));
+	}
+
+	private void fireChangeEvent(Person changedPerson) {
+		db.fireTSKEvent(new PersonChangeEvent(Collections.singletonList(changedPerson)));
+	}
+
+	private void fireDeletedEvent(Person deleted) {
+		db.fireTSKEvent(new PersonDeletionEvent(Collections.singletonList(deleted)));
+	}
+
+	
+	static class BasePersonEvent {
+
+		private final List<Person> persons;
+
+		BasePersonEvent(List<Person> persons) {
+			this.persons = Collections.unmodifiableList(new ArrayList<>(persons));
+		}
+
+		public List<Person> getPersons() {
+			return persons;
+		}
+	}
+
+	public static final class PersonCreationEvent extends BasePersonEvent {
+
+		PersonCreationEvent(List<Person> persons) {
+			super(persons);
+		}
+	}
+
+	public static final class PersonChangeEvent extends BasePersonEvent {
+
+		PersonChangeEvent(List<Person> persons) {
+			super(persons);
+		}
+	}
+
+	public static final class PersonDeletionEvent extends BasePersonEvent {
+
+		PersonDeletionEvent(List<Person> persons) {
+			super(persons);
+		}
+	}
 }
