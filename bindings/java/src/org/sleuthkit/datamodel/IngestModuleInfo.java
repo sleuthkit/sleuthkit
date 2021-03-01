@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2016 Basis Technology Corp.
+ * Copyright 2014-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,9 +34,10 @@ public final class IngestModuleInfo {
 	public static enum IngestModuleType {
 		//DO NOT CHANGE ORDER
 		DATA_SOURCE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.DataSourceLevel.displayName")),
-		FILE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.FileLevel.displayName"));
+		FILE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.FileLevel.displayName")),
+		DATA_ARTIFACT(bundle.getString("IngestModuleInfo.IngestModuleType.DataArtifact.displayName"));
 		
-		private String displayName;
+		private final String displayName;
 		
 		private IngestModuleType(String displayName) {
 			this.displayName = displayName;
