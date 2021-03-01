@@ -12024,6 +12024,26 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Builds "INSERT or IGNORE ....", or "INSERT .... ON CONFLICT DO NOTHING"
+	 * insert SQL, based on the database type being used, using the given base
+	 * SQL.
+	 *
+	 * @param sql Base insert SQL - "INTO xyz ...."
+	 *
+	 * @return SQL string.
+	 */
+	String getInsertOrIgnoreSQL(String sql) {
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				return " INSERT " + sql + " ON CONFLICT DO NOTHING "; //NON-NLS
+			case SQLITE:
+				return " INSERT OR IGNORE " + sql; //NON-NLS
+			default:
+				throw new UnsupportedOperationException("Unsupported DB type: " + getDatabaseType().name());
+		}
+	}
+
+	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {

@@ -503,8 +503,8 @@ public final class OsAccountManager {
 		db.acquireSingleUserCaseWriteLock();
 		CaseDbConnection connection = this.db.getConnection(); // not in try-with-resource because it's used in the catch block.
 		try {
-			String accountInsertSQL = "INSERT INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
-					+ " VALUES (?, ?, ?, ?)"; // NON-NLS
+			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
+					+ " VALUES (?, ?, ?, ?)"); // NON-NLS
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.RETURN_GENERATED_KEYS);
 			preparedStatement.clearParameters();
