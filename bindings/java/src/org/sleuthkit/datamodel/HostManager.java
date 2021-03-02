@@ -52,6 +52,8 @@ public final class HostManager {
 	/**
 	 * Get or create host with specified name.
 	 *
+	 * TODO: This should be deleted before release
+	 *
 	 * @param name	Host name.
 	 *
 	 * @return Host with the specified name.
@@ -88,9 +90,21 @@ public final class HostManager {
 
 	/**
 	 * Create a host with given name. If the host already exists, the existing
-	 * host will be returned.
+	 * host will be returned.  
 	 *
-	 * @param name  Host name.
+	 * NOTE: Whenever possible, create hosts as part of a single step transaction so
+	 * that it can quickly determine a host of the same name already exists. If you call 
+	 * this as part of a multi-step CaseDbTransaction, then this method may think it can
+	 * insert the host name, but then when it comes time to call CaseDbTransaction.commit(),
+	 * there could be a uniqueness constraint violation and other inserts in the same 
+	 * transaction could have problems. 
+	 *
+	 * This method should never be made public and exists only because we need to support
+	 * APIs that do not take in a host and we must make one. Ensure that if you call this 
+	 * method that the host name you give will be unique.
+	 *
+	 * @param name  Host name that must be unique if this is called as part of a 
+	 *              multi-step transaction
 	 * @param trans Database transaction to use.
 	 *
 	 * @return Newly created host.
@@ -424,6 +438,71 @@ public final class HostManager {
 			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	
+	/**
+	 * Get person for the given host or empty if no associated person.
+	 *
+	 * @param host The host.
+	 *
+	 * @return The parent person or empty if no parent person.
+	 *
+	 * @throws TskCoreException if error occurs.
+	 */
+	public Optional<Person> getPerson(Host host) throws TskCoreException {
+
+		String queryString = "SELECT p.id AS personId, p.name AS name FROM \n"
+				+ "tsk_persons p INNER JOIN tsk_hosts h\n"
+				+ "ON p.id = h.person_id \n"
+				+ "WHERE h.id = " + host.getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.of(new Person(rs.getLong("personId"), rs.getString("name")));
+			} else {
+				return Optional.empty();
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting person for host with ID = %d", host.getId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	
+	/**
+	 * Set host's parent person.
+	 *
+	 * @param host   The host whose parent will be set.
+	 * @param person The person to be a parent or null to remove any parent
+	 *               person reference from this host.
+	 *
+	 * @throws IllegalArgumentException
+	 * @throws TskCoreException
+	 */
+	public void setPerson(Host host, Person person) throws IllegalArgumentException, TskCoreException {
+		if (host == null) {
+			throw new IllegalArgumentException("host must be non-null.");
+		}
+
+		String queryString = (person == null)
+				? String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getId())
+				: String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getId(), host.getId());
+
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();) {
+			s.executeUpdate(queryString);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting persons"), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 }
