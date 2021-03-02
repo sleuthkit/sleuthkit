@@ -105,7 +105,7 @@ public final class PersonManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-		
+
 		fireChangeEvent(person);
 		return person;
 	}
@@ -128,7 +128,7 @@ public final class PersonManager {
 			s.clearParameters();
 			s.setString(1, name);
 			s.executeUpdate();
-			
+
 			try (ResultSet resultSet = s.getGeneratedKeys()) {
 				if (resultSet.next()) {
 					deletedPerson = new Person(resultSet.getLong(1), name);
@@ -139,7 +139,7 @@ public final class PersonManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-		
+
 		if (deletedPerson != null) {
 			fireDeletedEvent(deletedPerson);
 		}
@@ -159,6 +159,37 @@ public final class PersonManager {
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return getPerson(name, connection);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get person with given id.
+	 *
+	 * @param id Id of the person to look for.
+	 *
+	 * @return Optional with person. Optional.empty if no matching person is
+	 *         found.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Optional<Person> getPerson(long id) throws TskCoreException {
+		String queryString = "SELECT * FROM tsk_persons WHERE id = " + id;
+
+		List<Person> persons = new ArrayList<>();
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.of(new Person(rs.getLong("id"), rs.getString("name")));
+			} else {
+				return Optional.empty();
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting persons"), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -222,7 +253,7 @@ public final class PersonManager {
 			connection.close();
 			db.releaseSingleUserCaseWriteLock();
 		}
-		
+
 		if (toReturn != null) {
 			fireCreationEvent(toReturn);
 		}
@@ -240,7 +271,7 @@ public final class PersonManager {
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
 		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getId();
-		
+
 		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
 
 		List<Host> hosts = new ArrayList<>();
@@ -294,15 +325,15 @@ public final class PersonManager {
 	}
 
 	private void fireCreationEvent(Person added) {
-		db.fireTSKEvent(new PersonCreationEvent(Collections.singletonList(added)));
+		db.fireTSKEvent(new PersonsCreationEvent(Collections.singletonList(added)));
 	}
 
 	private void fireChangeEvent(Person newValue) {
-		db.fireTSKEvent(new PersonUpdateEvent(Collections.singletonList(newValue)));
+		db.fireTSKEvent(new PersonsUpdateEvent(Collections.singletonList(newValue)));
 	}
 
 	private void fireDeletedEvent(Person deleted) {
-		db.fireTSKEvent(new PersonDeletionEvent(Collections.singletonList(deleted)));
+		db.fireTSKEvent(new PersonsDeletionEvent(Collections.singletonList(deleted)));
 	}
 
 	/**
@@ -314,6 +345,7 @@ public final class PersonManager {
 
 		/**
 		 * Main constructor.
+		 *
 		 * @param persons The persons that are objects of the event.
 		 */
 		BasePersonEvent(List<Person> persons) {
@@ -331,13 +363,14 @@ public final class PersonManager {
 	/**
 	 * Event fired when persons are created.
 	 */
-	public static final class PersonCreationEvent extends BasePersonEvent {
+	public static final class PersonsCreationEvent extends BasePersonEvent {
 
 		/**
 		 * Main constructor.
+		 *
 		 * @param persons The added persons.
 		 */
-		PersonCreationEvent(List<Person> persons) {
+		PersonsCreationEvent(List<Person> persons) {
 			super(persons);
 		}
 	}
@@ -345,13 +378,14 @@ public final class PersonManager {
 	/**
 	 * Event fired when persons are updated.
 	 */
-	public static final class PersonUpdateEvent extends BasePersonEvent {
+	public static final class PersonsUpdateEvent extends BasePersonEvent {
 
 		/**
 		 * Main constructor.
+		 *
 		 * @param persons The new values for the persons that were changed.
 		 */
-		PersonUpdateEvent(List<Person> persons) {
+		PersonsUpdateEvent(List<Person> persons) {
 			super(persons);
 		}
 	}
@@ -359,13 +393,14 @@ public final class PersonManager {
 	/**
 	 * Event fired when persons are deleted.
 	 */
-	public static final class PersonDeletionEvent extends BasePersonEvent {
+	public static final class PersonsDeletionEvent extends BasePersonEvent {
 
 		/**
 		 * Main constructor.
+		 *
 		 * @param persons The persons that were deleted.
 		 */
-		PersonDeletionEvent(List<Person> persons) {
+		PersonsDeletionEvent(List<Person> persons) {
 			super(persons);
 		}
 	}

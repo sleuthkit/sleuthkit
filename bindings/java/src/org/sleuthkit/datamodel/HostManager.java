@@ -79,7 +79,6 @@ public final class HostManager {
 			Host host = createHost(name, transaction);
 			transaction.commit();
 			transaction = null;
-			fireCreationEvent(host);
 			return host;
 		} finally {
 			if (transaction != null) {
@@ -119,13 +118,19 @@ public final class HostManager {
 			connection.executeUpdate(preparedStatement);
 
 			// Read back the row id
+			Host host = null;
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
 				if (resultSet.next()) {
-					return new Host(resultSet.getLong(1), name); //last_insert_rowid()
+					host = new Host(resultSet.getLong(1), name); //last_insert_rowid()
 				} else {
 					throw new SQLException("Error executing  " + hostInsertSQL);
 				}
 			}
+			
+			if (host != null) {
+				fireCreationEvent(host);	
+			}
+			return host;
 		} catch (SQLException ex) {
 			if (savepoint != null) {
 				try {
@@ -513,15 +518,15 @@ public final class HostManager {
 	}
 
 	private void fireCreationEvent(Host added) {
-		db.fireTSKEvent(new HostCreationEvent(Collections.singletonList(added)));
+		db.fireTSKEvent(new HostsCreationEvent(Collections.singletonList(added)));
 	}
 
 	private void fireChangeEvent(Host newValue) {
-		db.fireTSKEvent(new HostUpdateEvent(Collections.singletonList(newValue)));
+		db.fireTSKEvent(new HostsUpdateEvent(Collections.singletonList(newValue)));
 	}
 
 	private void fireDeletedEvent(Host deleted) {
-		db.fireTSKEvent(new HostDeletionEvent(Collections.singletonList(deleted)));
+		db.fireTSKEvent(new HostsDeletionEvent(Collections.singletonList(deleted)));
 	}
 
 	/**
@@ -550,13 +555,13 @@ public final class HostManager {
 	/**
 	 * Event fired when hosts are created.
 	 */
-	public static final class HostCreationEvent extends BaseHostEvent {
+	public static final class HostsCreationEvent extends BaseHostEvent {
 
 		/**
 		 * Main constructor.
 		 * @param hosts The added hosts.
 		 */
-		HostCreationEvent(List<Host> hosts) {
+		HostsCreationEvent(List<Host> hosts) {
 			super(hosts);
 		}
 	}
@@ -564,13 +569,13 @@ public final class HostManager {
 	/**
 	 * Event fired when hosts are updated.
 	 */
-	public static final class HostUpdateEvent extends BaseHostEvent {
+	public static final class HostsUpdateEvent extends BaseHostEvent {
 
 		/**
 		 * Main constructor.
 		 * @param hosts The new values for the hosts that were changed.
 		 */
-		HostUpdateEvent(List<Host> hosts) {
+		HostsUpdateEvent(List<Host> hosts) {
 			super(hosts);
 		}
 	}
@@ -578,13 +583,13 @@ public final class HostManager {
 	/**
 	 * Event fired when hosts are deleted.
 	 */
-	public static final class HostDeletionEvent extends BaseHostEvent {
+	public static final class HostsDeletionEvent extends BaseHostEvent {
 
 		/**
 		 * Main constructor.
 		 * @param hosts The hosts that were deleted.
 		 */
-		HostDeletionEvent(List<Host> hosts) {
+		HostsDeletionEvent(List<Host> hosts) {
 			super(hosts);
 		}
 	}
