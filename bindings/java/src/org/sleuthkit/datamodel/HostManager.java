@@ -52,6 +52,8 @@ public final class HostManager {
 	/**
 	 * Get or create host with specified name.
 	 *
+	 * TODO: This should be deleted before release
+	 *
 	 * @param name	Host name.
 	 *
 	 * @return Host with the specified name.
@@ -88,9 +90,21 @@ public final class HostManager {
 
 	/**
 	 * Create a host with given name. If the host already exists, the existing
-	 * host will be returned.
+	 * host will be returned.  
 	 *
-	 * @param name  Host name.
+	 * NOTE: Whenever possible, create hosts as part of a single step transaction so
+	 * that it can quickly determine a host of the same name already exists. If you call 
+	 * this as part of a multi-step CaseDbTransaction, then this method may think it can
+	 * insert the host name, but then when it comes time to call CaseDbTransaction.commit(),
+	 * there could be a uniqueness constraint violation and other inserts in the same 
+	 * transaction could have problems. 
+	 *
+	 * This method should never be made public and exists only because we need to support
+	 * APIs that do not take in a host and we must make one. Ensure that if you call this 
+	 * method that the host name you give will be unique.
+	 *
+	 * @param name  Host name that must be unique if this is called as part of a 
+	 *              multi-step transaction
 	 * @param trans Database transaction to use.
 	 *
 	 * @return Newly created host.
