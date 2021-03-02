@@ -12850,6 +12850,7 @@ public class SleuthkitCase {
 		// When the transaction is committed, events are fired to notify any listeners.
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>(); 
+		private List<Host> hostsAdded = new ArrayList<>();
 		
 		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
 			this.connection = connection;
@@ -12883,6 +12884,12 @@ public class SleuthkitCase {
 			scoreChangeMap.put(scoreChange.getObjId(), scoreChange);
 		}
 		
+		void registerAddedHost(Host host) {
+			if (host != null) {
+				this.hostsAdded.add(host);	
+			}
+		}
+		
 		/**
 		 * Commits the transaction on the case database that was begun when this
 		 * object was constructed.
@@ -12901,6 +12908,11 @@ public class SleuthkitCase {
 					// Fire an event for each data source with a list of score changes.
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
 						sleuthkitCase.fireTSKEvent(new AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
+					}
+					
+					// Fire an event notifying that hosts have been added.
+					if (!hostsAdded.isEmpty()) {
+						sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
 					}
 				}
 

@@ -128,7 +128,7 @@ public final class HostManager {
 			}
 			
 			if (host != null) {
-				fireCreationEvent(host);	
+				trans.registerAddedHost(host);
 			}
 			return host;
 		} catch (SQLException ex) {
