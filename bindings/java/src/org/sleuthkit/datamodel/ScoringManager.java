@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -121,7 +122,7 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, CaseDbTransaction transaction) throws TskCoreException {
+	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
 		setAggregateScore(objId, dataSourceObjectId, score, connection);
 	}
@@ -129,28 +130,38 @@ public class ScoringManager {
 	/**
 	 * Inserts or updates the score for the given object.
 	 *
-	 * @param objId Object id of the object.
-	 * @param dataSourceObjectId Data source object id.
-	 * @param score  Score to be inserted/updated.
-	 * @param connection Connection to use for the update.
+	 * @param objId              Object id of the object.
+	 * @param dataSourceObjectId Data source object id, may be null.
+	 * @param score              Score to be inserted/updated.
+	 * @param connection         Connection to use for the update.
 	 *
 	 * @throws TskCoreException
 	 */
-	private void setAggregateScore(long objId, long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
 
-		String query = String.format("INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , confidence) VALUES (%d, %d, %d, %d)"
-				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = %d, confidence = %d",
-				objId, dataSourceObjectId, score.getSignificance().getId(), score.getConfidence().getId(), score.getSignificance().getId(), score.getConfidence().getId() );
+		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , confidence) VALUES (?, ?, ?, ?)"
+				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, confidence = ?";
 
+		db.acquireSingleUserCaseWriteLock();
 		try {
-			db.acquireSingleUserCaseWriteLock();
+			PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQLString, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
 
-			try (Statement updateStatement = connection.createStatement()) {
-				updateStatement.executeUpdate(query);
-			} catch (SQLException ex) {
-				throw new TskCoreException("Error updating  aggregate score, query: " + query, ex);//NON-NLS
+			preparedStatement.setLong(1, objId);
+			if (dataSourceObjectId != null) {
+				preparedStatement.setLong(2, dataSourceObjectId);
+			} else {
+				preparedStatement.setNull(2, java.sql.Types.NULL);
 			}
+			preparedStatement.setInt(3, score.getSignificance().getId());
+			preparedStatement.setInt(4, score.getConfidence().getId());
 
+			preparedStatement.setInt(5, score.getSignificance().getId());
+			preparedStatement.setInt(6, score.getConfidence().getId());
+
+			connection.executeUpdate(preparedStatement);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error updating aggregate score, query: %s for objId = %d", insertSQLString, objId), ex);//NON-NLS
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -163,16 +174,16 @@ public class ScoringManager {
 	 * Updates the score for the specified object, if the given analysis result
 	 * score is higher than the score the object already has.
 	 *
-	 * @param objId      Object id.
-	 * @param dataSourceObjectId Object id of the data source.
-	 * @param resultScore Score for a newly added analysis result.
-	 * @param transaction Transaction to use for the update.
+	 * @param objId              Object id.
+	 * @param dataSourceObjectId Object id of the data source, may be null.
+	 * @param resultScore        Score for a newly added analysis result.
+	 * @param transaction        Transaction to use for the update.
 	 *
 	 * @return Aggregate score for the object.
 	 *
 	 * @throws TskCoreException
 	 */
-	Score updateAggregateScore(long objId, long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
+	Score updateAggregateScore(long objId, Long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
 
 		// Get the current score 
 		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);

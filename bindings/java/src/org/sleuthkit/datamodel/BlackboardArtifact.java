@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2020 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,18 +80,18 @@ public class BlackboardArtifact implements Content {
 	 *
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
-	 * @param artifactID       The unique id for this artifact
+	 * @param artifactID       The unique id for this artifact.
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
-	 * @param artifactObjId    The unique id this artifact, in tsk_objects
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects.
 	 * @param dataSourceObjId  Object ID of the datasource where the artifact
-	 *                         was found.
+	 *                         was found. May be null.
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
 
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactId = artifactID;
@@ -127,8 +127,9 @@ public class BlackboardArtifact implements Content {
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
+	 * @param isNew            If the artifact is newly created.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, Long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
 		this(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		if (isNew) {
 			/*
@@ -172,9 +173,9 @@ public class BlackboardArtifact implements Content {
 	/**
 	 * Gets the object id of the data source for this artifact.
 	 *
-	 * @return The data source object id.
+	 * @return The data source object id, may be null.
 	 */
-	long getDataSourceObjectID() {
+	Long getDataSourceObjectID() {
 		return this.dataSourceObjId;
 	}
 
@@ -244,7 +245,7 @@ public class BlackboardArtifact implements Content {
 					ATTRIBUTE_TYPE.TSK_EMAIL_FROM,
 					ATTRIBUTE_TYPE.TSK_EMAIL_TO,
 					ATTRIBUTE_TYPE.TSK_EMAIL_HOME,
-					ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE}; //in the order we want to use them 
+					ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE}; //in the order we want to use them
 				for (ATTRIBUTE_TYPE t : typesThatCanHaveName) {
 					attr = getAttribute(new BlackboardAttribute.Type(t));
 					if (attr != null && !attr.getDisplayString().isEmpty()) {
@@ -268,7 +269,7 @@ public class BlackboardArtifact implements Content {
 			ATTRIBUTE_TYPE.TSK_DATETIME_MODIFIED,
 			ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED,
 			ATTRIBUTE_TYPE.TSK_DATETIME_START,
-			ATTRIBUTE_TYPE.TSK_DATETIME_END};  //in the order we want to use them 
+			ATTRIBUTE_TYPE.TSK_DATETIME_END};  //in the order we want to use them
 		BlackboardAttribute date;
 		for (ATTRIBUTE_TYPE t : typesThatCanHaveDate) {
 			date = getAttribute(new BlackboardAttribute.Type(t));
@@ -442,7 +443,7 @@ public class BlackboardArtifact implements Content {
 			if (myParent != null) {
 				tempUniquePath = myParent.getUniquePath();
 			}
-			
+
 			// Don't update uniquePath until it is complete.
 			uniquePath = tempUniquePath;
 		}
@@ -482,19 +483,19 @@ public class BlackboardArtifact implements Content {
 	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
 		return sleuthkitCase.getBlackboard().getAnalysisResults(artifactObjId);
 	}
-	
+
 	@Override
 	public Score getAggregateScore() throws TskCoreException {
 		return sleuthkitCase.getScoringManager().getAggregateScore(artifactObjId);
-		
+
 	}
-	
+
 
 	@Override
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
 		return sleuthkitCase.getBlackboard().getAnalysisResults(artifactObjId, artifactType.getTypeID()); //NON-NLS
 	}
-	
+
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * name
@@ -698,7 +699,7 @@ public class BlackboardArtifact implements Content {
 			throw new TskCoreException("Error adding analysis result.", ex);
 		}
 	}
-	
+
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
 
@@ -1051,7 +1052,7 @@ public class BlackboardArtifact implements Content {
 		 * create cookie artifacts.
 		 */
 		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE",
-				bundle.getString("BlackboardArtifact.tskWebCookie.text")), //NON-NLS				
+				bundle.getString("BlackboardArtifact.tskWebCookie.text")), //NON-NLS
 		/**
 		 * A Web history. Use methods in
 		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
@@ -1541,8 +1542,8 @@ public class BlackboardArtifact implements Content {
 	/**
 	 * Enumeration to encapsulate categories of artifact.
 	 *
-	 * Some artifact types represent data directly extracted from a data source, 
-	 * while others may be the result of some analysis done on the extracted 
+	 * Some artifact types represent data directly extracted from a data source,
+	 * while others may be the result of some analysis done on the extracted
 	 * data.
 	 */
 	public enum Category {
