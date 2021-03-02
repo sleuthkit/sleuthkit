@@ -515,10 +515,8 @@ public final class HostManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-	}
-
-	private void fireCreationEvent(Host added) {
-		db.fireTSKEvent(new HostsCreationEvent(Collections.singletonList(added)));
+		
+		db.getPersonManager().fireChangeEvent(person);
 	}
 
 	private void fireChangeEvent(Host newValue) {

@@ -328,7 +328,11 @@ public final class PersonManager {
 		db.fireTSKEvent(new PersonsCreationEvent(Collections.singletonList(added)));
 	}
 
-	private void fireChangeEvent(Person newValue) {
+	/**
+	 * Fires a change event for the specified person.
+	 * @param newValue The person value that has changed.
+	 */
+	void fireChangeEvent(Person newValue) {
 		db.fireTSKEvent(new PersonsUpdateEvent(Collections.singletonList(newValue)));
 	}
 

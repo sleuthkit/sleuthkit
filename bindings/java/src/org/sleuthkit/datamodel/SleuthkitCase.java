@@ -12909,13 +12909,12 @@ public class SleuthkitCase {
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
 						sleuthkitCase.fireTSKEvent(new AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
-					
-					// Fire an event notifying that hosts have been added.
-					if (!hostsAdded.isEmpty()) {
-						sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
-					}
 				}
-
+				
+				// Fire an event notifying that hosts have been added.
+				if (!hostsAdded.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
+				}
 			} catch (SQLException ex) {
 				throw new TskCoreException("Failed to commit transaction on case database", ex);
 			} finally {
