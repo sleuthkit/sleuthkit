@@ -836,7 +836,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor());
 	
 	TimelineEventType WEB_CACHE = new URLArtifactEventType(62,
-			getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
+			getBundle().getString("TimelineEventType.WebCache.text"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_CACHE),
 			new Type(TSK_DATETIME_CREATED),
