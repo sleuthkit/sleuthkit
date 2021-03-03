@@ -194,7 +194,7 @@ public class HostAddressManager {
 	 */
 	public void mapHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
 
-		String insertSQL = insertOrIgnore(" INTO tsk_host_address_map(host_id, addr_obj_id, source_obj_id, time) "
+		String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_map(host_id, addr_obj_id, source_obj_id, time) "
 				+ " VALUES(?, ?, ?, ?) ");
 
 		db.acquireSingleUserCaseWriteLock();
@@ -317,7 +317,7 @@ public class HostAddressManager {
 			throw new IllegalArgumentException("An IPv4/IPv6 address is expected.");
 		}
 
-		String insertSQL = insertOrIgnore(" INTO tsk_host_address_dns_ip_map(dns_address_id, ip_address_id, source_obj_id, time) "
+		String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_dns_ip_map(dns_address_id, ip_address_id, source_obj_id, time) "
 				+ " VALUES(?, ?, ?, ?) ");
 
 		db.acquireSingleUserCaseWriteLock();
@@ -423,7 +423,7 @@ public class HostAddressManager {
 	 * @param hostAddress The host address.
 	 */
 	public void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
-		final String insertSQL = insertOrIgnore(" INTO tsk_host_address_usage(addr_obj_id, artifact_obj_id) "
+		final String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_usage(addr_obj_id, artifact_obj_id) "
 				+ " VALUES(" + hostAddress.getId() + ", " + artifact.getId() + ") ");
 
 		db.acquireSingleUserCaseWriteLock();
@@ -434,24 +434,6 @@ public class HostAddressManager {
 			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), artifact.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	/**
-	 * Constructs suitable insert or ignore sql query.
-	 *
-	 * @param sql
-	 *
-	 * @return SQL string.
-	 */
-	private String insertOrIgnore(String sql) {
-		switch (db.getDatabaseType()) {
-			case POSTGRESQL:
-				return " INSERT " + sql + " ON CONFLICT DO NOTHING "; //NON-NLS
-			case SQLITE:
-				return " INSERT OR IGNORE " + sql; //NON-NLS
-			default:
-				throw new UnsupportedOperationException("Unsupported DB type: " + db.getDatabaseType().name());
 		}
 	}
 

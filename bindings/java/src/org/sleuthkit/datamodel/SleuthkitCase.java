@@ -2476,9 +2476,9 @@ public class SleuthkitCase {
 					+ "value_text TEXT, "
 					+ "value_int32 INTEGER, value_int64 " + bigIntDataType + ", "
 					+ "value_double NUMERIC(20, 10), "
-					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), "
 					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL, "
 					+ "FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))");
 
 			statement.execute("CREATE TABLE tsk_os_account_instances (id " + primaryKeyType + " PRIMARY KEY, "
@@ -2487,14 +2487,14 @@ public class SleuthkitCase {
 					+ "host_id " + bigIntDataType + " NOT NULL, "
 					+ "instance_type INTEGER NOT NULL, " // PerformedActionOn/ReferencedOn
 					+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
-					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), "
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
 
 			statement.execute("CREATE TABLE tsk_data_artifacts ( "
 					+ "artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "os_account_obj_id " + bigIntDataType + ", "
-					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE) ");
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id)) ");
 
 			// add owner_uid & os_account_obj_id columns to tsk_files
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN owner_uid TEXT DEFAULT NULL");
@@ -2513,9 +2513,9 @@ public class SleuthkitCase {
 					+ "source_obj_id " + bigIntDataType + ", " // object id of the source where this mapping was found.
 					+ "time " + bigIntDataType + ", " // time at which the mapping existed
 					+ "UNIQUE(host_id, addr_obj_id, time), "
-					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id), "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL )");
 
 			// stores associations between DNS name and IP address
 			statement.execute("CREATE TABLE tsk_host_address_dns_ip_map (id " + primaryKeyType + " PRIMARY KEY, "
@@ -2524,17 +2524,17 @@ public class SleuthkitCase {
 					+ "source_obj_id " + bigIntDataType + ", "
 					+ "time " + bigIntDataType + ", " // time at which the mapping existed
 					+ "UNIQUE(dns_address_id, ip_address_id, time), "
-					+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id), "
-					+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id),"
-					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) )");
+					+ "FOREIGN KEY(dns_address_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE,"
+					+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL )");
 
 			// maps an address to an artifact using it 
 			statement.execute("CREATE TABLE tsk_host_address_usage (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "addr_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
 					+ "UNIQUE(addr_obj_id, artifact_obj_id), "
-					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id), "
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) )");
+					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");
 		
 		
 			return new CaseDbSchemaVersionNumber(8, 7);
@@ -12024,6 +12024,26 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Builds "INSERT or IGNORE ....", or "INSERT .... ON CONFLICT DO NOTHING"
+	 * insert SQL, based on the database type being used, using the given base
+	 * SQL.
+	 *
+	 * @param sql Base insert SQL - "INTO xyz ...."
+	 *
+	 * @return SQL string.
+	 */
+	String getInsertOrIgnoreSQL(String sql) {
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				return " INSERT " + sql + " ON CONFLICT DO NOTHING "; //NON-NLS
+			case SQLITE:
+				return " INSERT OR IGNORE " + sql; //NON-NLS
+			default:
+				throw new UnsupportedOperationException("Unsupported DB type: " + getDatabaseType().name());
+		}
+	}
+
+	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -12884,7 +12904,7 @@ public class SleuthkitCase {
 		 * @param scoreChange Score change.
 		 */
 		void registerScoreChange(ScoreChange scoreChange) {
-			scoreChangeMap.put(scoreChange.getObjId(), scoreChange);
+			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
 		}
 		
 		/**
