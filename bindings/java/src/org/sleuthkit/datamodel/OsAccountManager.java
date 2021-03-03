@@ -702,8 +702,8 @@ public final class OsAccountManager {
 				} else {
 					preparedStatement.setNull(2, java.sql.Types.NULL);
 				}
-				if(accountAttribute.getSourceObjId().isPresent()) {
-					preparedStatement.setLong(3, accountAttribute.getSourceObjId().get());
+				if(accountAttribute.getSourceObjectId().isPresent()) {
+					preparedStatement.setLong(3, accountAttribute.getSourceObjectId().get());
 				}else {
 					preparedStatement.setNull(3, java.sql.Types.NULL);
 				}

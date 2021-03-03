@@ -12884,7 +12884,7 @@ public class SleuthkitCase {
 		 * @param scoreChange Score change.
 		 */
 		void registerScoreChange(ScoreChange scoreChange) {
-			scoreChangeMap.put(scoreChange.getObjId(), scoreChange);
+			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
 		}
 		
 		/**
