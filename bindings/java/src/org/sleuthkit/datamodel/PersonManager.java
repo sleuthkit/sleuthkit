@@ -324,12 +324,18 @@ public final class PersonManager {
 		}
 	}
 
+	/**
+	 * Fires an event when a person is created.
+	 *
+	 * @param added The person that was created.
+	 */
 	private void fireCreationEvent(Person added) {
 		db.fireTSKEvent(new PersonsCreationEvent(Collections.singletonList(added)));
 	}
 
 	/**
 	 * Fires a change event for the specified person.
+	 *
 	 * @param newValue The person value that has changed.
 	 */
 	void fireChangeEvent(Person newValue) {
@@ -357,7 +363,9 @@ public final class PersonManager {
 		}
 
 		/**
-		 * @return The persons effected in the event.
+		 * Returns the persons affected in the event.
+		 *
+		 * @return The persons affected in the event.
 		 */
 		public List<Person> getPersons() {
 			return persons;

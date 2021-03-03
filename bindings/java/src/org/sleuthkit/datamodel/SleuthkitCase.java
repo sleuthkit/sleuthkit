@@ -12887,7 +12887,11 @@ public class SleuthkitCase {
 		void registerScoreChange(ScoreChange scoreChange) {
 			scoreChangeMap.put(scoreChange.getObjId(), scoreChange);
 		}
-		
+
+		/**
+		 * Saves a host that has been added as a part of this transaction.
+		 * @param host The host.
+		 */
 		void registerAddedHost(Host host) {
 			if (host != null) {
 				this.hostsAdded.add(host);	
