@@ -879,6 +879,37 @@ public final class OsAccountManager {
 		fireChangeEvent(osAccount);
 		return osAccount;
 	}
+	
+	/**
+	 * Returns a list of hosts where the OsAccount has appeared.
+	 * 
+	 * @param account OsAccount 
+	 * 
+	 * @return List of Hosts that reference the given OsAccount.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public List<Host> getHosts(OsAccount account) throws TskCoreException {
+		List<Host> hostList = new ArrayList<>();
+		String query = "SELECT tsk_hosts.id AS hostId, name, status FROM tsk_hosts JOIN tsk_os_account_instances ON tsk_hosts.id = host_id WHERE os_account_obj_id = " + account.getId();
+		
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, query)) {
+			
+			while(rs.next()) {
+				hostList.add(new Host(rs.getLong("hostId"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+			}
+
+		}  catch (SQLException ex) {
+			throw new TskCoreException(String.format("Failed to get host list for os account %d", account.getId()), ex);
+		}finally {
+			db.releaseSingleUserCaseReadLock();
+		}		
+		return hostList;
+	}
+	
 	/**
 	 * Takes in a result with a row from tsk_os_accounts table and creates 
 	 * an OsAccount.
