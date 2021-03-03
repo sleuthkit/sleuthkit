@@ -596,10 +596,11 @@ public final class OsAccountManager {
 			// we have separate matches in the destination account for both. If we find this case, we need to first merge
 			// the two accounts in the destination realm. This will ensure that all source accounts match at most one
 			// destination account.
+			// Note that we only merge accounts based on login name if the unique ID is empty.
 			if (sourceAccount.getUniqueIdWithinRealm().isPresent() && sourceAccount.getLoginName().isPresent()) {
 				List<OsAccount> duplicateDestAccounts = destinationAccounts.stream()
 						.filter(p -> p.getUniqueIdWithinRealm().equals(sourceAccount.getUniqueIdWithinRealm())
-								|| p.getLoginName().equals(sourceAccount.getLoginName()))
+								|| (p.getLoginName().equals(sourceAccount.getLoginName()) && (! p.getUniqueIdWithinRealm().isPresent())))
 						.collect(Collectors.toList());
 				if (duplicateDestAccounts.size() > 1) {
 					System.out.println("### Found destination accounts that need to be combined due to source account " + sourceAccount.getId());
@@ -624,10 +625,14 @@ public final class OsAccountManager {
 				}
 			}
 			
-			// If a match wasn't found yet, look for a matching login name
+			// If a match wasn't found yet, look for a matching login name.
+			// We will merge only if:
+			// - We didn't already find a unique ID match
+			// - The source account has no unique ID OR the destination account has no unique ID
 			if (matchingDestAccount == null && sourceAccount.getLoginName().isPresent()) {
 				List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
-						.filter(p -> p.getLoginName().equals(sourceAccount.getLoginName()))
+						.filter(p -> (p.getLoginName().equals(sourceAccount.getLoginName())
+							&& ((!sourceAccount.getUniqueIdWithinRealm().isPresent()) || (!p.getUniqueIdWithinRealm().isPresent()))))
 						.collect(Collectors.toList());
 				if (! matchingDestAccounts.isEmpty()) {
 					matchingDestAccount = matchingDestAccounts.get(0);

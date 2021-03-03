@@ -230,7 +230,7 @@ public final class PersonManager {
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			while (rs.next()) {
-				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
+				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status"))));
 			}
 
 			return hosts;
