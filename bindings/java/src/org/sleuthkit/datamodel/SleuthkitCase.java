@@ -12359,6 +12359,10 @@ public class SleuthkitCase {
 
 		@Override
 		public CaseDbConnection getPooledConnection() throws SQLException {
+			// If the requesting thread already has an open transaction, the new connection may get SQLITE_BUSY errors. 
+			if (CaseDbTransaction.hasOpenTransaction(Thread.currentThread().getId())) {
+				logger.log(Level.WARNING, String.format("Thread id = %d already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getId()));
+			}
 			return new SQLiteConnection(getPooledDataSource().getConnection());
 		}
 	}
@@ -12875,11 +12879,17 @@ public class SleuthkitCase {
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>(); 
 		
+		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
+		private static final Object threadsWithOpenTransactionLock = new Object();
+		
 		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
 			this.connection = connection;
 			this.sleuthkitCase = sleuthkitCase;
 			try {
-				this.connection.beginTransaction();
+				synchronized (threadsWithOpenTransactionLock) {
+					this.connection.beginTransaction();
+					threadsWithOpenTransaction.add(Thread.currentThread().getId());
+				}
 			} catch (SQLException ex) {
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
@@ -12907,6 +12917,18 @@ public class SleuthkitCase {
 			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
 		}
 		
+		/**
+		 * Check if the given thread has an open transaction.
+		 * 
+		 * @param threadId Thread id to check for.
+		 * 
+		 * @return True if the given thread has an open transaction, false otherwise.  
+		 */
+		private static boolean hasOpenTransaction(long threadId) {
+			synchronized (threadsWithOpenTransactionLock) {
+				return threadsWithOpenTransaction.contains(threadId);
+			}
+		}
 		/**
 		 * Commits the transaction on the case database that was begun when this
 		 * object was constructed.
@@ -12958,6 +12980,9 @@ public class SleuthkitCase {
 		void close() {
 			this.connection.close();
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
+			synchronized (threadsWithOpenTransactionLock) {
+				threadsWithOpenTransaction.remove(Thread.currentThread().getId());
+			}
 		}
 	}
 
