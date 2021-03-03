@@ -6622,7 +6622,7 @@ public class SleuthkitCase {
 				if (name.isEmpty()) {
 					host = getHostManager().createHost("Image_" + newObjId + " Host", transaction);
 				} else {
-					host = getHostManager().createHost(name + " Host", transaction);
+					host = getHostManager().createHost(name + "_" + newObjId + " Host", transaction);
 				}
 			}
 
