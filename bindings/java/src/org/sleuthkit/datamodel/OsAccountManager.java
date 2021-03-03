@@ -43,7 +43,7 @@ public final class OsAccountManager {
 
 	private final SleuthkitCase db;
 
-	private final NavigableSet<OsAccountInstanceCacheKey> osAccountInstanceCache = new ConcurrentSkipListSet<>();
+	private final NavigableSet<OsAccountInstance> osAccountInstanceCache = new ConcurrentSkipListSet<>();
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
 	 *
@@ -481,7 +481,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public void createOsAccountInstance(OsAccount osAccount, Host host, Content dataSource, OsAccount.OsAccountInstanceType instanceType) throws TskCoreException {
+	public void createOsAccountInstance(OsAccount osAccount, Host host, Content dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 
 		if (osAccount == null) {
 			throw new IllegalArgumentException("Cannot create account instance with null account.");
@@ -494,9 +494,9 @@ public final class OsAccountManager {
 		}
 
 		// check cache first
-		OsAccountInstanceCacheKey accountInstancekey = new OsAccountInstanceCacheKey(osAccount.getId(), host.getId(), dataSource.getId());
-        if (osAccountInstanceCache.contains(accountInstancekey)) {
-            return;
+		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, host, dataSource, instanceType);
+        if (osAccountInstanceCache.contains(accountInstance)) {
+            return ;
         }
 			
 		// create the instance 
@@ -517,14 +517,14 @@ public final class OsAccountManager {
 			connection.executeUpdate(preparedStatement);
 			
 			// add to the cache.
-            osAccountInstanceCache.add(accountInstancekey);
+            osAccountInstanceCache.add(accountInstance);
 			
 		} catch (SQLException ex) {
 			// Create may fail if an OsAccount instance already exists. 
 			Optional<Long> instanceId = getOsAccountInstanceId(osAccount, host, dataSource.getId(), connection);
 			if (instanceId.isPresent()) {
 				//add to the cache.
-				osAccountInstanceCache.add(accountInstancekey);
+				osAccountInstanceCache.add(accountInstance);
 				return;
 			}
 
@@ -990,76 +990,7 @@ public final class OsAccountManager {
 		}
 		return signature;
 	}
-	
-	/**
-	 * Key for the OS account instance cache.
-	 */
-	private final class OsAccountInstanceCacheKey implements Comparable<OsAccountInstanceCacheKey> {
 
-		long accountObjId;
-		long hostId;
-		long datasourceObjId;
-
-		/**
-		 * Create the key into the OS Account instance cache.
-		 *
-		 * @param accountObjId    Account object id.
-		 * @param hostId          Host id.
-		 * @param datasourceObjId Data source obj id.
-		 */
-		OsAccountInstanceCacheKey(long accountObjId, long hostId, long datasourceObjId) {
-			this.accountObjId = accountObjId;
-			this.hostId = hostId;
-			this.datasourceObjId = datasourceObjId;
-		}
-
-		@Override
-		public int hashCode() {
-			int hash = 5;
-			hash = 67 * hash + (int) (this.accountObjId ^ (this.accountObjId >>> 32));
-			hash = 67 * hash + (int) (this.hostId ^ (this.hostId >>> 32));
-			hash = 67 * hash + (int) (this.datasourceObjId ^ (this.datasourceObjId >>> 32));
-			return hash;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			final OsAccountInstanceCacheKey other = (OsAccountInstanceCacheKey) obj;
-			if (this.accountObjId != other.accountObjId) {
-				return false;
-			}
-			if (this.hostId != other.hostId) {
-				return false;
-			}
-			if (this.datasourceObjId != other.datasourceObjId) {
-				return false;
-			}
-			return true;
-		}
-
-		@Override
-		public int compareTo(OsAccountInstanceCacheKey other) {
-			
-			if (this.accountObjId != other.accountObjId) {
-				 return Long.compare(this.accountObjId, other.accountObjId);
-			}
-			if (this.hostId != other.hostId) {
-				return Long.compare(this.hostId, other.hostId);
-			}
-			return Long.compare(this.datasourceObjId, other.datasourceObjId);
-		}
-
-	}
-	
 	/**
 	 * Event fired by OsAccountManager to indicate that a new OsAccount was
 	 * created.

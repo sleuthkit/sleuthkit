@@ -170,60 +170,6 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Describes the relationship between an os account instance and the host
-	 * where the instance was found.
-	 *
-	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host (such as in a log file)
-	 */
-	public enum OsAccountInstanceType {
-		PERFORMED_ACTION_ON(0, bundle.getString("OsAccountInstanceType.PerformedActionOn.text")), // the user performed actions on a host
-		REFERENCED_ON(1, bundle.getString("OsAccountInstanceType.ReferencedOn.text") );	// user was simply referenced on a host
-
-		private final int id;
-		private final String name;
-
-		OsAccountInstanceType(int id, String name) {
-			this.id = id;
-			this.name = name;
-		}
-
-		/**
-		 * Get account instance type id.
-		 *
-		 * @return Account instance type id.
-		 */
-		public int getId() {
-			return id;
-		}
-
-		/**
-		 * Get account instance type name.
-		 *
-		 * @return Account instance type name.
-		 */
-		public String getName() {
-			return name;
-		}
-
-		/**
-		 * Gets account instance type enum from id.
-		 *
-		 * @param typeId Id to look for.
-		 *
-		 * @return Account instance type enum.
-		 */
-		public static OsAccountInstanceType fromID(int typeId) {
-			for (OsAccountInstanceType statusType : OsAccountInstanceType.values()) {
-				if (statusType.ordinal() == typeId) {
-					return statusType;
-				}
-			}
-			return null;
-		}
-	}
-
-	/**
 	 * Constructs an OsAccount with a realm/username and unique id, and
 	 * signature.
 	 *
