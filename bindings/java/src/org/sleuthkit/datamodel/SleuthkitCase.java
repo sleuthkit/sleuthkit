@@ -12959,7 +12959,11 @@ public class SleuthkitCase {
 		public void commit() throws TskCoreException {
 			try {
 				this.connection.commitTransaction();
-
+			} catch (SQLException ex) {
+				throw new TskCoreException("Failed to commit transaction on case database", ex);
+			} finally {
+				close();
+				
 				if (!scoreChangeMap.isEmpty()) {
 					// Group the score changes by data source id
 					Map<Long, List<ScoreChange>> changesByDataSource = scoreChangeMap.values().stream()
@@ -12975,10 +12979,6 @@ public class SleuthkitCase {
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
 				}
-			} catch (SQLException ex) {
-				throw new TskCoreException("Failed to commit transaction on case database", ex);
-			} finally {
-				close();
 			}
 		}
 
