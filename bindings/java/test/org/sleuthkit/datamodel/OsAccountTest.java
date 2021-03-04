@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -170,6 +171,75 @@ public class OsAccountTest {
 		assertEquals(p2opt.isPresent(), false);
 	}
 		
+	@Test 
+	public void mergeTests() throws TskCoreException {
+		Host host = caseDB.getHostManager().createHost("mergeTestHost");
+		
+		String destRealmName = "mergeTestDestRealm";
+		String srcRealmName = "mergeTestSourceRealm";
+		
+		String sid1 = "S-1-5-21-222222222-222222222-1060284298-2222";
+        String sid2 = "S-1-5-21-555555555-555555555-1060284298-5555";   
+		
+		String uniqueRealm2Name = "uniqueRealm2Account";
+		String matchingName = "matchingNameAccount";
+		String fullName1 = "FullName1";
+		long creationTime1 = 555;
+		
+		OsAccountRealm srcRealm = caseDB.getOsAccountRealmManager().createWindowsRealm(null, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm destRealm = caseDB.getOsAccountRealmManager().createWindowsRealm(null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		
+		OsAccount account1 = caseDB.getOsAccountManager().createWindowsAccount(null, "uniqueRealm1Account", destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account2 = caseDB.getOsAccountManager().createWindowsAccount(null, matchingName, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account3 = caseDB.getOsAccountManager().createWindowsAccount(null, uniqueRealm2Name, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account4 = caseDB.getOsAccountManager().createWindowsAccount(null, matchingName, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		account4.setFullName(fullName1);
+		account4.setIsAdmin(true);
+		account4.setCreationTime(creationTime1);
+		caseDB.getOsAccountManager().updateAccount(account4);
+		OsAccount account5 = caseDB.getOsAccountManager().createWindowsAccount(sid1, null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account6 = caseDB.getOsAccountManager().createWindowsAccount(sid1, null, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);  
+		OsAccount account7 = caseDB.getOsAccountManager().createWindowsAccount(sid2, null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account8 = caseDB.getOsAccountManager().createWindowsAccount(null, "nameForCombining", destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account9 = caseDB.getOsAccountManager().createWindowsAccount(sid2, "nameForCombining", srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		
+		// Test that we can currently get the source realm by name
+		Optional<OsAccountRealm> optRealm = caseDB.getOsAccountRealmManager().getWindowsRealm(null, srcRealmName, host);
+		assertEquals(optRealm.isPresent(), true);
+		
+		// Test that there are currently two account associated with sid1
+		List<OsAccount> accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getUniqueIdWithinRealm().isPresent() && p.getUniqueIdWithinRealm().get().equals(sid1)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 2, true);
+		
+		// Expected results of the merge:
+		// - account 4 will be merged into account 2 (and extra fields should be copied)
+		// - account 6 will be merged into account 5
+		// - account 8 will be merged into account 7 (due to account 9 containing matches for both)
+		// - account 9 will be merged into account 7
+		caseDB.getOsAccountRealmManager().mergeRealms(srcRealm, destRealm);
+		
+		// Test that the source realm is no longer returned by a search by name
+		optRealm = caseDB.getOsAccountRealmManager().getWindowsRealm(null, srcRealmName, host);
+		assertEquals(optRealm.isPresent(), false);
+		
+		// Test that there is now only one account associated with sid1
+		accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getUniqueIdWithinRealm().isPresent() && p.getUniqueIdWithinRealm().get().equals(sid1)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 1, true);
+		
+		// Test that account 3 got moved into the destination realm
+		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(uniqueRealm2Name, destRealm);
+		assertEquals(optAcct.isPresent(), true);
+		
+		// Test that data from account 4 was merged into account 2
+		optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(matchingName, destRealm);
+		assertEquals(optAcct.isPresent(), true);
+		if (optAcct.isPresent()) {
+			assertEquals(optAcct.get().getCreationTime().isPresent() &&  optAcct.get().getCreationTime().get() == creationTime1, true);
+			assertEquals(optAcct.get().getFullName().isPresent() && fullName1.equalsIgnoreCase(optAcct.get().getFullName().get()), true);
+			assertEquals(optAcct.get().isAdmin().isPresent() && optAcct.get().isAdmin().get(), true);
+		}
+	}
+	
 	@Test 
 	public void hostAddressTests() throws TskCoreException {
 		String ipv4Str = "11.22.33.44";

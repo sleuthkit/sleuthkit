@@ -242,7 +242,7 @@ public final class OsAccountRealmManager {
 			// Use a random string as the signature if the realm is not active.
 			String updateSQL = "UPDATE tsk_os_account_realms SET realm_name = ?,  realm_addr = ?, " 
 					+  " realm_signature = "
-					+ "   CASE WHEN db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE + " THEN ? ELSE realm_signature END "
+					+ "   CASE WHEN db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId() + " THEN ? ELSE realm_signature END "
 					+ " WHERE id = ?";
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
@@ -647,10 +647,23 @@ public final class OsAccountRealmManager {
 		return signature;
 	}
 	
-	private String makeRandomSignature() {
+	/**
+	 * Create a random signature for realms that have been merged.
+	 * 
+	 * @return The random signature.
+	 */
+	private String makeMergedRealmSignature() {
 		return "MERGED " +  UUID.randomUUID().toString();
 	}
 	
+	/**
+	 * Merge one realm into another, moving or combining all associated OsAccounts.
+	 * 
+	 * @param source The source realm.
+	 * @param dest   The destination realm.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	public void mergeRealms(OsAccountRealm source, OsAccountRealm dest) throws TskCoreException {
 		
 		CaseDbTransaction trans = null;
@@ -665,7 +678,7 @@ public final class OsAccountRealmManager {
 			try (Statement statement = connection.createStatement()) {
 				String updateStr = "UPDATE tsk_os_account_realms SET db_status = " + OsAccountRealm.RealmDbStatus.MERGED.getId() 
 						+ ", merged_into = " + dest.getId()
-						+ ", realm_signature = '" + makeRandomSignature() + "' "
+						+ ", realm_signature = '" + makeMergedRealmSignature() + "' "
 						+ " WHERE id = " + source.getId();
 				connection.executeUpdate(statement, updateStr);
 			} catch (SQLException ex) {
