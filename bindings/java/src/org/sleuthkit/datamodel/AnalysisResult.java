@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,28 @@ public class AnalysisResult extends BlackboardArtifact {
 
 	private boolean ignoreResult = false; // ignore this analysis result when computing score of the parent object.
 
-	AnalysisResult( SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Score score, String conclusion, String configuration, String justification) {
+	/**
+	 * Constructs an analysis result. 
+	 *
+	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
+	 *                         the artifact data.
+	 * @param artifactID       The unique id for this artifact.
+	 * @param sourceObjId      The unique id of the content with which this
+	 *                         artifact is associated.
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects.
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact
+	 *                         was found. May be null.
+	 * @param artifactTypeID   The type id of this artifact.
+	 * @param artifactTypeName The type name of this artifact.
+	 * @param displayName      The display name of this artifact.
+	 * @param reviewStatus     The review status of this artifact.
+	 * @param score            The score assigned by the analysis.
+	 * @param conclusion       Conclusion arrived at by the analysis. May be
+	 *                         null.
+	 * @param configuration    Configuration used for analysis. May be null.
+	 * @param justification	   Justification for the analysis. May be null.
+	 */
+	AnalysisResult( SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		this.score = score;
 		this.conclusion = (conclusion != null) ? conclusion : "";
@@ -40,7 +61,31 @@ public class AnalysisResult extends BlackboardArtifact {
 		this.justification = (justification != null) ? justification : "";
 	}
 
-	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew, Score score, String conclusion, String configuration, String justification) {
+	
+	/**
+	 * Constructs an analysis result. 
+	 *
+	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
+	 *                         the artifact data.
+	 * @param artifactID       The unique id for this artifact.
+	 * @param sourceObjId      The unique id of the content with which this
+	 *                         artifact is associated.
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects.
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact
+	 *                         was found. May be null.
+	 * @param artifactTypeID   The type id of this artifact.
+	 * @param artifactTypeName The type name of this artifact.
+	 * @param displayName      The display name of this artifact.
+	 * @param reviewStatus     The review status of this artifact.
+	 * @param isNew            If this analysis result is newly created.
+	 * @param score            The score assigned by the analysis.
+	 * @param conclusion       Conclusion arrived at by the analysis. May be
+	 *                         null.
+	 * @param configuration    Configuration used for analysis. May be null.
+	 * @param justification	   Justification for the analysis. May be null.
+	 */
+	
+	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, Long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.score = score;
 		this.conclusion = (conclusion != null) ? conclusion : "";
