@@ -162,7 +162,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *
 	 * @return Account row id.
 	 */
-	public long getOsAccountObjId() {
+	public long getOsAccountObjectId() {
 		return osAccountObjId;
 	}
 
@@ -171,7 +171,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 	 *
 	 * @return Object id of source.
 	 */
-	public Optional<Long> getSourceObjId() {
+	public Optional<Long> getSourceObjectId() {
 		return Optional.ofNullable(sourceObjId);
 	}
 }

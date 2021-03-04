@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -262,7 +262,7 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE blackboard_artifacts (artifact_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "artifact_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "review_status_id INTEGER NOT NULL, "
 				+ "UNIQUE (artifact_obj_id),"
@@ -297,7 +297,7 @@ class CaseDatabaseFactory {
 				+ ")");		
 		
 		stmt.execute("CREATE TABLE tsk_aggregate_score( obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
-				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "significance INTEGER NOT NULL, "
 				+ "confidence INTEGER NOT NULL, "
 				+ "UNIQUE (obj_id),"

@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ResourceBundle;
 
 /**
  * Realm encapsulates the scope of an OsAccount. An account is unique within a realm.
@@ -33,6 +34,8 @@ import java.util.Optional;
  * host-level scope and a confidence of "inferred". 
  */
 public final class OsAccountRealm {
+	
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private final long id;	// row id 
 	private String realmName; // realm name - may be updated later. For example, a Windows domain name. 
@@ -126,6 +129,15 @@ public final class OsAccountRealm {
 	public RealmDbStatus getDbStatus() {
 		return dbStatus;
 	}	
+
+	/**
+	 * Get the realm scope.
+	 * 
+	 * @return Realm scope.
+	 */
+	public RealmScope getScope() {
+		return getScopeHost().isPresent() ? RealmScope.LOCAL : RealmScope.DOMAIN; 
+	}
 	
 	/**
 	 * Enum to encapsulate a realm scope.
@@ -134,9 +146,9 @@ public final class OsAccountRealm {
 	 * or to a domain.
 	 */
 	public enum RealmScope {
-		UNKNOWN(0, "Unknown"),			// realm scope is unknown.
-		LOCAL(1, "Local"),				// realm scope is a single host.
-		DOMAIN(2, "Domain");			// realm scope is a domain.
+		UNKNOWN(0,	bundle.getString("OsAccountRealm.Unknown.text")),			// realm scope is unknown.
+		LOCAL(1,	bundle.getString("OsAccountRealm.Local.text")),				// realm scope is a single host.
+		DOMAIN(2,	bundle.getString("OsAccountRealm.Domain.text"));			// realm scope is a domain.
 		
 		private final int id;
 		private final String name; 
@@ -160,7 +172,7 @@ public final class OsAccountRealm {
 		 * 
 		 * @return Realm scope name.
 		 */
-		String getName() {
+		public String getName() {
 			return name;
 		}
 		
@@ -189,8 +201,8 @@ public final class OsAccountRealm {
 	 * initially create a realm.
 	 */
 	public enum ScopeConfidence {
-		KNOWN(0, "Known"),			// realm scope is known for sure.
-		INFERRED(1, "Inferred");	// realm scope is inferred
+		KNOWN(0, bundle.getString("OsAccountRealm.Known.text")),			// realm scope is known for sure.
+		INFERRED(1, bundle.getString("OsAccountRealm.Inferred.text"));	// realm scope is inferred
 
 		private final int id;
 		private final String name; 
@@ -214,7 +226,7 @@ public final class OsAccountRealm {
 		 * 
 		 * @return Realm scope confidence name.
 		 */
-		String getName() {
+		public String getName() {
 			return name;
 		}
 		
