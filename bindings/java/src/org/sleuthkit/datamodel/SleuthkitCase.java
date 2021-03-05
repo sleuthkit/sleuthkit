@@ -2457,7 +2457,6 @@ public class SleuthkitCase {
 					+ "unique_id TEXT DEFAULT NULL, " // SID/UID, if available
 					+ "signature TEXT NOT NULL, " // This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 					+ "status INTEGER, " // enabled/disabled/deleted
-					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
 					+ "person_id INTEGER, "
