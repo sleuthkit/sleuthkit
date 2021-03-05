@@ -20,13 +20,14 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.Optional;
 
 /**
  * Event to indicate that aggregate score of objects has changed.
  */
 final public class AggregateScoresChangedEvent implements TskDataSourceEvent, TskEvent {
 
-	AggregateScoresChangedEvent(long dataSourceId, ImmutableSet<ScoreChange> scoreChanges) {
+	AggregateScoresChangedEvent(Long dataSourceId, ImmutableSet<ScoreChange> scoreChanges) {
 		this.dataSourceId = dataSourceId;
 		this.scoreChanges = scoreChanges;
 		
@@ -39,12 +40,12 @@ final public class AggregateScoresChangedEvent implements TskDataSourceEvent, Ts
 				});
 	}
 
-	private final long dataSourceId;
+	private final Long dataSourceId;
 	private final ImmutableSet<ScoreChange> scoreChanges;
 
 	@Override
-	public long getDataSourceId() {
-		return dataSourceId;
+	public Optional<Long> getDataSourceId() {
+		return Optional.ofNullable(dataSourceId);
 	}
 
 	public ImmutableSet<ScoreChange> getScoreChanges() {

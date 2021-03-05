@@ -149,7 +149,7 @@ public class ArtifactTest {
 		trans.commit();
 		
 		
-		// Create an account 
+		// Create a host and an account.
 		String hostname1 = "host1";
 		String realmName1 = "realm1";
 		String ownerUid1 = "S-1-5-32-111111111-222222222-3333333333-0001";
@@ -174,12 +174,42 @@ public class ArtifactTest {
         attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD, MODULE_NAME, "keyword1"));
         
 		// Test: attach an analysis result to the file. 
-		AnalysisResultAdded analysisResultAdded = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), new Score(Score.Significance.MEDIUM, Score.Confidence.HIGH), "Keyword hit found", "", "", attributes);
+		AnalysisResultAdded analysisResultAdded1 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), 
+																		new Score(Score.Significance.MEDIUM, Score.Confidence.HIGH), "Keyword hit found", "", "", attributes);
    
-		assertEquals(analysisResultAdded.getAnalysisResult().getScore().getSignificance().getId(), Score.Significance.MEDIUM.getId());
-		assertEquals(analysisResultAdded.getAnalysisResult().getScore().getConfidence().getId(), Score.Confidence.HIGH.getId());
+		assertEquals(analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId(), Score.Significance.MEDIUM.getId());
+		assertEquals(analysisResultAdded1.getAnalysisResult().getScore().getConfidence().getId(), Score.Confidence.HIGH.getId());
+		assertEquals(analysisResultAdded1.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"), true);
 		
-		assertEquals(analysisResultAdded.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"), true);
+		// Add a 2nd analysis result to the same file
+		AnalysisResultAdded analysisResultAdded2 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+																	new Score(Score.Significance.LOW, Score.Confidence.LOW), "Thats a rather intersting file.", "", "", Collections.emptyList());
+   
+		// Add a 3rd analysis result to the same file 
+		AnalysisResultAdded analysisResultAdded3 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED), 
+																	new Score(Score.Significance.HIGH, Score.Confidence.HIGH), "Highly scrambled text!!", "", "", Collections.emptyList());
+		// get analysis results and verify count
+		
+		List<AnalysisResult> ars = abcTextFile.getAllAnalysisResults();
+		assertEquals(ars.size(), 3);
+		
+		// verify the aggregate score - expect HIGH/HIGH - highest of the 3 results added
+		Score aggScore = abcTextFile.getAggregateScore();
+		assertEquals(aggScore.getSignificance().getId(), Score.Significance.HIGH.getId());
+		assertEquals(aggScore.getConfidence().getId(), Score.Confidence.HIGH.getId());
+		
+		// delete an anlysis result 3
+		Score newScore = caseDB.getBlackboard().deleteAnalysisResult(analysisResultAdded3.getAnalysisResult());
+		
+		// get analysis results and verify count
+		ars = abcTextFile.getAllAnalysisResults();
+		assertEquals(ars.size(), 2);
+		
+		// verify aggregate score - should now be Medium/High
+		Score newAggScore = abcTextFile.getAggregateScore();
+		assertEquals(newAggScore.getSignificance().getId(), Score.Significance.MEDIUM.getId());
+		assertEquals(newAggScore.getConfidence().getId(), Score.Confidence.HIGH.getId());
+		
 		
 		// Test: add a new data artifact to the file
         DataArtifact dataArtifact1 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH), Collections.emptyList(), osAccount1);

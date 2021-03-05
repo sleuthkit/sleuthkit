@@ -194,6 +194,73 @@ public final class Blackboard {
 		}
 	}
 	
+	/**
+	 * Delete the specified analysis result.
+	 *
+	 * Deletes the result from tsk_analysis_results table, and recalculates and
+	 * updates the aggregate score of the content. Fires an event to indicate that
+	 * the analysis result has been deleted and that the score of the item has
+	 * changed.
+	 *
+	 * @param analysisResult AnalysisResult to delete.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score deleteAnalysisResult(AnalysisResult analysisResult) throws TskCoreException {
+
+		// get current score of the content for this result
+		Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID());
+		
+		CaseDbTransaction transaction = this.caseDb.beginTransaction();
+		try {
+			
+			CaseDbConnection connection = transaction.getConnection();
+
+			// delete the analysis result
+			String deleteSQL = " DELETE FROM tsk_analysis_results WHERE artifact_obj_id = ?";
+
+			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
+			deleteStatement.clearParameters();
+			deleteStatement.setLong(1, analysisResult.getId());
+
+			deleteStatement.executeUpdate();
+
+			// get all remaining analysis results for the object, loop over to find the highest score
+			List<AnalysisResult> analysisResults = this.getAnalysisResults(analysisResult.getObjectID(), connection);
+			Score newScore = Score.SCORE_UNKNOWN;
+			for (AnalysisResult iter : analysisResults) {
+				Score iterScore = iter.getScore();
+				if ((newScore.compareTo(Score.SCORE_UNKNOWN) == 0 && iterScore.compareTo(Score.SCORE_UNKNOWN) != 0)
+						|| (Score.getScoreComparator().compare(iterScore, newScore) > 0)) {
+					newScore = iterScore;
+				}
+			}
+			
+			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, connection);
+
+			transaction.commit();
+			transaction = null;
+
+			// fire an event that an anaylsys result was deleted.  
+			caseDb.fireTSKEvent(new AnalysisResultDeletedEvent(analysisResult));
+
+			// fire an event to indicate aggregate score of a content changed.
+			Set<ScoreChange> scoreChanges = new HashSet<>();
+			scoreChanges.add(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
+			caseDb.fireTSKEvent(new AggregateScoresChangedEvent(analysisResult.getDataSourceObjectID(), ImmutableSet.copyOf(scoreChanges)));
+
+			return newScore;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+		}
+	}
+	
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
 				+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
 				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
@@ -217,6 +284,21 @@ public final class Blackboard {
 	 */
 	public List<AnalysisResult> getAnalysisResults(long objId) throws TskCoreException {
 		return getAnalysisResultsWhere(" arts.obj_id = " + objId);
+	}
+	
+	/**
+	 * Get all analysis results for a given object.
+	 *
+	 * @param objId Object id.
+	 * @param connection Database connection to use. 
+	
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	List<AnalysisResult> getAnalysisResults(long objId, CaseDbConnection connection) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.obj_id = " + objId, connection);
 	}
 	
 	/**
