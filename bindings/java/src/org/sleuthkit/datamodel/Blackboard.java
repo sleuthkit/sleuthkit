@@ -253,7 +253,7 @@ public final class Blackboard {
 
 			return newScore;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error deleting analysis result with artofact obj id %d", analysisResult.getId()), ex);
+			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
 		} finally {
 			if (transaction != null) {
 				transaction.rollback();
