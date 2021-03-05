@@ -213,9 +213,10 @@ public final class Blackboard {
 		// get current score of the content for this result
 		Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID());
 		
-		caseDb.acquireSingleUserCaseWriteLock();
 		CaseDbTransaction transaction = this.caseDb.beginTransaction();
-		try (CaseDbConnection connection = transaction.getConnection()) {
+		try {
+			
+			CaseDbConnection connection = transaction.getConnection();
 
 			// delete the analysis result
 			String deleteSQL = " DELETE FROM tsk_analysis_results WHERE artifact_obj_id = ?";
@@ -257,7 +258,6 @@ public final class Blackboard {
 			if (transaction != null) {
 				transaction.rollback();
 			}
-			caseDb.releaseSingleUserCaseWriteLock();
 		}
 	}
 	

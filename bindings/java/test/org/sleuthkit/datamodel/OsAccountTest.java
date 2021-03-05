@@ -300,12 +300,10 @@ public class OsAccountTest {
 			assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
 			assertEquals(osAccount1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
 			
-			// Create another account - with same SID  on the same host - should return the existing account
-			String ownerUid11 = "S-1-5-21-111111111-222222222-3333333333-1001";  // same as ownerUid1
+			// Create another account - with same SID on the same host - should return the existing account
 			String loginName11 = "BlueJay";
-			
 			String realmName11 = "DESKTOP-9TO5";
-			OsAccount osAccount11 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid11, loginName11, realmName11, host1, OsAccountRealm.RealmScope.DOMAIN);
+			OsAccount osAccount11 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, loginName11, realmName11, host1, OsAccountRealm.RealmScope.DOMAIN);
 			
 			// account should be the same as osAccount1
 			assertEquals(osAccount11.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);	
