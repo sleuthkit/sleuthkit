@@ -35,8 +35,8 @@ import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALU
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 
 /**
- * Responsible for creating/updating/retrieving the OS accounts for files
- * and artifacts.
+ * Responsible for creating/updating/retrieving the OS accounts for files and
+ * artifacts.
  *
  */
 public final class OsAccountManager {
@@ -44,6 +44,7 @@ public final class OsAccountManager {
 	private final SleuthkitCase db;
 
 	private final NavigableSet<OsAccountInstance> osAccountInstanceCache = new ConcurrentSkipListSet<>();
+
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
 	 *
@@ -55,29 +56,29 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Creates an OS account with given unique id and given realm id.
-	 * If an account already exists with the given id, then the
-	 * existing OS account is returned.
+	 * Creates an OS account with given unique id and given realm id. If an
+	 * account already exists with the given id, then the existing OS account is
+	 * returned.
 	 *
 	 * @param uniqueAccountId Account sid/uid.
 	 * @param realm           Account realm.
-	 * 
+	 *
 	 * @return OsAccount.
 	 *
 	 * @throws TskCoreException If there is an error in creating the OSAccount.
 	 *
 	 */
-	OsAccount createOsAccount(String uniqueAccountId,  OsAccountRealm realm) throws TskCoreException {
+	OsAccount createOsAccount(String uniqueAccountId, OsAccountRealm realm) throws TskCoreException {
 
 		// ensure unique id is provided
 		if (Strings.isNullOrEmpty(uniqueAccountId)) {
 			throw new IllegalArgumentException("Cannot create OS account with null uniqueId.");
 		}
-		
+
 		if (realm == null) {
 			throw new IllegalArgumentException("Cannot create OS account without a realm.");
 		}
-		
+
 		try (CaseDbConnection connection = this.db.getConnection();) {
 
 			// try to create account
@@ -94,19 +95,19 @@ public final class OsAccountManager {
 				// create failed for some other reason, throw an exception
 				throw new TskCoreException(String.format("Error creating OsAccount with uniqueAccountId = %s in realm id = %d", uniqueAccountId, realm.getId()), ex);
 			}
-		} 
+		}
 	}
 
-	
 	/**
-	 * Creates an OS account with Windows-specific data. 
-	 * If an account already exists with the given id or realm/login, then the
-	 * existing OS account is returned.  
+	 * Creates an OS account with Windows-specific data. If an account already
+	 * exists with the given id or realm/login, then the existing OS account is
+	 * returned.
 	 *
-	 * @param sid           Account sid/uid, can be null if loginName is supplied. 
-	 * @param loginName     Login name, can be null if sid is supplied. 
+	 * @param sid           Account sid/uid, can be null if loginName is
+	 *                      supplied.
+	 * @param loginName     Login name, can be null if sid is supplied.
 	 * @param realmName     Realm within which the accountId or login name is
-	 *                      unique. Can be null if sid is supplied. 
+	 *                      unique. Can be null if sid is supplied.
 	 * @param referringHost Host referring the account.
 	 * @param realmScope    Realm scope.
 	 *
@@ -123,7 +124,7 @@ public final class OsAccountManager {
 		if (referringHost == null) {
 			throw new IllegalArgumentException("A referring host is required to create an account.");
 		}
-		
+
 		// ensure at least one of the two is supplied - unique id or a login name
 		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(loginName)) {
 			throw new IllegalArgumentException("Cannot create OS account with both uniqueId and loginName as null.");
@@ -142,7 +143,7 @@ public final class OsAccountManager {
 				// realm was not found, create it.
 				realm = Optional.of(db.getOsAccountRealmManager().createWindowsRealm(sid, realmName, referringHost, realmScope));
 			}
-		
+
 			// try to create account
 			try {
 				return createOsAccount(sid, loginName, realm.get(), OsAccount.OsAccountStatus.UNKNOWN, connection);
@@ -168,22 +169,22 @@ public final class OsAccountManager {
 				}
 
 				// create failed for some other reason, throw an exception
-				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %d", 
-															(sid != null) ? sid : "Null", (loginName != null) ? loginName : "Null", 
-															(realmName != null) ? realmName : "Null", referringHost), ex);
+				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %d",
+						(sid != null) ? sid : "Null", (loginName != null) ? loginName : "Null",
+						(realmName != null) ? realmName : "Null", referringHost), ex);
 
 			}
-		} 
+		}
 	}
 
 	/**
 	 * Creates a OS account with the given uid, name, and realm.
 	 *
-	 * @param uniqueId     Account sid/uid. May be null.
-	 * @param loginName    Login name. May be null only if SID is not null.
-	 * @param realm	       Realm.
+	 * @param uniqueId      Account sid/uid. May be null.
+	 * @param loginName     Login name. May be null only if SID is not null.
+	 * @param realm	        Realm.
 	 * @param accountStatus Account status.
-	 * @param connection   Database connection to use.
+	 * @param connection    Database connection to use.
 	 *
 	 * @return OS account.
 	 *
@@ -194,21 +195,20 @@ public final class OsAccountManager {
 		if (Objects.isNull(realm)) {
 			throw new IllegalArgumentException("Cannot create an OS Account, realm is NULL.");
 		}
-		
+
 		String signature = getAccountSignature(uniqueId, loginName);
 		OsAccount account;
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			
+
 			// first create a tsk_object for the OsAccount.
-			
 			// RAMAN TODO: need to get the correct parent obj id.  
 			//            Create an Object Directory parent and used its id.
 			long parentObjId = 0;
-			
+
 			int objTypeId = TskData.ObjectType.OS_ACCOUNT.getObjectType();
 			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
-			
+
 			String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, unique_id, signature, status)"
 					+ " VALUES (?, ?, ?, ?, ?, ?)"; // NON-NLS
 
@@ -216,7 +216,7 @@ public final class OsAccountManager {
 			preparedStatement.clearParameters();
 
 			preparedStatement.setLong(1, osAccountObjId);
-			
+
 			preparedStatement.setString(2, loginName);
 			if (!Objects.isNull(realm)) {
 				preparedStatement.setLong(3, realm.getId());
@@ -226,12 +226,12 @@ public final class OsAccountManager {
 
 			preparedStatement.setString(4, uniqueId);
 			preparedStatement.setString(5, signature);
-			preparedStatement.setInt(6, accountStatus.getId());	
+			preparedStatement.setInt(6, accountStatus.getId());
 
 			connection.executeUpdate(preparedStatement);
 
-			account = new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature, accountStatus );
-		}  finally {
+			account = new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature, accountStatus);
+		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
 		fireCreationEvent(account);
@@ -241,8 +241,8 @@ public final class OsAccountManager {
 	/**
 	 * Get the OS account with the given unique id.
 	 *
-	 * @param uniqueId    Account sid/uid.
-	 * @param host        Host for account realm, may be null.
+	 * @param uniqueId Account sid/uid.
+	 * @param host     Host for account realm, may be null.
 	 *
 	 * @return Optional with OsAccount, Optional.empty if no matching account is
 	 *         found.
@@ -257,32 +257,33 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Gets the OS account for the given unique id. 
+	 * Gets the OS account for the given unique id.
 	 *
 	 * @param uniqueId   Account SID/uid.
 	 * @param host       Host to match the realm, may be null.
 	 * @param connection Database connection to use.
 	 *
-	 * @return Optional with OsAccount, Optional.empty if no account with matching uniqueId is found.
+	 * @return Optional with OsAccount, Optional.empty if no account with
+	 *         matching uniqueId is found.
 	 *
 	 * @throws TskCoreException
 	 */
 	private Optional<OsAccount> getOsAccountByUniqueId(String uniqueId, Host host, CaseDbConnection connection) throws TskCoreException {
 
-		String whereHostClause = (host == null) 
-							? " 1 = 1 " 
-							: " ( realms.scope_host_id = " + host.getId() + " OR realms.scope_host_id IS NULL) ";
-		
+		String whereHostClause = (host == null)
+				? " 1 = 1 "
+				: " ( realms.scope_host_id = " + host.getId() + " OR realms.scope_host_id IS NULL) ";
+
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
-								+ " accounts.realm_id, accounts.unique_id, accounts.signature, "
-								+ "	accounts.type, accounts.status, accounts.admin, accounts.created_date, "
-								+ " realms.realm_name as realm_name, realms.realm_addr as realm_addr, realms.realm_signature, realms.scope_host_id, realms.scope_confidence "
-							+ " FROM tsk_os_accounts as accounts"
-							+ "		LEFT JOIN tsk_os_account_realms as realms"
-							+ " ON accounts.realm_id = realms.id"
-							+ " WHERE " + whereHostClause
-							+ "		AND LOWER(accounts.unique_id) = LOWER('" + uniqueId + "')";
-		
+				+ " accounts.realm_id, accounts.unique_id, accounts.signature, "
+				+ "	accounts.type, accounts.status, accounts.admin, accounts.created_date, "
+				+ " realms.realm_name as realm_name, realms.realm_addr as realm_addr, realms.realm_signature, realms.scope_host_id, realms.scope_confidence "
+				+ " FROM tsk_os_accounts as accounts"
+				+ "		LEFT JOIN tsk_os_account_realms as realms"
+				+ " ON accounts.realm_id = realms.id"
+				+ " WHERE " + whereHostClause
+				+ "		AND LOWER(accounts.unique_id) = LOWER('" + uniqueId + "')";
+
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -294,25 +295,23 @@ public final class OsAccountManager {
 				long realmId = rs.getLong("realm_id");
 				if (!rs.wasNull()) {
 					realm = new OsAccountRealm(realmId, rs.getString("realm_name"), rs.getString("realm_addr"), rs.getString("realm_signature"),
-									host, OsAccountRealm.ScopeConfidence.fromID(rs.getInt("scope_confidence")));
+							host, OsAccountRealm.ScopeConfidence.fromID(rs.getInt("scope_confidence")));
 				}
 
 				return Optional.of(osAccountFromResultSet(rs, realm));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for unique id = %s and host = %s", uniqueId, (host != null ? host.getName() : "null")), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
-	
 	/**
 	 * Gets a OS Account by the realm and unique id.
 	 *
-	 * @param uniqueId   Account unique id.
-	 * @param realm      Account realm.
+	 * @param uniqueId Account unique id.
+	 * @param realm    Account realm.
 	 *
 	 * @return Optional with OsAccount, Optional.empty, if no user is found with
 	 *         matching realm and unique id.
@@ -322,11 +321,11 @@ public final class OsAccountManager {
 	Optional<OsAccount> getOsAccountByUniqueId(String uniqueId, OsAccountRealm realm) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE LOWER(unique_id) = LOWER('" + uniqueId + "')" 
+				+ " WHERE LOWER(unique_id) = LOWER('" + uniqueId + "')"
 				+ " AND realm_id = " + realm.getId();
-		
+
 		db.acquireSingleUserCaseReadLock();
-		try (  CaseDbConnection connection = this.db.getConnection();
+		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -337,12 +336,11 @@ public final class OsAccountManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for realm = %s and uniqueId = %s.", (realm != null) ? realm.getSignature() : "NULL", uniqueId), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Gets a OS Account by the realm and login name.
 	 *
@@ -357,11 +355,11 @@ public final class OsAccountManager {
 	Optional<OsAccount> getOsAccountByLoginName(String loginName, OsAccountRealm realm) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE LOWER(login_name) = LOWER('" + loginName + "')" 
+				+ " WHERE LOWER(login_name) = LOWER('" + loginName + "')"
 				+ " AND realm_id = " + realm.getId();
-		
+
 		db.acquireSingleUserCaseReadLock();
-		try (	CaseDbConnection connection = this.db.getConnection();
+		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
@@ -384,7 +382,8 @@ public final class OsAccountManager {
 	 *
 	 * @return OsAccount.
 	 *
-	 * @throws TskCoreException         If there is an error getting the account.
+	 * @throws TskCoreException         If there is an error getting the
+	 *                                  account.
 	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
 	public OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
@@ -393,16 +392,17 @@ public final class OsAccountManager {
 			return getOsAccount(osAccountObjId, connection);
 		}
 	}
-	
+
 	/**
 	 * Get the OsAccount with the given object id.
 	 *
 	 * @param osAccountObjId Object id for the account.
-	 * @param connection Database connection to use.
+	 * @param connection     Database connection to use.
 	 *
 	 * @return OsAccount.
 	 *
-	 * @throws TskCoreException         If there is an error getting the account.
+	 * @throws TskCoreException         If there is an error getting the
+	 *                                  account.
 	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
 	OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
@@ -411,13 +411,13 @@ public final class OsAccountManager {
 				+ " WHERE os_account_obj_id = " + osAccountObjId;
 
 		db.acquireSingleUserCaseReadLock();
-		try (	Statement s = connection.createStatement();
+		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			if (!rs.next()) {
 				throw new IllegalArgumentException(String.format("No account found with obj id = %d ", osAccountObjId));
 			} else {
-		
+
 				OsAccountRealm realm = null;
 				long realmId = rs.getLong("realm_id");
 
@@ -429,17 +429,15 @@ public final class OsAccountManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting account with obj id = %d ", osAccountObjId), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Get the account instance for given account, host and data source id.
 	 *
 	 * @param osAccount       Account to check for.
-	 * @param host            Host Host for the account instance.
 	 * @param dataSourceObjId Data source object id.
 	 * @param connection      Database connection to use.
 	 *
@@ -448,12 +446,11 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<Long> getOsAccountInstanceId(OsAccount osAccount, Host host, long dataSourceObjId, CaseDbConnection connection) throws TskCoreException {
+	private Optional<Long> getOsAccountInstanceId(OsAccount osAccount, DataSource dataSource, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_account_instances"
 				+ " WHERE os_account_obj_id = " + osAccount.getId()
-				+ " AND data_source_obj_id = " + dataSourceObjId
-				+ " AND host_id = " + host.getId();
+				+ " AND data_source_obj_id = " + dataSource.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
@@ -464,45 +461,41 @@ public final class OsAccountManager {
 			}
 			return Optional.empty();
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting account instance with account obj id = %d, data source obj id = %d, host  = %s ", osAccount.getId(), dataSourceObjId, host.getName()), ex);
+			throw new TskCoreException(String.format("Error getting account instance with account obj id = %d, data source obj id = %d ", osAccount.getId(), dataSource.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
 	 * instance already exists in the table.
 	 *
 	 * @param osAccount    Account for which an instance needs to be added.
-	 * @param host         Host on which the instance is found.
 	 * @param dataSource   Data source where the instance is found.
 	 * @param instanceType Instance type.
 	 *
 	 * @throws TskCoreException
 	 */
-	public void createOsAccountInstance(OsAccount osAccount, Host host, Content dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
+	public void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 
 		if (osAccount == null) {
 			throw new IllegalArgumentException("Cannot create account instance with null account.");
 		}
-		if (host == null) {
-			throw new IllegalArgumentException("Cannot create account instance with null host.");
-		}
-		if (host == null) {
+		if (dataSource == null) {
 			throw new IllegalArgumentException("Cannot create account instance with null data source.");
 		}
 
 		// check cache first
-		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, host, dataSource, instanceType);
-        if (osAccountInstanceCache.contains(accountInstance)) {
-            return ;
-        }
-			
+		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, dataSource, instanceType);
+		if (osAccountInstanceCache.contains(accountInstance)) {
+			return;
+		}
+
 		// create the instance 
 		db.acquireSingleUserCaseWriteLock();
-		CaseDbConnection connection = this.db.getConnection(); // not in try-with-resource because it's used in the catch block.
-		try {
+		 // not in try-with-resource because it's used in the catch block.
+		try(CaseDbConnection connection = this.db.getConnection()) {
 			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
 					+ " VALUES (?, ?, ?, ?)"); // NON-NLS
 
@@ -511,47 +504,37 @@ public final class OsAccountManager {
 
 			preparedStatement.setLong(1, osAccount.getId());
 			preparedStatement.setLong(2, dataSource.getId());
-			preparedStatement.setLong(3, host.getId());
+			preparedStatement.setLong(3, dataSource.getHost().getId());
 			preparedStatement.setInt(4, instanceType.getId());
-			
-			connection.executeUpdate(preparedStatement);
-			
-			// add to the cache.
-            osAccountInstanceCache.add(accountInstance);
-			
-		} catch (SQLException ex) {
-			// Create may fail if an OsAccount instance already exists. 
-			Optional<Long> instanceId = getOsAccountInstanceId(osAccount, host, dataSource.getId(), connection);
-			if (instanceId.isPresent()) {
-				//add to the cache.
-				osAccountInstanceCache.add(accountInstance);
-				return;
-			}
 
-			// create failed due to a real error - throw it up.
-			throw new TskCoreException(String.format("Error adding os account instance for account = %s, host name = %s, data source object id = %d", osAccount.getUniqueIdWithinRealm().orElse(osAccount.getLoginName().orElse("UNKNOWN")), host.getName(), dataSource.getId()), ex);
+			connection.executeUpdate(preparedStatement);
+
+			// add to the cache.
+			osAccountInstanceCache.add(accountInstance);
+
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error adding os account instance for account = %s, data source object id = %d", osAccount.getUniqueIdWithinRealm().orElse(osAccount.getLoginName().orElse("UNKNOWN")), dataSource.getId()), ex);
 		} finally {
-			connection.close();
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Get all accounts that had an instance on the specified host.
-	 * 
+	 *
 	 * @param host Host for which to look accounts for.
-	 * 
+	 *
 	 * @return Set of OsAccounts, may be empty.
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<OsAccount> getAccounts(Host host) throws TskCoreException {
-	
+
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
 				+ " ON instances.os_account_obj_id = accounts.os_account_obj_id "
 				+ " WHERE instances.host_id = " + host.getId();
 
-		
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -566,23 +549,23 @@ public final class OsAccountManager {
 				}
 
 				accounts.add(osAccountFromResultSet(rs, realm));
-			} 
+			}
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS accounts for host id = %d", host.getId()), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Get all accounts.
-	 * 
+	 *
 	 * @return Set of OsAccounts, may be empty.
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<OsAccount> getAccounts() throws TskCoreException{
+	public List<OsAccount> getAccounts() throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_os_accounts";
 
 		db.acquireSingleUserCaseReadLock();
@@ -599,46 +582,46 @@ public final class OsAccountManager {
 				}
 
 				accounts.add(osAccountFromResultSet(rs, realm));
-			} 
+			}
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS accounts"), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-		
+
 	/**
-	 * Gets an OS account using Windows-specific data. 
-	 * 
+	 * Gets an OS account using Windows-specific data.
+	 *
 	 * @param sid           Account SID, maybe null if loginName is supplied.
-	 * @param loginName     Login name, maybe null if sid is supplied. 
+	 * @param loginName     Login name, maybe null if sid is supplied.
 	 * @param realmName     Realm within which the accountId or login name is
-	 *                      unique.  Can be null if sid is supplied. 
+	 *                      unique. Can be null if sid is supplied.
 	 * @param referringHost Host referring the account.
 	 *
-	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount is found.
-	 * 
-	 * @throws TskCoreException 
+	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount
+	 *         is found.
+	 *
+	 * @throws TskCoreException
 	 */
 	public Optional<OsAccount> getWindowsAccount(String sid, String loginName, String realmName, Host referringHost) throws TskCoreException {
-		
+
 		if (referringHost == null) {
 			throw new IllegalArgumentException("A referring host is required to get an account.");
 		}
-		
+
 		// ensure at least one of the two is supplied - sid or a login name
 		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(loginName)) {
 			throw new IllegalArgumentException("Cannot get an OS account with both SID and loginName as null.");
 		}
-		
+
 		// first get the realm for the given sid
 		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost);
-		if (!realm.isPresent()) {	
+		if (!realm.isPresent()) {
 			return Optional.empty();
 		}
-		
+
 		// search by SID
 		if (!Strings.isNullOrEmpty(sid)) {
 			return this.getOsAccountByUniqueId(sid, realm.get());
@@ -647,13 +630,13 @@ public final class OsAccountManager {
 		// search by login name
 		return this.getOsAccountByLoginName(loginName, realm.get());
 	}
-	
+
 	/**
 	 * Gets an OS account with the given login name and realm name.
 	 *
-	 * @param loginName   Account SID.
-	 * @param realmName   Domain name.
-	 * @param host        Host for the realm.
+	 * @param loginName Account SID.
+	 * @param realmName Domain name.
+	 * @param host      Host for the realm.
 	 *
 	 * @return Optional with OsAccount, Optional.empty if no matching OS account
 	 *         is found.
@@ -673,20 +656,20 @@ public final class OsAccountManager {
 			return getOsAccountByLoginName(loginName, realm.get());
 		}
 	}
-		
+
 	/**
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.
 	 *
-	 * @param account	       Account for which the attributes is being added.
+	 * @param account	         Account for which the attributes is being added.
 	 * @param accountAttribute List of attributes to add.
 	 *
 	 * @throws TskCoreException,
 	 */
 	void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
-		
+
 		db.acquireSingleUserCaseWriteLock();
-	
+
 		try (CaseDbConnection connection = db.getConnection()) {
 			for (OsAccountAttribute accountAttribute : accountAttributes) {
 
@@ -702,9 +685,9 @@ public final class OsAccountManager {
 				} else {
 					preparedStatement.setNull(2, java.sql.Types.NULL);
 				}
-				if(accountAttribute.getSourceObjectId().isPresent()) {
+				if (accountAttribute.getSourceObjectId().isPresent()) {
 					preparedStatement.setLong(3, accountAttribute.getSourceObjectId().get());
-				}else {
+				} else {
 					preparedStatement.setNull(3, java.sql.Types.NULL);
 				}
 
@@ -743,30 +726,28 @@ public final class OsAccountManager {
 				}
 
 				connection.executeUpdate(preparedStatement);
-			
+
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
-		} 
-		
-		finally {
+		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
 
 		fireChangeEvent(account);
 	}
-	
+
 	/**
 	 * Get the OS account attributes for the given account.
-	 * 
+	 *
 	 * @param account Account to get the attributes for.
-	 * 
+	 *
 	 * @return List of attributes, may be an empty list.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	List<OsAccountAttribute> getOsAccountAttributes(OsAccount account) throws TskCoreException {
-		
+
 		String queryString = "SELECT attributes.os_account_obj_id as os_account_obj_id, attributes.host_id as host_id, attributes.source_obj_id as source_obj_id, "
 				+ " attributes.attribute_type_id as attribute_type_id,  attributes.value_type as value_type, attributes.value_byte as value_byte, "
 				+ " attributes.value_text as value_text, attributes.value_int32 as value_int32, attributes.value_int64 as value_int64, attributes.value_double as value_double, "
@@ -783,75 +764,108 @@ public final class OsAccountManager {
 
 			List<OsAccountAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
-				
+
 				Host host = null;
 				long hostId = rs.getLong("host_id");
 				if (!rs.wasNull()) {
 					host = new Host(hostId, rs.getString("host_name"), Host.HostStatus.fromID(rs.getInt("host_status")));
 				}
-		
+
 				Content sourceContent = null;
 				long sourceObjId = rs.getLong("source_obj_id");
 				if (!rs.wasNull()) {
 					sourceContent = this.db.getContentById(sourceObjId);
 				}
 				BlackboardAttribute.Type attributeType = db.getAttributeType(rs.getInt("attribute_type_id"));
-				OsAccountAttribute attribute = new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"), 
-														rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
-														db, account, host, sourceContent );
-			
+				OsAccountAttribute attribute = new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"),
+						rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
+						db, account, host, sourceContent);
+
 				attributes.add(attribute);
-			} 
+			}
 			return attributes;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account attributes for account obj id = %d", account.getId()), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
+	/**
+	 * Get a list of OsAccountInstances for the give OsAccount.
+	 *
+	 * @param account Account to retrieve instance for.
+	 *
+	 * @return List of OsAccountInstances, the list maybe empty if none were
+	 *         found.
+	 *
+	 * @throws TskCoreException
+	 */
+	List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
+		List<OsAccountInstance> instanceList = new ArrayList<>();
+		String queryString = String.format("SELECT * FROM tsk_os_account_instances WHERE os_account_obj_id = %d", account.getId());
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			while (rs.next()) {
+				long dataSourceId = rs.getLong("data_source_obj_id");
+				int instanceType = rs.getInt("instance_type");
+
+				instanceList.add(new OsAccountInstance(db, account, dataSourceId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Failed to get OsAccountInstance for OsAccount (%d)", account.getId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+
+		return instanceList;
+	}
+
 	/**
 	 * Updates the database for the given OsAccount.
 	 *
-	 * @param osAccount   OsAccount that needs to be updated in the database.
+	 * @param osAccount OsAccount that needs to be updated in the database.
 	 *
 	 * @return OsAccount Updated account.
 	 *
 	 * @throws TskCoreException
 	 */
 	public OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
-		
+
 		// do nothing if the account is not dirty.
 		if (!osAccount.isDirty()) {
 			return osAccount;
 		}
-		
+
 		db.acquireSingleUserCaseWriteLock();
-		try(CaseDbConnection connection = db.getConnection()) {
+		try (CaseDbConnection connection = db.getConnection()) {
 			String updateSQL = "UPDATE tsk_os_accounts SET "
-										+ "		login_name = ?, "	// 1
-										+ "		unique_id = ?, "	// 2
-										+ "		signature = ?, "	// 3
-										+ "		full_name = ?, "	// 4
-										+ "		status = ?, "		// 5
-										+ "		admin = ?, "		// 6
-										+ "		type = ?, "			// 7
-										+ "		created_date = ? "	//8
-								+ " WHERE os_account_obj_id = ?";	//9
-			
+					+ "		login_name = ?, " // 1
+					+ "		unique_id = ?, " // 2
+					+ "		signature = ?, " // 3
+					+ "		full_name = ?, " // 4
+					+ "		status = ?, " // 5
+					+ "		admin = ?, " // 6
+					+ "		type = ?, " // 7
+					+ "		created_date = ? " //8
+					+ " WHERE os_account_obj_id = ?";	//9
+
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
 			preparedStatement.setString(1, osAccount.getLoginName().orElse(null));
 			preparedStatement.setString(2, osAccount.getUniqueIdWithinRealm().orElse(null));
-			
+
 			preparedStatement.setString(3, osAccount.getSignature());
-			
+
 			preparedStatement.setString(4, osAccount.getFullName().orElse(null));
-			
+
 			preparedStatement.setInt(5, osAccount.getOsAccountStatus().getId());
-			if(osAccount.isAdmin().isPresent()) {
+			if (osAccount.isAdmin().isPresent()) {
 				preparedStatement.setInt(6, osAccount.isAdmin().get() ? 1 : 0);
 			} else {
 				preparedStatement.setNull(6, Types.NULL);
@@ -859,88 +873,87 @@ public final class OsAccountManager {
 			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
 
 			Optional<Long> creationTime = osAccount.getCreationTime();
-			if(creationTime.isPresent()) {
+			if (creationTime.isPresent()) {
 				preparedStatement.setLong(8, osAccount.getCreationTime().get());
 			} else {
 				preparedStatement.setNull(8, Types.NULL);
 			}
 			preparedStatement.setLong(9, osAccount.getId());
-			
+
 			connection.executeUpdate(preparedStatement);
-			
+
 			osAccount.resetDirty();
-		}
-		catch (SQLException ex) {
+		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getUniqueIdWithinRealm().orElse("Unknown"), osAccount.getId()), ex);
-		}	finally {
+		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-		
+
 		fireChangeEvent(osAccount);
 		return osAccount;
 	}
-	
+
 	/**
 	 * Returns a list of hosts where the OsAccount has appeared.
-	 * 
-	 * @param account OsAccount 
-	 * 
+	 *
+	 * @param account OsAccount
+	 *
 	 * @return List of Hosts that reference the given OsAccount.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public List<Host> getHosts(OsAccount account) throws TskCoreException {
 		List<Host> hostList = new ArrayList<>();
 		String query = "SELECT tsk_hosts.id AS hostId, name, status FROM tsk_hosts JOIN tsk_os_account_instances ON tsk_hosts.id = host_id WHERE os_account_obj_id = " + account.getId();
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, query)) {
-			
-			while(rs.next()) {
+
+			while (rs.next()) {
 				hostList.add(new Host(rs.getLong("hostId"), rs.getString("name"), Host.HostStatus.fromID(rs.getInt("status"))));
 			}
 
-		}  catch (SQLException ex) {
+		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to get host list for os account %d", account.getId()), ex);
-		}finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
-		}		
+		}
 		return hostList;
 	}
-	
+
 	/**
-	 * Takes in a result with a row from tsk_os_accounts table and creates 
-	 * an OsAccount.
-	 * 
-	 * @param rs ResultSet.
+	 * Takes in a result with a row from tsk_os_accounts table and creates an
+	 * OsAccount.
+	 *
+	 * @param rs    ResultSet.
 	 * @param realm Realm.
+	 *
 	 * @return OsAccount OS Account.
-	 * 
-	 * @throws SQLException 
+	 *
+	 * @throws SQLException
 	 */
 	private OsAccount osAccountFromResultSet(ResultSet rs, OsAccountRealm realm) throws SQLException {
-		
+
 		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), rs.getString("signature"), OsAccount.OsAccountStatus.fromID(rs.getInt("status")));
-		
+
 		// set other optional fields
-		
 		String fullName = rs.getString("full_name");
 		if (!rs.wasNull()) {
 			osAccount.setFullName(fullName);
 		}
 
 		int admin = rs.getInt("admin");
-		if (!rs.wasNull()) {	
+		if (!rs.wasNull()) {
 			osAccount.setIsAdmin(admin != 0);
 		}
-		
+
 		int type = rs.getInt("type");
 		if (!rs.wasNull()) {
 			osAccount.setOsAccountType(OsAccount.OsAccountType.fromID(type));
 		}
-		
+
 		long creationTime = rs.getLong("created_date");
 		if (!rs.wasNull()) {
 			osAccount.setCreationTime(creationTime);
@@ -948,43 +961,43 @@ public final class OsAccountManager {
 
 		return osAccount;
 	}
-	
+
 	/**
 	 * Fires an OsAccountAddedEvent for the given OsAccount.
-	 * 
-	 * @param account Newly created account. 
+	 *
+	 * @param account Newly created account.
 	 */
 	private void fireCreationEvent(OsAccount account) {
 		db.fireTSKEvent(new OsAccountsCreationEvent(Collections.singletonList(account)));
 	}
-	
+
 	/**
 	 * Fires an OsAccountChangeEvent for the given OsAccount.
-	 * 
+	 *
 	 * @param account Updated account.
 	 */
 	private void fireChangeEvent(OsAccount account) {
 		db.fireTSKEvent(new OsAccountsUpdateEvent(Collections.singletonList(account)));
 	}
-	
+
 	/**
 	 * Created an account signature for an OS Account. This signature is simply
 	 * to prevent duplicate accounts from being created. Signature is set to:
-	 * uniqueId: if the account has a uniqueId, otherwise
-	 * loginName: if the account has a login name.
+	 * uniqueId: if the account has a uniqueId, otherwise loginName: if the
+	 * account has a login name.
 	 *
 	 * @param uniqueId  Unique id.
 	 * @param loginName Login name.
 	 *
 	 * @return Account signature.
 	 */
-	static String getAccountSignature(String uniqueId,  String loginName) {
+	static String getAccountSignature(String uniqueId, String loginName) {
 		// Create a signature. 
 		String signature;
 		if (Strings.isNullOrEmpty(uniqueId) == false) {
-			signature = uniqueId; 
-		} else if (Strings.isNullOrEmpty(loginName) == false)  {
-			signature = loginName; 
+			signature = uniqueId;
+		} else if (Strings.isNullOrEmpty(loginName) == false) {
+			signature = loginName;
 		} else {
 			throw new IllegalArgumentException("OS Account must have either a uniqueID or a login name.");
 		}
@@ -996,46 +1009,48 @@ public final class OsAccountManager {
 	 * created.
 	 */
 	public static final class OsAccountsCreationEvent {
+
 		private final List<OsAccount> accountList;
-		
+
 		/**
 		 * Constructs a new AddedEvent
-		 * 
+		 *
 		 * @param accountList List newly created accounts.
 		 */
 		OsAccountsCreationEvent(List<OsAccount> accountList) {
 			this.accountList = accountList;
 		}
-		
+
 		/**
 		 * Returns a list of the added OsAccounts.
-		 * 
+		 *
 		 * @return List of OsAccounts.
 		 */
 		public List<OsAccount> getOsAcounts() {
 			return Collections.unmodifiableList(accountList);
 		}
 	}
-	
+
 	/**
 	 * Event fired by OsAccount Manager to indicate that an OsAccount was
 	 * updated.
 	 */
 	public static final class OsAccountsUpdateEvent {
+
 		private final List<OsAccount> accountList;
-		
+
 		/**
 		 * Constructs a new ChangeEvent
-		 * 
+		 *
 		 * @param accountList List newly created accounts.
 		 */
 		OsAccountsUpdateEvent(List<OsAccount> accountList) {
 			this.accountList = accountList;
 		}
-		
+
 		/**
 		 * Returns a list of the updated OsAccounts.
-		 * 
+		 *
 		 * @return List of OsAccounts.
 		 */
 		public List<OsAccount> getOsAcounts() {

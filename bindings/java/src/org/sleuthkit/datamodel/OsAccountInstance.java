@@ -22,88 +22,139 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 
 /**
- *
- * 
+ * An OsAccountInstance represents the appearance of a particular OsAccount on a
+ * particular data source.
  */
-public class OsAccountInstance implements Comparable<OsAccountInstance>{
-	private final Host host;
-	private final Content dataSource;
+public class OsAccountInstance implements Comparable<OsAccountInstance> {
+
+	private DataSource dataSource;
 	private final OsAccount account;
 	private final OsAccountInstanceType instanceType;
-	
+
+	private final long dataSourceId;
+
+	private SleuthkitCase skCase;
+
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
-	
+
 	/**
-	 * Construct a new OsAccount instance object.
-	 * 
-	 * @param account Account for which an instance needs to be added.
-	 * @param host Host on which the instance is found.
-	 * @param dataSource Data source where the instance is found.
-	 * @param instanceType Instance type.
+	 * Construct with OsAccount and DataSource instances.
+	 *
+	 * @param account	     The instance account.
+	 * @param dataSource   The instance data source
+	 * @param instanceType The instance type.
 	 */
-	OsAccountInstance(OsAccount account, Host host, Content dataSource, OsAccountInstanceType instanceType) {
+	OsAccountInstance(OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
 		this.account = account;
-		this.host = host;
 		this.dataSource = dataSource;
 		this.instanceType = instanceType;
+
+		dataSourceId = dataSource.getId();
 	}
-	
+
+	/**
+	 * Construct the OsAccountInstance doing a lazy construction on the data
+	 * source object.
+	 *
+	 * @param skCase       The case instance
+	 * @param account      The OsAccount for this instance
+	 * @param dataSourceId The id of the data source
+	 * @param instanceType The instance type.
+	 */
+	OsAccountInstance(SleuthkitCase skCase, OsAccount account, long dataSourceId, OsAccountInstanceType instanceType) {
+		this.account = account;
+		this.dataSourceId = dataSourceId;
+		this.instanceType = instanceType;
+		this.skCase = skCase;
+	}
+
+	/**
+	 * Returns the OsAccount object for this instance.
+	 *
+	 * @return The OsAccount object.
+	 */
 	public OsAccount getOsAccount() {
 		return account;
 	}
-	
-	public Content getDataSource() {
+
+	/**
+	 * Returns the data source for this account instance.
+	 *
+	 * @return Return the data source instance.
+	 *
+	 * @throws TskCoreException
+	 */
+	public DataSource getDataSource() throws TskCoreException {
+		if (dataSource == null) {
+			try {
+				dataSource = skCase.getDataSource(dataSourceId);
+			} catch (TskDataException ex) {
+				throw new TskCoreException(String.format("Failed to get DataSource for id %d", dataSourceId), ex);
+			}
+		}
+
 		return dataSource;
 	}
-	
-	public Host getHost() {
-		return host;
-	}
-	
+
+	/**
+	 * Returns the type for this OsAccount instance.
+	 *
+	 * @return
+	 */
 	public OsAccountInstanceType getInstanceType() {
 		return instanceType;
 	}
 
-	@Override
-	public int compareTo(OsAccountInstance o) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	/**
+	 * Return the dataSourceId value.
+	 *
+	 * @return
+	 */
+	private long getDataSourceId() {
+		return dataSourceId;
 	}
-	
+
+	@Override
+	public int compareTo(OsAccountInstance other) {
+		if (equals(other)) {
+			return 0;
+		}
+
+		if (dataSourceId != other.getDataSourceId()) {
+			return Long.compare(dataSourceId, other.getDataSourceId());
+		}
+
+		return Long.compare(account.getId(), other.getOsAccount().getId());
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			final OsAccountInstance other = (OsAccountInstance) obj;
-			if (this.account.getId() != other.getOsAccount().getId()) {
-				return false;
-			}
-			if (this.host.getId() != other.getHost().getId()) {
-				return false;
-			}
-			if (this.dataSource.getId() != other.getDataSource().getId()) {
-				return false;
-			}
-			
-			return this.instanceType.equals(other.getInstanceType());
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final OsAccountInstance other = (OsAccountInstance) obj;
+		if (this.account.getId() != other.getOsAccount().getId()) {
+			return false;
+		}
+
+		return this.dataSourceId != other.dataSourceId;
 	}
 
 	@Override
 	public int hashCode() {
 		int hash = 7;
-		hash = 67 * hash + Objects.hashCode(this.host.getId());
-		hash = 67 * hash + Objects.hashCode(this.dataSource.getId());
+		hash = 67 * hash + Objects.hashCode(this.dataSourceId);
 		hash = 67 * hash + Objects.hashCode(this.account.getId());
 		hash = 67 * hash + Objects.hashCode(this.instanceType);
 		return hash;
 	}
-	
+
 	/**
 	 * Describes the relationship between an os account instance and the host
 	 * where the instance was found.
@@ -113,7 +164,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance>{
 	 */
 	public enum OsAccountInstanceType {
 		PERFORMED_ACTION_ON(0, bundle.getString("OsAccountInstanceType.PerformedActionOn.text")), // the user performed actions on a host
-		REFERENCED_ON(1, bundle.getString("OsAccountInstanceType.ReferencedOn.text") );	// user was simply referenced on a host
+		REFERENCED_ON(1, bundle.getString("OsAccountInstanceType.ReferencedOn.text"));	// user was simply referenced on a host
 
 		private final int id;
 		private final String name;
