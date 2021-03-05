@@ -389,7 +389,7 @@ public class HostAddressManager {
 			throw new IllegalArgumentException("An IPv4/IPv6 address is expected.");
 		}
 		if (Objects.isNull(connection)) {
-			throw new IllegalArgumentException("null caseDbTransaction passed to addHostNameToIpMapping");
+			throw new IllegalArgumentException("null connection passed to addHostNameAndIpMapping");
 		}
 
 		String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_dns_ip_map(dns_address_id, ip_address_id, source_obj_id, time) "
