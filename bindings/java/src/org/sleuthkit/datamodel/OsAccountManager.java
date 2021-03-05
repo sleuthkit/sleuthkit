@@ -584,8 +584,12 @@ public final class OsAccountManager {
 	}
 	
 	/**
-	 * Merge all OS accounts from sourceRealm into destRealm.
-	 * 
+	 * Merge all OS accounts from sourceRealm into destRealm. 
+	 * After this call:
+	 * - sourceRealm's accounts will have been moved or merged
+	 * - References to sourceRealm accounts will be updated
+	 * - sourceRealm will still exist, but will be empty
+	 *
 	 * @param sourceRealm The source realm.
 	 * @param destRealm   The destination realm.
 	 * @param connection  The current database connection.
@@ -659,8 +663,12 @@ public final class OsAccountManager {
 	}
 	
 	/**
-	 * Merge the data from two accounts.
+	 * Merges data between two accounts so that only one is active at the end and all references are to it. 
 	 * Data from the destination account will take priority.
+	 * Basic operation:
+	 * - Update the destination if source has names, etc. not already in the destination
+	 * - Update any references to the source (such as in tsk_files) to point to destination
+	 * - Mark the source as "MERGED" and it will not come back in future queries. 
 	 * 
 	 * @param sourceAccount
 	 * @param destAccount
