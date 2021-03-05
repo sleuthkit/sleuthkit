@@ -50,17 +50,17 @@ public class HostAddressManager {
 	/**
 	 * An HostAddress Object Id entry is maintained in this cache when a
 	 * hostaddress and ip mapping is added. This is here to improve the
-	 * performance of {@link #existsHostNameAndIpMapping(long) } check.
+	 * performance of {@link #hostNameAndIpMappingExists(long) } check.
 	 */
 	private final Cache<Long, Byte> recentHostNameAndIpMappingCache = CacheBuilder.newBuilder().maximumSize(200000).build();
 
 	/**
 	 * Recently added or accessed Host Address Object Ids are cached. This is
 	 * here to improve performance of the
-	 * {@link #existsHostAddress(org.sleuthkit.datamodel.HostAddress.HostAddressType, java.lang.String)}
+	 * {@link #hostAddressExists(org.sleuthkit.datamodel.HostAddress.HostAddressType, java.lang.String)}
 	 * check.
 	 */
-	private final Cache<String, Long> recenHostAddresstCache = CacheBuilder.newBuilder().maximumSize(200000).build();
+	private final Cache<String, Long> recentHostAddresstCache = CacheBuilder.newBuilder().maximumSize(200000).build();
 
 	
 	/**
@@ -193,7 +193,7 @@ public class HostAddressManager {
 			preparedStatement.setString(3, address.toLowerCase());
 
 			connection.executeUpdate(preparedStatement);
-			recenHostAddresstCache.put(addressType.getId()+"#"+address.toLowerCase(), objId);
+			recentHostAddresstCache.put(addressType.getId()+"#"+address.toLowerCase(), objId);
 			return new HostAddress(db, objId, addressType, address);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding host address of type = %s, with address = %s", type.getName(), address), ex);
@@ -312,7 +312,7 @@ public class HostAddressManager {
 				long objId = rs.getLong("id");
 				int type = rs.getInt("address_type");
 				String address =  rs.getString("address");
-				recenHostAddresstCache.put(type+"#"+address, objId);
+				recentHostAddresstCache.put(type+"#"+address, objId);
 				return new HostAddress(db, objId, HostAddress.HostAddressType.fromID(type),address);
 			}
 		} catch (SQLException ex) {
@@ -416,10 +416,10 @@ public class HostAddressManager {
 	 * <br>
 	 * <b>Note:</b> This api call uses a database connection. Do not invoke within a transaction.
 	 * 
-	 * @param address
+	 * @param addressObjectId
 	 * @return 
 	 */
-	public boolean existsHostNameAndIpMapping(long addressObjectId) throws TskCoreException {
+	public boolean hostNameAndIpMappingExists(long addressObjectId) throws TskCoreException {
 
 		Byte isPresent = recentHostNameAndIpMappingCache.getIfPresent(addressObjectId);
 		
@@ -468,9 +468,9 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Optional<Long> existsHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
+	public Optional<Long> hostAddressExists(HostAddress.HostAddressType type, String address) throws TskCoreException {
 		
-		Long id = recenHostAddresstCache.getIfPresent(type.getId()+"#"+address.toLowerCase());
+		Long id = recentHostAddresstCache.getIfPresent(type.getId()+"#"+address.toLowerCase());
 		if(Objects.nonNull(id)){
 			return Optional.of(id);
 		}
@@ -495,7 +495,7 @@ public class HostAddressManager {
 				} else {
 					long objId = rs.getLong("id");
 					int addrType = rs.getInt("address_type");
-					recenHostAddresstCache.put(addrType + "#" + address.toLowerCase(), objId);					
+					recentHostAddresstCache.put(addrType + "#" + address.toLowerCase(), objId);					
 					return Optional.of(objId);
 				}
 			}
@@ -515,7 +515,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<HostAddress> getIp(String hostname) throws TskCoreException {
+	public List<HostAddress> getIpAddress(String hostname) throws TskCoreException {
 		String queryString = "SELECT ip_address_id FROM tsk_host_address_dns_ip_map as map "
 				+ " JOIN tsk_host_addresses as addresses "
 				+ " ON map.dns_address_id = addresses.id "
