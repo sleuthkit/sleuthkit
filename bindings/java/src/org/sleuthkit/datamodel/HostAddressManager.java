@@ -360,7 +360,7 @@ public class HostAddressManager {
 	public void addHostNameAndIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
 		if (Objects.isNull(caseDbTransaction)) {
-			throw new IllegalArgumentException("null caseDbTransaction passed to addAttributes");
+			throw new IllegalArgumentException("null caseDbTransaction passed to addHostNameAndIpMapping");
 		}
 		try {
 			addHostNameAndIpMapping(dnsNameAddress, ipAddress, time, source, caseDbTransaction.getConnection());
@@ -470,7 +470,7 @@ public class HostAddressManager {
 	 */
 	public Optional<Long> existsHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
 		
-		long id = recenHostAddresstCache.getIfPresent(type.getId()+"#"+address.toLowerCase());
+		Long id = recenHostAddresstCache.getIfPresent(type.getId()+"#"+address.toLowerCase());
 		if(Objects.nonNull(id)){
 			return Optional.of(id);
 		}
