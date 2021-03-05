@@ -202,8 +202,8 @@ public class OsAccountTest {
 		assertEquals(hostAddrs.size() == 1, true);
 		
 		// Test IP mapping
-		caseDB.getHostAddressManager().addHostNameToIpMapping(hostAddr, ipv4addr, (long) 0, ds);
-		List<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIp(hostAddr.getAddress());
+		caseDB.getHostAddressManager().addHostNameAndIpMapping(hostAddr, ipv4addr, (long) 0, ds);
+		List<HostAddress> ipForHostSet = caseDB.getHostAddressManager().getIpAddress(hostAddr.getAddress());
 		assertEquals(ipForHostSet.size() == 1, true);
 		List<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
 		assertEquals(hostForIpSet.size() == 1, true);
