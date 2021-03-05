@@ -334,13 +334,10 @@ public class HostAddressManager {
 	 */
 	public void addHostNameAndIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source) throws TskCoreException {
 
-		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			addHostNameAndIpMapping(dnsNameAddress, ipAddress, time, source, connection);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding host DNS address mapping for DNS name = %s, and IP address = %s", dnsNameAddress.getAddress(), ipAddress.getAddress()), ex);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
 		} 
 	}
 	
@@ -395,20 +392,25 @@ public class HostAddressManager {
 		String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_dns_ip_map(dns_address_id, ip_address_id, source_obj_id, time) "
 				+ " VALUES(?, ?, ?, ?) ");
 
-		PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQL, Statement.NO_GENERATED_KEYS);
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQL, Statement.NO_GENERATED_KEYS);
 
-		preparedStatement.clearParameters();
-		preparedStatement.setLong(1, dnsNameAddress.getId());
-		preparedStatement.setLong(2, ipAddress.getId());
-		preparedStatement.setLong(3, source.getId());
-		if (time != null) {
-			preparedStatement.setLong(4, time);
-		} else {
-			preparedStatement.setNull(4, java.sql.Types.BIGINT);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, dnsNameAddress.getId());
+			preparedStatement.setLong(2, ipAddress.getId());
+			preparedStatement.setLong(3, source.getId());
+			if (time != null) {
+				preparedStatement.setLong(4, time);
+			} else {
+				preparedStatement.setNull(4, java.sql.Types.BIGINT);
+			}
+			connection.executeUpdate(preparedStatement);
+			recentHostNameAndIpMappingCache.put(ipAddress.getId(), new Byte((byte) 1));
+			recentHostNameAndIpMappingCache.put(dnsNameAddress.getId(), new Byte((byte) 1));
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
 		}
-		connection.executeUpdate(preparedStatement);
-		recentHostNameAndIpMappingCache.put(ipAddress.getId(), new Byte((byte)1));
-		recentHostNameAndIpMappingCache.put(dnsNameAddress.getId(), new Byte((byte)1));
 	}
 
 	/**
