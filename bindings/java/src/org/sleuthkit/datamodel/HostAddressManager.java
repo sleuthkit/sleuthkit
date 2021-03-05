@@ -419,19 +419,19 @@ public class HostAddressManager {
 	/**
 	 * Associate the given artifact with a HostAddress.
 	 *
-	 * @param artifact    The artifact to associate the host address with.
+	 * @param content    The content/item using the address.
 	 * @param hostAddress The host address.
 	 */
-	public void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
-		final String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_usage(addr_obj_id, artifact_obj_id) "
-				+ " VALUES(" + hostAddress.getId() + ", " + artifact.getId() + ") ");
+	public void addUsage(Content content, HostAddress hostAddress) throws TskCoreException {
+		final String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_usage(addr_obj_id, obj_id, data_source_obj_id) "
+				+ " VALUES(" + hostAddress.getId() + ", " + content.getId() + ", " + content.getDataSource().getId() + ") ");
 
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement()) {
 			connection.executeUpdate(s, insertSQL);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), artifact.getId()), ex);
+			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), content.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}

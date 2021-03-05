@@ -2531,10 +2531,12 @@ public class SleuthkitCase {
 			// maps an address to an artifact using it 
 			statement.execute("CREATE TABLE tsk_host_address_usage (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "addr_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+					+ "obj_id " + bigIntDataType + " NOT NULL, "
+					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, " // data source where the usage was found
+					+ "UNIQUE(addr_obj_id, obj_id), "
 					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");
+							
+					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");
 		
 		
 			return new CaseDbSchemaVersionNumber(8, 7);
