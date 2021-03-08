@@ -213,15 +213,18 @@ public final class OsAccount extends AbstractContent {
 	 * just a reference to it was found on the host (such as in a log file)
 	 */
 	public enum OsAccountInstanceType {
-		PERFORMED_ACTION_ON(0, bundle.getString("OsAccountInstanceType.PerformedActionOn.text")), // the user performed actions on a host
-		REFERENCED_ON(1, bundle.getString("OsAccountInstanceType.ReferencedOn.text") );	// user was simply referenced on a host
-
+		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user launched a program on the host
+		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")),	// user accesed a resource for read/write
+		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text") );	// user was referenced, e.g. in a event log.
+		
 		private final int id;
 		private final String name;
+		private final String description;
 
-		OsAccountInstanceType(int id, String name) {
+		OsAccountInstanceType(int id, String name, String description) {
 			this.id = id;
 			this.name = name;
+			this.description = description ;
 		}
 
 		/**
@@ -242,6 +245,15 @@ public final class OsAccount extends AbstractContent {
 			return name;
 		}
 
+		/**
+		 * Get account instance type description.
+		 *
+		 * @return Account instance type description.
+		 */
+		public String getDescription() {
+			return description;
+		}
+		
 		/**
 		 * Gets account instance type enum from id.
 		 *
