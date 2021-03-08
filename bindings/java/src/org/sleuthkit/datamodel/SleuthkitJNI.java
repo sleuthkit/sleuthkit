@@ -449,7 +449,7 @@ public class SleuthkitJNI {
 					} else {
 						hostName = "Image_" + deviceObjId + " Host";
 					}
-					host = skCase.getHostManager().getOrCreateHost(hostName);
+					host = skCase.getHostManager().createHost(hostName);
 				}
 				TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks(), host);
 				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);

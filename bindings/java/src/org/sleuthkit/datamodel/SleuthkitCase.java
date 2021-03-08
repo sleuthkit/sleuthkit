@@ -2457,7 +2457,6 @@ public class SleuthkitCase {
 					+ "unique_id TEXT DEFAULT NULL, " // SID/UID, if available
 					+ "signature TEXT NOT NULL, " // This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 					+ "status INTEGER, " // enabled/disabled/deleted
-					+ "admin INTEGER DEFAULT 0," // is admin account
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
 					+ "person_id INTEGER, "
@@ -12890,6 +12889,7 @@ public class SleuthkitCase {
 		// When the transaction is committed, events are fired to notify any listeners.
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>(); 
+		private List<Host> hostsAdded = new ArrayList<>();
 		
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
@@ -12928,6 +12928,16 @@ public class SleuthkitCase {
 		void registerScoreChange(ScoreChange scoreChange) {
 			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
 		}
+
+		/**
+		 * Saves a host that has been added as a part of this transaction.
+		 * @param host The host.
+		 */
+		void registerAddedHost(Host host) {
+			if (host != null) {
+				this.hostsAdded.add(host);	
+			}
+		}
 		
 		/**
 		 * Check if the given thread has an open transaction.
@@ -12950,7 +12960,11 @@ public class SleuthkitCase {
 		public void commit() throws TskCoreException {
 			try {
 				this.connection.commitTransaction();
-
+			} catch (SQLException ex) {
+				throw new TskCoreException("Failed to commit transaction on case database", ex);
+			} finally {
+				close();
+				
 				if (!scoreChangeMap.isEmpty()) {
 					// Group the score changes by data source id
 					Map<Long, List<ScoreChange>> changesByDataSource = scoreChangeMap.values().stream()
@@ -12961,11 +12975,11 @@ public class SleuthkitCase {
 						sleuthkitCase.fireTSKEvent(new AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
 				}
-
-			} catch (SQLException ex) {
-				throw new TskCoreException("Failed to commit transaction on case database", ex);
-			} finally {
-				close();
+				
+				// Fire an event notifying that hosts have been added.
+				if (!hostsAdded.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
+				}
 			}
 		}
 

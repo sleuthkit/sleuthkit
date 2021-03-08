@@ -835,10 +835,9 @@ public final class OsAccountManager {
 										+ "		signature = ?, "	// 3
 										+ "		full_name = ?, "	// 4
 										+ "		status = ?, "		// 5
-										+ "		admin = ?, "		// 6
-										+ "		type = ?, "			// 7
-										+ "		created_date = ? "	//8
-								+ " WHERE os_account_obj_id = ?";	//9
+										+ "		type = ?, "			// 6
+										+ "		created_date = ? "	// 7
+								+ " WHERE os_account_obj_id = ?";	// 8
 			
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
@@ -851,20 +850,16 @@ public final class OsAccountManager {
 			preparedStatement.setString(4, osAccount.getFullName().orElse(null));
 			
 			preparedStatement.setInt(5, osAccount.getOsAccountStatus().getId());
-			if(osAccount.isAdmin().isPresent()) {
-				preparedStatement.setInt(6, osAccount.isAdmin().get() ? 1 : 0);
-			} else {
-				preparedStatement.setNull(6, Types.NULL);
-			}
-			preparedStatement.setInt(7, osAccount.getOsAccountType().getId());
+			
+			preparedStatement.setInt(6, osAccount.getOsAccountType().getId());
 
 			Optional<Long> creationTime = osAccount.getCreationTime();
 			if(creationTime.isPresent()) {
-				preparedStatement.setLong(8, osAccount.getCreationTime().get());
+				preparedStatement.setLong(7, osAccount.getCreationTime().get());
 			} else {
-				preparedStatement.setNull(8, Types.NULL);
+				preparedStatement.setNull(7, Types.NULL);
 			}
-			preparedStatement.setLong(9, osAccount.getId());
+			preparedStatement.setLong(8, osAccount.getId());
 			
 			connection.executeUpdate(preparedStatement);
 			
@@ -900,11 +895,6 @@ public final class OsAccountManager {
 			osAccount.setFullName(fullName);
 		}
 
-		int admin = rs.getInt("admin");
-		if (!rs.wasNull()) {	
-			osAccount.setIsAdmin(admin != 0);
-		}
-		
 		int type = rs.getInt("type");
 		if (!rs.wasNull()) {
 			osAccount.setOsAccountType(OsAccount.OsAccountType.fromID(type));
