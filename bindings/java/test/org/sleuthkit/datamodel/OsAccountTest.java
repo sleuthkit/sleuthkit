@@ -172,6 +172,32 @@ public class OsAccountTest {
 		
 	@Test 
 	public void hostAddressTests() throws TskCoreException {
+		
+		
+		// lets add a file 
+		long dataSourceObjectId = fs.getDataSource().getId();
+		
+		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		
+		// Add a root folder
+		FsContent _root = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "", 0, 0,
+				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
+				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, fs, null, null, Collections.emptyList(), trans);
+
+		// Add a dir - no attributes 
+		FsContent _windows = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "Windows", 0, 0,
+				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
+				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, _root, "S-1-5-80-956008885-3418522649-1831038044-1853292631-227147846", null, Collections.emptyList(), trans);
+
+		// add another no attribute file to same folder
+		FsContent _abcTextFile = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "abc.txt", 0, 0,
+					TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
+					(short) 0, 200, 0, 0, 0, 0, null, null, "Text/Plain", true, _windows, null, null, Collections.emptyList(), trans);
+		
+		trans.commit();
+			
+		
+		
 		String ipv4Str = "11.22.33.44";
 		String ipv6Str = "2001:0db8:85a3:0000:0000:8a2e:0370:6666";
 		String hostnameStr = "basis.com";
@@ -194,11 +220,13 @@ public class OsAccountTest {
 		
 		// Test host map
 		Host host = caseDB.getHostManager().createHost("TestHostAddress");
-		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		
+		trans = caseDB.beginTransaction();
 		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
 		trans.commit();
-		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, (long) 0, ds);
-		List<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
+		
+		caseDB.getHostAddressManager().assignHostToAddress(host, ipv4addr, (long) 0, ds);
+		List<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddressesAssignedTo(host);
 		assertEquals(hostAddrs.size() == 1, true);
 		
 		// Test IP mapping
@@ -207,6 +235,23 @@ public class OsAccountTest {
 		assertEquals(ipForHostSet.size() == 1, true);
 		List<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
 		assertEquals(hostForIpSet.size() == 1, true);
+		
+		
+		// add address usage
+		caseDB.getHostAddressManager().addUsage(_abcTextFile, ipv4addr);
+		caseDB.getHostAddressManager().addUsage(_abcTextFile, addr2);
+		caseDB.getHostAddressManager().addUsage(_abcTextFile, hostAddr);
+		
+		//test get addressUsed methods
+		List<HostAddress> addrUsedByAbc = caseDB.getHostAddressManager().getHostAddressesUsedByContent(_abcTextFile);
+		assertEquals(addrUsedByAbc.size() == 3, true);
+		
+		List<HostAddress> addrUsedByRoot = caseDB.getHostAddressManager().getHostAddressesUsedByContent(_root);
+		assertEquals(addrUsedByRoot.isEmpty(), true);
+		
+		List<HostAddress> addrUsedOnDataSource = caseDB.getHostAddressManager().getHostAddressesUsedOnDataSource(_root.getDataSource());
+		assertEquals(addrUsedOnDataSource.size() == 3, true);
+		
 	}
 	
 	@Test
