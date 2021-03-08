@@ -137,7 +137,7 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
 
 		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , confidence) VALUES (?, ?, ?, ?)"
 				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, confidence = ?";

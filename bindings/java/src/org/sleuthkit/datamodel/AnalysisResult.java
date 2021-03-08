@@ -19,16 +19,20 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Analysis result is a category of artifact types that represent the outcome of
- * some analysis technique applied to extracted data.
+ * An AnalysisResult represents the outcome of some analysis technique
+ * that was applied to some data (i.e. Content) to determine the data's
+ * relevance.  The result should have a conclusion and a relevance 
+ * score. The score of the AnalysisResult will be used to calculate
+ * the aggregate score of the parent data.  Additional metadata can be
+ * stored as BlackboardAttributes.
  *
  */
 public class AnalysisResult extends BlackboardArtifact {
 
 	private final String conclusion;	// conclusion of analysis - may be an empty string
-	private final Score score;			// score from the analysis
-	private final String configuration; // name of a configuration file/element that guides this analysis, may be an empty string.
-	private final String justification;  // justification/explanation from the analysis, may be an empty string.
+	private final Score score;			// relevance score based on the conclusion 
+	private final String configuration; // Optional descriptor of configuration of analysis technique (such as a set name). Maybe empty string
+	private final String justification;  // justification/explanation of the conclusion.  Maybe empty string.
 
 	private boolean ignoreResult = false; // ignore this analysis result when computing score of the parent object.
 
@@ -103,7 +107,7 @@ public class AnalysisResult extends BlackboardArtifact {
 	}
 
 	/**
-	 * Returns analysis result score.
+	 * Returns relevance score based on conclusion
 	 *
 	 * @return Score.
 	 */
@@ -121,7 +125,7 @@ public class AnalysisResult extends BlackboardArtifact {
 	}
 
 	/**
-	 * Returns analysis justification.
+	 * Returns justification for conclusion
 	 *
 	 * @return justification, returns an empty string if not set.
 	 */
@@ -130,7 +134,8 @@ public class AnalysisResult extends BlackboardArtifact {
 	}
 
 	/**
-	 * Sets if this result is to be ignored.
+	 * Sets if this result is to be ignored when calculating
+     * the aggregate score of the parent object. 
 	 *
 	 * @param ignore if the result should be ignored or not.
 	 */

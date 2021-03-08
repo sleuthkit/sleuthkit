@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,21 +18,18 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Optional;
-
 /**
- *
- * Defines an interface implemented by data source specific events published by
- * Sleuthkit. These events are applicable to single data source.
+ * Event to indicate that an analysis result was deleted.
  */
-public interface TskDataSourceEvent {
+public class AnalysisResultDeletedEvent implements TskEvent {
+	
+	private final AnalysisResult deletedResult;
+	
+	AnalysisResultDeletedEvent(AnalysisResult deletedResult) {
+		this.deletedResult = deletedResult;	
+	}
 
-	/**
-	 * Returns the object id of the data source that the event pertains to.
-	 *
-	 * All data in an event should pertain to a single data source.
-	 *
-	 * @return Data source object id.
-	 */
-	public Optional<Long> getDataSourceId();
+	public AnalysisResult getDeletedAnalysisResult() {
+		return deletedResult;
+	}
 }
