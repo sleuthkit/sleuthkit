@@ -507,15 +507,15 @@ public class OsAccountTest {
 		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// Test: add an instance
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.LAUNCHED);
 
 		// Test: add an existing instance - should be a no-op.
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.LAUNCHED);
 
 		// Test: create account instance on a new host
 		String hostname2 = "host2222";
 		Host host2 = caseDB.getHostManager().createHost(hostname2);
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image, OsAccount.OsAccountInstanceType.REFERENCED_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image, OsAccount.OsAccountInstanceType.REFERENCED);
 	
 		
 		List<OsAccountAttribute> accountAttributes = new ArrayList<>();
