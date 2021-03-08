@@ -329,9 +329,10 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		
+		long dataSourceObjectId = this.getDataSource().getId();
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objId, dataSourceObjectId, score, conclusion, configuration, justification, attributesList, trans);
 			
 			trans.commit();
 			return resultAdded;
