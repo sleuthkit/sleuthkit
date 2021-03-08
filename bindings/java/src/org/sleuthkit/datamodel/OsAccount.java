@@ -54,7 +54,6 @@ public final class OsAccount extends AbstractContent {
 									// or the login_name if login_name is defined.
 
 	private String fullName;	// full name, may be null
-	private Boolean isAdmin = null;	// is admin account.
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
 	private OsAccountStatus osAccountStatus = null;
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
@@ -347,23 +346,6 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Sets the admin status for the account, if it is not already set.
-	 *
-	 * @param isAdmin Flag to indicate if the account is an admin account.
-	 * 
-	 * @return Returns true of the admin status is set, false if the status was not
-	 *         changed.
-	 */
-	public boolean setIsAdmin(boolean isAdmin) {
-		if (this.isAdmin == null) {
-			this.isAdmin = isAdmin;
-			this.isDirty = true;
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Sets account type for the account, if it has not already been set.
 	 *
 	 * @param osAccountType Account type.
@@ -509,17 +491,7 @@ public final class OsAccount extends AbstractContent {
 		return Optional.ofNullable(fullName);
 	}
 
-	/**
-	 * Check if account is an admin account.
-	 *
-	 * @return Optional with isAdmin status. If the value is not
-	 * present the status is unknown.
-	 */
-	public Optional<Boolean> isAdmin() {
-		return Optional.ofNullable(isAdmin);
-	}	
-
-	/**
+	/*
 	 * Get account creation time.
 	 *
 	 * @return Account creation time, returns 0 if creation time is not known.
