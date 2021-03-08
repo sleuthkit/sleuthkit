@@ -449,7 +449,7 @@ class CaseDatabaseFactory {
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " // data source where the usage was found
 				+ "UNIQUE(addr_obj_id, obj_id), "
 				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");		
 	}
 		
