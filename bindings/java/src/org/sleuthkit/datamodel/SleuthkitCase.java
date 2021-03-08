@@ -2443,7 +2443,7 @@ public class SleuthkitCase {
 					
 					if (! hostMap.containsKey(deviceId)) {
 						String hostName = "Host " + hostIndex;
-						updateStatement.execute("INSERT INTO tsk_hosts (name, status) VALUES ('" + hostName + "', 0)");
+						updateStatement.execute("INSERT INTO tsk_hosts (name, db_status) VALUES ('" + hostName + "', 0)");
 						hostMap.put(deviceId, hostIndex);
 						hostIndex++;
 					}
