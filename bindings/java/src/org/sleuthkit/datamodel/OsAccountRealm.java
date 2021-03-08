@@ -43,11 +43,8 @@ public final class OsAccountRealm {
 	private String signature; // either realm address or name (if address is not known)
 	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
+	private final RealmDbStatus dbStatus; // Status of row in database.
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
-
-
-
-	
 	
 	/**
 	 * Creates OsAccountRealm.
@@ -60,13 +57,14 @@ public final class OsAccountRealm {
 	 * @param host            Host if the realm is host scoped.
 	 * @param scopeConfidence Scope confidence.
 	 */
-	OsAccountRealm(long id, String realmName, String realmAddr, String signature, Host host, ScopeConfidence scopeConfidence) {
+	OsAccountRealm(long id, String realmName, String realmAddr, String signature, Host host, ScopeConfidence scopeConfidence, RealmDbStatus dbStatus) {
 		this.id = id;
 		this.realmName = realmName;
 		this.realmAddr = realmAddr;
 		this.signature = signature;
 		this.host = host;
 		this.scopeConfidence = scopeConfidence;
+		this.dbStatus = dbStatus;
 	}
 
 	/**
@@ -123,6 +121,15 @@ public final class OsAccountRealm {
 		return scopeConfidence;
 	}
 	
+	/**
+	 * Get the database status of this realm.
+	 * 
+	 * @return Realm database status. 
+	 */
+	public RealmDbStatus getDbStatus() {
+		return dbStatus;
+	}	
+
 	/**
 	 * Get the realm scope.
 	 * 
@@ -302,6 +309,40 @@ public final class OsAccountRealm {
 	 */
 	private void updateSignature() {
 		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
+	}
+	
+	/**
+	 * Encapsulates status of realm row.
+	 */
+	public enum RealmDbStatus {
+		ACTIVE(0, "Active"),
+		MERGED(1, "Merged"),
+		DELETED(2, "Deleted");	
+
+		private final int id;
+		private final String name;
+
+		RealmDbStatus(int id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		public int getId() {
+			return id;
+		}
+
+		String getName() {
+			return name;
+		}
+
+		public static RealmDbStatus fromID(int typeId) {
+			for (RealmDbStatus type : RealmDbStatus.values()) {
+				if (type.ordinal() == typeId) {
+					return type;
+				}
+			}
+			return null;
+		}
 	}
 	
 	

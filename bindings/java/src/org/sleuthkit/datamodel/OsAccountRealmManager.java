@@ -26,9 +26,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 
 /**
@@ -237,16 +239,18 @@ public final class OsAccountRealmManager {
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection())  {
 			// We only alow realm addr, name and signature to be updated at this time. 
-			String updateSQL = "UPDATE tsk_os_account_realms SET realm_name = ?,  realm_addr = ?, realm_signature = ? WHERE id = ?";
+			// Use a random string as the signature if the realm is not active.
+			String updateSQL = "UPDATE tsk_os_account_realms SET realm_name = ?,  realm_addr = ?, " 
+					+  " realm_signature = "
+					+ "   CASE WHEN db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId() + " THEN ? ELSE realm_signature END "
+					+ " WHERE id = ?";
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
 			preparedStatement.setString(1, realm.getRealmName().orElse(null));
 			preparedStatement.setString(2, realm.getRealmAddr().orElse(null));
-			preparedStatement.setString(3, realm.getSignature());
-			
+			preparedStatement.setString(3, realm.getSignature()); // Is only set for active accounts
 			preparedStatement.setLong(4, realm.getId());
-			
 			connection.executeUpdate(preparedStatement);
 			
 			realm.resetDirty();
@@ -259,7 +263,7 @@ public final class OsAccountRealmManager {
 	}
 	
 	private final static String REALM_QUERY_STRING = "SELECT realms.id as realm_id, realms.realm_name as realm_name,"
-			+ " realms.realm_addr as realm_addr, realms.realm_signature as realm_signature, realms.scope_host_id, realms.scope_confidence, "
+			+ " realms.realm_addr as realm_addr, realms.realm_signature as realm_signature, realms.scope_host_id, realms.scope_confidence, realms.db_status,"
 			+ " hosts.id, hosts.name as host_name "
 			+ " FROM tsk_os_account_realms as realms"
 			+ "		LEFT JOIN tsk_hosts as hosts"
@@ -319,6 +323,7 @@ public final class OsAccountRealmManager {
 		String queryString = REALM_QUERY_STRING
 						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
 						+ " AND " + whereHostClause
+				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
 				    
 		db.acquireSingleUserCaseReadLock();
@@ -339,7 +344,8 @@ public final class OsAccountRealmManager {
 				
 				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"), 
 												rs.getString("realm_addr"), rs.getString("realm_signature"), 
-												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")));
+												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")),
+												OsAccountRealm.RealmDbStatus.fromID(rs.getInt("db_status")));
 			} 
 			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
@@ -370,6 +376,7 @@ public final class OsAccountRealmManager {
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
 				+ " AND " + whereHostClause
+				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
 
 		db.acquireSingleUserCaseReadLock();
@@ -390,7 +397,8 @@ public final class OsAccountRealmManager {
 				
 				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"), 
 												rs.getString("realm_addr"), rs.getString("realm_signature"), 
-												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")));
+												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")),
+												OsAccountRealm.RealmDbStatus.fromID(rs.getInt("db_status")));
 				
 			} 
 			return Optional.ofNullable(accountRealm);
@@ -417,6 +425,7 @@ public final class OsAccountRealmManager {
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE realms.scope_host_id = " + host.getId()
 				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
+				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ SPECIAL_WINDOWS_REALM_ADDR + "') ";
 
 		db.acquireSingleUserCaseReadLock();
@@ -452,7 +461,8 @@ public final class OsAccountRealmManager {
 
 		return new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"), 
 												rs.getString("realm_addr"), rs.getString("realm_signature"), 
-												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")));
+												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")),
+												OsAccountRealm.RealmDbStatus.fromID(rs.getInt("db_status")));
 	}
 	
 //	/**
@@ -537,7 +547,7 @@ public final class OsAccountRealmManager {
 			// Read back the row id
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
 				long rowId = resultSet.getLong(1); // last_insert_rowid()
-				return new OsAccountRealm(rowId, realmName, realmAddr, signature, host, scopeConfidence);
+				return new OsAccountRealm(rowId, realmName, realmAddr, signature, host, scopeConfidence, OsAccountRealm.RealmDbStatus.ACTIVE);
 			}
 
 		} catch (SQLException ex) {
@@ -635,5 +645,52 @@ public final class OsAccountRealmManager {
 		String signature = String.format("%s_%s", !Strings.isNullOrEmpty(realmAddr) ?  realmAddr : realmName,
 												scopeHost != null ? scopeHost.getId() : "DOMAIN");
 		return signature;
+	}
+	
+	/**
+	 * Create a random signature for realms that have been merged.
+	 * 
+	 * @return The random signature.
+	 */
+	private String makeMergedRealmSignature() {
+		return "MERGED " +  UUID.randomUUID().toString();
+	}
+	
+	/**
+	 * Merge one realm into another, moving or combining all associated OsAccounts.
+	 * 
+	 * @param source The source realm.
+	 * @param dest   The destination realm.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void mergeRealms(OsAccountRealm source, OsAccountRealm dest) throws TskCoreException {
+		
+		CaseDbTransaction trans = null;
+		try {
+			trans = db.beginTransaction();
+			
+			// Update accounts
+			db.getOsAccountManager().mergeAccountsForRealms(source, dest, trans.getConnection());
+			
+			// Update the status
+			CaseDbConnection connection = trans.getConnection();
+			try (Statement statement = connection.createStatement()) {
+				String updateStr = "UPDATE tsk_os_account_realms SET db_status = " + OsAccountRealm.RealmDbStatus.MERGED.getId() 
+						+ ", merged_into = " + dest.getId()
+						+ ", realm_signature = '" + makeMergedRealmSignature() + "' "
+						+ " WHERE id = " + source.getId();
+				connection.executeUpdate(statement, updateStr);
+			} catch (SQLException ex) {
+				throw new TskCoreException ("Error updating status of realm with id: " + source.getId(), ex);
+			}
+			
+			trans.commit();
+			trans = null;
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
 	}
 }

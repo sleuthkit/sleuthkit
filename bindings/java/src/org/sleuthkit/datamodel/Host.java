@@ -28,13 +28,13 @@ public final class Host {
 
 	private final long id;
 	private String name;
-	private HostStatus status;
+	private HostDbStatus status;
 
 	Host(long id, String name) {
-		this(id, name, HostStatus.ACTIVE);
+		this(id, name, HostDbStatus.ACTIVE);
 	}
 
-	Host(long id, String name, HostStatus status) {
+	Host(long id, String name, HostDbStatus status) {
 		this.id = id;
 		this.name = name;
 		this.status = status;
@@ -72,7 +72,7 @@ public final class Host {
 	 *
 	 * @return Host status.
 	 */
-	public HostStatus getStatus() {
+	public HostDbStatus getStatus() {
 		return status;
 	}
 	
@@ -81,7 +81,7 @@ public final class Host {
 	 *
 	 * @param status Host status.
 	 */
-	public void setStatus(HostStatus status) {
+	public void setStatus(HostDbStatus status) {
 		this.status = status;
 	}
 		
@@ -120,7 +120,7 @@ public final class Host {
 	/**
 	 * Encapsulates status of host row.
 	 */
-	public enum HostStatus {
+	public enum HostDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");
@@ -129,7 +129,7 @@ public final class Host {
 		private final int id;
 		private final String name;
 
-		HostStatus(int id, String name) {
+		HostDbStatus(int id, String name) {
 			this.id = id;
 			this.name = name;
 		}
@@ -142,8 +142,8 @@ public final class Host {
 			return name;
 		}
 
-		public static HostStatus fromID(int typeId) {
-			for (HostStatus type : HostStatus.values()) {
+		public static HostDbStatus fromID(int typeId) {
+			for (HostDbStatus type : HostDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;
 				}
