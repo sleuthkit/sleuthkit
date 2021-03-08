@@ -194,7 +194,6 @@ public class OsAccountTest {
 		OsAccount account3 = caseDB.getOsAccountManager().createWindowsAccount(null, uniqueRealm2Name, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
 		OsAccount account4 = caseDB.getOsAccountManager().createWindowsAccount(null, matchingName, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
 		account4.setFullName(fullName1);
-		account4.setIsAdmin(true);
 		account4.setCreationTime(creationTime1);
 		caseDB.getOsAccountManager().updateAccount(account4);
 		OsAccount account5 = caseDB.getOsAccountManager().createWindowsAccount(sid1, null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
@@ -236,7 +235,6 @@ public class OsAccountTest {
 		if (optAcct.isPresent()) {
 			assertEquals(optAcct.get().getCreationTime().isPresent() &&  optAcct.get().getCreationTime().get() == creationTime1, true);
 			assertEquals(optAcct.get().getFullName().isPresent() && fullName1.equalsIgnoreCase(optAcct.get().getFullName().get()), true);
-			assertEquals(optAcct.get().isAdmin().isPresent() && optAcct.get().isAdmin().get(), true);
 		}
 	}
 	
