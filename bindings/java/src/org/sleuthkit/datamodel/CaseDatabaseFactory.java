@@ -442,13 +442,15 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE,"
 				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL )");
 
-		// maps an address to an artifact using it 
+		// maps an address to an content/item using it 
 		stmt.execute("CREATE TABLE  tsk_host_address_usage (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "addr_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// obj id of the content/item using the address
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " // data source where the usage was found
+				+ "UNIQUE(addr_obj_id, obj_id), "
 				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");		
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");		
 	}
 		
 	// Must be called after tsk_persons, tsk_hosts and tsk_objects have been created.
