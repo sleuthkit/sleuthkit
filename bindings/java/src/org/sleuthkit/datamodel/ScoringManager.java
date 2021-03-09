@@ -149,18 +149,15 @@ public class ScoringManager {
 	 */
 	void setAggregateScore(long objId, Long dataSourceObjectId, Score score, int version, CaseDbConnection connection) throws TskCoreException, SQLException {
 
-		System.out.println(String.format("RAMAN: setAggregateScore: Score = %s, currVer = %d ",  score.getSignificance().getName(), version));
-		
 		String whereVersionClause = (TskData.DbType.SQLITE == db.getDatabaseType()) ? "version = ?" : "EXCLUDED.version = ?";
 		
-	
 		// insert or update score
-		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance, confidence) VALUES (?, ?, ?, ?)"
+		String upsertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance, confidence) VALUES (?, ?, ?, ?)"
 				+ " ON CONFLICT (obj_id) DO UPDATE SET version = ?, significance = ?, confidence = ?  WHERE " + whereVersionClause;
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQLString, Statement.NO_GENERATED_KEYS);
+			PreparedStatement preparedStatement = connection.getPreparedStatement(upsertSQLString, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
 			preparedStatement.setLong(1, objId);
@@ -181,10 +178,8 @@ public class ScoringManager {
 			
 			connection.executeUpdate(preparedStatement);
 			
-			System.out.println(String.format("RAMAN: setAggregateScore: SUCCESS!!!"));
-			
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating aggregate score, query: %s for objId = %d", insertSQLString, objId), ex);//NON-NLS
+			throw new TskCoreException(String.format("Error updating aggregate score, query: %s for objId = %d", upsertSQLString, objId), ex);//NON-NLS
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}

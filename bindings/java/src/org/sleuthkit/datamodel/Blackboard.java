@@ -233,10 +233,6 @@ public final class Blackboard {
 			// get all remaining analysis results for the object, loop over to find the highest score
 			List<AnalysisResult> analysisResults = this.getAnalysisResults(analysisResult.getObjectID(), connection);
 			
-			// 
-			System.out.println(String.format("RAMAN: Result count after deletion = %d ",  analysisResults.size()));
-			
-			
 			Score newScore = Score.SCORE_UNKNOWN;
 			for (AnalysisResult iter : analysisResults) {
 				Score iterScore = iter.getScore();
@@ -246,17 +242,10 @@ public final class Blackboard {
 				}
 			}
 			
-			System.out.println(String.format("RAMAN: deleteAnalysisResult: currentScore = %s ",  currentScore.getSignificance().getName()));
-			System.out.println(String.format("RAMAN: deleteAnalysisResult: currentScoreVersion = %d ",  currentScoreVersion));
-			System.out.println(String.format("RAMAN: deleteAnalysisResult: newScore = %s ",  newScore.getSignificance().getName()));
 			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, currentScoreVersion, connection);
 
 			transaction.commit();
 			transaction = null;
-			
-			// RAMAN TEMP: get it back to verify
-			Score nnn  = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID());
-			System.out.println(String.format("RAMAN: deleteAnalysisResult: new score in db after deletion = %s ",  nnn.getSignificance().getName()));
 			
 			// fire an event that an anaylsys result was deleted.  
 			caseDb.fireTSKEvent(new AnalysisResultDeletedEvent(analysisResult));
