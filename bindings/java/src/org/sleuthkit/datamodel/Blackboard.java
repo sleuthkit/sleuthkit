@@ -465,7 +465,7 @@ public final class Blackboard {
 	 * @throws TskCoreException The exception is thrown if there is an error
 	 *                          querying the case database.
 	 */
-	public List<DataArtifact> getDataArtifacts(DataSource dataSource) throws TskException {
+	public List<DataArtifact> getDataArtifacts(Content dataSource) throws TskCoreException {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = " artifacts.data_source_obj_id = " + dataSource.getId();
