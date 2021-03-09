@@ -669,7 +669,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_BACKUP_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME_START),
 			artf -> {
-				return getBundle().getString("TimelineEventType.BackupEvent.description.started");
+				return getBundle().getString("TimelineEventType.BackupEvent.description.start");
 			},
 			new EmptyExtractor(),
 			new EmptyExtractor());
