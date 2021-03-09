@@ -4335,8 +4335,8 @@ public class SleuthkitCase {
 	}
 	
 	void addFileAttribute(Attribute attr, CaseDbConnection connection) throws SQLException, TskCoreException {
-		PreparedStatement statement;
-		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE);
+		PreparedStatement statement; 
+		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE, Statement.RETURN_GENERATED_KEYS); 
 		statement.clearParameters();
 
 		statement.setLong(1, attr.getAttributeParentId());
