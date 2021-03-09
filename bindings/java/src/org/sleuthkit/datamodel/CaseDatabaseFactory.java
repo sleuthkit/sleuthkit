@@ -411,7 +411,7 @@ class CaseDatabaseFactory {
 		// References tsk_persons
 		stmt.execute("CREATE TABLE tsk_hosts (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "name TEXT NOT NULL, " // host name
-				+ "status INTEGER DEFAULT 0, " // to indicate if the host was merged/deleted
+				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 				+ "person_id INTEGER, "
 				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "UNIQUE(name)) ");
@@ -442,13 +442,15 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE,"
 				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL )");
 
-		// maps an address to an artifact using it 
+		// maps an address to an content/item using it 
 		stmt.execute("CREATE TABLE  tsk_host_address_usage (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "addr_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// obj id of the content/item using the address
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " // data source where the usage was found
+				+ "UNIQUE(addr_obj_id, obj_id), "
 				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");		
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");		
 	}
 		
 	// Must be called after tsk_persons, tsk_hosts and tsk_objects have been created.
@@ -480,9 +482,12 @@ class CaseDatabaseFactory {
 				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
 				+ "realm_signature TEXT NOT NULL, "	// Signature exists only to prevent duplicates. It is  made up of realm address/name and scope host
 				+ "scope_host_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, " // if the realm scope is a single host
-				+ "scope_confidence INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "scope_confidence INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it				
+				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
+				+ "merged_into " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "	
 				+ "UNIQUE(realm_signature), "
-				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id) )");
+				+ "FOREIGN KEY(scope_host_id) REFERENCES tsk_hosts(id),"
+				+ "FOREIGN KEY(merged_into) REFERENCES tsk_os_account_realms(id) )");
 		
 		// References tsk_objects, tsk_os_account_realms, tsk_persons
 		stmt.execute("CREATE TABLE tsk_os_accounts (os_account_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
@@ -493,12 +498,15 @@ class CaseDatabaseFactory {
 				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "type INTEGER, "	// service/interactive
-				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "	
+				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
 				+ "person_id INTEGER, "	
+				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
+			    + "merged_into " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
-				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) )");
+				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id),"
+				+ "FOREIGN KEY(merged_into) REFERENCES tsk_os_accounts(os_account_obj_id) )");
 		
 	}
 	// Must be called after createAccountTables() and blackboard_attribute_types, blackboard_artifacts creation.

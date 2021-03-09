@@ -212,7 +212,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public void mapHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
+	public void assignHostToAddress(Host host, HostAddress hostAddress, Long time, Content source) throws TskCoreException {
 
 		String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_map(host_id, addr_obj_id, source_obj_id, time) "
 				+ " VALUES(?, ?, ?, ?) ");
@@ -242,13 +242,13 @@ public class HostAddressManager {
 	}
 
 	/**
-	 * Get all the addresses that have been mapped to the given host
+	 * Get all the addresses that have been assigned to the given host.
 	 *
 	 * @param host Host to get addresses for.
 	 *
 	 * @return List of addresses, may be empty.
 	 */
-	List<HostAddress> getHostAddresses(Host host) throws TskCoreException {
+	List<HostAddress> getHostAddressesAssignedTo(Host host) throws TskCoreException {
 
 		String queryString = "SELECT addr_obj_id FROM tsk_host_address_map "
 				+ " WHERE host_id = " + host.getId();
@@ -588,21 +588,87 @@ public class HostAddressManager {
 	/**
 	 * Associate the given artifact with a HostAddress.
 	 *
-	 * @param artifact    The artifact to associate the host address with.
+	 * @param content    The content/item using the address.
 	 * @param hostAddress The host address.
 	 */
-	public void addUsage(BlackboardArtifact artifact, HostAddress hostAddress) throws TskCoreException {
-		final String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_usage(addr_obj_id, artifact_obj_id) "
-				+ " VALUES(" + hostAddress.getId() + ", " + artifact.getId() + ") ");
+	public void addUsage(Content content, HostAddress hostAddress) throws TskCoreException {
+		final String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_usage(addr_obj_id, obj_id, data_source_obj_id) "
+				+ " VALUES(" + hostAddress.getId() + ", " + content.getId() + ", " + content.getDataSource().getId() + ") ");
 
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement()) {
 			connection.executeUpdate(s, insertSQL);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), artifact.getId()), ex);
+			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), content.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	private final String ADDRESS_USAGE_QUERY = "SELECT addresses.id as id, addresses.address_type as address_type, addresses.address as address "
+			+ " FROM tsk_host_address_usage as usage "
+			+ " JOIN tsk_host_addresses as addresses "
+			+ " ON usage.addr_obj_id = addresses.id ";
+
+	/**
+	 * Get all the addresses that have been used by the given content.
+	 *
+	 * @param content Content to get addresses used for.
+	 *
+	 * @return List of addresses, may be empty.
+	 *
+	 * @throws TskCoreException
+	 */
+	public List<HostAddress> getHostAddressesUsedByContent(Content content) throws TskCoreException {
+		String queryString = ADDRESS_USAGE_QUERY
+				+ " WHERE usage.obj_id = " + content.getId();
+
+		return getHostAddressesUsed(queryString);
+	}
+
+	/**
+	 * Get all the addresses that have been used by the given data source.
+	 *
+	 * @param dataSource Data source to get addresses used for.
+	 *
+	 * @return List of addresses, may be empty.
+	 *
+	 * @throws TskCoreException
+	 */
+	public List<HostAddress> getHostAddressesUsedOnDataSource(Content dataSource) throws TskCoreException {
+		String queryString = ADDRESS_USAGE_QUERY
+				+ " WHERE usage.data_source_obj_id = " + dataSource.getId();
+
+		return getHostAddressesUsed(queryString);
+	}
+
+	/**
+	 * Gets the host addresses used by running the given query.
+	 *
+	 * @param addressesUsedSQL SQL query to run.
+	 *
+	 * @return List of addresses, may be empty.
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<HostAddress> getHostAddressesUsed(String addressesUsedSQL) throws TskCoreException {
+
+		List<HostAddress> addressesUsed = new ArrayList<>();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, addressesUsedSQL)) {
+
+			while (rs.next()) {
+				addressesUsed.add(new HostAddress(db, rs.getLong("id"), HostAddress.HostAddressType.fromID(rs.getInt("address_type")), rs.getString("address")));
+			}
+			return addressesUsed;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting host addresses used with query string = %s", addressesUsedSQL), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 

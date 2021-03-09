@@ -56,6 +56,7 @@ public final class OsAccount extends AbstractContent {
 	private String fullName;	// full name, may be null
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
 	private OsAccountStatus osAccountStatus = null;
+	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
 	private Long creationTime = null;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
@@ -111,6 +112,42 @@ public final class OsAccount extends AbstractContent {
 			for (OsAccountStatus statusType : OsAccountStatus.values()) {
 				if (statusType.ordinal() == statusId) {
 					return statusType;
+				}
+			}
+			return null;
+		}
+	}
+	
+	/**
+	 * Encapsulates status of OsAccount row.
+	 * OsAccounts that are not "Active" are generally invisible -
+	 * they will not be returned by any queries on the string fields.
+	 */
+	public enum OsAccountDbStatus {
+		ACTIVE(0, "Active"),
+		MERGED(1, "Merged"),
+		DELETED(2, "Deleted");	
+
+		private final int id;
+		private final String name;
+
+		OsAccountDbStatus(int id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		public int getId() {
+			return id;
+		}
+
+		String getName() {
+			return name;
+		}
+
+		public static OsAccountDbStatus fromID(int typeId) {
+			for (OsAccountDbStatus type : OsAccountDbStatus.values()) {
+				if (type.ordinal() == typeId) {
+					return type;
 				}
 			}
 			return null;
@@ -183,8 +220,10 @@ public final class OsAccount extends AbstractContent {
 	 * @param signature	     A unique signature constructed from realm id and
 	 *                       loginName or uniqueId.
 	 * @param accountStatus  Account status.
+	 * @param dbStatus       Status of row in database.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature, OsAccountStatus accountStatus) {
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature, 
+			OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
 		
 		super(sleuthkitCase, osAccountobjId, signature);
 		
@@ -195,6 +234,7 @@ public final class OsAccount extends AbstractContent {
 		this.uniqueId = uniqueId;
 		this.signature = signature;
 		this.osAccountStatus = accountStatus;
+		this.osAccountDbStatus = accountDbStatus;
 	}
 
 	/**
@@ -423,6 +463,15 @@ public final class OsAccount extends AbstractContent {
 	 */
 	public OsAccountStatus getOsAccountStatus() {
 		return osAccountStatus;
+	}
+	
+	/**
+	 * Get account status in the database.
+	 *
+	 * @return Database account status.
+	 */
+	public OsAccountDbStatus getOsAccountDbStatus() {
+		return osAccountDbStatus;
 	}
 
 	/**

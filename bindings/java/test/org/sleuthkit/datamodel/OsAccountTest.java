@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -171,7 +172,100 @@ public class OsAccountTest {
 	}
 		
 	@Test 
+	public void mergeTests() throws TskCoreException {
+		Host host = caseDB.getHostManager().createHost("mergeTestHost");
+		
+		String destRealmName = "mergeTestDestRealm";
+		String srcRealmName = "mergeTestSourceRealm";
+		
+		String sid1 = "S-1-5-21-222222222-222222222-1060284298-2222";
+        String sid2 = "S-1-5-21-555555555-555555555-1060284298-5555";   
+		
+		String uniqueRealm2Name = "uniqueRealm2Account";
+		String matchingName = "matchingNameAccount";
+		String fullName1 = "FullName1";
+		long creationTime1 = 555;
+		
+		OsAccountRealm srcRealm = caseDB.getOsAccountRealmManager().createWindowsRealm(null, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm destRealm = caseDB.getOsAccountRealmManager().createWindowsRealm(null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		
+		OsAccount account1 = caseDB.getOsAccountManager().createWindowsAccount(null, "uniqueRealm1Account", destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account2 = caseDB.getOsAccountManager().createWindowsAccount(null, matchingName, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account3 = caseDB.getOsAccountManager().createWindowsAccount(null, uniqueRealm2Name, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account4 = caseDB.getOsAccountManager().createWindowsAccount(null, matchingName, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		account4.setFullName(fullName1);
+		account4.setCreationTime(creationTime1);
+		caseDB.getOsAccountManager().updateAccount(account4);
+		OsAccount account5 = caseDB.getOsAccountManager().createWindowsAccount(sid1, null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account6 = caseDB.getOsAccountManager().createWindowsAccount(sid1, null, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);  
+		OsAccount account7 = caseDB.getOsAccountManager().createWindowsAccount(sid2, null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account8 = caseDB.getOsAccountManager().createWindowsAccount(null, "nameForCombining", destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount account9 = caseDB.getOsAccountManager().createWindowsAccount(sid2, "nameForCombining", srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
+		
+		// Test that we can currently get the source realm by name
+		Optional<OsAccountRealm> optRealm = caseDB.getOsAccountRealmManager().getWindowsRealm(null, srcRealmName, host);
+		assertEquals(optRealm.isPresent(), true);
+		
+		// Test that there are currently two account associated with sid1
+		List<OsAccount> accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getUniqueIdWithinRealm().isPresent() && p.getUniqueIdWithinRealm().get().equals(sid1)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 2, true);
+		
+		// Expected results of the merge:
+		// - account 4 will be merged into account 2 (and extra fields should be copied)
+		// - account 6 will be merged into account 5
+		// - account 8 will be merged into account 7 (due to account 9 containing matches for both)
+		// - account 9 will be merged into account 7
+		caseDB.getOsAccountRealmManager().mergeRealms(srcRealm, destRealm);
+		
+		// Test that the source realm is no longer returned by a search by name
+		optRealm = caseDB.getOsAccountRealmManager().getWindowsRealm(null, srcRealmName, host);
+		assertEquals(optRealm.isPresent(), false);
+		
+		// Test that there is now only one account associated with sid1
+		accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getUniqueIdWithinRealm().isPresent() && p.getUniqueIdWithinRealm().get().equals(sid1)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 1, true);
+		
+		// Test that account 3 got moved into the destination realm
+		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(uniqueRealm2Name, destRealm);
+		assertEquals(optAcct.isPresent(), true);
+		
+		// Test that data from account 4 was merged into account 2
+		optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(matchingName, destRealm);
+		assertEquals(optAcct.isPresent(), true);
+		if (optAcct.isPresent()) {
+			assertEquals(optAcct.get().getCreationTime().isPresent() &&  optAcct.get().getCreationTime().get() == creationTime1, true);
+			assertEquals(optAcct.get().getFullName().isPresent() && fullName1.equalsIgnoreCase(optAcct.get().getFullName().get()), true);
+		}
+	}
+	
+	@Test 
 	public void hostAddressTests() throws TskCoreException {
+		
+		
+		// lets add a file 
+		long dataSourceObjectId = fs.getDataSource().getId();
+		
+		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		
+		// Add a root folder
+		FsContent _root = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "", 0, 0,
+				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
+				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, fs, null, null, Collections.emptyList(), trans);
+
+		// Add a dir - no attributes 
+		FsContent _windows = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "Windows", 0, 0,
+				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
+				(short) 0, 200, 0, 0, 0, 0, null, null, null, false, _root, "S-1-5-80-956008885-3418522649-1831038044-1853292631-227147846", null, Collections.emptyList(), trans);
+
+		// add another no attribute file to same folder
+		FsContent _abcTextFile = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "abc.txt", 0, 0,
+					TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
+					(short) 0, 200, 0, 0, 0, 0, null, null, "Text/Plain", true, _windows, null, null, Collections.emptyList(), trans);
+		
+		trans.commit();
+			
+		
+		
 		String ipv4Str = "11.22.33.44";
 		String ipv6Str = "2001:0db8:85a3:0000:0000:8a2e:0370:6666";
 		String hostnameStr = "basis.com";
@@ -194,11 +288,13 @@ public class OsAccountTest {
 		
 		// Test host map
 		Host host = caseDB.getHostManager().createHost("TestHostAddress");
-		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		
+		trans = caseDB.beginTransaction();
 		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", null, trans);
 		trans.commit();
-		caseDB.getHostAddressManager().mapHostToAddress(host, ipv4addr, (long) 0, ds);
-		List<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddresses(host);
+		
+		caseDB.getHostAddressManager().assignHostToAddress(host, ipv4addr, (long) 0, ds);
+		List<HostAddress> hostAddrs = caseDB.getHostAddressManager().getHostAddressesAssignedTo(host);
 		assertEquals(hostAddrs.size() == 1, true);
 		
 		// Test IP mapping
@@ -207,6 +303,23 @@ public class OsAccountTest {
 		assertEquals(ipForHostSet.size() == 1, true);
 		List<HostAddress> hostForIpSet = caseDB.getHostAddressManager().getHostNameByIp(ipv4addr.getAddress());
 		assertEquals(hostForIpSet.size() == 1, true);
+		
+		
+		// add address usage
+		caseDB.getHostAddressManager().addUsage(_abcTextFile, ipv4addr);
+		caseDB.getHostAddressManager().addUsage(_abcTextFile, addr2);
+		caseDB.getHostAddressManager().addUsage(_abcTextFile, hostAddr);
+		
+		//test get addressUsed methods
+		List<HostAddress> addrUsedByAbc = caseDB.getHostAddressManager().getHostAddressesUsedByContent(_abcTextFile);
+		assertEquals(addrUsedByAbc.size() == 3, true);
+		
+		List<HostAddress> addrUsedByRoot = caseDB.getHostAddressManager().getHostAddressesUsedByContent(_root);
+		assertEquals(addrUsedByRoot.isEmpty(), true);
+		
+		List<HostAddress> addrUsedOnDataSource = caseDB.getHostAddressManager().getHostAddressesUsedOnDataSource(_root.getDataSource());
+		assertEquals(addrUsedOnDataSource.size() == 3, true);
+		
 	}
 	
 	@Test
@@ -499,15 +612,15 @@ public class OsAccountTest {
 		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// Test: add an instance
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.LAUNCHED);
 
 		// Test: add an existing instance - should be a no-op.
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.PERFORMED_ACTION_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host1, image, OsAccount.OsAccountInstanceType.LAUNCHED);
 
 		// Test: create account instance on a new host
 		String hostname2 = "host2222";
 		Host host2 = caseDB.getHostManager().createHost(hostname2);
-		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image, OsAccount.OsAccountInstanceType.REFERENCED_ON);
+		caseDB.getOsAccountManager().createOsAccountInstance(osAccount1, host2, image, OsAccount.OsAccountInstanceType.REFERENCED);
 	
 		
 		List<OsAccountAttribute> accountAttributes = new ArrayList<>();

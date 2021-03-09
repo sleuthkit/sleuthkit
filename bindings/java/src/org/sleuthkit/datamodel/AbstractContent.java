@@ -347,7 +347,7 @@ public abstract class AbstractContent implements Content {
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
 
 		DataArtifact artifact =  db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccount);
-		db.getOsAccountManager().createOsAccountInstance(osAccount, (DataSource)getDataSource(), OsAccountInstance.OsAccountInstanceType.PERFORMED_ACTION_ON);
+		db.getOsAccountManager().createOsAccountInstance(osAccount, (DataSource)getDataSource(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
 		return artifact;
 	}
 	
