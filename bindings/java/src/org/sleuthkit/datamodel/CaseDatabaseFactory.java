@@ -413,7 +413,9 @@ class CaseDatabaseFactory {
 				+ "name TEXT NOT NULL, " // host name
 				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 				+ "person_id INTEGER, "
+				+ "merged_into " + dbQueryHelper.getBigIntType() + ", "
 				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
+				+ "FOREIGN KEY(merged_into) REFERENCES tsk_hosts(id), "
 				+ "UNIQUE(name)) ");
 
 		stmt.execute("CREATE TABLE  tsk_host_addresses (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "

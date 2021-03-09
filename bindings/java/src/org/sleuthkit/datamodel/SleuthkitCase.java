@@ -2413,7 +2413,9 @@ public class SleuthkitCase {
 					+ "name TEXT NOT NULL, " // host name
 					+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 					+ "person_id INTEGER, "
+					+ "merged_into " + bigIntDataType + ", "
 					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
+					+ "FOREIGN KEY(merged_into) REFERENCES tsk_hosts(id), "
 					+ "UNIQUE(name)) ");
 
 			// Create OS Account and related tables 

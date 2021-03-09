@@ -24,6 +24,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -656,6 +658,69 @@ public final class OsAccountRealmManager {
 		return "MERGED " +  UUID.randomUUID().toString();
 	}
 	
+	
+	void moveOrMergeRealm(OsAccountRealm sourceRealm, Host destHost, CaseDbTransaction trans) throws TskCoreException {
+		// Look for a matching realm by address
+		Optional<OsAccountRealm> optDestRealmAddr = Optional.empty();
+		if (sourceRealm.getRealmAddr().isPresent()) {
+			optDestRealmAddr = db.getOsAccountRealmManager().getRealmByAddr(sourceRealm.getRealmAddr().get(), destHost, trans.getConnection());
+		}
+		
+		// Look for a matching realm by name
+		Optional<OsAccountRealm> optDestRealmName = Optional.empty();
+		if (sourceRealm.getRealmName().isPresent()) {
+			optDestRealmName = db.getOsAccountRealmManager().getRealmByName(sourceRealm.getRealmName().get(), destHost, trans.getConnection());
+		}
+		
+		// Decide how to proceed:
+		// - If we only got one match or the matches are the same, set destRealm to that realm
+		// - If we got no matches, leave destRealm null (we'll do a move not a merge)
+		// - If we got two different matches:
+		// -- If the name match has no address set, merge the matching name realm into the matching address realm, then
+		//        set destRealm to the matching address realm
+		// -- Otherwise we're in the case where the addresses are different. We will consider the address the 
+		//        stronger match and set destRealm to the matching address realm and leave the matching name realm as-is.		
+		OsAccountRealm destRealm = null;
+		if (optDestRealmAddr.isPresent() && optDestRealmName.isPresent()) {
+			if (optDestRealmAddr.get().getId() == optDestRealmName.get().getId()) {
+				// The two matches are the same
+				destRealm = optDestRealmAddr.get();
+			} else {
+				if (optDestRealmName.get().getRealmAddr().isPresent()) {
+					// The addresses are different, so use the one with the matching address
+					destRealm = optDestRealmAddr.get();
+				} else {
+					// Merge the realm with the matching name into the realm with the matching address.
+					// Reload from database afterward to make sure everything is up-to-date.
+					mergeRealms(optDestRealmName.get(), optDestRealmAddr.get(), trans);
+					destRealm = getRealm(optDestRealmAddr.get().getId(), trans.getConnection());
+				}
+			}
+		} else if (optDestRealmAddr.isPresent()) {
+			// Only address matched - use it
+			destRealm = optDestRealmAddr.get();
+		} else if (optDestRealmName.isPresent()) {
+			// Only name matched - use it
+			destRealm = optDestRealmName.get();
+		}
+		
+		// Move or merge the source realm
+		if (destRealm == null) {
+			moveRealm(sourceRealm, destHost, trans);
+		} else {
+			mergeRealms(sourceRealm, destRealm, trans);
+		}
+	}
+	
+	private void moveRealm(OsAccountRealm sourceRealm, Host destHost, CaseDbTransaction trans) throws TskCoreException {
+		try(Statement s = trans.getConnection().createStatement()) {
+			String query = "UPDATE tsk_os_account_realms SET scope_host_id = " + destHost.getId() + " WHERE id = " + sourceRealm.getId();
+			s.executeUpdate(query);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error moving realm with id: " + sourceRealm.getId() + " to host with id: " + destHost.getId(), ex);
+		}
+	}
+	
 	/**
 	 * Merge one realm into another, moving or combining all associated OsAccounts.
 	 * 
@@ -665,32 +730,64 @@ public final class OsAccountRealmManager {
 	 * @throws TskCoreException 
 	 */
 	public void mergeRealms(OsAccountRealm source, OsAccountRealm dest) throws TskCoreException {
-		
 		CaseDbTransaction trans = null;
 		try {
 			trans = db.beginTransaction();
-			
-			// Update accounts
-			db.getOsAccountManager().mergeAccountsForRealms(source, dest, trans.getConnection());
-			
-			// Update the status
-			CaseDbConnection connection = trans.getConnection();
-			try (Statement statement = connection.createStatement()) {
-				String updateStr = "UPDATE tsk_os_account_realms SET db_status = " + OsAccountRealm.RealmDbStatus.MERGED.getId() 
-						+ ", merged_into = " + dest.getId()
-						+ ", realm_signature = '" + makeMergedRealmSignature() + "' "
-						+ " WHERE id = " + source.getId();
-				connection.executeUpdate(statement, updateStr);
-			} catch (SQLException ex) {
-				throw new TskCoreException ("Error updating status of realm with id: " + source.getId(), ex);
-			}
-			
+			mergeRealms(source, dest, trans);
 			trans.commit();
 			trans = null;
 		} finally {
 			if (trans != null) {
 				trans.rollback();
 			}
+		}
+	}
+	
+	/**
+	 * Merge one realm into another, moving or combining all associated OsAccounts.
+	 * 
+	 * @param source The source realm.
+	 * @param dest   The destination realm.
+	 * @param trans  The open transaction.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	void mergeRealms(OsAccountRealm source, OsAccountRealm dest, CaseDbTransaction trans) throws TskCoreException {
+
+		// Update accounts
+		db.getOsAccountManager().mergeAccountsForRealms(source, dest, trans);
+
+		// Update the status
+		CaseDbConnection connection = trans.getConnection();
+		try (Statement statement = connection.createStatement()) {
+			String updateStr = "UPDATE tsk_os_account_realms SET db_status = " + OsAccountRealm.RealmDbStatus.MERGED.getId() 
+					+ ", merged_into = " + dest.getId()
+					+ ", realm_signature = '" + makeMergedRealmSignature() + "' "
+					+ " WHERE id = " + source.getId();
+			connection.executeUpdate(statement, updateStr);
+		} catch (SQLException ex) {
+			throw new TskCoreException ("Error updating status of realm with id: " + source.getId(), ex);
+		}
+	}
+	
+	List<OsAccountRealm> getRealmsByHost(Host host, CaseDbConnection connection) throws TskCoreException {
+		List<OsAccountRealm> results = new ArrayList<>();
+		String queryString = REALM_QUERY_STRING
+			+ " WHERE realms.scope_host_id = " + host.getId();
+		
+		db.acquireSingleUserCaseReadLock();
+		try (	Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+			while (rs.next()) { 
+				results.add(resultSetToAccountRealm(rs));
+			} 
+
+			return results;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error gettings realms for host with id = " + host.getId()), ex);
+		}
+		finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 }
