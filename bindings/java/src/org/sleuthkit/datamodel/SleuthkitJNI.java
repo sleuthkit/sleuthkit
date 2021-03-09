@@ -449,7 +449,7 @@ public class SleuthkitJNI {
 					} else {
 						hostName = "Image_" + deviceObjId + " Host";
 					}
-					host = skCase.getHostManager().getOrCreateHost(hostName);
+					host = skCase.getHostManager().createHost(hostName);
 				}
 				TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks(), host);
 				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);
@@ -1002,17 +1002,6 @@ public class SleuthkitJNI {
 		//  Now save to database
 		CaseDbTransaction transaction = skCase.beginTransaction();
 		try {
-			if (host == null) {
-				String hostName;
-				if (computedPaths.size() > 0) {
-					String path = computedPaths.get(0);
-					hostName = (new java.io.File(path)).getName() + " Host";
-				} else {
-					hostName = "Image_" + deviceId + " Host";
-				}
-				host = skCase.getHostManager().createHost(hostName, transaction);
-			}
-			
 			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize, 
 				size, null, computedPaths, 
 				timeZone, md5, sha1, sha256, 

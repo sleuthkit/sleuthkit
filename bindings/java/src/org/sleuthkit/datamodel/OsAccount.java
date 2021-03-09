@@ -54,9 +54,9 @@ public final class OsAccount extends AbstractContent {
 									// or the login_name if login_name is defined.
 
 	private String fullName;	// full name, may be null
-	private Boolean isAdmin = null;	// is admin account.
 	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
 	private OsAccountStatus osAccountStatus = null;
+	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
 	private Long creationTime = null;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
@@ -111,6 +111,42 @@ public final class OsAccount extends AbstractContent {
 			for (OsAccountStatus statusType : OsAccountStatus.values()) {
 				if (statusType.ordinal() == statusId) {
 					return statusType;
+				}
+			}
+			return null;
+		}
+	}
+	
+	/**
+	 * Encapsulates status of OsAccount row.
+	 * OsAccounts that are not "Active" are generally invisible -
+	 * they will not be returned by any queries on the string fields.
+	 */
+	public enum OsAccountDbStatus {
+		ACTIVE(0, "Active"),
+		MERGED(1, "Merged"),
+		DELETED(2, "Deleted");	
+
+		private final int id;
+		private final String name;
+
+		OsAccountDbStatus(int id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		public int getId() {
+			return id;
+		}
+
+		String getName() {
+			return name;
+		}
+
+		public static OsAccountDbStatus fromID(int typeId) {
+			for (OsAccountDbStatus type : OsAccountDbStatus.values()) {
+				if (type.ordinal() == typeId) {
+					return type;
 				}
 			}
 			return null;
@@ -177,15 +213,18 @@ public final class OsAccount extends AbstractContent {
 	 * just a reference to it was found on the host (such as in a log file)
 	 */
 	public enum OsAccountInstanceType {
-		PERFORMED_ACTION_ON(0, bundle.getString("OsAccountInstanceType.PerformedActionOn.text")), // the user performed actions on a host
-		REFERENCED_ON(1, bundle.getString("OsAccountInstanceType.ReferencedOn.text") );	// user was simply referenced on a host
-
+		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user launched a program on the host
+		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")),	// user accesed a resource for read/write
+		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text") );	// user was referenced, e.g. in a event log.
+		
 		private final int id;
 		private final String name;
+		private final String description;
 
-		OsAccountInstanceType(int id, String name) {
+		OsAccountInstanceType(int id, String name, String description) {
 			this.id = id;
 			this.name = name;
+			this.description = description ;
 		}
 
 		/**
@@ -206,6 +245,15 @@ public final class OsAccount extends AbstractContent {
 			return name;
 		}
 
+		/**
+		 * Get account instance type description.
+		 *
+		 * @return Account instance type description.
+		 */
+		public String getDescription() {
+			return description;
+		}
+		
 		/**
 		 * Gets account instance type enum from id.
 		 *
@@ -237,8 +285,10 @@ public final class OsAccount extends AbstractContent {
 	 * @param signature	     A unique signature constructed from realm id and
 	 *                       loginName or uniqueId.
 	 * @param accountStatus  Account status.
+	 * @param dbStatus       Status of row in database.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature, OsAccountStatus accountStatus) {
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature, 
+			OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
 		
 		super(sleuthkitCase, osAccountobjId, signature);
 		
@@ -249,6 +299,7 @@ public final class OsAccount extends AbstractContent {
 		this.uniqueId = uniqueId;
 		this.signature = signature;
 		this.osAccountStatus = accountStatus;
+		this.osAccountDbStatus = accountDbStatus;
 	}
 
 	/**
@@ -300,23 +351,6 @@ public final class OsAccount extends AbstractContent {
 	public boolean setFullName(String fullName) {
 		if (this.fullName == null) {
 			this.fullName = fullName;
-			this.isDirty = true;
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Sets the admin status for the account, if it is not already set.
-	 *
-	 * @param isAdmin Flag to indicate if the account is an admin account.
-	 * 
-	 * @return Returns true of the admin status is set, false if the status was not
-	 *         changed.
-	 */
-	public boolean setIsAdmin(boolean isAdmin) {
-		if (this.isAdmin == null) {
-			this.isAdmin = isAdmin;
 			this.isDirty = true;
 			return true;
 		}
@@ -470,16 +504,6 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Check if account is an admin account.
-	 *
-	 * @return Optional with isAdmin status. If the value is not
-	 * present the status is unknown.
-	 */
-	public Optional<Boolean> isAdmin() {
-		return Optional.ofNullable(isAdmin);
-	}
-
-	/**
 	 * Get account creation time.
 	 *
 	 * @return Account creation time, returns 0 if creation time is not known.
@@ -504,6 +528,15 @@ public final class OsAccount extends AbstractContent {
 	 */
 	public OsAccountStatus getOsAccountStatus() {
 		return osAccountStatus;
+	}
+	
+	/**
+	 * Get account status in the database.
+	 *
+	 * @return Database account status.
+	 */
+	public OsAccountDbStatus getOsAccountDbStatus() {
+		return osAccountDbStatus;
 	}
 
 	/**
