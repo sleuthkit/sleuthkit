@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,8 +41,8 @@ public final class DataArtifact extends BlackboardArtifact {
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
 	 * @param artifactObjId    The object id of artifact, in tsk_objects.
-	 * @param dataSourceObjId  Object ID of the datasource where the artifact
-	 *                         was found.
+	 * @param dataSourceObjId  Object ID of the data source where the artifact
+	 *                         was found. May be null.
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
@@ -51,7 +51,7 @@ public final class DataArtifact extends BlackboardArtifact {
 	 *                         null.
 	 * @param isNew            The object is newly created.
 	 */
-	DataArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, OsAccount osAccount, boolean isNew) {
+	DataArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, OsAccount osAccount, boolean isNew) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.osAccount = osAccount;
 	}

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,20 +19,45 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Analysis result is a category of artifact types that represent the outcome of
- * some analysis technique applied to extracted data.
+ * An AnalysisResult represents the outcome of some analysis technique
+ * that was applied to some data (i.e. Content) to determine the data's
+ * relevance.  The result should have a conclusion and a relevance 
+ * score. The score of the AnalysisResult will be used to calculate
+ * the aggregate score of the parent data.  Additional metadata can be
+ * stored as BlackboardAttributes.
  *
  */
 public class AnalysisResult extends BlackboardArtifact {
 
 	private final String conclusion;	// conclusion of analysis - may be an empty string
-	private final Score score;			// score from the analysis
-	private final String configuration; // name of a configuration file/element that guides this analysis, may be an empty string.
-	private final String justification;  // justification/explanation from the analysis, may be an empty string.
+	private final Score score;			// relevance score based on the conclusion 
+	private final String configuration; // Optional descriptor of configuration of analysis technique (such as a set name). Maybe empty string
+	private final String justification;  // justification/explanation of the conclusion.  Maybe empty string.
 
 	private boolean ignoreResult = false; // ignore this analysis result when computing score of the parent object.
 
-	AnalysisResult( SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Score score, String conclusion, String configuration, String justification) {
+	/**
+	 * Constructs an analysis result. 
+	 *
+	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
+	 *                         the artifact data.
+	 * @param artifactID       The unique id for this artifact.
+	 * @param sourceObjId      The unique id of the content with which this
+	 *                         artifact is associated.
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects.
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact
+	 *                         was found. May be null.
+	 * @param artifactTypeID   The type id of this artifact.
+	 * @param artifactTypeName The type name of this artifact.
+	 * @param displayName      The display name of this artifact.
+	 * @param reviewStatus     The review status of this artifact.
+	 * @param score            The score assigned by the analysis.
+	 * @param conclusion       Conclusion arrived at by the analysis. May be
+	 *                         null.
+	 * @param configuration    Configuration used for analysis. May be null.
+	 * @param justification	   Justification for the analysis. May be null.
+	 */
+	AnalysisResult( SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		this.score = score;
 		this.conclusion = (conclusion != null) ? conclusion : "";
@@ -40,7 +65,31 @@ public class AnalysisResult extends BlackboardArtifact {
 		this.justification = (justification != null) ? justification : "";
 	}
 
-	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew, Score score, String conclusion, String configuration, String justification) {
+	
+	/**
+	 * Constructs an analysis result. 
+	 *
+	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
+	 *                         the artifact data.
+	 * @param artifactID       The unique id for this artifact.
+	 * @param sourceObjId      The unique id of the content with which this
+	 *                         artifact is associated.
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects.
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact
+	 *                         was found. May be null.
+	 * @param artifactTypeID   The type id of this artifact.
+	 * @param artifactTypeName The type name of this artifact.
+	 * @param displayName      The display name of this artifact.
+	 * @param reviewStatus     The review status of this artifact.
+	 * @param isNew            If this analysis result is newly created.
+	 * @param score            The score assigned by the analysis.
+	 * @param conclusion       Conclusion arrived at by the analysis. May be
+	 *                         null.
+	 * @param configuration    Configuration used for analysis. May be null.
+	 * @param justification	   Justification for the analysis. May be null.
+	 */
+	
+	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, Long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.score = score;
 		this.conclusion = (conclusion != null) ? conclusion : "";
@@ -58,7 +107,7 @@ public class AnalysisResult extends BlackboardArtifact {
 	}
 
 	/**
-	 * Returns analysis result score.
+	 * Returns relevance score based on conclusion
 	 *
 	 * @return Score.
 	 */
@@ -76,7 +125,7 @@ public class AnalysisResult extends BlackboardArtifact {
 	}
 
 	/**
-	 * Returns analysis justification.
+	 * Returns justification for conclusion
 	 *
 	 * @return justification, returns an empty string if not set.
 	 */
@@ -85,7 +134,8 @@ public class AnalysisResult extends BlackboardArtifact {
 	}
 
 	/**
-	 * Sets if this result is to be ignored.
+	 * Sets if this result is to be ignored when calculating
+     * the aggregate score of the parent object. 
 	 *
 	 * @param ignore if the result should be ignored or not.
 	 */

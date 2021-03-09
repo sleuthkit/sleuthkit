@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017-2020 Basis Technology Corp.
+ * Copyright 2017-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -565,7 +565,8 @@ public final class CommunicationsManager {
 			if (rs.next()) {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 
-				accountArtifact = new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
+				accountArtifact = new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
 			}
@@ -1010,7 +1011,8 @@ public final class CommunicationsManager {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 				relationshipSources.add(new BlackboardArtifact(db, rs.getLong("artifact_id"),
 						rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getLong("data_source_obj_id"), bbartType.getTypeID(),
+						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
+						bbartType.getTypeID(),
 						bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
@@ -1195,7 +1197,8 @@ public final class CommunicationsManager {
 			ArrayList<Content> artifacts = new ArrayList<Content>();
 			while (rs.next()) {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
+				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}

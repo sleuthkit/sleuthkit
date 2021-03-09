@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018-2020 Basis Technology Corp.
+ * Copyright 2018-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.logging.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
@@ -155,7 +156,7 @@ public final class Blackboard {
 	 *
 	 * @param artifactType    Type of analysis result artifact to create.
 	 * @param objId           Object id of parent.
-	 * @param dataSourceObjId Data source object id.
+	 * @param dataSourceObjId Data source object id, may be null.
 	 * @param score	          Score associated with this analysis result.
 	 * @param conclusion      Conclusion of the analysis, may be null or an
 	 *                        empty string.
@@ -172,7 +173,7 @@ public final class Blackboard {
 	 * @throws BlackboardException exception thrown if a critical error occurs
 	 *                             within TSK core
 	 */
-	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
 		
 		try {
 			// add analysis result
@@ -191,6 +192,87 @@ public final class Blackboard {
 			
 		}  catch (TskCoreException ex) {
 			throw new BlackboardException("Failed to add analysis result.", ex);
+		}
+	}
+	
+	/**
+	 * Delete the specified analysis result.
+	 *
+	 * Deletes the result from tsk_analysis_results table, and recalculates and
+	 * updates the aggregate score of the content. Fires an event to indicate that
+	 * the analysis result has been deleted and that the score of the item has
+	 * changed.
+	 *
+	 * @param analysisResult AnalysisResult to delete.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score deleteAnalysisResult(AnalysisResult analysisResult) throws TskCoreException {
+
+		CaseDbTransaction transaction = this.caseDb.beginTransaction();
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			
+			// get current score of the content for this result
+			Pair<Score, Integer> currentScoreAndVersion = caseDb.getScoringManager().getAggregateScoreAndVersion(analysisResult.getObjectID(), connection);
+			Score currentScore = currentScoreAndVersion.getKey();
+			Integer currentScoreVersion = currentScoreAndVersion.getRight();
+		
+
+			// delete the analysis result
+			String deleteSQL = " DELETE FROM tsk_analysis_results WHERE artifact_obj_id = ?";
+
+			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
+			deleteStatement.clearParameters();
+			deleteStatement.setLong(1, analysisResult.getId());
+
+			deleteStatement.executeUpdate();
+
+			// get all remaining analysis results for the object, loop over to find the highest score
+			List<AnalysisResult> analysisResults = this.getAnalysisResults(analysisResult.getObjectID(), connection);
+			
+			// 
+			System.out.println(String.format("RAMAN: Result count after deletion = %d ",  analysisResults.size()));
+			
+			
+			Score newScore = Score.SCORE_UNKNOWN;
+			for (AnalysisResult iter : analysisResults) {
+				Score iterScore = iter.getScore();
+				if ((newScore.compareTo(Score.SCORE_UNKNOWN) == 0 && iterScore.compareTo(Score.SCORE_UNKNOWN) != 0)
+						|| (Score.getScoreComparator().compare(iterScore, newScore) > 0)) {
+					newScore = iterScore;
+				}
+			}
+			
+			System.out.println(String.format("RAMAN: deleteAnalysisResult: currentScore = %s ",  currentScore.getSignificance().getName()));
+			System.out.println(String.format("RAMAN: deleteAnalysisResult: currentScoreVersion = %d ",  currentScoreVersion));
+			System.out.println(String.format("RAMAN: deleteAnalysisResult: newScore = %s ",  newScore.getSignificance().getName()));
+			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, currentScoreVersion, connection);
+
+			transaction.commit();
+			transaction = null;
+			
+			// RAMAN TEMP: get it back to verify
+			Score nnn  = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID());
+			System.out.println(String.format("RAMAN: deleteAnalysisResult: new score in db after deletion = %s ",  nnn.getSignificance().getName()));
+			
+			// fire an event that an anaylsys result was deleted.  
+			caseDb.fireTSKEvent(new AnalysisResultDeletedEvent(analysisResult));
+
+			// fire an event to indicate aggregate score of a content changed.
+			Set<ScoreChange> scoreChanges = new HashSet<>();
+			scoreChanges.add(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currentScore, newScore));
+			caseDb.fireTSKEvent(new AggregateScoresChangedEvent(analysisResult.getDataSourceObjectID(), ImmutableSet.copyOf(scoreChanges)));
+
+			return newScore;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 	}
 	
@@ -217,6 +299,21 @@ public final class Blackboard {
 	 */
 	public List<AnalysisResult> getAnalysisResults(long objId) throws TskCoreException {
 		return getAnalysisResultsWhere(" arts.obj_id = " + objId);
+	}
+	
+	/**
+	 * Get all analysis results for a given object.
+	 *
+	 * @param objId Object id.
+	 * @param connection Database connection to use. 
+	
+	 * @return list of analysis results.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	List<AnalysisResult> getAnalysisResults(long objId, CaseDbConnection connection) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.obj_id = " + objId, connection);
 	}
 	
 	/**
@@ -362,7 +459,8 @@ public final class Blackboard {
 
 		while (resultSet.next()) {
 			analysisResults.add(new AnalysisResult(caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"),
-					resultSet.getLong("artifact_obj_id"), resultSet.getLong("data_source_obj_id"),
+					resultSet.getLong("artifact_obj_id"),
+					resultSet.getObject("data_source_obj_id") != null ? resultSet.getLong("data_source_obj_id") : null,
 					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
 					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")),
 					new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.Confidence.fromID(resultSet.getInt("confidence"))),
@@ -518,7 +616,8 @@ public final class Blackboard {
 			}
 			
 			dataArtifacts.add(new DataArtifact(caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"),
-					resultSet.getLong("artifact_obj_id"), resultSet.getLong("data_source_obj_id"),
+					resultSet.getLong("artifact_obj_id"),
+					resultSet.getObject("data_source_obj_id") != null ? resultSet.getLong("data_source_obj_id") : null,
 					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
 					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")), osAccount, false));
 		} //end for each resultSet
@@ -926,6 +1025,7 @@ public final class Blackboard {
 	 * @param sourceObjId     The content that is the source of this artifact.
 	 * @param dataSourceObjId The data source the artifact source content
 	 *                        belongs to, may be the same as the sourceObjId.
+	 *                        May be null.
 	 * @param attributes      The attributes. May be empty or null.
 	 * @param osAccount       The OS account associated with the artifact. May
 	 *                        be null.
@@ -934,7 +1034,7 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException If a critical error occurs within tsk core.
 	 */
-	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
 
 		CaseDbTransaction transaction = caseDb.beginTransaction();
@@ -964,6 +1064,7 @@ public final class Blackboard {
 	 * @param sourceObjId     The content that is the source of this artifact.
 	 * @param dataSourceObjId The data source the artifact source content
 	 *                        belongs to, may be the same as the sourceObjId.
+	 *                        May be null.
 	 * @param attributes      The attributes. May be empty or null.
 	 * @param osAccount       The OS account associated with the artifact. May
 	 *                        be null.
@@ -974,7 +1075,7 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException If a critical error occurs within tsk core.
 	 */
-	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, OsAccount osAccount, final CaseDbTransaction transaction) throws TskCoreException {
 
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {

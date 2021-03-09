@@ -25,6 +25,7 @@ import java.sql.Savepoint;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.sleuthkit.datamodel.Host.HostStatus;
@@ -51,6 +52,8 @@ public final class HostManager {
 
 	/**
 	 * Get or create host with specified name.
+	 *
+	 * TODO: This should be deleted before release
 	 *
 	 * @param name	Host name.
 	 *
@@ -90,7 +93,20 @@ public final class HostManager {
 	 * Create a host with given name. If the host already exists, the existing
 	 * host will be returned.
 	 *
-	 * @param name  Host name.
+	 * NOTE: Whenever possible, create hosts as part of a single step
+	 * transaction so that it can quickly determine a host of the same name
+	 * already exists. If you call this as part of a multi-step
+	 * CaseDbTransaction, then this method may think it can insert the host
+	 * name, but then when it comes time to call CaseDbTransaction.commit(),
+	 * there could be a uniqueness constraint violation and other inserts in the
+	 * same transaction could have problems.
+	 *
+	 * This method should never be made public and exists only because we need
+	 * to support APIs that do not take in a host and we must make one. Ensure
+	 * that if you call this method that the host name you give will be unique.
+	 *
+	 * @param name  Host name that must be unique if this is called as part of a
+	 *              multi-step transaction
 	 * @param trans Database transaction to use.
 	 *
 	 * @return Newly created host.
@@ -105,7 +121,7 @@ public final class HostManager {
 
 		CaseDbConnection connection = trans.getConnection();
 		Savepoint savepoint = null;
-		
+
 		try {
 			savepoint = connection.getConnection().setSavepoint();
 			String hostInsertSQL = "INSERT INTO tsk_hosts(name) VALUES (?)"; // NON-NLS
@@ -117,13 +133,19 @@ public final class HostManager {
 			connection.executeUpdate(preparedStatement);
 
 			// Read back the row id
+			Host host = null;
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
 				if (resultSet.next()) {
-					return new Host(resultSet.getLong(1), name); //last_insert_rowid()
+					host = new Host(resultSet.getLong(1), name); //last_insert_rowid()
 				} else {
 					throw new SQLException("Error executing  " + hostInsertSQL);
 				}
 			}
+
+			if (host != null) {
+				trans.registerAddedHost(host);
+			}
+			return host;
 		} catch (SQLException ex) {
 			if (savepoint != null) {
 				try {
@@ -139,7 +161,7 @@ public final class HostManager {
 				return optHost.get();
 			}
 			throw new TskCoreException(String.format("Error adding host with name = %s", name), ex);
-		} 
+		}
 	}
 
 	/**
@@ -159,6 +181,7 @@ public final class HostManager {
 			throw new IllegalArgumentException(String.format("Host with id %d has no name", newHost.getId()));
 		}
 
+		Host updatedHost = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			String hostInsertSQL = "UPDATE tsk_hosts \n"
@@ -173,7 +196,7 @@ public final class HostManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			return getHost(newHost.getId(), connection).orElseThrow(()
+			updatedHost = getHost(newHost.getId(), connection).orElseThrow(()
 					-> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "))));
 
 		} catch (SQLException ex) {
@@ -181,6 +204,11 @@ public final class HostManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+
+		if (updatedHost != null) {
+			fireChangeEvent(updatedHost);
+		}
+		return updatedHost;
 	}
 
 	/**
@@ -244,6 +272,7 @@ public final class HostManager {
 			trans.commit();
 			trans = null;
 
+			fireDeletedEvent(new Host(hostId, name));
 			return hostId;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting host with name %s", name), ex);
@@ -296,7 +325,7 @@ public final class HostManager {
 	public Optional<Host> getHost(String name) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
 			return getHost(name, connection);
-		} 
+		}
 	}
 
 	/**
@@ -313,7 +342,7 @@ public final class HostManager {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)";
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try {
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.RETURN_GENERATED_KEYS);
@@ -329,9 +358,23 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with name = %s", name), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get host with the given id.
+	 *
+	 * @param id The id of the host.
+	 *
+	 * @return Optional with host. Optional.empty if no matching host is found.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Optional<Host> getHost(long id) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getHost(id, connection);
 		}
 	}
 
@@ -348,7 +391,7 @@ public final class HostManager {
 	private Optional<Host> getHost(long id, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts WHERE id = " + id;
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -360,8 +403,7 @@ public final class HostManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host with id: " + id), ex);
-		}
-		finally {
+		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
@@ -424,6 +466,160 @@ public final class HostManager {
 			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get person for the given host or empty if no associated person.
+	 *
+	 * @param host The host.
+	 *
+	 * @return The parent person or empty if no parent person.
+	 *
+	 * @throws TskCoreException if error occurs.
+	 */
+	public Optional<Person> getPerson(Host host) throws TskCoreException {
+
+		String queryString = "SELECT p.id AS personId, p.name AS name FROM \n"
+				+ "tsk_persons p INNER JOIN tsk_hosts h\n"
+				+ "ON p.id = h.person_id \n"
+				+ "WHERE h.id = " + host.getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.of(new Person(rs.getLong("personId"), rs.getString("name")));
+			} else {
+				return Optional.empty();
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting person for host with ID = %d", host.getId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Set host's parent person.
+	 *
+	 * @param host   The host whose parent will be set.
+	 * @param person The person to be a parent or null to remove any parent
+	 *               person reference from this host.
+	 *
+	 * @throws IllegalArgumentException
+	 * @throws TskCoreException
+	 */
+	public void setPerson(Host host, Person person) throws IllegalArgumentException, TskCoreException {
+		if (host == null) {
+			throw new IllegalArgumentException("host must be non-null.");
+		}
+
+		String queryString = (person == null)
+				? String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getId())
+				: String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getId(), host.getId());
+
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();) {
+			s.executeUpdate(queryString);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting persons"), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+
+		db.getPersonManager().fireChangeEvent(person);
+	}
+
+	/**
+	 * Fires an event that a host has changed.
+	 *
+	 * @param newValue The new value for the host.
+	 */
+	private void fireChangeEvent(Host newValue) {
+		db.fireTSKEvent(new HostsUpdateEvent(Collections.singletonList(newValue)));
+	}
+
+	/**
+	 * Fires an event that a host has been deleted.
+	 *
+	 * @param deleted The deleted host.
+	 */
+	private void fireDeletedEvent(Host deleted) {
+		db.fireTSKEvent(new HostsDeletionEvent(Collections.singletonList(deleted)));
+	}
+
+	/**
+	 * Base event for all host events
+	 */
+	static class BaseHostEvent {
+
+		private final List<Host> hosts;
+
+		/**
+		 * Main constructor.
+		 *
+		 * @param hosts The hosts that are objects of the event.
+		 */
+		BaseHostEvent(List<Host> hosts) {
+			this.hosts = Collections.unmodifiableList(new ArrayList<>(hosts));
+		}
+
+		/**
+		 * Returns the hosts affected in the event.
+		 *
+		 * @return The hosts affected in the event.
+		 */
+		public List<Host> getHosts() {
+			return hosts;
+		}
+	}
+
+	/**
+	 * Event fired when hosts are created.
+	 */
+	public static final class HostsCreationEvent extends BaseHostEvent {
+
+		/**
+		 * Main constructor.
+		 *
+		 * @param hosts The added hosts.
+		 */
+		HostsCreationEvent(List<Host> hosts) {
+			super(hosts);
+		}
+	}
+
+	/**
+	 * Event fired when hosts are updated.
+	 */
+	public static final class HostsUpdateEvent extends BaseHostEvent {
+
+		/**
+		 * Main constructor.
+		 *
+		 * @param hosts The new values for the hosts that were changed.
+		 */
+		HostsUpdateEvent(List<Host> hosts) {
+			super(hosts);
+		}
+	}
+
+	/**
+	 * Event fired when hosts are deleted.
+	 */
+	public static final class HostsDeletionEvent extends BaseHostEvent {
+
+		/**
+		 * Main constructor.
+		 *
+		 * @param hosts The hosts that were deleted.
+		 */
+		HostsDeletionEvent(List<Host> hosts) {
+			super(hosts);
 		}
 	}
 }
