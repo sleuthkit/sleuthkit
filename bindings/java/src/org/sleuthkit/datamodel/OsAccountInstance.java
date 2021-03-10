@@ -108,7 +108,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	/**
 	 * Return the dataSourceId value.
 	 *
-	 * @return
+	 * @return Id of the instance data source.
 	 */
 	private long getDataSourceId() {
 		return dataSourceId;

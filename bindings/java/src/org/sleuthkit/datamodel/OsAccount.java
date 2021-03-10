@@ -489,7 +489,7 @@ public final class OsAccount extends AbstractContent {
 	}
 	
 	/**
-	 * Get get account instances.
+	 * Get get account instance.
 	 * 
 	 * @return List of all the OsAccountInstances. May return an empty list.
 	 * 
