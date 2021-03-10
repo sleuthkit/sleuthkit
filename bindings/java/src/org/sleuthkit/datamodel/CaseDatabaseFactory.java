@@ -499,12 +499,10 @@ class CaseDatabaseFactory {
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
-				+ "person_id INTEGER, "	
 				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 			    + "merged_into " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id),"
 				+ "FOREIGN KEY(merged_into) REFERENCES tsk_os_accounts(os_account_obj_id) )");
 		

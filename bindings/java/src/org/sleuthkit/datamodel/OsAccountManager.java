@@ -707,24 +707,6 @@ public final class OsAccountManager {
 			// same realm.
 			updateAccount(destAccount, connection);
 			
-			// Copy the Person id if it is present and the destination account does not have one.
-			query = "SELECT person_id FROM tsk_os_accounts WHERE os_account_obj_id = " + sourceAccount.getId();
-			Long sourcePersonId = null;
-			try (ResultSet rs = connection.executeQuery(s, query)) {
-				if (rs.next()) {
-					long personId = rs.getLong("person_id");
-					if (!rs.wasNull()) {
-						sourcePersonId = personId;
-					}
-				} 
-			}
-			if (sourcePersonId != null) {
-				query = "UPDATE tsk_os_accounts " 
-						+ "SET person_id = CASE WHEN person_id IS NULL THEN " + sourcePersonId + " ELSE person_id END"
-						+ "WHERE os_account_obj_id = " + destAccount.getId();
-				s.executeUpdate(query);
-			}
-			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error executing SQL update: " + query, ex);
 		}
