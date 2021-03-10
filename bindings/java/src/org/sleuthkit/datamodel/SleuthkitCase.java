@@ -2464,12 +2464,10 @@ public class SleuthkitCase {
 					+ "status INTEGER, " // enabled/disabled/deleted
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
-					+ "person_id INTEGER, "
 					+ "db_status INTEGER, " // active/merged/deleted
 			        + "merged_into " + bigIntDataType + " DEFAULT NULL, "
 					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 					+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id),"
 				    + "FOREIGN KEY(merged_into) REFERENCES tsk_os_accounts(os_account_obj_id) )");
 
@@ -2538,10 +2536,12 @@ public class SleuthkitCase {
 			// maps an address to an artifact using it 
 			statement.execute("CREATE TABLE tsk_host_address_usage (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "addr_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "artifact_obj_id " + bigIntDataType + " NOT NULL, "
-					+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+					+ "obj_id " + bigIntDataType + " NOT NULL, "
+					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, " // data source where the usage was found
+					+ "UNIQUE(addr_obj_id, obj_id), "
 					+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
-					+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");
+							
+					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");
 		
 		
 			return new CaseDbSchemaVersionNumber(8, 7);
@@ -4335,8 +4335,8 @@ public class SleuthkitCase {
 	}
 	
 	void addFileAttribute(Attribute attr, CaseDbConnection connection) throws SQLException, TskCoreException {
-		PreparedStatement statement;
-		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE);
+		PreparedStatement statement; 
+		statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_ATTRIBUTE, Statement.RETURN_GENERATED_KEYS); 
 		statement.clearParameters();
 
 		statement.setLong(1, attr.getAttributeParentId());
@@ -7022,6 +7022,8 @@ public class SleuthkitCase {
 				addFileAttribute(fileAttribute, connection);
 			}
 
+			this.osAccountManager.createOsAccountInstance(osAccount, getDataSource(dataSourceObjId), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+			
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
 					attrType, attrId, fileName, metaAddr, metaSeq,
 					dirType, metaType, dirFlag, metaFlags,
@@ -7031,7 +7033,9 @@ public class SleuthkitCase {
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
-		} finally {
+		} catch(TskDataException ex) { 
+			throw new TskCoreException(String.format("Failed to get DataSource (%d) object while creating OsAccount Instance", dataSourceObjId), ex);
+		}finally {
 			closeStatement(queryStatement);
 		} 
 	}

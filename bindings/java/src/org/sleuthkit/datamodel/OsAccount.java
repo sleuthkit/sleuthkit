@@ -60,6 +60,7 @@ public final class OsAccount extends AbstractContent {
 	private Long creationTime = null;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
+	private List<OsAccountInstance> osAccountInstances = null;
 	
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
@@ -199,72 +200,6 @@ public final class OsAccount extends AbstractContent {
 			for (OsAccountType accountType : OsAccountType.values()) {
 				if (accountType.ordinal() == typeId) {
 					return accountType;
-				}
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * Describes the relationship between an os account instance and the host
-	 * where the instance was found.
-	 *
-	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host (such as in a log file)
-	 */
-	public enum OsAccountInstanceType {
-		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user launched a program on the host
-		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")),	// user accesed a resource for read/write
-		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text") );	// user was referenced, e.g. in a event log.
-		
-		private final int id;
-		private final String name;
-		private final String description;
-
-		OsAccountInstanceType(int id, String name, String description) {
-			this.id = id;
-			this.name = name;
-			this.description = description ;
-		}
-
-		/**
-		 * Get account instance type id.
-		 *
-		 * @return Account instance type id.
-		 */
-		public int getId() {
-			return id;
-		}
-
-		/**
-		 * Get account instance type name.
-		 *
-		 * @return Account instance type name.
-		 */
-		public String getName() {
-			return name;
-		}
-
-		/**
-		 * Get account instance type description.
-		 *
-		 * @return Account instance type description.
-		 */
-		public String getDescription() {
-			return description;
-		}
-		
-		/**
-		 * Gets account instance type enum from id.
-		 *
-		 * @param typeId Id to look for.
-		 *
-		 * @return Account instance type enum.
-		 */
-		public static OsAccountInstanceType fromID(int typeId) {
-			for (OsAccountInstanceType statusType : OsAccountInstanceType.values()) {
-				if (statusType.ordinal() == typeId) {
-					return statusType;
 				}
 			}
 			return null;
@@ -551,6 +486,21 @@ public final class OsAccount extends AbstractContent {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}
 		return Collections.unmodifiableList(osAccountAttributes);
+	}
+	
+	/**
+	 * Return the os account instances.
+	 * 
+	 * @return List of all the OsAccountInstances. May return an empty list.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
+		if(osAccountInstances == null) {
+			osAccountInstances = sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
+		}
+		
+		return Collections.unmodifiableList(osAccountInstances);
 	}
 	
 	/**

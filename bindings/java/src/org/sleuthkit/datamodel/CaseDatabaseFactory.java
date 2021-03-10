@@ -444,13 +444,15 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(ip_address_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE,"
 				+ "FOREIGN KEY(source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE SET NULL )");
 
-		// maps an address to an artifact using it 
+		// maps an address to an content/item using it 
 		stmt.execute("CREATE TABLE  tsk_host_address_usage (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "addr_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "artifact_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
-				+ "UNIQUE(addr_obj_id, artifact_obj_id), "
+				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// obj id of the content/item using the address
+				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " // data source where the usage was found
+				+ "UNIQUE(addr_obj_id, obj_id), "
 				+ "FOREIGN KEY(addr_obj_id) REFERENCES tsk_host_addresses(id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");		
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");		
 	}
 		
 	// Must be called after tsk_persons, tsk_hosts and tsk_objects have been created.
@@ -499,12 +501,10 @@ class CaseDatabaseFactory {
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
-				+ "person_id INTEGER, "	
 				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 			    + "merged_into " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id),"
 				+ "FOREIGN KEY(merged_into) REFERENCES tsk_os_accounts(os_account_obj_id) )");
 		

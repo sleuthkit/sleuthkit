@@ -1038,40 +1038,40 @@ public class BlackboardArtifact implements Content {
 		 * A generic information artifact.
 		 */
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskGenInfo.text")),
+				bundle.getString("BlackboardArtifact.tskGenInfo.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A Web bookmark. Use methods in
 		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
 		 * create bookmark artifacts.
 		 */
 		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebBookmark.text")),
+				bundle.getString("BlackboardArtifact.tskWebBookmark.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A Web cookie. Use methods in
 		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
 		 * create cookie artifacts.
 		 */
 		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE",
-				bundle.getString("BlackboardArtifact.tskWebCookie.text")), //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWebCookie.text"), Category.DATA_ARTIFACT), //NON-NLS
 		/**
 		 * A Web history. Use methods in
 		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
 		 * create history artifacts.
 		 */
 		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebHistory.text")),
+				bundle.getString("BlackboardArtifact.tskWebHistory.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A Web download. Use methods in
 		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
 		 * create download artifacts.
 		 */
 		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebDownload.text")),
+				bundle.getString("BlackboardArtifact.tskWebDownload.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A recent object.
 		 */
 		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ", //NON-NLS
-				bundle.getString("BlackboardArtifact.tsk.recentObject.text")),
+				bundle.getString("BlackboardArtifact.tsk.recentObject.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A GPS track point (geolocation data).
 		 *
@@ -1079,12 +1079,12 @@ public class BlackboardArtifact implements Content {
 		 */
 		@Deprecated
 		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskGpsTrackpoint.text")),
+				bundle.getString("BlackboardArtifact.tskGpsTrackpoint.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An installed program.
 		 */
 		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskInstalledProg.text")),
+				bundle.getString("BlackboardArtifact.tskInstalledProg.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A search hit for a keyword.
 		 */
@@ -1099,7 +1099,7 @@ public class BlackboardArtifact implements Content {
 		 * An attached device.
 		 */
 		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskDeviceAttached.text")),
+				bundle.getString("BlackboardArtifact.tskDeviceAttached.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An meta-artifact to call attention to a file deemed to be
 		 * interesting.
@@ -1110,22 +1110,22 @@ public class BlackboardArtifact implements Content {
 		 * An email message.
 		 */
 		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskEmailMsg.text")),
+				bundle.getString("BlackboardArtifact.tskEmailMsg.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Text extracted from the source content.
 		 */
 		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskExtractedText.text")),
+				bundle.getString("BlackboardArtifact.tskExtractedText.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A Web search engine query extracted from Web history.
 		 */
 		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebSearchQuery.text")),
+				bundle.getString("BlackboardArtifact.tskWebSearchQuery.text"), Category.DATA_ARTIFACT),
 		/**
 		 * EXIF metadata.
 		 */
 		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskMetadataExif.text")),
+				bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A tag applied to a file.
 		 *
@@ -1133,7 +1133,7 @@ public class BlackboardArtifact implements Content {
 		 */
 		@Deprecated
 		TSK_TAG_FILE(17, "TSK_TAG_FILE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tagFile.text")),
+				bundle.getString("BlackboardArtifact.tagFile.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * A tag applied to an artifact.
 		 *
@@ -1141,22 +1141,22 @@ public class BlackboardArtifact implements Content {
 		 */
 		@Deprecated
 		TSK_TAG_ARTIFACT(18, "TSK_TAG_ARTIFACT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskTagArtifact.text")),
+				bundle.getString("BlackboardArtifact.tskTagArtifact.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * Information pertaining to an operating system.
 		 */
 		TSK_OS_INFO(19, "TSK_OS_INFO", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskOsInfo.text")),
+				bundle.getString("BlackboardArtifact.tskOsInfo.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An operating system user account.
 		 */
 		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskOsAccount.text")),
+				bundle.getString("BlackboardArtifact.tskOsAccount.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An application or Web service account.
 		 */
 		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskServiceAccount.text")),
+				bundle.getString("BlackboardArtifact.tskServiceAccount.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Output from an external tool or module (raw text).
 		 *
@@ -1164,7 +1164,7 @@ public class BlackboardArtifact implements Content {
 		 */
 		@Deprecated
 		TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskToolOutput.text")),
+				bundle.getString("BlackboardArtifact.tskToolOutput.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A contact extracted from a phone, or from an address
 		 * book/email/messaging application. Use methods in
@@ -1172,7 +1172,7 @@ public class BlackboardArtifact implements Content {
 		 * to create contact artifacts.
 		 */
 		TSK_CONTACT(23, "TSK_CONTACT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskContact.text")),
+				bundle.getString("BlackboardArtifact.tskContact.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An SMS/MMS message extracted from phone, or from another messaging
 		 * application, like IM. Use methods in
@@ -1180,7 +1180,7 @@ public class BlackboardArtifact implements Content {
 		 * to create message artifacts.
 		 */
 		TSK_MESSAGE(24, "TSK_MESSAGE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskMessage.text")),
+				bundle.getString("BlackboardArtifact.tskMessage.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A phone call log extracted from a phone or softphone application. Use
 		 * methods in
@@ -1188,42 +1188,42 @@ public class BlackboardArtifact implements Content {
 		 * to create call log artifacts.
 		 */
 		TSK_CALLLOG(25, "TSK_CALLLOG", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskCalllog.text")),
+				bundle.getString("BlackboardArtifact.tskCalllog.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A calendar entry from a phone, PIM, or a calendar application.
 		 */
 		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskCalendarEntry.text")),
+				bundle.getString("BlackboardArtifact.tskCalendarEntry.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A speed dial entry from a phone.
 		 */
 		TSK_SPEED_DIAL_ENTRY(27, "TSK_SPEED_DIAL_ENTRY", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskSpeedDialEntry.text")),
+				bundle.getString("BlackboardArtifact.tskSpeedDialEntry.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A bluetooth pairing entry.
 		 */
 		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskBluetoothPairing.text")),
+				bundle.getString("BlackboardArtifact.tskBluetoothPairing.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A GPS bookmark / way point that the user saved.
 		 */
 		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskGpsBookmark.text")),
+				bundle.getString("BlackboardArtifact.tskGpsBookmark.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A GPS last known location record.
 		 */
 		TSK_GPS_LAST_KNOWN_LOCATION(30, "TSK_GPS_LAST_KNOWN_LOCATION", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskGpsLastKnownLocation.text")),
+				bundle.getString("BlackboardArtifact.tskGpsLastKnownLocation.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A GPS search record.
 		 */
 		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskGpsSearch.text")),
+				bundle.getString("BlackboardArtifact.tskGpsSearch.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Application run information.
 		 */
 		TSK_PROG_RUN(32, "TSK_PROG_RUN", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskProgRun.text")),
+				bundle.getString("BlackboardArtifact.tskProgRun.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An encrypted file.
 		 */
@@ -1246,12 +1246,12 @@ public class BlackboardArtifact implements Content {
 		 * to create route artifacts.
 		 */
 		TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskGpsRoute.text")),
+				bundle.getString("BlackboardArtifact.tskGpsRoute.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A remote drive.
 		 */
 		TSK_REMOTE_DRIVE(37, "TSK_REMOTE_DRIVE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskRemoteDrive.text")),
+				bundle.getString("BlackboardArtifact.tskRemoteDrive.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A human face was detected in a media file.
 		 */
@@ -1261,7 +1261,7 @@ public class BlackboardArtifact implements Content {
 		 * An account.
 		 */
 		TSK_ACCOUNT(39, "TSK_ACCOUNT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskAccount.text")),
+				bundle.getString("BlackboardArtifact.tskAccount.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An encrypted file.
 		 */
@@ -1276,51 +1276,51 @@ public class BlackboardArtifact implements Content {
 		 * A wireless network.
 		 */
 		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWIFINetwork.text")),
+				bundle.getString("BlackboardArtifact.tskWIFINetwork.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Information related to a device.
 		 */
 		TSK_DEVICE_INFO(43, "TSK_DEVICE_INFO", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskDeviceInfo.text")),
+				bundle.getString("BlackboardArtifact.tskDeviceInfo.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A SIM card.
 		 */
 		TSK_SIM_ATTACHED(44, "TSK_SIM_ATTACHED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskSimAttached.text")),
+				bundle.getString("BlackboardArtifact.tskSimAttached.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A bluetooth adapter.
 		 */
 		TSK_BLUETOOTH_ADAPTER(45, "TSK_BLUETOOTH_ADAPTER", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskBluetoothAdapter.text")),
+				bundle.getString("BlackboardArtifact.tskBluetoothAdapter.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A wireless network adapter.
 		 */
 		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text")),
+				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Indicates a verification failure
 		 */
 		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskVerificationFailed.text")),
+				bundle.getString("BlackboardArtifact.tskVerificationFailed.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * Categorization information for a data source.
 		 */
 		TSK_DATA_SOURCE_USAGE(48, "TSK_DATA_SOURCE_USAGE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskDataSourceUsage.text")),
+				bundle.getString("BlackboardArtifact.tskDataSourceUsage.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * Indicates auto fill data from a Web form. Use methods in
 		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
 		 * create web form autofill artifacts.
 		 */
 		TSK_WEB_FORM_AUTOFILL(49, "TSK_WEB_FORM_AUTOFILL", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebFormAutofill.text")),
+				bundle.getString("BlackboardArtifact.tskWebFormAutofill.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Indicates an person's address filled in a web form. Use methods in
 		 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
 		 * create web form address artifacts.
 		 */
 		TSK_WEB_FORM_ADDRESS(50, "TSK_WEB_FORM_ADDRESSES ", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text")),
+				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Indicates source of a file/object
 		 *
@@ -1329,87 +1329,87 @@ public class BlackboardArtifact implements Content {
 		 */
 		@Deprecated
 		TSK_DOWNLOAD_SOURCE(51, "TSK_DOWNLOAD_SOURCE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskDownloadSource.text")),
+				bundle.getString("BlackboardArtifact.tskDownloadSource.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Indicates web cache data
 		 */
 		TSK_WEB_CACHE(52, "TSK_WEB_CACHE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWebCache.text")),
+				bundle.getString("BlackboardArtifact.tskWebCache.text"), Category.DATA_ARTIFACT),
 		/**
 		 * A generic (timeline) event.
 		 */
 		TSK_TL_EVENT(53, "TSK_TL_EVENT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskTLEvent.text")),
+				bundle.getString("BlackboardArtifact.tskTLEvent.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Indicates clipboard content
 		 */
 		TSK_CLIPBOARD_CONTENT(54, "TSK_CLIPBOARD_CONTENT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskClipboardContent.text")),
+				bundle.getString("BlackboardArtifact.tskClipboardContent.text"), Category.DATA_ARTIFACT),
 		/**
 		 * An associated object.
 		 */
 		TSK_ASSOCIATED_OBJECT(55, "TSK_ASSOCIATED_OBJECT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskAssociatedObject.text")),
+				bundle.getString("BlackboardArtifact.tskAssociatedObject.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Indicates file may have been created by the user.
 		 */
 		TSK_USER_CONTENT_SUSPECTED(56, "TSK_USER_CONTENT_SUSPECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskUserContentSuspected.text")),
+				bundle.getString("BlackboardArtifact.tskUserContentSuspected.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * Stores metadata about an object.
 		 */
 		TSK_METADATA(57, "TSK_METADATA", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskMetadata.text")),
+				bundle.getString("BlackboardArtifact.tskMetadata.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Stores a GPS track log. Use
 		 * org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addTrack()
 		 * to create track artifacts.
 		 */
 		TSK_GPS_TRACK(58, "TSK_GPS_TRACK",
-				bundle.getString("BlackboardArtifact.tskTrack.text")),
+				bundle.getString("BlackboardArtifact.tskTrack.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Stores a role on a given domain.
 		 */
 		TSK_WEB_ACCOUNT_TYPE(59, "TSK_WEB_ACCOUNT_TYPE",
-				bundle.getString("BlackboardArtifact.tskWebAccountType.text")),
+				bundle.getString("BlackboardArtifact.tskWebAccountType.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * Screen shots from device or Application.
 		 */
 		TSK_SCREEN_SHOTS(60, "TSK_SCREEN_SHOTS",
-				bundle.getString("BlackboardArtifact.tskScreenShots.text")),
+				bundle.getString("BlackboardArtifact.tskScreenShots.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Notifications Sent to User.
 		 */
 		TSK_PROG_NOTIFICATIONS(62, "TSK_PROG_NOTIFICATIONS",
-				bundle.getString("BlackboardArtifact.tskProgNotifications.text")),
+				bundle.getString("BlackboardArtifact.tskProgNotifications.text"), Category.DATA_ARTIFACT),
 		/**
 		 * System/Application/File backup.
 		 */
 		TSK_BACKUP_EVENT(63, "TSK_BACKUP_EVENT",
-				bundle.getString("BlackboardArtifact.tskBackupEvent.text")),
+				bundle.getString("BlackboardArtifact.tskBackupEvent.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Programs that have been deleted.
 		 */
 		TSK_DELETED_PROG(64, "TSK_DELETED_PROG",
-				bundle.getString("BlackboardArtifact.tskDeletedProg.text")),
+				bundle.getString("BlackboardArtifact.tskDeletedProg.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Activity on the System/Application.
 		 */
 		TSK_USER_DEVICE_EVENT(65, "TSK_USER_DEVICE_EVENT",
-				bundle.getString("BlackboardArtifact.tskUserDeviceEvent.text")),
+				bundle.getString("BlackboardArtifact.tskUserDeviceEvent.text"), Category.DATA_ARTIFACT),
 		/**
 		 * Indicates that the file had a yara pattern match hit.
 		 */
 		TSK_YARA_HIT(66, "TSK_YARA_HIT",
-				bundle.getString("BlackboardArtifact.tskYaraHit.text")),
+				bundle.getString("BlackboardArtifact.tskYaraHit.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * Stores the outline of an area using GPS coordinates.
 		 */
 		TSK_GPS_AREA(67, "TSK_GPS_AREA",
-				bundle.getString("BlackboardArtifact.tskGPSArea.text")),
+				bundle.getString("BlackboardArtifact.tskGPSArea.text"), Category.DATA_ARTIFACT),
 
 		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
-				bundle.getString("BlackboardArtifact.tskWebCategorization.text")),
+				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),
 
 		;
 

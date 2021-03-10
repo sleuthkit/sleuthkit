@@ -346,7 +346,9 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
 
-		return db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccount);
+		DataArtifact artifact =  db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccount);
+		db.getOsAccountManager().createOsAccountInstance(osAccount, (DataSource)getDataSource(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+		return artifact;
 	}
 	
 	@Override
