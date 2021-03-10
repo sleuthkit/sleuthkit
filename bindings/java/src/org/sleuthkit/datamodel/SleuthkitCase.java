@@ -9342,7 +9342,7 @@ public class SleuthkitCase {
 					}
 					
 					Long osAccountObjId = rs.getLong("os_account_obj_id");
-					if(rs.wasNull()) {
+					if (rs.wasNull()) {
 						osAccountObjId = null;
 					}
 		
@@ -9393,7 +9393,7 @@ public class SleuthkitCase {
 	 */
 	org.sleuthkit.datamodel.File file(ResultSet rs, FileSystem fs) throws SQLException {
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
-		if(rs.wasNull()) {
+		if (rs.wasNull()) {
 			osAccountObjId = null;
 		}
 				
@@ -9426,7 +9426,7 @@ public class SleuthkitCase {
 	 */
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
-		if(rs.wasNull()) {
+		if (rs.wasNull()) {
 			osAccountObjId = null;
 		}
 		
@@ -9579,7 +9579,7 @@ public class SleuthkitCase {
 		}
 		
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
-		if(rs.wasNull()) {
+		if (rs.wasNull()) {
 			osAccountObjId = null;
 		}
 				
@@ -9638,7 +9638,7 @@ public class SleuthkitCase {
 			parentPath = "";
 		}
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
-		if(rs.wasNull()) {
+		if (rs.wasNull()) {
 			osAccountObjId = null;
 		}
 		
@@ -9669,7 +9669,7 @@ public class SleuthkitCase {
 	 */
 	org.sleuthkit.datamodel.SlackFile slackFile(ResultSet rs, FileSystem fs) throws SQLException {
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
-		if(rs.wasNull()) {
+		if (rs.wasNull()) {
 			osAccountObjId = null;
 		}
 		org.sleuthkit.datamodel.SlackFile f = new org.sleuthkit.datamodel.SlackFile(this, rs.getLong("obj_id"), //NON-NLS
@@ -9739,7 +9739,7 @@ public class SleuthkitCase {
 							parentPath = "";
 						}
 						Long osAccountObjId = rs.getLong("os_account_obj_id");
-						if(rs.wasNull()) {
+						if (rs.wasNull()) {
 							osAccountObjId = null;
 						}
 						final LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
