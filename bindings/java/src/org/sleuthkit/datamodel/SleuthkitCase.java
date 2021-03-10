@@ -7020,6 +7020,8 @@ public class SleuthkitCase {
 				addFileAttribute(fileAttribute, connection);
 			}
 
+			this.osAccountManager.createOsAccountInstance(osAccount, getDataSource(dataSourceObjId), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+			
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
 					attrType, attrId, fileName, metaAddr, metaSeq,
 					dirType, metaType, dirFlag, metaFlags,
@@ -7029,7 +7031,9 @@ public class SleuthkitCase {
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
-		} finally {
+		} catch(TskDataException ex) { 
+			throw new TskCoreException(String.format("Failed to get DataSource (%d) object while creating OsAccount Instance", dataSourceObjId), ex);
+		}finally {
 			closeStatement(queryStatement);
 		} 
 	}
