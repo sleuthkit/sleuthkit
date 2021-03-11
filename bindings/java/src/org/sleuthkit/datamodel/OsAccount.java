@@ -540,15 +540,12 @@ public final class OsAccount extends AbstractContent {
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
-		// TODO: need to implement this when OS Accounts are part of the Autopsy tree.
-		
+
 		throw new UnsupportedOperationException("Not supported yet."); 
 	}
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		// TODO: need to implement this when OS Accounts are part of the Autopsy tree.
-		
-		throw new UnsupportedOperationException("Not supported yet."); 
+		return v.visit(this);
 	}
 }
