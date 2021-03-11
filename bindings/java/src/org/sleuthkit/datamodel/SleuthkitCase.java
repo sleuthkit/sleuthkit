@@ -5622,6 +5622,9 @@ public class SleuthkitCase {
 			case REPORT:
 				content = getReportById(id);
 				break;
+			case OS_ACCOUNT:
+				content = this.osAccountManager.getOsAccount(id);
+				break;
 			case HOST_ADDRESS:
 				content = hostAddressManager.getHostAddress(id);
 				break;
