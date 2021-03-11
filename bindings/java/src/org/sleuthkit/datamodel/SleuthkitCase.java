@@ -12406,7 +12406,7 @@ public class SleuthkitCase {
 		public CaseDbConnection getPooledConnection() throws SQLException {
 			// If the requesting thread already has an open transaction, the new connection may get SQLITE_BUSY errors. 
 			if (CaseDbTransaction.hasOpenTransaction(Thread.currentThread().getId())) {
-				logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()));
+				logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()), new Throwable());
 			}
 			return new SQLiteConnection(getPooledDataSource().getConnection());
 		}
