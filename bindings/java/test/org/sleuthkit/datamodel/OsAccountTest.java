@@ -175,8 +175,10 @@ public class OsAccountTest {
 	public void mergeHostTests() throws TskCoreException {
 		
 		// Host 1 will be merged into Host 2
-		Host host1 = caseDB.getHostManager().createHost("host1");
-		Host host2 = caseDB.getHostManager().createHost("host2");
+		String host1Name = "host1forHostMergeTest";
+		String host2Name = "host2forHostMergeTest";
+		Host host1 = caseDB.getHostManager().createHost(host1Name);
+		Host host2 = caseDB.getHostManager().createHost(host2Name);
 		
 		// Data source is originally associated with host1
 		org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
@@ -198,8 +200,8 @@ public class OsAccountTest {
 		String realmName7 = "hostMergeRealm7";
 		String realmName8 = "hostMergeRealm8";
 		
-		String realm8AcctName = "uniqueRealm8Account";
-		String realm10AcctName = "uniqueRealm10Account";
+		String realm8AcctName = "hostMergeUniqueRealm8Account";
+		String realm10AcctName = "hostMergeUniqueRealm10Account";
 		
 		// Save the created realms/accounts so we can query them later by object ID (the objects themselves will end up out-of-date)
 		OsAccountRealmManager realmManager = caseDB.getOsAccountRealmManager();
@@ -280,11 +282,19 @@ public class OsAccountTest {
 			assertEquals(acct.getRealm().getId() == realm9.getId(), true);
 			acct = caseDB.getOsAccountManager().getOsAccount(realm10acct.getId(), connection);
 			assertEquals(acct.getRealm().getId() == realm9.getId(), true);
-			
-			// The data source should now reference host2
-			Host host = caseDB.getHostManager().getHost(ds);
-			assertEquals(host.getId() == host2.getId(), true);
 		}
+			
+		// The data source should now reference host2
+		Host host = caseDB.getHostManager().getHost(ds);
+		assertEquals(host.getId() == host2.getId(), true);
+
+		// We should get no results on a search for host1
+		Optional<Host> optHost = caseDB.getHostManager().getHost(host1Name);
+		assertEquals(optHost.isPresent(), false);
+		
+		// If we attempt to make a new host with the same name host1 had, we should get a new object Id
+		host = caseDB.getHostManager().createHost(host1Name);
+		assertEquals(host.getId() != host1.getId(), true);
 	}
 	
 	/**
