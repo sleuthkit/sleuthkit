@@ -465,7 +465,6 @@ Details about an installed program.
 - TSK_PATH_SOURCE (Path to an Android Package Kit (APK) file for an Android program)
 - TSK_PERMISSIONS (Permissions of the installed program)
 - TSK_VERSION (Version number of the program)
-- TSK_USER_NAME (Name of the user that installed the program)
 
 ---
 ## TSK_MESSAGE
