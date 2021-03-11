@@ -225,8 +225,8 @@ public class ArtifactTest {
 				
 				
 		// and two more 
-		DataArtifact dataArtifact3 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT), Collections.emptyList(), osAccount2);
-		DataArtifact dataArtifact4 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT), Collections.emptyList(), osAccount2);
+		DataArtifact dataArtifact3 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA), Collections.emptyList(), osAccount2);
+		DataArtifact dataArtifact4 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA), Collections.emptyList(), osAccount2);
 
 		
 		// TEST: get all TSK_GPS_SEARCH data artifacts in the data source
@@ -237,11 +237,11 @@ public class ArtifactTest {
 		
 		
 		// TES: get all data artifacts of type TSK_YARA_HIT
-		List<DataArtifact> yaraHitArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT.getTypeID(), image.getId());
-		assertEquals(yaraHitArtifacts.size(), 2);
+		List<DataArtifact> gpsAreaArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), image.getId());
+		assertEquals(gpsAreaArtifacts.size(), 2);
 		// verify the account on each
-		assertEquals(yaraHitArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
-		assertEquals(yaraHitArtifacts.get(1).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+		assertEquals(gpsAreaArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+		assertEquals(gpsAreaArtifacts.get(1).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
 		
 		
 		
