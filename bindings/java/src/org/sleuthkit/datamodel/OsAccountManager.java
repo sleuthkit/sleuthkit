@@ -474,6 +474,45 @@ public final class OsAccountManager {
 		}
 	}
 
+        /**
+         * Records that an OsAccount was used or referenced on a given data source. 
+         * This data is automatically recorded when a file or DataArtifact is created.
+         * 
+         * Use this method to explicitly record the association when:
+         * - Parsing account information (such as in the registry) because the account
+         *   may already exist in the database, but the account did not create any files.
+         *   Therefore, no instance for it would be automatically created, even though 
+         *   you found data about it. 
+         * - You want to associate more than one OsAccount with a DataArtifact.  Call 
+         *   this for each OsAccount not specified in 'newDataArtifact()'. 
+         * 
+         * This method does nothing if the instance is already recorded. 
+         *
+         * @param osAccount    Account for which an instance needs to be added.
+         * @param dataSource   Data source where the instance is found.
+         * @param instanceType Instance type.
+         *
+         * @throws TskCoreException
+         */
+	public void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
+		if (osAccount == null) {
+			throw new IllegalArgumentException("Cannot create account instance with null account.");
+		}
+		if (dataSource == null) {
+			throw new IllegalArgumentException("Cannot create account instance with null data source.");
+		}
+
+		// check cache first
+		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, dataSource, instanceType);
+		if (osAccountInstanceCache.contains(accountInstance)) {
+			return;
+		}
+		
+		try(CaseDbConnection connection = this.db.getConnection()) {
+			createOsAccountInstance(osAccount, dataSource, instanceType, connection);		
+		}
+	}
+
 	/**
 	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
 	 * instance already exists in the table.
@@ -481,11 +520,13 @@ public final class OsAccountManager {
 	 * @param osAccount    Account for which an instance needs to be added.
 	 * @param dataSource   Data source where the instance is found.
 	 * @param instanceType Instance type.
+	 * @param connection   The current database connection.
 	 *
 	 * @throws TskCoreException
 	 */
-	public void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
-
+	void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	
+		
 		if (osAccount == null) {
 			throw new IllegalArgumentException("Cannot create account instance with null account.");
 		}
@@ -501,8 +542,7 @@ public final class OsAccountManager {
 
 		// create the instance 
 		db.acquireSingleUserCaseWriteLock();
-		 // not in try-with-resource because it's used in the catch block.
-		try(CaseDbConnection connection = this.db.getConnection()) {
+		try {
 			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
 					+ " VALUES (?, ?, ?, ?)"); // NON-NLS
 

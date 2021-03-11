@@ -7022,7 +7022,9 @@ public class SleuthkitCase {
 				addFileAttribute(fileAttribute, connection);
 			}
 
-			this.osAccountManager.createOsAccountInstance(osAccount, getDataSource(dataSourceObjId), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+			if(osAccount != null) {
+				osAccountManager.createOsAccountInstance(osAccount, getDataSource(dataSourceObjId), OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+			}
 			
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
 					attrType, attrId, fileName, metaAddr, metaSeq,
@@ -9344,6 +9346,9 @@ public class SleuthkitCase {
 					}
 					
 					Long osAccountObjId = rs.getLong("os_account_obj_id");
+					if (rs.wasNull()) {
+						osAccountObjId = null;
+					}
 		
 					LayoutFile lf = new LayoutFile(this,
 							rs.getLong("obj_id"), //NON-NLS
@@ -9392,6 +9397,9 @@ public class SleuthkitCase {
 	 */
 	org.sleuthkit.datamodel.File file(ResultSet rs, FileSystem fs) throws SQLException {
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
+		if (rs.wasNull()) {
+			osAccountObjId = null;
+		}
 				
 		org.sleuthkit.datamodel.File f = new org.sleuthkit.datamodel.File(this, rs.getLong("obj_id"), //NON-NLS
 				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
@@ -9422,6 +9430,9 @@ public class SleuthkitCase {
 	 */
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
+		if (rs.wasNull()) {
+			osAccountObjId = null;
+		}
 		
 		Directory dir = new Directory(this, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
@@ -9572,6 +9583,9 @@ public class SleuthkitCase {
 		}
 		
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
+		if (rs.wasNull()) {
+			osAccountObjId = null;
+		}
 				
 		final DerivedFile df = new DerivedFile(this, objId, rs.getLong("data_source_obj_id"),
 				rs.getString("name"), //NON-NLS
@@ -9628,6 +9642,9 @@ public class SleuthkitCase {
 			parentPath = "";
 		}
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
+		if (rs.wasNull()) {
+			osAccountObjId = null;
+		}
 		
 		LocalFile file = new LocalFile(this, objId, rs.getString("name"), //NON-NLS
 				TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
@@ -9656,6 +9673,9 @@ public class SleuthkitCase {
 	 */
 	org.sleuthkit.datamodel.SlackFile slackFile(ResultSet rs, FileSystem fs) throws SQLException {
 		Long osAccountObjId = rs.getLong("os_account_obj_id");
+		if (rs.wasNull()) {
+			osAccountObjId = null;
+		}
 		org.sleuthkit.datamodel.SlackFile f = new org.sleuthkit.datamodel.SlackFile(this, rs.getLong("obj_id"), //NON-NLS
 				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
@@ -9723,6 +9743,9 @@ public class SleuthkitCase {
 							parentPath = "";
 						}
 						Long osAccountObjId = rs.getLong("os_account_obj_id");
+						if (rs.wasNull()) {
+							osAccountObjId = null;
+						}
 						final LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 								rs.getLong("data_source_obj_id"), rs.getString("name"), type,
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
