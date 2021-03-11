@@ -345,7 +345,7 @@ public final class HostManager {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)" 
-				+ " AND db_status = " + Host.HostDbStatus.ACTIVE;
+				+ " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try {

@@ -173,12 +173,12 @@ public class OsAccountTest {
 		
 	@Test
 	public void mergeHostTests() throws TskCoreException {
-		SleuthkitCase db = caseDB; // TODO fix
 		
 		// Host 1 will be merged into Host 2
-		Host host1 = db.getHostManager().createHost("host1");
-		Host host2 = db.getHostManager().createHost("host2");
+		Host host1 = caseDB.getHostManager().createHost("host1");
+		Host host2 = caseDB.getHostManager().createHost("host2");
 		
+		// Data source is originally associated with host1
 		org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", host1, trans);
 		trans.commit();
@@ -198,8 +198,11 @@ public class OsAccountTest {
 		String realmName7 = "hostMergeRealm7";
 		String realmName8 = "hostMergeRealm8";
 		
+		String realm8AcctName = "uniqueRealm8Account";
+		String realm10AcctName = "uniqueRealm10Account";
+		
 		// Save the created realms/accounts so we can query them later by object ID (the objects themselves will end up out-of-date)
-		OsAccountRealmManager realmManager = db.getOsAccountRealmManager();
+		OsAccountRealmManager realmManager = caseDB.getOsAccountRealmManager();
 		
 		// 1 - Should get moved
 		OsAccountRealm realm1 = realmManager.createWindowsRealm(null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
@@ -224,10 +227,10 @@ public class OsAccountTest {
 
 		// 8, 9, 10 - 8 should be merged into 9 and then 10 should be merged into 9
 		OsAccountRealm realm8 = realmManager.createWindowsRealm(null, realmName6, host2, OsAccountRealm.RealmScope.LOCAL); 
-		OsAccount realm8acct = db.getOsAccountManager().createWindowsAccount(null, "uniqueRealm8Account", realmName6, host2, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount realm8acct = caseDB.getOsAccountManager().createWindowsAccount(null, realm8AcctName, realmName6, host2, OsAccountRealm.RealmScope.LOCAL);
 		OsAccountRealm realm9 = realmManager.createWindowsRealm(sid6, null, host2, OsAccountRealm.RealmScope.LOCAL);
 		OsAccountRealm realm10 = realmManager.createWindowsRealm(sid6, realmName6, host1, OsAccountRealm.RealmScope.LOCAL);
-		OsAccount realm10acct = db.getOsAccountManager().createWindowsAccount(null, "uniqueRealm10Account", realmName6, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount realm10acct = caseDB.getOsAccountManager().createWindowsAccount(null, realm10AcctName, realmName6, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// 11, 12 - 11 should get merged into 12, adding the addr "sid8" to 12
 		OsAccountRealm realm11 = realmManager.createWindowsRealm(sid8, realmName7, host1, OsAccountRealm.RealmScope.LOCAL);
@@ -238,23 +241,70 @@ public class OsAccountTest {
 		OsAccountRealm realm14 = realmManager.createWindowsRealm(sid7, realmName8, host2, OsAccountRealm.RealmScope.LOCAL);
 		
 		// Do the merge
-		db.getHostManager().mergeHosts(host1, host2);
+		caseDB.getHostManager().mergeHosts(host1, host2);
 		
 		// Test the realms
 		try (org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection connection = caseDB.getConnection()) {
-			
+			// Expected change: host is now host2
 			testUpdatedRealm(realm1, OsAccountRealm.RealmDbStatus.ACTIVE, realm1.getRealmAddr(), realm1.getRealmName(), Optional.of(host2), connection);
+			
+			// Expected change: should be marked as merged
+			testUpdatedRealm(realm2, OsAccountRealm.RealmDbStatus.MERGED, null, null, null, connection);
+			
+			// Expected change: should be marked as merged
+			testUpdatedRealm(realm3, OsAccountRealm.RealmDbStatus.MERGED, null, null, null, connection);
+			
+			// Expected change: should still be active and be moved to host2
+			testUpdatedRealm(realm4, OsAccountRealm.RealmDbStatus.ACTIVE, realm4.getRealmAddr(), realm4.getRealmName(), Optional.of(host2), connection);
+			
+			// Expected change: nothing
+			testUpdatedRealm(realm7, realm7.getDbStatus(), realm7.getRealmAddr(), realm7.getRealmName(), realm7.getScopeHost(), connection);
+			
+			// Expected change: should be marked as merged
+			testUpdatedRealm(realm8, OsAccountRealm.RealmDbStatus.MERGED, null, null, null, connection);
+			
+			// Expected change: should have gained the name of realm 8
+			testUpdatedRealm(realm9, OsAccountRealm.RealmDbStatus.ACTIVE, realm9.getRealmAddr(), realm8.getRealmName(), realm9.getScopeHost(), connection);
+			
+			// Expected change: should have gained the addr of realm 11
+			testUpdatedRealm(realm12, OsAccountRealm.RealmDbStatus.ACTIVE, realm11.getRealmAddr(), realm12.getRealmName(), Optional.of(host2), connection);
+			
+			// "notRealm8" should not return any hits for either host (realm13 is marked as merged and the name was not copied to realm14)
+			Optional<OsAccountRealm> optRealm = realmManager.getRealmByName("notRealm8", host1, connection);
+			assertEquals(optRealm.isPresent(), false);
+			optRealm = realmManager.getRealmByName("notRealm8", host2, connection);
+			assertEquals(optRealm.isPresent(), false);
+			
+			// The realm8 and realm10 accounts should both be in realm9 now
+			OsAccount acct = caseDB.getOsAccountManager().getOsAccount(realm8acct.getId(), connection);
+			assertEquals(acct.getRealm().getId() == realm9.getId(), true);
+			acct = caseDB.getOsAccountManager().getOsAccount(realm10acct.getId(), connection);
+			assertEquals(acct.getRealm().getId() == realm9.getId(), true);
+			
+			// The data source should now reference host2
+			Host host = caseDB.getHostManager().getHost(ds);
+			assertEquals(host.getId() == host2.getId(), true);
 		}
 	}
 	
+	/**
+	 * Retrieve the new version of a realm from the database and compare with expected values.
+	 * Addr, name, and host can be passed in as null to skip comparison.
+	 */
 	private void testUpdatedRealm(OsAccountRealm origRealm, OsAccountRealm.RealmDbStatus expectedStatus, Optional<String> expectedAddr,
 			Optional<String> expectedName, Optional<Host> expectedHost, org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection connection) throws TskCoreException {
 		
 		OsAccountRealm realm = caseDB.getOsAccountRealmManager().getRealm(origRealm.getId(), connection);
 		assertEquals(realm.getDbStatus().equals(expectedStatus), true);	
-		assertEquals(realm.getRealmAddr().equals(expectedAddr), true);
-		assertEquals(realm.getRealmName().equals(expectedName), true);
-		assertEquals(realm.getScopeHost().equals(expectedHost), true);
+		if (expectedAddr != null) {
+			assertEquals(realm.getRealmAddr().equals(expectedAddr), true);
+		}
+		if(expectedName != null) {
+			assertEquals(realm.getRealmName().equals(expectedName), true);
+		}
+		if (expectedHost != null) {
+			assertEquals(realm.getScopeHost().equals(expectedHost), true);
+		}
 	}
 	
 	@Test 
