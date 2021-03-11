@@ -475,16 +475,26 @@ public final class OsAccountManager {
 		}
 	}
 
-	/**
-	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
-	 * instance already exists in the table.
-	 *
-	 * @param osAccount    Account for which an instance needs to be added.
-	 * @param dataSource   Data source where the instance is found.
-	 * @param instanceType Instance type.
-	 *
-	 * @throws TskCoreException
-	 */
+        /**
+         * Records that an OsAccount was used or referenced on a given data source. 
+         * This data is automatically recorded when a file or DataArtifact is created.
+         * 
+         * Use this method to explicitly record the association when:
+         * - Parsing account information (such as in the registry) because the account
+         *   may already exist in the database, but the account did not create any files.
+         *   Therefore, no instance for it would be automatically created, even though 
+         *   you found data about it. 
+         * - You want to associate more than one OsAccount with a DataArtifact.  Call 
+         *   this for each OsAccount not specified in 'newDataArtifact()'. 
+         * 
+         * This method does nothing if the instance is already recorded. 
+         *
+         * @param osAccount    Account for which an instance needs to be added.
+         * @param dataSource   Data source where the instance is found.
+         * @param instanceType Instance type.
+         *
+         * @throws TskCoreException
+         */
 	public void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 
 		if (osAccount == null) {
