@@ -3255,8 +3255,34 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is a problem getting the data source.
 	 */
 	public DataSource getDataSource(long objectId) throws TskDataException, TskCoreException {
+		try (CaseDbConnection connection = connections.getConnection()) {
+			return getDataSource(objectId, connection);
+		}
+	}
+	
+		
+	/**
+	 * Gets a specific data source for the case. If it is an image, an Image
+	 * will be instantiated. Otherwise, a LocalFilesDataSource will be
+	 * instantiated.
+	 *
+	 * NOTE: The DataSource class is an emerging feature and at present is only
+	 * useful for obtaining the object id and the data source identifier, an
+	 * ASCII-printable identifier for the data source that is intended to be
+	 * unique across multiple cases (e.g., a UUID). In the future, this method
+	 * will be a replacement for the getRootObjects method.
+	 *
+	 * @param objectId The object id of the data source.
+	 * @param connection Database connection to use.
+	 *
+	 * @return The data source.
+	 *
+	 * @throws TskDataException If there is no data source for the given object
+	 *                          id.
+	 * @throws TskCoreException If there is a problem getting the data source.
+	 */
+	DataSource getDataSource(long objectId, CaseDbConnection connection) throws TskDataException, TskCoreException {
 		DataSource dataSource = null;
-		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -3303,7 +3329,7 @@ public class SleuthkitCase {
 					String sha256 = resultSet.getString("sha256");
 					String name = resultSet.getString("display_name");
 
-					List<String> imagePaths = getImagePathsById(objectId);
+					List<String> imagePaths = getImagePathsById(objectId, connection);
 					if (name == null) {
 						if (imagePaths.size() > 0) {
 							String path = imagePaths.get(0);
@@ -3326,7 +3352,7 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			closeResultSet(resultSet2);
 			closeStatement(statement2);
-			connection.close();
+			
 			releaseSingleUserCaseReadLock();
 		}
 
@@ -7024,7 +7050,8 @@ public class SleuthkitCase {
 			}
 
 			if(osAccount != null) {
-				osAccountManager.createOsAccountInstance(osAccount, getDataSource(dataSourceObjId), OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				DataSource dataSource = getDataSource(dataSourceObjId, connection);
+				osAccountManager.createOsAccountInstance(osAccount, dataSource, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
 			}
 			
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
@@ -9152,15 +9179,15 @@ public class SleuthkitCase {
 	 * Returns a list of fully qualified file paths based on an image object ID.
 	 *
 	 * @param objectId The object id of the data source.
+	 * @param connection Database connection to use. 
 	 *
 	 * @return List of file paths.
 	 *
 	 * @throws TskCoreException Thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	private List<String> getImagePathsById(long objectId) throws TskCoreException {
+	private List<String> getImagePathsById(long objectId, CaseDbConnection connection) throws TskCoreException {
 		List<String> imagePaths = new ArrayList<String>();
-		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -9175,7 +9202,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
 
@@ -12406,7 +12432,7 @@ public class SleuthkitCase {
 		public CaseDbConnection getPooledConnection() throws SQLException {
 			// If the requesting thread already has an open transaction, the new connection may get SQLITE_BUSY errors. 
 			if (CaseDbTransaction.hasOpenTransaction(Thread.currentThread().getId())) {
-				logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()));
+				logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()), new Throwable());
 			}
 			return new SQLiteConnection(getPooledDataSource().getConnection());
 		}
