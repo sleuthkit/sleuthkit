@@ -680,6 +680,14 @@ public final class OsAccountRealmManager {
 	}
 	
 	
+	/**
+	 * Move source realm into the destination host or merge with an existing realm.
+	 * 
+	 * @param sourceRealm
+	 * @param destHost
+	 * @param trans
+	 * @throws TskCoreException 
+	 */
 	void moveOrMergeRealm(OsAccountRealm sourceRealm, Host destHost, CaseDbTransaction trans) throws TskCoreException {
 		// Look for a matching realm by address
 		Optional<OsAccountRealm> optDestRealmAddr = Optional.empty();
@@ -741,6 +749,17 @@ public final class OsAccountRealmManager {
 		}
 	}
 	
+	/**
+	 * Move a realm to a different host.
+	 * A check should be done to make sure there are no matching realms in
+	 * the destination host before calling this method.
+	 * 
+	 * @param sourceRealm The source realm.
+	 * @param destHost    The destination host.
+	 * @param trans       The open transaction.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	private void moveRealm(OsAccountRealm sourceRealm, Host destHost, CaseDbTransaction trans) throws TskCoreException {
 		try(Statement s = trans.getConnection().createStatement()) {
 			String query = "UPDATE tsk_os_account_realms SET scope_host_id = " + destHost.getId() + " WHERE id = " + sourceRealm.getId();
@@ -806,28 +825,18 @@ public final class OsAccountRealmManager {
 			destRealm.setRealmName(sourceRealm.getRealmName().get());
 			updateRealm(destRealm, trans.getConnection());
 		}
-		/*
-				|| (!destRealm.getRealmName().isPresent() && sourceRealm.getRealmName().isPresent())) {
-			try {
-				String updateSQL = "UPDATE tsk_os_account_realms SET "
-						+  " realm_name = "
-						+ "   CASE WHEN realm_name IS NULL THEN ? ELSE realm_name END "
-						+  " realm_addr = " 
-						+ "   CASE WHEN realm_addr IS NULL THEN ? ELSE realm_addr END "
-						+ " WHERE id = ?";
-				PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
-				preparedStatement.clearParameters();
-
-				preparedStatement.setString(1, sourceRealm.getRealmName().orElse(null));
-				preparedStatement.setString(2, sourceRealm.getRealmAddr().orElse(null));
-				preparedStatement.setLong(3, destRealm.getId());
-				connection.executeUpdate(preparedStatement);
-			} catch (SQLException ex) {
-				throw new TskCoreException("Error updating name/addr of realm with id: " + destRealm.getId(), ex);
-			}
-		}*/
 	}
 	
+	/**
+	 * Get all realms associated with the given host.
+	 * 
+	 * @param host       The host.
+	 * @param connection The current database connection.
+	 * 
+	 * @return List of realms for the given host.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	List<OsAccountRealm> getRealmsByHost(Host host, CaseDbConnection connection) throws TskCoreException {
 		List<OsAccountRealm> results = new ArrayList<>();
 		String queryString = REALM_QUERY_STRING
@@ -839,7 +848,6 @@ public final class OsAccountRealmManager {
 			while (rs.next()) { 
 				results.add(resultSetToAccountRealm(rs));
 			} 
-
 			return results;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error gettings realms for host with id = " + host.getId()), ex);

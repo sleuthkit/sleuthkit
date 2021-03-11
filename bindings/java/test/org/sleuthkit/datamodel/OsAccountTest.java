@@ -171,8 +171,94 @@ public class OsAccountTest {
 		assertEquals(p2opt.isPresent(), false);
 	}
 		
+	@Test
+	public void mergeHostTests() throws TskCoreException {
+		SleuthkitCase db = caseDB; // TODO fix
+		
+		// Host 1 will be merged into Host 2
+		Host host1 = db.getHostManager().createHost("host1");
+		Host host2 = db.getHostManager().createHost("host2");
+		
+		org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		DataSource ds = caseDB.addLocalFilesDataSource("devId", "pathToFiles", "EST", host1, trans);
+		trans.commit();
+        
+		String sid3 = "S-1-5-27-777777777-854245398-1060284298-7777";
+		String sid4 = "S-1-5-27-788888888-854245398-1060284298-8888";
+		String sid5 = "S-1-5-27-799999999-854245398-1060284298-9999";
+		String sid6 = "S-1-5-27-711111111-854245398-1060284298-1111";
+		String sid7 = "S-1-5-27-733333333-854245398-1060284298-3333";
+		String sid8 = "S-1-5-27-744444444-854245398-1060284298-4444";
+		
+		String realmName1 = "hostMergeRealm1";
+		String realmName2 = "hostMergeRealm2";
+		String realmName4 = "hostMergeRealm4";
+		String realmName5 = "hostMergeRealm5";
+		String realmName6 = "hostMergeRealm6";
+		String realmName7 = "hostMergeRealm7";
+		String realmName8 = "hostMergeRealm8";
+		
+		// Save the created realms/accounts so we can query them later by object ID (the objects themselves will end up out-of-date)
+		OsAccountRealmManager realmManager = db.getOsAccountRealmManager();
+		
+		// 1 - Should get moved
+		OsAccountRealm realm1 = realmManager.createWindowsRealm(null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		
+		// 2 - Should be merged into 5
+		OsAccountRealm realm2 = realmManager.createWindowsRealm(null, realmName2, host1, OsAccountRealm.RealmScope.LOCAL);
+		
+		// 3 - Should be merged into 5
+		OsAccountRealm realm3 = realmManager.createWindowsRealm(sid3, null, host1, OsAccountRealm.RealmScope.LOCAL); 
+		
+		// 4 - Should get moved - not merged into 6 since addrs are different
+		OsAccountRealm realm4 = realmManager.createWindowsRealm(sid4, realmName4, host1, OsAccountRealm.RealmScope.LOCAL); 
+
+		// 5 - 2 and 3 should get merged in
+		OsAccountRealm realm5 = realmManager.createWindowsRealm(sid3, realmName2, host2, OsAccountRealm.RealmScope.LOCAL);
+
+		// 6 - Should not get merged with 4
+		OsAccountRealm realm6 = realmManager.createWindowsRealm(sid5, realmName4, host2, OsAccountRealm.RealmScope.LOCAL);
+
+		// 7 - Should be unchanged
+		OsAccountRealm realm7 = realmManager.createWindowsRealm(null, realmName5, host2, OsAccountRealm.RealmScope.LOCAL);
+
+		// 8, 9, 10 - 8 should be merged into 9 and then 10 should be merged into 9
+		OsAccountRealm realm8 = realmManager.createWindowsRealm(null, realmName6, host2, OsAccountRealm.RealmScope.LOCAL); 
+		OsAccount realm8acct = db.getOsAccountManager().createWindowsAccount(null, "uniqueRealm8Account", realmName6, host2, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm9 = realmManager.createWindowsRealm(sid6, null, host2, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm10 = realmManager.createWindowsRealm(sid6, realmName6, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount realm10acct = db.getOsAccountManager().createWindowsAccount(null, "uniqueRealm10Account", realmName6, host1, OsAccountRealm.RealmScope.LOCAL);
+
+		// 11, 12 - 11 should get merged into 12, adding the addr "sid8" to 12
+		OsAccountRealm realm11 = realmManager.createWindowsRealm(sid8, realmName7, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm12 = realmManager.createWindowsRealm(null, realmName7, host2, OsAccountRealm.RealmScope.LOCAL);
+
+		// 13,14 - 13 should get merged into 14, name for 14 should not change
+		OsAccountRealm realm13 = realmManager.createWindowsRealm(sid7, "notRealm8", host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm14 = realmManager.createWindowsRealm(sid7, realmName8, host2, OsAccountRealm.RealmScope.LOCAL);
+		
+		// Do the merge
+		db.getHostManager().mergeHosts(host1, host2);
+		
+		// Test the realms
+		try (org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection connection = caseDB.getConnection()) {
+			
+			testUpdatedRealm(realm1, OsAccountRealm.RealmDbStatus.ACTIVE, realm1.getRealmAddr(), realm1.getRealmName(), Optional.of(host2), connection);
+		}
+	}
+	
+	private void testUpdatedRealm(OsAccountRealm origRealm, OsAccountRealm.RealmDbStatus expectedStatus, Optional<String> expectedAddr,
+			Optional<String> expectedName, Optional<Host> expectedHost, org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection connection) throws TskCoreException {
+		
+		OsAccountRealm realm = caseDB.getOsAccountRealmManager().getRealm(origRealm.getId(), connection);
+		assertEquals(realm.getDbStatus().equals(expectedStatus), true);	
+		assertEquals(realm.getRealmAddr().equals(expectedAddr), true);
+		assertEquals(realm.getRealmName().equals(expectedName), true);
+		assertEquals(realm.getScopeHost().equals(expectedHost), true);
+	}
+	
 	@Test 
-	public void mergeTests() throws TskCoreException {
+	public void mergeRealmsTests() throws TskCoreException {
 		Host host = caseDB.getHostManager().createHost("mergeTestHost");
 		
 		String destRealmName = "mergeTestDestRealm";

@@ -540,6 +540,11 @@ public final class HostManager {
 	
 	/**
 	 * Merge source host into destination host.
+	 * When complete:
+	 * - All realms will have been moved into the destination host or merged with existing realms in the destination host.
+	 * - All references to the source host will be updated to reference the destination host.
+	 * - The source host will be updated so that it will no longer be returned by any methods
+	 *    apart from get by host id.
 	 * 
 	 * @param sourceHost The source host.
 	 * @param destHost   The destination host.
