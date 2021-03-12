@@ -5624,6 +5624,9 @@ public class SleuthkitCase {
 			case REPORT:
 				content = getReportById(id);
 				break;
+			case OS_ACCOUNT:
+				content = this.osAccountManager.getOsAccount(id);
+				break;
 			case HOST_ADDRESS:
 				content = hostAddressManager.getHostAddress(id);
 				break;
@@ -12405,7 +12408,7 @@ public class SleuthkitCase {
 		public CaseDbConnection getPooledConnection() throws SQLException {
 			// If the requesting thread already has an open transaction, the new connection may get SQLITE_BUSY errors. 
 			if (CaseDbTransaction.hasOpenTransaction(Thread.currentThread().getId())) {
-				logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()));
+				logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()), new Throwable());
 			}
 			return new SQLiteConnection(getPooledDataSource().getConnection());
 		}

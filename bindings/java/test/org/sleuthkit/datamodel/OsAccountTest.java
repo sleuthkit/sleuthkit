@@ -595,6 +595,15 @@ public class OsAccountTest {
 			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);
 			
 			
+			// Test that getContentById() returns the same account
+			Content content = caseDB.getContentById(osAccount1.getId());
+			assertEquals(content != null, true);
+			assertEquals(content instanceof OsAccount, true);
+			OsAccount osAccount1_copy2 = (OsAccount) content;
+			assertEquals(osAccount1_copy2.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+			
+			
+			
 			// Create two new accounts on a new domain realm
 			String ownerUid2 = "S-1-5-21-725345543-854245398-1060284298-1003";
 			String ownerUid3 = "S-1-5-21-725345543-854245398-1060284298-1004";
