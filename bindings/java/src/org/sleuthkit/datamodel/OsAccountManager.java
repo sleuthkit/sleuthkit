@@ -544,16 +544,15 @@ public final class OsAccountManager {
 		// create the instance 
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, host_id, instance_type)"
-					+ " VALUES (?, ?, ?, ?)"); // NON-NLS
+			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, instance_type)"
+					+ " VALUES (?, ?, ?)"); // NON-NLS
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.RETURN_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
 			preparedStatement.setLong(1, osAccount.getId());
 			preparedStatement.setLong(2, dataSource.getId());
-			preparedStatement.setLong(3, dataSource.getHost().getId());
-			preparedStatement.setInt(4, instanceType.getId());
+			preparedStatement.setInt(3, instanceType.getId());
 
 			connection.executeUpdate(preparedStatement);
 
@@ -580,8 +579,10 @@ public final class OsAccountManager {
 
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
-				+ " ON instances.os_account_obj_id = accounts.os_account_obj_id "
-				+ " WHERE instances.host_id = " + host.getId()
+				+ "		ON instances.os_account_obj_id = accounts.os_account_obj_id "
+				+ " JOIN data_source_info as datasources "
+				+ "		ON datasources.obj_id = instances.data_source_obj_id "
+				+ " WHERE datasources.host_id = " + host.getId()
 				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 		
 		db.acquireSingleUserCaseReadLock();
@@ -719,7 +720,7 @@ public final class OsAccountManager {
 				"  sourceAccountInstance.id " +
 				"FROM " +
 				"  tsk_os_account_instances destAccountInstance " +
-				"INNER JOIN tsk_os_account_instances sourceAccountInstance ON destAccountInstance.host_id = sourceAccountInstance.host_id AND destAccountInstance.data_source_obj_id = sourceAccountInstance.data_source_obj_id " +
+				"INNER JOIN tsk_os_account_instances sourceAccountInstance ON destAccountInstance.data_source_obj_id = sourceAccountInstance.data_source_obj_id " +
 				"WHERE destAccountInstance.os_account_obj_id = " +  destAccount.getId() + 
 				" AND sourceAccountInstance.os_account_obj_id = " + sourceAccount.getId() + " )";
 			s.executeUpdate(query);
@@ -1190,7 +1191,11 @@ public final class OsAccountManager {
 	 */
 	public List<Host> getHosts(OsAccount account) throws TskCoreException {
 		List<Host> hostList = new ArrayList<>();
-		String query = "SELECT tsk_hosts.id AS hostId, name, db_status FROM tsk_hosts JOIN tsk_os_account_instances ON tsk_hosts.id = host_id WHERE os_account_obj_id = " + account.getId();
+		
+		String query = "SELECT tsk_hosts.id AS hostId, name, db_status FROM tsk_hosts "
+						+ " JOIN data_source_info ON tsk_hosts.id = data_source_info.host_id"
+						+ "	JOIN tsk_os_account_instances ON data_source_info.obj_id = tsk_os_account_instances.data_source_obj_id"
+						+ " WHERE os_account_obj_id = " + account.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
