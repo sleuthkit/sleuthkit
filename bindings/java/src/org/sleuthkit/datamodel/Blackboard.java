@@ -172,13 +172,9 @@ public final class Blackboard {
 	 * @throws BlackboardException exception thrown if a critical error occurs
 	 *                             within TSK core
 	 */
-<<<<<<< HEAD
-	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
 
-=======
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
 		
->>>>>>> upstream/develop
 		try {
 			// add analysis result
 			AnalysisResult analysisResult = caseDb.newAnalysisResult(artifactType, objId, dataSourceObjId, score, conclusion, configuration, justification, transaction.getConnection());
@@ -198,9 +194,6 @@ public final class Blackboard {
 			throw new BlackboardException("Failed to add analysis result.", ex);
 		}
 	}
-<<<<<<< HEAD
-
-=======
 	
 	/**
 	 * Delete the specified analysis result.
@@ -269,7 +262,6 @@ public final class Blackboard {
 		}
 	}
 	
->>>>>>> upstream/develop
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
 			+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
 			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS

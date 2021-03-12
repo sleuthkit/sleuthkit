@@ -35,7 +35,8 @@ public final class IngestModuleInfo {
 		//DO NOT CHANGE ORDER
 		DATA_SOURCE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.DataSourceLevel.displayName")),
 		FILE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.FileLevel.displayName")),
-		DATA_ARTIFACT(bundle.getString("IngestModuleInfo.IngestModuleType.DataArtifact.displayName"));
+		DATA_ARTIFACT(bundle.getString("IngestModuleInfo.IngestModuleType.DataArtifact.displayName")),
+		MULTIPLE(""); // RJCTODO
 		
 		private final String displayName;
 		
