@@ -233,8 +233,6 @@ public final class HostManager {
 				+ "UNION\n"
 				+ "SELECT id, host_id FROM tsk_os_account_attributes\n"
 				+ "UNION\n"
-				+ "SELECT id FROM tsk_os_account_instances\n"
-				+ "UNION\n"
 				+ "SELECT id, host_id FROM tsk_host_address_map) children\n"
 				+ "INNER JOIN tsk_hosts h ON children.host_id = h.id WHERE LOWER(h.name)=LOWER(?)";
 
