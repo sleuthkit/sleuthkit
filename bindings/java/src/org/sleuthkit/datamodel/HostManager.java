@@ -584,21 +584,6 @@ public final class HostManager {
 				query = makeOsAccountUpdateQuery("tsk_os_account_attributes", "host_id", sourceHost, destHost);
 				s.executeUpdate(query);
 				
-				// tsk_os_account_instances has a unique constraint on os_account_obj_id, data_source_obj_id, host_id,
-				// so delete any rows that would be duplicates.
-				query = "DELETE FROM tsk_os_account_instances " +
-					"WHERE id IN ( " +
-					"SELECT " +
-					"  sourceAccountInstance.id " +
-					"FROM " +
-					"  tsk_os_account_instances destAccountInstance " +
-					"INNER JOIN tsk_os_account_instances sourceAccountInstance ON destAccountInstance.os_account_obj_id = sourceAccountInstance.os_account_obj_id AND destAccountInstance.data_source_obj_id = sourceAccountInstance.data_source_obj_id " +
-					"WHERE destAccountInstance.host_id = " +  destHost.getId() + 
-					" AND sourceAccountInstance.host_id = " + sourceHost.getId() + " )";
-				s.executeUpdate(query);
-				query = makeOsAccountUpdateQuery("tsk_os_account_instances", "host_id", sourceHost, destHost);
-				s.executeUpdate(query);
-				
 				query = makeOsAccountUpdateQuery("data_source_info", "host_id", sourceHost, destHost);
 				s.executeUpdate(query);
 			
