@@ -532,12 +532,10 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_os_account_instances (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
-				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "instance_type INTEGER NOT NULL, "	// PerformedActionOn/ReferencedOn
-				+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
+				+ "UNIQUE(os_account_obj_id, data_source_obj_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), " 
-				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE ) ");
 		
 		// References blackboard_artifacts, tsk_os_accounts
 		stmt.execute("CREATE TABLE tsk_data_artifacts ( "
