@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.ResourceBundle;
 
 /**
  * Encapsulates either an analysis result score or the aggregate score of Content. 
@@ -38,42 +39,47 @@ import java.util.Comparator;
  * can detect if a car is "bad" based on its color and we have a module to look for
  * green convertibles. This module's significance is based on how many green 
  * convertibles are bad overall. If all green convertibles are bad, then its 
- * significance will be HIGH because the car's existence is surely notable. But, if
- * there are some good and some bad, then it should have a significance of MEDIUM (or LOW).
+ * significance will be NOTABLE because the car's existence is surely notable. But, if
+ * there are some good and some bad, then it should have a significance of LIKELY_NOTABLE (or LOW).
  * Any module that detects green convertibles should have the same significance. 
  * But, different modules may have different confidences based on their approach. 
- * If a module can accurately detect a green convertible, then it should have HIGH
+ * If a module can accurately detect a green convertible, then it should have NOTABLE
  * confidence. But, if a module can't differentiate a convertible from a truck or
- * green from yellow, then it should have MEDIUM confience (or lower). 
+ * green from yellow, then it should have LIKELY_NOTABLE confidence (or lower). 
  * 
  * For a more traditional example, if a file is found in a MD5 hashset of notable files, 
- * then it would get HIGH significance because the hashset contains only known notable
- * files. And it would get HIGH confidence because the MD5 calculation and lookup 
+ * then it would get NOTABLE significance because the hashset contains only known notable
+ * files. And it would get NOTABLE confidence because the MD5 calculation and lookup 
  * process are exact matches and there is no guessing.
  *
- * For a keyword hit, the significance could be MEDIUM if the word exists in both
- * good and bad contexts, but the confidence would be HIGH because we know the word 
+ * For a keyword hit, the significance could be LIKELY_NOTABLE if the word exists in both
+ * good and bad contexts, but the confidence would be NOTABLE because we know the word 
  * existed in a document. 
  * 
  * If a file is found to be on a good list, then it could have a significance of NONE
  * and then other modules could ignore it. 
- * The confidence could be HIGH if it was based on an exact match MD5 or MEDIUM if it 
- * was based on only file name and size and we aren't entirely sure what the content was.
+ * 
  */
 public class Score implements Comparable<Score> {
 
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	/**
 	 * Indicates the relevance of an item based on the analysis result's conclusion.
      * Significance is tied to an analysis technique type. 
+	 * 
+	 * For comparing significance, the following ordering applies
+	 * 
+	 * Bad > Good > Likely Bad > Likely Good > Unknown
+	 * 
 	 */
 	public enum Significance {
 
-		NONE(0, "None"),		//< Item is Good and has no (bad) significance
-		UNKNOWN(10, "Unknown"), //< no analysis has been performed to ascertain significance.
-		LOW(20, "Low"),
-		MEDIUM(30, "Medium"), //< Suspicious.  Could be good or bad. 
-		HIGH(40, "High");	//< Bad & notable
-
+		UNKNOWN(0, bundle.getString("Significance.Unknown.text")),				// no analysis has been performed to ascertain significance.
+		LIKELY_NONE(8, bundle.getString("Significance.LikelyNone.text")),		// likely good
+		LIKELY_NOTABLE(9, bundle.getString("Significance.LikelyNotable.text")),	// likely bad, suspicious
+		NONE(18, bundle.getString("Significance.None.text")),					// good
+		NOTABLE(19, bundle.getString("Significance.Notable.text"));				// bad
+		
 		private final int id;
 		private final String name;
 
@@ -109,18 +115,17 @@ public class Score implements Comparable<Score> {
 	}
 
 	/**
-	 * Encapsulates confidence in the analysis technique's implementation on the conclusion.
-	 * Higher confidence implies fewer false positives. For example, an object detection
-     * result may have lower confidence than one based looking for a specific byte sequence. 
+	 * Encapsulates confidence in the assigned significance.
+	 *
+	 * This is a broad measure of confidence - significance assigned by a user
+	 * trumps the significance assigned by automated analysis.
+	 *
 	 */
 	public enum Confidence {
 
-		NONE(0, "None"), //< Used with "Unknown" significance
-		LOWEST(10, "Lowest"), //< Very high false positive rates
-		LOW(20, "Low"),
-		MEDIUM(30, "Medium"), //< Some false positives
-		HIGH(40, "High"),   //< No false positives
-		HIGHEST(50, "Highest"); //< Reservied for examiner-tagged results. Human judgement overrules module results. 
+		NONE(0, bundle.getString("Confidence.None.text")), // < Used with "Unknown" significance
+		NORMAL(30, bundle.getString("Confidence.Normal.text")), // < automatic analysis results have normal conidence.
+		USER_DEFINED(50, bundle.getString("Confidence.UserDefined.text")); //< Reservied for examiner-tagged results. Human judgement overrules module results. 
 
 		private final int id;
 		private final String name;
