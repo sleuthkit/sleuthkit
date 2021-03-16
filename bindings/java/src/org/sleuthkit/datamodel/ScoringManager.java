@@ -88,7 +88,7 @@ public class ScoringManager {
 	 * @param objId Object id.
 	 * @param connection Connection to use for the query.
 	 *
-	 * @return Score, if it is found, Score(UNKNOWN,NONE) otherwise.
+	 * @return Score, if it is found, SCORE_UNKNOWN otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -102,7 +102,7 @@ public class ScoringManager {
 				if (rs.next()) {
 					return new Score(Significance.fromID(rs.getInt("significance")), Confidence.fromID(rs.getInt("confidence")));
 				} else {
-					return new Score(Significance.UNKNOWN, Confidence.NONE);
+					return Score.SCORE_UNKNOWN;
 				}
 			} catch (SQLException ex) {
 				throw new TskCoreException("SQLException thrown while running query: " + queryString, ex);

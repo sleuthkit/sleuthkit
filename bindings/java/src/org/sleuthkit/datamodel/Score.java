@@ -123,9 +123,8 @@ public class Score implements Comparable<Score> {
 	 */
 	public enum Confidence {
 
-		NONE(0, bundle.getString("Confidence.None.text")), // < Used with "Unknown" significance
-		NORMAL(30, bundle.getString("Confidence.Normal.text")), // < automatic analysis results have normal conidence.
-		USER_DEFINED(50, bundle.getString("Confidence.UserDefined.text")); //< Reservied for examiner-tagged results. Human judgement overrules module results. 
+		NORMAL(0, bundle.getString("Confidence.Normal.text")), // < automatic analysis results have normal conidence.
+		USER_DEFINED(10, bundle.getString("Confidence.UserDefined.text")); //< Reservied for examiner-tagged results. Human judgement overrules module results. 
 
 		private final int id;
 		private final String name;
@@ -138,13 +137,13 @@ public class Score implements Comparable<Score> {
 		public static Confidence fromString(String name) {
 			return Arrays.stream(values())
 					.filter(val -> val.getName().equals(name))
-					.findFirst().orElse(NONE);
+					.findFirst().orElse(NORMAL);
 		}
 
 		static public Confidence fromID(int id) {
 			return Arrays.stream(values())
 					.filter(val -> val.getId() == id)
-					.findFirst().orElse(NONE);
+					.findFirst().orElse(NORMAL);
 		}
 
 		public int getId() {
@@ -161,7 +160,7 @@ public class Score implements Comparable<Score> {
 		}
 	}
 
-	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Confidence.NONE);
+	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Confidence.NORMAL);
 	
 	// Score is a combination of significance and confidence.
 	private final Significance significance;
