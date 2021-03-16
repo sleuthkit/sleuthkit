@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,24 +18,26 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Optional;
+
 /**
  * This class encapsulates a score change.
  */
 final public class ScoreChange {
 
 	private final long objId;
-	private final long dataSourceObjectId;
+	private final Long dataSourceObjectId;
 	private final Score oldScore;
 	private final Score newScore;
 
-	ScoreChange(long objId, long dataSourceObjectId, Score oldScore, Score newScore) {
+	ScoreChange(long objId, Long dataSourceObjectId, Score oldScore, Score newScore) {
 		this.objId = objId;
 		this.dataSourceObjectId = dataSourceObjectId;
 		this.oldScore = oldScore;
 		this.newScore = newScore;
 	}
 
-	public long getDataSourceObjectId() {
+	public Long getDataSourceObjectId() {
 		return dataSourceObjectId;
 	}
 
