@@ -396,7 +396,6 @@ OsAccountRealm.Inferred.text=Inferred
 OsAccountRealm.Unknown.text=Unknown
 OsAccountRealm.Local.text=Local
 OsAccountRealm.Domain.text=Domain
-Confidence.None.text=None
 Confidence.Normal.text=Normal
 Confidence.UserDefined.text=User defined
 Significance.Unknown.text=Unknown
