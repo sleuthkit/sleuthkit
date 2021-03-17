@@ -262,15 +262,18 @@ public final class Blackboard {
 	}
 	
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-				+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+				+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
 				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 				+ " arts.review_status_id AS review_status_id, " //NON-NLS
 				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
 				+ " results.configuration AS configuration,  results.justification AS justification "
-				+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
-				+ " WHERE arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
-				+ " AND arts.artifact_type_id = types.artifact_type_id"
-				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
+				+ " FROM blackboard_artifacts AS arts "
+				+ " JOIN blackboard_artifact_types AS types " //NON-NLS
+				+ "		ON arts.artifact_type_id = types.artifact_type_id" //NON-NLS
+				+ " LEFT JOIN tsk_analysis_results AS results "
+				+ "		ON arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
+				+ " WHERE arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
+				+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
 	/**
 	 * Get all analysis results for a given object.
@@ -396,7 +399,7 @@ public final class Blackboard {
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
 			return analysisResults;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting analysis results for WHERE caluse = '%s'", whereClause), ex);
+			throw new TskCoreException(String.format("Error getting analysis results for WHERE clause = '%s'", whereClause), ex);
 		}
 	}
 	
@@ -466,8 +469,8 @@ public final class Blackboard {
 				+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
 				+ " LEFT JOIN tsk_data_artifacts AS data_artifacts "
 				+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
-				+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID(); //NON-NLS
-	
+				+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
+				+ "     AND types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS
 	
 	/**
 	 * Get all data artifacts of a given type for a given data source.
