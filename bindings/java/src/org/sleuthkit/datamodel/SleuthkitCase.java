@@ -2344,6 +2344,7 @@ public class SleuthkitCase {
 		}
 	}	
 
+	@SuppressWarnings("deprecation")
 	private CaseDbSchemaVersionNumber updateFromSchema8dot6toSchema8dot7(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 8) {
 			return schemaVersion;
