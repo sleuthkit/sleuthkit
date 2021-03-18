@@ -222,11 +222,11 @@ public class ScoringManager {
 
 	/**
 	 * Get the count of contents with the specified significance. Uses the
-	 * specified transaction to obtain the database connection.
+	 * specified database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
 	 * @param significance       Significance to look for.
-	 * @param transaction        Transaction from which to get the connection.
+	 * @param connection         Database connection to use..
 	 *
 	 * @return Number of contents with given score.
 	 *
@@ -271,7 +271,7 @@ public class ScoringManager {
 
 	/**
 	 * Gets the contents with the specified score. Uses the specified
-	 * transaction to obtain the database connection.
+	 * database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
 	 * @param significance       Significance to look for.
