@@ -174,6 +174,10 @@ public final class Blackboard {
 	 */
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
 		
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new BlackboardException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", artifactType.getTypeName()));
+		}
+		
 		try {
 			// add analysis result
 			AnalysisResult analysisResult =  caseDb.newAnalysisResult(artifactType, objId, dataSourceObjId, score, conclusion, configuration, justification, transaction.getConnection());
@@ -265,7 +269,7 @@ public final class Blackboard {
 				+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
 				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 				+ " arts.review_status_id AS review_status_id, " //NON-NLS
-				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.confidence AS confidence,  "
+				+ " results.conclusion AS conclusion, results.significance AS significance, results.confidence AS confidence,  "
 				+ " results.configuration AS configuration,  results.justification AS justification "
 				+ " FROM blackboard_artifacts AS arts "
 				+ " JOIN blackboard_artifact_types AS types " //NON-NLS
@@ -317,7 +321,8 @@ public final class Blackboard {
 	 */
 	public List<AnalysisResult> getAnalysisResults(long objId, int artifactTypeId) throws TskCoreException {
 		
-		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
+		// Get the artifact type to check that it in the analysis result category.
+		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeId);
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
 		}
@@ -346,7 +351,8 @@ public final class Blackboard {
 	
 //	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, int artifactTypeId) throws TskCoreException {
 //		
-//		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
+//		// Get the artifact type to check that it in the analysis result category.
+//		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeId);
 //		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 //			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
 //		}
@@ -484,6 +490,13 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<DataArtifact> getDataArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
+		
+		// Get the artifact type to check that it in the data artifact category.
+		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeID);
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type id %d is not in data artifact catgeory.", artifactTypeID));
+		}
+		
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = "artifacts.data_source_obj_id = " + dataSourceObjId
@@ -508,6 +521,12 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<DataArtifact> getDataArtifacts(int artifactTypeID) throws TskCoreException {
+		// Get the artifact type to check that it in the data artifact category.
+		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeID);
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type id %d is not in data artifact catgeory.", artifactTypeID));
+		}
+		
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause =  " artifacts.artifact_type_id = " + artifactTypeID;
@@ -1024,6 +1043,10 @@ public final class Blackboard {
 	 */
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
+		
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
+		}
 
 		CaseDbTransaction transaction = caseDb.beginTransaction();
 		try {
