@@ -7024,7 +7024,7 @@ public class SleuthkitCase {
 			}
 
 			if(osAccount != null) {
-				osAccountManager.createOsAccountInstance(osAccount, getDataSource(dataSourceObjId), OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				osAccountManager.createOsAccountInstance(osAccount, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
 			}
 			
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
@@ -7036,9 +7036,7 @@ public class SleuthkitCase {
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
-		} catch(TskDataException ex) { 
-			throw new TskCoreException(String.format("Failed to get DataSource (%d) object while creating OsAccount Instance", dataSourceObjId), ex);
-		}finally {
+		} finally {
 			closeStatement(queryStatement);
 		} 
 	}

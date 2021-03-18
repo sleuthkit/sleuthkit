@@ -198,7 +198,9 @@ Details about a Bluetooth adapter.
 
 ### REQUIRED ATTRIBUTES
 - TSK_MAC_ADDRESS (MAC address of the Bluetooth adapter)
-
+- TSK_NAME (Name of the device)
+- TSK_DATETIME (Time device was last seen)
+- TSK_DEVICE_ID (UUID of the device)
 
 
 ---
@@ -211,7 +213,8 @@ Details about a Bluetooth pairing event.
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (When the pairing occurred, in seconds since 1970-01-01T00:00:00Z)
 - TSK_MAC_ADDRESS (MAC address of the Bluetooth device)
-
+- TSK_DEVICE_ID (UUID of the device)
+- TSK_DATETIME_ACCESSED (Last Connection Time)
 
 
 ---
@@ -221,9 +224,9 @@ A calendar entry in an application file or database.
 ### REQUIRED ATTRIBUTES
 - TSK_CALENDAR_ENTRY_TYPE (E.g., Reminder, Event, Birthday, etc.)
 - TSK_DATETIME_START (Start of the entry, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DESCRIPTION (Description of the entry, such as a note)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_DESCRIPTION (Description of the entry, such as a note)
 - TSK_LOCATION (Location of the entry, such as an address)
 - TSK_DATETIME_END (End of the entry, in seconds since 1970-01-01T00:00:00Z)
 
@@ -347,7 +350,7 @@ An email message found in an application file or database.
 Text extracted from some content.
 
 ### REQUIRED ATTRIBUTES
-TSK_TEXT (The extracted text)
+- TSK_TEXT (The extracted text)
 
 ---
 ## TSK_GEN_INFO
@@ -461,6 +464,7 @@ Details about an installed program.
 - TSK_PATH (Path to the installed program in the data source)
 - TSK_PATH_SOURCE (Path to an Android Package Kit (APK) file for an Android program)
 - TSK_PERMISSIONS (Permissions of the installed program)
+- TSK_VERSION (Version number of the program)
 
 ---
 ## TSK_MESSAGE
@@ -586,9 +590,9 @@ The number of times a program/application was run.
 
 ### REQUIRED ATTRIBUTES
 - TSK_PROG_NAME (Name of the application)
-- TSK_COUNT (Number of times program was run, should be at least 1)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_COUNT (Number of times program was run, should be at least 1)
 - TSK_DATETIME (Timestamp that application was run last, in seconds since 1970-01-01T00:00:00Z)
 - TSK_BYTES_SENT (Number of bytes sent)
 - TSK_BYTES_RECEIVED (Number of bytes received)
@@ -821,6 +825,7 @@ A Web history entry.
 - TSK_TITLE (Title of the Web page that was visited)
 - TSK_URL_DECODED (The decoded URL)
 - TSK_USER_NAME (Name of the user that viewed the Web page)
+- TSK_DATETIME_CREATED (The datetime the page was created, ie: offline pages)
 
 
 
@@ -848,7 +853,8 @@ Details about a WiFi network.
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (Timestamp, in seconds since 1970-01-01T00:00:00Z. This timestamp could be last connected time or creation time)
 - TSK_DEVICE_ID (String that uniquely identifies the WiFi network)
-
+- TSK_MAC_ADDRESS (Mac address of the adapter)
+- TSK_DEVICE_MODEL (Model of the decvice)
 
 
 ---

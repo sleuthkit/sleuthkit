@@ -27,7 +27,7 @@ import java.util.ResourceBundle;
  */
 public class OsAccountInstance implements Comparable<OsAccountInstance> {
 
-	private DataSource dataSource;
+	private DataSource dataSource = null;
 	private final OsAccount account;
 	private final OsAccountInstanceType instanceType;
 
@@ -40,18 +40,28 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	/**
 	 * Construct with OsAccount and DataSource instances.
 	 *
-	 * @param account	     The instance account.
+	 * @param account      The instance account.
 	 * @param dataSource   The instance data source
 	 * @param instanceType The instance type.
 	 */
 	OsAccountInstance(OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
-		this.account = account;
+		this(account, dataSource.getId(), instanceType);
 		this.dataSource = dataSource;
-		this.instanceType = instanceType;
-
-		dataSourceId = dataSource.getId();
 	}
 
+	/**
+	 * Construct with OsAccount and DataSource instances.
+	 *
+	 * @param account         The instance account.
+	 * @param dataSourceObjId The instance data source object id.
+	 * @param instanceType    The instance type.
+	 */
+	OsAccountInstance(OsAccount account, long dataSourceObjId, OsAccountInstanceType instanceType) {
+		this.account = account;
+		this.dataSourceId = dataSourceObjId;
+		this.instanceType = instanceType;
+	}
+	
 	/**
 	 * Construct the OsAccountInstance doing a lazy construction on the data
 	 * source object.
