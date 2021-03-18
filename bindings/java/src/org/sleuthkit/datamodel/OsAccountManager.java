@@ -1143,12 +1143,16 @@ public final class OsAccountManager {
 		
 	/**
 	 * Updates the database for the given OsAccount.
+     * NOTE: Will not merge accounts if the updated information conflicts with an 
+     * existing account (such as adding an ID to an account that has only a name
+     * and there already being an account with that ID).
 	 *
 	 * @param osAccount   OsAccount that needs to be updated in the database.
 	 *
 	 * @return OsAccount Updated account.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is a database error or if the 
+     * updated information conflicts with an existing account. 
 	 */
 	OsAccount updateAccount(OsAccount osAccount, CaseDbConnection connection) throws TskCoreException {
 		
