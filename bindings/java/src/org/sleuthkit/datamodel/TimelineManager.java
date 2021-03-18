@@ -814,7 +814,12 @@ public final class TimelineManager {
 		String shortDescription = eventPayload.getDescription(TimelineLevelOfDetail.LOW);
 		long artifactID = artifact.getArtifactID();
 		long fileObjId = artifact.getObjectID();
-		long dataSourceObjectID = artifact.getDataSourceObjectID();
+		Long dataSourceObjectID = artifact.getDataSourceObjectID();
+		
+		if(dataSourceObjectID == null) {
+			logger.log(Level.SEVERE, String.format("Failed to create timeline event for artifact (%d), artifact data source was null"), artifact.getId());
+			return Optional.empty();
+		}
 
 		AbstractFile file = caseDB.getAbstractFileById(fileObjId);
 		boolean hasHashHits = false;

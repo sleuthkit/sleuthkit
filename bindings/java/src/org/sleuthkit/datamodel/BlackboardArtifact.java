@@ -54,7 +54,7 @@ public class BlackboardArtifact implements Content {
 	private final long artifactId;
 	private final long sourceObjId;				// refers to objID of parent/source object
 	private final long artifactObjId;			// objId of the artifact in tsk_objects. TBD: replace artifactID with this
-	private final long dataSourceObjId;			// objId of the data source in tsk_objects.
+	private final Long dataSourceObjId;			// objId of the data source in tsk_objects.
 	private final int artifactTypeId;
 	private final String artifactTypeName;
 	private final String displayName;
@@ -856,7 +856,7 @@ public class BlackboardArtifact implements Content {
 
 	@Override
 	public Content getDataSource() throws TskCoreException {
-		return getSleuthkitCase().getContentById(dataSourceObjId);
+		return dataSourceObjId != null ? getSleuthkitCase().getContentById(dataSourceObjId) : null;
 	}
 
 	/**
