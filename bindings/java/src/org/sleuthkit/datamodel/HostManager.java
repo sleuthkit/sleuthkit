@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.sleuthkit.datamodel.Host.HostDbStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -184,8 +185,10 @@ public final class HostManager {
 		Host updatedHost = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
-			String hostInsertSQL = "UPDATE tsk_hosts \n"
-					+ "SET name = ? \n"
+			// Don't update the name for non-active hosts
+			String hostInsertSQL = "UPDATE tsk_hosts "
+					+ "SET name = "
+					+ "   CASE WHEN db_status = " + Host.HostDbStatus.ACTIVE.getId() + " THEN ? ELSE name END "
 					+ "WHERE id = ?";
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
@@ -312,7 +315,7 @@ public final class HostManager {
 	}
 
 	/**
-	 * Get host with given name.
+	 * Get active host with given name.
 	 *
 	 * @param name Host name to look for.
 	 *
@@ -327,7 +330,7 @@ public final class HostManager {
 	}
 
 	/**
-	 * Get host with given name.
+	 * Get active host with given name.
 	 *
 	 * @param name       Host name to look for.
 	 * @param connection Database connection to use.
@@ -339,7 +342,8 @@ public final class HostManager {
 	private Optional<Host> getHost(String name, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts"
-				+ " WHERE LOWER(name) = LOWER(?)";
+				+ " WHERE LOWER(name) = LOWER(?)" 
+				+ " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try {
@@ -530,6 +534,98 @@ public final class HostManager {
 		}
 
 		db.getPersonManager().fireChangeEvent(person);
+	}
+	
+	/**
+	 * Merge source host into destination host.
+	 * When complete:
+	 * - All realms will have been moved into the destination host or merged with existing realms in the destination host.
+	 * - All references to the source host will be updated to reference the destination host.
+	 * - The source host will be updated so that it will no longer be returned by any methods
+	 *    apart from get by host id.
+	 * 
+	 * @param sourceHost The source host.
+	 * @param destHost   The destination host.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void mergeHosts(Host sourceHost, Host destHost) throws TskCoreException {
+		String query = "";
+		CaseDbTransaction trans = null;
+		try {
+			trans = db.beginTransaction();
+			
+			// Merge or move any realms associated with the source host
+			List<OsAccountRealm> realms = db.getOsAccountRealmManager().getRealmsByHost(sourceHost, trans.getConnection());
+			for (OsAccountRealm realm : realms) {
+				db.getOsAccountRealmManager().moveOrMergeRealm(realm, destHost, trans);
+			}
+			
+			try (Statement s = trans.getConnection().createStatement()) {
+				// Update references to the source host
+				
+				// tsk_host_address_map has a unique constraint on host_id, addr_obj_id, time,
+				// so delete any rows that would be duplicates.
+				query = "DELETE FROM tsk_host_address_map " +
+					"WHERE id IN ( " +
+					"SELECT " +
+					"  sourceMapRow.id " +
+					"FROM " +
+					"  tsk_host_address_map destMapRow " +
+					"INNER JOIN tsk_host_address_map sourceMapRow ON destMapRow.addr_obj_id = sourceMapRow.addr_obj_id AND destMapRow.time = sourceMapRow.time " +
+					"WHERE destMapRow.host_id = " +  destHost.getId() + 
+					" AND sourceMapRow.host_id = " + sourceHost.getId() + " )";
+				s.executeUpdate(query);
+				query = makeOsAccountUpdateQuery("tsk_host_address_map", "host_id", sourceHost, destHost);
+				s.executeUpdate(query);
+				
+				query = makeOsAccountUpdateQuery("tsk_os_account_attributes", "host_id", sourceHost, destHost);
+				s.executeUpdate(query);
+				
+				query = makeOsAccountUpdateQuery("data_source_info", "host_id", sourceHost, destHost);
+				s.executeUpdate(query);
+			
+				// Mark the source host as merged and change the name to a random string.
+				String mergedName = makeMergedHostName();
+				query = "UPDATE tsk_hosts SET merged_into = " + destHost.getId()
+						+ ", db_status = " + Host.HostDbStatus.MERGED.getId()
+						+ ", name = '" + mergedName + "' " 
+						+ " WHERE id = " + sourceHost.getId();
+				s.executeUpdate(query);	
+			}
+			
+			trans.commit();
+			trans = null;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error executing query: " + query, ex);
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
+	
+	/**
+	 * Create the query to update the host id column to the merged host.
+	 * 
+	 * @param tableName  Name of table to update.
+	 * @param columnName Name of the column containing the host id.
+	 * @param sourceHost  The source host.
+	 * @param destHost    The destination host.
+	 * 
+	 * @return The query.
+	 */
+	private String makeOsAccountUpdateQuery(String tableName, String columnName, Host sourceHost, Host destHost) {
+		return "UPDATE " + tableName + " SET " + columnName + " = " + destHost.getId() + " WHERE " + columnName + " = " + sourceHost.getId();
+	}
+	
+	/**
+	 * Create a random name for hosts that have been merged.
+	 * 
+	 * @return The random signature.
+	 */
+	private String makeMergedHostName() {
+		return "MERGED " +  UUID.randomUUID().toString();
 	}
 
 	/**

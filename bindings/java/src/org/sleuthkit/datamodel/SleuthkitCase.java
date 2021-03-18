@@ -2436,7 +2436,9 @@ public class SleuthkitCase {
 					+ "name TEXT NOT NULL, " // host name
 					+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 					+ "person_id INTEGER, "
+					+ "merged_into " + bigIntDataType + ", "
 					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
+					+ "FOREIGN KEY(merged_into) REFERENCES tsk_hosts(id), "
 					+ "UNIQUE(name)) ");
 
 			// Create OS Account and related tables 
@@ -12943,6 +12945,8 @@ public class SleuthkitCase {
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>(); 
 		private List<Host> hostsAdded = new ArrayList<>();
+		private List<OsAccount> accountsChanged = new ArrayList<>();
+		private List<OsAccount> accountsAdded = new ArrayList<>();
 		
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
@@ -12993,6 +12997,26 @@ public class SleuthkitCase {
 		}
 		
 		/**
+		 * Saves an account that has been updated as a part of this transaction.
+		 * @param account The account.
+		 */		
+		void registerChangedOsAccount(OsAccount account) {
+			if (account != null) {
+				accountsChanged.add(account);
+			}
+		}
+		
+		/**
+		 * Saves an account that has been added as a part of this transaction.
+		 * @param account The account.
+		 */	
+		void registerAddedOsAccount(OsAccount account) {
+			if (account != null) {
+				accountsAdded.add(account);
+			}
+		}
+		
+		/**
 		 * Check if the given thread has an open transaction.
 		 * 
 		 * @param threadId Thread id to check for.
@@ -13029,9 +13053,15 @@ public class SleuthkitCase {
 					}
 				}
 				
-				// Fire an event notifying that hosts have been added.
+				// Fire events for any new or changed objects
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
+				}
+				if (!accountsAdded.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsCreationEvent(accountsAdded));
+				}
+				if (!accountsChanged.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsUpdateEvent(accountsChanged));
 				}
 			}
 		}
