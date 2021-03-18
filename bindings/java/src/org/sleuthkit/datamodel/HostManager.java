@@ -596,6 +596,10 @@ public final class HostManager {
 			
 			trans.commit();
 			trans = null;
+			
+			// Fire events for updated and deleted hosts
+			fireChangeEvent(sourceHost);
+			fireDeletedEvent(destHost);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error executing query: " + query, ex);
 		} finally {
@@ -630,6 +634,7 @@ public final class HostManager {
 
 	/**
 	 * Fires an event that a host has changed.
+	 * Do not call this with an open transaction.
 	 *
 	 * @param newValue The new value for the host.
 	 */
@@ -639,6 +644,7 @@ public final class HostManager {
 
 	/**
 	 * Fires an event that a host has been deleted.
+	 * Do not call this with an open transaction.
 	 *
 	 * @param deleted The deleted host.
 	 */

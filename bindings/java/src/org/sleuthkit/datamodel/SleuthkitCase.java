@@ -12947,6 +12947,7 @@ public class SleuthkitCase {
 		private List<Host> hostsAdded = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
+		private List<OsAccount> accountsDeleted = new ArrayList<>();
 		
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
@@ -13007,6 +13008,16 @@ public class SleuthkitCase {
 		}
 		
 		/**
+		 * Saves an account that has been deleted as a part of this transaction.
+		 * @param account The account.
+		 */		
+		void registerDeletedOsAccount(OsAccount account) {
+			if (account != null) {
+				accountsDeleted.add(account);
+			}
+		}		
+		
+		/**
 		 * Saves an account that has been added as a part of this transaction.
 		 * @param account The account.
 		 */	
@@ -13062,6 +13073,9 @@ public class SleuthkitCase {
 				}
 				if (!accountsChanged.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsUpdateEvent(accountsChanged));
+				}
+				if (!accountsDeleted.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsDeleteEvent(accountsDeleted));
 				}
 			}
 		}
