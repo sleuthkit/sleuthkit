@@ -2372,7 +2372,30 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
 			
+			// Add category type and initialize the types. We use the list of artifact types that
+			// were categorized as analysis results as of the 8.7 update to ensure consistency in
+			// case the built-in types change in a later release.
 			statement.execute("ALTER TABLE blackboard_artifact_types ADD COLUMN category_type INTEGER DEFAULT 0");
+			String analysisTypeObjIdList = 
+				BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ", " 
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_FACE_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_OBJECT_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_VERIFICATION_FAILED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_USER_CONTENT_SUSPECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_ACCOUNT_TYPE.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CATEGORIZATION.getTypeID();
+			statement.execute("UPDATE blackboard_artifact_types SET category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
+					+ " WHERE artifact_type_id IN (" + analysisTypeObjIdList + ")");
 
             // Create tsk file attributes table
 			statement.execute("CREATE TABLE tsk_file_attributes (id " + primaryKeyType + " PRIMARY KEY, "
