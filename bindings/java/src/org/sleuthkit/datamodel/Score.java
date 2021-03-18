@@ -74,33 +74,31 @@ public class Score implements Comparable<Score> {
 	 */
 	public enum Significance {
 
+		// Enum name must not have any spaces.
+		
 		// no significance assigned yet.
-		UNKNOWN(0, bundle.getString("Significance.Unknown.name.text"),					
-					bundle.getString("Significance.Unknown.descr.text")),	
+		UNKNOWN(0, "Unknown", bundle.getString("Significance.Unknown.displayName.text")),	
 		
 		// likely good		
-		LIKELY_NONE(8, bundle.getString("Significance.LikelyNone.name.text"),			
-					bundle.getString("Significance.LikelyNone.descr.text")),
+		LIKELY_NONE(8, "LikelyNone", bundle.getString("Significance.LikelyNone.displayName.text")),
 		
 		// likely bad, suspicious
-		LIKELY_NOTABLE(9, bundle.getString("Significance.LikelyNotable.name.text"), 
-					bundle.getString("Significance.LikelyNotable.descr.text")),	
+		LIKELY_NOTABLE(9, "LikelyNotable", bundle.getString("Significance.LikelyNotable.displayName.text")),	
+		
 		// good
-		NONE(18, bundle.getString("Significance.None.name.text"), 
-					bundle.getString("Significance.LikelyNotable.descr.text")),		
+		NONE(18, "None", bundle.getString("Significance.LikelyNotable.displayName.text")),		
 		
 		// bad
-		NOTABLE(19, bundle.getString("Significance.Notable.name.text"), 
-					bundle.getString("Significance.LikelyNotable.descr.text"));				
+		NOTABLE(19, "Notable", bundle.getString("Significance.LikelyNotable.displayName.text"));				
 		
 		private final int id;
-		private final String name;
-		private final String description;
+		private final String name;	// name must not have spaces
+		private final String displayName;
 
-		private Significance(int id, String name, String description) {
+		private Significance(int id, String name, String displayName) {
 			this.id = id;
 			this.name = name;
-			this.description = description;
+			this.displayName = displayName;
 		}
 
 		public static Significance fromString(String name) {
@@ -123,8 +121,8 @@ public class Score implements Comparable<Score> {
 			return name;
 		}
 
-		public String getDescription() {
-			return description;
+		public String getDisplayName() {
+			return displayName;
 		}
 			
 		@Override
@@ -142,19 +140,18 @@ public class Score implements Comparable<Score> {
 	 */
 	public enum MethodCategory {
 
-		AUTO(0, bundle.getString("MethodCategory.Auto.name.text"), 
-						bundle.getString("MethodCategory.Auto.descr.text")),
-		USER_DEFINED(10, bundle.getString("MethodCategory.UserDefined.name.text"), 
-						bundle.getString("MethodCategory.UserDefined.descr.text")); 
+		// Name must not have any spaces.
+		AUTO(0, "Auto", bundle.getString("MethodCategory.Auto.displayName.text")),
+		USER_DEFINED(10, "UserDefined", bundle.getString("MethodCategory.UserDefined.displayName.text")); 
 
 		private final int id;
-		private final String name;
-		private final String description;
+		private final String name; 
+		private final String displayName;
 		
-		private MethodCategory(int id, String name, String description) {
+		private MethodCategory(int id, String name, String displayName) {
 			this.id = id;
 			this.name = name;
-			this.description = description;
+			this.displayName = displayName;
 		}
 
 		public static MethodCategory fromString(String name) {
@@ -177,8 +174,8 @@ public class Score implements Comparable<Score> {
 			return name;
 		}
 
-		public String getDescription() {
-			return description;
+		public String getDisplayName() {
+			return displayName;
 		}
 		
 		@Override
