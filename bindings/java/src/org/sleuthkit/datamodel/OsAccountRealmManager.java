@@ -222,12 +222,16 @@ public final class OsAccountRealmManager {
 	
 	/**
 	 * Updates the specified realm in the database.
+     * NOTE: This will not merge two realms if the updated information exists
+     * for another realm (i.e. such as adding an address to a realm that has
+     * only a name and there is already a realm with that address). 
 	 * 
 	 * @param realm Realm to update.
 	 * 
 	 * @return OsAccountRealm Updated realm.
 	 * 
-	 * @throws TskCoreException 
+	 * @throws TskCoreException If there is a database error or if a realm
+     * already exists with that information. 
 	 */
 	OsAccountRealm updateRealm(OsAccountRealm realm) throws TskCoreException {
 		
