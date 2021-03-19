@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -177,9 +178,9 @@ public class ArtifactTest {
 		AnalysisResultAdded analysisResultAdded1 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), 
 																		new Score(Score.Significance.MEDIUM, Score.Confidence.HIGH), "Keyword hit found", "", "", attributes);
    
-		assertEquals(analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId(), Score.Significance.MEDIUM.getId());
-		assertEquals(analysisResultAdded1.getAnalysisResult().getScore().getConfidence().getId(), Score.Confidence.HIGH.getId());
-		assertEquals(analysisResultAdded1.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"), true);
+		assertEquals(Score.Significance.MEDIUM.getId(), analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId());
+		assertEquals(Score.Confidence.HIGH.getId(), analysisResultAdded1.getAnalysisResult().getScore().getConfidence().getId());
+		assertTrue(analysisResultAdded1.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"));
 		
 		// Add a 2nd analysis result to the same file
 		AnalysisResultAdded analysisResultAdded2 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
@@ -191,37 +192,37 @@ public class ArtifactTest {
 		// get analysis results and verify count
 		
 		List<AnalysisResult> ars = abcTextFile.getAllAnalysisResults();
-		assertEquals(ars.size(), 3);
+		assertEquals(3, ars.size());
 		
 		// verify the aggregate score - expect HIGH/HIGH - highest of the 3 results added
 		Score aggScore = abcTextFile.getAggregateScore();
-		assertEquals(aggScore.getSignificance().getId(), Score.Significance.HIGH.getId());
-		assertEquals(aggScore.getConfidence().getId(), Score.Confidence.HIGH.getId());
+		assertEquals(Score.Significance.HIGH.getId(), aggScore.getSignificance().getId());
+		assertEquals(Score.Confidence.HIGH.getId(), aggScore.getConfidence().getId());
 		
 		// delete an anlysis result 3
 		Score newScore = caseDB.getBlackboard().deleteAnalysisResult(analysisResultAdded3.getAnalysisResult());
 		
 		// get analysis results and verify count
 		ars = abcTextFile.getAllAnalysisResults();
-		assertEquals(ars.size(), 2);
+		assertEquals(2, ars.size());
 		
 		// verify aggregate score - should now be Medium/High
 		Score newAggScore = abcTextFile.getAggregateScore();
-		assertEquals(newAggScore.getSignificance().getId(), Score.Significance.MEDIUM.getId());
-		assertEquals(newAggScore.getConfidence().getId(), Score.Confidence.HIGH.getId());
+		assertEquals(Score.Significance.MEDIUM.getId(), newAggScore.getSignificance().getId());
+		assertEquals(Score.Confidence.HIGH.getId(), newAggScore.getConfidence().getId());
 		
 		
 		// Test: add a new data artifact to the file
         DataArtifact dataArtifact1 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH), Collections.emptyList(), osAccount1);
         
-		assertEquals(dataArtifact1.getOsAccount().isPresent(), true);
-		assertEquals(dataArtifact1.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+		assertTrue(dataArtifact1.getOsAccount().isPresent());
+		assertTrue(dataArtifact1.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// Test: add a second data artifact to file - associate it with a different account
 		DataArtifact dataArtifact2 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CLIPBOARD_CONTENT), Collections.emptyList(), osAccount2);
-		assertEquals(dataArtifact2.getOsAccount().isPresent(), true);
-		assertEquals(dataArtifact2.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+		assertTrue(dataArtifact2.getOsAccount().isPresent());
+		assertTrue(dataArtifact2.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
 				
 				
 		// and two more 
@@ -231,20 +232,16 @@ public class ArtifactTest {
 		
 		// TEST: get all TSK_GPS_SEARCH data artifacts in the data source
 		List<DataArtifact> gpsArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID(), image.getId());
-		assertEquals(gpsArtifacts.size(), 1);
+		assertEquals(1, gpsArtifacts.size());
 		// verify the account 
-		assertEquals(gpsArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+		assertTrue(gpsArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// TES: get all data artifacts of type TSK_YARA_HIT
 		List<DataArtifact> gpsAreaArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), image.getId());
-		assertEquals(gpsAreaArtifacts.size(), 2);
+		assertEquals(2, gpsAreaArtifacts.size());
 		// verify the account on each
-		assertEquals(gpsAreaArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
-		assertEquals(gpsAreaArtifacts.get(1).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
-		
-		
-		
-		
+		assertTrue(gpsAreaArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(gpsAreaArtifacts.get(1).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
 	}
 }

@@ -2344,6 +2344,7 @@ public class SleuthkitCase {
 		}
 	}	
 
+	@SuppressWarnings("deprecation")
 	private CaseDbSchemaVersionNumber updateFromSchema8dot6toSchema8dot7(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 8) {
 			return schemaVersion;
@@ -2372,7 +2373,30 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_name TEXT");
 			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_tool_version TEXT");
 			
+			// Add category type and initialize the types. We use the list of artifact types that
+			// were categorized as analysis results as of the 8.7 update to ensure consistency in
+			// case the built-in types change in a later release.
 			statement.execute("ALTER TABLE blackboard_artifact_types ADD COLUMN category_type INTEGER DEFAULT 0");
+			String analysisTypeObjIdList = 
+				BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ", " 
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_FACE_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_OBJECT_DETECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_VERIFICATION_FAILED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_USER_CONTENT_SUSPECTED.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_ACCOUNT_TYPE.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT.getTypeID() + ", "
+				+ BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CATEGORIZATION.getTypeID();
+			statement.execute("UPDATE blackboard_artifact_types SET category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
+					+ " WHERE artifact_type_id IN (" + analysisTypeObjIdList + ")");
 
             // Create tsk file attributes table
 			statement.execute("CREATE TABLE tsk_file_attributes (id " + primaryKeyType + " PRIMARY KEY, "
@@ -2413,7 +2437,9 @@ public class SleuthkitCase {
 					+ "name TEXT NOT NULL, " // host name
 					+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 					+ "person_id INTEGER, "
+					+ "merged_into " + bigIntDataType + ", "
 					+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
+					+ "FOREIGN KEY(merged_into) REFERENCES tsk_hosts(id), "
 					+ "UNIQUE(name)) ");
 
 			// Create OS Account and related tables 
@@ -12923,6 +12949,8 @@ public class SleuthkitCase {
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>(); 
 		private List<Host> hostsAdded = new ArrayList<>();
+		private List<OsAccount> accountsChanged = new ArrayList<>();
+		private List<OsAccount> accountsAdded = new ArrayList<>();
 		
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
@@ -12973,6 +13001,26 @@ public class SleuthkitCase {
 		}
 		
 		/**
+		 * Saves an account that has been updated as a part of this transaction.
+		 * @param account The account.
+		 */		
+		void registerChangedOsAccount(OsAccount account) {
+			if (account != null) {
+				accountsChanged.add(account);
+			}
+		}
+		
+		/**
+		 * Saves an account that has been added as a part of this transaction.
+		 * @param account The account.
+		 */	
+		void registerAddedOsAccount(OsAccount account) {
+			if (account != null) {
+				accountsAdded.add(account);
+			}
+		}
+		
+		/**
 		 * Check if the given thread has an open transaction.
 		 * 
 		 * @param threadId Thread id to check for.
@@ -13009,9 +13057,15 @@ public class SleuthkitCase {
 					}
 				}
 				
-				// Fire an event notifying that hosts have been added.
+				// Fire events for any new or changed objects
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
+				}
+				if (!accountsAdded.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsCreationEvent(accountsAdded));
+				}
+				if (!accountsChanged.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsUpdateEvent(accountsChanged));
 				}
 			}
 		}
