@@ -2411,7 +2411,7 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "conclusion TEXT, "
 					+ "significance INTEGER NOT NULL, "
-					+ "confidence INTEGER NOT NULL, "
+					+ "method_category INTEGER NOT NULL, "
 					+ "configuration TEXT, justification TEXT, "
 					+ "ignore_score INTEGER DEFAULT 0 " // boolean	
 					+ ")");
@@ -2419,14 +2419,12 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "data_source_obj_id " + bigIntDataType + ", "
 					+ "significance INTEGER NOT NULL, "
-					+ "confidence INTEGER NOT NULL, "
+					+ "method_category INTEGER NOT NULL, "
 					+ "UNIQUE (obj_id),"
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
 					+ ")");
 
-			// RAMAN TBD: need to add  UNIQUE (artifact_obj_id) constraint to blackboard_artifacts table for it to be FK
-			
 			// Create person table.
 			statement.execute("CREATE TABLE tsk_persons (id " + primaryKeyType + " PRIMARY KEY, "
 					+ "name TEXT NOT NULL, " // person name
@@ -5172,7 +5170,7 @@ public class SleuthkitCase {
 				analysisResultsStatement.setLong(1, artifactObjId);
 				analysisResultsStatement.setString(2, (conclusion != null) ? conclusion : "");
 				analysisResultsStatement.setInt(3, score.getSignificance().getId());
-				analysisResultsStatement.setInt(4, score.getConfidence().getId());
+				analysisResultsStatement.setInt(4, score.getMethodCategory().getId());
 				analysisResultsStatement.setString(5, (configuration != null) ? configuration : "");
 				analysisResultsStatement.setString(6, (justification != null) ? justification : "");
 
@@ -12173,7 +12171,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (DEFAULT, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
-		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (artifact_obj_id, conclusion, significance, confidence, configuration, justification) " //NON-NLS
+		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (artifact_obj_id, conclusion, significance, method_category, configuration, justification) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
