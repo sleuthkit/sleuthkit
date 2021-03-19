@@ -86,10 +86,10 @@ public class Score implements Comparable<Score> {
 		LIKELY_NOTABLE(9, "LikelyNotable", bundle.getString("Significance.LikelyNotable.displayName.text")),	
 		
 		// good
-		NONE(18, "None", bundle.getString("Significance.LikelyNotable.displayName.text")),		
+		NONE(18, "None", bundle.getString("Significance.None.displayName.text")),		
 		
 		// bad
-		NOTABLE(19, "Notable", bundle.getString("Significance.LikelyNotable.displayName.text"));				
+		NOTABLE(19, "Notable", bundle.getString("Significance.Notable.displayName.text"));				
 		
 		private final int id;
 		private final String name;	// name must not have spaces
