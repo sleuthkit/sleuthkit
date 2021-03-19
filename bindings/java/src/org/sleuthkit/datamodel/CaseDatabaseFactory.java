@@ -290,7 +290,7 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "conclusion TEXT, "
 				+ "significance INTEGER NOT NULL, "
-				+ "confidence INTEGER NOT NULL, "
+				+ "method_category INTEGER NOT NULL, "
 				+ "configuration TEXT, justification TEXT, "
 				+ "ignore_score INTEGER DEFAULT 0, " // boolean	
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
@@ -299,7 +299,7 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_aggregate_score( obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "significance INTEGER NOT NULL, "
-				+ "confidence INTEGER NOT NULL, "
+				+ "method_category INTEGER NOT NULL, "
 				+ "UNIQUE (obj_id),"
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
@@ -372,7 +372,7 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX events_time ON tsk_events(time)");
 			
 			// analysis results and scores indices
-			stmt.execute("CREATE INDEX score_significance_confidence ON tsk_aggregate_score(significance,confidence)");
+			stmt.execute("CREATE INDEX score_significance_category ON tsk_aggregate_score(significance, method_category)");
 			stmt.execute("CREATE INDEX score_datasource_obj_id ON tsk_aggregate_score(data_source_obj_id)");
 			
 		} catch (SQLException ex) {

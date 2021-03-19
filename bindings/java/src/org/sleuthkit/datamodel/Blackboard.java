@@ -269,7 +269,7 @@ public final class Blackboard {
 				+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
 				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 				+ " arts.review_status_id AS review_status_id, " //NON-NLS
-				+ " results.conclusion AS conclusion, results.significance AS significance, results.confidence AS confidence,  "
+				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.method_category AS method_category,  "
 				+ " results.configuration AS configuration,  results.justification AS justification "
 				+ " FROM blackboard_artifacts AS arts "
 				+ " JOIN blackboard_artifact_types AS types " //NON-NLS
@@ -457,7 +457,7 @@ public final class Blackboard {
 					resultSet.getObject("data_source_obj_id") != null ? resultSet.getLong("data_source_obj_id") : null,
 					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
 					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")),
-					new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.Confidence.fromID(resultSet.getInt("confidence"))),
+					new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.MethodCategory.fromID(resultSet.getInt("method_category"))),
 					resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification")));
 		} //end for each resultSet
 
