@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,66 +20,93 @@ package org.sleuthkit.datamodel;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.ResourceBundle;
 
 /**
- * Encapsulates either an analysis result score or the aggregate score of Content. 
- * A score measures how likely the Content object is to be relevant to an investigation.
- * Relevance is determined by a series of analysis techniques, each of which has a score. 
- * The aggregate score for an item is then determined based on its analysis results.
+ * Encapsulates either an analysis result score or the aggregate score of
+ * Content. A score measures how likely the Content object is to be relevant to
+ * an investigation. Relevance is determined by a series of analysis techniques,
+ * each of which has a score. The aggregate score for an item is then determined
+ * based on its analysis results.
  *
- * A score has two primary fields: Significance and Confidence. Significance is based on 
- * what the analysis technique is measuring and if its goal is to detect good, bad, or 
- * suspicious. The significance is more about the technique and less about a specific
- * implementation of the technique. 
- * Confidence reflects how confident the analysis technique implementation was in its conclusion
- * and is based on the false positive rate of that implementation. 
+ * A score has two primary fields: Significance and MethodCategory.
  *
- * Let's first look at a made up example. Lets say that in some crazy world, we
- * can detect if a car is "bad" based on its color and we have a module to look for
- * green convertibles. This module's significance is based on how many green 
- * convertibles are bad overall. If all green convertibles are bad, then its 
- * significance will be HIGH because the car's existence is surely notable. But, if
- * there are some good and some bad, then it should have a significance of MEDIUM (or LOW).
- * Any module that detects green convertibles should have the same significance. 
- * But, different modules may have different confidences based on their approach. 
- * If a module can accurately detect a green convertible, then it should have HIGH
- * confidence. But, if a module can't differentiate a convertible from a truck or
- * green from yellow, then it should have MEDIUM confience (or lower). 
+ * There are two method categories : Auto and User Defined. "Auto" comes from
+ * various (automated) analysis modules assigning a significance. "User Defined"
+ * comes from a user manually assigning a significance to the item. The "User
+ * Defined" scores will overrule the "Auto" scores. Modules should be
+ * creating score with category "Auto".
+ *
+ * The significance is a range of how Notable (i.e. "Bad") the item is. The
+ * range is from NONE (i.e. "Good") to NOTABLE with values in the middle, such
+ * as LIKELY_NOTABLE for suspicious items. The LIKELY_ values are used when
+ * there is less confidence in the result. The significance has to do with the
+ * false positive rate at actually detecting notable or benign things.
+ *
+ *
+ * For an example, if a file is found in a MD5 hashset of notable files, then a
+ * module would use a significance of NOTABLE. This is because the MD5 is exact
+ * match and the hash set is all notable files.
+ *
+ * For a keyword hit, the significance would be LIKELY_NOTABLE because keywords
+ * often can be used in both good and bad ways. A user will need to review the
+ * file to determine if it is a true or false positive.
+ *
+ * If a file is found to be on a good list (via MD5), then it could have a
+ * significance of NONE and then other modules could ignore it.
+ *
+ * An aggregate score is the combination of the specific analysis results.
+ * USER_RESULTS will overrule NORMAL. NOTABLE overrules NONE. Both of those
+ * overrule the LIKELY_* results. 
  * 
- * For a more traditional example, if a file is found in a MD5 hashset of notable files, 
- * then it would get HIGH significance because the hashset contains only known notable
- * files. And it would get HIGH confidence because the MD5 calculation and lookup 
- * process are exact matches and there is no guessing.
- *
- * For a keyword hit, the significance could be MEDIUM if the word exists in both
- * good and bad contexts, but the confidence would be HIGH because we know the word 
- * existed in a document. 
- * 
- * If a file is found to be on a good list, then it could have a significance of NONE
- * and then other modules could ignore it. 
- * The confidence could be HIGH if it was based on an exact match MD5 or MEDIUM if it 
- * was based on only file name and size and we aren't entirely sure what the content was.
+ * NOTABLE > NONE > LIKELY_NOTABLE > LIKELY_NONE > UNKNOWN
  */
 public class Score implements Comparable<Score> {
 
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	/**
 	 * Indicates the relevance of an item based on the analysis result's conclusion.
-     * Significance is tied to an analysis technique type. 
+         * 
+	 * For comparing significance, the following ordering applies
+	 * 
+	 * Bad > Good > Likely Bad > Likely Good > Unknown
+	 * 
 	 */
 	public enum Significance {
 
-		NONE(0, "None"),		//< Item is Good and has no (bad) significance
-		UNKNOWN(10, "Unknown"), //< no analysis has been performed to ascertain significance.
-		LOW(20, "Low"),
-		MEDIUM(30, "Medium"), //< Suspicious.  Could be good or bad. 
-		HIGH(40, "High");	//< Bad & notable
+		// Enum name must not have any spaces.
 
+        /* Notes on the ordinal numbers: We defined these so that we could easily
+         * compare values while also have some concept of grouping. 
+         * The 1x values are a higher confidence than the 0x files.
+         * NOTABLE (x9) has priority over NOT NOTABLE (x8). 
+         * If we need to make this more complicated in the future, we can add
+         * other groupings, such as 14 and 15. 
+         */
+		
+		/// no significance assigned yet.
+		UNKNOWN(0, "Unknown", bundle.getString("Significance.Unknown.displayName.text")),	
+		
+		/// likely good		
+		LIKELY_NONE(8, "LikelyNone", bundle.getString("Significance.LikelyNone.displayName.text")),
+		
+		/// likely bad, suspicious
+		LIKELY_NOTABLE(9, "LikelyNotable", bundle.getString("Significance.LikelyNotable.displayName.text")),	
+		
+		/// good
+		NONE(18, "None", bundle.getString("Significance.None.displayName.text")),		
+		
+		/// bad
+		NOTABLE(19, "Notable", bundle.getString("Significance.Notable.displayName.text"));				
+		
 		private final int id;
-		private final String name;
+		private final String name;	// name must not have spaces
+		private final String displayName;
 
-		private Significance(int id, String name) {
+		private Significance(int id, String name, String displayName) {
 			this.id = id;
 			this.name = name;
+			this.displayName = displayName;
 		}
 
 		public static Significance fromString(String name) {
@@ -98,10 +125,22 @@ public class Score implements Comparable<Score> {
 			return id;
 		}
 
+        /**
+         * Gets name that has no spaces in it.
+         * Does not get translated.
+         */
 		public String getName() {
 			return name;
 		}
 
+        /**
+         * Gets display name that may have spaces and can be used in the UI.
+         * May return a translated version. 
+         */
+		public String getDisplayName() {
+			return displayName;
+		}
+			
 		@Override
 		public String toString() {
 			return name;
@@ -109,37 +148,38 @@ public class Score implements Comparable<Score> {
 	}
 
 	/**
-	 * Encapsulates confidence in the analysis technique's implementation on the conclusion.
-	 * Higher confidence implies fewer false positives. For example, an object detection
-     * result may have lower confidence than one based looking for a specific byte sequence. 
+	 * Encapsulates category of methods assigning significance.
+	 *
+	 * Significance assigned by a user overrides the significance assigned by
+	 * automated analysis.
+	 *
 	 */
-	public enum Confidence {
+	public enum MethodCategory {
 
-		NONE(0, "None"), //< Used with "Unknown" significance
-		LOWEST(10, "Lowest"), //< Very high false positive rates
-		LOW(20, "Low"),
-		MEDIUM(30, "Medium"), //< Some false positives
-		HIGH(40, "High"),   //< No false positives
-		HIGHEST(50, "Highest"); //< Reservied for examiner-tagged results. Human judgement overrules module results. 
+		// Name must not have any spaces.
+		AUTO(0, "Auto", bundle.getString("MethodCategory.Auto.displayName.text")),
+		USER_DEFINED(10, "UserDefined", bundle.getString("MethodCategory.UserDefined.displayName.text")); 
 
 		private final int id;
-		private final String name;
-
-		private Confidence(int id, String name) {
+		private final String name; 
+		private final String displayName;
+		
+		private MethodCategory(int id, String name, String displayName) {
 			this.id = id;
 			this.name = name;
+			this.displayName = displayName;
 		}
 
-		public static Confidence fromString(String name) {
+		public static MethodCategory fromString(String name) {
 			return Arrays.stream(values())
 					.filter(val -> val.getName().equals(name))
-					.findFirst().orElse(NONE);
+					.findFirst().orElse(AUTO);
 		}
 
-		static public Confidence fromID(int id) {
+		static public MethodCategory fromID(int id) {
 			return Arrays.stream(values())
 					.filter(val -> val.getId() == id)
-					.findFirst().orElse(NONE);
+					.findFirst().orElse(AUTO);
 		}
 
 		public int getId() {
@@ -150,38 +190,42 @@ public class Score implements Comparable<Score> {
 			return name;
 		}
 
+		public String getDisplayName() {
+			return displayName;
+		}
+		
 		@Override
 		public String toString() {
 			return name;
 		}
 	}
 
-	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Confidence.NONE);
+	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, MethodCategory.AUTO);
 	
-	// Score is a combination of significance and confidence.
+	// Score is a combination of significance and method category.
 	private final Significance significance;
-	private final Confidence confidence;
+	private final MethodCategory methodCategory;
 
-	public Score(Significance significance, Confidence confidence) {
+	public Score(Significance significance, MethodCategory methodCategory) {
 		this.significance = significance;
-		this.confidence = confidence;
+		this.methodCategory = methodCategory;
 	}
 
 	public Significance getSignificance() {
 		return significance;
 	}
 
-	public Confidence getConfidence() {
-		return confidence;
+	public MethodCategory getMethodCategory() {
+		return methodCategory;
 	}
 
 	@Override
 	public int compareTo(Score other) {
-		// A score is a combination of significance & confidence
-		// Higher confidence wins.  
-		// If two results have same confidence, then the higher significance wins
-		if (this.getConfidence() != other.getConfidence()) {
-			return this.getConfidence().ordinal() - other.getConfidence().ordinal();
+		// A score is a combination of significance & method category.
+		// Category UserDefined overrides Auto.
+		// If two results have same method category, then the higher significance wins.
+		if (this.getMethodCategory() != other.getMethodCategory()) {
+			return this.getMethodCategory().ordinal() - other.getMethodCategory().ordinal();
 		} else {
 			return this.getSignificance().ordinal() - other.getSignificance().ordinal();
 		}

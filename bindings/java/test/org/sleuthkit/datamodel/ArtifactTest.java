@@ -176,19 +176,19 @@ public class ArtifactTest {
         
 		// Test: attach an analysis result to the file. 
 		AnalysisResultAdded analysisResultAdded1 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), 
-																		new Score(Score.Significance.MEDIUM, Score.Confidence.HIGH), "Keyword hit found", "", "", attributes);
+																		new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Keyword hit found", "", "", attributes);
    
-		assertEquals(Score.Significance.MEDIUM.getId(), analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId());
-		assertEquals(Score.Confidence.HIGH.getId(), analysisResultAdded1.getAnalysisResult().getScore().getConfidence().getId());
+		assertEquals( Score.Significance.LIKELY_NOTABLE.getId(), analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId());
+		assertEquals(Score.MethodCategory.AUTO.getId(), analysisResultAdded1.getAnalysisResult().getScore().getMethodCategory().getId());
 		assertTrue(analysisResultAdded1.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"));
 		
 		// Add a 2nd analysis result to the same file
 		AnalysisResultAdded analysisResultAdded2 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
-																	new Score(Score.Significance.LOW, Score.Confidence.LOW), "Thats a rather intersting file.", "", "", Collections.emptyList());
+																	new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Thats a rather intersting file.", "", "", Collections.emptyList());
    
 		// Add a 3rd analysis result to the same file 
 		AnalysisResultAdded analysisResultAdded3 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED), 
-																	new Score(Score.Significance.HIGH, Score.Confidence.HIGH), "Highly scrambled text!!", "", "", Collections.emptyList());
+																	new Score(Score.Significance.NOTABLE, Score.MethodCategory.AUTO), "Highly scrambled text!!", "", "", Collections.emptyList());
 		// get analysis results and verify count
 		
 		List<AnalysisResult> ars = abcTextFile.getAllAnalysisResults();
@@ -196,8 +196,8 @@ public class ArtifactTest {
 		
 		// verify the aggregate score - expect HIGH/HIGH - highest of the 3 results added
 		Score aggScore = abcTextFile.getAggregateScore();
-		assertEquals(Score.Significance.HIGH.getId(), aggScore.getSignificance().getId());
-		assertEquals(Score.Confidence.HIGH.getId(), aggScore.getConfidence().getId());
+		assertEquals(Score.Significance.NOTABLE.getId(), aggScore.getSignificance().getId());
+		assertEquals(Score.MethodCategory.AUTO.getId(), aggScore.getMethodCategory().getId());
 		
 		// delete an anlysis result 3
 		Score newScore = caseDB.getBlackboard().deleteAnalysisResult(analysisResultAdded3.getAnalysisResult());
@@ -208,8 +208,8 @@ public class ArtifactTest {
 		
 		// verify aggregate score - should now be Medium/High
 		Score newAggScore = abcTextFile.getAggregateScore();
-		assertEquals(Score.Significance.MEDIUM.getId(), newAggScore.getSignificance().getId());
-		assertEquals(Score.Confidence.HIGH.getId(), newAggScore.getConfidence().getId());
+		assertEquals(Score.Significance.LIKELY_NOTABLE.getId(), newAggScore.getSignificance().getId());
+		assertEquals(Score.MethodCategory.AUTO.getId(), newAggScore.getMethodCategory().getId());
 		
 		
 		// Test: add a new data artifact to the file
