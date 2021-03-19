@@ -75,20 +75,28 @@ public class Score implements Comparable<Score> {
 	public enum Significance {
 
 		// Enum name must not have any spaces.
+
+        /* Notes on the ordinal numbers: We defined these so that we could easily
+         * compare values while also have some concept of grouping. 
+         * The 1x values are a higher confidence than the 0x files.
+         * NOTABLE (x9) has priority over NOT NOTABLE (x8). 
+         * If we need to make this more complicated in the future, we can add
+         * other groupings, such as 14 and 15. 
+         */
 		
-		// no significance assigned yet.
+		/// no significance assigned yet.
 		UNKNOWN(0, "Unknown", bundle.getString("Significance.Unknown.displayName.text")),	
 		
-		// likely good		
+		/// likely good		
 		LIKELY_NONE(8, "LikelyNone", bundle.getString("Significance.LikelyNone.displayName.text")),
 		
-		// likely bad, suspicious
+		/// likely bad, suspicious
 		LIKELY_NOTABLE(9, "LikelyNotable", bundle.getString("Significance.LikelyNotable.displayName.text")),	
 		
-		// good
+		/// good
 		NONE(18, "None", bundle.getString("Significance.LikelyNotable.displayName.text")),		
 		
-		// bad
+		/// bad
 		NOTABLE(19, "Notable", bundle.getString("Significance.LikelyNotable.displayName.text"));				
 		
 		private final int id;
@@ -117,10 +125,18 @@ public class Score implements Comparable<Score> {
 			return id;
 		}
 
+        /**
+         * Gets name that has no spaces in it.
+         * Does not get translated.
+         */
 		public String getName() {
 			return name;
 		}
 
+        /**
+         * Gets display name that may have spaces and can be used in the UI.
+         * May return a translated version. 
+         */
 		public String getDisplayName() {
 			return displayName;
 		}
