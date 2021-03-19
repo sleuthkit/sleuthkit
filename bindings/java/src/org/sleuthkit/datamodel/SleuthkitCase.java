@@ -66,9 +66,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
-import org.sleuthkit.datamodel.BlackboardArtifact.Category;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
@@ -5161,20 +5161,26 @@ public class SleuthkitCase {
 				resultSet.next();
 				artifactID = resultSet.getLong(1); //last_insert_rowid()
 
-				// add a row in tsk_analysis_results table
-				PreparedStatement analysisResultsStatement;
+				// add a row in tsk_analysis_results if any data for it is set
+				if (score.getSignificance() != Score.Significance.UNKNOWN
+						|| !StringUtils.isBlank(conclusion)
+						|| !StringUtils.isBlank(configuration)
+						|| !StringUtils.isBlank(justification)) {
+						
+					PreparedStatement analysisResultsStatement;
 
-				analysisResultsStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ANALYSIS_RESULT);
-				analysisResultsStatement.clearParameters();
+					analysisResultsStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ANALYSIS_RESULT);
+					analysisResultsStatement.clearParameters();
 
-				analysisResultsStatement.setLong(1, artifactObjId);
-				analysisResultsStatement.setString(2, (conclusion != null) ? conclusion : "");
-				analysisResultsStatement.setInt(3, score.getSignificance().getId());
-				analysisResultsStatement.setInt(4, score.getMethodCategory().getId());
-				analysisResultsStatement.setString(5, (configuration != null) ? configuration : "");
-				analysisResultsStatement.setString(6, (justification != null) ? justification : "");
+					analysisResultsStatement.setLong(1, artifactObjId);
+					analysisResultsStatement.setString(2, (conclusion != null) ? conclusion : "");
+					analysisResultsStatement.setInt(3, score.getSignificance().getId());
+					analysisResultsStatement.setInt(4, score.getMethodCategory().getId());
+					analysisResultsStatement.setString(5, (configuration != null) ? configuration : "");
+					analysisResultsStatement.setString(6, (justification != null) ? justification : "");
 
-				connection.executeUpdate(analysisResultsStatement);
+					connection.executeUpdate(analysisResultsStatement);
+				}
 
 				return new AnalysisResult(this, artifactID, objId, artifactObjId, dataSourceObjId, artifactType.getTypeID(),
 						artifactType.getTypeName(), artifactType.getDisplayName(),
@@ -12426,10 +12432,7 @@ public class SleuthkitCase {
 		public CaseDbConnection getPooledConnection() throws SQLException {
 			// If the requesting thread already has an open transaction, the new connection may get SQLITE_BUSY errors. 
 			if (CaseDbTransaction.hasOpenTransaction(Thread.currentThread().getId())) {
-					if (! Thread.currentThread().getName().contains("ImageGallery")) {
 					logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()), new Throwable());
-
-				}
 			}
 			return new SQLiteConnection(getPooledDataSource().getConnection());
 		}

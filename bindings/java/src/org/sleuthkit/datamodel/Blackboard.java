@@ -172,7 +172,8 @@ public final class Blackboard {
 	 * @throws BlackboardException exception thrown if a critical error occurs
 	 *                             within TSK core
 	 */
-	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, 
+			String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
 		
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 			throw new BlackboardException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", artifactType.getTypeName()));
