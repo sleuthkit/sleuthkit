@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -172,7 +171,7 @@ public class OsAccountTest {
 	}
 		
 	@Test
-	public void mergeHostTests() throws TskCoreException {
+	public void mergeHostTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 		
 		// Host 1 will be merged into Host 2
 		String host1Name = "host1forHostMergeTest";
@@ -318,7 +317,7 @@ public class OsAccountTest {
 	}
 	
 	@Test 
-	public void mergeRealmsTests() throws TskCoreException {
+	public void mergeRealmsTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 		Host host = caseDB.getHostManager().createHost("mergeTestHost");
 		
 		String destRealmName = "mergeTestDestRealm";
@@ -469,7 +468,7 @@ public class OsAccountTest {
 	}
 	
 	@Test
-	public void osAccountRealmTests() throws TskCoreException {
+	public void osAccountRealmTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 		
 		try {
 		// TEST: create a DOMAIN realm 
@@ -538,7 +537,7 @@ public class OsAccountTest {
 	}
 	
 	@Test
-	public void basicOsAccountTests() throws TskCoreException {
+	public void basicOsAccountTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 
 		try {
 			//String ownerUid1 = "S-1-5-32-544"; // special short SIDS not handled yet
@@ -638,45 +637,13 @@ public class OsAccountTest {
 	
 	
 	@Test
-	public void windowsSpecialAccountTests() throws TskCoreException {
+	public void windowsSpecialAccountTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 
 		try {
 			
 			String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
 			
 			
-			
-			// TEST: create accounts with a "short" sid
-			{
-				String hostname1 = "host111";
-				Host host1 = caseDB.getHostManager().createHost(hostname1);
-
-				String realmName1 = "realmName111";
-				String sid1 = "S-1-5-32-544"; // builtin Administrators
-				String sid2 = "S-1-5-32-545"; //  builtin Users
-				String sid3 = "S-1-5-32-546"; //  builtin Guests
-				String realmAddr1 = "S-1-5-32";
-
-				OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(sid1, null, realmName1, host1, OsAccountRealm.RealmScope.UNKNOWN);
-				OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsAccount(sid2, null, realmName1, host1, OsAccountRealm.RealmScope.UNKNOWN);
-				OsAccount osAccount3 = caseDB.getOsAccountManager().createWindowsAccount(sid3, null, realmName1, host1, OsAccountRealm.RealmScope.UNKNOWN);
-
-				assertEquals(osAccount1.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
-				assertEquals(osAccount1.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true);
-				assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(sid1), true);
-
-				assertEquals(osAccount2.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
-				assertEquals(osAccount2.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true);
-				assertEquals(osAccount2.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(sid2), true);
-
-				assertEquals(osAccount3.getRealm().getRealmName().orElse("").equalsIgnoreCase(realmName1), true);
-				assertEquals(osAccount3.getRealm().getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true);
-				assertEquals(osAccount3.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(sid3), true);
-			}
-			
-			
-			
-		
 			// TEST create accounts with special SIDs on host2
 			{
 				String hostname2 = "host222";
@@ -745,6 +712,46 @@ public class OsAccountTest {
 				
 			}
 			
+			// TEST: create accounts with a invalid user SIDs - these should generate an exception
+			{
+				String hostname5 = "host555";
+				String realmName5 = "realmName555";
+				Host host5 = caseDB.getHostManager().createHost(hostname5);
+
+				try {
+					String sid1 = "S-1-5-32-544"; // builtin Administrators
+					OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(sid1, null, realmName5, host5, OsAccountRealm.RealmScope.UNKNOWN);
+					
+					// above should raise an exception
+					assertEquals(true, false);
+				}
+				catch (OsAccountManager.NotUserSIDException ex) {
+					// continue
+				}
+				
+				try {
+					String sid2 = "S-1-5-21-725345543-854245398-1060284298-512"; //  domain admins group
+					OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsAccount(sid2, null, realmName5, host5, OsAccountRealm.RealmScope.UNKNOWN);
+					
+					// above should raise an exception
+					assertEquals(true, false);
+				}
+				catch (OsAccountManager.NotUserSIDException ex) {
+					// continue
+				}
+				
+				try {
+					String sid3 = "S-1-1-0"; //  Everyone
+					OsAccount osAccount3 = caseDB.getOsAccountManager().createWindowsAccount(sid3, null, realmName5, host5, OsAccountRealm.RealmScope.UNKNOWN);
+					
+					// above should raise an exception
+					assertEquals(true, false);
+				}
+				catch (OsAccountManager.NotUserSIDException ex) {
+					// continue
+				}
+
+			}
 		}
 		
 		finally {
@@ -755,9 +762,9 @@ public class OsAccountTest {
 	
 	
 	@Test
-	public void osAccountInstanceTests() throws TskCoreException {
+	public void osAccountInstanceTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 
-		String ownerUid1 = "S-1-5-32-111111111-222222222-3333333333-0001";
+		String ownerUid1 = "S-1-5-21-111111111-222222222-3333333333-0001";
 		String realmName1 = "realm1111";
 
 		String hostname1 = "host1111";

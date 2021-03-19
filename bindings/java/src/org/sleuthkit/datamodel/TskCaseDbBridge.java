@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.OsAccountManager.NotUserSIDException;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
@@ -461,7 +462,7 @@ class TskCaseDbBridge {
                 // Exception firewall to prevent unexpected return to the native code
                 logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
             }
-        } catch (TskCoreException ex) {
+        } catch (TskCoreException | NotUserSIDException ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
             return -1;

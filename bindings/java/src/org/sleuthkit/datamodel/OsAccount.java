@@ -244,8 +244,10 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @return Returns true of the login name is set, false if the name was not
 	 *         changed.
+	 * @throws TskCoreException If there is an error setting the login name.
+	 * 
 	 */
-	public boolean setLoginName(String loginName) {
+	public boolean setLoginName(String loginName) throws TskCoreException {
 		if (this.loginName == null) {
 			this.loginName = loginName;
 			updateSignature();
@@ -262,8 +264,9 @@ public final class OsAccount extends AbstractContent {
 	 * 
 	 * @return Returns true of the unique id is set, false if the unique id was not
 	 *         changed.
+	 * @throws TskCoreException If there is an error setting the account unique id.
 	 */
-	public boolean setUniqueId(String uniqueId) {
+	public boolean setUniqueId(String uniqueId) throws TskCoreException {
 		if (this.uniqueId == null) {
 			this.uniqueId = uniqueId;
 			updateSignature();
@@ -505,8 +508,11 @@ public final class OsAccount extends AbstractContent {
 	
 	/**
 	 * Updates the account signature with unique id or name.
+	 *
+	 * @throws TskCoreException If there is an error updating the account
+	 *                          signature.
 	 */
-	private void updateSignature() {
+	private void updateSignature() throws TskCoreException {
 		signature = OsAccountManager.getAccountSignature(this.uniqueId, this.loginName);
 	}
 	
