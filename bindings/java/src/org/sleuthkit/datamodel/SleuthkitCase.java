@@ -4217,9 +4217,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the blackboard artifact with the given artifact id
+	 * Get the blackboard artifact with the given artifact id (artifact_id in blackboard_artifacts)
 	 *
-	 * @param artifactID artifact ID
+	 * @param artifactID artifact ID (artifact_id column)
 	 *
 	 * @return blackboard artifact
 	 *
@@ -5891,7 +5891,7 @@ public class SleuthkitCase {
 	/**
 	 * Get artifact from blackboard_artifacts table by its artifact_obj_id
 	 *
-	 * @param id id of the artifact in blackboard_artifacts table
+	 * @param id id of the artifact in blackboard_artifacts table (artifact_obj_id column)
 	 *
 	 * @return Artifact object populated, or null if not found.
 	 *
