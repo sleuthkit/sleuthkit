@@ -1107,20 +1107,17 @@ public final class Blackboard {
 									artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, 
 									osAccount, true);
 				
-				// Add a row in tsk_data_artifact
-				String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
-
-				statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
-				statement.clearParameters();
-
-				statement.setLong(1, artifact_obj_id);
+				// Add a row in tsk_data_artifact if the os account is present
 				if (osAccount != null) {
+					String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
+
+					statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
+					statement.clearParameters();
+
+					statement.setLong(1, artifact_obj_id);
 					statement.setLong(2, osAccount.getId());
-				} else {
-					statement.setNull(2, java.sql.Types.BIGINT);
+					connection.executeUpdate(statement);
 				}
-				
-				connection.executeUpdate(statement);
 
 				// if attributes are provided, add them to the artifact.
 				if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
