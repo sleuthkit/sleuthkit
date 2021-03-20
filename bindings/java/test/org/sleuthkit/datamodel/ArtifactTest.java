@@ -342,19 +342,19 @@ public class ArtifactTest {
 		artifactResults = caseDB.getBlackboardArtifacts(dataArtType.getTypeID());
 		assertEquals(dataArtifactCount, artifactResults.size());
 
-		// TEST: getBlackboardArtifacts(artifact type id, file id)
+        // TEST: getBlackboardArtifacts(artifact type id, file id)
         artifactResults = caseDB.getBlackboardArtifacts(dataArtType.getTypeID(), defTextFile.getId());
 		assertEquals(dataArtifactCount, artifactResults.size());
             
-		// TEST: getArtifacts(artifact type id, data source id)
+        // TEST: getArtifacts(artifact type id, data source id)
         artifactResults = caseDB.getBlackboard().getArtifacts(dataArtType.getTypeID(), fs.getDataSource().getId());
 		assertEquals(dataArtifactCount, artifactResults.size());
             
-		// TEST: getMatchingArtifacts(where clause)
+        // TEST: getMatchingArtifacts(where clause)
         artifactResults = caseDB.getMatchingArtifacts("WHERE artifact_type_id=" + dataArtType.getTypeID());
 		assertEquals(dataArtifactCount, artifactResults.size());
 		
-		// TEST: getBlackboardArtifact(artifactId) 
+        // TEST: getBlackboardArtifact(artifactId) 
 		art = caseDB.getBlackboardArtifact(dataArt1.getArtifactID());
 		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
 		art = caseDB.getBlackboardArtifact(dataArt2.getArtifactID());
