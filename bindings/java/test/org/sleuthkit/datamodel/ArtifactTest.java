@@ -102,7 +102,7 @@ public class ArtifactTest {
 	}
 	
 	@Test
-	public void artifactTests() throws TskCoreException {
+	public void artifactTests() throws TskCoreException, Blackboard.BlackboardException {
 
 		// first add a few files.
 		
@@ -142,7 +142,11 @@ public class ArtifactTest {
 		FsContent _abcTextFile = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "abc.txt", 0, 0,
 					TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
 					(short) 0, 200, 0, 0, 0, 0, null, null, "Text/Plain", true, _windows, null, null, Collections.emptyList(), trans);
-			
+		
+		// add another no attribute file to same folder
+		FsContent _defTextFile = caseDB.addFileSystemFile(dataSourceObjectId, fs.getId(), "def.txt", 0, 0,
+					TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC,
+					(short) 0, 200, 0, 0, 0, 0, null, null, "Text/Plain", true, _windows, null, null, Collections.emptyList(), trans);			
 		
 		// Add additional attributes to dllhosts file - within the same transaction. 
 		_dllhosts.addAttributes(fileAttributes2, trans);
@@ -178,7 +182,7 @@ public class ArtifactTest {
 		AnalysisResultAdded analysisResultAdded1 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), 
 																		new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Keyword hit found", "", "", attributes);
    
-		assertEquals( Score.Significance.LIKELY_NOTABLE.getId(), analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId());
+		assertEquals(Score.Significance.LIKELY_NOTABLE.getId(), analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId());
 		assertEquals(Score.MethodCategory.AUTO.getId(), analysisResultAdded1.getAnalysisResult().getScore().getMethodCategory().getId());
 		assertTrue(analysisResultAdded1.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"));
 		
@@ -237,11 +241,144 @@ public class ArtifactTest {
 		assertTrue(gpsArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
-		// TES: get all data artifacts of type TSK_YARA_HIT
+		// TEST: get all data artifacts of type TSK_YARA_HIT
 		List<DataArtifact> gpsAreaArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), image.getId());
 		assertEquals(2, gpsAreaArtifacts.size());
 		// verify the account on each
 		assertTrue(gpsAreaArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
 		assertTrue(gpsAreaArtifacts.get(1).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
+		
+		// Testing that artifacts created using the old methods and new methods are treated the same.
+		// Find the file def.text
+		List<AbstractFile> deftextfiles = caseDB.findFiles(fs.getDataSource(), "def.txt");
+		assertEquals(1, deftextfiles.size());
+	
+		AbstractFile defTextFile = deftextfiles.get(0);
+		
+		// Test analysis results.
+		// Using a custom analysis result to for additional test coverage
+		BlackboardArtifact.Type analysisArtType = caseDB.getBlackboard().getOrAddArtifactType("CUSTOM_ANALYSIS_RESULT", "Custom Analysis Result", BlackboardArtifact.Category.ANALYSIS_RESULT);
+
+		AnalysisResultAdded added0 = defTextFile.newAnalysisResult(analysisArtType, new Score(Score.Significance.UNKNOWN, Score.MethodCategory.AUTO), 
+				"", "", null, java.util.Collections.emptyList());
+		trans = caseDB.beginTransaction();
+		AnalysisResultAdded added1 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), Score.SCORE_UNKNOWN, 
+				"conclusion1", "config1", "justification1", java.util.Collections.emptyList(), trans);
+		AnalysisResultAdded added2 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), Score.SCORE_UNKNOWN, 
+				"", "", null, java.util.Collections.emptyList(), trans);
+		AnalysisResultAdded added3 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), Score.SCORE_UNKNOWN, 
+				"", "config3", null, java.util.Collections.emptyList(), trans);
+		AnalysisResultAdded added4 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), new Score(Score.Significance.NOTABLE, Score.MethodCategory.AUTO), 
+				"", "", null, java.util.Collections.emptyList(), trans);
+		trans.commit();
+		BlackboardArtifact bbArt2 = defTextFile.newArtifact(analysisArtType.getTypeID());
+		int analysisResultCount = 6;
+		
+		// TEST: getAnalysisResults(file id)
+		List<AnalysisResult> analysisResultResults = caseDB.getBlackboard().getAnalysisResults(defTextFile.getId());
+		assertEquals(analysisResultCount, analysisResultResults.size());
+
+		// TEST: getAnalysisResults(file id, artifact type)
+		analysisResultResults = caseDB.getBlackboard().getAnalysisResults(defTextFile.getId(), analysisArtType.getTypeID());
+		assertEquals(analysisResultCount, analysisResultResults.size());
+
+		// TEST: getAnalysisResultsWhere("obj_id = <file id>")
+		analysisResultResults = caseDB.getBlackboard().getAnalysisResultsWhere("obj_id=" + defTextFile.getId());
+		assertEquals(analysisResultCount, analysisResultResults.size());
+
+		// Test: getArtifacts(artifact type, data source id)
+		List<BlackboardArtifact> artifactResults = caseDB.getBlackboard().getArtifacts(analysisArtType.getTypeID(), fs.getDataSource().getId());
+		assertEquals(analysisResultCount, artifactResults.size());
+		
+		// TEST: getBlackboardArtifact(artifactId) 
+		BlackboardArtifact art = caseDB.getBlackboardArtifact(added0.getAnalysisResult().getArtifactID());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(added1.getAnalysisResult().getArtifactID());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(added2.getAnalysisResult().getArtifactID());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(added3.getAnalysisResult().getArtifactID());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(added4.getAnalysisResult().getArtifactID());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(bbArt2.getArtifactID());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+
+		// TEST: getArtifactById(artifact obj id)
+		art = caseDB.getArtifactById(added0.getAnalysisResult().getId());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(added1.getAnalysisResult().getId());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(added2.getAnalysisResult().getId());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(added3.getAnalysisResult().getId());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(added4.getAnalysisResult().getId());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(bbArt2.getId());
+		assertEquals(analysisArtType.getTypeID(), art.getArtifactTypeID());
+		
+		// Test data artifactst
+		// Using a custom data artifact to for additional test coverage
+		BlackboardArtifact.Type dataArtType = caseDB.getBlackboard().getOrAddArtifactType("CUSTOM_DATA_ARTIFACT", "Custom Data Artifact", BlackboardArtifact.Category.DATA_ARTIFACT);
+
+		// Create five data artifacts. Only three should create a row in tsk_data_artifacts.
+		DataArtifact dataArt1 = defTextFile.newDataArtifact(dataArtType, java.util.Collections.emptyList(), null);
+		DataArtifact dataArt2 = defTextFile.newDataArtifact(dataArtType, java.util.Collections.emptyList(), osAccount2);
+		BlackboardArtifact bbArt1 = defTextFile.newArtifact(dataArtType.getTypeID());
+		DataArtifact dataArt3 = defTextFile.newDataArtifact(dataArtType, java.util.Collections.emptyList(), osAccount2);
+		DataArtifact dataArt4 = caseDB.getBlackboard().newDataArtifact(dataArtType, defTextFile.getId(), fs.getDataSource().getId(), java.util.Collections.emptyList(), osAccount2);
+		int dataArtifactCount = 5;
+		
+		// TEST: getDataArtifacts(artifact type id)
+		List<DataArtifact> dataArtifactResults = caseDB.getBlackboard().getDataArtifacts(dataArtType.getTypeID());
+		assertEquals(dataArtifactCount, dataArtifactResults.size());
+            
+		// TEST: getDataArtifacts(artifact type id, data source id)
+		dataArtifactResults = caseDB.getBlackboard().getDataArtifacts(dataArtType.getTypeID(), fs.getDataSource().getId());
+		assertEquals(dataArtifactCount, dataArtifactResults.size());
+		
+		// TEST: getBlackboardArtifacts(artifact type id, data source id)
+		artifactResults = caseDB.getBlackboardArtifacts(dataArtType.getTypeID());
+		assertEquals(dataArtifactCount, artifactResults.size());
+
+		// TEST: getBlackboardArtifacts(artifact type id, file id)
+        artifactResults = caseDB.getBlackboardArtifacts(dataArtType.getTypeID(), defTextFile.getId());
+		assertEquals(dataArtifactCount, artifactResults.size());
+            
+		// TEST: getArtifacts(artifact type id, data source id)
+        artifactResults = caseDB.getBlackboard().getArtifacts(dataArtType.getTypeID(), fs.getDataSource().getId());
+		assertEquals(dataArtifactCount, artifactResults.size());
+            
+		// TEST: getMatchingArtifacts(where clause)
+        artifactResults = caseDB.getMatchingArtifacts("WHERE artifact_type_id=" + dataArtType.getTypeID());
+		assertEquals(dataArtifactCount, artifactResults.size());
+		
+		// TEST: getBlackboardArtifact(artifactId) 
+		art = caseDB.getBlackboardArtifact(dataArt1.getArtifactID());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(dataArt2.getArtifactID());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(bbArt1.getArtifactID());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(dataArt3.getArtifactID());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getBlackboardArtifact(dataArt4.getArtifactID());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		
+		// TEST: getArtifactById(artifact obj id)
+		art = caseDB.getArtifactById(dataArt1.getId());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(dataArt2.getId());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(bbArt1.getId());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(dataArt3.getId());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());
+		art = caseDB.getArtifactById(dataArt4.getId());
+		assertEquals(dataArtType.getTypeID(), art.getArtifactTypeID());	
+		
+		// TEST: getBlackboardArtifactsCount()
+		assertEquals(analysisResultCount + dataArtifactCount, caseDB.getBlackboardArtifactsCount(defTextFile.getId()));
 	}
 }

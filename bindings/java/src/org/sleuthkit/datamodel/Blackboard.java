@@ -222,10 +222,9 @@ public final class Blackboard {
 		try {
 			
 			CaseDbConnection connection = transaction.getConnection();
-
-			// delete the analysis result
-			String deleteSQL = " DELETE FROM tsk_analysis_results WHERE artifact_obj_id = ?";
-
+			
+		    // delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
+			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
 			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
 			deleteStatement.clearParameters();
 			deleteStatement.setLong(1, analysisResult.getId());
