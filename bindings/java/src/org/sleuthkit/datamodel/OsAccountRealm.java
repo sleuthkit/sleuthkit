@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Realm encapsulates the scope of an OsAccount. An account is unique within a realm.
@@ -258,7 +259,7 @@ public final class OsAccountRealm {
 	 * 
 	 */
 	public boolean setRealmName(String name) throws TskCoreException {
-		if (Objects.isNull(this.realmName) && Objects.nonNull(name)) {
+		if (StringUtils.isBlank(this.realmName) && StringUtils.isNotBlank(name)) {
 			this.realmName = name;
 			updateSignature();
 			this.isDirty = true;
@@ -279,7 +280,7 @@ public final class OsAccountRealm {
 	 * @throws TskCoreException If there is an error setting the realm address.
 	 */
 	public boolean setRealmAddr(String addr) throws TskCoreException {
-		if (Objects.isNull(this.realmAddr) && Objects.nonNull(addr)) {
+		if (StringUtils.isBlank(this.realmAddr) && StringUtils.isNotBlank(addr)) {
 			this.realmAddr = addr;
 			updateSignature();
 			this.isDirty = true;
@@ -291,11 +292,13 @@ public final class OsAccountRealm {
 	
 	/**
 	 * Get the dirty flag. Indicates whether the realm has any changes that need
-	 * to be updated in the database.
+	 * to be updated in the database. If it returns true,
+	 * {@link OsAccountRealmManager#updateRealm()} should be called to update
+	 * the realm.
 	 *
 	 * @return True if the object is dirty, false otherwise.
 	 */
-	boolean isDirty() {
+	public boolean isDirty() {
 		return isDirty;
 	}
 		
