@@ -70,7 +70,7 @@ final class WindowsAccountUtils {
 	);
 	
 	// SIDS that begin with a domain SID prefix and have on of these 
-	private static final String DOMAIN_SID_PREFIX = "S-1-5-21";	
+	private static final String DOMAIN_SID_PREFIX = "S-1-5";	
 	private static final Set<String> DOMAIN_GROUP_SID_SUFFIX = ImmutableSet.of(
 			"-512",		// Domain Admins
 			"-513",		// Domain Users
@@ -88,19 +88,6 @@ final class WindowsAccountUtils {
 			"-527",		// Enterprise Key Admins
 			
 			"-533",		// RAS and IAS Servers
-			
-			"-544",		// Administrators
-			"-545",		// Users
-			"-546",		// Guests
-			"-547",		// Power Users
-			"-548",		// Account Operators
-			"-549",		// Server Operators
-			
-			"-550",		// Print Operators
-			"-551",		// Backup Operators
-			"-552",		// Replicators
-			
-			"-582",		// Storage Replica Administrators
 			
 			// Windows 2008 and later
 			"-498",		// Enterprise Read-only Domain Controllers
