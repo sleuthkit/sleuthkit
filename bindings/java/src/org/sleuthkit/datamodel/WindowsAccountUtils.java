@@ -35,6 +35,7 @@ final class WindowsAccountUtils {
 	// We dont want to create "User" account for group SIDs.
 	// The lists here help us identify and weed out group SIDs when creating accounts.
 	private static final Set<String> GROUP_SIDS = ImmutableSet.of(
+			"S-1-0-0",	// Null SID
 			"S-1-1-0",	// Everyone
 			"S-1-2-0",	// Local - anyone who has logged on locally
 			"S-1-2-1",	// Console Logon
