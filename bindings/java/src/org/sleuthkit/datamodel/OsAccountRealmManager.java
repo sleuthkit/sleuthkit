@@ -235,7 +235,7 @@ public final class OsAccountRealmManager {
 	 * @throws TskCoreException If there is a database error or if a realm
      * already exists with that information. 
 	 */
-	OsAccountRealm updateRealm(OsAccountRealm realm) throws TskCoreException {
+	public OsAccountRealm updateRealm(OsAccountRealm realm) throws TskCoreException {
 		
 		// do nothing if the realm is not dirty.
 		if (!realm.isDirty()) {
