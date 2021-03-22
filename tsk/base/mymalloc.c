@@ -11,7 +11,7 @@
  * when an error occurs.
  */
 
-/*	The IBM Public Licence must be distributed with this software.
+/*	The IBM Public License must be distributed with this software.
 * AUTHOR(S)
 *	Wietse Venema
 *	IBM T.J. Watson Research
