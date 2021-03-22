@@ -51,7 +51,7 @@ public class EventTypeFilterTest {
 		EventTypeFilter instance = new EventTypeFilter(TimelineEventType.EMAIL);
 		assertEquals(TimelineEventType.EMAIL.getDisplayName(), instance.getDisplayName());
 		instance = new EventTypeFilter(TimelineEventType.ROOT_EVENT_TYPE);
-		assertEquals("Event Type", instance.getDisplayName());
+		assertEquals("Limit event types to", instance.getDisplayName());
 	}
 
 	/**

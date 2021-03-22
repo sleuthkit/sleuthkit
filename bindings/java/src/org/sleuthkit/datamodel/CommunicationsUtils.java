@@ -177,7 +177,7 @@ public final class CommunicationsUtils {
 	 * side to allow us to differentiate between app-specific identifiers and
 	 * email addresses. We realize that some emails can be sent within
 	 * enterprises without a ".', but that this is less common than encountering
-	 * app-specific identifiers of the form a@b.
+	 * app-specific identifiers of the form a(at)b.
 	 *
 	 * @param emailAddress String to check.
 	 *

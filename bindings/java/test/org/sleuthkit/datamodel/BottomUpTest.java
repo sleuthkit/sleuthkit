@@ -77,6 +77,10 @@ public class BottomUpTest {
 			String tempDirPath = dbFile.getAbsolutePath();
 			String dbPath = DataModelTestSuite.buildPath(tempDirPath, title, DataModelTestSuite.BTTMUP, ".db");
 			dbFile.delete();
+			if (dbFile.getParentFile() != null) {
+				dbFile.getParentFile().mkdirs();
+			}
+			
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
 			title = title + DataModelTestSuite.BTTMUP + ".txt";

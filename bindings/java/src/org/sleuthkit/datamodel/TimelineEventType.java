@@ -392,7 +392,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			getBundle().getString("MiscTypes.recentDocuments.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_RECENT_OBJECT),
-			new Type(TSK_DATETIME),
+			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_PATH));
 
 	TimelineEventType INSTALLED_PROGRAM = new TimelineEventArtifactTypeImpl(19,
@@ -468,7 +468,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			getBundle().getString("WebTypes.webFormAutoFill.name"),//NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_FORM_AUTOFILL),
-			new Type(TSK_DATETIME_ACCESSED),
+			new Type(TSK_DATETIME_CREATED),
 			artf -> {
 				final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
 				final BlackboardAttribute value = getAttributeSafe(artf, new Type(TSK_VALUE));
