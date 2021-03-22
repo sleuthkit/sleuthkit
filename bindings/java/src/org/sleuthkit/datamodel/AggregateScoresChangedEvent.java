@@ -34,7 +34,7 @@ final public class AggregateScoresChangedEvent implements TskDataSourceEvent, Ts
 		// ensure that all score changes have the same data source as the one in the event.
 		scoreChanges.stream()
 				.forEach(chg -> {
-					if (chg.getDataSourceObjectId() != dataSourceId) {
+					if (!chg.getDataSourceObjectId().equals(dataSourceId)) {
 						throw new IllegalArgumentException("ScoreChange datasource id does not match the datasource id of the event.");
 					}
 				});

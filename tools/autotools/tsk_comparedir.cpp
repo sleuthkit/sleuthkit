@@ -348,7 +348,6 @@ main(int argc, char **argv1)
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
     TSK_OFF_T pvol_block = 0;
-    const char * password = "";
     
 #ifdef WIN32
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
