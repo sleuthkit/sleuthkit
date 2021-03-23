@@ -18,15 +18,15 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,31 +37,30 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 /**
  *
- * Tests OsAccount apis.
+ * Tests to make sure timeline event types handle all artifacts with time-valued
+ * attributes.
  *
  */
 public class TimelineEventTypesTest {
-	
+
 	private static final Logger LOGGER = Logger.getLogger(TimelineEventTypesTest.class.getName());
 
-	public TimelineEventTypesTest (){
+	public TimelineEventTypesTest() {
 
 	}
-	
+
 	@BeforeClass
 	public static void setUpClass() {
-		
 	}
-
 
 	@AfterClass
 	public static void tearDownClass() {
-
 	}
-	
+
 	@Before
 	public void setUp() {
 	}
@@ -70,87 +69,133 @@ public class TimelineEventTypesTest {
 	public void tearDown() {
 	}
 
+	/**
+	 * Ensure all event display names exist.
+	 */
 	@Test
-	public void testAnEventTypeForEveryArtifact() {
-		// artifact types with no time-value attributes
-		Set<ARTIFACT_TYPE> artifactsWithNoTime = new HashSet<>(Arrays.asList(
-			ARTIFACT_TYPE.TSK_OBJECT_DETECTED,
-			ARTIFACT_TYPE.TSK_REMOTE_DRIVE,
-			ARTIFACT_TYPE.TSK_ACCOUNT,
-			ARTIFACT_TYPE.TSK_SIM_ATTACHED,
-			ARTIFACT_TYPE.TSK_DEVICE_INFO,
-			ARTIFACT_TYPE.TSK_HASHSET_HIT,
-			ARTIFACT_TYPE.TSK_DOWNLOAD_SOURCE,
-			ARTIFACT_TYPE.TSK_USER_CONTENT_SUSPECTED,
-			ARTIFACT_TYPE.TSK_TAG_ARTIFACT,
-			ARTIFACT_TYPE.TSK_WIFI_NETWORK_ADAPTER,
-			ARTIFACT_TYPE.TSK_CLIPBOARD_CONTENT,
-			ARTIFACT_TYPE.TSK_YARA_HIT,
-			ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE,
-			ARTIFACT_TYPE.TSK_KEYWORD_HIT,
-			ARTIFACT_TYPE.TSK_SPEED_DIAL_ENTRY,
-			ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT,
-			ARTIFACT_TYPE.TSK_CONTACT,
-			ARTIFACT_TYPE.TSK_EXTRACTED_TEXT,
-			ARTIFACT_TYPE.TSK_WEB_CATEGORIZATION,
-			ARTIFACT_TYPE.TSK_TAG_FILE,
-			ARTIFACT_TYPE.TSK_VERIFICATION_FAILED,
-			ARTIFACT_TYPE.TSK_GPS_AREA,
-			ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED,
-			ARTIFACT_TYPE.TSK_TOOL_OUTPUT,
-			ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED,
-			ARTIFACT_TYPE.TSK_GEN_INFO,
-			ARTIFACT_TYPE.TSK_FACE_DETECTED,
-			ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT,
-			ARTIFACT_TYPE.TSK_WEB_ACCOUNT_TYPE,
-			ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT,
-			ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED
-		));
-				
-		Set<Integer> eventArtifactTypeIds = getArtifactEvents()
-				.map((artEv) -> artEv.getArtifactTypeID())
-				.collect(Collectors.toSet());
-		
-		Set<BlackboardArtifact.ARTIFACT_TYPE> missingTypes = getArtifactTypes()
-				.filter((artType) -> !artifactsWithNoTime.contains(artType))
-				.filter((artType) -> !eventArtifactTypeIds.contains(artType.getTypeID()))
-				.collect(Collectors.toSet());
-		
-		String missingItems = missingTypes.stream().map((artType) -> artType.name()).collect(Collectors.joining(", "));
-		assertEquals("Expected no missing event types but received: " + missingItems, missingTypes.size(), 0);
+	public void testEventIdentifiersUnique() {
+		Set<String> identifiers = new HashSet<>();
+		Set<String> repeats = new HashSet<>();
+		Set<TimelineEventArtifactTypeImpl> nullDisplayNames = new HashSet<>();
+
+		getArtifactEvents().forEach((artEv) -> {
+			if (artEv.getDisplayName() == null) {
+				nullDisplayNames.add(artEv);
+			} else if (!identifiers.add(artEv.getDisplayName())) {
+				repeats.add(artEv.getDisplayName());
+			}
+		});
+
+		assertEquals("Expected no null display names", 0, nullDisplayNames.size());
+		assertEquals("Expected no repeats but received: " + repeats.stream().collect(Collectors.joining(", ")), 0, repeats.size());
 	}
-	
+
+	/**
+	 * Ensure all artifacts with time-valued attributes are represented without
+	 * duplicates.
+	 */
 	@Test
-	public void timelineTypesCoverAllArtifacts() {
-		// are we covering every artifact?
-		// are identifiers / artifacts unique?
-		// are we covering all time valued attributes for artifact?
-		// what happens to artifacts that fall through?
-		// are all filters visible and fiterable in ui?
+	public void testArtifactAttributeEvents() {
+		Map<ARTIFACT_TYPE, Set<ATTRIBUTE_TYPE>> mapping = new HashMap<>();
+		mapping.put(ARTIFACT_TYPE.TSK_PROG_NOTIFICATIONS, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED));
+		mapping.put(ARTIFACT_TYPE.TSK_RECENT_OBJECT, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED));
+		mapping.put(ARTIFACT_TYPE.TSK_SCREEN_SHOTS, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_BLUETOOTH_ADAPTER, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_CALENDAR_ENTRY, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_END, ATTRIBUTE_TYPE.TSK_DATETIME_START));
+		mapping.put(ARTIFACT_TYPE.TSK_DEVICE_ATTACHED, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_SERVICE_ACCOUNT, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
+		mapping.put(ARTIFACT_TYPE.TSK_DELETED_PROG, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME, ATTRIBUTE_TYPE.TSK_DATETIME_DELETED));
+		mapping.put(ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_USER_DEVICE_EVENT, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME, ATTRIBUTE_TYPE.TSK_DATETIME_END, ATTRIBUTE_TYPE.TSK_DATETIME_START));
+		mapping.put(ARTIFACT_TYPE.TSK_OS_ACCOUNT, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_FAIL, ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_HISTORY, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
+		mapping.put(ARTIFACT_TYPE.TSK_OS_INFO, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_GPS_ROUTE, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_MESSAGE, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_GPS_BOOKMARK, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_GPS_SEARCH, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_CACHE, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
+		mapping.put(ARTIFACT_TYPE.TSK_WIFI_NETWORK, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, ATTRIBUTE_TYPE.TSK_DATETIME_MODIFIED));
+		mapping.put(ARTIFACT_TYPE.TSK_METADATA_EXIF, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_COOKIE, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, ATTRIBUTE_TYPE.TSK_DATETIME_END));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_DOWNLOAD, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED));
+		mapping.put(ARTIFACT_TYPE.TSK_TL_EVENT, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_METADATA, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, ATTRIBUTE_TYPE.TSK_DATETIME_MODIFIED, ATTRIBUTE_TYPE.TSK_LAST_PRINTED_DATETIME));
+		mapping.put(ARTIFACT_TYPE.TSK_WEB_BOOKMARK, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
+		mapping.put(ARTIFACT_TYPE.TSK_BLUETOOTH_PAIRING, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME, ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED));
+		mapping.put(ARTIFACT_TYPE.TSK_INSTALLED_PROG, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME, ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
+		mapping.put(ARTIFACT_TYPE.TSK_BACKUP_EVENT, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME, ATTRIBUTE_TYPE.TSK_DATETIME_END, ATTRIBUTE_TYPE.TSK_DATETIME_START));
+		mapping.put(ARTIFACT_TYPE.TSK_CALLLOG, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME_END, ATTRIBUTE_TYPE.TSK_DATETIME_START));
+		mapping.put(ARTIFACT_TYPE.TSK_PROG_RUN, EnumSet.of(ATTRIBUTE_TYPE.TSK_DATETIME));
 
+		Map<Integer, ARTIFACT_TYPE> artTypeIds = Stream.of(ARTIFACT_TYPE.values())
+				.collect(Collectors.toMap((art) -> art.getTypeID(), (art) -> art));
 
-//		TimelineEventArtifactTypeImpl impl = null;
-//		impl.getA
+		Map<Integer, ATTRIBUTE_TYPE> attrTypeIds = Stream.of(ATTRIBUTE_TYPE.values())
+				.collect(Collectors.toMap((attr) -> attr.getTypeID(), (attr) -> attr));
+
+		Map<ARTIFACT_TYPE, Set<ATTRIBUTE_TYPE>> duplicates = new HashMap<>();
+		Map<ARTIFACT_TYPE, Set<ATTRIBUTE_TYPE>> timelineEventArtifacts = new HashMap<>();
+
+		getArtifactEvents().forEach((artEv) -> {
+			ARTIFACT_TYPE currArtType = artTypeIds.get(artEv.getArtifactTypeID());
+			ATTRIBUTE_TYPE curAttrType = attrTypeIds.get(artEv.getDateTimeAttributeType().getTypeID());
+			if (currArtType != null && curAttrType != null) {
+				// if adding for this artifact's set of attributes results in duplicate
+				if (!timelineEventArtifacts.computeIfAbsent(currArtType, (artType) -> new HashSet<>()).add(curAttrType)) {
+					duplicates.computeIfAbsent(currArtType, (artType) -> new HashSet<>()).add(curAttrType);
+				}
+			}
+		});
+
+		Map<ARTIFACT_TYPE, Set<ATTRIBUTE_TYPE>> notRepresentedInTimeline = new HashMap<>();
+		for (Entry<ARTIFACT_TYPE, Set<ATTRIBUTE_TYPE>> e : mapping.entrySet()) {
+			Set<ATTRIBUTE_TYPE> bbAttrs = new HashSet<>(e.getValue());
+			Set<ATTRIBUTE_TYPE> timelineEvtAttrs = timelineEventArtifacts.get(e.getKey());
+			timelineEvtAttrs = timelineEvtAttrs == null ? Collections.emptySet() : timelineEvtAttrs;
+
+			bbAttrs.removeAll(timelineEvtAttrs);
+			if (bbAttrs.size() > 0) {
+				notRepresentedInTimeline.put(e.getKey(), bbAttrs);
+			}
+		}
+
+		assertEquals("Expected all time valued attributes represented, but the following are not: "
+				+ notRepresentedInTimeline.toString(), 0, notRepresentedInTimeline.size());
+
+		assertEquals("Expected no repeats but received: " + duplicates.toString(), 0, duplicates.size());
 	}
-	
-	private Stream<BlackboardArtifact.ARTIFACT_TYPE> getArtifactTypes() {
-		return Stream.of(BlackboardArtifact.ARTIFACT_TYPE.values());
-	}
-	
+
+	/**
+	 * Recursively gathers all timeline event types for artifacts.
+	 *
+	 * @return Timeline event types for artifacts.
+	 */
 	private Stream<TimelineEventArtifactTypeImpl> getArtifactEvents() {
 		return getArtifactEvents(TimelineEventType.ROOT_EVENT_TYPE);
 	}
-	
+
+	/**
+	 * Recursively gathers all timeline event types for artifacts.
+	 *
+	 * @param type The parent type that will be checked and whose children will
+	 *             be checked.
+	 *
+	 * @return Timeline event types for artifacts.
+	 */
 	private Stream<TimelineEventArtifactTypeImpl> getArtifactEvents(TimelineEventType type) {
-		Stream<TimelineEventArtifactTypeImpl> thisItem = type instanceof TimelineEventArtifactTypeImpl ? 
-				Stream.of((TimelineEventArtifactTypeImpl) type) : 
-				Stream.empty();
-		
-		Stream<TimelineEventArtifactTypeImpl> children = type.getChildren() == null ? 
-				Stream.empty() : 
-				type.getChildren().stream()
+		Stream<TimelineEventArtifactTypeImpl> thisItem = type instanceof TimelineEventArtifactTypeImpl
+				? Stream.of((TimelineEventArtifactTypeImpl) type)
+				: Stream.empty();
+
+		Stream<TimelineEventArtifactTypeImpl> children = type.getChildren() == null
+				? Stream.empty()
+				: type.getChildren().stream()
 						.flatMap(t -> getArtifactEvents(t));
-		
+
 		return Stream.concat(thisItem, children);
 	}
 }
