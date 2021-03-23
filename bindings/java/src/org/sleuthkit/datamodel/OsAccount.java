@@ -249,7 +249,7 @@ public final class OsAccount extends AbstractContent {
 	 * 
 	 */
 	public boolean setLoginName(String loginName) throws TskCoreException {
-		if (this.loginName == null) {
+		if (StringUtils.isBlank(this.loginName) && StringUtils.isNotBlank(loginName)) {
 			this.loginName = loginName;
 			updateSignature();
 			this.isDirty = true;
@@ -323,7 +323,7 @@ public final class OsAccount extends AbstractContent {
 	 *         status was not changed.
 	 */
 	public boolean setOsAccountStatus(OsAccountStatus osAccountStatus) {
-		if (this.osAccountStatus == null) {
+		if ((this.osAccountStatus == null) && Objects.nonNull(osAccountStatus)) {
 			this.osAccountStatus = osAccountStatus;
 			this.isDirty = true;
 			return true;
