@@ -1,3 +1,10 @@
+/* This file contains decompression routines used by APFS and HFS
+ * It has one method derived from public domain ZLIB and others
+ * that are TSK-specific. 
+ *
+ * It would probably be cleaner to separate these into two files.
+ */
+
 #include "../libtsk.h"
 #include "tsk_fs_i.h"
 #include "decmpfs.h"
@@ -13,7 +20,13 @@
 
 /***************** ZLIB stuff *******************************/
 
-// Adapted from zpipe.c (part of zlib) at http://zlib.net/zpipe.c
+/* The zlib_inflate method is adapted from the public domain
+ * zpipe.c (part of zlib) at http://zlib.net/zpipe.c
+ *
+ * zpipe.c: example of proper use of zlib's inflate() and deflate()
+ * Not copyrighted -- provided to the public domain
+ * Version 1.4  11 December 2005  Mark Adler */
+
 #define CHUNK 16384
 
 /*
@@ -139,6 +152,20 @@ zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uin
 }
 
 #endif
+
+
+
+/********************* TSK STUFF **********************/
+
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 
 typedef struct {
     uint32_t offset;

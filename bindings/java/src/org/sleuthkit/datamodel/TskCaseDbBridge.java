@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.OsAccountManager.NotUserSIDException;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
@@ -375,15 +376,20 @@ class TskCaseDbBridge {
 					}
 
 					// query the DB to get the owner account
-					Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getWindowsAccount(ownerUid, null, null, imageHost);
-					if (ownerAccount.isPresent()) {
-						// found account - add to map 
-						ownerIdToAccountMap.put(ownerUid, ownerAccount.get());
-					} else {
-						// account not found in the database,  create the account and add to map
-						// Currently we expect only NTFS systems to provide a windows style SID as owner id.
-						OsAccount newAccount = caseDb.getOsAccountManager().createWindowsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
-						ownerIdToAccountMap.put(ownerUid, newAccount);
+					try {
+						Optional<OsAccount> ownerAccount = caseDb.getOsAccountManager().getWindowsAccount(ownerUid, null, null, imageHost);
+						if (ownerAccount.isPresent()) {
+							// found account - add to map 
+							ownerIdToAccountMap.put(ownerUid, ownerAccount.get());
+						} else {
+							// account not found in the database,  create the account and add to map
+							// Currently we expect only NTFS systems to provide a windows style SID as owner id.
+							OsAccount newAccount = caseDb.getOsAccountManager().createWindowsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+							ownerIdToAccountMap.put(ownerUid, newAccount);
+						}
+					} catch (NotUserSIDException ex) {
+						// if the owner SID is not a user SID, set the owner account to null
+						ownerIdToAccountMap.put(ownerUid, null);
 					}
 				}
 			}
@@ -403,9 +409,12 @@ class TskCaseDbBridge {
 					Long ownerAccountObjId = OsAccount.NO_ACCOUNT;
 					if (Strings.isNullOrEmpty(fileInfo.ownerUid) == false) { 
 						if (ownerIdToAccountMap.containsKey(fileInfo.ownerUid)) {
-							ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
+							// for any non user SIDs, the map will have a null for account
+							if (Objects.nonNull(ownerIdToAccountMap.get(fileInfo.ownerUid))) {
+							    ownerAccountObjId = ownerIdToAccountMap.get(fileInfo.ownerUid).getId();
+							}
 						} else {
-							// Error - owner should be in the map at this point!!
+							// Error - the map should have an account or a null at this point for the owner SID.
 							throw new TskCoreException(String.format("Failed to add file. Owner account not found for file with parent object ID: %d, name: %s, owner id: %s", fileInfo.parentObjId, fileInfo.name, fileInfo.ownerUid));
 						}
 					}

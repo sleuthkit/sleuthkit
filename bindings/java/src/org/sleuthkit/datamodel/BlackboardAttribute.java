@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2020 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -343,6 +343,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 *
 	 * @return The value as a string.
 	 */
+	@Override
 	public String getDisplayString() {
 		switch (getAttributeType().getValueType()) {
 			case DATETIME: {
@@ -351,7 +352,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 						BlackboardArtifact parent = getParentArtifact();
 						parentDataSourceID = parent.getDataSourceObjectID();
 					}
-					final Content dataSource = getCaseDatabase().getContentById(parentDataSourceID);
+					final Content dataSource = parentDataSourceID != null ? getCaseDatabase().getContentById(parentDataSourceID) : null;
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						// return the date/time string in the timezone associated with the datasource,
 						Image image = (Image) dataSource;
@@ -404,7 +405,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 *
 	 * @param parentDataSourceID The parent data source id.
 	 */
-	void setParentDataSourceID(long parentDataSourceID) {
+	void setParentDataSourceID(Long parentDataSourceID) {
 		this.parentDataSourceID = parentDataSourceID;
 	}
 

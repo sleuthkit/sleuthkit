@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
+
 #pragma once
 
 #include <stdint.h>
@@ -7,6 +16,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Contains the structures and function APIs dealing with compressed files
+ * in APFS and HFS+ file systems.
+ */
 
 /*
  * If a file is compressed, then it will have an extended attribute

@@ -18,11 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Abstracts an OS user account. OS Accounts have a scope,
@@ -244,8 +245,10 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @return Returns true of the login name is set, false if the name was not
 	 *         changed.
+	 * @throws TskCoreException If there is an error setting the login name.
+	 * 
 	 */
-	public boolean setLoginName(String loginName) {
+	public boolean setLoginName(String loginName) throws TskCoreException {
 		if (this.loginName == null) {
 			this.loginName = loginName;
 			updateSignature();
@@ -262,9 +265,10 @@ public final class OsAccount extends AbstractContent {
 	 * 
 	 * @return Returns true of the unique id is set, false if the unique id was not
 	 *         changed.
+	 * @throws TskCoreException If there is an error setting the account unique id.
 	 */
-	public boolean setUniqueId(String uniqueId) {
-		if (this.uniqueId == null) {
+	public boolean setUniqueId(String uniqueId) throws TskCoreException {
+		if (StringUtils.isBlank(this.uniqueId)  && StringUtils.isNotBlank(uniqueId)) {
 			this.uniqueId = uniqueId;
 			updateSignature();
 			this.isDirty = true;
@@ -284,7 +288,7 @@ public final class OsAccount extends AbstractContent {
 	 *         changed.
 	 */
 	public boolean setFullName(String fullName) {
-		if (this.fullName == null) {
+		if (StringUtils.isBlank(this.fullName)  && StringUtils.isNotBlank(fullName)) {
 			this.fullName = fullName;
 			this.isDirty = true;
 			return true;
@@ -301,7 +305,7 @@ public final class OsAccount extends AbstractContent {
 	 *         type was not changed.
 	 */
 	public boolean setOsAccountType(OsAccountType osAccountType) {
-		if (this.osAccountType == null) {
+		if (Objects.isNull(this.osAccountType) && Objects.nonNull(osAccountType)) {
 			this.osAccountType = osAccountType;
 			this.isDirty = true;
 			return true;
@@ -337,7 +341,7 @@ public final class OsAccount extends AbstractContent {
 	 *         changed.
 	 */
 	public boolean setCreationTime(Long creationTime) {
-		if (this.creationTime == null) {
+		if (Objects.isNull(this.creationTime) && Objects.nonNull(creationTime)) {
 			this.creationTime = creationTime;
 			this.isDirty = true;
 			return true;
@@ -347,12 +351,14 @@ public final class OsAccount extends AbstractContent {
 
 	
 	/**
-	 * Get the dirty flag. Indicates whether the account has any changes that need
-	 * to be updated in the database.
+	 * Get the dirty flag. Indicates whether the account has any changes that
+	 * need to be updated in the database. If it returns true,
+	 * {@link OsAccountManager#updateAccount()} should be called to update the
+	 * account.
 	 *
 	 * @return True if the object is dirty, false otherwise.
 	 */
-	boolean isDirty() {
+	public boolean isDirty() {
 		return isDirty;
 	}
 	
@@ -505,8 +511,11 @@ public final class OsAccount extends AbstractContent {
 	
 	/**
 	 * Updates the account signature with unique id or name.
+	 *
+	 * @throws TskCoreException If there is an error updating the account
+	 *                          signature.
 	 */
-	private void updateSignature() {
+	private void updateSignature() throws TskCoreException {
 		signature = OsAccountManager.getAccountSignature(this.uniqueId, this.loginName);
 	}
 	
