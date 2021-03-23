@@ -172,7 +172,12 @@ public final class Blackboard {
 	 * @throws BlackboardException exception thrown if a critical error occurs
 	 *                             within TSK core
 	 */
-	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, 
+			String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
+		
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new BlackboardException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", artifactType.getTypeName()));
+		}
 		
 		try {
 			// add analysis result
@@ -197,7 +202,7 @@ public final class Blackboard {
 	/**
 	 * Delete the specified analysis result.
 	 *
-	 * Deletes the result from tsk_analysis_results table, and recalculates and
+	 * Deletes the result from blackboard_artifacts and tsk_analysis_results, and recalculates and
 	 * updates the aggregate score of the content. Fires an event to indicate that
 	 * the analysis result has been deleted and that the score of the item has
 	 * changed.
@@ -210,17 +215,44 @@ public final class Blackboard {
 	 */
 	public Score deleteAnalysisResult(AnalysisResult analysisResult) throws TskCoreException {
 
-		// get current score of the content for this result
-		Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID());
-		
 		CaseDbTransaction transaction = this.caseDb.beginTransaction();
 		try {
+			Score score = deleteAnalysisResult(analysisResult, transaction);
+			transaction.commit();
+			transaction = null;
 			
+			return score;
+		}  finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+		}
+	}
+	
+	/**
+	 * Delete the specified analysis result.
+	 *
+	 * Deletes the result from blackboard_artifacts and tsk_analysis_results, and recalculates and
+	 * updates the aggregate score of the content. 
+	 *
+	 * @param analysisResult AnalysisResult to delete.
+	 * @param transaction Transaction to use for database operations.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score deleteAnalysisResult(AnalysisResult analysisResult, CaseDbTransaction transaction) throws TskCoreException {
+
+		try {
 			CaseDbConnection connection = transaction.getConnection();
-
-			// delete the analysis result
-			String deleteSQL = " DELETE FROM tsk_analysis_results WHERE artifact_obj_id = ?";
-
+			
+			// get current score of the content for this result
+			Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID(), connection);
+			
+			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
+			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
+			
 			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
 			deleteStatement.clearParameters();
 			deleteStatement.setLong(1, analysisResult.getId());
@@ -240,37 +272,32 @@ public final class Blackboard {
 			
 			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, connection);
 
-			transaction.commit();
-			transaction = null;
-
-			// fire an event that an anaylsys result was deleted.  
-			caseDb.fireTSKEvent(new AnalysisResultDeletedEvent(analysisResult));
-
-			// fire an event to indicate aggregate score of a content changed.
-			Set<ScoreChange> scoreChanges = new HashSet<>();
-			scoreChanges.add(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
-			caseDb.fireTSKEvent(new AggregateScoresChangedEvent(analysisResult.getDataSourceObjectID(), ImmutableSet.copyOf(scoreChanges)));
-
+			// register the deleted result with the transaction so an event can be fired for it. 
+			transaction.registerDeletedAnalysisResult(analysisResult);
+			
+			// register the score change with the transaction so an event can be fired for it. 
+			transaction.registerScoreChange(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
+			
 			return newScore;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
-		} finally {
-			if (transaction != null) {
-				transaction.rollback();
-			}
-		}
+		} 
+
 	}
 	
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-				+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+				+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
 				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 				+ " arts.review_status_id AS review_status_id, " //NON-NLS
 				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.method_category AS method_category,  "
 				+ " results.configuration AS configuration,  results.justification AS justification "
-				+ " FROM blackboard_artifacts AS arts, tsk_analysis_results AS results, blackboard_artifact_types AS types " //NON-NLS
-				+ " WHERE arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
-				+ " AND arts.artifact_type_id = types.artifact_type_id"
-				+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
+				+ " FROM blackboard_artifacts AS arts "
+				+ " JOIN blackboard_artifact_types AS types " //NON-NLS
+				+ "		ON arts.artifact_type_id = types.artifact_type_id" //NON-NLS
+				+ " LEFT JOIN tsk_analysis_results AS results "
+				+ "		ON arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
+				+ " WHERE arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
+				+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
 	/**
 	 * Get all analysis results for a given object.
@@ -314,7 +341,8 @@ public final class Blackboard {
 	 */
 	public List<AnalysisResult> getAnalysisResults(long objId, int artifactTypeId) throws TskCoreException {
 		
-		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
+		// Get the artifact type to check that it in the analysis result category.
+		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeId);
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
 		}
@@ -343,7 +371,8 @@ public final class Blackboard {
 	
 //	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, int artifactTypeId) throws TskCoreException {
 //		
-//		BlackboardArtifact.Type artifactType = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.fromID(artifactTypeId));
+//		// Get the artifact type to check that it in the analysis result category.
+//		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeId);
 //		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 //			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
 //		}
@@ -396,7 +425,7 @@ public final class Blackboard {
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
 			return analysisResults;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting analysis results for WHERE caluse = '%s'", whereClause), ex);
+			throw new TskCoreException(String.format("Error getting analysis results for WHERE clause = '%s'", whereClause), ex);
 		}
 	}
 	
@@ -466,8 +495,8 @@ public final class Blackboard {
 				+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
 				+ " LEFT JOIN tsk_data_artifacts AS data_artifacts "
 				+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
-				+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID(); //NON-NLS
-	
+				+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
+				+ "     AND types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS
 	
 	/**
 	 * Get all data artifacts of a given type for a given data source.
@@ -481,6 +510,13 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<DataArtifact> getDataArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
+		
+		// Get the artifact type to check that it in the data artifact category.
+		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeID);
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type id %d is not in data artifact catgeory.", artifactTypeID));
+		}
+		
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = "artifacts.data_source_obj_id = " + dataSourceObjId
@@ -505,6 +541,12 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<DataArtifact> getDataArtifacts(int artifactTypeID) throws TskCoreException {
+		// Get the artifact type to check that it in the data artifact category.
+		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeID);
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type id %d is not in data artifact catgeory.", artifactTypeID));
+		}
+		
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause =  " artifacts.artifact_type_id = " + artifactTypeID;
@@ -1021,6 +1063,10 @@ public final class Blackboard {
 	 */
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
+		
+		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
+		}
 
 		CaseDbTransaction transaction = caseDb.beginTransaction();
 		try {
@@ -1081,20 +1127,17 @@ public final class Blackboard {
 									artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, 
 									osAccount, true);
 				
-				// Add a row in tsk_data_artifact
-				String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
-
-				statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
-				statement.clearParameters();
-
-				statement.setLong(1, artifact_obj_id);
+				// Add a row in tsk_data_artifact if the os account is present
 				if (osAccount != null) {
+					String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
+
+					statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
+					statement.clearParameters();
+
+					statement.setLong(1, artifact_obj_id);
 					statement.setLong(2, osAccount.getId());
-				} else {
-					statement.setNull(2, java.sql.Types.BIGINT);
+					connection.executeUpdate(statement);
 				}
-				
-				connection.executeUpdate(statement);
 
 				// if attributes are provided, add them to the artifact.
 				if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
