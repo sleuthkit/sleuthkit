@@ -210,14 +210,42 @@ public final class Blackboard {
 	 */
 	public Score deleteAnalysisResult(AnalysisResult analysisResult) throws TskCoreException {
 
-		// get current score of the content for this result
-		Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID());
-		
 		CaseDbTransaction transaction = this.caseDb.beginTransaction();
 		try {
+			Score score = deleteAnalysisResult(analysisResult, transaction);
 			
-			CaseDbConnection connection = transaction.getConnection();
+			transaction.commit();
+			transaction = null;
+			
+			return score;
+		}  finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+		}
+	}
+	
+	/**
+	 * Delete the specified analysis result.
+	 *
+	 * Deletes the result from tsk_analysis_results table, and recalculates and
+	 * updates the aggregate score of the content. 
+	 *
+	 * @param analysisResult AnalysisResult to delete.
+	 * @param transaction Transaction to use for database operations.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score deleteAnalysisResult(AnalysisResult analysisResult, CaseDbTransaction transaction) throws TskCoreException {
 
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			
+			// get current score of the content for this result
+			Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID(), connection);
+			
 			// delete the analysis result
 			String deleteSQL = " DELETE FROM tsk_analysis_results WHERE artifact_obj_id = ?";
 
@@ -240,25 +268,17 @@ public final class Blackboard {
 			
 			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, connection);
 
-			transaction.commit();
-			transaction = null;
-
-			// fire an event that an anaylsys result was deleted.  
-			caseDb.fireTSKEvent(new AnalysisResultDeletedEvent(analysisResult));
-
-			// fire an event to indicate aggregate score of a content changed.
-			Set<ScoreChange> scoreChanges = new HashSet<>();
-			scoreChanges.add(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
-			caseDb.fireTSKEvent(new AggregateScoresChangedEvent(analysisResult.getDataSourceObjectID(), ImmutableSet.copyOf(scoreChanges)));
-
+			// register the deleted result with the transaction so an event can be fired for it. 
+			transaction.registerDeletedAnalysisResult(analysisResult);
+			
+			// register the score change with the transaction so an event can be fired for it. 
+			transaction.registerScoreChange(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
+			
 			return newScore;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
-		} finally {
-			if (transaction != null) {
-				transaction.rollback();
-			}
-		}
+		} 
+
 	}
 	
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS

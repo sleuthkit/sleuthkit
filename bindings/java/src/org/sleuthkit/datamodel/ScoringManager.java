@@ -92,7 +92,7 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
+	Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT significance, method_category FROM tsk_aggregate_score WHERE obj_id = " + objId;
 
 		try {

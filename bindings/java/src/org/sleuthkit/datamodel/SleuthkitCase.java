@@ -12946,6 +12946,7 @@ public class SleuthkitCase {
 		private List<Host> hostsAdded = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
+		private List<AnalysisResult> deletedResults = new ArrayList<>();
 		
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
@@ -13016,6 +13017,16 @@ public class SleuthkitCase {
 		}
 		
 		/**
+		 * Saves an analysis result that has been deleted as a part of this transaction.
+		 * 
+		 * @param result Deleted result.
+		 */
+		void registerDeletedAnalysisResult(AnalysisResult result) {
+			if (result != null) {
+				this.deletedResults.add(result);
+			}
+		}
+		/**
 		 * Check if the given thread has an open transaction.
 		 * 
 		 * @param threadId Thread id to check for.
@@ -13061,6 +13072,9 @@ public class SleuthkitCase {
 				}
 				if (!accountsChanged.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsUpdateEvent(accountsChanged));
+				}
+				if (!deletedResults.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new  AnalysisResultsDeletedEvent(deletedResults));
 				}
 			}
 		}
