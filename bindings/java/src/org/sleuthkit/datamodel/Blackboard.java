@@ -271,7 +271,7 @@ public final class Blackboard {
 			// register the deleted result with the transaction so an event can be fired for it. 
 			transaction.registerDeletedAnalysisResult(analysisResult);
 			
-			// register the score change with the transaction so an even can be fored for it. 
+			// register the score change with the transaction so an event can be fired for it. 
 			transaction.registerScoreChange(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
 			
 			return newScore;
