@@ -381,5 +381,12 @@ public class ArtifactTest {
 		
 		// TEST: getBlackboardArtifactsCount()
 		assertEquals(analysisResultCount + dataArtifactCount, caseDB.getBlackboardArtifactsCount(defTextFile.getId()));
+		
+		
+		// set a file to unallocated.
+		caseDB.setFileUnalloc(abcTextFile);
+		assertTrue(abcTextFile.isDirNameFlagSet(TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC) == false);
+		assertTrue(abcTextFile.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC) == false);
+		assertTrue(abcTextFile.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.UNALLOC) == true);
 	}
 }
