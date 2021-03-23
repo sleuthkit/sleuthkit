@@ -12921,9 +12921,26 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Wraps the transactional capabilities of a CaseDbConnection object to
-	 * support use cases where control of a transaction is given to a
-	 * SleuthkitCase client. Note that this class does not implement the
+     * Allows callers to execute multiple database operations in a single
+     * transaction.  The usual motivations for this are for speed and
+     * atomicity. 
+     *
+     * WARNING: You need to be very careful when using this because it is
+     * easy to get the system into a deadlock when using a SQLite database. 
+     * For example, if you get this transaction, perform some inserts 
+     * (and you therefore have a write lock on the DB), and then need to
+     * query the database from the same thread.  If your query does not use
+     * this transaction, then it will get a new connection and will be 
+     * blocked by the connection that is held by the transaction. 
+     *
+     * If you are using CaseDbTransaction, you need to use only DB methods
+     * that also take in a transaction. We recommend that you preprocess
+     * as much as possible before getting the transaction to:
+     * - prevent deadlocks
+     * - hold on to the transaction for as little time as possible. 
+     *
+     * 
+	 * Note that this class does not implement the
 	 * Transaction interface because that sort of flexibility and its associated
 	 * complexity is not needed. Also, TskCoreExceptions are thrown to be
 	 * consistent with the outer SleuthkitCase class.
@@ -12939,14 +12956,18 @@ public class SleuthkitCase {
 		private final CaseDbConnection connection;
 		private SleuthkitCase sleuthkitCase;
 
-		// A collection of object score changes that ocuured as part of this transaction.
-		// When the transaction is committed, events are fired to notify any listeners.
+        /* This class can store information about what was 
+         * inserted as part of the transaction so that we can
+         * fire events after the data has been persisted. */
+
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>(); 
 		private List<Host> hostsAdded = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
-		
+	
+        // Keep track of which threads have connections to debug
+        // deadlocks 
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
 		
