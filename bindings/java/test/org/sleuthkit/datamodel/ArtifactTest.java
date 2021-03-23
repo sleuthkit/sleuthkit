@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -385,8 +386,8 @@ public class ArtifactTest {
 		
 		// set a file to unallocated.
 		caseDB.setFileUnalloc(abcTextFile);
-		assertTrue(abcTextFile.isDirNameFlagSet(TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC) == false);
-		assertTrue(abcTextFile.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC) == false);
-		assertTrue(abcTextFile.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.UNALLOC) == true);
+		assertFalse(abcTextFile.isDirNameFlagSet(TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC));
+		assertFalse(abcTextFile.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.ALLOC));
+		assertTrue(abcTextFile.isMetaFlagSet(TskData.TSK_FS_META_FLAG_ENUM.UNALLOC));
 	}
 }
