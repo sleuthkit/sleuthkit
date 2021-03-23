@@ -723,6 +723,7 @@ public final class OsAccountManager {
 				} catch (SQLException ex) {
 					throw new TskCoreException("Error executing SQL update: " + query, ex);
 				}
+				trans.registerChangedOsAccount(sourceAccount);
 			}
 		}
 	}
@@ -782,6 +783,7 @@ public final class OsAccountManager {
 					+ ", signature = '" + mergedSignature + "' " 
 					+ " WHERE os_account_obj_id = " + sourceAccount.getId();
 			s.executeUpdate(query);	
+			trans.registerDeletedOsAccount(sourceAccount);
 			
 			// Update the destination account. Note that this must be done after updating
 			// the source account to prevent conflicts when merging two accounts in the
@@ -1323,6 +1325,16 @@ public final class OsAccountManager {
 	private void fireChangeEvent(OsAccount account) {
 		db.fireTSKEvent(new OsAccountsUpdateEvent(Collections.singletonList(account)));
 	}
+	
+	/**
+	 * Fires an OsAccountDeleteEvent for the given OsAccount.
+	 * Do not call this with an open transaction.
+	 *
+	 * @param account Deleted account.
+	 */
+	private void fireDeleteEvent(OsAccount account) {
+		db.fireTSKEvent(new OsAccountsDeleteEvent(Collections.singletonList(account)));
+	}	
 
 	/**
 	 * Created an account signature for an OS Account. This signature is simply
@@ -1396,6 +1408,33 @@ public final class OsAccountManager {
 
 		/**
 		 * Returns a list of the updated OsAccounts.
+		 *
+		 * @return List of OsAccounts.
+		 */
+		public List<OsAccount> getOsAcounts() {
+			return Collections.unmodifiableList(accountList);
+		}
+	}
+	
+	/**
+	 * Event fired by OsAccount Manager to indicate that an OsAccount was
+	 * deleted.
+	 */
+	public static final class OsAccountsDeleteEvent {
+
+		private final List<OsAccount> accountList;
+
+		/**
+		 * Constructs a new DeleteEvent
+		 *
+		 * @param accountList List newly deleted accounts.
+		 */
+		OsAccountsDeleteEvent(List<OsAccount> accountList) {
+			this.accountList = accountList;
+		}
+
+		/**
+		 * Returns a list of the deleted OsAccounts.
 		 *
 		 * @return List of OsAccounts.
 		 */
