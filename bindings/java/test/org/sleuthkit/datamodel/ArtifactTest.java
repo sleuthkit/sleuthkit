@@ -102,7 +102,7 @@ public class ArtifactTest {
 	}
 	
 	@Test
-	public void artifactTests() throws TskCoreException {
+	public void artifactTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 
 		// first add a few files.
 		
@@ -153,14 +153,14 @@ public class ArtifactTest {
 		// Create a host and an account.
 		String hostname1 = "host1";
 		String realmName1 = "realm1";
-		String ownerUid1 = "S-1-5-32-111111111-222222222-3333333333-0001";
+		String ownerUid1 = "S-1-5-21-111111111-222222222-3333333333-0001";
 
 		Host host1 = caseDB.getHostManager().createHost(hostname1);
 		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// create a 2nd account on the same host
-		String ownerUid2 = "S-1-5-32-111111111-222222222-3333333333-0009";
+		String ownerUid2 = "S-1-5-21-111111111-222222222-3333333333-0009";
 		OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid2, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 		
 		

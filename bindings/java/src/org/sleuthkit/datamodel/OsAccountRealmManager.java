@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,7 +27,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence;
@@ -40,25 +39,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
  * host with local accounts or a domain. 
  */
 public final class OsAccountRealmManager {
-	
-	// Some windows SID indicate special account.
-	// These should be handled differently from regular user accounts.
-	private static final Set<String> SPECIAL_SIDS = ImmutableSet.of(
-			"S-1-5-18",	// LOCAL_SYSTEM_ACCOUNT
-			"S-1-5-19", // LOCAL_SERVICE_ACCOUNT
-			"S-1-5-20" // NETWORK_SERVICE_ACCOUNT
-	);
-	private static final Set<String> SPECIAL_SID_PREFIXES = ImmutableSet.of(
-			"S-1-5-80",	// Virtual Service accounts
-			"S-1-5-82", // AppPoolIdentity Virtual accounts. 
-			"S-1-5-83", // Virtual Machine  Virtual Accounts.
-			"S-1-5-90", // Windows Manager Virtual Accounts. 
-			"S-1-5-96" // Font Drive Host Virtual Accounts.
-			);
-	
-	// Special Windows Accounts with short SIDS are given a special realm "address".
-	private final static String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
-	
+
 	private static final Logger LOGGER = Logger.getLogger(OsAccountRealmManager.class.getName());
 
 	private final SleuthkitCase db;
@@ -74,29 +55,33 @@ public final class OsAccountRealmManager {
 	}
 		
 	/**
-	 * Create realm based on Windows information. The input SID is a user/group SID. The
-	 * domain SID is extracted from this incoming SID.
+	 * Create realm based on Windows information. The input SID is a user/group
+	 * SID.The domain SID is extracted from this incoming SID.
 	 *
-	 * @param accountSid    User/group SID. May be null only if name is not null.
+	 * @param accountSid    User/group SID. May be null only if name is not
+	 *                      null.
 	 * @param realmName     Realm name. May be null only if SID is not null.
 	 * @param referringHost Host where realm reference is found.
-	 * @param realmScope    Scope of realm. Use UNKNOWN if you are not sure and the 
-	 *                      method will try to detect the correct scope. 
+	 * @param realmScope    Scope of realm. Use UNKNOWN if you are not sure and
+	 *                      the method will try to detect the correct scope.
 	 *
 	 * @return OsAccountRealm.
-	 * 
-	 * @throws TskCoreException If there is an error creating the realm.
+	 *
+	 * @throws TskCoreException                     If there is an error
+	 *                                              creating the realm.
+	 * @throws OsAccountManager.NotUserSIDException If the SID is not a user
+	 *                                              SID.
 	 */
-	public OsAccountRealm createWindowsRealm(String accountSid, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException {
+	public OsAccountRealm createWindowsRealm(String accountSid, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, OsAccountManager.NotUserSIDException {
 
 		if (realmScope == null) {
-			throw new IllegalArgumentException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
+			throw new TskCoreException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
 		}
 		if (referringHost == null) {
-			throw new IllegalArgumentException("A referring host is required to create a realm.");
+			throw new TskCoreException("A referring host is required to create a realm.");
 		}
-		if (Strings.isNullOrEmpty(accountSid) && Strings.isNullOrEmpty(realmName)) {
-			throw new IllegalArgumentException("Either an address or a name is required to create a realm.");
+		if (StringUtils.isBlank(accountSid) && StringUtils.isBlank(realmName)) {
+			throw new TskCoreException("Either an address or a name is required to create a realm.");
 		}
 		
 		Host scopeHost;
@@ -130,10 +115,15 @@ public final class OsAccountRealmManager {
 		// get windows realm address from sid
 		String realmAddr = null;
 		if (!Strings.isNullOrEmpty(accountSid)) {
-			realmAddr = getWindowsRealmAddress(accountSid);
+			
+			if (!WindowsAccountUtils.isWindowsUserSid(accountSid)) {
+				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", accountSid ));
+			}
+			
+			realmAddr = WindowsAccountUtils.getWindowsRealmAddress(accountSid);
 			
 			// if the account is special windows account, create a local realm for it.
-			if (realmAddr.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
+			if (realmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR)) {
 				scopeHost = referringHost;
 				scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;
 			}
@@ -146,27 +136,31 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Get a windows realm by the account SID, or the domain name.
-	 * The input SID is an user/group account SID. The domain SID is extracted from this incoming SID.
-	 * 
-	 * @param accountSid  Account SID, may be null.
-	 * @param realmName   Realm name, may be null only if accountSid is not
-	 *                    null.
+	 * Get a windows realm by the account SID, or the domain name. The input SID
+	 * is an user/group account SID. The domain SID is extracted from this
+	 * incoming SID.
+	 *
+	 * @param accountSid    Account SID, may be null.
+	 * @param realmName     Realm name, may be null only if accountSid is not
+	 *                      null.
 	 * @param referringHost Referring Host.
-	 * 
-	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
-	 * 
+	 *
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm
+	 *         is found.
+	 *
 	 * @throws TskCoreException
+	 * @throws OsAccountManager.NotUserSIDException If the SID is not a user
+	 *                                              SID.
 	 */
-	public Optional<OsAccountRealm> getWindowsRealm(String accountSid, String realmName, Host referringHost) throws TskCoreException {
+	public Optional<OsAccountRealm> getWindowsRealm(String accountSid, String realmName, Host referringHost) throws TskCoreException, OsAccountManager.NotUserSIDException {
 		
 		if (referringHost == null) {
-			throw new IllegalArgumentException("A referring host is required get a realm.");
+			throw new TskCoreException("A referring host is required get a realm.");
 		}
 		
 		// need at least one of the two, the addr or name to look up
 		if (Strings.isNullOrEmpty(accountSid) && Strings.isNullOrEmpty(realmName)) {
-			throw new IllegalArgumentException("Realm address or name is required get a realm.");
+			throw new TskCoreException("Realm address or name is required get a realm.");
 		}
 		
 		try (CaseDbConnection connection = this.db.getConnection()) {
@@ -189,21 +183,25 @@ public final class OsAccountRealmManager {
 	 * 
 	 * @throws TskCoreException
 	 */
-	Optional<OsAccountRealm> getWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException {
+	Optional<OsAccountRealm> getWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException, OsAccountManager.NotUserSIDException {
 		
 		if (referringHost == null) {
-			throw new IllegalArgumentException("A referring host is required get a realm.");
+			throw new TskCoreException("A referring host is required get a realm.");
 		}
 		
 		// need at least one of the two, the addr or name to look up
-		if (Strings.isNullOrEmpty(accountSid) && Strings.isNullOrEmpty(realmName)) {
-			throw new IllegalArgumentException("Realm address or name is required get a realm.");
+		if (StringUtils.isBlank(accountSid) && StringUtils.isBlank(realmName)) {
+			throw new TskCoreException("Realm address or name is required get a realm.");
 		}
 		
 		// If an accountSID is provided search for realm by addr.
 		if (!Strings.isNullOrEmpty(accountSid)) {
+			
+			if (!WindowsAccountUtils.isWindowsUserSid(accountSid)) {
+				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", accountSid ));
+			}
 			// get realm addr from the account SID.
-			String realmAddr = getWindowsRealmAddress(accountSid);
+			String realmAddr = WindowsAccountUtils.getWindowsRealmAddress(accountSid);
 			Optional<OsAccountRealm> realm = getRealmByAddr(realmAddr, referringHost, connection);
 			if (realm.isPresent()) {
 				return realm;
@@ -453,7 +451,7 @@ public final class OsAccountRealmManager {
 				+ " WHERE realms.scope_host_id = " + host.getId()
 				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
-				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ SPECIAL_WINDOWS_REALM_ADDR + "') ";
+				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR + "') ";
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -601,52 +599,6 @@ public final class OsAccountRealmManager {
 		}
 	}
 	
-	/**
-	 * Get the windows realm address from the given SID.
-	 * 
-	 * For all regular account SIDs, the realm address is the sub-authority SID.
-	 * For special Windows account the realm address is a special address.
-	 * 
-	 * @param sid SID
-	 * 
-	 * @return Realm address for the SID.
-	 */
-	private String getWindowsRealmAddress(String sid) {
-		
-		String realmAddr;
-		
-		if (isWindowsSpecialSid(sid)) {
-			realmAddr = SPECIAL_WINDOWS_REALM_ADDR;
-		} else {
-			// regular SIDs should have at least 5 components: S-1-x-y-z
-			if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 4) {
-				throw new IllegalArgumentException(String.format("Invalid SID %s for a host/domain", sid));
-			}
-			// get the sub authority SID
-			realmAddr = sid.substring(0, sid.lastIndexOf('-'));
-		}
-
-		return realmAddr;
-	}
-	
-	/**
-	 * Checks if the given SID is a special Windows SID.
-	 * 
-	 * @param sid SID to check.
-	 * 
-	 * @return True if the SID is a Windows special SID, false otherwise 
-	 */
-	private boolean isWindowsSpecialSid(String sid) {
-		if (SPECIAL_SIDS.contains(sid)) {
-			return true;
-		}
-		for (String specialPrefix: SPECIAL_SID_PREFIXES) {
-			if (sid.startsWith(specialPrefix)) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	/**
 	 * Makes a realm signature based on given realm address, name scope host.
@@ -661,12 +613,14 @@ public final class OsAccountRealmManager {
 	 * @param scopeHost Realm scope host. May be null.
 	 * 
 	 * @return Realm Signature.
+	 * 
+	 * @throws TskCoreException If there is an error making the signature.
 	 */
-	static String makeRealmSignature(String realmAddr, String realmName, Host scopeHost) {
+	static String makeRealmSignature(String realmAddr, String realmName, Host scopeHost) throws TskCoreException {
 
 		// need at least one of the two, the addr or name to look up
 		if (Strings.isNullOrEmpty(realmAddr) && Strings.isNullOrEmpty(realmName)) {
-			throw new IllegalArgumentException("Realm address and name can't both be null.");
+			throw new TskCoreException("Realm address and name can't both be null.");
 		}
 		
 		String signature = String.format("%s_%s", !Strings.isNullOrEmpty(realmAddr) ?  realmAddr : realmName,

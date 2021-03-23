@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -75,11 +76,11 @@ public final class OsAccountManager {
 
 		// ensure unique id is provided
 		if (Strings.isNullOrEmpty(uniqueAccountId)) {
-			throw new IllegalArgumentException("Cannot create OS account with null uniqueId.");
+			throw new TskCoreException("Cannot create OS account with null uniqueId.");
 		}
 
 		if (realm == null) {
-			throw new IllegalArgumentException("Cannot create OS account without a realm.");
+			throw new TskCoreException("Cannot create OS account without a realm.");
 		}
 
 		CaseDbTransaction trans = db.beginTransaction();
@@ -130,22 +131,22 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error in creating the OSAccount.
 	 *
 	 */
-	public OsAccount createWindowsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException {
+	public OsAccount createWindowsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
 
 		if (realmScope == null) {
-			throw new IllegalArgumentException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
+			throw new TskCoreException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
 		}
 		if (referringHost == null) {
-			throw new IllegalArgumentException("A referring host is required to create an account.");
+			throw new TskCoreException("A referring host is required to create an account.");
 		}
 
 		// ensure at least one of the two is supplied - unique id or a login name
-		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(loginName)) {
-			throw new IllegalArgumentException("Cannot create OS account with both uniqueId and loginName as null.");
+		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
 		}
 		// Realm name is required if the sid is null. 
-		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(realmName)) {
-			throw new IllegalArgumentException("Realm name or SID is required to create a Windows account.");
+		if (StringUtils.isBlank(sid) && StringUtils.isBlank(realmName)) {
+			throw new TskCoreException("Realm name or SID is required to create a Windows account.");
 		}
 
 		Optional<OsAccountRealm> realm;
@@ -213,12 +214,12 @@ public final class OsAccountManager {
 	 *
 	 * @return OS account.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is an error creating the account.
 	 */
 	private OsAccount createOsAccount(String uniqueId, String loginName, OsAccountRealm realm, OsAccount.OsAccountStatus accountStatus, CaseDbTransaction trans) throws TskCoreException, SQLException {
 
 		if (Objects.isNull(realm)) {
-			throw new IllegalArgumentException("Cannot create an OS Account, realm is NULL.");
+			throw new TskCoreException("Cannot create an OS Account, realm is NULL.");
 		}
 
 		String signature = getAccountSignature(uniqueId, loginName);
@@ -414,7 +415,6 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException         If there is an error getting the
 	 *                                  account.
-	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
 	public OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
 
@@ -433,7 +433,6 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException         If there is an error getting the
 	 *                                  account.
-	 * @throws IllegalArgumentException If no matching object id is found.
 	 */
 	OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
 
@@ -445,7 +444,7 @@ public final class OsAccountManager {
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			if (!rs.next()) {
-				throw new IllegalArgumentException(String.format("No account found with obj id = %d ", osAccountObjId));
+				throw new TskCoreException(String.format("No account found with obj id = %d ", osAccountObjId));
 			} else {
 
 				OsAccountRealm realm = null;
@@ -515,14 +514,14 @@ public final class OsAccountManager {
          * @param dataSource   Data source where the instance is found.
          * @param instanceType Instance type.
          *
-         * @throws TskCoreException
+         * @throws TskCoreException If there is an error creating the account instance.
          */
 	public void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 		if (osAccount == null) {
-			throw new IllegalArgumentException("Cannot create account instance with null account.");
+			throw new TskCoreException("Cannot create account instance with null account.");
 		}
 		if (dataSource == null) {
-			throw new IllegalArgumentException("Cannot create account instance with null data source.");
+			throw new TskCoreException("Cannot create account instance with null data source.");
 		}
 
 		// check cache first
@@ -545,15 +544,15 @@ public final class OsAccountManager {
 	 * @param instanceType Instance type.
 	 * @param connection   The current database connection.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is an error creating the account instance.
 	 */
 	void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 	
 		if (osAccount == null) {
-			throw new IllegalArgumentException("Cannot create account instance with null account.");
+			throw new TskCoreException("Cannot create account instance with null account.");
 		}
 		if (dataSource == null) {
-			throw new IllegalArgumentException("Cannot create account instance with null data source.");
+			throw new TskCoreException("Cannot create account instance with null data source.");
 		}
 
 		createOsAccountInstance(osAccount, dataSource.getId(), instanceType, connection);
@@ -568,13 +567,12 @@ public final class OsAccountManager {
 	 * @param instanceType Instance type.
 	 * @param connection   The current database connection.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If there is an error creating the account instance.
 	 */
 	void createOsAccountInstance(OsAccount osAccount, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 	
-		
 		if (osAccount == null) {
-			throw new IllegalArgumentException("Cannot create account instance with null account.");
+			throw new TskCoreException("Cannot create account instance with null account.");
 		}
 		
 		// check cache first
@@ -916,17 +914,18 @@ public final class OsAccountManager {
 	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount
 	 *         is found.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException    If there is an error getting the account.
+	 * @throws NotUserSIDException If the given SID is not a user SID.
 	 */
-	public Optional<OsAccount> getWindowsAccount(String sid, String loginName, String realmName, Host referringHost) throws TskCoreException {
+	public Optional<OsAccount> getWindowsAccount(String sid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
 
 		if (referringHost == null) {
-			throw new IllegalArgumentException("A referring host is required to get an account.");
+			throw new TskCoreException("A referring host is required to get an account.");
 		}
 
 		// ensure at least one of the two is supplied - sid or a login name
-		if (Strings.isNullOrEmpty(sid) && Strings.isNullOrEmpty(loginName)) {
-			throw new IllegalArgumentException("Cannot get an OS account with both SID and loginName as null.");
+		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot get an OS account with both SID and loginName as null.");
 		}
 
 		// first get the realm for the given sid
@@ -937,6 +936,10 @@ public final class OsAccountManager {
 
 		// search by SID
 		if (!Strings.isNullOrEmpty(sid)) {
+			if (!WindowsAccountUtils.isWindowsUserSid(sid)) {
+				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid ));
+			}
+			
 			return this.getOsAccountByUniqueId(sid, realm.get());
 		}
 
@@ -1331,8 +1334,10 @@ public final class OsAccountManager {
 	 * @param loginName Login name.
 	 *
 	 * @return Account signature.
+	 * 
+	 * @throws TskCoreException If there is an error creating the account signature.
 	 */
-	static String getAccountSignature(String uniqueId, String loginName) {
+	static String getAccountSignature(String uniqueId, String loginName) throws TskCoreException {
 		// Create a signature. 
 		String signature;
 		if (Strings.isNullOrEmpty(uniqueId) == false) {
@@ -1340,7 +1345,7 @@ public final class OsAccountManager {
 		} else if (Strings.isNullOrEmpty(loginName) == false) {
 			signature = loginName;
 		} else {
-			throw new IllegalArgumentException("OS Account must have either a uniqueID or a login name.");
+			throw new TskCoreException("OS Account must have either a uniqueID or a login name.");
 		}
 		return signature;
 	}
@@ -1396,6 +1401,41 @@ public final class OsAccountManager {
 		 */
 		public List<OsAccount> getOsAcounts() {
 			return Collections.unmodifiableList(accountList);
+		}
+	}
+
+	/**
+	 * Exception thrown if a given SID is a valid SID but is a group SID, 
+	 * and not an individual user SID.
+	 */
+	public static class NotUserSIDException extends TskException {
+
+		private static final long serialVersionUID = 1L;
+
+		/**
+		 * Default constructor when error message is not available
+		 */
+		public NotUserSIDException() {
+			super("No error message available.");
+		}
+
+		/**
+		 * Create exception containing the error message
+		 *
+		 * @param msg the message
+		 */
+		public NotUserSIDException(String msg) {
+			super(msg);
+		}
+
+		/**
+		 * Create exception containing the error message and cause exception
+		 *
+		 * @param msg the message
+		 * @param ex  cause exception
+		 */
+		public NotUserSIDException(String msg, Exception ex) {
+			super(msg, ex);
 		}
 	}
 }
