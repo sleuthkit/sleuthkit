@@ -261,6 +261,10 @@ public final class OsAccountRealmManager {
 		if (!realm.isDirty()) {
 			return realm;
 		}		
+		
+		List<String> realmNames = realm.getRealmNames();
+		String realmName = realmNames.isEmpty() ? null : realmNames.get(0);
+			
 		db.acquireSingleUserCaseWriteLock();
 		try {
 			// We only alow realm addr, name and signature to be updated at this time. 
@@ -271,8 +275,8 @@ public final class OsAccountRealmManager {
 					+ " WHERE id = ?";
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
-
-			preparedStatement.setString(1, realm.getRealmName().orElse(null));
+			
+			preparedStatement.setString(1, realmName);
 			preparedStatement.setString(2, realm.getRealmAddr().orElse(null));
 			preparedStatement.setString(3, realm.getSignature()); // Is only set for active accounts
 			preparedStatement.setLong(4, realm.getId());
@@ -281,7 +285,7 @@ public final class OsAccountRealmManager {
 			realm.resetDirty();
 			return realm;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating realm with id = %d, name = %s, addr = %s", realm.getId(), realm.getRealmName().orElse("Null"), realm.getRealmAddr().orElse("Null") ), ex);
+			throw new TskCoreException(String.format("Error updating realm with id = %d, name = %s, addr = %s", realm.getId(), realmName != null ? realmName : "Null", realm.getRealmAddr().orElse("Null") ), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -655,8 +659,8 @@ public final class OsAccountRealmManager {
 		
 		// Look for a matching realm by name
 		Optional<OsAccountRealm> optDestRealmName = Optional.empty();
-		if (sourceRealm.getRealmName().isPresent()) {
-			optDestRealmName = db.getOsAccountRealmManager().getRealmByName(sourceRealm.getRealmName().get(), destHost, trans.getConnection());
+		if (!sourceRealm.getRealmNames().isEmpty()) {
+			optDestRealmName = db.getOsAccountRealmManager().getRealmByName(sourceRealm.getRealmNames().get(0), destHost, trans.getConnection());
 		}
 		
 		// Decide how to proceed:
@@ -779,8 +783,8 @@ public final class OsAccountRealmManager {
 		if (!destRealm.getRealmAddr().isPresent() && sourceRealm.getRealmAddr().isPresent()) {
 			destRealm.setRealmAddr(sourceRealm.getRealmAddr().get());
 			updateRealm(destRealm, trans.getConnection());
-		} else if (!destRealm.getRealmName().isPresent() && sourceRealm.getRealmName().isPresent()) {
-			destRealm.setRealmName(sourceRealm.getRealmName().get());
+		} else if (destRealm.getRealmNames().isEmpty() && !sourceRealm.getRealmNames().isEmpty()) {
+			destRealm.setRealmName(sourceRealm.getRealmNames().get(0));
 			updateRealm(destRealm, trans.getConnection());
 		}
 	}

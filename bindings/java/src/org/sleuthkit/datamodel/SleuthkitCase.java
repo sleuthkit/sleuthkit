@@ -10101,6 +10101,50 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Sets the unalloc meta flags for the file in the case database, and updates
+	 * the meta flags in given file object. Also updates the dir flag to
+	 * unalloc.
+	 *
+	 * @param file A file.
+	 *
+	 *
+	 * @throws TskCoreException If there is an error updating the case database.
+	 */
+	public void setFileUnalloc(AbstractFile file) throws TskCoreException {
+		
+		// get the flags, reset the ALLOC flag, and set the UNALLOC flag
+		short metaFlag = file.getMetaFlagsAsInt();
+		Set<TSK_FS_META_FLAG_ENUM> metaFlagAsSet = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlag);
+		metaFlagAsSet.remove(TSK_FS_META_FLAG_ENUM.ALLOC);
+		metaFlagAsSet.add(TSK_FS_META_FLAG_ENUM.UNALLOC);
+		
+		short newMetaFlgs = TSK_FS_META_FLAG_ENUM.toInt(metaFlagAsSet);
+		short newDirFlags = TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue();
+		 
+		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		ResultSet rs = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			connection.executeUpdate(statement, String.format("UPDATE tsk_files SET meta_flags = '%d', dir_flags = '%d'  WHERE obj_id = %d", newMetaFlgs, newDirFlags, file.getId()));
+			
+			file.removeMetaFlag(TSK_FS_META_FLAG_ENUM.ALLOC);
+			file.setMetaFlag(TSK_FS_META_FLAG_ENUM.UNALLOC);
+			
+			file.setDirFlag(TSK_FS_NAME_FLAG_ENUM.UNALLOC);
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error setting unalloc meta flag for file (obj_id = %s)", file.getId()), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(statement);
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
 	 * Store the md5Hash for the file in the database
 	 *
 	 * @param	file    The file object
@@ -12432,7 +12476,10 @@ public class SleuthkitCase {
 		public CaseDbConnection getPooledConnection() throws SQLException {
 			// If the requesting thread already has an open transaction, the new connection may get SQLITE_BUSY errors. 
 			if (CaseDbTransaction.hasOpenTransaction(Thread.currentThread().getId())) {
+				// Temporarily filter out Image Gallery threads
+				if (!Thread.currentThread().getName().contains("ImageGallery")) {
 					logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()), new Throwable());
+				}
 			}
 			return new SQLiteConnection(getPooledDataSource().getConnection());
 		}

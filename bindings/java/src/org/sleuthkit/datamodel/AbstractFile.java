@@ -53,8 +53,8 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final TskData.TSK_DB_FILES_TYPE_ENUM fileType;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_META_TYPE_ENUM metaType;
-	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
-	protected final Set<TSK_FS_META_FLAG_ENUM> metaFlags;
+	protected TSK_FS_NAME_FLAG_ENUM dirFlag;
+	protected Set<TSK_FS_META_FLAG_ENUM> metaFlags;
 	protected long size;
 	protected final long metaAddr, ctime, crtime, atime, mtime;
 	protected final int metaSeq;
@@ -937,6 +937,15 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Set the directory name flag.
+	 * 
+	 * @param flag Flag to set to.
+	 */
+	void setDirFlag(TSK_FS_NAME_FLAG_ENUM flag) {
+		dirFlag = flag;
+	}
+	
+	/**
 	 * @return a string representation of the meta flags
 	 */
 	public String getMetaFlagsAsString() {
@@ -958,6 +967,34 @@ public abstract class AbstractFile extends AbstractContent {
 		return metaFlags.contains(metaFlag);
 	}
 
+	/**
+	 * Set the specified meta flag. 
+	 * 
+	 * @param metaFlag Meta flag to set
+	 */
+	void setMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
+		metaFlags.add(metaFlag);
+	}
+	
+	/**
+	 * Remove the specified meta flag.
+	 * 
+	 * @param metaFlag Meta flag to remove.
+	 */
+	void removeMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
+		metaFlags.remove(metaFlag);
+	}
+	
+	/**
+	 * Get meta flags as an integer.
+	 * 
+	 * @return Integer representation of the meta flags.
+	 */
+	short getMetaFlagsAsInt() {
+		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
+	}
+	
+	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
