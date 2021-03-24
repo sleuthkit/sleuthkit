@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -39,7 +41,11 @@ public final class OsAccountRealm {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private final long id;	// row id 
+	
+	// a realm may have multiple names - for exmple, for a user ABCCorp\\user1 or user1@ABCcorp.com - 'ABCCorp' and 'ABCcorp.com' both refer to the same realm.
+	// currently we only support a single name, this could be expanded in future.
 	private String realmName; // realm name - may be updated later. For example, a Windows domain name. 
+	
 	private String realmAddr; // realm address - may be updated later.  For example, the numbers and dashes in a Windows SID.
 	private String signature; // either realm address or name (if address is not known)
 	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
@@ -78,12 +84,20 @@ public final class OsAccountRealm {
 	}
 
 	/**
-	 * Get the realm name.
+	 * Get realm names list.
 	 *
-	 * @return Optional with realm name.
+	 * Currently we only support a single name for realm, so this list may have
+	 * at most a single name. And the list may be empty if there is no name.
+	 *
+	 * @return List of realm names, may be empty.
 	 */
-	public Optional<String> getRealmName() {
-		return Optional.ofNullable(realmName);
+	public List<String> getRealmNames() {
+		List<String> namesList = new ArrayList<>();
+		if (!Objects.isNull(realmName)) {
+			namesList.add(realmName);
+		}
+
+		return namesList;
 	}
 
 	/**
