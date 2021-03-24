@@ -42,7 +42,7 @@ public final class OsAccountRealm {
 
 	private final long id;	// row id 
 	
-	// a realm may have multiple names - for exmple, for a user ABCCorp\user1 or user1@ABCcorp.com - 'ABCCorp' and 'ABCcorp.com' both refer to the same realm.
+	// a realm may have multiple names - for exmple, for a user ABCCorp\\user1 or user1@ABCcorp.com - 'ABCCorp' and 'ABCcorp.com' both refer to the same realm.
 	// currently we only support a single name, this could be expanded in future.
 	private String realmName; // realm name - may be updated later. For example, a Windows domain name. 
 	
