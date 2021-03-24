@@ -37,6 +37,7 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -99,9 +100,10 @@ public abstract class AbstractFile extends AbstractContent {
 	private boolean loadedAttributesCacheFromDb = false;
 
 	private final String ownerUid;	// string owner uid, for example a Windows SID.
-									// different from the numeric uid which is more commonly found 
-									// on Unix based file systems.
+	// different from the numeric uid which is more commonly found 
+	// on Unix based file systems.
 	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
+
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
@@ -522,12 +524,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getSha256Hash() {
 		return this.sha256Hash;
-	}	
-	
+	}
+
 	/**
 	 * Gets the attributes of this File
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public List<Attribute> getAttributes() throws TskCoreException {
 		synchronized (this) {
@@ -542,19 +546,19 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Adds a collection of attributes to this file in a single operation 
-	 * within a transaction supplied by the caller.
+	 * Adds a collection of attributes to this file in a single operation within
+	 * a transaction supplied by the caller.
 	 *
 	 * @param attributes        The collection of attributes.
 	 * @param caseDbTransaction The transaction in the scope of which the
 	 *                          operation is to be performed, managed by the
 	 *                          caller. if Null is passed in a local transaction
-	 *							will be created and used. 
+	 *                          will be created and used.
 	 *
 	 * @throws TskCoreException         If an error occurs and the attributes
 	 *                                  were not added to the artifact.
-	 * @throws IllegalArgumentException If <code>attributes</code> is
-	 *                                  null or empty.
+	 * @throws IllegalArgumentException If <code>attributes</code> is null or
+	 *                                  empty.
 	 */
 	public void addAttributes(Collection<Attribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
@@ -562,17 +566,17 @@ public abstract class AbstractFile extends AbstractContent {
 			throw new IllegalArgumentException("null or empty attributes passed to addAttributes");
 		}
 		boolean isLocalTransaction = Objects.isNull(caseDbTransaction);
-		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;		
+		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;
 		SleuthkitCase.CaseDbConnection connection = isLocalTransaction ? localTransaction.getConnection() : caseDbTransaction.getConnection();
-		
+
 		try {
 			for (final Attribute attribute : attributes) {
-				attribute.setAttributeParentId(getId()); 
+				attribute.setAttributeParentId(getId());
 				attribute.setCaseDatabase(getSleuthkitCase());
 				getSleuthkitCase().addFileAttribute(attribute, connection);
 			}
-			
-			if(isLocalTransaction) {
+
+			if (isLocalTransaction) {
 				localTransaction.commit();
 				localTransaction = null;
 			}
@@ -593,7 +597,7 @@ public abstract class AbstractFile extends AbstractContent {
 			throw new TskCoreException("Error adding file attributes", ex);
 		}
 	}
-	
+
 	/**
 	 * Sets the known state for this file. Passed in value will be ignored if it
 	 * is "less" than the current state. A NOTABLE file cannot be downgraded to
@@ -731,7 +735,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Converts a file offset and length into a series of TskFileRange objects
-	 * whose offsets are relative to the image.  This method will only work on
+	 * whose offsets are relative to the image. This method will only work on
 	 * files with layout ranges.
 	 *
 	 * @param fileOffset The byte offset in this file to map.
@@ -779,7 +783,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 				// how much this current range exceeds the length requested (or 0 if within the length requested)
 				long rangeOvershoot = Math.max(0, curRangeEnd - requestedEnd);
-				
+
 				long newRangeLen = curRangeLen - rangeOffset - rangeOvershoot;
 				toRet.add(new TskFileRange(newRangeStart, newRangeLen, toRet.size()));
 			}
@@ -1274,82 +1278,96 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Saves the editable file properties of this file to the case database,
-	 * e.g., the MIME type, MD5 hash, and known state.
+	 * Saves the editable file properties of this file to the case database.
 	 *
-	 * @throws TskCoreException if there is an error saving the editable file
-	 *                          properties to the case database.
+	 * @throws TskCoreException Exception thrown if there is an error saving the
+	 *                          editable file properties to the case database.
 	 */
 	public void save() throws TskCoreException {
+		CaseDbTransaction transaction = null;
+		try {
+			transaction = getSleuthkitCase().beginTransaction();
+			save(transaction);
+			transaction.commit();
+		} catch (TskCoreException ex) {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+			throw ex;
+		}
+	}
 
-		// No fields have been updated
+	/**
+	 * Saves the editable file properties of this file to the case database in
+	 * the context of an open transaction.
+	 *
+	 * @param transaction The transaction.
+	 *
+	 * @throws TskCoreException Exception thrown if there is an error saving the
+	 *                          editable file properties to the case database.
+	 */
+	public void save(CaseDbTransaction transaction) throws TskCoreException {
 		if (!(md5HashDirty || sha256HashDirty || mimeTypeDirty || knownStateDirty)) {
 			return;
 		}
 
-		String queryStr = "";
+		String updateSql = "";
 		if (mimeTypeDirty) {
-			queryStr = "mime_type = '" + this.getMIMEType() + "'";
+			updateSql = "mime_type = '" + this.getMIMEType() + "'";
 		}
 		if (md5HashDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "md5 = '" + this.getMd5Hash() + "'";
+			updateSql += "md5 = '" + this.getMd5Hash() + "'";
 		}
 		if (sha256HashDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "sha256 = '" + this.getSha256Hash() + "'";
+			updateSql += "sha256 = '" + this.getSha256Hash() + "'";
 		}
 		if (knownStateDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "known = '" + this.getKnown().getFileKnownValue() + "'";
+			updateSql += "known = '" + this.getKnown().getFileKnownValue() + "'";
 		}
+		updateSql = "UPDATE tsk_files SET " + updateSql + " WHERE obj_id = " + this.getId();
 
-		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
-
-		getSleuthkitCase().acquireSingleUserCaseWriteLock();
-		try (SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
-				Statement statement = connection.createStatement();) {
-
-			connection.executeUpdate(statement, queryStr);
+		SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
+		try (Statement statement = connection.createStatement()) {
+			connection.executeUpdate(statement, updateSql);
 			md5HashDirty = false;
 			sha256HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
-		} finally {
-			getSleuthkitCase().releaseSingleUserCaseWriteLock();
+			throw new TskCoreException(String.format("Error updating properties of file %s (obj_id = %s)", getName(), getId()), ex);
 		}
 	}
 
 	/**
 	 * Get the owner uid.
-	 * 
-	 * Note this is a string uid, typically a Windows SID. 
-	 * This is different from the numeric uid commonly found 
-	 * on Unix based file systems.
-	 * 
+	 *
+	 * Note this is a string uid, typically a Windows SID. This is different
+	 * from the numeric uid commonly found on Unix based file systems.
+	 *
 	 * @return Optional with owner uid.
 	 */
 	public Optional<String> getOwnerUid() {
 		return Optional.ofNullable(ownerUid);
 	}
-		
+
 	/**
-	 * Get the Object Id of the owner account. 
-	 * 
+	 * Get the Object Id of the owner account.
+	 *
 	 * @return Optional with Object Id of the OsAccount, or Optional.empty.
 	 */
 	public Optional<Long> getOsAccountObjectId() {
 		return Optional.ofNullable(osAccountObjId);
 	}
-	
+
 	/**
 	 * Gets the owner account for the file.
 	 *
@@ -1358,14 +1376,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
 	public Optional<OsAccount> getOsAccount() throws TskCoreException {
-		
+
 		if (osAccountObjId == null) {
 			return Optional.empty();
 		}
-		
+
 		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));
 	}
-	
+
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		// don't let them make more than 1 GEN_INFO
