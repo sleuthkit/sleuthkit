@@ -117,7 +117,7 @@ public final class HostManager {
 	Host createHost(String name, CaseDbTransaction trans) throws TskCoreException {
 		// must have a name
 		if (Strings.isNullOrEmpty(name)) {
-			throw new IllegalArgumentException("Host name is required.");
+			throw new TskCoreException("Illegal argument passed to createHost: Host name is required.");
 		}
 
 		CaseDbConnection connection = trans.getConnection();
@@ -173,13 +173,12 @@ public final class HostManager {
 	 * @return The newly returned host.
 	 *
 	 * @throws TskCoreException
-	 * @throws IllegalArgumentException
 	 */
-	public Host updateHost(Host newHost) throws TskCoreException, IllegalArgumentException {
+	public Host updateHost(Host newHost) throws TskCoreException {
 		if (newHost == null) {
-			throw new IllegalArgumentException("No host argument provided.");
+			throw new TskCoreException("Illegal argument passed to updateHost: No host argument provided.");
 		} else if (newHost.getName() == null) {
-			throw new IllegalArgumentException(String.format("Host with id %d has no name", newHost.getId()));
+			throw new TskCoreException(String.format("Illegal argument passed to updateHost: Host with id %d has no name", newHost.getId()));
 		}
 
 		Host updatedHost = null;
@@ -225,7 +224,7 @@ public final class HostManager {
 	 */
 	public Long deleteHost(String name) throws TskCoreException {
 		if (name == null) {
-			throw new IllegalArgumentException("Name provided must be non-null");
+			throw new TskCoreException("Illegal argument passed to deleteHost: Name provided must be non-null");
 		}
 
 		// query to check if there are any dependencies on this host.  If so, don't delete.
@@ -511,12 +510,11 @@ public final class HostManager {
 	 * @param person The person to be a parent or null to remove any parent
 	 *               person reference from this host.
 	 *
-	 * @throws IllegalArgumentException
 	 * @throws TskCoreException
 	 */
-	public void setPerson(Host host, Person person) throws IllegalArgumentException, TskCoreException {
+	public void setPerson(Host host, Person person) throws TskCoreException {
 		if (host == null) {
-			throw new IllegalArgumentException("host must be non-null.");
+			throw new TskCoreException("Illegal argument passed to setPerson: host must be non-null.");
 		}
 
 		String queryString = (person == null)
