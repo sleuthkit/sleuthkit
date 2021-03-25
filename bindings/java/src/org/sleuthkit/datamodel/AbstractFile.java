@@ -553,13 +553,11 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @throws TskCoreException         If an error occurs and the attributes
 	 *                                  were not added to the artifact.
-	 * @throws IllegalArgumentException If <code>attributes</code> is
-	 *                                  null or empty.
 	 */
 	public void addAttributes(Collection<Attribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
 		if (Objects.isNull(attributes) || attributes.isEmpty()) {
-			throw new IllegalArgumentException("null or empty attributes passed to addAttributes");
+			throw new TskCoreException("Illegal Argument passed to addAttributes: null or empty attributes passed to addAttributes");
 		}
 		boolean isLocalTransaction = Objects.isNull(caseDbTransaction);
 		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;		

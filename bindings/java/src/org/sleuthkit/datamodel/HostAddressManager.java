@@ -357,7 +357,7 @@ public class HostAddressManager {
 	public void addHostNameAndIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
 		if (Objects.isNull(caseDbTransaction)) {
-			throw new IllegalArgumentException("null caseDbTransaction passed to addHostNameAndIpMapping");
+			throw new TskCoreException(String.format("Error adding host DNS address mapping for DNS name = %s, and IP address = %s, null caseDbTransaction passed to addHostNameAndIpMapping", dnsNameAddress.getAddress(), ipAddress.getAddress()));
 		}
 		try {
 			addHostNameAndIpMapping(dnsNameAddress, ipAddress, time, source, caseDbTransaction.getConnection());
@@ -377,16 +377,16 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private void addHostNameAndIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source, final CaseDbConnection connection) throws  SQLException {
+	private void addHostNameAndIpMapping(HostAddress dnsNameAddress, HostAddress ipAddress, Long time, Content source, final CaseDbConnection connection) throws  SQLException, TskCoreException {
 
 		if (dnsNameAddress.getAddressType() != HostAddress.HostAddressType.HOSTNAME) {
-			throw new IllegalArgumentException("A host name address is expected.");
+			throw new TskCoreException("IllegalArguments passed to addHostNameAndIpMapping: A host name address is expected.");
 		}
 		if ((ipAddress.getAddressType() != HostAddress.HostAddressType.IPV4) && (ipAddress.getAddressType() != HostAddress.HostAddressType.IPV6)) {
-			throw new IllegalArgumentException("An IPv4/IPv6 address is expected.");
+			throw new TskCoreException("IllegalArguments passed to addHostNameAndIpMapping:An IPv4/IPv6 address is expected.");
 		}
 		if (Objects.isNull(connection)) {
-			throw new IllegalArgumentException("null connection passed to addHostNameAndIpMapping");
+			throw new TskCoreException("IllegalArguments passed to addHostNameAndIpMapping: null connection passed to addHostNameAndIpMapping");
 		}
 
 		String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_dns_ip_map(dns_address_id, ip_address_id, source_obj_id, time) "
@@ -420,6 +420,7 @@ public class HostAddressManager {
 	 * 
 	 * @param addressObjectId
 	 * @return 
+	 * @throws TskCoreException
 	 */
 	public boolean hostNameAndIpMappingExists(long addressObjectId) throws TskCoreException {
 
