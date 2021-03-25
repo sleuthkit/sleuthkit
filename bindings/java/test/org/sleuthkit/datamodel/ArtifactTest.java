@@ -221,14 +221,16 @@ public class ArtifactTest {
 		// Test: add a new data artifact to the file
         DataArtifact dataArtifact1 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH), Collections.emptyList(), osAccount1);
         
-		assertTrue(dataArtifact1.getOsAccount().isPresent());
-		assertTrue(dataArtifact1.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1));
+		OsAccountManager osAcctMgr = caseDB.getOsAccountManager();
+		
+		assertTrue(dataArtifact1.getOsAccountObjectId().isPresent());
+		assertTrue(osAcctMgr.getOsAccount(dataArtifact1.getOsAccountObjectId().get()).getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// Test: add a second data artifact to file - associate it with a different account
 		DataArtifact dataArtifact2 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CLIPBOARD_CONTENT), Collections.emptyList(), osAccount2);
-		assertTrue(dataArtifact2.getOsAccount().isPresent());
-		assertTrue(dataArtifact2.getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(dataArtifact2.getOsAccountObjectId().isPresent());
+		assertTrue(osAcctMgr.getOsAccount(dataArtifact2.getOsAccountObjectId().get()).getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
 				
 				
 		// and two more 
@@ -239,16 +241,17 @@ public class ArtifactTest {
 		// TEST: get all TSK_GPS_SEARCH data artifacts in the data source
 		List<DataArtifact> gpsArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID(), image.getId());
 		assertEquals(1, gpsArtifacts.size());
-		// verify the account 
-		assertTrue(gpsArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1));
+		// verify the account was set from the query
+		assertTrue(gpsArtifacts.get(0).getOsAccountObjectId().isPresent());
+		assertTrue(osAcctMgr.getOsAccount(gpsArtifacts.get(0).getOsAccountObjectId().get()).getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// TEST: get all data artifacts of type TSK_YARA_HIT
 		List<DataArtifact> gpsAreaArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), image.getId());
 		assertEquals(2, gpsAreaArtifacts.size());
 		// verify the account on each
-		assertTrue(gpsAreaArtifacts.get(0).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
-		assertTrue(gpsAreaArtifacts.get(1).getOsAccount().get().getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(osAcctMgr.getOsAccount(gpsAreaArtifacts.get(0).getOsAccountObjectId().get()).getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(osAcctMgr.getOsAccount(gpsAreaArtifacts.get(1).getOsAccountObjectId().get()).getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2));
 		
 		// Testing that artifacts created using the old methods and new methods are treated the same.
 		// Find the file def.text

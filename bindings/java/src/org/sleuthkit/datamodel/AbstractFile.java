@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -1385,21 +1384,6 @@ public abstract class AbstractFile extends AbstractContent {
 		return Optional.ofNullable(osAccountObjId);
 	}
 	
-	/**
-	 * Gets the owner account for the file.
-	 *
-	 * @return Optional with OsAccount, Optional.empty if there is no account.
-	 *
-	 * @throws TskCoreException If there is an error getting the account.
-	 */
-	public Optional<OsAccount> getOsAccount() throws TskCoreException {
-		
-		if (osAccountObjId == null) {
-			return Optional.empty();
-		}
-		
-		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));
-	}
 	
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
