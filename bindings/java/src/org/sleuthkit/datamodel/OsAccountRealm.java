@@ -264,6 +264,8 @@ public final class OsAccountRealm {
 	
 	/**
 	 * Set the realm name if it is not already set.
+	 * NOTE: Only a single name is currently supported.  Future
+	 * versions will support multiple names. 
 	 *
 	 * @param name Realm name to set.
 	 *
@@ -272,7 +274,7 @@ public final class OsAccountRealm {
 	 * @throws TskCoreException If there is an error setting the realm name.
 	 * 
 	 */
-	public boolean setRealmName(String name) throws TskCoreException {
+	public boolean addRealmName(String name) throws TskCoreException {
 		if (StringUtils.isBlank(this.realmName) && StringUtils.isNotBlank(name)) {
 			this.realmName = name;
 			updateSignature();

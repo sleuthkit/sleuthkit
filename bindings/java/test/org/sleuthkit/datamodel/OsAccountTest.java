@@ -499,7 +499,7 @@ public class OsAccountTest {
 		assertEquals(localRealm2.getScopeHost().orElse(null).getName().equalsIgnoreCase(hostName2), true);
 		
 		// update the a realm name on a existing realm.
-		localRealm2.setRealmName(realmName2);
+		localRealm2.addRealmName(realmName2);
 		OsAccountRealm updatedRealm2 = caseDB.getOsAccountRealmManager().updateRealm(localRealm2);
 		assertEquals(updatedRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2), true );
 		assertEquals(updatedRealm2.getRealmNames().get(0).equalsIgnoreCase(realmName2), true );

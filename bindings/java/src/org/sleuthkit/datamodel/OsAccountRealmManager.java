@@ -784,7 +784,7 @@ public final class OsAccountRealmManager {
 			destRealm.setRealmAddr(sourceRealm.getRealmAddr().get());
 			updateRealm(destRealm, trans.getConnection());
 		} else if (destRealm.getRealmNames().isEmpty() && !sourceRealm.getRealmNames().isEmpty()) {
-			destRealm.setRealmName(sourceRealm.getRealmNames().get(0));
+			destRealm.addRealmName(sourceRealm.getRealmNames().get(0));
 			updateRealm(destRealm, trans.getConnection());
 		}
 	}
