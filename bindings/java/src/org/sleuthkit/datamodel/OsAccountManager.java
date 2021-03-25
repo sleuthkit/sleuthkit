@@ -1044,7 +1044,7 @@ public final class OsAccountManager {
 				}
 
 				connection.executeUpdate(preparedStatement);
-
+				account.addAttributeInternal(accountAttribute);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);

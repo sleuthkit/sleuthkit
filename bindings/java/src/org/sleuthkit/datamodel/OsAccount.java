@@ -383,10 +383,25 @@ public final class OsAccount extends AbstractContent {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public void addAttributes(List<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
-		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes);
-		osAccountAttributes.addAll(osAccountAttributes);
+		// osAccountAttributes are lazy loaded. if null then check with db to ensure the latest list is loaded first
+		// Syncronized so that the effects of one threading is visible to another. 
+		synchronized (this) {
+			if (this.osAccountAttributes == null) {
+				this.osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
+			}
+		}
+		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes); 
 	}
-
+	
+	/**
+	 * addAttributeInternal is used by OsAccountManger to update the list of 
+	 * OsAccount attributes. 
+	 * 
+	 * @param osAccountAttribute The osAccount Attribute that is to be added. 
+	 */
+	void addAttributeInternal(OsAccountAttribute osAccountAttribute) {
+		this.osAccountAttributes.add(osAccountAttribute);
+	}
 		
 	/**
 	 * Get the account Object Id that is unique within the scope of the case.
