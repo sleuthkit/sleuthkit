@@ -988,9 +988,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException,
 	 */
 	synchronized void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
-
-		List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
-				 
+		 
 		db.acquireSingleUserCaseWriteLock();
 
 		try (CaseDbConnection connection = db.getConnection()) {
@@ -1049,15 +1047,15 @@ public final class OsAccountManager {
 				}
 
 				connection.executeUpdate(preparedStatement);
-				currentAttribsList.add(accountAttribute);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-
-		account.addAttributesInternal(currentAttribsList);
+		List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
+		currentAttribsList.addAll(accountAttributes);
+		account.setAttributesInternal(currentAttribsList);
 		fireChangeEvent(account);
 	}
 

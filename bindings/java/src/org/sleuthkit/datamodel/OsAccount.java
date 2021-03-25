@@ -392,7 +392,7 @@ public final class OsAccount extends AbstractContent {
 	 * 
 	 * @param osAccountAttribute The osAccount Attribute that is to be added. 
 	 */
-	void addAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
+	void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
 	}
 		
