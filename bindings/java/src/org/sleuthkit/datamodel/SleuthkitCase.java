@@ -12999,8 +12999,8 @@ public class SleuthkitCase {
 		private List<Host> hostsAdded = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
-		private List<OsAccount> accountsDeleted = new ArrayList<>();
-		private List<AnalysisResult> deletedResults = new ArrayList<>();
+		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
+		private List<Long> deletedResultObjectIds = new ArrayList<>();
 		
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
@@ -13062,12 +13062,10 @@ public class SleuthkitCase {
 		
 		/**
 		 * Saves an account that has been deleted as a part of this transaction.
-		 * @param account The account.
+		 * @param osAccountObjId The account.
 		 */		
-		void registerDeletedOsAccount(OsAccount account) {
-			if (account != null) {
-				accountsDeleted.add(account);
-			}
+		void registerDeletedOsAccount(long osAccountObjId) {
+			deletedOsAccountObjectIds.add(osAccountObjId);
 		}		
 		
 		/**
@@ -13085,10 +13083,8 @@ public class SleuthkitCase {
 		 * 
 		 * @param result Deleted result.
 		 */
-		void registerDeletedAnalysisResult(AnalysisResult result) {
-			if (result != null) {
-				this.deletedResults.add(result);
-			}
+		void registerDeletedAnalysisResult(long analysisResultObjId) {
+			this.deletedResultObjectIds.add(analysisResultObjId);
 		}
 		/**
 		 * Check if the given thread has an open transaction.
@@ -13137,11 +13133,11 @@ public class SleuthkitCase {
 				if (!accountsChanged.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsUpdateEvent(accountsChanged));
 				}
-				if (!accountsDeleted.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsDeleteEvent(accountsDeleted));
+				if (!deletedOsAccountObjectIds.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsDeleteEvent(deletedOsAccountObjectIds));
 				}
-				if (!deletedResults.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new AnalysisResultsDeletedEvent(deletedResults));
+				if (!deletedResultObjectIds.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new AnalysisResultsDeletedEvent(deletedResultObjectIds));
 				}
 			}
 		}
