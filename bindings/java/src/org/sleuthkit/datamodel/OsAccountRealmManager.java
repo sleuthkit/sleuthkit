@@ -298,6 +298,21 @@ public final class OsAccountRealmManager {
 			+ "		LEFT JOIN tsk_hosts as hosts"
 			+ " ON realms.scope_host_id = hosts.id";
 	
+    /**
+	 * Get the realm from the given row id. 
+	 * 
+	 * @param id Realm row id.
+	 * 
+	 * @return Realm. 
+	 * @throws TskCoreException on error 
+	 */
+
+	public OsAccountRealm getRealmById(long id) throws TskCoreException {
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			return getRealmById(id, connection);
+		}
+	}
+	
 	/**
 	 * Get the realm from the given row id. 
 	 * 
@@ -307,7 +322,7 @@ public final class OsAccountRealmManager {
 	 * @return Realm. 
 	 * @throws TskCoreException 
 	 */
-	OsAccountRealm getRealm(long id, CaseDbConnection connection) throws TskCoreException {
+	OsAccountRealm getRealmById(long id, CaseDbConnection connection) throws TskCoreException {
 		
 		String queryString = REALM_QUERY_STRING
 					+ " WHERE realms.id = " + id;
@@ -688,7 +703,7 @@ public final class OsAccountRealmManager {
 					// Merge the realm with the matching name into the realm with the matching address.
 					// Reload from database afterward to make sure everything is up-to-date.
 					mergeRealms(optDestRealmName.get(), optDestRealmAddr.get(), trans);
-					destRealm = getRealm(optDestRealmAddr.get().getId(), trans.getConnection());
+					destRealm = getRealmById(optDestRealmAddr.get().getId(), trans.getConnection());
 				}
 			}
 		} else if (optDestRealmAddr.isPresent()) {
