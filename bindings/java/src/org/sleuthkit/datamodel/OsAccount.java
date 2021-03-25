@@ -60,7 +60,7 @@ public final class OsAccount extends AbstractContent {
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
 	private Long creationTime = null;
 
-	private List<OsAccountAttribute> osAccountAttributes = null;
+	private volatile List<OsAccountAttribute> osAccountAttributes = null; // ensure visibility when updated in multithreaded env.
 	private List<OsAccountInstance> osAccountInstances = null;
 	
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
@@ -383,13 +383,6 @@ public final class OsAccount extends AbstractContent {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public void addAttributes(List<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
-		// osAccountAttributes are lazy loaded. if null then check with db to ensure the latest list is loaded first
-		// Syncronized so that the effects of one threading is visible to another. 
-		synchronized (this) {
-			if (this.osAccountAttributes == null) {
-				this.osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
-			}
-		}
 		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes); 
 	}
 	
@@ -399,8 +392,8 @@ public final class OsAccount extends AbstractContent {
 	 * 
 	 * @param osAccountAttribute The osAccount Attribute that is to be added. 
 	 */
-	void addAttributeInternal(OsAccountAttribute osAccountAttribute) {
-		this.osAccountAttributes.add(osAccountAttribute);
+	void addAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
+		this.osAccountAttributes = osAccountAttributes;
 	}
 		
 	/**

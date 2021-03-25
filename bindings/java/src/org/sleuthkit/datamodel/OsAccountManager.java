@@ -979,13 +979,18 @@ public final class OsAccountManager {
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.
 	 *
+	 * This is method is synchronized to prevent multiple threads trying to 
+	 * add osAccount attributes concurrently.
+	 * 
 	 * @param account	         Account for which the attributes is being added.
 	 * @param accountAttribute List of attributes to add.
 	 *
 	 * @throws TskCoreException,
 	 */
-	void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
+	synchronized void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
 
+		List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
+				 
 		db.acquireSingleUserCaseWriteLock();
 
 		try (CaseDbConnection connection = db.getConnection()) {
@@ -1044,7 +1049,7 @@ public final class OsAccountManager {
 				}
 
 				connection.executeUpdate(preparedStatement);
-				account.addAttributeInternal(accountAttribute);
+				currentAttribsList.add(accountAttribute);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
@@ -1052,6 +1057,7 @@ public final class OsAccountManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 
+		account.addAttributesInternal(currentAttribsList);
 		fireChangeEvent(account);
 	}
 
