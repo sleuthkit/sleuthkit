@@ -207,7 +207,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					WEB_COOKIE_END, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL,
 					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED,
-					WEB_FORM_AUTOFILL_ACCESSED, WEB_CACHE);
+					WEB_FORM_AUTOFILL_ACCESSED, WEB_CACHE, WEB_HISTORY_CREATED);
 		}
 	};
 
@@ -233,7 +233,8 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					BLUETOOTH_PAIRING, CALENDAR_ENTRY_START, CALENDAR_ENTRY_END,
 					DELETE_PROGRAM, DELETE_PROGRAM_DELETED,
 					OS_INFO, WIFI_NETWORK, USER_DEVICE_EVENT, USER_DEVICE_EVENT_START, USER_DEVICE_EVENT_END,
-					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION);
+					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION,
+					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER, INSTALLED_PROG);
 
 			return builder.build();
 		}
@@ -817,9 +818,37 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	TimelineEventType WIFI_NETWORK = new TimelineEventArtifactTypeSingleDescription(59,
 			getBundle().getString("TimelineEventType.WIFINetwork.txt"),//NON-NLS
 			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_PROG_NOTIFICATIONS),
+			new BlackboardArtifact.Type(TSK_WIFI_NETWORK),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_SSID));
+	
+	TimelineEventType INSTALLED_PROG = new TimelineEventArtifactTypeSingleDescription(60,
+			getBundle().getString("TimelineEventType.InstalledProgram.txt"),//NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
+			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
+			new BlackboardAttribute.Type(TSK_PROG_NAME));
+	
+	TimelineEventType WEB_HISTORY_CREATED = new URLArtifactEventType(61,
+			getBundle().getString("WebTypes.webHistoryCreated.name"),// NON-NLS
+			WEB_ACTIVITY,
+			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
+			new Type(TSK_DATETIME_CREATED),
+			new Type(TSK_URL));
+	
+	TimelineEventType BLUETOOTH_ADAPTER = new TimelineEventArtifactTypeSingleDescription(62,
+			getBundle().getString("TimelineEventType.BluetoothAdapter.txt"),//NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_BLUETOOTH_ADAPTER),
+			new BlackboardAttribute.Type(TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_NAME));
+	
+	TimelineEventType BLUETOOTH_PAIRING_ACCESSED = new TimelineEventArtifactTypeSingleDescription(63,
+			getBundle().getString("TimelineEventType.BluetoothPairingLastConnection.txt"),//NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_BLUETOOTH_PAIRING),
+			new BlackboardAttribute.Type(TSK_DATETIME_ACCESSED),
+			new BlackboardAttribute.Type(TSK_DEVICE_NAME));
 
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();
