@@ -555,8 +555,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                          caller. if Null is passed in a local transaction
 	 *                          will be created and used.
 	 *
-	 * @throws TskCoreException         If an error occurs and the attributes
-	 *                                  were not added to the artifact.
+	 * @throws TskCoreException If an error occurs and the attributes were not
+	 *                          added to the artifact.
 	 */
 	public void addAttributes(Collection<Attribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
@@ -936,13 +936,13 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Set the directory name flag.
-	 * 
+	 *
 	 * @param flag Flag to set to.
 	 */
 	void setDirFlag(TSK_FS_NAME_FLAG_ENUM flag) {
 		dirFlag = flag;
 	}
-	
+
 	/**
 	 * @return a string representation of the meta flags
 	 */
@@ -966,33 +966,32 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Set the specified meta flag. 
-	 * 
+	 * Set the specified meta flag.
+	 *
 	 * @param metaFlag Meta flag to set
 	 */
 	void setMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
 		metaFlags.add(metaFlag);
 	}
-	
+
 	/**
 	 * Remove the specified meta flag.
-	 * 
+	 *
 	 * @param metaFlag Meta flag to remove.
 	 */
 	void removeMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
 		metaFlags.remove(metaFlag);
 	}
-	
+
 	/**
 	 * Get meta flags as an integer.
-	 * 
+	 *
 	 * @return Integer representation of the meta flags.
 	 */
 	short getMetaFlagsAsInt() {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
-	
-	
+
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
