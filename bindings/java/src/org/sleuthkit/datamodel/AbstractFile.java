@@ -1314,8 +1314,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Saves the editable properties of this file to the case database, e.g.,
 	 * the MIME type, MD5 hash, and known state.
 	 *
-	 * @throws TskCoreException Exception thrown if there is an error saving the
-	 *                          editable file properties to the case database.
+	 * @throws TskCoreException if there is an error saving the editable file
+	 *                          properties to the case database.
 	 */
 	public void save() throws TskCoreException {
 		CaseDbTransaction transaction = null;
@@ -1337,8 +1337,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param transaction The transaction.
 	 *
-	 * @throws TskCoreException Exception thrown if there is an error saving the
-	 *                          editable file properties to the case database.
+	 * @throws TskCoreException if there is an error saving the editable file
+	 *                          properties to the case database.
 	 */
 	public void save(CaseDbTransaction transaction) throws TskCoreException {
 		if (!(md5HashDirty || sha256HashDirty || mimeTypeDirty || knownStateDirty)) {
