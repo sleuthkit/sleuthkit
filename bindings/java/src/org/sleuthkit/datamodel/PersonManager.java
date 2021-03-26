@@ -83,13 +83,12 @@ public final class PersonManager {
 	 * @return person The person that was updated.
 	 *
 	 * @throws TskCoreException
-	 * @throws IllegalArgumentException If name field of the person is empty.
 	 */
 	public Person updatePerson(Person person) throws TskCoreException {
 
 		// Must have a non-empty name
 		if (Strings.isNullOrEmpty(person.getName())) {
-			throw new IllegalArgumentException("Name field for person with ID " + person.getId() + " is null/empty. Will not update database.");
+			throw new TskCoreException("Illegal argument passed to updatePerson: Name field for person with ID " + person.getId() + " is null/empty. Will not update database.");
 		}
 
 		String queryString = "UPDATE tsk_persons"
@@ -205,13 +204,12 @@ public final class PersonManager {
 	 * @return Person with the specified name.
 	 *
 	 * @throws TskCoreException
-	 * @throws IllegalArgumentException If name field of the person is empty.
 	 */
-	public Person createPerson(String name) throws TskCoreException, IllegalArgumentException {
+	public Person createPerson(String name) throws TskCoreException {
 
 		// Must have a name
 		if (Strings.isNullOrEmpty(name)) {
-			throw new IllegalArgumentException("Non-empty name is required.");
+			throw new TskCoreException("Illegal argument passed to createPerson: Non-empty name is required.");
 		}
 
 		Person toReturn = null;

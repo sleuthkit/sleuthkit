@@ -231,8 +231,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					METADATA_LAST_PRINTED, METADATA_LAST_SAVED, METADATA_CREATED, PROGRAM_EXECUTION,
 					RECENT_DOCUMENTS, REGISTRY, BACKUP_EVENT_START, BACKUP_EVENT, BACKUP_EVENT_END,
 					BLUETOOTH_PAIRING, CALENDAR_ENTRY_START, CALENDAR_ENTRY_END,
-					DELETE_PROGRAM, DELETE_PROGRAM_DELETED, OS_ACCOUNT_ACCESSED,
-					OS_ACCOUNT_CREATED, OS_ACCOUNT_PWD_FAIL, OS_ACCOUNT_PWD_RESET,
+					DELETE_PROGRAM, DELETE_PROGRAM_DELETED,
 					OS_INFO, WIFI_NETWORK, USER_DEVICE_EVENT, USER_DEVICE_EVENT_START, USER_DEVICE_EVENT_END,
 					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION);
 
@@ -731,56 +730,29 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardAttribute.Type(TSK_DATETIME_DELETED),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 	
-	TimelineEventType OS_ACCOUNT_ACCESSED = new TimelineEventArtifactTypeSingleDescription(51,
-			getBundle().getString("TimelineEventType.OSAccountAccessed.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_OS_ACCOUNT),
-			new BlackboardAttribute.Type(TSK_DATETIME_ACCESSED),
-			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 	
-	TimelineEventType OS_ACCOUNT_CREATED = new TimelineEventArtifactTypeSingleDescription(52,
-			getBundle().getString("TimelineEventType.OSAccountCreated.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_OS_ACCOUNT),
-			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
-			new BlackboardAttribute.Type(TSK_DESCRIPTION));
-		
-	TimelineEventType OS_ACCOUNT_PWD_FAIL = new TimelineEventArtifactTypeSingleDescription(53,
-			getBundle().getString("TimelineEventType.OSAccountPwdFail.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_OS_ACCOUNT),
-			new BlackboardAttribute.Type(TSK_DATETIME_PASSWORD_FAIL),
-			new BlackboardAttribute.Type(TSK_DESCRIPTION));
-		
-	TimelineEventType OS_ACCOUNT_PWD_RESET = new TimelineEventArtifactTypeSingleDescription(54,
-			getBundle().getString("TimelineEventType.OSAccountPwdReset.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_OS_ACCOUNT),
-			new BlackboardAttribute.Type(TSK_DATETIME_PASSWORD_RESET),
-			new BlackboardAttribute.Type(TSK_DESCRIPTION));
-	
-	TimelineEventType OS_INFO = new TimelineEventArtifactTypeSingleDescription(55,
+	TimelineEventType OS_INFO = new TimelineEventArtifactTypeSingleDescription(51,
 			getBundle().getString("TimelineEventType.OSInfo.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_OS_INFO),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 
-	TimelineEventType PROGRAM_NOTIFICATION = new TimelineEventArtifactTypeSingleDescription(56,
+	TimelineEventType PROGRAM_NOTIFICATION = new TimelineEventArtifactTypeSingleDescription(52,
 			getBundle().getString("TimelineEventType.ProgramNotification.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_PROG_NOTIFICATIONS),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 	
-	TimelineEventType SCREEN_SHOT = new TimelineEventArtifactTypeSingleDescription(57,
+	TimelineEventType SCREEN_SHOT = new TimelineEventArtifactTypeSingleDescription(53,
 			getBundle().getString("TimelineEventType.ScreenShot.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_SCREEN_SHOTS),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 		
-	TimelineEventType SERVICE_ACCOUNT = new TimelineEventArtifactTypeImpl(58,
+	TimelineEventType SERVICE_ACCOUNT = new TimelineEventArtifactTypeImpl(54,
 			getBundle().getString("TimelineEventType.ServiceAccount.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_SERVICE_ACCOUNT),
@@ -793,7 +765,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT = new TimelineEventArtifactTypeImpl(59,
+	TimelineEventType USER_DEVICE_EVENT = new TimelineEventArtifactTypeImpl(55,
 			getBundle().getString("TimelineEventType.UserDeviceEvent.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -807,7 +779,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT_START = new TimelineEventArtifactTypeImpl(60,
+	TimelineEventType USER_DEVICE_EVENT_START = new TimelineEventArtifactTypeImpl(56,
 			getBundle().getString("TimelineEventType.UserDeviceEventStart.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -821,7 +793,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT_END = new TimelineEventArtifactTypeImpl(61,
+	TimelineEventType USER_DEVICE_EVENT_END = new TimelineEventArtifactTypeImpl(57,
 			getBundle().getString("TimelineEventType.UserDeviceEventEnd.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -835,24 +807,20 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType WEB_CACHE = new URLArtifactEventType(62,
+	TimelineEventType WEB_CACHE = new URLArtifactEventType(58,
 			getBundle().getString("TimelineEventType.WebCache.text"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_CACHE),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
 	
-	TimelineEventType WIFI_NETWORK = new TimelineEventArtifactTypeSingleDescription(63,
+	TimelineEventType WIFI_NETWORK = new TimelineEventArtifactTypeSingleDescription(59,
 			getBundle().getString("TimelineEventType.WIFINetwork.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_PROG_NOTIFICATIONS),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_SSID));
-	
-	// Next Event number will be 66. GEOLCATION_ACTIVITY(64) and 
-	// COMMUNICATION_ACTIVITY(65) are top level grouping therefore
-	// are defined above
-	
+
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();
 	}
