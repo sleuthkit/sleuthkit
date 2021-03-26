@@ -1333,7 +1333,8 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Saves the editable properties of this file to the case database, e.g.,
-	 * the MIME type, MD5 hash, and known state.
+	 * the MIME type, MD5 hash, and known state, in the context of a given case
+	 * database transaction.
 	 *
 	 * @param transaction The transaction.
 	 *
