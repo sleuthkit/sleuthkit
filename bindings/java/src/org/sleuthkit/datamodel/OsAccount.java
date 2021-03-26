@@ -46,7 +46,7 @@ public final class OsAccount extends AbstractContent {
 	private final long osAccountObjId;	// Object ID within the database
 	private final long realmId;		// realm where the account exists in (could be local or domain scoped)
 	private String loginName;	// user login name - may be null
-	private String address;	// a unique user sid/uid, may be null
+	private String addr;	// a unique user sid/uid, may be null
 
 	private String signature;		// This exists only to prevent duplicates.
 	// Together realm_id & signature must be unique for each account.
@@ -230,7 +230,7 @@ public final class OsAccount extends AbstractContent {
 		this.osAccountObjId = osAccountobjId;
 		this.realmId = realmId;
 		this.loginName = loginName;
-		this.address = uniqueId;
+		this.addr = uniqueId;
 		this.signature = signature;
 		this.osAccountStatus = accountStatus;
 		this.osAccountDbStatus = accountDbStatus;
@@ -269,8 +269,8 @@ public final class OsAccount extends AbstractContent {
 	 *                          address.
 	 */
 	public boolean setAddr(String addr) throws TskCoreException {
-		if (StringUtils.isBlank(this.address) && StringUtils.isNotBlank(addr)) {
-			this.address = addr;
+		if (StringUtils.isBlank(this.addr) && StringUtils.isNotBlank(addr)) {
+			this.addr = addr;
 			updateSignature();
 			this.isDirty = true;
 			return true;
@@ -400,8 +400,8 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @return Optional unique identifier.
 	 */
-	public Optional<String> getAddress() {
-		return Optional.ofNullable(address);
+	public Optional<String> getAddr() {
+		return Optional.ofNullable(addr);
 	}
 
 	/**
@@ -514,7 +514,7 @@ public final class OsAccount extends AbstractContent {
 	 *                          signature.
 	 */
 	private void updateSignature() throws TskCoreException {
-		signature = OsAccountManager.getAccountSignature(this.address, this.loginName);
+		signature = OsAccountManager.getAccountSignature(this.addr, this.loginName);
 	}
 
 	/**

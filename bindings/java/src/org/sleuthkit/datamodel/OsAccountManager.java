@@ -586,7 +586,7 @@ public final class OsAccountManager {
 			osAccountInstanceCache.add(accountInstance);
 
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding os account instance for account = %s, data source object id = %d", osAccount.getAddress().orElse(osAccount.getLoginName().orElse("UNKNOWN")), dataSourceObjId), ex);
+			throw new TskCoreException(String.format("Error adding os account instance for account = %s, data source object id = %d", osAccount.getAddr().orElse(osAccount.getLoginName().orElse("UNKNOWN")), dataSourceObjId), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -651,10 +651,10 @@ public final class OsAccountManager {
 			// the two accounts in the destination realm. This will ensure that all source accounts match at most one
 			// destination account.
 			// Note that we only merge accounts based on login name if the unique ID is empty.
-			if (sourceAccount.getAddress().isPresent() && sourceAccount.getLoginName().isPresent()) {
+			if (sourceAccount.getAddr().isPresent() && sourceAccount.getLoginName().isPresent()) {
 				List<OsAccount> duplicateDestAccounts = destinationAccounts.stream()
-						.filter(p -> p.getAddress().equals(sourceAccount.getAddress())
-						|| (p.getLoginName().equals(sourceAccount.getLoginName()) && (!p.getAddress().isPresent())))
+						.filter(p -> p.getAddr().equals(sourceAccount.getAddr())
+						|| (p.getLoginName().equals(sourceAccount.getLoginName()) && (!p.getAddr().isPresent())))
 						.collect(Collectors.toList());
 				if (duplicateDestAccounts.size() > 1) {
 					OsAccount combinedDestAccount = duplicateDestAccounts.get(0);
@@ -669,9 +669,9 @@ public final class OsAccountManager {
 			OsAccount matchingDestAccount = null;
 
 			// First look for matching unique id
-			if (sourceAccount.getAddress().isPresent()) {
+			if (sourceAccount.getAddr().isPresent()) {
 				List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
-						.filter(p -> p.getAddress().equals(sourceAccount.getAddress()))
+						.filter(p -> p.getAddr().equals(sourceAccount.getAddr()))
 						.collect(Collectors.toList());
 				if (!matchingDestAccounts.isEmpty()) {
 					matchingDestAccount = matchingDestAccounts.get(0);
@@ -685,7 +685,7 @@ public final class OsAccountManager {
 			if (matchingDestAccount == null && sourceAccount.getLoginName().isPresent()) {
 				List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
 						.filter(p -> (p.getLoginName().equals(sourceAccount.getLoginName())
-						&& ((!sourceAccount.getAddress().isPresent()) || (!p.getAddress().isPresent()))))
+						&& ((!sourceAccount.getAddr().isPresent()) || (!p.getAddr().isPresent()))))
 						.collect(Collectors.toList());
 				if (!matchingDestAccounts.isEmpty()) {
 					matchingDestAccount = matchingDestAccounts.get(0);
@@ -809,8 +809,8 @@ public final class OsAccountManager {
 			destAccount.setLoginName(sourceAccount.getLoginName().get());
 		}
 
-		if (!destAccount.getAddress().isPresent() && sourceAccount.getAddress().isPresent()) {
-			destAccount.setAddr(sourceAccount.getAddress().get());
+		if (!destAccount.getAddr().isPresent() && sourceAccount.getAddr().isPresent()) {
+			destAccount.setAddr(sourceAccount.getAddr().get());
 		}
 
 		if (!destAccount.getFullName().isPresent() && sourceAccount.getFullName().isPresent()) {
@@ -1185,7 +1185,7 @@ public final class OsAccountManager {
 			preparedStatement.clearParameters();
 
 			preparedStatement.setString(1, osAccount.getLoginName().orElse(null));
-			preparedStatement.setString(2, osAccount.getAddress().orElse(null));
+			preparedStatement.setString(2, osAccount.getAddr().orElse(null));
 
 			// If the account is merged or deleted this will not be set.
 			preparedStatement.setString(3, osAccount.getSignature());
@@ -1205,7 +1205,7 @@ public final class OsAccountManager {
 
 			osAccount.resetDirty();
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getAddress().orElse("Unknown"), osAccount.getId()), ex);
+			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
 		}
 
 		trans.registerChangedOsAccount(osAccount);

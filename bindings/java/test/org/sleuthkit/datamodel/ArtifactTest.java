@@ -222,13 +222,13 @@ public class ArtifactTest {
         DataArtifact dataArtifact1 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH), Collections.emptyList(), osAccount1);
         
 		assertTrue(dataArtifact1.getOsAccount().isPresent());
-		assertTrue(dataArtifact1.getOsAccount().get().getAddress().orElse("").equalsIgnoreCase(ownerUid1));
+		assertTrue(dataArtifact1.getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// Test: add a second data artifact to file - associate it with a different account
 		DataArtifact dataArtifact2 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CLIPBOARD_CONTENT), Collections.emptyList(), osAccount2);
 		assertTrue(dataArtifact2.getOsAccount().isPresent());
-		assertTrue(dataArtifact2.getOsAccount().get().getAddress().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(dataArtifact2.getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid2));
 				
 				
 		// and two more 
@@ -240,15 +240,15 @@ public class ArtifactTest {
 		List<DataArtifact> gpsArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID(), image.getId());
 		assertEquals(1, gpsArtifacts.size());
 		// verify the account 
-		assertTrue(gpsArtifacts.get(0).getOsAccount().get().getAddress().orElse("").equalsIgnoreCase(ownerUid1));
+		assertTrue(gpsArtifacts.get(0).getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// TEST: get all data artifacts of type TSK_YARA_HIT
 		List<DataArtifact> gpsAreaArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), image.getId());
 		assertEquals(2, gpsAreaArtifacts.size());
 		// verify the account on each
-		assertTrue(gpsAreaArtifacts.get(0).getOsAccount().get().getAddress().orElse("").equalsIgnoreCase(ownerUid2));
-		assertTrue(gpsAreaArtifacts.get(1).getOsAccount().get().getAddress().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(gpsAreaArtifacts.get(0).getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(gpsAreaArtifacts.get(1).getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid2));
 		
 		// Testing that artifacts created using the old methods and new methods are treated the same.
 		// Find the file def.text
