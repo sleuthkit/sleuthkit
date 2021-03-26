@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2020 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -1312,7 +1311,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Saves the editable file properties of this file to the case database.
+	 * Saves the editable properties of this file to the case database, e.g.,
+	 * the MIME type, MD5 hash, and known state.
 	 *
 	 * @throws TskCoreException Exception thrown if there is an error saving the
 	 *                          editable file properties to the case database.
@@ -1332,8 +1332,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Saves the editable file properties of this file to the case database in
-	 * the context of an open transaction.
+	 * Saves the editable properties of this file to the case database, e.g.,
+	 * the MIME type, MD5 hash, and known state.
 	 *
 	 * @param transaction The transaction.
 	 *
