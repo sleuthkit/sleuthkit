@@ -12857,6 +12857,8 @@ public class SleuthkitCase {
 					executeCommand(tableWriteLock);
 					break;
 				case SQLITE:
+					// We do nothing here because we assume the entire SQLite DB is already locked from
+					// when the analysis results were added/deleted in the same transaction. 
 					break;
 				default:
 					throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
