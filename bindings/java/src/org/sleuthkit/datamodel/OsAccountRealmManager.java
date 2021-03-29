@@ -780,7 +780,7 @@ public final class OsAccountRealmManager {
 	void mergeRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm, CaseDbTransaction trans) throws TskCoreException {
 
 		// Update accounts
-		db.getOsAccountManager().mergeAccountsForRealms(sourceRealm, destRealm, trans);
+		db.getOsAccountManager().mergeOsAccountsForRealms(sourceRealm, destRealm, trans);
 
 		// Update the sourceRealm realm
 		CaseDbConnection connection = trans.getConnection();
