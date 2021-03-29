@@ -32,8 +32,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
@@ -234,6 +234,27 @@ public final class Blackboard {
 	 *
 	 * Deletes the result from blackboard_artifacts and tsk_analysis_results, and recalculates and
 	 * updates the aggregate score of the content. 
+	 * @param artifactObjId Artifact Obj Id to be deleted
+	 * @param transaction
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	public Score deleteAnalysisResult(long artifactObjId, CaseDbTransaction transaction) throws TskCoreException {
+
+		List<AnalysisResult> analysisResults = getAnalysisResultsWhere(" arts.artifact_obj_id = " + artifactObjId, transaction.getConnection());
+		
+		if(analysisResults.isEmpty()) {
+			throw new TskCoreException(String.format("Analysis Result not found for artifact obj id %d", artifactObjId));
+		}
+		
+		return deleteAnalysisResult(analysisResults.get(0), transaction);
+	}
+	
+	/**
+	 * Delete the specified analysis result.
+	 *
+	 * Deletes the result from blackboard_artifacts and tsk_analysis_results, and recalculates and
+	 * updates the aggregate score of the content. 
 	 *
 	 * @param analysisResult AnalysisResult to delete.
 	 * @param transaction Transaction to use for database operations.
@@ -242,7 +263,7 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Score deleteAnalysisResult(AnalysisResult analysisResult, CaseDbTransaction transaction) throws TskCoreException {
+	private Score deleteAnalysisResult(AnalysisResult analysisResult, CaseDbTransaction transaction) throws TskCoreException {
 
 		try {
 			CaseDbConnection connection = transaction.getConnection();
