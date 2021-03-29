@@ -85,19 +85,19 @@ public class Score implements Comparable<Score> {
          */
 		
 		/// no significance assigned yet.
-		UNKNOWN(0, "Unknown", "Significance.Unknown.displayName.text"),	
+		UNKNOWN(0, "Unknown", bundle.getString("Significance.Unknown.displayName.text")),	
 		
 		/// likely good		
-		LIKELY_NONE(8, "LikelyNone", "Significance.LikelyNone.displayName.text"),
+		LIKELY_NONE(8, "LikelyNone", bundle.getString("Significance.LikelyNone.displayName.text")),
 		
 		/// likely bad, suspicious
-		LIKELY_NOTABLE(9, "LikelyNotable","Significance.LikelyNotable.displayName.text"),	
+		LIKELY_NOTABLE(9, "LikelyNotable", bundle.getString("Significance.LikelyNotable.displayName.text")),	
 		
 		/// good
-		NONE(18, "None", "Significance.None.displayName.text"),		
+		NONE(18, "None", bundle.getString("Significance.None.displayName.text")),		
 		
 		/// bad
-		NOTABLE(19, "Notable", "Significance.Notable.displayName.text");				
+		NOTABLE(19, "Notable", bundle.getString("Significance.Notable.displayName.text"));				
 		
 		private final int id;
 		private final String name;	// name must not have spaces
@@ -138,7 +138,7 @@ public class Score implements Comparable<Score> {
          * May return a translated version. 
          */
 		public String getDisplayName() {
-			return bundle.getString(displayName);
+			return displayName;
 		}
 			
 		@Override
@@ -157,8 +157,8 @@ public class Score implements Comparable<Score> {
 	public enum MethodCategory {
 
 		// Name must not have any spaces.
-		AUTO(0, "Auto", "MethodCategory.Auto.displayName.text"),
-		USER_DEFINED(10, "UserDefined", "MethodCategory.UserDefined.displayName.text"); 
+		AUTO(0, "Auto", bundle.getString("MethodCategory.Auto.displayName.text")),
+		USER_DEFINED(10, "UserDefined", bundle.getString("MethodCategory.UserDefined.displayName.text")); 
 
 		private final int id;
 		private final String name; 
@@ -191,7 +191,7 @@ public class Score implements Comparable<Score> {
 		}
 
 		public String getDisplayName() {
-			return bundle.getString(displayName);
+			return displayName;
 		}
 		
 		@Override
