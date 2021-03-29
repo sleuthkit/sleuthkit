@@ -26,15 +26,15 @@ import java.util.List;
  */
 public class AnalysisResultsDeletedEvent implements TskEvent {
 
-	private final List<AnalysisResult> deletedResults;
+	private final List<Long> deletedResultObjIds;
 
 	/**
 	 * Constructs a new AnalysisResultsDeletedEvent.
 	 *
 	 * @param deletedResults List of deleted results.
 	 */
-	AnalysisResultsDeletedEvent(List<AnalysisResult> deletedResults) {
-		this.deletedResults = deletedResults;
+	AnalysisResultsDeletedEvent(List<Long> deletedResultObjIds) {
+		this.deletedResultObjIds = deletedResultObjIds;
 	}
 
 	/**
@@ -42,8 +42,8 @@ public class AnalysisResultsDeletedEvent implements TskEvent {
 	 *
 	 * @return List of AnalysisResult.
 	 */
-	public List<AnalysisResult> getDeletedAnalysisResult() {
-		return Collections.unmodifiableList(deletedResults);
+	public List<Long> getObjectIds() {
+		return Collections.unmodifiableList(deletedResultObjIds);
 	}
 
 }

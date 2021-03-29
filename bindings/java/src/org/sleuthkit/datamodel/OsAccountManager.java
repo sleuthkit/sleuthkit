@@ -761,8 +761,9 @@ public final class OsAccountManager {
 					+ ", db_status = " + OsAccount.OsAccountDbStatus.MERGED.getId()
 					+ ", signature = '" + mergedSignature + "' "
 					+ " WHERE os_account_obj_id = " + sourceAccount.getId();
-			s.executeUpdate(query);
-			trans.registerDeletedOsAccount(sourceAccount);
+
+			s.executeUpdate(query);	
+			trans.registerDeletedOsAccount(sourceAccount.getId());
 
 			// Update the destination account. Note that this must be done after updating
 			// the source account to prevent conflicts when merging two accounts in the
@@ -1308,8 +1309,9 @@ public final class OsAccountManager {
 	 * @param account Deleted account.
 	 */
 	private void fireDeleteEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsDeleteEvent(Collections.singletonList(account)));
-	}
+		db.fireTSKEvent(new OsAccountsDeleteEvent(Collections.singletonList(account.getId())));
+	}	
+
 
 	/**
 	 * Created an account signature for an OS Account. This signature is simply
@@ -1398,15 +1400,15 @@ public final class OsAccountManager {
 	 */
 	public static final class OsAccountsDeleteEvent {
 
-		private final List<OsAccount> accountList;
+		private final List<Long> accountObjectIds;
 
 		/**
 		 * Constructs a new DeleteEvent
 		 *
 		 * @param accountList List newly deleted accounts.
 		 */
-		OsAccountsDeleteEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
+		OsAccountsDeleteEvent(List<Long> accountObjectIds) {
+			this.accountObjectIds = accountObjectIds;
 		}
 
 		/**
@@ -1414,8 +1416,8 @@ public final class OsAccountManager {
 		 *
 		 * @return List of OsAccounts.
 		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
+		public List<Long> getOsAcountObjectIds() {
+			return Collections.unmodifiableList(accountObjectIds);
 		}
 	}
 

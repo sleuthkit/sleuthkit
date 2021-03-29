@@ -294,7 +294,7 @@ public final class Blackboard {
 			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, connection);
 
 			// register the deleted result with the transaction so an event can be fired for it. 
-			transaction.registerDeletedAnalysisResult(analysisResult);
+			transaction.registerDeletedAnalysisResult(analysisResult.getObjectID());
 			
 			// register the score change with the transaction so an event can be fired for it. 
 			transaction.registerScoreChange(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
