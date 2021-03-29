@@ -514,7 +514,7 @@ public final class OsAccount extends AbstractContent {
 	 *                          signature.
 	 */
 	private void updateSignature() throws TskCoreException {
-		signature = OsAccountManager.getAccountSignature(this.addr, this.loginName);
+		signature = OsAccountManager.getOsAccountSignature(this.addr, this.loginName);
 	}
 
 	/**

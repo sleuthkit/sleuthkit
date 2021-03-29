@@ -131,7 +131,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error in creating the OSAccount.
 	 *
 	 */
-	public OsAccount createWindowsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
+	public OsAccount createWindowsOsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
 
 		if (realmScope == null) {
 			throw new TskCoreException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
@@ -226,7 +226,7 @@ public final class OsAccountManager {
 			throw new TskCoreException("Cannot create an OS Account, realm is NULL.");
 		}
 
-		String signature = getAccountSignature(uniqueId, loginName);
+		String signature = getOsAccountSignature(uniqueId, loginName);
 		OsAccount account;
 		db.acquireSingleUserCaseWriteLock();
 		try {
@@ -601,7 +601,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<OsAccount> getAccounts(Host host) throws TskCoreException {
+	public List<OsAccount> getOsAccounts(Host host) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
@@ -640,9 +640,9 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void mergeAccountsForRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm, CaseDbTransaction trans) throws TskCoreException {
-		List<OsAccount> destinationAccounts = getAccounts(destRealm, trans.getConnection());
-		List<OsAccount> sourceAccounts = getAccounts(sourceRealm, trans.getConnection());
+	void mergeOsAccountsForRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm, CaseDbTransaction trans) throws TskCoreException {
+		List<OsAccount> destinationAccounts = OsAccountManager.this.getOsAccounts(destRealm, trans.getConnection());
+		List<OsAccount> sourceAccounts = OsAccountManager.this.getOsAccounts(sourceRealm, trans.getConnection());
 
 		for (OsAccount sourceAccount : sourceAccounts) {
 
@@ -660,7 +660,7 @@ public final class OsAccountManager {
 					OsAccount combinedDestAccount = duplicateDestAccounts.get(0);
 					duplicateDestAccounts.remove(combinedDestAccount);
 					for (OsAccount dupeDestAccount : duplicateDestAccounts) {
-						mergeAccounts(dupeDestAccount, combinedDestAccount, trans);
+						mergeOsAccounts(dupeDestAccount, combinedDestAccount, trans);
 					}
 				}
 			}
@@ -694,7 +694,7 @@ public final class OsAccountManager {
 
 			// If we found a match, merge the accounts. Otherwise simply update the realm id
 			if (matchingDestAccount != null) {
-				mergeAccounts(sourceAccount, matchingDestAccount, trans);
+				mergeOsAccounts(sourceAccount, matchingDestAccount, trans);
 			} else {
 				String query = "UPDATE tsk_os_accounts SET realm_id = " + destRealm.getId() + " WHERE os_account_obj_id = " + sourceAccount.getId();
 				try (Statement s = trans.getConnection().createStatement()) {
@@ -721,7 +721,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private void mergeAccounts(OsAccount sourceAccount, OsAccount destAccount, CaseDbTransaction trans) throws TskCoreException {
+	private void mergeOsAccounts(OsAccount sourceAccount, OsAccount destAccount, CaseDbTransaction trans) throws TskCoreException {
 		// Merge data from sourceAccount into matchingDestAccount. Does not update the database.
 		mergeOsAccountObjects(sourceAccount, destAccount);
 
@@ -756,7 +756,7 @@ public final class OsAccountManager {
 			s.executeUpdate(query);
 
 			// Update the source account. Make a dummy signature to prevent problems with the unique constraint.
-			String mergedSignature = makeMergedAccountSignature();
+			String mergedSignature = makeMergedOsAccountSignature();
 			query = "UPDATE tsk_os_accounts SET merged_into = " + destAccount.getId()
 					+ ", db_status = " + OsAccount.OsAccountDbStatus.MERGED.getId()
 					+ ", signature = '" + mergedSignature + "' "
@@ -767,7 +767,7 @@ public final class OsAccountManager {
 			// Update the destination account. Note that this must be done after updating
 			// the source account to prevent conflicts when merging two accounts in the
 			// same realm.
-			updateAccount(destAccount, trans);
+			updateOsAccount(destAccount, trans);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error executing SQL update: " + query, ex);
 		}
@@ -778,7 +778,7 @@ public final class OsAccountManager {
 	 *
 	 * @return The random signature.
 	 */
-	private String makeMergedAccountSignature() {
+	private String makeMergedOsAccountSignature() {
 		return "MERGED " + UUID.randomUUID().toString();
 	}
 
@@ -832,7 +832,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	private List<OsAccount> getAccounts(OsAccountRealm realm, CaseDbConnection connection) throws TskCoreException {
+	private List<OsAccount> getOsAccounts(OsAccountRealm realm, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE realm_id = " + realm.getId()
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
@@ -858,7 +858,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<OsAccount> getAccounts() throws TskCoreException {
+	public List<OsAccount> getOsAccounts() throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
@@ -894,7 +894,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException    If there is an error getting the account.
 	 * @throws NotUserSIDException If the given SID is not a user SID.
 	 */
-	public Optional<OsAccount> getWindowsAccount(String sid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
+	public Optional<OsAccount> getWindowsOsAccount(String sid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
 
 		if (referringHost == null) {
 			throw new TskCoreException("A referring host is required to get an account.");
@@ -1127,7 +1127,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public OsAccount updateAccount(OsAccount osAccount) throws TskCoreException {
+	public OsAccount updateOsAccount(OsAccount osAccount) throws TskCoreException {
 
 		// do nothing if the account is not dirty.
 		if (!osAccount.isDirty()) {
@@ -1136,7 +1136,7 @@ public final class OsAccountManager {
 
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			OsAccount account = updateAccount(osAccount, trans);
+			OsAccount account = updateOsAccount(osAccount, trans);
 			trans.commit();
 			trans = null;
 			return account;
@@ -1161,7 +1161,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	OsAccount updateAccount(OsAccount osAccount, CaseDbTransaction trans) throws TskCoreException {
+	OsAccount updateOsAccount(OsAccount osAccount, CaseDbTransaction trans) throws TskCoreException {
 
 		// do nothing if the account is not dirty.
 		if (!osAccount.isDirty()) {
@@ -1325,7 +1325,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          signature.
 	 */
-	static String getAccountSignature(String uniqueId, String loginName) throws TskCoreException {
+	static String getOsAccountSignature(String uniqueId, String loginName) throws TskCoreException {
 		// Create a signature. 
 		String signature;
 		if (Strings.isNullOrEmpty(uniqueId) == false) {
