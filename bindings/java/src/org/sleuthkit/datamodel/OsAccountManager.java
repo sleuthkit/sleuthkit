@@ -641,8 +641,8 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	void mergeOsAccountsForRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm, CaseDbTransaction trans) throws TskCoreException {
-		List<OsAccount> destinationAccounts = OsAccountManager.this.getOsAccounts(destRealm, trans.getConnection());
-		List<OsAccount> sourceAccounts = OsAccountManager.this.getOsAccounts(sourceRealm, trans.getConnection());
+		List<OsAccount> destinationAccounts = getOsAccounts(destRealm, trans.getConnection());
+		List<OsAccount> sourceAccounts = getOsAccounts(sourceRealm, trans.getConnection());
 
 		for (OsAccount sourceAccount : sourceAccounts) {
 
