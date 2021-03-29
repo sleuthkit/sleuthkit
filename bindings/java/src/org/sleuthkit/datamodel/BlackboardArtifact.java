@@ -1150,6 +1150,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * An operating system user account.
 		 */
+		@Deprecated
 		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskOsAccount.text"), Category.DATA_ARTIFACT),
 		/**
