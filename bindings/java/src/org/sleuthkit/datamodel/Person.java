@@ -38,7 +38,7 @@ public final class Person {
 	 *
 	 * @return Row id.
 	 */
-	public long getId() {
+	public long getPersonId() {
 		return id;
 	}
 

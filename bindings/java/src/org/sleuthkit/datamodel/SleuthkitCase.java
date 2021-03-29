@@ -5651,7 +5651,7 @@ public class SleuthkitCase {
 				content = getReportById(id);
 				break;
 			case OS_ACCOUNT:
-				content = this.osAccountManager.getOsAccount(id);
+				content = this.osAccountManager.getOsAccountByObjectId(id);
 				break;
 			case HOST_ADDRESS:
 				content = hostAddressManager.getHostAddress(id);
@@ -6506,7 +6506,7 @@ public class SleuthkitCase {
 			// the data_source_info table.
 			statement = connection.createStatement();
 			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone, host_id) "
-					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "', " + host.getId() + ");");
+					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "', " + host.getHostId() + ");");
 
 			// Insert a row for the root virtual directory of the data source
 			// into the tsk_files table. Note that its data source object id is
@@ -6669,7 +6669,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
 			preparedStatement.setLong(4, new Date().getTime());
-			preparedStatement.setLong(5, host.getId());
+			preparedStatement.setLong(5, host.getHostId());
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object

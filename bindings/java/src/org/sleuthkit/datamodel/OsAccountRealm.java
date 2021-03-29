@@ -79,7 +79,7 @@ public final class OsAccountRealm {
 	 * 
 	 * @return Realm id.
 	 */
-	long getId() {
+	long getRealmId() {
 		return id;
 	}
 
