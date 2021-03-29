@@ -149,20 +149,26 @@ public final class OsAccountManager {
 			throw new TskCoreException("Realm name or SID is required to create a Windows account.");
 		}
 
-		Optional<OsAccountRealm> realm;
+		Optional<OsAccountRealm> realmOptional;
+		
 		try (CaseDbConnection connection = db.getConnection()) {
-			realm = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost, connection);
+			realmOptional = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost, connection);
 		}
-		if (! realm.isPresent()) {
+		OsAccountRealm realm;
+		if (realmOptional.isPresent()) {
+			realm = realmOptional.get();
+		}
+		else {
 			// realm was not found, create it.
-			realm = Optional.of(db.getOsAccountRealmManager().createWindowsRealm(sid, realmName, referringHost, realmScope));
+			realm = db.getOsAccountRealmManager().createWindowsRealm(sid, realmName, referringHost, realmScope);
 		}
+		
 		
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			// try to create account
 			try {
-				OsAccount account = createOsAccount(sid, loginName, realm.get(), OsAccount.OsAccountStatus.UNKNOWN, trans);
+				OsAccount account = createOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 				trans.commit();
 				trans = null;
 				return account;
@@ -176,7 +182,7 @@ public final class OsAccountManager {
 
 				// First search for account by uniqueId
 				if (!Strings.isNullOrEmpty(sid)) {
-					osAccount = getOsAccountByUniqueId(sid, realm.get());
+					osAccount = getOsAccountByUniqueId(sid, realm);
 					if (osAccount.isPresent()) {
 						return osAccount.get();
 					}
@@ -184,7 +190,7 @@ public final class OsAccountManager {
 
 				// search by loginName
 				if (!Strings.isNullOrEmpty(loginName)) {
-					osAccount = getOsAccountByLoginName(loginName, realm.get());
+					osAccount = getOsAccountByLoginName(loginName, realm);
 					if (osAccount.isPresent()) {
 						return osAccount.get();
 					}
@@ -245,11 +251,7 @@ public final class OsAccountManager {
 			preparedStatement.setLong(1, osAccountObjId);
 
 			preparedStatement.setString(2, loginName);
-			if (!Objects.isNull(realm)) {
-				preparedStatement.setLong(3, realm.getId());
-			} else {
-				preparedStatement.setNull(3, java.sql.Types.BIGINT);
-			}
+			preparedStatement.setLong(3, realm.getId());
 
 			preparedStatement.setString(4, uniqueId);
 			preparedStatement.setString(5, signature);
@@ -257,7 +259,7 @@ public final class OsAccountManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			account = new OsAccount(db, osAccountObjId, realm, loginName, uniqueId, signature, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
+			account = new OsAccount(db, osAccountObjId, realm.getId(), loginName, uniqueId, signature, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
 		}  finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -319,15 +321,7 @@ public final class OsAccountManager {
 			if (!rs.next()) {
 				return Optional.empty();	// no match found
 			} else {
-				OsAccountRealm realm = null;
-				long realmId = rs.getLong("realm_id");
-				if (!rs.wasNull()) {
-					realm = new OsAccountRealm(realmId, rs.getString("realm_name"), rs.getString("realm_addr"), rs.getString("realm_signature"),
-									host, OsAccountRealm.ScopeConfidence.fromID(rs.getInt("scope_confidence")),
-									OsAccountRealm.RealmDbStatus.fromID(rs.getInt("realm_db_status")));
-				}
-
-				return Optional.of(osAccountFromResultSet(rs, realm));
+				return Optional.of(osAccountFromResultSet(rs));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for unique id = %s and host = %s", uniqueId, (host != null ? host.getName() : "null")), ex);
@@ -343,7 +337,7 @@ public final class OsAccountManager {
 	 * @param realm    Account realm.
 	 *
 	 * @return Optional with OsAccount, Optional.empty, if no user is found with
-	 *         matching realm and unique id.
+         matching realm and unique id.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -362,7 +356,7 @@ public final class OsAccountManager {
 			if (!rs.next()) {
 				return Optional.empty();	// no match found
 			} else {
-				return Optional.of(osAccountFromResultSet(rs, realm));
+				return Optional.of(osAccountFromResultSet(rs));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for realm = %s and uniqueId = %s.", (realm != null) ? realm.getSignature() : "NULL", uniqueId), ex);
@@ -378,7 +372,7 @@ public final class OsAccountManager {
 	 * @param realm     Account realm.
 	 *
 	 * @return Optional with OsAccount, Optional.empty, if no user is found with
-	 *         matching realm and login name.
+         matching realm and login name.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -397,7 +391,7 @@ public final class OsAccountManager {
 			if (!rs.next()) {
 				return Optional.empty();	// no match found
 			} else {
-				return Optional.of(osAccountFromResultSet(rs, realm));
+				return Optional.of(osAccountFromResultSet(rs));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for realm = %s and loginName = %s.", (realm != null) ? realm.getSignature() : "NULL", loginName), ex);
@@ -446,15 +440,7 @@ public final class OsAccountManager {
 			if (!rs.next()) {
 				throw new TskCoreException(String.format("No account found with obj id = %d ", osAccountObjId));
 			} else {
-
-				OsAccountRealm realm = null;
-				long realmId = rs.getLong("realm_id");
-
-				if (!rs.wasNull()) {
-					realm = db.getOsAccountRealmManager().getRealm(realmId, connection);
-				}
-
-				return osAccountFromResultSet(rs, realm);
+				return osAccountFromResultSet(rs);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting account with obj id = %d ", osAccountObjId), ex);
@@ -632,13 +618,7 @@ public final class OsAccountManager {
 
 			List<OsAccount> accounts = new ArrayList<>();
 			while (rs.next()) {
-				OsAccountRealm realm = null;
-				long realmId = rs.getLong("realm_id");
-				if (!rs.wasNull()) {
-					realm = db.getOsAccountRealmManager().getRealm(realmId, connection);
-				}
-
-				accounts.add(osAccountFromResultSet(rs, realm));
+				accounts.add(osAccountFromResultSet(rs));
 			}
 			return accounts;
 		} catch (SQLException ex) {
@@ -862,7 +842,7 @@ public final class OsAccountManager {
 
 			List<OsAccount> accounts = new ArrayList<>();
 			while (rs.next()) {
-				accounts.add(osAccountFromResultSet(rs, realm));
+				accounts.add(osAccountFromResultSet(rs));
 			} 
 			return accounts;
 		} catch (SQLException ex) {
@@ -888,13 +868,7 @@ public final class OsAccountManager {
 
 			List<OsAccount> accounts = new ArrayList<>();
 			while (rs.next()) {
-				OsAccountRealm realm = null;
-				long realmId = rs.getLong("realm_id");
-				if (!rs.wasNull()) {
-					realm = db.getOsAccountRealmManager().getRealm(realmId, connection);
-				}
-
-				accounts.add(osAccountFromResultSet(rs, realm));
+				accounts.add(osAccountFromResultSet(rs));
 			}
 			return accounts;
 		} catch (SQLException ex) {
@@ -1279,14 +1253,14 @@ public final class OsAccountManager {
 	 * OsAccount.
 	 *
 	 * @param rs    ResultSet.
-	 * @param realm Realm.
+	 * @param realmId Realm.
 	 *
 	 * @return OsAccount OS Account.
 	 *
 	 * @throws SQLException
 	 */
-	private OsAccount osAccountFromResultSet(ResultSet rs, OsAccountRealm realm) throws SQLException {
-		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), realm, rs.getString("login_name"), rs.getString("unique_id"), 
+	private OsAccount osAccountFromResultSet(ResultSet rs) throws SQLException {
+		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), rs.getLong("realm_id"), rs.getString("login_name"), rs.getString("unique_id"), 
 				rs.getString("signature"), OsAccount.OsAccountStatus.fromID(rs.getInt("status")),
 				OsAccount.OsAccountDbStatus.fromID(rs.getInt("db_status")));
 		

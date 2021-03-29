@@ -44,8 +44,8 @@ public final class OsAccount extends AbstractContent {
 
 	private final SleuthkitCase sleuthkitCase;
 	
-	private final long osAccountobjId;	// Object ID within the database
-	private final OsAccountRealm realm;		// realm where the loginname/uniqueId is unique - a domain or a host name.
+	private final long osAccountObjId;  // Object ID within the database
+	private final long realmId;		// realm where the account exists in (could be local or domain scoped)
 	private volatile String loginName;	// user login name - may be null
 	private volatile String uniqueId;	// a unique user sid/uid, may be null
 	
@@ -214,7 +214,7 @@ public final class OsAccount extends AbstractContent {
 	 * @param sleuthkitCase  The SleuthKit case (case database) that contains
 	 *                       the artifact data.
 	 * @param osAccountobjId Obj id of the account in tsk_objects table.
-	 * @param realm	         Realm - defines the scope of this account.
+	 * @param realmId	         Realm - defines the scope of this account.
 	 * @param loginName      Login name for the account. May be null.
 	 * @param uniqueId       An id unique within the realm - a SID or uid. May
 	 *                       be null, only if login name is not null.
@@ -223,14 +223,14 @@ public final class OsAccount extends AbstractContent {
 	 * @param accountStatus  Account status.
 	 * @param dbStatus       Status of row in database.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature, 
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature, 
 			OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
 		
 		super(sleuthkitCase, osAccountobjId, signature);
 		
 		this.sleuthkitCase = sleuthkitCase;
-		this.osAccountobjId = osAccountobjId;
-		this.realm = realm;
+		this.osAccountObjId = osAccountobjId;
+		this.realmId = realmId;
 		this.loginName = loginName;
 		this.uniqueId = uniqueId;
 		this.signature = signature;
@@ -402,7 +402,7 @@ public final class OsAccount extends AbstractContent {
 	 * @return Account id.
 	 */
 	public long getId() {
-		return osAccountobjId;
+		return osAccountObjId;
 	}
 
 	/**
@@ -416,12 +416,15 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get the account realm.
-	 *
-	 * @return OsAccountRealm.
+	 * Get the ID for the account realm.
+	 * Get the Realm via OsAccountRealmManager.getRealmById()
+	 * NOTE: The realm may get updated as more data is parsed,
+	 * so listen for events to update as needed.
+	 * 
+	 * @return 
 	 */
-	public OsAccountRealm getRealm() {
-		return realm;
+	public long getRealmId() {
+		return realmId;
 	}
 
 	/**
