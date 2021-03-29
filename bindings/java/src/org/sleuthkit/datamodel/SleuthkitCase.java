@@ -12574,6 +12574,29 @@ public class SleuthkitCase {
 			}
 		}
 
+		/**
+		 * Obtains a write lock on tsk_aggregate_score table. 
+		 * Only PostgreSQL is supported. 
+		 * 
+		 * NOTE: We run into deadlock risks when we start to lock 
+		 * multiple tables. If that need arrises, consider changing 
+		 * to opportunistic locking and single-step transactions. 
+		 */		
+		private class AggregateScoreTablePostgreSQLWriteLock implements DbCommand {
+			private final Connection connection;
+
+			AggregateScoreTablePostgreSQLWriteLock(Connection connection) {
+				this.connection = connection;
+			}
+
+			@Override
+			public void execute() throws SQLException {
+				PreparedStatement preparedStatement = connection.prepareStatement("LOCK TABLE ONLY tsk_aggregate_score in SHARE ROW EXCLUSIVE MODE");
+				preparedStatement.execute();
+		
+			}
+		}
+
 		private class ExecuteQuery implements DbCommand {
 
 			private final Statement statement;
@@ -12816,6 +12839,27 @@ public class SleuthkitCase {
 				connection.rollback();
 			} finally {
 				connection.setAutoCommit(true);
+			}
+		}
+		
+		/**
+		 * Blocks until a write lock can be obtained on the tsk_aggregate_score
+		 * table. Used to ensure only one thread/client is updating the score
+		 * at a time.  Can be called multiple times on the same transaction.
+		 * 
+		 * @throws SQLException
+		 * @throws TskCoreException 
+		 */
+		void getAggregateScoreTableWriteLock() throws SQLException, TskCoreException {
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					AggregateScoreTablePostgreSQLWriteLock tableWriteLock = new AggregateScoreTablePostgreSQLWriteLock(connection);
+					executeCommand(tableWriteLock);
+					break;
+				case SQLITE:
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
 			}
 		}
 

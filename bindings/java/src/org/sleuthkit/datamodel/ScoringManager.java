@@ -185,6 +185,23 @@ public class ScoringManager {
 	 */
 	Score updateAggregateScore(long objId, Long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
 
+		/* get an exclusive write lock on the DB before we read anything so that we know we are
+		 * the only one reading existing scores and updating.  The risk is that two computers
+		 * could update the score and the aggregate score ends up being incorrect. 
+		 * 
+		 * NOTE: The alternative design is to add a 'version' column for opportunistic locking
+		 * and calculate these outside of a transaction.  We opted for table locking for performance
+		 * reasons so that we can still add the analysis results in a batch.  That remains an option
+		 * if we get into deadlocks with the current design. 
+		 */
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			connection.getAggregateScoreTableWriteLock();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting exclusive write lock on aggregate score table", ex);//NON-NLS
+		}
+			
+		
 		// Get the current score 
 		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
 
@@ -192,7 +209,7 @@ public class ScoringManager {
 		// or if the new score is higher than the current score
 		if  ( (currentScore.compareTo(Score.SCORE_UNKNOWN) == 0 && resultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
 			  || (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
-			ScoringManager.this.setAggregateScore(objId, dataSourceObjectId, resultScore, transaction);
+			setAggregateScore(objId, dataSourceObjectId, resultScore, transaction);
 			
 			// register score change in the transaction.
 			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, resultScore));
