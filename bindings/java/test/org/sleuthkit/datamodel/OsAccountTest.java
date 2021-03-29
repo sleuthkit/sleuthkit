@@ -352,7 +352,7 @@ public class OsAccountTest {
 		assertEquals(optRealm.isPresent(), true);
 		
 		// Test that there are currently two account associated with sid1
-		List<OsAccount> accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getUniqueIdWithinRealm().isPresent() && p.getUniqueIdWithinRealm().get().equals(sid1)).collect(Collectors.toList());
+		List<OsAccount> accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getAddr().isPresent() && p.getAddr().get().equals(sid1)).collect(Collectors.toList());
 		assertEquals(accounts.size() == 2, true);
 		
 		// Expected results of the merge:
@@ -367,7 +367,7 @@ public class OsAccountTest {
 		assertEquals(optRealm.isPresent(), false);
 		
 		// Test that there is now only one account associated with sid1
-		accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getUniqueIdWithinRealm().isPresent() && p.getUniqueIdWithinRealm().get().equals(sid1)).collect(Collectors.toList());
+		accounts = caseDB.getOsAccountManager().getAccounts().stream().filter(p -> p.getAddr().isPresent() && p.getAddr().get().equals(sid1)).collect(Collectors.toList());
 		assertEquals(accounts.size() == 1, true);
 		
 		// Test that account 3 got moved into the destination realm
@@ -554,7 +554,7 @@ public class OsAccountTest {
 			//OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 			OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, loginName1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 			
-			assertEquals(osAccount1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+			assertEquals(osAccount1.getAddr().orElse("").equalsIgnoreCase(ownerUid1), true);
 			assertEquals(caseDB.getOsAccountRealmManager().getRealmById(osAccount1.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName1), true);
 			
 			// Create another account - with same SID on the same host - should return the existing account
@@ -563,7 +563,7 @@ public class OsAccountTest {
 			OsAccount osAccount11 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, loginName11, realmName11, host1, OsAccountRealm.RealmScope.DOMAIN);
 			
 			// account should be the same as osAccount1
-			assertEquals(osAccount11.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);	
+			assertEquals(osAccount11.getAddr().orElse("").equalsIgnoreCase(ownerUid1), true);	
 			assertEquals(caseDB.getOsAccountRealmManager().getRealmById(osAccount11.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName1), true);
 			assertEquals(osAccount11.getLoginName().orElse("").equalsIgnoreCase(loginName1), true);	
 			
@@ -586,7 +586,7 @@ public class OsAccountTest {
 			OsAccount osAccount1_copy1 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 			
 			
-			assertEquals(osAccount1_copy1.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+			assertEquals(osAccount1_copy1.getAddr().orElse("").equalsIgnoreCase(ownerUid1), true);
 			assertEquals(caseDB.getOsAccountRealmManager().getRealmById(osAccount1_copy1.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName1), true);
 			
 			
@@ -599,7 +599,7 @@ public class OsAccountTest {
 			assertEquals(content != null, true);
 			assertEquals(content instanceof OsAccount, true);
 			OsAccount osAccount1_copy2 = (OsAccount) content;
-			assertEquals(osAccount1_copy2.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid1), true);
+			assertEquals(osAccount1_copy2.getAddr().orElse("").equalsIgnoreCase(ownerUid1), true);
 			
 			
 			
@@ -620,11 +620,11 @@ public class OsAccountTest {
 			OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid2, null, realmName2, host2, OsAccountRealm.RealmScope.DOMAIN);
 			OsAccount osAccount3 = caseDB.getOsAccountManager().createWindowsAccount(ownerUid3, null, realmName2, host3, OsAccountRealm.RealmScope.DOMAIN);
 			
-			assertEquals(osAccount2.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid2), true);
+			assertEquals(osAccount2.getAddr().orElse("").equalsIgnoreCase(ownerUid2), true);
 			assertEquals(caseDB.getOsAccountRealmManager().getRealmById(osAccount2.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName2), true);
 			
 			
-			assertEquals(osAccount3.getUniqueIdWithinRealm().orElse("").equalsIgnoreCase(ownerUid3), true);
+			assertEquals(osAccount3.getAddr().orElse("").equalsIgnoreCase(ownerUid3), true);
 			assertEquals(caseDB.getOsAccountRealmManager().getRealmById(osAccount3.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName2), true);
 			
 		}
@@ -802,7 +802,7 @@ public class OsAccountTest {
 		
 		
 		// now get the account with same sid,  and get its attribuites and verify.
-		Optional<OsAccount> existingAccount1 = caseDB.getOsAccountManager().getOsAccountByUniqueId(osAccount1.getUniqueIdWithinRealm().get(), caseDB.getOsAccountRealmManager().getRealmById(osAccount1.getRealmId()));
+		Optional<OsAccount> existingAccount1 = caseDB.getOsAccountManager().getOsAccountByAddr(osAccount1.getAddr().get(), caseDB.getOsAccountRealmManager().getRealmById(osAccount1.getRealmId()));
 		List<OsAccountAttribute> existingAccountAttribs  = existingAccount1.get().getOsAccountAttributes();
 		
 		
