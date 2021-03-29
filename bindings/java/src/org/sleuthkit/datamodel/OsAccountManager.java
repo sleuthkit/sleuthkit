@@ -1054,8 +1054,8 @@ public final class OsAccountManager {
 			List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
 			currentAttribsList.addAll(accountAttributes);
 			account.setAttributesInternal(currentAttribsList);
-			fireChangeEvent(account);
 		}
+		fireChangeEvent(account);
 	}
 
 	/**
