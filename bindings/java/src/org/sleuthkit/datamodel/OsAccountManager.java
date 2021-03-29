@@ -407,7 +407,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
-	public OsAccount getOsAccountbyObjectid(long osAccountObjId) throws TskCoreException {
+	public OsAccount getOsAccountByObjectId(long osAccountObjId) throws TskCoreException {
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return getOsAccountByObjectId(osAccountObjId, connection);
