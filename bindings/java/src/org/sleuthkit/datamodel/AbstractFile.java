@@ -99,9 +99,10 @@ public abstract class AbstractFile extends AbstractContent {
 	private boolean loadedAttributesCacheFromDb = false;
 
 	private final String ownerUid;	// string owner uid, for example a Windows SID.
-									// different from the numeric uid which is more commonly found 
-									// on Unix based file systems.
+	// different from the numeric uid which is more commonly found 
+	// on Unix based file systems.
 	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
+
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
@@ -522,12 +523,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getSha256Hash() {
 		return this.sha256Hash;
-	}	
-	
+	}
+
 	/**
 	 * Gets the attributes of this File
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public List<Attribute> getAttributes() throws TskCoreException {
 		synchronized (this) {
@@ -542,17 +545,17 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Adds a collection of attributes to this file in a single operation 
-	 * within a transaction supplied by the caller.
+	 * Adds a collection of attributes to this file in a single operation within
+	 * a transaction supplied by the caller.
 	 *
 	 * @param attributes        The collection of attributes.
 	 * @param caseDbTransaction The transaction in the scope of which the
 	 *                          operation is to be performed, managed by the
 	 *                          caller. if Null is passed in a local transaction
-	 *							will be created and used. 
+	 *                          will be created and used.
 	 *
-	 * @throws TskCoreException         If an error occurs and the attributes
-	 *                                  were not added to the artifact.
+	 * @throws TskCoreException If an error occurs and the attributes were not
+	 *                          added to the artifact.
 	 */
 	public void addAttributes(Collection<Attribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
@@ -560,17 +563,17 @@ public abstract class AbstractFile extends AbstractContent {
 			throw new TskCoreException("Illegal Argument passed to addAttributes: null or empty attributes passed to addAttributes");
 		}
 		boolean isLocalTransaction = Objects.isNull(caseDbTransaction);
-		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;		
+		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;
 		SleuthkitCase.CaseDbConnection connection = isLocalTransaction ? localTransaction.getConnection() : caseDbTransaction.getConnection();
-		
+
 		try {
 			for (final Attribute attribute : attributes) {
-				attribute.setAttributeParentId(getId()); 
+				attribute.setAttributeParentId(getId());
 				attribute.setCaseDatabase(getSleuthkitCase());
 				getSleuthkitCase().addFileAttribute(attribute, connection);
 			}
-			
-			if(isLocalTransaction) {
+
+			if (isLocalTransaction) {
 				localTransaction.commit();
 				localTransaction = null;
 			}
@@ -591,7 +594,7 @@ public abstract class AbstractFile extends AbstractContent {
 			throw new TskCoreException("Error adding file attributes", ex);
 		}
 	}
-	
+
 	/**
 	 * Sets the known state for this file. Passed in value will be ignored if it
 	 * is "less" than the current state. A NOTABLE file cannot be downgraded to
@@ -729,7 +732,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Converts a file offset and length into a series of TskFileRange objects
-	 * whose offsets are relative to the image.  This method will only work on
+	 * whose offsets are relative to the image. This method will only work on
 	 * files with layout ranges.
 	 *
 	 * @param fileOffset The byte offset in this file to map.
@@ -777,7 +780,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 				// how much this current range exceeds the length requested (or 0 if within the length requested)
 				long rangeOvershoot = Math.max(0, curRangeEnd - requestedEnd);
-				
+
 				long newRangeLen = curRangeLen - rangeOffset - rangeOvershoot;
 				toRet.add(new TskFileRange(newRangeStart, newRangeLen, toRet.size()));
 			}
@@ -932,13 +935,13 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Set the directory name flag.
-	 * 
+	 *
 	 * @param flag Flag to set to.
 	 */
 	void setDirFlag(TSK_FS_NAME_FLAG_ENUM flag) {
 		dirFlag = flag;
 	}
-	
+
 	/**
 	 * @return a string representation of the meta flags
 	 */
@@ -962,33 +965,32 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Set the specified meta flag. 
-	 * 
+	 * Set the specified meta flag.
+	 *
 	 * @param metaFlag Meta flag to set
 	 */
 	void setMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
 		metaFlags.add(metaFlag);
 	}
-	
+
 	/**
 	 * Remove the specified meta flag.
-	 * 
+	 *
 	 * @param metaFlag Meta flag to remove.
 	 */
 	void removeMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
 		metaFlags.remove(metaFlag);
 	}
-	
+
 	/**
 	 * Get meta flags as an integer.
-	 * 
+	 *
 	 * @return Integer representation of the meta flags.
 	 */
 	short getMetaFlagsAsInt() {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
-	
-	
+
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
@@ -1365,26 +1367,25 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Get the owner uid.
-	 * 
-	 * Note this is a string uid, typically a Windows SID. 
-	 * This is different from the numeric uid commonly found 
-	 * on Unix based file systems.
-	 * 
+	 *
+	 * Note this is a string uid, typically a Windows SID. This is different
+	 * from the numeric uid commonly found on Unix based file systems.
+	 *
 	 * @return Optional with owner uid.
 	 */
 	public Optional<String> getOwnerUid() {
 		return Optional.ofNullable(ownerUid);
 	}
-		
+
 	/**
-	 * Get the Object Id of the owner account. 
-	 * 
+	 * Get the Object Id of the owner account.
+	 *
 	 * @return Optional with Object Id of the OsAccount, or Optional.empty.
 	 */
 	public Optional<Long> getOsAccountObjectId() {
 		return Optional.ofNullable(osAccountObjId);
 	}
-	
+
 	/**
 	 * Gets the owner account for the file.
 	 *
@@ -1393,14 +1394,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
 	public Optional<OsAccount> getOsAccount() throws TskCoreException {
-		
+
 		if (osAccountObjId == null) {
 			return Optional.empty();
 		}
-		
+
 		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));
 	}
-	
+
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		// don't let them make more than 1 GEN_INFO

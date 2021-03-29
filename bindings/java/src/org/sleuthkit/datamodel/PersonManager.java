@@ -269,6 +269,7 @@ public final class PersonManager {
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
 		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getId();
+		whereStatement +=  " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 
 		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
 

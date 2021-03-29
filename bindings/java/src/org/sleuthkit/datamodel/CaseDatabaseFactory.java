@@ -496,8 +496,8 @@ class CaseDatabaseFactory {
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null
 				+ "full_name TEXT DEFAULT NULL, "	// full name, if available, may be null
 				+ "realm_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "		// realm for the account 
-				+ "unique_id TEXT DEFAULT NULL, "	// SID/UID, if available
-				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
+				+ "addr TEXT DEFAULT NULL, "	// SID/UID, if available
+				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the addr or the login_name whichever is not null.
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
