@@ -2481,8 +2481,8 @@ public class SleuthkitCase {
 					+ "login_name TEXT DEFAULT NULL, " // login name, if available, may be null
 					+ "full_name TEXT DEFAULT NULL, " // full name, if available, may be null
 					+ "realm_id " + bigIntDataType + " NOT NULL, " // realm for the account
-					+ "unique_id TEXT DEFAULT NULL, " // SID/UID, if available
-					+ "signature TEXT NOT NULL, " // This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
+					+ "addr TEXT DEFAULT NULL, " // SID/UID, if available
+					+ "signature TEXT NOT NULL, " // This exists only to prevent duplicates.  It is either the addr or the login_name whichever is not null.
 					+ "status INTEGER, " // enabled/disabled/deleted
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
@@ -12999,8 +12999,8 @@ public class SleuthkitCase {
 		private List<Host> hostsAdded = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
-		private List<OsAccount> accountsDeleted = new ArrayList<>();
-		private List<AnalysisResult> deletedResults = new ArrayList<>();
+		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
+		private List<Long> deletedResultObjectIds = new ArrayList<>();
 		
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
@@ -13062,12 +13062,10 @@ public class SleuthkitCase {
 		
 		/**
 		 * Saves an account that has been deleted as a part of this transaction.
-		 * @param account The account.
+		 * @param osAccountObjId The account.
 		 */		
-		void registerDeletedOsAccount(OsAccount account) {
-			if (account != null) {
-				accountsDeleted.add(account);
-			}
+		void registerDeletedOsAccount(long osAccountObjId) {
+			deletedOsAccountObjectIds.add(osAccountObjId);
 		}		
 		
 		/**
@@ -13085,10 +13083,8 @@ public class SleuthkitCase {
 		 * 
 		 * @param result Deleted result.
 		 */
-		void registerDeletedAnalysisResult(AnalysisResult result) {
-			if (result != null) {
-				this.deletedResults.add(result);
-			}
+		void registerDeletedAnalysisResult(long analysisResultObjId) {
+			this.deletedResultObjectIds.add(analysisResultObjId);
 		}
 		/**
 		 * Check if the given thread has an open transaction.
@@ -13137,11 +13133,11 @@ public class SleuthkitCase {
 				if (!accountsChanged.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsUpdateEvent(accountsChanged));
 				}
-				if (!accountsDeleted.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsDeleteEvent(accountsDeleted));
+				if (!deletedOsAccountObjectIds.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsDeleteEvent(deletedOsAccountObjectIds));
 				}
-				if (!deletedResults.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new AnalysisResultsDeletedEvent(deletedResults));
+				if (!deletedResultObjectIds.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new AnalysisResultsDeletedEvent(deletedResultObjectIds));
 				}
 			}
 		}

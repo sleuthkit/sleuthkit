@@ -26,33 +26,32 @@ import java.util.ResourceBundle;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Abstracts an OS user account. OS Accounts have a scope,
- * which is defined by their parent OsAccountRealm.
+ * Abstracts an OS user account. OS Accounts have a scope, which is defined by
+ * their parent OsAccountRealm.
  *
  * An OS user account may own files and (some) artifacts.
  *
- * OsAcounts can be created with minimal data and updated 
- * as more is learned. Caller must call update() to save
- * any new data. 
+ * OsAcounts can be created with minimal data and updated as more is learned.
+ * Caller must call update() to save any new data.
  */
 public final class OsAccount extends AbstractContent {
-	
+
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	final static Long NO_ACCOUNT = null;
 	final static String NO_OWNER_ID = null;
 
 	private final SleuthkitCase sleuthkitCase;
-	
-	private final long osAccountObjId;  // Object ID within the database
+
+	private final long osAccountObjId;	// Object ID within the database
 	private final long realmId;		// realm where the account exists in (could be local or domain scoped)
 	private volatile String loginName;	// user login name - may be null
-	private volatile String uniqueId;	// a unique user sid/uid, may be null
-	
+	private volatile String addr;	// a unique user sid/uid, may be null
+
 	private volatile String signature;		// This exists only to prevent duplicates.
-									// Together realm_id & signature must be unique for each account.
-									// It is either unique_id if unique_id is defined,
-									// or the login_name if login_name is defined.
+	// Together realm_id & signature must be unique for each account.
+	// It is either addr if addr is defined,
+	// or the login_name if login_name is defined.
 
 	private volatile String fullName;	// full name, may be null
 	private volatile OsAccountType osAccountType = OsAccountType.UNKNOWN;
@@ -60,9 +59,9 @@ public final class OsAccount extends AbstractContent {
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
 	private volatile Long creationTime = null;
 
-	private volatile List<OsAccountAttribute> osAccountAttributes = null; // ensure visibility when updated in multithreaded env.
+	private volatile List<OsAccountAttribute> osAccountAttributes = null;
 	private volatile List<OsAccountInstance> osAccountInstances = null;
-	
+
 	private volatile boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
 	
@@ -118,16 +117,16 @@ public final class OsAccount extends AbstractContent {
 			return null;
 		}
 	}
-	
+
 	/**
-	 * Encapsulates status of OsAccount row.
-	 * OsAccounts that are not "Active" are generally invisible -
-	 * they will not be returned by any queries on the string fields.
+	 * Encapsulates status of OsAccount row. OsAccounts that are not "Active"
+	 * are generally invisible - they will not be returned by any queries on the
+	 * string fields.
 	 */
 	public enum OsAccountDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
-		DELETED(2, "Deleted");	
+		DELETED(2, "Deleted");
 
 		private final int id;
 		private final String name;
@@ -214,7 +213,7 @@ public final class OsAccount extends AbstractContent {
 	 * @param sleuthkitCase  The SleuthKit case (case database) that contains
 	 *                       the artifact data.
 	 * @param osAccountobjId Obj id of the account in tsk_objects table.
-	 * @param realmId	         Realm - defines the scope of this account.
+	 * @param realmId	       Realm - defines the scope of this account.
 	 * @param loginName      Login name for the account. May be null.
 	 * @param uniqueId       An id unique within the realm - a SID or uid. May
 	 *                       be null, only if login name is not null.
@@ -223,16 +222,16 @@ public final class OsAccount extends AbstractContent {
 	 * @param accountStatus  Account status.
 	 * @param dbStatus       Status of row in database.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature, 
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature,
 			OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
-		
+
 		super(sleuthkitCase, osAccountobjId, signature);
-		
+
 		this.sleuthkitCase = sleuthkitCase;
 		this.osAccountObjId = osAccountobjId;
 		this.realmId = realmId;
 		this.loginName = loginName;
-		this.uniqueId = uniqueId;
+		this.addr = uniqueId;
 		this.signature = signature;
 		this.osAccountStatus = accountStatus;
 		this.osAccountDbStatus = accountDbStatus;
@@ -245,8 +244,9 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @return Returns true of the login name is set, false if the name was not
 	 *         changed.
+	 *
 	 * @throws TskCoreException If there is an error setting the login name.
-	 * 
+	 *
 	 */
 	public boolean setLoginName(String loginName) throws TskCoreException {
 		if (StringUtils.isBlank(this.loginName) && StringUtils.isNotBlank(loginName)) {
@@ -260,24 +260,25 @@ public final class OsAccount extends AbstractContent {
 
 	/**
 	 * Set the account unique id, such as SID or UID, if not already set.
-	 * 
-	 * @param uniqueId Id to set.
-	 * 
-	 * @return Returns true of the unique id is set, false if the unique id was not
+	 *
+	 * @param addr Id to set.
+	 *
+	 * @return Returns true of the address is set, false if the address was not
 	 *         changed.
-	 * @throws TskCoreException If there is an error setting the account unique id.
+	 *
+	 * @throws TskCoreException If there is an error setting the account
+	 *                          address.
 	 */
-	public boolean setUniqueId(String uniqueId) throws TskCoreException {
-		if (StringUtils.isBlank(this.uniqueId)  && StringUtils.isNotBlank(uniqueId)) {
-			this.uniqueId = uniqueId;
+	public boolean setAddr(String addr) throws TskCoreException {
+		if (StringUtils.isBlank(this.addr) && StringUtils.isNotBlank(addr)) {
+			this.addr = addr;
 			updateSignature();
 			this.isDirty = true;
 			return true;
 		}
 		return false;
 	}
-	
-	
+
 	/**
 	 * Sets the account user's full name, such as "John Doe", if it is not
 	 * already set.
@@ -288,7 +289,7 @@ public final class OsAccount extends AbstractContent {
 	 *         changed.
 	 */
 	public boolean setFullName(String fullName) {
-		if (StringUtils.isBlank(this.fullName)  && StringUtils.isNotBlank(fullName)) {
+		if (StringUtils.isBlank(this.fullName) && StringUtils.isNotBlank(fullName)) {
 			this.fullName = fullName;
 			this.isDirty = true;
 			return true;
@@ -318,7 +319,7 @@ public final class OsAccount extends AbstractContent {
 	 * Sets account status for the account, if it is not already set.
 	 *
 	 * @param osAccountStatus Account status.
-	 * 
+	 *
 	 * @return Returns true of the account status is set, false if the account
 	 *         status was not changed.
 	 */
@@ -336,9 +337,9 @@ public final class OsAccount extends AbstractContent {
 	 * Set account creation time, if not already set.
 	 *
 	 * @param creationTime Creation time.
-	 * 
-	 * @return Returns true of the creation time is set, false if the time was not
-	 *         changed.
+	 *
+	 * @return Returns true of the creation time is set, false if the time was
+	 *         not changed.
 	 */
 	public boolean setCreationTime(Long creationTime) {
 		if (Objects.isNull(this.creationTime) && Objects.nonNull(creationTime)) {
@@ -349,7 +350,6 @@ public final class OsAccount extends AbstractContent {
 		return false;
 	}
 
-	
 	/**
 	 * Get the dirty flag. Indicates whether the account has any changes that
 	 * need to be updated in the database. If it returns true,
@@ -361,17 +361,16 @@ public final class OsAccount extends AbstractContent {
 	public boolean isDirty() {
 		return isDirty;
 	}
-	
+
 	/**
 	 * Reset the dirty flag. Indicates that the account has been updated in the
 	 * database.
-	 * 
+	 *
 	 */
 	void resetDirty() {
 		this.isDirty = false;
 	}
-	
-	
+
 	/**
 	 * Adds account attributes to the account. Attributes can be at a host-level
 	 * or domain-level (for domain-scoped accounts).
@@ -395,7 +394,7 @@ public final class OsAccount extends AbstractContent {
 	void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
 	}
-		
+
 	/**
 	 * Get the account Object Id that is unique within the scope of the case.
 	 *
@@ -406,22 +405,21 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Get the unique identifier for the account, such as UID or SID.
-	 * The id is unique within the account realm.
+	 * Get the unique identifier for the account, such as UID or SID. The id is
+	 * unique within the account realm.
 	 *
 	 * @return Optional unique identifier.
 	 */
-	public Optional<String> getUniqueIdWithinRealm() {
-		return Optional.ofNullable(uniqueId);
+	public Optional<String> getAddr() {
+		return Optional.ofNullable(addr);
 	}
 
 	/**
-	 * Get the ID for the account realm.
-	 * Get the Realm via OsAccountRealmManager.getRealmById()
-	 * NOTE: The realm may get updated as more data is parsed,
-	 * so listen for events to update as needed.
-	 * 
-	 * @return 
+	 * Get the ID for the account realm. Get the Realm via
+	 * OsAccountRealmManager.getRealmById() NOTE: The realm may get updated as
+	 * more data is parsed, so listen for events to update as needed.
+	 *
+	 * @return
 	 */
 	public long getRealmId() {
 		return realmId;
@@ -445,7 +443,6 @@ public final class OsAccount extends AbstractContent {
 		return signature;
 	}
 
-	
 	/**
 	 * Get account user full name, such as "John Doe"
 	 *
@@ -481,7 +478,7 @@ public final class OsAccount extends AbstractContent {
 	public OsAccountStatus getOsAccountStatus() {
 		return osAccountStatus;
 	}
-	
+
 	/**
 	 * Get account status in the database.
 	 *
@@ -495,7 +492,7 @@ public final class OsAccount extends AbstractContent {
 	 * Get additional account attributes.
 	 *
 	 * @return List of additional account attributes. May return an empty list.
-	 * 
+	 *
 	 * @throws TskCoreException
 	 */
 	public List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
@@ -504,22 +501,22 @@ public final class OsAccount extends AbstractContent {
 		}
 		return Collections.unmodifiableList(osAccountAttributes);
 	}
-	
+
 	/**
 	 * Return the os account instances.
-	 * 
+	 *
 	 * @return List of all the OsAccountInstances. May return an empty list.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
-		if(osAccountInstances == null) {
+		if (osAccountInstances == null) {
 			osAccountInstances = sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
 		}
-		
+
 		return Collections.unmodifiableList(osAccountInstances);
 	}
-	
+
 	/**
 	 * Updates the account signature with unique id or name.
 	 *
@@ -527,12 +524,11 @@ public final class OsAccount extends AbstractContent {
 	 *                          signature.
 	 */
 	private void updateSignature() throws TskCoreException {
-		signature = OsAccountManager.getAccountSignature(this.uniqueId, this.loginName);
+		signature = OsAccountManager.getOsAccountSignature(this.addr, this.loginName);
 	}
-	
+
 	/**
-	 * Gets the SleuthKit case  database for this
-	 * account.
+	 * Gets the SleuthKit case database for this account.
 	 *
 	 * @return The SleuthKit case object.
 	 */
@@ -540,7 +536,7 @@ public final class OsAccount extends AbstractContent {
 	public SleuthkitCase getSleuthkitCase() {
 		return sleuthkitCase;
 	}
-	
+
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// No data to read. 
@@ -561,7 +557,7 @@ public final class OsAccount extends AbstractContent {
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 
-		throw new UnsupportedOperationException("Not supported yet."); 
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	@Override
