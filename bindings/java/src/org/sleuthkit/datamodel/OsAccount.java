@@ -46,24 +46,24 @@ public final class OsAccount extends AbstractContent {
 	
 	private final long osAccountobjId;	// Object ID within the database
 	private final OsAccountRealm realm;		// realm where the loginname/uniqueId is unique - a domain or a host name.
-	private String loginName;	// user login name - may be null
-	private String uniqueId;	// a unique user sid/uid, may be null
+	private volatile String loginName;	// user login name - may be null
+	private volatile String uniqueId;	// a unique user sid/uid, may be null
 	
-	private String signature;		// This exists only to prevent duplicates.
+	private volatile String signature;		// This exists only to prevent duplicates.
 									// Together realm_id & signature must be unique for each account.
 									// It is either unique_id if unique_id is defined,
 									// or the login_name if login_name is defined.
 
-	private String fullName;	// full name, may be null
-	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
-	private OsAccountStatus osAccountStatus = null;
+	private volatile String fullName;	// full name, may be null
+	private volatile OsAccountType osAccountType = OsAccountType.UNKNOWN;
+	private volatile OsAccountStatus osAccountStatus = null;
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
-	private Long creationTime = null;
+	private volatile Long creationTime = null;
 
 	private volatile List<OsAccountAttribute> osAccountAttributes = null; // ensure visibility when updated in multithreaded env.
-	private List<OsAccountInstance> osAccountInstances = null;
+	private volatile List<OsAccountInstance> osAccountInstances = null;
 	
-	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
+	private volatile boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
 	
 	/**
@@ -387,7 +387,7 @@ public final class OsAccount extends AbstractContent {
 	}
 	
 	/**
-	 * addAttributeInternal is used by OsAccountManger to update the list of 
+	 * This function is used by OsAccountManger to update the list of 
 	 * OsAccount attributes. 
 	 * 
 	 * @param osAccountAttribute The osAccount Attribute that is to be added. 

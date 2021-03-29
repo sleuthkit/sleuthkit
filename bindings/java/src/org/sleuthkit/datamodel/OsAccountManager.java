@@ -979,84 +979,83 @@ public final class OsAccountManager {
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.
 	 *
-	 * This is method is synchronized to prevent multiple threads trying to 
-	 * add osAccount attributes concurrently.
-	 * 
 	 * @param account	         Account for which the attributes is being added.
 	 * @param accountAttribute List of attributes to add.
 	 *
 	 * @throws TskCoreException,
 	 */
-	synchronized void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
-		 
-		db.acquireSingleUserCaseWriteLock();
+	void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
+	
+		synchronized (account) {  // synchronized to prevent multiple threads trying to add osAccount attributes concurrently to the same osAccount.
+			db.acquireSingleUserCaseWriteLock();
 
-		try (CaseDbConnection connection = db.getConnection()) {
-			for (OsAccountAttribute accountAttribute : accountAttributes) {
+			try (CaseDbConnection connection = db.getConnection()) {
+				for (OsAccountAttribute accountAttribute : accountAttributes) {
 
-				String attributeInsertSQL = "INSERT INTO tsk_os_account_attributes(os_account_obj_id, host_id, source_obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double)"
-						+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
+					String attributeInsertSQL = "INSERT INTO tsk_os_account_attributes(os_account_obj_id, host_id, source_obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double)"
+							+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 
-				PreparedStatement preparedStatement = connection.getPreparedStatement(attributeInsertSQL, Statement.RETURN_GENERATED_KEYS);
-				preparedStatement.clearParameters();
+					PreparedStatement preparedStatement = connection.getPreparedStatement(attributeInsertSQL, Statement.RETURN_GENERATED_KEYS);
+					preparedStatement.clearParameters();
 
-				preparedStatement.setLong(1, account.getId());
-				if (accountAttribute.getHostId().isPresent()) {
-					preparedStatement.setLong(2, accountAttribute.getHostId().get());
-				} else {
-					preparedStatement.setNull(2, java.sql.Types.NULL);
+					preparedStatement.setLong(1, account.getId());
+					if (accountAttribute.getHostId().isPresent()) {
+						preparedStatement.setLong(2, accountAttribute.getHostId().get());
+					} else {
+						preparedStatement.setNull(2, java.sql.Types.NULL);
+					}
+					if (accountAttribute.getSourceObjectId().isPresent()) {
+						preparedStatement.setLong(3, accountAttribute.getSourceObjectId().get());
+					} else {
+						preparedStatement.setNull(3, java.sql.Types.NULL);
+					}
+
+					preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
+					preparedStatement.setLong(5, accountAttribute.getAttributeType().getValueType().getType());
+
+					if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+						preparedStatement.setBytes(6, accountAttribute.getValueBytes());
+					} else {
+						preparedStatement.setBytes(6, null);
+					}
+
+					if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+							|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
+						preparedStatement.setString(7, accountAttribute.getValueString());
+					} else {
+						preparedStatement.setString(7, null);
+					}
+					if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+						preparedStatement.setInt(8, accountAttribute.getValueInt());
+					} else {
+						preparedStatement.setNull(8, java.sql.Types.NULL);
+					}
+
+					if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+							|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
+						preparedStatement.setLong(9, accountAttribute.getValueLong());
+					} else {
+						preparedStatement.setNull(9, java.sql.Types.NULL);
+					}
+
+					if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+						preparedStatement.setDouble(10, accountAttribute.getValueDouble());
+					} else {
+						preparedStatement.setNull(10, java.sql.Types.NULL);
+					}
+
+					connection.executeUpdate(preparedStatement);
 				}
-				if (accountAttribute.getSourceObjectId().isPresent()) {
-					preparedStatement.setLong(3, accountAttribute.getSourceObjectId().get());
-				} else {
-					preparedStatement.setNull(3, java.sql.Types.NULL);
-				}
-
-				preparedStatement.setLong(4, accountAttribute.getAttributeType().getTypeID());
-				preparedStatement.setLong(5, accountAttribute.getAttributeType().getValueType().getType());
-
-				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
-					preparedStatement.setBytes(6, accountAttribute.getValueBytes());
-				} else {
-					preparedStatement.setBytes(6, null);
-				}
-
-				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
-						|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
-					preparedStatement.setString(7, accountAttribute.getValueString());
-				} else {
-					preparedStatement.setString(7, null);
-				}
-				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
-					preparedStatement.setInt(8, accountAttribute.getValueInt());
-				} else {
-					preparedStatement.setNull(8, java.sql.Types.NULL);
-				}
-
-				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
-						|| accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
-					preparedStatement.setLong(9, accountAttribute.getValueLong());
-				} else {
-					preparedStatement.setNull(9, java.sql.Types.NULL);
-				}
-
-				if (accountAttribute.getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
-					preparedStatement.setDouble(10, accountAttribute.getValueDouble());
-				} else {
-					preparedStatement.setNull(10, java.sql.Types.NULL);
-				}
-
-				connection.executeUpdate(preparedStatement);
+			} catch (SQLException ex) {
+				throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
+			} finally {
+				db.releaseSingleUserCaseWriteLock();
 			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding OS Account attribute for account id = %d", account.getId()), ex);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
+			List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
+			currentAttribsList.addAll(accountAttributes);
+			account.setAttributesInternal(currentAttribsList);
+			fireChangeEvent(account);
 		}
-		List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
-		currentAttribsList.addAll(accountAttributes);
-		account.setAttributesInternal(currentAttribsList);
-		fireChangeEvent(account);
 	}
 
 	/**
