@@ -45,7 +45,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 		super(attributeType, valueInt);
 
 		this.osAccountObjId = osAccount.getId();
-		this.hostId = (host != null ? host.getId() : null);
+		this.hostId = (host != null ? host.getHostId() : null);
 		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
@@ -63,7 +63,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 		super(attributeType, valueLong);
 
 		this.osAccountObjId = osAccount.getId();
-		this.hostId = (host != null ? host.getId() : null);
+		this.hostId = (host != null ? host.getHostId() : null);
 		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
@@ -81,7 +81,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 		super(attributeType, valueDouble);
 
 		this.osAccountObjId = osAccount.getId();
-		this.hostId = (host != null ? host.getId() : null);
+		this.hostId = (host != null ? host.getHostId() : null);
 		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
@@ -99,7 +99,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 		super(attributeType, valueString);
 
 		this.osAccountObjId = osAccount.getId();
-		this.hostId = (host != null ? host.getId() : null);
+		this.hostId = (host != null ? host.getHostId() : null);
 		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
@@ -117,7 +117,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 		super(attributeType, valueBytes);
 
 		this.osAccountObjId = osAccount.getId();
-		this.hostId = (host != null ? host.getId() : null);
+		this.hostId = (host != null ? host.getHostId() : null);
 		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
@@ -144,7 +144,7 @@ public final class OsAccountAttribute extends AbstractAttribute {
 				valueInt, valueLong, valueDouble, valueString, valueBytes,
 				sleuthkitCase);
 		this.osAccountObjId = osAccount.getId();
-		this.hostId = (host != null ? host.getId() : null);
+		this.hostId = (host != null ? host.getHostId() : null);
 		this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
 	}
 
