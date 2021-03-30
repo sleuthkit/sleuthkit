@@ -746,27 +746,6 @@ public final class OsAccountRealmManager {
 		}
 	}
 	
-	/**
-	 * Merge one realm into another, moving or combining all associated OsAccounts.
-	 * 
-	 * @param sourceRealm The sourceRealm realm.
-	 * @param destRealm   The destination realm.
-	 * 
-	 * @throws TskCoreException 
-	 */
-	public void mergeRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm) throws TskCoreException {
-		CaseDbTransaction trans = null;
-		try {
-			trans = db.beginTransaction();
-			mergeRealms(sourceRealm, destRealm, trans);
-			trans.commit();
-			trans = null;
-		} finally {
-			if (trans != null) {
-				trans.rollback();
-			}
-		}
-	}
 	
 	/**
 	 * Merge one realm into another, moving or combining all associated OsAccounts.
