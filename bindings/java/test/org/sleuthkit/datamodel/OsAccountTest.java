@@ -360,7 +360,9 @@ public class OsAccountTest {
 		// - account 6 will be merged into account 5
 		// - account 8 will be merged into account 7 (due to account 9 containing matches for both)
 		// - account 9 will be merged into account 7
-		caseDB.getOsAccountRealmManager().mergeRealms(srcRealm, destRealm);
+		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		caseDB.getOsAccountRealmManager().mergeRealms(srcRealm, destRealm, trans);
+		trans.commit();
 		
 		// Test that the source realm is no longer returned by a search by name
 		optRealm = caseDB.getOsAccountRealmManager().getWindowsRealm(null, srcRealmName, host);
