@@ -1416,7 +1416,7 @@ public abstract class AbstractFile extends AbstractContent {
 			return Optional.empty();
 		}
 
-		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));
+		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccountByObjectId(this.osAccountObjId));
 	}
 
 	@Override

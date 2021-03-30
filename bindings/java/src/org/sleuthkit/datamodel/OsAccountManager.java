@@ -104,7 +104,7 @@ public final class OsAccountManager {
 				}
 
 				// create failed for some other reason, throw an exception
-				throw new TskCoreException(String.format("Error creating OsAccount with uniqueAccountId = %s in realm id = %d", uniqueAccountId, realm.getId()), ex);
+				throw new TskCoreException(String.format("Error creating OsAccount with uniqueAccountId = %s in realm id = %d", uniqueAccountId, realm.getRealmId()), ex);
 			}
 		} finally {
 			if (trans != null) {
@@ -249,7 +249,7 @@ public final class OsAccountManager {
 			preparedStatement.setLong(1, osAccountObjId);
 
 			preparedStatement.setString(2, loginName);
-			preparedStatement.setLong(3, realm.getId());
+			preparedStatement.setLong(3, realm.getRealmId());
 
 			preparedStatement.setString(4, uniqueId);
 			preparedStatement.setString(5, signature);
@@ -257,7 +257,7 @@ public final class OsAccountManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			account = new OsAccount(db, osAccountObjId, realm.getId(), loginName, uniqueId, signature, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
+			account = new OsAccount(db, osAccountObjId, realm.getRealmId(), loginName, uniqueId, signature, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -299,7 +299,7 @@ public final class OsAccountManager {
 
 		String whereHostClause = (host == null)
 				? " 1 = 1 "
-				: " ( realms.scope_host_id = " + host.getId() + " OR realms.scope_host_id IS NULL) ";
+				: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL) ";
 
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 				+ " accounts.realm_id, accounts.addr, accounts.signature, "
@@ -344,7 +344,7 @@ public final class OsAccountManager {
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE LOWER(addr) = LOWER('" + uniqueId + "')"
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
-				+ " AND realm_id = " + realm.getId();
+				+ " AND realm_id = " + realm.getRealmId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -379,7 +379,7 @@ public final class OsAccountManager {
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE LOWER(login_name) = LOWER('" + loginName + "')"
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
-				+ " AND realm_id = " + realm.getId();
+				+ " AND realm_id = " + realm.getRealmId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -407,10 +407,10 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
-	public OsAccount getOsAccount(long osAccountObjId) throws TskCoreException {
+	public OsAccount getOsAccountByObjectId(long osAccountObjId) throws TskCoreException {
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			return getOsAccount(osAccountObjId, connection);
+			return getOsAccountByObjectId(osAccountObjId, connection);
 		}
 	}
 
@@ -424,7 +424,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
-	OsAccount getOsAccount(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
+	OsAccount getOsAccountByObjectId(long osAccountObjId, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
 				+ " WHERE os_account_obj_id = " + osAccountObjId;
@@ -608,7 +608,7 @@ public final class OsAccountManager {
 				+ "		ON instances.os_account_obj_id = accounts.os_account_obj_id "
 				+ " JOIN data_source_info as datasources "
 				+ "		ON datasources.obj_id = instances.data_source_obj_id "
-				+ " WHERE datasources.host_id = " + host.getId()
+				+ " WHERE datasources.host_id = " + host.getHostId()
 				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
@@ -622,7 +622,7 @@ public final class OsAccountManager {
 			}
 			return accounts;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting OS accounts for host id = %d", host.getId()), ex);
+			throw new TskCoreException(String.format("Error getting OS accounts for host id = %d", host.getHostId()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -696,7 +696,7 @@ public final class OsAccountManager {
 			if (matchingDestAccount != null) {
 				mergeOsAccounts(sourceAccount, matchingDestAccount, trans);
 			} else {
-				String query = "UPDATE tsk_os_accounts SET realm_id = " + destRealm.getId() + " WHERE os_account_obj_id = " + sourceAccount.getId();
+				String query = "UPDATE tsk_os_accounts SET realm_id = " + destRealm.getRealmId() + " WHERE os_account_obj_id = " + sourceAccount.getId();
 				try (Statement s = trans.getConnection().createStatement()) {
 					s.executeUpdate(query);
 				} catch (SQLException ex) {
@@ -835,7 +835,7 @@ public final class OsAccountManager {
 	 */
 	private List<OsAccount> getOsAccounts(OsAccountRealm realm, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE realm_id = " + realm.getId()
+				+ " WHERE realm_id = " + realm.getRealmId()
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 				+ " ORDER BY os_account_obj_id";
 
@@ -848,7 +848,7 @@ public final class OsAccountManager {
 			}
 			return accounts;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting OS accounts for realm id = %d", realm.getId()), ex);
+			throw new TskCoreException(String.format("Error getting OS accounts for realm id = %d", realm.getRealmId()), ex);
 		}
 	}
 

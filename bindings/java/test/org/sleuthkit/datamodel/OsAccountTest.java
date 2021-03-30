@@ -277,15 +277,15 @@ public class OsAccountTest {
 			assertEquals(optRealm.isPresent(), false);
 			
 			// The realm8 and realm10 accounts should both be in realm9 now
-			OsAccount acct = caseDB.getOsAccountManager().getOsAccount(realm8acct.getId(), connection);
-			assertEquals(acct.getRealmId() == realm9.getId(), true);
-			acct = caseDB.getOsAccountManager().getOsAccount(realm10acct.getId(), connection);
-			assertEquals(acct.getRealmId() == realm9.getId(), true);
+			OsAccount acct = caseDB.getOsAccountManager().getOsAccountByObjectId(realm8acct.getId(), connection);
+			assertEquals(acct.getRealmId() == realm9.getRealmId(), true);
+			acct = caseDB.getOsAccountManager().getOsAccountByObjectId(realm10acct.getId(), connection);
+			assertEquals(acct.getRealmId() == realm9.getRealmId(), true);
 		}
 			
 		// The data source should now reference host2
 		Host host = caseDB.getHostManager().getHost(ds);
-		assertEquals(host.getId() == host2.getId(), true);
+		assertEquals(host.getHostId() == host2.getHostId(), true);
 
 		// We should get no results on a search for host1
 		Optional<Host> optHost = caseDB.getHostManager().getHost(host1Name);
@@ -293,7 +293,7 @@ public class OsAccountTest {
 		
 		// If we attempt to make a new host with the same name host1 had, we should get a new object Id
 		host = caseDB.getHostManager().createHost(host1Name);
-		assertEquals(host.getId() != host1.getId(), true);
+		assertEquals(host.getHostId() != host1.getHostId(), true);
 	}
 	
 	/**
@@ -303,7 +303,7 @@ public class OsAccountTest {
 	private void testUpdatedRealm(OsAccountRealm origRealm, OsAccountRealm.RealmDbStatus expectedStatus, Optional<String> expectedAddr,
 			List<String> expectedNames, Optional<Host> expectedHost, org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection connection) throws TskCoreException {
 		
-		OsAccountRealm realm = caseDB.getOsAccountRealmManager().getRealmById(origRealm.getId(), connection);
+		OsAccountRealm realm = caseDB.getOsAccountRealmManager().getRealmById(origRealm.getRealmId(), connection);
 		assertEquals(realm.getDbStatus().equals(expectedStatus), true);	
 		if (expectedAddr != null) {
 			assertEquals(realm.getRealmAddr().equals(expectedAddr), true);

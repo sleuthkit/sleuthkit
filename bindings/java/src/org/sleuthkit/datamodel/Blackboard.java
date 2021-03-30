@@ -660,7 +660,7 @@ public final class Blackboard {
 			
 			long accountObjId = resultSet.getLong("os_account_obj_id");
 			if (resultSet.wasNull() == false) {	
-				osAccount = this.caseDb.getOsAccountManager().getOsAccount(accountObjId, connection);
+				osAccount = this.caseDb.getOsAccountManager().getOsAccountByObjectId(accountObjId, connection);
 			}
 			
 			dataArtifacts.add(new DataArtifact(caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"),
