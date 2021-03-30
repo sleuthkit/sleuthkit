@@ -925,31 +925,7 @@ public final class OsAccountManager {
 		return this.getOsAccountByLoginName(loginName, realm.get());
 	}
 
-	/**
-	 * Gets an OS account with the given login name and realm name.
-	 *
-	 * @param loginName Account SID.
-	 * @param realmName Domain name.
-	 * @param host      Host for the realm.
-	 *
-	 * @return Optional with OsAccount, Optional.empty if no matching OS account
-	 *         is found.
-	 *
-	 * @throws TskCoreException
-	 */
-	private Optional<OsAccount> getOsAccountByLogin(String loginName, String realmName, Host host) throws TskCoreException {
 
-		try (CaseDbConnection connection = db.getConnection()) {
-
-			// first get the realm 
-			Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getRealmByName(realmName, host, connection);
-			if (!realm.isPresent()) {
-				throw new TskCoreException(String.format("No realm found with name %s", realmName));
-			}
-
-			return getOsAccountByLoginName(loginName, realm.get());
-		}
-	}
 
 	/**
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of

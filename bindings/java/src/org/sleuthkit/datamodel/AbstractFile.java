@@ -1403,22 +1403,6 @@ public abstract class AbstractFile extends AbstractContent {
 		return Optional.ofNullable(osAccountObjId);
 	}
 
-	/**
-	 * Gets the owner account for the file.
-	 *
-	 * @return Optional with OsAccount, Optional.empty if there is no account.
-	 *
-	 * @throws TskCoreException If there is an error getting the account.
-	 */
-	public Optional<OsAccount> getOsAccount() throws TskCoreException {
-
-		if (osAccountObjId == null) {
-			return Optional.empty();
-		}
-
-		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccountByObjectId(this.osAccountObjId));
-	}
-
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		// don't let them make more than 1 GEN_INFO
