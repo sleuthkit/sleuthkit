@@ -74,6 +74,10 @@ public class ArtifactTest {
 
 			// Create new case db
 			caseDB = SleuthkitCase.newCase(dbPath);
+			
+			// uncomment to manually test with PostgreSQL
+			//CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("HostName", "5432", "User", "Password", TskData.DbType.POSTGRESQL);
+			//caseDB = SleuthkitCase.newCase("TskArtifactTest", connectionInfo, tempDirPath);
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
@@ -200,7 +204,7 @@ public class ArtifactTest {
 		List<AnalysisResult> ars = abcTextFile.getAllAnalysisResults();
 		assertEquals(3, ars.size());
 		
-		// verify the aggregate score - expect HIGH/HIGH - highest of the 3 results added
+		// verify the aggregate score - expect HIGH/Auto - highest of the 3 results added
 		Score aggScore = abcTextFile.getAggregateScore();
 		assertEquals(Score.Significance.NOTABLE.getId(), aggScore.getSignificance().getId());
 		assertEquals(Score.MethodCategory.AUTO.getId(), aggScore.getMethodCategory().getId());
@@ -212,10 +216,29 @@ public class ArtifactTest {
 		ars = abcTextFile.getAllAnalysisResults();
 		assertEquals(2, ars.size());
 		
-		// verify aggregate score - should now be Medium/High
+		// verify aggregate score - should now be Medium/Auto
 		Score newAggScore = abcTextFile.getAggregateScore();
 		assertEquals(Score.Significance.LIKELY_NOTABLE.getId(), newAggScore.getSignificance().getId());
 		assertEquals(Score.MethodCategory.AUTO.getId(), newAggScore.getMethodCategory().getId());
+		
+		
+		// Test Analysis Results in a Transaction
+		SleuthkitCase.CaseDbTransaction transAr = caseDB.beginTransaction();
+		AnalysisResultAdded analysisResultAdded4 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
+		
+		AnalysisResultAdded analysisResultAdded5 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NONE, Score.MethodCategory.USER_DEFINED), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
+
+		transAr.commit();
+		ars = abcTextFile.getAllAnalysisResults();
+		assertEquals(4, ars.size());
+		
+		// verify aggregate score - should now be Good/User
+		newAggScore = abcTextFile.getAggregateScore();
+		assertEquals(Score.Significance.LIKELY_NONE.getId(), newAggScore.getSignificance().getId());
+		assertEquals(Score.MethodCategory.USER_DEFINED.getId(), newAggScore.getMethodCategory().getId());
+
 		
 		
 		// Test: add a new data artifact to the file

@@ -189,7 +189,7 @@ public final class Blackboard {
 			}
 			
 			// update the final score for the object 
-			Score aggregateScore = caseDb.getScoringManager().updateAggregateScore(objId, dataSourceObjId, analysisResult.getScore(), transaction);
+			Score aggregateScore = caseDb.getScoringManager().updateAggregateScoreAfterAddition(objId, dataSourceObjId, analysisResult.getScore(), transaction);
 			
 			// return the analysis result and the current aggregate score.
 			return new AnalysisResultAdded(analysisResult, aggregateScore);
@@ -268,9 +268,6 @@ public final class Blackboard {
 		try {
 			CaseDbConnection connection = transaction.getConnection();
 			
-			// get current score of the content for this result
-			Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID(), connection);
-			
 			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
 			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
 			
@@ -279,31 +276,15 @@ public final class Blackboard {
 			deleteStatement.setLong(1, analysisResult.getId());
 
 			deleteStatement.executeUpdate();
-
-			// get all remaining analysis results for the object, loop over to find the highest score
-			List<AnalysisResult> analysisResults = this.getAnalysisResults(analysisResult.getObjectID(), connection);
-			Score newScore = Score.SCORE_UNKNOWN;
-			for (AnalysisResult iter : analysisResults) {
-				Score iterScore = iter.getScore();
-				if ((newScore.compareTo(Score.SCORE_UNKNOWN) == 0 && iterScore.compareTo(Score.SCORE_UNKNOWN) != 0)
-						|| (Score.getScoreComparator().compare(iterScore, newScore) > 0)) {
-					newScore = iterScore;
-				}
-			}
 			
-			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, connection);
-
 			// register the deleted result with the transaction so an event can be fired for it. 
 			transaction.registerDeletedAnalysisResult(analysisResult.getObjectID());
 			
-			// register the score change with the transaction so an event can be fired for it. 
-			transaction.registerScoreChange(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
-			
-			return newScore;
+			return caseDb.getScoringManager().updateAggregateScoreAfterDeletion(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), transaction);
+
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
 		} 
-
 	}
 	
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS

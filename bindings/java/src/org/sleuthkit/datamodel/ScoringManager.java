@@ -137,7 +137,7 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
 
 		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , method_category) VALUES (?, ?, ?, ?)"
 				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, method_category = ?";
@@ -171,36 +171,108 @@ public class ScoringManager {
 
 
 	/**
-	 * Updates the score for the specified object, if the given analysis result
-	 * score is higher than the score the object already has.
+	 * Updates the score for the specified object after a result has been
+	 * added. Is optimized to do nothing if the new score is less than the
+	 * current aggregate score. 
 	 *
 	 * @param objId              Object id.
 	 * @param dataSourceObjectId Object id of the data source, may be null.
-	 * @param resultScore        Score for a newly added analysis result.
+	 * @param newResultScore        Score for a newly added analysis result.
 	 * @param transaction        Transaction to use for the update.
 	 *
 	 * @return Aggregate score for the object.
 	 *
 	 * @throws TskCoreException
 	 */
-	Score updateAggregateScore(long objId, Long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
+	Score updateAggregateScoreAfterAddition(long objId, Long dataSourceObjectId, Score newResultScore, CaseDbTransaction transaction) throws TskCoreException {
 
+		/* get an exclusive write lock on the DB before we read anything so that we know we are
+		 * the only one reading existing scores and updating.  The risk is that two computers
+		 * could update the score and the aggregate score ends up being incorrect. 
+		 * 
+		 * NOTE: The alternative design is to add a 'version' column for opportunistic locking
+		 * and calculate these outside of a transaction.  We opted for table locking for performance
+		 * reasons so that we can still add the analysis results in a batch.  That remains an option
+		 * if we get into deadlocks with the current design. 
+		 */
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			connection.getAggregateScoreTableWriteLock();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting exclusive write lock on aggregate score table", ex);//NON-NLS
+		}
+			
+		
 		// Get the current score 
-		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
+		Score currentAggregateScore = ScoringManager.this.getAggregateScore(objId, transaction);
 
 		// If current score is Unknown And newscore is not Unknown - allow None (good) to be recorded
 		// or if the new score is higher than the current score
-		if  ( (currentScore.compareTo(Score.SCORE_UNKNOWN) == 0 && resultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
-			  || (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
-			ScoringManager.this.setAggregateScore(objId, dataSourceObjectId, resultScore, transaction);
+		if  ( (currentAggregateScore.compareTo(Score.SCORE_UNKNOWN) == 0 && newResultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
+			  || (Score.getScoreComparator().compare(newResultScore, currentAggregateScore) > 0)) {
+			setAggregateScore(objId, dataSourceObjectId, newResultScore, transaction);
 			
 			// register score change in the transaction.
-			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, resultScore));
-			return resultScore;
+			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentAggregateScore, newResultScore));
+			return newResultScore;
 		} else {
 			// return the current score
-			return currentScore;
+			return currentAggregateScore;
 		}
+	}
+	
+	/**
+	 * Recalculate the aggregate score after an analysis result was 
+	 * deleted.
+	 * 
+	 * @param objId Content that had result deleted from
+	 * @param dataSourceObjectId Data source content is in
+	 * @param transaction 
+	 * @return New Score
+	 * @throws TskCoreException 
+	 */
+	Score updateAggregateScoreAfterDeletion(long objId, Long dataSourceObjectId, CaseDbTransaction transaction) throws TskCoreException {
+
+		CaseDbConnection connection = transaction.getConnection();
+		
+		/* get an exclusive write lock on the DB before we read anything so that we know we are
+		 * the only one reading existing scores and updating.  The risk is that two computers
+		 * could update the score and the aggregate score ends up being incorrect. 
+		 * 
+		 * NOTE: The alternative design is to add a 'version' column for opportunistic locking
+		 * and calculate these outside of a transaction.  We opted for table locking for performance
+		 * reasons so that we can still add the analysis results in a batch.  That remains an option
+		 * if we get into deadlocks with the current design. 
+		 */
+		try {
+			connection.getAggregateScoreTableWriteLock();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting exclusive write lock on aggregate score table", ex);//NON-NLS
+		}
+			
+		// Get the current score 
+		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
+
+		// Calculate the score from scratch by getting all of them and getting the highest
+		List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResults(objId, connection);
+		Score newScore = Score.SCORE_UNKNOWN;
+		for (AnalysisResult iter : analysisResults) {
+			Score iterScore = iter.getScore();
+			if (Score.getScoreComparator().compare(iterScore, newScore) > 0) {
+				newScore = iterScore;
+			}
+		}
+		// NOTE: Add logic here in the future to get tag score
+		
+		
+		// only change the DB if we got a new score. 
+		if (newScore.compareTo(currentScore) != 0) {
+			setAggregateScore(objId, dataSourceObjectId, newScore, connection);
+
+			// register the score change with the transaction so an event can be fired for it. 
+			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, newScore));
+		}
+		return newScore;
 	}
 
 	/**
