@@ -224,13 +224,13 @@ public class ArtifactTest {
 		OsAccountManager osAcctMgr = caseDB.getOsAccountManager();
 		
 		assertTrue(dataArtifact1.getOsAccountObjectId().isPresent());
-		assertTrue(osAcctMgr.getOsAccount(dataArtifact1.getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid1));
+		assertTrue(osAcctMgr.getOsAccountByObjectId(dataArtifact1.getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// Test: add a second data artifact to file - associate it with a different account
 		DataArtifact dataArtifact2 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CLIPBOARD_CONTENT), Collections.emptyList(), osAccount2);
 		assertTrue(dataArtifact2.getOsAccountObjectId().isPresent());
-		assertTrue(osAcctMgr.getOsAccount(dataArtifact2.getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(osAcctMgr.getOsAccountByObjectId(dataArtifact2.getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
 				
 				
 		// and two more 
@@ -244,7 +244,7 @@ public class ArtifactTest {
 
 		// verify the account was set from the query
 		assertTrue(gpsArtifacts.get(0).getOsAccountObjectId().isPresent());
-		assertTrue(osAcctMgr.getOsAccount(gpsArtifacts.get(0).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid1));
+		assertTrue(osAcctMgr.getOsAccountByObjectId(gpsArtifacts.get(0).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid1));
 
 		
 		
@@ -252,8 +252,8 @@ public class ArtifactTest {
 		List<DataArtifact> gpsAreaArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), image.getId());
 		assertEquals(2, gpsAreaArtifacts.size());
 		// verify the account on each
-		assertTrue(osAcctMgr.getOsAccount(gpsAreaArtifacts.get(0).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
-		assertTrue(osAcctMgr.getOsAccount(gpsAreaArtifacts.get(1).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(osAcctMgr.getOsAccountByObjectId(gpsAreaArtifacts.get(0).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(osAcctMgr.getOsAccountByObjectId(gpsAreaArtifacts.get(1).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
 
 		
 		// Testing that artifacts created using the old methods and new methods are treated the same.
