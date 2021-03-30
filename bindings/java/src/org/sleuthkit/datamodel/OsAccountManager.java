@@ -118,6 +118,9 @@ public final class OsAccountManager {
 	 * exists with the given id or realm/login, then the existing OS account is
 	 * returned.
 	 *
+	 * If the account realm already exists, but is missing the address or the
+	 * realm name, the realm is updated.
+	 *
 	 * @param sid           Account sid/uid, can be null if loginName is
 	 *                      supplied.
 	 * @param loginName     Login name, can be null if sid is supplied.
@@ -128,7 +131,10 @@ public final class OsAccountManager {
 	 *
 	 * @return OsAccount.
 	 *
-	 * @throws TskCoreException If there is an error in creating the OSAccount.
+	 * @throws TskCoreException                     If there is an error in
+	 *                                              creating the OSAccount.
+	 * @throws OsAccountManager.NotUserSIDException If the given SID is not a
+	 *                                              user SID.
 	 *
 	 */
 	public OsAccount createWindowsOsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
@@ -149,6 +155,10 @@ public final class OsAccountManager {
 			throw new TskCoreException("Realm name or SID is required to create a Windows account.");
 		}
 
+		if (!StringUtils.isBlank(sid) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
+			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
+		}
+		
 		Optional<OsAccountRealm> realmOptional;
 
 		try (CaseDbConnection connection = db.getConnection()) {
@@ -157,6 +167,24 @@ public final class OsAccountManager {
 		OsAccountRealm realm;
 		if (realmOptional.isPresent()) {
 			realm = realmOptional.get();
+			boolean updateRealm = false;
+
+			// check if the existing realm's address or name needs to be updated.
+			if (!realm.getRealmAddr().isPresent() && !StringUtils.isBlank(sid)) {
+				String realmAddr = WindowsAccountUtils.getWindowsRealmAddress(sid);
+				realm.setRealmAddr(realmAddr);
+				updateRealm = true;
+			}
+
+			List<String> realmNames = realm.getRealmNames();
+			if (realmNames.contains(realmName) == false) {
+				realm.addRealmName(realmName);
+				updateRealm = true;
+			}
+
+			if (updateRealm) {
+				realm = db.getOsAccountRealmManager().updateRealm(realm);
+			}
 		} else {
 			// realm was not found, create it.
 			realm = db.getOsAccountRealmManager().createWindowsRealm(sid, realmName, referringHost, realmScope);

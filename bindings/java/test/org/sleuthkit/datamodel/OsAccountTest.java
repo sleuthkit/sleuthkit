@@ -351,9 +351,9 @@ public class OsAccountTest {
 		Optional<OsAccountRealm> optRealm = caseDB.getOsAccountRealmManager().getWindowsRealm(null, srcRealmName, host);
 		assertEquals(optRealm.isPresent(), true);
 		
-		// Test that there are currently two account associated with sid1
+		// Test that there is only one account associated with sid1
 		List<OsAccount> accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getAddr().isPresent() && p.getAddr().get().equals(sid1)).collect(Collectors.toList());
-		assertEquals(accounts.size() == 2, true);
+		assertEquals(accounts.size() == 1, true);
 		
 		// Expected results of the merge:
 		// - account 4 will be merged into account 2 (and extra fields should be copied)
@@ -820,5 +820,75 @@ public class OsAccountTest {
 		
 	}
 	
+	
+	@Test
+	public void windowsAccountRealmUpdateTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
+
+		String ownerUid1 = "S-1-5-21-111111111-222222222-4444444444-0001";
+		//String realmName1 = "realm4444";
+
+		String hostname1 = "host4444";
+		Host host1 = caseDB.getHostManager().createHost(hostname1);
+
+		
+		// create an account, a realm should be created implicitly with just the SID, and no name
+		
+		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsOsAccount(ownerUid1, null, null, host1, OsAccountRealm.RealmScope.LOCAL);
+		
+		String realmAddr1 = "S-1-5-21-111111111-222222222-4444444444";
+		OsAccountRealm realm1 = caseDB.getOsAccountRealmManager().getRealmById(osAccount1.getRealmId());
+		assertEquals(realm1.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true );
+		assertEquals(realm1.getRealmNames().isEmpty(), true);	//
+		
+		
+		
+		// create a 2nd account with the same realmaddr, along with a known realm name
+		String ownerUid2 = "S-1-5-21-111111111-222222222-4444444444-0002";
+		
+		String realmName2 = "realm4444";
+		OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsOsAccount(ownerUid2, null, realmName2, host1, OsAccountRealm.RealmScope.LOCAL);
+		
+		// Account 2 should have the same realm by addr, but it's realm name should now get updated.
+		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmById(osAccount2.getRealmId());
+		
+		assertEquals(osAccount1.getRealmId(), osAccount2.getRealmId() );
+		assertEquals(realm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1), true );
+		assertEquals(realm2.getRealmNames().size(), 1 );	// should have 1 name
+		assertEquals(realm2.getRealmNames().get(0).equalsIgnoreCase(realmName2), true );
+		
+		
+		// Create an account with  known realm name but no known addr
+		String hostname3 = "host4444_3";
+		Host host3 = caseDB.getHostManager().createHost(hostname3);
+		
+		String realmName3 = "realm4444_3";
+		String loginName3 = "User4444_3";
+		OsAccount osAccount3 = caseDB.getOsAccountManager().createWindowsOsAccount(null, loginName3, realmName3, host3, OsAccountRealm.RealmScope.DOMAIN);
+		
+		OsAccountRealm realm3 = caseDB.getOsAccountRealmManager().getRealmById(osAccount3.getRealmId());
+		assertEquals(realm3.getRealmAddr().orElse("").equalsIgnoreCase(""), true );
+		assertEquals(realm3.getRealmNames().size(), 1 );	// should have 1 name
+		assertEquals(realm3.getRealmNames().get(0).equalsIgnoreCase(realmName3), true );
+		
+		
+		// add a second user with same realmname and a known addr - expect the realm to get updated
+		String loginName4 = "User4444_4";
+		String ownerSid4 =  "S-1-5-21-111111111-444444444-4444444444-0001";
+	    String realm4Addr = "S-1-5-21-111111111-444444444-4444444444";
+		
+		String hostname4 = "host4444_4";
+		Host host4 = caseDB.getHostManager().createHost(hostname4);
+		
+		OsAccount osAccount4 = caseDB.getOsAccountManager().createWindowsOsAccount(ownerSid4, loginName4, realmName3, host4, OsAccountRealm.RealmScope.DOMAIN);
+		
+		// realm4 should be the same as realm3 but the addr should be updaed now
+		OsAccountRealm realm4 = caseDB.getOsAccountRealmManager().getRealmById(osAccount4.getRealmId());
+		assertEquals(osAccount3.getRealmId(), osAccount4.getRealmId() );
+		assertEquals(realm4.getRealmAddr().orElse("").equalsIgnoreCase(realm4Addr), true );
+		assertEquals(realm4.getRealmNames().size(), 1 );	// should have 1 name
+		assertEquals(realm4.getRealmNames().get(0).equalsIgnoreCase(realmName3), true );
+		
+	
+	}
 	
 }
