@@ -13125,19 +13125,19 @@ public class SleuthkitCase {
 				
 				// Fire events for any new or changed objects
 				if (!hostsAdded.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new HostManager.HostsCreationEvent(hostsAdded));
+					sleuthkitCase.fireTSKEvent(new TskEvent.HostsAddedTskEvent(hostsAdded));
 				}
 				if (!accountsAdded.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsCreationEvent(accountsAdded));
+					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsAddedTskEvent(accountsAdded));
 				}
 				if (!accountsChanged.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsUpdateEvent(accountsChanged));
+					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsChangedTskEvent(accountsChanged));
 				}
 				if (!deletedOsAccountObjectIds.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new OsAccountManager.OsAccountsDeleteEvent(deletedOsAccountObjectIds));
+					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsDeletedTskEvent(deletedOsAccountObjectIds));
 				}
 				if (!deletedResultObjectIds.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new AnalysisResultsDeletedEvent(deletedResultObjectIds));
+					sleuthkitCase.fireTSKEvent(new TskEvent.AnalysisResultsDeletedTskEvent(deletedResultObjectIds));
 				}
 			}
 		}
