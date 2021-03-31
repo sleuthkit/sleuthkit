@@ -85,28 +85,28 @@ public class Score implements Comparable<Score> {
          */
 		
 		/// no significance assigned yet.
-		UNKNOWN(0, "Unknown", bundle.getString("Significance.Unknown.displayName.text")),	
+		UNKNOWN(0, "Unknown", "Significance.Unknown.displayName.text"),	
 		
 		/// likely good		
-		LIKELY_NONE(8, "LikelyNone", bundle.getString("Significance.LikelyNone.displayName.text")),
+		LIKELY_NONE(8, "LikelyNone", "Significance.LikelyNone.displayName.text"),
 		
 		/// likely bad, suspicious
-		LIKELY_NOTABLE(9, "LikelyNotable", bundle.getString("Significance.LikelyNotable.displayName.text")),	
+		LIKELY_NOTABLE(9, "LikelyNotable", "Significance.LikelyNotable.displayName.text"),	
 		
 		/// good
-		NONE(18, "None", bundle.getString("Significance.None.displayName.text")),		
+		NONE(18, "None", "Significance.None.displayName.text"),		
 		
 		/// bad
-		NOTABLE(19, "Notable", bundle.getString("Significance.Notable.displayName.text"));				
+		NOTABLE(19, "Notable", "Significance.Notable.displayName.text");				
 		
 		private final int id;
 		private final String name;	// name must not have spaces
-		private final String displayName;
+		private final String displayNameKey; // display name is loaded from resource bundle using this key.
 
-		private Significance(int id, String name, String displayName) {
+		private Significance(int id, String name, String displayNameKey) {
 			this.id = id;
 			this.name = name;
-			this.displayName = displayName;
+			this.displayNameKey = displayNameKey;
 		}
 
 		public static Significance fromString(String name) {
@@ -121,6 +121,11 @@ public class Score implements Comparable<Score> {
 					.findFirst().orElse(NONE);
 		}
 
+		/**
+		 * Get enum ordinal.
+		 * 
+		 * @return Ordinal.
+		 */
 		public int getId() {
 			return id;
 		}
@@ -128,6 +133,8 @@ public class Score implements Comparable<Score> {
         /**
          * Gets name that has no spaces in it.
          * Does not get translated.
+		 * 
+		 * @return Name.
          */
 		public String getName() {
 			return name;
@@ -136,9 +143,11 @@ public class Score implements Comparable<Score> {
         /**
          * Gets display name that may have spaces and can be used in the UI.
          * May return a translated version. 
+		 * 
+		 * @return Display name.
          */
 		public String getDisplayName() {
-			return displayName;
+			return  bundle.getString(displayNameKey);
 		}
 			
 		@Override
@@ -157,17 +166,17 @@ public class Score implements Comparable<Score> {
 	public enum MethodCategory {
 
 		// Name must not have any spaces.
-		AUTO(0, "Auto", bundle.getString("MethodCategory.Auto.displayName.text")),
-		USER_DEFINED(10, "UserDefined", bundle.getString("MethodCategory.UserDefined.displayName.text")); 
+		AUTO(0, "Auto",  "MethodCategory.Auto.displayName.text"),
+		USER_DEFINED(10, "UserDefined", "MethodCategory.UserDefined.displayName.text"); 
 
 		private final int id;
 		private final String name; 
-		private final String displayName;
+		private final String displayNameKey; // display name is loaded from resource bundle using this key.
 		
-		private MethodCategory(int id, String name, String displayName) {
+		private MethodCategory(int id, String name, String displayNameKey) {
 			this.id = id;
 			this.name = name;
-			this.displayName = displayName;
+			this.displayNameKey = displayNameKey;
 		}
 
 		public static MethodCategory fromString(String name) {
@@ -191,7 +200,7 @@ public class Score implements Comparable<Score> {
 		}
 
 		public String getDisplayName() {
-			return displayName;
+			return bundle.getString(displayNameKey);
 		}
 		
 		@Override
