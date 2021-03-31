@@ -45,24 +45,24 @@ public final class OsAccount extends AbstractContent {
 
 	private final long osAccountObjId;	// Object ID within the database
 	private final long realmId;		// realm where the account exists in (could be local or domain scoped)
-	private volatile String loginName;	// user login name - may be null
-	private volatile String addr;	// a unique user sid/uid, may be null
+	private String loginName;	// user login name - may be null
+	private String addr;	// a unique user sid/uid, may be null
 
-	private volatile String signature;		// This exists only to prevent duplicates.
+	private String signature;		// This exists only to prevent duplicates.
 	// Together realm_id & signature must be unique for each account.
 	// It is either addr if addr is defined,
 	// or the login_name if login_name is defined.
 
-	private volatile String fullName;	// full name, may be null
-	private volatile OsAccountType osAccountType = OsAccountType.UNKNOWN;
-	private volatile OsAccountStatus osAccountStatus = null;
+	private String fullName;	// full name, may be null
+	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
+	private OsAccountStatus osAccountStatus = null;
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
-	private volatile Long creationTime = null;
+	private Long creationTime = null;
 
-	private volatile List<OsAccountAttribute> osAccountAttributes = null;
+	private  List<OsAccountAttribute> osAccountAttributes = null;
 	private volatile List<OsAccountInstance> osAccountInstances = null;
 
-	private volatile boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
+	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
 	
 	/**
