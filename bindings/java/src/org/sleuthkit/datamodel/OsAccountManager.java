@@ -964,7 +964,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException,
 	 */
-	void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
+	public void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
 	
 		synchronized (account) {  // synchronized to prevent multiple threads trying to add osAccount attributes concurrently to the same osAccount.
 			db.acquireSingleUserCaseWriteLock();

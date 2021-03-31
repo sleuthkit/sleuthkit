@@ -372,20 +372,6 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Adds account attributes to the account. Attributes can be at a host-level
-	 * or domain-level (for domain-scoped accounts).
-	 *
-	 * @param osAccountAttributes List of attributes to add.
-	 *
-	 * @throws TskCoreException
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public void addAttributes(List<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
-		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes); 
-	}
-	
-	/**
 	 * This function is used by OsAccountManger to update the list of 
 	 * OsAccount attributes. 
 	 * 
