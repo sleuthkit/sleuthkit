@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2020 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -37,6 +36,7 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -1311,57 +1311,74 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Saves the editable file properties of this file to the case database,
-	 * e.g., the MIME type, MD5 hash, and known state.
+	 * Saves the editable properties of this file to the case database, e.g.,
+	 * the MIME type, MD5 hash, and known state.
 	 *
 	 * @throws TskCoreException if there is an error saving the editable file
 	 *                          properties to the case database.
 	 */
 	public void save() throws TskCoreException {
+		CaseDbTransaction transaction = null;
+		try {
+			transaction = getSleuthkitCase().beginTransaction();
+			save(transaction);
+			transaction.commit();
+		} catch (TskCoreException ex) {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+			throw ex;
+		}
+	}
 
-		// No fields have been updated
+	/**
+	 * Saves the editable properties of this file to the case database, e.g.,
+	 * the MIME type, MD5 hash, and known state, in the context of a given case
+	 * database transaction.
+	 *
+	 * @param transaction The transaction.
+	 *
+	 * @throws TskCoreException if there is an error saving the editable file
+	 *                          properties to the case database.
+	 */
+	public void save(CaseDbTransaction transaction) throws TskCoreException {
 		if (!(md5HashDirty || sha256HashDirty || mimeTypeDirty || knownStateDirty)) {
 			return;
 		}
 
-		String queryStr = "";
+		String updateSql = "";
 		if (mimeTypeDirty) {
-			queryStr = "mime_type = '" + this.getMIMEType() + "'";
+			updateSql = "mime_type = '" + this.getMIMEType() + "'";
 		}
 		if (md5HashDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "md5 = '" + this.getMd5Hash() + "'";
+			updateSql += "md5 = '" + this.getMd5Hash() + "'";
 		}
 		if (sha256HashDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "sha256 = '" + this.getSha256Hash() + "'";
+			updateSql += "sha256 = '" + this.getSha256Hash() + "'";
 		}
 		if (knownStateDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "known = '" + this.getKnown().getFileKnownValue() + "'";
+			updateSql += "known = '" + this.getKnown().getFileKnownValue() + "'";
 		}
+		updateSql = "UPDATE tsk_files SET " + updateSql + " WHERE obj_id = " + this.getId();
 
-		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
-
-		getSleuthkitCase().acquireSingleUserCaseWriteLock();
-		try (SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
-				Statement statement = connection.createStatement();) {
-
-			connection.executeUpdate(statement, queryStr);
+		SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
+		try (Statement statement = connection.createStatement()) {
+			connection.executeUpdate(statement, updateSql);
 			md5HashDirty = false;
 			sha256HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
-		} finally {
-			getSleuthkitCase().releaseSingleUserCaseWriteLock();
+			throw new TskCoreException(String.format("Error updating properties of file %s (obj_id = %s)", getName(), getId()), ex);
 		}
 	}
 
@@ -1384,22 +1401,6 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public Optional<Long> getOsAccountObjectId() {
 		return Optional.ofNullable(osAccountObjId);
-	}
-
-	/**
-	 * Gets the owner account for the file.
-	 *
-	 * @return Optional with OsAccount, Optional.empty if there is no account.
-	 *
-	 * @throws TskCoreException If there is an error getting the account.
-	 */
-	public Optional<OsAccount> getOsAccount() throws TskCoreException {
-
-		if (osAccountObjId == null) {
-			return Optional.empty();
-		}
-
-		return Optional.of(getSleuthkitCase().getOsAccountManager().getOsAccount(this.osAccountObjId));
 	}
 
 	@Override

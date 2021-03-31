@@ -45,7 +45,7 @@ public final class Host {
 	 *
 	 * @return Row id.
 	 */
-	public long getId() {
+	public long getHostId() {
 		return id;
 	}
 

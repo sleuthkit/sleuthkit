@@ -88,11 +88,11 @@ public final class PersonManager {
 
 		// Must have a non-empty name
 		if (Strings.isNullOrEmpty(person.getName())) {
-			throw new TskCoreException("Illegal argument passed to updatePerson: Name field for person with ID " + person.getId() + " is null/empty. Will not update database.");
+			throw new TskCoreException("Illegal argument passed to updatePerson: Name field for person with ID " + person.getPersonId() + " is null/empty. Will not update database.");
 		}
 
 		String queryString = "UPDATE tsk_persons"
-				+ " SET name = ? WHERE id = " + person.getId();
+				+ " SET name = ? WHERE id = " + person.getPersonId();
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			PreparedStatement s = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
@@ -100,7 +100,7 @@ public final class PersonManager {
 			s.setString(1, person.getName());
 			s.executeUpdate();
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating person with id = %d", person.getId()), ex);
+			throw new TskCoreException(String.format("Error updating person with id = %d", person.getPersonId()), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -268,7 +268,7 @@ public final class PersonManager {
 	 * @throws TskCoreException
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
-		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getId();
+		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getPersonId();
 		whereStatement +=  " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 
 		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
