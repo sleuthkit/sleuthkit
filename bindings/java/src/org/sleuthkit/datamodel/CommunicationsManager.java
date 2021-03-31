@@ -1223,7 +1223,7 @@ public final class CommunicationsManager {
 	 *
 	 * @param account List of accounts
 	 *
-	 * @return	A lit of AccountFileInstances for the given accounts or null if
+	 * @return	A lit of AccountFileInstances for the given accounts or empty list if
 	 *         none are found.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
@@ -1239,11 +1239,7 @@ public final class CommunicationsManager {
 			}
 		}
 
-		if (!accountFileInstanceList.isEmpty()) {
-			return accountFileInstanceList;
-		} else {
-			return null;
-		}
+		return accountFileInstanceList;
 	}
 
 	/**
