@@ -60,7 +60,7 @@ public final class OsAccount extends AbstractContent {
 	private Long creationTime = null;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
-	private volatile List<OsAccountInstance> osAccountInstances = null;
+	private List<OsAccountInstance> osAccountInstances = null;
 
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
@@ -481,7 +481,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
+	public synchronized List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
 		if (osAccountAttributes == null) {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}
