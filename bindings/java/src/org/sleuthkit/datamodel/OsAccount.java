@@ -59,7 +59,7 @@ public final class OsAccount extends AbstractContent {
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
 	private Long creationTime = null;
 
-	private  List<OsAccountAttribute> osAccountAttributes = null;
+	private List<OsAccountAttribute> osAccountAttributes = null;
 	private volatile List<OsAccountInstance> osAccountInstances = null;
 
 	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
