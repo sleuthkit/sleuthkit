@@ -189,7 +189,7 @@ public final class Blackboard {
 			}
 			
 			// update the final score for the object 
-			Score aggregateScore = caseDb.getScoringManager().updateAggregateScore(objId, dataSourceObjId, analysisResult.getScore(), transaction);
+			Score aggregateScore = caseDb.getScoringManager().updateAggregateScoreAfterAddition(objId, dataSourceObjId, analysisResult.getScore(), transaction);
 			
 			// return the analysis result and the current aggregate score.
 			return new AnalysisResultAdded(analysisResult, aggregateScore);
@@ -268,9 +268,6 @@ public final class Blackboard {
 		try {
 			CaseDbConnection connection = transaction.getConnection();
 			
-			// get current score of the content for this result
-			Score currScore = caseDb.getScoringManager().getAggregateScore(analysisResult.getObjectID(), connection);
-			
 			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
 			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
 			
@@ -279,31 +276,15 @@ public final class Blackboard {
 			deleteStatement.setLong(1, analysisResult.getId());
 
 			deleteStatement.executeUpdate();
-
-			// get all remaining analysis results for the object, loop over to find the highest score
-			List<AnalysisResult> analysisResults = this.getAnalysisResults(analysisResult.getObjectID(), connection);
-			Score newScore = Score.SCORE_UNKNOWN;
-			for (AnalysisResult iter : analysisResults) {
-				Score iterScore = iter.getScore();
-				if ((newScore.compareTo(Score.SCORE_UNKNOWN) == 0 && iterScore.compareTo(Score.SCORE_UNKNOWN) != 0)
-						|| (Score.getScoreComparator().compare(iterScore, newScore) > 0)) {
-					newScore = iterScore;
-				}
-			}
 			
-			caseDb.getScoringManager().setAggregateScore(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), newScore, connection);
-
 			// register the deleted result with the transaction so an event can be fired for it. 
 			transaction.registerDeletedAnalysisResult(analysisResult.getObjectID());
 			
-			// register the score change with the transaction so an event can be fired for it. 
-			transaction.registerScoreChange(new ScoreChange(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), currScore, newScore));
-			
-			return newScore;
+			return caseDb.getScoringManager().updateAggregateScoreAfterDeletion(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), transaction);
+
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
 		} 
-
 	}
 	
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
@@ -656,18 +637,17 @@ public final class Blackboard {
 		ArrayList<DataArtifact> dataArtifacts = new ArrayList<>();
 
 		while (resultSet.next()) {
-			OsAccount osAccount = null;
 			
-			long accountObjId = resultSet.getLong("os_account_obj_id");
-			if (resultSet.wasNull() == false) {	
-				osAccount = this.caseDb.getOsAccountManager().getOsAccount(accountObjId, connection);
+			Long osAccountObjId = resultSet.getLong("os_account_obj_id");
+			if (resultSet.wasNull()) {	
+				osAccountObjId = null;
 			}
 			
 			dataArtifacts.add(new DataArtifact(caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"),
 					resultSet.getLong("artifact_obj_id"),
 					resultSet.getObject("data_source_obj_id") != null ? resultSet.getLong("data_source_obj_id") : null,
 					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
-					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")), osAccount, false));
+					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")), osAccountObjId, false));
 		} //end for each resultSet
 
 		return dataArtifacts;
@@ -1088,11 +1068,16 @@ public final class Blackboard {
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
 		}
+		
+		Long osAccountObjdId = null;
+		if (osAccount != null) {
+			osAccountObjdId = osAccount.getId();
+		}
 
 		CaseDbTransaction transaction = caseDb.beginTransaction();
 		try {
 			DataArtifact dataArtifact = newDataArtifact(artifactType, sourceObjId, dataSourceObjId,
-					attributes, osAccount, transaction);
+					attributes, osAccountObjdId, transaction);
 			transaction.commit();
 			return dataArtifact;
 		} catch (TskCoreException ex) {
@@ -1118,7 +1103,7 @@ public final class Blackboard {
 	 *                        belongs to, may be the same as the sourceObjId.
 	 *                        May be null.
 	 * @param attributes      The attributes. May be empty or null.
-	 * @param osAccount       The OS account associated with the artifact. May
+	 * @param osAccountObjId       The OS account associated with the artifact. May
 	 *                        be null.
 	 * @param transaction     The transaction in the scope of which the
 	 *                        operation is to be performed.
@@ -1128,7 +1113,7 @@ public final class Blackboard {
 	 * @throws TskCoreException If a critical error occurs within tsk core.
 	 */
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
-			Collection<BlackboardAttribute> attributes, OsAccount osAccount, final CaseDbTransaction transaction) throws TskCoreException {
+			Collection<BlackboardAttribute> attributes, Long osAccountObjId, final CaseDbTransaction transaction) throws TskCoreException {
 
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
@@ -1146,17 +1131,17 @@ public final class Blackboard {
 				DataArtifact dataArtifact = new DataArtifact(caseDb, resultSet.getLong(1), //last_insert_rowid()
 									sourceObjId, artifact_obj_id, dataSourceObjId, artifactType.getTypeID(), 
 									artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, 
-									osAccount, true);
+									osAccountObjId, true);
 				
 				// Add a row in tsk_data_artifact if the os account is present
-				if (osAccount != null) {
+				if (osAccountObjId != null) {
 					String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
 
 					statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
 					statement.clearParameters();
 
 					statement.setLong(1, artifact_obj_id);
-					statement.setLong(2, osAccount.getId());
+					statement.setLong(2, osAccountObjId);
 					connection.executeUpdate(statement);
 				}
 

@@ -279,13 +279,13 @@ public final class OsAccountRealmManager {
 			preparedStatement.setString(1, realmName);
 			preparedStatement.setString(2, realm.getRealmAddr().orElse(null));
 			preparedStatement.setString(3, realm.getSignature()); // Is only set for active accounts
-			preparedStatement.setLong(4, realm.getId());
+			preparedStatement.setLong(4, realm.getRealmId());
 			connection.executeUpdate(preparedStatement);
 			
 			realm.resetDirty();
 			return realm;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating realm with id = %d, name = %s, addr = %s", realm.getId(), realmName != null ? realmName : "Null", realm.getRealmAddr().orElse("Null") ), ex);
+			throw new TskCoreException(String.format("Error updating realm with id = %d, name = %s, addr = %s", realm.getRealmId(), realmName != null ? realmName : "Null", realm.getRealmAddr().orElse("Null") ), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -363,7 +363,7 @@ public final class OsAccountRealmManager {
 		// If no host is specified, then we return the first realm with matching addr.
 		String whereHostClause = (host == null) 
 							? " 1 = 1 " 
-							: " ( realms.scope_host_id = " + host.getId() + " OR realms.scope_host_id IS NULL) ";
+							: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL) ";
 		String queryString = REALM_QUERY_STRING
 						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
 						+ " AND " + whereHostClause
@@ -416,7 +416,7 @@ public final class OsAccountRealmManager {
 		// If no host is specified, then we return the first realm with matching name.
 		String whereHostClause = (host == null)
 				? " 1 = 1 "
-				: " ( realms.scope_host_id = " + host.getId() + " OR realms.scope_host_id IS NULL ) ";
+				: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL ) ";
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
 				+ " AND " + whereHostClause
@@ -467,7 +467,7 @@ public final class OsAccountRealmManager {
 	
 		// check if this host has a local known realm aleady, other than the special windows realm.
 		String queryString = REALM_QUERY_STRING
-				+ " WHERE realms.scope_host_id = " + host.getId()
+				+ " WHERE realms.scope_host_id = " + host.getHostId()
 				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR + "') ";
@@ -580,7 +580,7 @@ public final class OsAccountRealmManager {
 			preparedStatement.setString(2, realmAddr);
 			preparedStatement.setString(3, signature);
 			if (host != null) {
-				preparedStatement.setLong(4, host.getId());
+				preparedStatement.setLong(4, host.getHostId());
 			} else {
 				preparedStatement.setNull(4, java.sql.Types.BIGINT);
 			}
@@ -643,7 +643,7 @@ public final class OsAccountRealmManager {
 		}
 		
 		String signature = String.format("%s_%s", !Strings.isNullOrEmpty(realmAddr) ?  realmAddr : realmName,
-												scopeHost != null ? scopeHost.getId() : "DOMAIN");
+												scopeHost != null ? scopeHost.getHostId() : "DOMAIN");
 		return signature;
 	}
 	
@@ -692,7 +692,7 @@ public final class OsAccountRealmManager {
 		//        stronger match and set destRealm to the matching address realm and leave the matching name realm as-is.		
 		OsAccountRealm destRealm = null;
 		if (optDestRealmAddr.isPresent() && optDestRealmName.isPresent()) {
-			if (optDestRealmAddr.get().getId() == optDestRealmName.get().getId()) {
+			if (optDestRealmAddr.get().getRealmId() == optDestRealmName.get().getRealmId()) {
 				// The two matches are the same
 				destRealm = optDestRealmAddr.get();
 			} else {
@@ -703,7 +703,7 @@ public final class OsAccountRealmManager {
 					// Merge the realm with the matching name into the realm with the matching address.
 					// Reload from database afterward to make sure everything is up-to-date.
 					mergeRealms(optDestRealmName.get(), optDestRealmAddr.get(), trans);
-					destRealm = getRealmById(optDestRealmAddr.get().getId(), trans.getConnection());
+					destRealm = getRealmById(optDestRealmAddr.get().getRealmId(), trans.getConnection());
 				}
 			}
 		} else if (optDestRealmAddr.isPresent()) {
@@ -739,34 +739,13 @@ public final class OsAccountRealmManager {
 	 */
 	private void moveRealm(OsAccountRealm sourceRealm, Host destHost, CaseDbTransaction trans) throws TskCoreException {
 		try(Statement s = trans.getConnection().createStatement()) {
-			String query = "UPDATE tsk_os_account_realms SET scope_host_id = " + destHost.getId() + " WHERE id = " + sourceRealm.getId();
+			String query = "UPDATE tsk_os_account_realms SET scope_host_id = " + destHost.getHostId() + " WHERE id = " + sourceRealm.getRealmId();
 			s.executeUpdate(query);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error moving realm with id: " + sourceRealm.getId() + " to host with id: " + destHost.getId(), ex);
+			throw new TskCoreException("Error moving realm with id: " + sourceRealm.getRealmId() + " to host with id: " + destHost.getHostId(), ex);
 		}
 	}
 	
-	/**
-	 * Merge one realm into another, moving or combining all associated OsAccounts.
-	 * 
-	 * @param sourceRealm The sourceRealm realm.
-	 * @param destRealm   The destination realm.
-	 * 
-	 * @throws TskCoreException 
-	 */
-	public void mergeRealms(OsAccountRealm sourceRealm, OsAccountRealm destRealm) throws TskCoreException {
-		CaseDbTransaction trans = null;
-		try {
-			trans = db.beginTransaction();
-			mergeRealms(sourceRealm, destRealm, trans);
-			trans.commit();
-			trans = null;
-		} finally {
-			if (trans != null) {
-				trans.rollback();
-			}
-		}
-	}
 	
 	/**
 	 * Merge one realm into another, moving or combining all associated OsAccounts.
@@ -786,12 +765,12 @@ public final class OsAccountRealmManager {
 		CaseDbConnection connection = trans.getConnection();
 		try (Statement statement = connection.createStatement()) {
 			String updateStr = "UPDATE tsk_os_account_realms SET db_status = " + OsAccountRealm.RealmDbStatus.MERGED.getId() 
-					+ ", merged_into = " + destRealm.getId()
+					+ ", merged_into = " + destRealm.getRealmId()
 					+ ", realm_signature = '" + makeMergedRealmSignature() + "' "
-					+ " WHERE id = " + sourceRealm.getId();
+					+ " WHERE id = " + sourceRealm.getRealmId();
 			connection.executeUpdate(statement, updateStr);
 		} catch (SQLException ex) {
-			throw new TskCoreException ("Error updating status of realm with id: " + sourceRealm.getId(), ex);
+			throw new TskCoreException ("Error updating status of realm with id: " + sourceRealm.getRealmId(), ex);
 		}
 		
 		// Update the destination realm if it doesn't have the name or addr set and the source realm does
@@ -817,7 +796,7 @@ public final class OsAccountRealmManager {
 	List<OsAccountRealm> getRealmsByHost(Host host, CaseDbConnection connection) throws TskCoreException {
 		List<OsAccountRealm> results = new ArrayList<>();
 		String queryString = REALM_QUERY_STRING
-			+ " WHERE realms.scope_host_id = " + host.getId();
+			+ " WHERE realms.scope_host_id = " + host.getHostId();
 		
 		db.acquireSingleUserCaseReadLock();
 		try (	Statement s = connection.createStatement();
@@ -827,7 +806,7 @@ public final class OsAccountRealmManager {
 			} 
 			return results;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error gettings realms for host with id = " + host.getId()), ex);
+			throw new TskCoreException(String.format("Error gettings realms for host with id = " + host.getHostId()), ex);
 		}
 		finally {
 			db.releaseSingleUserCaseReadLock();

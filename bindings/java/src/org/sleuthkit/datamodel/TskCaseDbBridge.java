@@ -1028,7 +1028,7 @@ class TskCaseDbBridge {
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
 			preparedStatement.setString(4, collectionDetails);
-			preparedStatement.setLong(5, imageHost.getId());
+			preparedStatement.setLong(5, imageHost.getHostId());
 			connection.executeUpdate(preparedStatement);
 
 			return newObjId;

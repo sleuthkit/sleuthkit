@@ -29,7 +29,7 @@ import java.util.Optional;
 public final class DataArtifact extends BlackboardArtifact {
 	
 	// data artifacts may have a OS Account associated with them.
-	private final OsAccount osAccount;
+	private final Long osAccountObjId;
 	
 	
 	/**
@@ -47,13 +47,13 @@ public final class DataArtifact extends BlackboardArtifact {
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
-	 * @param osAccount        OsAccount associated with this artifact, may be
+	 * @param osAccountObjId        OsAccount associated with this artifact, may be
 	 *                         null.
 	 * @param isNew            The object is newly created.
 	 */
-	DataArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, OsAccount osAccount, boolean isNew) {
+	DataArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Long osAccountObjId, boolean isNew) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
-		this.osAccount = osAccount;
+		this.osAccountObjId = osAccountObjId;
 	}
 	
 		
@@ -64,8 +64,8 @@ public final class DataArtifact extends BlackboardArtifact {
 	 *
 	 * @throws TskCoreException If there is an error getting the account.
 	 */
-	public Optional<OsAccount> getOsAccount() throws TskCoreException {
-		return Optional.ofNullable(osAccount);
+	public Optional<Long> getOsAccountObjectId() throws TskCoreException {
+		return Optional.ofNullable(osAccountObjId);
 	}
 	
 	

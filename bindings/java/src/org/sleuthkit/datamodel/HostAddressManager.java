@@ -223,7 +223,7 @@ public class HostAddressManager {
 			PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQL, Statement.NO_GENERATED_KEYS);
 
 			preparedStatement.clearParameters();
-			preparedStatement.setLong(1, host.getId());
+			preparedStatement.setLong(1, host.getHostId());
 			preparedStatement.setLong(2, hostAddress.getId());
 			preparedStatement.setLong(3, source.getId());
 			if (time != null) {
@@ -251,7 +251,7 @@ public class HostAddressManager {
 	List<HostAddress> getHostAddressesAssignedTo(Host host) throws TskCoreException {
 
 		String queryString = "SELECT addr_obj_id FROM tsk_host_address_map "
-				+ " WHERE host_id = " + host.getId();
+				+ " WHERE host_id = " + host.getHostId();
 
 		List<HostAddress> addresses = new ArrayList<>();
 		
