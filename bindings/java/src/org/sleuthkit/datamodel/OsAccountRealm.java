@@ -51,7 +51,6 @@ public final class OsAccountRealm {
 	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
 	private final RealmDbStatus dbStatus; // Status of row in database.
-	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 	
 	/**
 	 * Creates OsAccountRealm.
@@ -274,17 +273,14 @@ public final class OsAccountRealm {
 	 * @throws TskCoreException If there is an error setting the realm name.
 	 * 
 	 */
-	public boolean addRealmName(String name) throws TskCoreException {
-		if (StringUtils.isBlank(this.realmName) && StringUtils.isNotBlank(name)) {
-			this.realmName = name;
-			updateSignature();
-			this.isDirty = true;
-			
-			return true;
-		}
-		
-		return false;
-	}
+//	boolean addRealmName(String name) throws TskCoreException {
+//		if (StringUtils.isBlank(this.realmName) && StringUtils.isNotBlank(name)) {
+//			this.realmName = name;
+//			return true;
+//		}
+//		
+//		return false;
+//	}
 
 	/**
 	 * Set the realm address if it is not already set.
@@ -295,11 +291,27 @@ public final class OsAccountRealm {
 	 *         changed.
 	 * @throws TskCoreException If there is an error setting the realm address.
 	 */
-	public boolean setRealmAddr(String addr) throws TskCoreException {
-		if (StringUtils.isBlank(this.realmAddr) && StringUtils.isNotBlank(addr)) {
-			this.realmAddr = addr;
-			updateSignature();
-			this.isDirty = true;
+//	 boolean setRealmAddr(String addr) throws TskCoreException {
+//		if (StringUtils.isBlank(this.realmAddr) && StringUtils.isNotBlank(addr)) {
+//			this.realmAddr = addr;
+//			return true;
+//		}
+//		
+//		return false;
+//	}
+	
+	
+	 /**
+	  * Set the signature for the account realm.
+	  * 
+	  * @param signature Realm signature.
+	  * 
+	  * @return Returns true of the address is set, false if the address was not
+	 *         changed.
+	  */
+	boolean setSignature(String signature) {
+		if (StringUtils.isNotBlank(signature)) {
+			this.signature = signature;
 			return true;
 		}
 		
@@ -307,33 +319,14 @@ public final class OsAccountRealm {
 	}
 	
 	/**
-	 * Get the dirty flag. Indicates whether the realm has any changes that need
-	 * to be updated in the database. If it returns true,
-	 * {@link OsAccountRealmManager#updateRealm()} should be called to update
-	 * the realm.
-	 *
-	 * @return True if the object is dirty, false otherwise.
-	 */
-	public boolean isDirty() {
-		return isDirty;
-	}
-		
-	/**
-	 * Reset the dirty flag. Indicates that the realm has been updated in the
-	 * database.
-	 */
-	void resetDirty() {
-		this.isDirty = false;
-	}
-	
-	/**
 	 * Updates the signature with realm address or realm name.
 	 * 
 	 * @throws If there is an error updating the signature.
 	 */
-	private void updateSignature() throws TskCoreException {
-		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
-	}
+	// RAMAN TBD: delete f not needed any more....
+//	private void updateSignature() throws TskCoreException {
+//		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
+//	}
 	
 	/**
 	 * Encapsulates status of realm row.
