@@ -345,10 +345,6 @@ public class OsAccountTest {
 		OsAccount account4 = caseDB.getOsAccountManager().createWindowsOsAccount(null, matchingName, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
 		
 		
-		//account4.setFullName(fullName1);
-		//account4.setCreationTime(creationTime1);
-		//caseDB.getOsAccountManager().updateOsAccount(account4);
-		
 		AccountUpdateStatus updateStatus =  caseDB.getOsAccountManager().updateOsAccountProperties(account4, fullName1, null, null, creationTime1);
 		assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatusEnum.UPDATED);
 		assertEquals(updateStatus.getUpdatedAccount().isPresent(), true);
@@ -818,7 +814,6 @@ public class OsAccountTest {
 		
 		// add attributes to account.
 		caseDB.getOsAccountManager().addOsAccountAttributes(osAccount1, accountAttributes);
-		//osAccount1.addAttributes(accountAttributes);
 		
 		
 		// now get the account with same sid,  and get its attribuites and verify.
