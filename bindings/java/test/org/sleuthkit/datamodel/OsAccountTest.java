@@ -800,8 +800,7 @@ public class OsAccountTest {
 		accountAttributes.add(attrib2);
 		
 		// add attributes to account.
-		osAccount1.addAttributes(accountAttributes);
-		
+		caseDB.getOsAccountManager().addOsAccountAttributes(osAccount1, accountAttributes);		
 		
 		// now get the account with same sid,  and get its attribuites and verify.
 		Optional<OsAccount> existingAccount1 = caseDB.getOsAccountManager().getOsAccountByAddr(osAccount1.getAddr().get(), caseDB.getOsAccountRealmManager().getRealmById(osAccount1.getRealmId()));
