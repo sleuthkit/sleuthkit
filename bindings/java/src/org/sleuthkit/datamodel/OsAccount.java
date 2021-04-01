@@ -62,6 +62,7 @@ public final class OsAccount extends AbstractContent {
 	private List<OsAccountAttribute> osAccountAttributes = null;
 	private List<OsAccountInstance> osAccountInstances = null;
 
+	
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
 	 * deleted.
@@ -340,17 +341,13 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Adds account attributes to the account. Attributes can be at a host-level
-	 * or domain-level (for domain-scoped accounts).
-	 *
-	 * @param osAccountAttributes List of attributes to add.
-	 *
-	 * @throws TskCoreException
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * This function is used by OsAccountManger to update the list of 
+	 * OsAccount attributes. 
+	 * 
+	 * @param osAccountAttribute The osAccount Attribute that is to be added. 
 	 */
-	void addAttributes(List<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
-		osAccountAttributes.addAll(osAccountAttributes);
+	void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
+		this.osAccountAttributes = osAccountAttributes;
 	}
 
 	/**
@@ -453,7 +450,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
+	public synchronized List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
 		if (osAccountAttributes == null) {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}

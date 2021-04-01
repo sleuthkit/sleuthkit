@@ -522,34 +522,6 @@ EXIF metadata found in an image or audio file.
 
 
 ---
-## TSK_OS_ACCOUNT
-Details about an operating system account recovered from the data source. Examples include user or administrator accounts.
-
-### REQUIRED ATTRIBUTES
-- TSK_ACCOUNT_TYPE (Account type, e.g., Administrator, User, etc.)
-- TSK_USER_NAME (The user name associated with the account)
-
-### OPTIONAL ATTRIBUTES
-- TSK_ACCOUNT_SETTINGS (Account settings such as if the account is set to auto lock or requires a home directory)
-- TSK_COUNT (Number of logins)
-- TSK_DATETIME_ACCESSED (Datetime of last login, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_CREATED (Datetime of account creation, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_PASSWORD_FAIL (Datetime of the last failed login, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_PASSWORD_RESET (Datetime of last password reset, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DESCRIPTION (Description of the account, e.g., "My personal school account")
-- TSK_DISPLAY_NAME (Full name of the user associated with the account)
-- TSK_EMAIL (Email address associated with the account)
-- TSK_FLAG (Account flags such as indication that the account is a server trust account) 
-- TSK_GROUPS (Groups that this account is included in)
-- TSK_PASSWORD_HINT (The password hint description)
-- TSK_PASSWORD_SETTINGS (Password settings such as if the password has been set to expire or is required for login)
-- TSK_PATH (Home directory of the account. Ex: "C:/Users/John/")
-- TSK_USER_ID (User security identifier, e.g., SID)
-- TSK_NAME (Name of person associated with the account)
-
-
-
----
 ## TSK_OS_INFO
 Details about an operating system recovered from the data source.
 

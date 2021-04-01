@@ -414,6 +414,7 @@ public class CaseUcoExporter {
      * @throws BlackboardJsonAttrUtil.InvalidJsonException If a JSON valued
      * attribute could not be correctly deserialized.
      */
+    @SuppressWarnings( "deprecation" )
     public List<JsonElement> exportBlackboardArtifact(BlackboardArtifact artifact) throws TskCoreException,
             ContentNotExportableException, BlackboardJsonAttrUtil.InvalidJsonException {
         List<JsonElement> output = new ArrayList<>();
