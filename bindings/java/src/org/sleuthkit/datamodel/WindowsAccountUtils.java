@@ -1,4 +1,4 @@
-/**
+/*
  * Sleuth Kit Data Model
  *
  * Copyright 2021 Basis Technology Corp.
