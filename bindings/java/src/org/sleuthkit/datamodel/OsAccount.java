@@ -45,8 +45,8 @@ public final class OsAccount extends AbstractContent {
 
 	private final long osAccountObjId;	// Object ID within the database
 	private final long realmId;		// realm where the account exists in (could be local or domain scoped)
-	private String loginName;	// user login name - may be null
-	private String addr;	// a unique user sid/uid, may be null
+	private final String loginName;	// user login name - may be null
+	private final String addr;	// a unique user sid/uid, may be null
 
 	private String signature;		// This exists only to prevent duplicates.
 	// Together realm_id & signature must be unique for each account.
@@ -236,44 +236,6 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Set the account login name, such as "jdoe", if not already set.
-	 *
-	 * @param loginName Login name to set.
-	 *
-	 * @return Returns true of the login name is set, false if the name was not
-	 *         changed.
-	 *
-	 * @throws TskCoreException If there is an error setting the login name.
-	 *
-	 */
-	boolean setLoginName(String loginName) throws TskCoreException {
-		if (StringUtils.isBlank(this.loginName) && StringUtils.isNotBlank(loginName)) {
-			this.loginName = loginName;
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Set the account unique id, such as SID or UID, if not already set.
-	 *
-	 * @param addr Id to set.
-	 *
-	 * @return Returns true of the address is set, false if the address was not
-	 *         changed.
-	 *
-	 * @throws TskCoreException If there is an error setting the account
-	 *                          address.
-	 */
-	 boolean setAddr(String addr) throws TskCoreException {
-		if (StringUtils.isBlank(this.addr) && StringUtils.isNotBlank(addr)) {
-			this.addr = addr;
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Sets the account user's full name, such as "John Doe", if it is not
 	 * already set.
 	 *
@@ -307,22 +269,6 @@ public final class OsAccount extends AbstractContent {
 		return false;
 	}
 
-	/**
-	 * Sets account status for the account, if it is not already set.
-	 *
-	 * @param osAccountStatus Account status.
-	 *
-	 * @return Returns true of the account status is set, false if the account
-	 *         status was not changed.
-	 */
-	boolean setOsAccountStatus(OsAccountStatus osAccountStatus) {
-		if ((this.osAccountStatus == null) && Objects.nonNull(osAccountStatus)) {
-			this.osAccountStatus = osAccountStatus;
-			return true;
-		}
-
-		return false;
-	}
 
 	/**
 	 * Set account creation time, if not already set.

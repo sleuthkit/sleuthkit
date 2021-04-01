@@ -162,35 +162,14 @@ public final class OsAccountManager {
 			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 		}
 		
+		// get the realm for the account, and update it if it is missing addr or name.
 		Optional<OsAccountRealm> realmOptional;
-
 		try (CaseDbConnection connection = db.getConnection()) {
-			realmOptional = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost, connection);
+			realmOptional = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(sid, realmName, referringHost, connection);
 		}
 		OsAccountRealm realm;
 		if (realmOptional.isPresent()) {
 			realm = realmOptional.get();
-			boolean updateRealm = false;
-
-			// check if the existing realm's address or name needs to be updated.
-			String newRealmAddr = null;
-			if (!realm.getRealmAddr().isPresent() && !StringUtils.isBlank(sid)) {
-				newRealmAddr = WindowsAccountUtils.getWindowsRealmAddress(sid);
-				updateRealm = true;
-			}
-			String newRealmName = null;
-			List<String> realmNames = realm.getRealmNames();
-			if (!StringUtils.isBlank(realmName) && realmNames.contains(realmName) == false) {
-				newRealmName = realmName;
-				updateRealm = true;
-			}
-
-			if (updateRealm) {
-				RealmUpdateStatus realmUpdateStatus = db.getOsAccountRealmManager().updateRealm(realm, newRealmAddr, newRealmName );
-				if (realmUpdateStatus.getUpdatedRealm().isPresent()) {
-					realm = realmUpdateStatus.getUpdatedRealm().get();
-				}
-			}
 		} else {
 			// realm was not found, create it.
 			realm = db.getOsAccountRealmManager().createWindowsRealm(sid, realmName, referringHost, realmScope);
@@ -756,9 +735,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	private void mergeOsAccounts(OsAccount sourceAccount, OsAccount destAccount, CaseDbTransaction trans) throws TskCoreException {
-		// Merge data from sourceAccount into matchingDestAccount. Does not update the database.
-		mergeOsAccountObjects(sourceAccount, destAccount);
-
+	
 		String query = "";
 		try (Statement s = trans.getConnection().createStatement()) {
 
@@ -799,12 +776,10 @@ public final class OsAccountManager {
 			s.executeUpdate(query);	
 			trans.registerDeletedOsAccount(sourceAccount.getId());
 
-			// Update the destination account. Note that this must be done after updating
+			// Merge and update the destination account. Note that this must be done after updating
 			// the source account to prevent conflicts when merging two accounts in the
 			// same realm.
-			
-			// RAMAN TBD: how do we update the merged dest account ?????????
-			//updateOsAccount(destAccount, trans);
+			mergeOsAccountObjectsAndUpdateDestAccount(sourceAccount, destAccount, trans);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error executing SQL update: " + query, ex);
 		}
@@ -834,29 +809,58 @@ public final class OsAccountManager {
 
 	/**
 	 * Copy all fields from sourceAccount that are not set in
-	 * matchingDestAccount. Does not update the database and does not update
-	 * associated Person.
+	 * destAccount. 
+	 * 
+	 * Updates the dest account in the database.
 	 *
 	 * @param sourceAccount The source account.
 	 * @param destAccount   The destination account.
+	 * @param trans	Transaction to use for database operations.
+	 * 
+	 * @return OsAccount Updated account.
 	 */
-	private void mergeOsAccountObjects(OsAccount sourceAccount, OsAccount destAccount) throws TskCoreException {
+	private OsAccount  mergeOsAccountObjectsAndUpdateDestAccount(OsAccount sourceAccount, OsAccount destAccount, CaseDbTransaction trans) throws TskCoreException {
+		
+		OsAccount mergedDestAccount = destAccount;
+		
+		String destLoginName = null;
+		String destAddr = null;
+		
+		
 		// Copy any fields that aren't set in the destination to the value from the source account.
 		if (!destAccount.getLoginName().isPresent() && sourceAccount.getLoginName().isPresent()) {
-			destAccount.setLoginName(sourceAccount.getLoginName().get());
+			destLoginName = sourceAccount.getLoginName().get();
 		}
 
 		if (!destAccount.getAddr().isPresent() && sourceAccount.getAddr().isPresent()) {
-			destAccount.setAddr(sourceAccount.getAddr().get());
+			destAddr = sourceAccount.getAddr().get();
 		}
 
+		// update the dest account core 
+		AccountUpdateStatus updateStatus = this.updateOsAccountCore(destAccount, destAddr, destLoginName, trans);
+		
+		if (updateStatus.getUpdateStatusCode() == AccountUpdateStatusEnum.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
+			mergedDestAccount = updateStatus.getUpdatedAccount().get();
+		}
+		
+		String destFullName = null;
+		Long destCreationTime = null;
 		if (!destAccount.getFullName().isPresent() && sourceAccount.getFullName().isPresent()) {
-			destAccount.setFullName(sourceAccount.getFullName().get());
+			destFullName = sourceAccount.getFullName().get();
 		}
 
 		if (!destAccount.getCreationTime().isPresent() && sourceAccount.getCreationTime().isPresent()) {
-			destAccount.setCreationTime(sourceAccount.getCreationTime().get());
+			destCreationTime = sourceAccount.getCreationTime().get();
 		}
+		
+		// update the dest account properties 
+		updateStatus = this.updateOsAccountProperties(destAccount, destFullName, null, null, destCreationTime, trans);
+		
+		if (updateStatus.getUpdateStatusCode() == AccountUpdateStatusEnum.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
+			mergedDestAccount = updateStatus.getUpdatedAccount().get();
+		}
+		
+		return mergedDestAccount;
 	}
 
 	/**
@@ -1134,16 +1138,15 @@ public final class OsAccountManager {
 		return instanceList;
 	}
 	
+	
 	/**
-	 * Update the database row for the given OsAccount, with the specified
-	 * column values.
+	 * Updates the properties of the specified account in the
+	 * database.
 	 *
 	 * A column is updated only if it's current value is null and a non-null
 	 * value has been specified.
 	 *
 	 * @param osAccount     OsAccount that needs to be updated in the database.
-	 * @param address       Account address, may be null.
-	 * @param loginName     Login name, may be null.
 	 * @param fullName      Full name, may be null.
 	 * @param accountType   Account type, may be null
 	 * @param accountStatus Account status, may be null.
@@ -1151,14 +1154,14 @@ public final class OsAccountManager {
 	 *
 	 * @return AccountUpdateStatus Account update status, and updated account.
 	 *
-	  * @throws TskCoreException If there is a database error or if the updated
+	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	public AccountUpdateStatus updateOsAccount(OsAccount osAccount, String address, String loginName, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime) throws TskCoreException {
+	public AccountUpdateStatus updateOsAccountProperties(OsAccount osAccount, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime) throws TskCoreException {
 
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			AccountUpdateStatus updateStatus = updateOsAccount(osAccount, address, loginName, fullName, accountType, accountStatus, creationTime, trans);
+			AccountUpdateStatus updateStatus = updateOsAccountProperties(osAccount, fullName, accountType, accountStatus, creationTime, trans);
 			
 			trans.commit();
 			trans = null;
@@ -1172,68 +1175,28 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Update the database row for the given OsAccount, with the specified
-	 * column values.
+	 * Updates the properties of the specified account in the
+	 * database.
 	 *
 	 * A column is updated only if it's current value is null and a non-null
 	 * value has been specified.
 	 *
-	 *
-	 * NOTE: Will not merge accounts if the updated information conflicts with
-	 * an existing account (such as adding an ID to an account that has only a
-	 * name and there already being an account with that ID).
-	 *
 	 * @param osAccount     OsAccount that needs to be updated in the database.
-	 * @param address       Account address, may be null.
-	 * @param loginName     Login name, may be null.
 	 * @param fullName      Full name, may be null.
 	 * @param accountType   Account type, may be null
 	 * @param accountStatus Account status, may be null.
 	 * @param creationTime  Creation time, may be null.
+	 * @param trans         Transaction to use for database operation.
 	 *
 	 * @return AccountUpdateStatus Account update status, and updated account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	AccountUpdateStatus  updateOsAccount(OsAccount osAccount, String address, String loginName, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime, CaseDbTransaction trans) throws TskCoreException {
+	AccountUpdateStatus  updateOsAccountProperties(OsAccount osAccount, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime, CaseDbTransaction trans) throws TskCoreException {
 
 		AccountUpdateStatusEnum updateStatusCode = AccountUpdateStatusEnum.NO_CHANGE;
-		OsAccount updatedAccount = null;
 				
-		// if a new addr is provided and the account already has an address, throw an exception
-		if (!StringUtils.isBlank(address) && !StringUtils.isBlank(osAccount.getAddr().orElse(null))) {
-			throw new TskCoreException(String.format("Account (%d) already has an address (%s), address cannot be updated.", osAccount.getId(), osAccount.getAddr().orElse(null)));
-		}
-		
-		// if a new addr is provided and the account already has an address, throw an exception
-		if (!StringUtils.isBlank(loginName) && !StringUtils.isBlank(osAccount.getLoginName().orElse(null))) {
-			throw new TskCoreException(String.format("Account (%d) already has a login name (%s), login name cannot be updated.", osAccount.getId(), osAccount.getLoginName().orElse(null)));
-		} 
-		
-		String newAddress;
-		if ( StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address)) {
-			newAddress = address;
-			updateStatusCode = AccountUpdateStatusEnum.UPDATED;
-		} else {
-			newAddress = osAccount.getAddr().orElse(null);
-		}
-		
-		String newLoginName;
-		if ( StringUtils.isBlank(osAccount.getLoginName().orElse(null)) && !StringUtils.isBlank(loginName)) {
-			newLoginName = loginName;
-			updateStatusCode = AccountUpdateStatusEnum.UPDATED;
-		} else {
-			newLoginName = osAccount.getLoginName().orElse(null);
-		}
-		
-		String newSignature;
-		if (updateStatusCode == AccountUpdateStatusEnum.UPDATED) {
-			newSignature = getOsAccountSignature(newAddress, newLoginName);
-		} else {
-			newSignature = osAccount.getSignature();
-		}
-		
 		String newFullName;
 		if ( StringUtils.isBlank(osAccount.getFullName().orElse(null)) && !StringUtils.isBlank(fullName)) {
 			newFullName = fullName;
@@ -1274,15 +1237,195 @@ public final class OsAccountManager {
 		try {
 			CaseDbConnection connection = trans.getConnection();
 			String updateSQL = "UPDATE tsk_os_accounts SET "
+					+ "		full_name = ?, " // 1
+					+ "		status = ?, " // 2
+					+ "		type = ?, " // 3
+					+ "		created_date = ? " // 4
+					+ " WHERE os_account_obj_id = ?";	// 5
+
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+
+			preparedStatement.setString(1, newFullName);
+			preparedStatement.setInt(2, newStatus.getId());
+			preparedStatement.setInt(3, newType.getId());
+			
+			
+			if (Objects.nonNull(newCreationTime)) {
+				preparedStatement.setLong(4, newCreationTime);
+			} else {
+				preparedStatement.setNull(5, Types.NULL);
+			}
+			preparedStatement.setLong(5, osAccount.getId());
+			
+			connection.executeUpdate(preparedStatement);
+
+			// get the updated account from database
+			OsAccount updatedAccount = getOsAccountByObjectId(osAccount.getId(), connection);
+			
+			// register the updated account with the transaction to fire off an event
+			trans.registerChangedOsAccount(updatedAccount);
+			
+			return new AccountUpdateStatus(updateStatusCode, updatedAccount);
+
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error updating account with addr = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
+		}
+	}
+
+	
+	/**
+	 * Update the address and/or login name for the specified account in the
+	 * database. Also update the realm addr/name if needed.
+	 * 
+	 * A column is updated only if it's current value is null and a
+	 * non-null value has been specified.
+	 *
+	 *
+	 * @param osAccount     OsAccount that needs to be updated in the database.
+	 * @param accountSid    Account SID, may be null.
+	 * @param loginName     Login name, may be null.
+	 * @param realmName     Realm name for the account.
+	 * @param referringHost Host.
+	 *
+	 * @return AccountUpdateStatus Account update status, and the updated
+	 *         account.
+	 *
+	 * @throws TskCoreException If there is a database error or if the updated
+	 *                          information conflicts with an existing account.
+	 */
+	public AccountUpdateStatus updateWindowsOsAccountCore(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AccountUpdateStatus updateStatus = this.updateWindowsOsAccountCore(osAccount, accountSid, loginName, realmName, referringHost, trans);
+
+			trans.commit();
+			trans = null;
+			return updateStatus;
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
+	
+	
+	
+	/**
+	 * Update the address and/or login name for the specified account in the
+	 * database. Also update the realm addr/name if needed.
+	 *
+	 * A column is updated only if it's current value is null and a non-null
+	 * value has been specified.
+	 *
+	 * @param osAccount OsAccount that needs to be updated in the database.
+	 * @param accountSid Account SID, may be null.
+	 * @param loginName Login name, may be null.
+	 * @param realmName Account realm name. May be null if accountSid is not null.
+	 *
+	 * @return AccountUpdateStatus Account update status, and the updated
+	 *         account.
+	 *
+	 * @throws TskCoreException If there is a database error or if the updated
+	 *                          information conflicts with an existing account.
+	 */
+	private AccountUpdateStatus  updateWindowsOsAccountCore(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
+				
+		// if a new addr is provided and the account already has an address, throw an exception
+		if (!StringUtils.isBlank(accountSid) && !StringUtils.isBlank(osAccount.getAddr().orElse(null))) {
+			throw new TskCoreException(String.format("Account (%d) already has an address (%s), address cannot be updated.", osAccount.getId(), osAccount.getAddr().orElse(null)));
+		}
+		
+		// if a new addr is provided and the account already has an address, throw an exception
+		if (!StringUtils.isBlank(loginName) && !StringUtils.isBlank(osAccount.getLoginName().orElse(null))) {
+			throw new TskCoreException(String.format("Account (%d) already has a login name (%s), login name cannot be updated.", osAccount.getId(), osAccount.getLoginName().orElse(null)));
+		} 
+		
+		// first get and update the realm - if we have the info to find the realm
+		if ( !StringUtils.isBlank(accountSid) || !StringUtils.isBlank(realmName) ) {
+			db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, realmName, referringHost, trans.getConnection());
+		}
+		
+		// now update the account core data
+		AccountUpdateStatus updateStatus = this.updateOsAccountCore(osAccount, accountSid, loginName, trans);
+		
+		return updateStatus;
+	}
+
+	
+	/**
+	 * Update the address and/or login name for the specified account in the
+	 * database.
+	 *
+	 * A column is updated only if it's current value is null and a non-null
+	 * value has been specified.
+	 *
+	 *
+	 * NOTE: Will not merge accounts if the updated information conflicts with
+	 * an existing account (such as adding an ID to an account that has only a
+	 * name and there already being an account with that ID).
+	 *
+	 * @param osAccount OsAccount that needs to be updated in the database.
+	 * @param address   Account address, may be null.
+	 * @param loginName Login name, may be null.
+	 *
+	 * @return AccountUpdateStatus Account update status, and the updated
+	 *         account.
+	 *
+	 * @throws TskCoreException If there is a database error or if the updated
+	 *                          information conflicts with an existing account.
+	 */
+	private AccountUpdateStatus  updateOsAccountCore(OsAccount osAccount, String address, String loginName, CaseDbTransaction trans) throws TskCoreException {
+
+		AccountUpdateStatusEnum updateStatusCode = AccountUpdateStatusEnum.NO_CHANGE;
+		OsAccount updatedAccount = null;
+				
+		// if a new addr is provided and the account already has an address, throw an exception
+		if (!StringUtils.isBlank(address) && !StringUtils.isBlank(osAccount.getAddr().orElse(null))) {
+			throw new TskCoreException(String.format("Account (%d) already has an address (%s), address cannot be updated.", osAccount.getId(), osAccount.getAddr().orElse(null)));
+		}
+		
+		// if a new addr is provided and the account already has an address, throw an exception
+		if (!StringUtils.isBlank(loginName) && !StringUtils.isBlank(osAccount.getLoginName().orElse(null))) {
+			throw new TskCoreException(String.format("Account (%d) already has a login name (%s), login name cannot be updated.", osAccount.getId(), osAccount.getLoginName().orElse(null)));
+		} 
+		
+		String newAddress;
+		if ( StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address)) {
+			newAddress = address;
+			updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+		} else {
+			newAddress = osAccount.getAddr().orElse(null);
+		}
+		
+		String newLoginName;
+		if ( StringUtils.isBlank(osAccount.getLoginName().orElse(null)) && !StringUtils.isBlank(loginName)) {
+			newLoginName = loginName;
+			updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+		} else {
+			newLoginName = osAccount.getLoginName().orElse(null);
+		}
+		
+		String newSignature;
+		if (updateStatusCode == AccountUpdateStatusEnum.UPDATED) {
+			newSignature = getOsAccountSignature(newAddress, newLoginName);
+		} else {
+			newSignature = osAccount.getSignature();
+		}
+		
+		// if nothing is to be changed, return
+		if ( updateStatusCode == AccountUpdateStatusEnum.NO_CHANGE) {
+			return new AccountUpdateStatus(updateStatusCode, null);
+		}
+		
+		try {
+			CaseDbConnection connection = trans.getConnection();
+			String updateSQL = "UPDATE tsk_os_accounts SET "
 					+ "		login_name = ?, " // 1
 					+ "		addr = ?, " // 2
 					+ "		signature = " // 3
-					+ "       CASE WHEN db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + " THEN ? ELSE signature END , "
-					+ "		full_name = ?, " // 4
-					+ "		status = ?, " // 5
-					+ "		type = ?, " // 6
-					+ "		created_date = ? " // 7
-					+ " WHERE os_account_obj_id = ?";	// 8
+					+ "       CASE WHEN db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + " THEN ? ELSE signature END  " 
+					+ " WHERE os_account_obj_id = ?";	// 4
 
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
@@ -1292,19 +1435,8 @@ public final class OsAccountManager {
 
 			// If the account is merged or deleted this will not be set.  ???
 			preparedStatement.setString(3, newSignature);
-
-			preparedStatement.setString(4, newFullName);
-
-			preparedStatement.setInt(5, newStatus.getId());
-			preparedStatement.setInt(6, newType.getId());
+			preparedStatement.setLong(4, osAccount.getId());
 			
-			
-			if (Objects.nonNull(newCreationTime)) {
-				preparedStatement.setLong(7, newCreationTime);
-			} else {
-				preparedStatement.setNull(7, Types.NULL);
-			}
-			preparedStatement.setLong(8, osAccount.getId());
 			connection.executeUpdate(preparedStatement);
 
 			// get the updated account from database
@@ -1320,6 +1452,7 @@ public final class OsAccountManager {
 		}
 	}
 
+	
 	/**
 	 * Returns a list of hosts where the OsAccount has appeared.
 	 *

@@ -220,6 +220,46 @@ public final class OsAccountRealmManager {
 		return realm;
 	}
 	
+	
+	/**
+	 * Get a windows realm by the account SID, or the domain name. The input SID
+	 * is an user/group account SID. The domain SID is extracted from this
+	 * incoming SID.
+	 *
+	 * If a realm is found but is missing either the addr or the realmName, then
+	 * the realm is updated.
+	 *
+	 * @param accountSid    Account SID, may be null.
+	 * @param realmName     Realm name, may be null only if accountSid is not
+	 *                      null.
+	 * @param referringHost Referring Host.
+	 * @param connection    Database connection to use.
+	 *
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm
+	 *         is found.
+	 *
+	 * @throws TskCoreException
+	 */
+	Optional<OsAccountRealm> getAndUpdateWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException, OsAccountManager.NotUserSIDException {
+		
+		// get realm
+		Optional<OsAccountRealm> realmOptional =  getWindowsRealm(accountSid, realmName, referringHost, connection );
+		
+		// if found, update it if needed
+		if (realmOptional.isPresent()) {
+			String realmAddr = StringUtils.isNotBlank(accountSid) ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
+			RealmUpdateStatus realmUpdateStatus = updateRealm(realmOptional.get(), realmAddr, realmName);
+			
+			// if realm was updated, return the updated realm
+			if (realmUpdateStatus.getUpdateStatusCode() == RealmUpdateStatusEnum.UPDATED) {
+				return realmUpdateStatus.getUpdatedRealm();
+			} 
+		} 
+		
+		return realmOptional; // return the found realm as is, if any
+	}
+	
+	
 	/**
 	 * Updates the address and/or name of specified realm in the database.
      *

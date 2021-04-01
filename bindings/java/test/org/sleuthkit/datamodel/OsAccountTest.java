@@ -320,8 +320,8 @@ public class OsAccountTest {
 		}
 	}
 	
-	// RAMAN TBD: merge test disabled for now
-	// @Test 
+	
+	@Test 
 	public void mergeRealmsTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
 		Host host = caseDB.getHostManager().createHost("mergeTestHost");
 		
@@ -349,7 +349,7 @@ public class OsAccountTest {
 		//account4.setCreationTime(creationTime1);
 		//caseDB.getOsAccountManager().updateOsAccount(account4);
 		
-		AccountUpdateStatus updateStatus =  caseDB.getOsAccountManager().updateOsAccount(account4, null, null, fullName1, null, null, creationTime1);
+		AccountUpdateStatus updateStatus =  caseDB.getOsAccountManager().updateOsAccountProperties(account4, fullName1, null, null, creationTime1);
 		assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatusEnum.UPDATED);
 		assertEquals(updateStatus.getUpdatedAccount().isPresent(), true);
 		account4 = updateStatus.getUpdatedAccount().orElseThrow(() ->  new TskCoreException("Updated account not found."));
@@ -592,7 +592,7 @@ public class OsAccountTest {
 			Long creationTime1 = 1611858618L;
 			
 			
-			AccountUpdateStatus updateStatus = caseDB.getOsAccountManager().updateOsAccount(osAccount1, null, null, fullName1, null, null, creationTime1 );
+			AccountUpdateStatus updateStatus = caseDB.getOsAccountManager().updateOsAccountProperties(osAccount1, fullName1, null, null, creationTime1 );
 			assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatusEnum.UPDATED);
 			assertTrue(updateStatus.getUpdatedAccount().isPresent());
 			

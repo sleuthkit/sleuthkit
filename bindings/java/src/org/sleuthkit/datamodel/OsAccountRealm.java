@@ -44,9 +44,9 @@ public final class OsAccountRealm {
 	
 	// a realm may have multiple names - for exmple, for a user ABCCorp\\user1 or user1@ABCcorp.com - 'ABCCorp' and 'ABCcorp.com' both refer to the same realm.
 	// currently we only support a single name, this could be expanded in future.
-	private String realmName; // realm name - may be updated later. For example, a Windows domain name. 
+	private final String realmName; // realm name
 	
-	private String realmAddr; // realm address - may be updated later.  For example, the numbers and dashes in a Windows SID.
+	private final String realmAddr; // realm address
 	private String signature; // either realm address or name (if address is not known)
 	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
@@ -260,47 +260,7 @@ public final class OsAccountRealm {
 			return null;
 		}
 	}
-	
-	/**
-	 * Set the realm name if it is not already set.
-	 * NOTE: Only a single name is currently supported.  Future
-	 * versions will support multiple names. 
-	 *
-	 * @param name Realm name to set.
-	 *
-	 * @return Returns true of the name is set, false if the name was not
-	 *         changed.
-	 * @throws TskCoreException If there is an error setting the realm name.
-	 * 
-	 */
-//	boolean addRealmName(String name) throws TskCoreException {
-//		if (StringUtils.isBlank(this.realmName) && StringUtils.isNotBlank(name)) {
-//			this.realmName = name;
-//			return true;
-//		}
-//		
-//		return false;
-//	}
-
-	/**
-	 * Set the realm address if it is not already set.
-	 *
-	 * @param addr Realm address to set.
-	 *
-	 * @return Returns true of the address is set, false if the address was not
-	 *         changed.
-	 * @throws TskCoreException If there is an error setting the realm address.
-	 */
-//	 boolean setRealmAddr(String addr) throws TskCoreException {
-//		if (StringUtils.isBlank(this.realmAddr) && StringUtils.isNotBlank(addr)) {
-//			this.realmAddr = addr;
-//			return true;
-//		}
-//		
-//		return false;
-//	}
-	
-	
+		
 	 /**
 	  * Set the signature for the account realm.
 	  * 
@@ -318,15 +278,6 @@ public final class OsAccountRealm {
 		return false;
 	}
 	
-	/**
-	 * Updates the signature with realm address or realm name.
-	 * 
-	 * @throws If there is an error updating the signature.
-	 */
-	// RAMAN TBD: delete f not needed any more....
-//	private void updateSignature() throws TskCoreException {
-//		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
-//	}
 	
 	/**
 	 * Encapsulates status of realm row.
@@ -362,28 +313,4 @@ public final class OsAccountRealm {
 		}
 	}
 	
-	
-//	/**
-//	 * Set the realm scope host if it is not already set.
-//	 *
-//	 * @param host Realm scope host to set.
-//	 */
-//	public void setHost(Host host) {
-//		if (Objects.isNull(this.host) && Objects.nonNull(host)) {
-//			this.host = host;
-//			this.isDirty = true;
-//		}
-//	}
-
-//	/**
-//	 * Set the realm scope confidence if it is different from current value..
-//	 *
-//	 * @param scopeConfidence Realm scope confidence to set.
-//	 */
-//	public void setScopeConfidence(ScopeConfidence scopeConfidence) {
-//		if (this.scopeConfidence.getId() != scopeConfidence.getId()) {
-//			this.scopeConfidence = scopeConfidence;
-//			this.isDirty = true;
-//		}
-//	}
 }
