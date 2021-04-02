@@ -268,8 +268,9 @@ public final class OsAccountManager {
 			preparedStatement.setInt(6, accountStatus.getId());
 
 			connection.executeUpdate(preparedStatement);
-
-			account = new OsAccount(db, osAccountObjId, realm.getRealmId(), loginName, uniqueId, signature, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
+			
+			account = new OsAccount(db, osAccountObjId, realm.getRealmId(), loginName, uniqueId, signature, 
+										null, null, null, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -1465,27 +1466,22 @@ public final class OsAccountManager {
 	 * @throws SQLException
 	 */
 	private OsAccount osAccountFromResultSet(ResultSet rs) throws SQLException {
-		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), rs.getLong("realm_id"), rs.getString("login_name"), rs.getString("addr"),
-				rs.getString("signature"), OsAccount.OsAccountStatus.fromID(rs.getInt("status")),
-				OsAccount.OsAccountDbStatus.fromID(rs.getInt("db_status")));
-
-		// set other optional fields
-		String fullName = rs.getString("full_name");
+		
+		OsAccountType accountType = null;
+		int typeId = rs.getInt("type");
 		if (!rs.wasNull()) {
-			osAccount.setFullName(fullName);
+			accountType = OsAccount.OsAccountType.fromID(typeId);
 		}
 
-		int type = rs.getInt("type");
-		if (!rs.wasNull()) {
-			osAccount.setOsAccountType(OsAccount.OsAccountType.fromID(type));
+		Long creationTime = rs.getLong("created_date"); // getLong returns 0 if value is null
+		if (rs.wasNull()) {
+			creationTime = null;
 		}
 
-		long creationTime = rs.getLong("created_date");
-		if (!rs.wasNull()) {
-			osAccount.setCreationTime(creationTime);
-		}
+		return new OsAccount(db, rs.getLong("os_account_obj_id"), rs.getLong("realm_id"), rs.getString("login_name"), rs.getString("addr"),
+						rs.getString("signature"), rs.getString("full_name"), creationTime, accountType, OsAccount.OsAccountStatus.fromID(rs.getInt("status")),
+						OsAccount.OsAccountDbStatus.fromID(rs.getInt("db_status")));
 
-		return osAccount;
 	}
 
 	/**
