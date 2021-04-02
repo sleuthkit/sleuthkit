@@ -322,6 +322,70 @@ public final class PersonManager {
 			throw new TskCoreException(String.format("Error getting person with name = %s", name), ex);
 		}
 	}
+	
+	/**
+	 * Get person for the given host or empty if no associated person.
+	 *
+	 * @param host The host.
+	 *
+	 * @return The parent person or empty if no parent person.
+	 *
+	 * @throws TskCoreException if error occurs.
+	 */
+	public Optional<Person> getPerson(Host host) throws TskCoreException {
+
+		String queryString = "SELECT p.id AS personId, p.name AS name FROM \n"
+				+ "tsk_persons p INNER JOIN tsk_hosts h\n"
+				+ "ON p.id = h.person_id \n"
+				+ "WHERE h.id = " + host.getHostId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			if (rs.next()) {
+				return Optional.of(new Person(rs.getLong("personId"), rs.getString("name")));
+			} else {
+				return Optional.empty();
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting person for host with ID = %d", host.getHostId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	/**
+	 * Set host's parent person.
+	 *
+	 * @param host   The host whose parent will be set.
+	 * @param person The person to be a parent or null to remove any parent
+	 *               person reference from this host.
+	 *
+	 * @throws TskCoreException
+	 */
+	public void setPerson(Host host, Person person) throws TskCoreException {
+		if (host == null) {
+			throw new TskCoreException("Illegal argument passed to setPerson: host must be non-null.");
+		}
+
+		String queryString = (person == null)
+				? String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getHostId())
+				: String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getPersonId(), host.getHostId());
+
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();) {
+			s.executeUpdate(queryString);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting persons"), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+
+		db.getPersonManager().fireChangeEvent(person);
+	}	
 
 	/**
 	 * Fires an event when a person is created.
