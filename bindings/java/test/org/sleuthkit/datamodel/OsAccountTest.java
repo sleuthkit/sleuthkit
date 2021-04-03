@@ -34,7 +34,7 @@ import static org.junit.Assert.assertFalse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.sleuthkit.datamodel.OsAccountManager.AccountUpdateStatus;
+import org.sleuthkit.datamodel.OsAccountManager.AccountUpdateResult;
 import org.sleuthkit.datamodel.OsAccountRealmManager.RealmUpdateStatus;
 
 /**
@@ -345,8 +345,8 @@ public class OsAccountTest {
 		OsAccount account4 = caseDB.getOsAccountManager().createWindowsOsAccount(null, matchingName, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
 		
 		
-		AccountUpdateStatus updateStatus =  caseDB.getOsAccountManager().updateOsAccountProperties(account4, fullName1, null, null, creationTime1);
-		assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatusEnum.UPDATED);
+		AccountUpdateResult updateStatus =  caseDB.getOsAccountManager().updateOsAccountProperties(account4, fullName1, null, null, creationTime1);
+		assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatus.UPDATED);
 		assertEquals(updateStatus.getUpdatedAccount().isPresent(), true);
 		account4 = updateStatus.getUpdatedAccount().orElseThrow(() ->  new TskCoreException("Updated account not found."));
 		
@@ -588,8 +588,8 @@ public class OsAccountTest {
 			Long creationTime1 = 1611858618L;
 			
 			
-			AccountUpdateStatus updateStatus = caseDB.getOsAccountManager().updateOsAccountProperties(osAccount1, fullName1, null, null, creationTime1 );
-			assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatusEnum.UPDATED);
+			AccountUpdateResult updateStatus = caseDB.getOsAccountManager().updateOsAccountProperties(osAccount1, fullName1, null, null, creationTime1 );
+			assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatus.UPDATED);
 			assertTrue(updateStatus.getUpdatedAccount().isPresent());
 			
 			osAccount1 = updateStatus.getUpdatedAccount().orElseThrow(() -> new TskCoreException("Updated account not found"));
