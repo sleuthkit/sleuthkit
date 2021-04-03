@@ -1212,7 +1212,6 @@ public final class OsAccountManager {
 			}
 
 			if (Objects.nonNull(creationTime)) {
-				//newCreationTime = creationTime;
 				updateAccountColumn(osAccount.getId(), "created_date", creationTime, connection);
 				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
 			}
@@ -1252,7 +1251,7 @@ public final class OsAccountManager {
 
 		String updateSQL = "UPDATE tsk_os_accounts "
 				+ " SET " + colName + " = ? "
-				+ " WHERE os_account_obj_id = ?";	// 5
+				+ " WHERE os_account_obj_id = ?";
 
 		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 		preparedStatement.clearParameters();
@@ -1271,6 +1270,32 @@ public final class OsAccountManager {
 			}
 		}
 
+		preparedStatement.setLong(2, accountObjId);
+		
+		connection.executeUpdate(preparedStatement);
+	}
+	
+	/**
+	 * Updates the signature of the specified account, if the db status of the
+	 * account is active.
+	 *
+	 * @param accountObjId Object id of the account to be updated.
+	 * @param signature    New signature.
+	 * @param connection   Database connection to use.
+	 *
+	 * @throws SQLException If there is an error updating the database.
+	 */
+	private void updateAccountSignature(long accountObjId, String signature, CaseDbConnection connection) throws SQLException {
+
+		String updateSQL = "UPDATE tsk_os_accounts SET "
+					+ "		signature = "
+					+ "       CASE WHEN db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + " THEN ? ELSE signature END  "
+					+ " WHERE os_account_obj_id = ?";	// 8
+
+		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+		preparedStatement.clearParameters();
+
+		preparedStatement.setString(1, signature);
 		preparedStatement.setLong(2, accountObjId);
 		
 		connection.executeUpdate(preparedStatement);
@@ -1331,7 +1356,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	private AccountUpdateStatus  updateWindowsOsAccountCore(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
+	private AccountUpdateStatus updateWindowsOsAccountCore(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
 						
 		// first get and update the realm - if we have the info to find the realm
 		if ( !StringUtils.isBlank(accountSid) || !StringUtils.isBlank(realmName) ) {
@@ -1395,10 +1420,10 @@ public final class OsAccountManager {
 				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
 			}
 
-			// update signature if needed, only for active acounts
-			if (updateStatusCode == AccountUpdateStatusEnum.UPDATED && osAccount.getOsAccountDbStatus() == OsAccount.OsAccountDbStatus.ACTIVE) {
+			// update signature if needed
+			if (updateStatusCode == AccountUpdateStatusEnum.UPDATED) {
 				String newSignature = getOsAccountSignature(address, loginName);
-				updateAccountColumn(osAccount.getId(), "signature", newSignature, connection);
+				updateAccountSignature(osAccount.getId(), newSignature, connection);
 			}
 
 			// if nothing is changed, return

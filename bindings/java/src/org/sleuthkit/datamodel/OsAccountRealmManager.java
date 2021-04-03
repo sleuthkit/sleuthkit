@@ -248,7 +248,7 @@ public final class OsAccountRealmManager {
 		// if found, update it if needed
 		if (realmOptional.isPresent()) {
 			String realmAddr = StringUtils.isNotBlank(accountSid) ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
-			RealmUpdateStatus realmUpdateStatus = updateRealm(realmOptional.get(), realmAddr, realmName);
+			RealmUpdateStatus realmUpdateStatus = updateRealm(realmOptional.get(), realmAddr, realmName, connection);
 			
 			// if realm was updated, return the updated realm
 			if (realmUpdateStatus.getUpdateStatusCode() == RealmUpdateStatusEnum.UPDATED) {
