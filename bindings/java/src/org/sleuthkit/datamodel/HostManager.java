@@ -62,7 +62,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Host getOrCreateHost(String name) throws TskCoreException {
+	public Host getOrNewHost(String name) throws TskCoreException {
 		return newHost(name);
 	}
 
