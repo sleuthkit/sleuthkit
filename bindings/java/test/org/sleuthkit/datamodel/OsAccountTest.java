@@ -34,7 +34,8 @@ import static org.junit.Assert.assertFalse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.sleuthkit.datamodel.OsAccountManager.AccountUpdateResult;
+import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
+import org.sleuthkit.datamodel.OsAccountManager.OsAccountUpdateResult;
 import org.sleuthkit.datamodel.OsAccountRealmManager.RealmUpdateStatus;
 
 /**
@@ -345,10 +346,10 @@ public class OsAccountTest {
 		OsAccount account4 = caseDB.getOsAccountManager().createWindowsOsAccount(null, matchingName, srcRealmName, host, OsAccountRealm.RealmScope.LOCAL);
 		
 		
-		AccountUpdateResult updateStatus =  caseDB.getOsAccountManager().updateOsAccountProperties(account4, fullName1, null, null, creationTime1);
-		assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatus.UPDATED);
-		assertEquals(updateStatus.getUpdatedAccount().isPresent(), true);
-		account4 = updateStatus.getUpdatedAccount().orElseThrow(() ->  new TskCoreException("Updated account not found."));
+		OsAccountUpdateResult updateResult =  caseDB.getOsAccountManager().updateStandardOsAccountAttributes(account4, fullName1, null, null, creationTime1);
+		assertEquals(updateResult.getUpdateStatusCode(), OsAccountManager.OsAccountUpdateStatus.UPDATED);
+		assertEquals(updateResult.getUpdatedAccount().isPresent(), true);
+		account4 = updateResult.getUpdatedAccount().orElseThrow(() ->  new TskCoreException("Updated account not found."));
 		
 		
 		OsAccount account5 = caseDB.getOsAccountManager().createWindowsOsAccount(sid1, null, destRealmName, host, OsAccountRealm.RealmScope.LOCAL);
@@ -588,11 +589,11 @@ public class OsAccountTest {
 			Long creationTime1 = 1611858618L;
 			
 			
-			AccountUpdateResult updateStatus = caseDB.getOsAccountManager().updateOsAccountProperties(osAccount1, fullName1, null, null, creationTime1 );
-			assertEquals(updateStatus.getUpdateStatusCode(), OsAccountManager.AccountUpdateStatus.UPDATED);
-			assertTrue(updateStatus.getUpdatedAccount().isPresent());
+			OsAccountUpdateResult updateResult = caseDB.getOsAccountManager().updateStandardOsAccountAttributes(osAccount1, fullName1, null, null, creationTime1 );
+			assertEquals(updateResult.getUpdateStatusCode(), OsAccountManager.OsAccountUpdateStatus.UPDATED);
+			assertTrue(updateResult.getUpdatedAccount().isPresent());
 			
-			osAccount1 = updateStatus.getUpdatedAccount().orElseThrow(() -> new TskCoreException("Updated account not found"));
+			osAccount1 = updateResult.getUpdatedAccount().orElseThrow(() -> new TskCoreException("Updated account not found"));
 			assertEquals(osAccount1.getCreationTime().orElse(null), creationTime1);
 			assertEquals(osAccount1.getFullName().orElse(null).equalsIgnoreCase(fullName1), true );
 			
@@ -805,19 +806,19 @@ public class OsAccountTest {
 		
 		// TBD: perhaps add some files to the case and then use one of the files as the source of attributes.
 		
-		OsAccountAttribute attrib1 = new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
+		OsAccountAttribute attrib1 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
 		accountAttributes.add(attrib1);
 		
 		String hint = "HINT";
-		OsAccountAttribute attrib2 = new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
+		OsAccountAttribute attrib2 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
 		accountAttributes.add(attrib2);
 		
 		// add attributes to account.
-		caseDB.getOsAccountManager().addOsAccountAttributes(osAccount1, accountAttributes);
+		caseDB.getOsAccountManager().addExtendedOsAccountAttributes(osAccount1, accountAttributes);
 		
 		// now get the account with same sid,  and get its attribuites and verify.
 		Optional<OsAccount> existingAccount1 = caseDB.getOsAccountManager().getOsAccountByAddr(osAccount1.getAddr().get(), caseDB.getOsAccountRealmManager().getRealmById(osAccount1.getRealmId()));
-		List<OsAccountAttribute> existingAccountAttribs  = existingAccount1.get().getOsAccountAttributes();
+		List<OsAccountAttribute> existingAccountAttribs  = existingAccount1.get().getExtendedOsAccountAttributes();
 		
 		
 		assertEquals(existingAccountAttribs.size(), 2);
