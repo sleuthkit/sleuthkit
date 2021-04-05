@@ -165,13 +165,13 @@ public class ArtifactTest {
 		String realmName1 = "realm1";
 		String ownerUid1 = "S-1-5-21-111111111-222222222-3333333333-0001";
 
-		Host host1 = caseDB.getHostManager().createHost(hostname1);
-		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
-		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsOsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		Host host1 = caseDB.getHostManager().newHost(hostname1);
+		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().newWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// create a 2nd account on the same host
 		String ownerUid2 = "S-1-5-21-111111111-222222222-3333333333-0009";
-		OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsOsAccount(ownerUid2, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid2, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 		
 		
 		// now find the file abc.text

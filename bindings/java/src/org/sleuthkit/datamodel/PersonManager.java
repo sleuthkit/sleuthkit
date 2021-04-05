@@ -205,7 +205,7 @@ public final class PersonManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Person createPerson(String name) throws TskCoreException {
+	public Person newPerson(String name) throws TskCoreException {
 
 		// Must have a name
 		if (Strings.isNullOrEmpty(name)) {
