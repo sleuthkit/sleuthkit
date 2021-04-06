@@ -316,7 +316,7 @@ public final class OsAccount extends AbstractContent {
 
 	/**
 	 * Get the ID for the account realm. Get the Realm via
-	 * OsAccountRealmManager.getRealmById() NOTE: The realm may get updated as
+	 * OsAccountRealmManager.getRealmByRealmId() NOTE: The realm may get updated as
 	 * more data is parsed, so listen for events to update as needed.
 	 *
 	 * @return
