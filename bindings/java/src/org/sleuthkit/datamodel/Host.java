@@ -63,7 +63,7 @@ public final class Host {
 	 *
 	 * @return Host status.
 	 */
-	public HostDbStatus getStatus() {
+	HostDbStatus getStatus() {
 		return status;
 	}
 		
