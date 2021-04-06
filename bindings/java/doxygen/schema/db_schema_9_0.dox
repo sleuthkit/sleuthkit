@@ -6,11 +6,14 @@
 
 This page outlines version 9.0 the database that is used by The Sleuth Kit and Autopsy. The goal of this page is to provide short descriptions for each table and column and not focus on foreign key requirements, etc. If you want that level of detail, then refer to the actual schema in addition to this. 
 
+Each Autopsy release is associated with a schema version with a major and minor version number. If a case with an older schema version is opened in a new version of Autopsy, the case will automatically be updated to the current schema. Going the other direction (opening a case that was created with a newer version of Autopsy), two things may happen:
+- If the case database has the same major number as the version of Autopsy being used, the case should generally be able to be opened and used.
+- If the case database has a higher major number than the version of Autopsy being used, an error will be displayed when attempting to open the case. 
+
 You can find a basic graphic of some of the table relationships <a href="https://docs.google.com/drawings/d/1omR_uUAp1fQt720oJ-kk8C48BXmVa3PNjPZCDdT0Tb4/edit?usp#sharing">here</a>
 
 
 Some general notes on this schema:
-
 - Nearly every type of data is assigned a unique ID, called the Object ID
 - The objects form a hierarchy, that shows where data came from.  A child comes from its parent.  
  - For example, disk images are the root, with a volume system below it, then a file system, and then files and directories. 
@@ -195,6 +198,18 @@ Methods that can be used to store files on local disks to prevent them from bein
 - **encoding_type** - ID of method used to store data.  See org.sleuthkit.datamodel.TskData.EncodingType enum 
 - **name** -  Display name of technique
 
+## tsk_file_attributes
+Extended attributes for a particular file
+- **id** - Id of the attribute
+- **obj_id** - File this attribute is associated with (references tsk_files)
+- **attribute_type_id** - Id for the type of attribute (can be looked up in the blackboard_attribute_types)
+- **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
+- **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
+- **value_text** - A string of text (should be NULL unless the value type is string)
+- **value_int32** - An integer (should be NULL unless the value type is int)
+- **value_int64** - A long integer / timestamp (should be NULL unless the value type is long)
+- **value_double** - A double (should be NULL unless the value type is double)
+
 ## tsk_files_derived_method
 Derived files are those that result from analyzing another file.  For example, files that are extracted from a ZIP file will be considered derived.  This table keeps track of the derivation techniques that were used to make the derived files. 
 
@@ -222,17 +237,26 @@ The \ref mod_bbpage "Blackboard" is used to store results from analysis modules.
 Stores artifacts associated with objects.
 - **artifact_id** - Id of the artifact (assigned by the database)
 - **obj_id** - Id of the associated object
+- **artifact_obj_id** - Object id of the artifact
 - **artifact_type_id** - Id for the type of artifact (can be looked up in the blackboard_artifact_types table)
 - **data_source_obj_id** - Id of the data source for the artifact
 - **artifact_type_id** - Type of artifact (references artifact_type_id in blackboard_artifact_types)
 - **review_status_id** - Review status (references review_status_id in review_statuses)
 
 ## tsk_analysis_results
-TODO
+Additional information for analysis results
+- **artifact_obj_id** - Object id of the associated artifact (artifact_obj_id column in blackboard_artifacts)
+- **conclusion** - Text description of conclusion
+- **significance** - Significance (as org.sleuthkit.datamodel.Score.Significance enum)
+- **method_category** - Category of the method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
+- **configuration** - Text description of configuration
+- **justification** - Text description of justification
+- **ignore_score** - true if score should be ignored, false (0) otherwise
 
 ## tsk_data_artifacts
 Additional information for data artifacts
-TODO
+- **artifact_obj_id** - Object id of the associated artifact (artifact_obj_id column in blackboard_artifacts)
+- **os_account_obj_id** - Object id of the associated OS account
 
 ## blackboard_artifact_types
 Types of artifacts
@@ -262,9 +286,6 @@ Types of attribute
 - **display_name** - A display name for the type (not unique, should be human readable)
 - **value_type** - Expected type of data for the attribute type (see blackboard_attributes)
 
-## tsk_file_attributes
-TODO
-
 ## review_statuses
 Review status of an artifact. Should mirror the org.sleuthkit.datamodel.BlackboardArtifact.ReviewStatus enum.
 - **review_status_id** - Id of the status 
@@ -272,7 +293,11 @@ Review status of an artifact. Should mirror the org.sleuthkit.datamodel.Blackboa
 - **display_name** - Display name (should be human readable)
 
 ## tsk_aggregate_score
-TODO
+Stores the score of an object
+- **obj_id** - Id of the object that corresponds to this score
+- **data_source_obj_id** - Id of the data source the object belongs to
+- **significance** - Significance (as org.sleuthkit.datamodel.Score.Significance enum)
+- **method_category** - Category of the method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
 
 # Hosts / Persons
 Stores data related to hosts and persons
@@ -305,23 +330,61 @@ Maps related DNS addresses and IP addresses
 - **time** - Timestamp when this mapping was recorded
 
 ## tsk_host_address_usage
-TODO
+Tracks usages of host addresses
+- **id** - Id of the usage
+- **addr_obj_id** - Id of the host address
+- **obj_id** - Id of the object related to the usage (references tsk_objects)
+- **data_source_obj_id** - Id of the data source associated with the usage
 
 
 # Operating System Accounts
 Stores data related to operating system accounts
 
 ## tsk_os_accounts
-TODO
+Stores operating system accounts
+- **os_account_obj_id** - Id of the OS account
+- **login_name** - Login name (login name or addr must be present)
+- **full_name** - Full name
+- **realm_id** - Optional id of the associated realm (references tsk_os_account_realms)
+- **addr** - Address (login name or addr must be present)
+- **signature** - Used internally for unique clause
+- **status** - Status of the account (as org.sleuthkit.datamodel.OsAccount.OsAccountStatus enum)
+- **type** - Type of account (as org.sleuthkit.datamodel.OsAccount.OsAccountType enum)
+- **created_date** - Timestamp of account creation
+- **db_status** - Status of this account in the database (active/merged/deleted)
+- **merged_into** - For merged accounts, set to the id of the account they were merged in to.
 
 ## tsk_os_account_attributes
-TODO
+Stores attributes for an OS account. Similar to blackboard_attributes.
+- **id** - Id of the attribute
+- **os_account_obj_id** - Id of the associated OS account
+- **host_id** - Optional id of the associated host
+- **source_obj_id** - Optional id of the source of this attribute (references tsk_objects)
+- **attribute_type_id** - Type of attribute (see org.sleuthkit.datamodel.BlackboardAttribute.BlackboardAttribute.Type)
+- **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
+- **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
+- **value_text** - A string of text (should be NULL unless the value type is string)
+- **value_int32** - An integer (should be NULL unless the value type is int)
+- **value_int64** - A long integer / timestamp (should be NULL unless the value type is long)
+- **value_double** - A double (should be NULL unless the value type is double)
 
 ## tsk_os_account_instances
-TODO
+Records that an OS account is associated with a specific data source
+- **id** - Id of the OS account instance
+- **os_account_obj_id** - Id of the OS account
+- **data_source_obj_id** - Id of the data source
+- **instance_type** - Type (as org.sleuthkit.datamodel.OsAccountInstance.OsAccountInstanceType enum)
 
 ## tsk_os_account_realms
-TODO
+Stores realms that OS accounts belong to
+- **id** - Id of the realm
+- **realm_name** - Name of the realm (realm_name or realm_addr must be set)
+- **realm_addr** - Address of the realm (realm_name or realm_addr must be set)
+- **realm_signature** - Used internally for unique clause
+- **scope_host_id** - Optional host that this realm is scoped to
+- **scope_confidence** - Confidence of the scope of the realm (as org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence enum)
+- **db_status** - Status of this realm in the database (as org.sleuthkit.datamodel.OsAccountRealm.RealmDbStatus enum)
+- **merged_into** - For merged realms, set to the id of the realm they were merged in to.
 
 # Communication Accounts
 Stores data related to communications between two parties. It is highly recommended to use 
