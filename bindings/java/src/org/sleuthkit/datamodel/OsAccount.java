@@ -45,8 +45,8 @@ public final class OsAccount extends AbstractContent {
 
 	private final long osAccountObjId;	// Object ID within the database
 	private final long realmId;		// realm where the account exists in (could be local or domain scoped)
-	private String loginName;	// user login name - may be null
-	private String addr;	// a unique user sid/uid, may be null
+	private final String loginName;	// user login name - may be null
+	private final String addr;	// a unique user sid/uid, may be null
 
 	private String signature;		// This exists only to prevent duplicates.
 	// Together realm_id & signature must be unique for each account.
@@ -62,9 +62,6 @@ public final class OsAccount extends AbstractContent {
 	private List<OsAccountAttribute> osAccountAttributes = null;
 	private List<OsAccountInstance> osAccountInstances = null;
 
-	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
-
-	
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
 	 * deleted.
@@ -238,48 +235,6 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Set the account login name, such as "jdoe", if not already set.
-	 *
-	 * @param loginName Login name to set.
-	 *
-	 * @return Returns true of the login name is set, false if the name was not
-	 *         changed.
-	 *
-	 * @throws TskCoreException If there is an error setting the login name.
-	 *
-	 */
-	public boolean setLoginName(String loginName) throws TskCoreException {
-		if (StringUtils.isBlank(this.loginName) && StringUtils.isNotBlank(loginName)) {
-			this.loginName = loginName;
-			updateSignature();
-			this.isDirty = true;
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Set the account unique id, such as SID or UID, if not already set.
-	 *
-	 * @param addr Id to set.
-	 *
-	 * @return Returns true of the address is set, false if the address was not
-	 *         changed.
-	 *
-	 * @throws TskCoreException If there is an error setting the account
-	 *                          address.
-	 */
-	public boolean setAddr(String addr) throws TskCoreException {
-		if (StringUtils.isBlank(this.addr) && StringUtils.isNotBlank(addr)) {
-			this.addr = addr;
-			updateSignature();
-			this.isDirty = true;
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Sets the account user's full name, such as "John Doe", if it is not
 	 * already set.
 	 *
@@ -288,10 +243,9 @@ public final class OsAccount extends AbstractContent {
 	 * @return Returns true of the name is set, false if the name was not
 	 *         changed.
 	 */
-	public boolean setFullName(String fullName) {
+	boolean setFullName(String fullName) {
 		if (StringUtils.isBlank(this.fullName) && StringUtils.isNotBlank(fullName)) {
 			this.fullName = fullName;
-			this.isDirty = true;
 			return true;
 		}
 		return false;
@@ -305,33 +259,15 @@ public final class OsAccount extends AbstractContent {
 	 * @return Returns true of the account type is set, false if the account
 	 *         type was not changed.
 	 */
-	public boolean setOsAccountType(OsAccountType osAccountType) {
+	boolean setOsAccountType(OsAccountType osAccountType) {
 		if (Objects.isNull(this.osAccountType) && Objects.nonNull(osAccountType)) {
 			this.osAccountType = osAccountType;
-			this.isDirty = true;
 			return true;
 		}
 
 		return false;
 	}
 
-	/**
-	 * Sets account status for the account, if it is not already set.
-	 *
-	 * @param osAccountStatus Account status.
-	 *
-	 * @return Returns true of the account status is set, false if the account
-	 *         status was not changed.
-	 */
-	public boolean setOsAccountStatus(OsAccountStatus osAccountStatus) {
-		if ((this.osAccountStatus == null) && Objects.nonNull(osAccountStatus)) {
-			this.osAccountStatus = osAccountStatus;
-			this.isDirty = true;
-			return true;
-		}
-
-		return false;
-	}
 
 	/**
 	 * Set account creation time, if not already set.
@@ -341,41 +277,19 @@ public final class OsAccount extends AbstractContent {
 	 * @return Returns true of the creation time is set, false if the time was
 	 *         not changed.
 	 */
-	public boolean setCreationTime(Long creationTime) {
+	boolean setCreationTime(Long creationTime) {
 		if (Objects.isNull(this.creationTime) && Objects.nonNull(creationTime)) {
 			this.creationTime = creationTime;
-			this.isDirty = true;
 			return true;
 		}
 		return false;
 	}
 
 	/**
-	 * Get the dirty flag. Indicates whether the account has any changes that
-	 * need to be updated in the database. If it returns true,
-	 * {@link OsAccountManager#updateAccount()} should be called to update the
-	 * account.
+	 * This function is used by OsAccountManger to update the list of OsAccount
+	 * attributes.
 	 *
-	 * @return True if the object is dirty, false otherwise.
-	 */
-	public boolean isDirty() {
-		return isDirty;
-	}
-
-	/**
-	 * Reset the dirty flag. Indicates that the account has been updated in the
-	 * database.
-	 *
-	 */
-	void resetDirty() {
-		this.isDirty = false;
-	}
-
-	/**
-	 * This function is used by OsAccountManger to update the list of 
-	 * OsAccount attributes. 
-	 * 
-	 * @param osAccountAttribute The osAccount Attribute that is to be added. 
+	 * @param osAccountAttribute The osAccount Attribute that is to be added.
 	 */
 	void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
@@ -481,7 +395,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public synchronized List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
+	public List<OsAccountAttribute> getExtendedOsAccountAttributes() throws TskCoreException {
 		if (osAccountAttributes == null) {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}
@@ -549,5 +463,165 @@ public final class OsAccount extends AbstractContent {
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
+	}
+
+	/**
+	 * Abstracts attributes of an OS account. An attribute may be specific to a
+	 * host, or applicable across all hosts.
+	 *
+	 * As an example, last login time is host specific, whereas last password
+	 * reset date is independent of a host.
+	 *
+	 */
+	public final class OsAccountAttribute extends AbstractAttribute {
+
+		private final long osAccountObjId;	// OS account to which this attribute belongs.
+		private final Long hostId; // Host to which this attribute applies, may be null
+		private final Long sourceObjId; // Object id of the source where the attribute was discovered.
+
+		/**
+		 * Creates an os account attribute with int value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueInt      Int value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if the attribute applies to all the hosts in
+		 *                      the realm.
+		 * @param sourceObj     Source where the attribute was found, may be null.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueInt);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with long value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueLong     Long value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueLong);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with double value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueDouble   Double value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueDouble);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with string value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueString   String value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueString);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with byte-array value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueBytes    Bytes value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, byte[] valueBytes, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueBytes);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Constructor to be used when creating an attribute after reading the
+		 * data from the table.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueInt      Int value.
+		 * @param valueLong     Long value.
+		 * @param valueDouble   Double value.
+		 * @param valueString   String value.
+		 * @param valueBytes    Bytes value.
+		 * @param sleuthkitCase Sleuthkit case.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
+				SleuthkitCase sleuthkitCase, OsAccount osAccount, Host host, Content sourceObj) {
+
+			super(attributeType,
+					valueInt, valueLong, valueDouble, valueString, valueBytes,
+					sleuthkitCase);
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Get the host id for the account attribute.
+		 *
+		 * @return Optional with Host id.
+		 */
+		public Optional<Long> getHostId() {
+			return Optional.ofNullable(hostId);
+		}
+
+		/**
+		 * Get the object id of account to which this attribute applies.
+		 *
+		 * @return Account row id.
+		 */
+		public long getOsAccountObjectId() {
+			return osAccountObjId;
+		}
+
+		/**
+		 * Get the object id of the source where the attribute was found.
+		 *
+		 * @return Object id of source.
+		 */
+		public Optional<Long> getSourceObjectId() {
+			return Optional.ofNullable(sourceObjId);
+		}
 	}
 }
