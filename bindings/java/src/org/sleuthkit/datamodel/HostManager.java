@@ -52,21 +52,6 @@ public final class HostManager {
 	}
 
 	/**
-	 * Get or create host with specified name.
-	 *
-	 * TODO: This should be deleted before release
-	 *
-	 * @param name	Host name.
-	 *
-	 * @return Host with the specified name.
-	 *
-	 * @throws TskCoreException
-	 */
-	public Host getOrNewHost(String name) throws TskCoreException {
-		return newHost(name);
-	}
-
-	/**
 	 * Create a host with specified name. If a host already exists with the
 	 * given name, it returns the existing host.
 	 *
