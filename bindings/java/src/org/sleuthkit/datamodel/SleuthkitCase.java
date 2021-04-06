@@ -6499,7 +6499,7 @@ public class SleuthkitCase {
 
 			// If no host was supplied, make one
 			if (host == null) {
-				host = getHostManager().createHost("LogicalFileSet_" + newObjId + " Host", transaction);
+				host = getHostManager().newHost("LogicalFileSet_" + newObjId + " Host", transaction);
 			}			
 			
 			// Insert a row for the virtual directory of the data source into
@@ -6656,9 +6656,9 @@ public class SleuthkitCase {
 			// Create a host if needed
 			if (host == null) {
 				if (name.isEmpty()) {
-					host = getHostManager().createHost("Image_" + newObjId + " Host", transaction);
+					host = getHostManager().newHost("Image_" + newObjId + " Host", transaction);
 				} else {
-					host = getHostManager().createHost(name + "_" + newObjId + " Host", transaction);
+					host = getHostManager().newHost(name + "_" + newObjId + " Host", transaction);
 				}
 			}
 
@@ -7052,7 +7052,7 @@ public class SleuthkitCase {
 			}
 
 			if(osAccount != null) {
-				osAccountManager.createOsAccountInstance(osAccount, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				osAccountManager.newOsAccountInstance(osAccount, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
 			}
 			
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,

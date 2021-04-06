@@ -75,7 +75,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error in creating the OSAccount.
 	 *
 	 */
-	OsAccount createOsAccount(String uniqueAccountId, OsAccountRealm realm) throws TskCoreException {
+	OsAccount newOsAccount(String uniqueAccountId, OsAccountRealm realm) throws TskCoreException {
 
 		// ensure unique id is provided
 		if (Strings.isNullOrEmpty(uniqueAccountId)) {
@@ -91,7 +91,7 @@ public final class OsAccountManager {
 
 			// try to create account
 			try {
-				OsAccount account = createOsAccount(uniqueAccountId, null, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				OsAccount account = newOsAccount(uniqueAccountId, null, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 				trans.commit();
 				trans = null;
 				return account;
@@ -140,7 +140,7 @@ public final class OsAccountManager {
 	 *                                              user SID.
 	 *
 	 */
-	public OsAccount createWindowsOsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
+	public OsAccount newWindowsOsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
 
 		if (realmScope == null) {
 			throw new TskCoreException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
@@ -172,14 +172,14 @@ public final class OsAccountManager {
 			realm = realmOptional.get();
 		} else {
 			// realm was not found, create it.
-			realm = db.getOsAccountRealmManager().createWindowsRealm(sid, realmName, referringHost, realmScope);
+			realm = db.getOsAccountRealmManager().newWindowsRealm(sid, realmName, referringHost, realmScope);
 		}
 
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			// try to create account
 			try {
-				OsAccount account = createOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				OsAccount account = newOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 				trans.commit();
 				trans = null;
 				return account;
@@ -233,7 +233,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException If there is an error creating the account.
 	 */
-	private OsAccount createOsAccount(String uniqueId, String loginName, OsAccountRealm realm, OsAccount.OsAccountStatus accountStatus, CaseDbTransaction trans) throws TskCoreException, SQLException {
+	private OsAccount newOsAccount(String uniqueId, String loginName, OsAccountRealm realm, OsAccount.OsAccountStatus accountStatus, CaseDbTransaction trans) throws TskCoreException, SQLException {
 
 		if (Objects.isNull(realm)) {
 			throw new TskCoreException("Cannot create an OS Account, realm is NULL.");
@@ -513,7 +513,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	public void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
+	public void newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");
 		}
@@ -528,7 +528,7 @@ public final class OsAccountManager {
 		}
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			createOsAccountInstance(osAccount, dataSource, instanceType, connection);
+			newOsAccountInstance(osAccount, dataSource, instanceType, connection);
 		}
 	}
 
@@ -544,7 +544,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	void newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");
@@ -553,7 +553,7 @@ public final class OsAccountManager {
 			throw new TskCoreException("Cannot create account instance with null data source.");
 		}
 
-		createOsAccountInstance(osAccount, dataSource.getId(), instanceType, connection);
+		newOsAccountInstance(osAccount, dataSource.getId(), instanceType, connection);
 	}
 
 	/**
@@ -568,7 +568,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	void createOsAccountInstance(OsAccount osAccount, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	void newOsAccountInstance(OsAccount osAccount, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");

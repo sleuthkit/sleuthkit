@@ -141,10 +141,10 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public HostAddress createHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
+	public HostAddress newHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
 		CaseDbConnection connection = this.db.getConnection();
 		try {
-			return HostAddressManager.this.createHostAddress(type, address, connection);
+			return HostAddressManager.this.newHostAddress(type, address, connection);
 		} catch (TskCoreException ex) {
 			// The insert may have failed because the HostAddress already exists, so
 			// try loading it from the database.
@@ -169,7 +169,7 @@ public class HostAddressManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private HostAddress createHostAddress(HostAddress.HostAddressType type, String address, CaseDbConnection connection) throws TskCoreException {
+	private HostAddress newHostAddress(HostAddress.HostAddressType type, String address, CaseDbConnection connection) throws TskCoreException {
 		HostAddress.HostAddressType addressType = type;
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
 			addressType = getDNSType(address);

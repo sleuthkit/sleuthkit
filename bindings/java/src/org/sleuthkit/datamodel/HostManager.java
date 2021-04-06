@@ -52,21 +52,6 @@ public final class HostManager {
 	}
 
 	/**
-	 * Get or create host with specified name.
-	 *
-	 * TODO: This should be deleted before release
-	 *
-	 * @param name	Host name.
-	 *
-	 * @return Host with the specified name.
-	 *
-	 * @throws TskCoreException
-	 */
-	public Host getOrCreateHost(String name) throws TskCoreException {
-		return createHost(name);
-	}
-
-	/**
 	 * Create a host with specified name. If a host already exists with the
 	 * given name, it returns the existing host.
 	 *
@@ -76,10 +61,10 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Host createHost(String name) throws TskCoreException {
+	public Host newHost(String name) throws TskCoreException {
 		CaseDbTransaction transaction = db.beginTransaction();
 		try {
-			Host host = createHost(name, transaction);
+			Host host = newHost(name, transaction);
 			transaction.commit();
 			transaction = null;
 			return host;
@@ -114,7 +99,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Host createHost(String name, CaseDbTransaction trans) throws TskCoreException {
+	Host newHost(String name, CaseDbTransaction trans) throws TskCoreException {
 		// must have a name
 		if (Strings.isNullOrEmpty(name)) {
 			throw new TskCoreException("Illegal argument passed to createHost: Host name is required.");
@@ -157,7 +142,7 @@ public final class HostManager {
 			}
 
 			// It may be the case that the host already exists, so try to get it.
-			Optional<Host> optHost = getHost(name, connection);
+			Optional<Host> optHost = getHostByName(name, connection);
 			if (optHost.isPresent()) {
 				return optHost.get();
 			}
@@ -200,7 +185,7 @@ public final class HostManager {
 
 			connection.executeUpdate(preparedStatement);
 
-			updatedHost = getHost(hostId, connection).orElseThrow(()
+			updatedHost = getHostById(hostId, connection).orElseThrow(()
 					-> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "))));
 
 		} catch (SQLException ex) {
@@ -324,9 +309,9 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Optional<Host> getHost(String name) throws TskCoreException {
+	public Optional<Host> getHostByName(String name) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getHost(name, connection);
+			return getHostByName(name, connection);
 		}
 	}
 
@@ -340,7 +325,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<Host> getHost(String name, CaseDbConnection connection) throws TskCoreException {
+	private Optional<Host> getHostByName(String name, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)" 
@@ -375,9 +360,9 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Optional<Host> getHost(long id) throws TskCoreException {
+	public Optional<Host> getHostById(long id) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getHost(id, connection);
+			return getHostById(id, connection);
 		}
 	}
 
@@ -391,7 +376,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<Host> getHost(long id, CaseDbConnection connection) throws TskCoreException {
+	private Optional<Host> getHostById(long id, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts WHERE id = " + id;
 
@@ -418,7 +403,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<Host> getHosts() throws TskCoreException {
+	public List<Host> getAllHosts() throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_hosts WHERE db_status = " + HostDbStatus.ACTIVE.getId();
 
 		List<Host> hosts = new ArrayList<>();
@@ -448,7 +433,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException if no host is found or an error occurs.
 	 */
-	public Host getHost(DataSource dataSource) throws TskCoreException {
+	public Host getHostByDataSource(DataSource dataSource) throws TskCoreException {
 
 		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.db_status AS db_status FROM \n"
 				+ "tsk_hosts INNER JOIN data_source_info \n"

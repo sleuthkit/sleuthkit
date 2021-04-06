@@ -72,7 +72,7 @@ public final class OsAccountRealmManager {
 	 * @throws OsAccountManager.NotUserSIDException If the SID is not a user
 	 *                                              SID.
 	 */
-	public OsAccountRealm createWindowsRealm(String accountSid, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, OsAccountManager.NotUserSIDException {
+	public OsAccountRealm newWindowsRealm(String accountSid, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, OsAccountManager.NotUserSIDException {
 
 		if (realmScope == null) {
 			throw new TskCoreException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
@@ -132,7 +132,7 @@ public final class OsAccountRealmManager {
 		String signature = makeRealmSignature(realmAddr, realmName, scopeHost);
 		
 		// create a realm
-		return createRealm(realmName, realmAddr, signature, scopeHost, scopeConfidence);
+		return newRealm(realmName, realmAddr, signature, scopeHost, scopeConfidence);
 	}
 	
 	/**
@@ -362,7 +362,7 @@ public final class OsAccountRealmManager {
 			connection.executeUpdate(preparedStatement);
 			
 			// read the updated realm
-			updatedRealm = this.getRealmById(realm.getRealmId(), connection);
+			updatedRealm = this.getRealmByRealmId(realm.getRealmId(), connection);
 			
 			return new OsRealmUpdateResult(updateStatusCode, updatedRealm);
 		} catch (SQLException ex) {
@@ -389,9 +389,9 @@ public final class OsAccountRealmManager {
 	 * @throws TskCoreException on error 
 	 */
 
-	public OsAccountRealm getRealmById(long id) throws TskCoreException {
+	public OsAccountRealm getRealmByRealmId(long id) throws TskCoreException {
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			return getRealmById(id, connection);
+			return getRealmByRealmId(id, connection);
 		}
 	}
 	
@@ -404,7 +404,7 @@ public final class OsAccountRealmManager {
 	 * @return Realm. 
 	 * @throws TskCoreException 
 	 */
-	OsAccountRealm getRealmById(long id, CaseDbConnection connection) throws TskCoreException {
+	OsAccountRealm getRealmByRealmId(long id, CaseDbConnection connection) throws TskCoreException {
 		
 		String queryString = REALM_QUERY_STRING
 					+ " WHERE realms.id = " + id;
@@ -648,7 +648,7 @@ public final class OsAccountRealmManager {
 	 *
 	 * @throws TskCoreException If there is an internal error.
 	 */
-	private OsAccountRealm createRealm(String realmName, String realmAddr, String signature, Host host, OsAccountRealm.ScopeConfidence scopeConfidence) throws TskCoreException {
+	private OsAccountRealm newRealm(String realmName, String realmAddr, String signature, Host host, OsAccountRealm.ScopeConfidence scopeConfidence) throws TskCoreException {
 
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = this.db.getConnection()) {
@@ -785,7 +785,7 @@ public final class OsAccountRealmManager {
 					// Merge the realm with the matching name into the realm with the matching address.
 					// Reload from database afterward to make sure everything is up-to-date.
 					mergeRealms(optDestRealmName.get(), optDestRealmAddr.get(), trans);
-					destRealm = getRealmById(optDestRealmAddr.get().getRealmId(), trans.getConnection());
+					destRealm = getRealmByRealmId(optDestRealmAddr.get().getRealmId(), trans.getConnection());
 				}
 			}
 		} else if (optDestRealmAddr.isPresent()) {
