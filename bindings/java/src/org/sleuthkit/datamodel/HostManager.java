@@ -166,21 +166,23 @@ public final class HostManager {
 	}
 
 	/**
-	 * Updates host in database based on the host object provided.
+	 * Updates the name of the provided host.
 	 *
-	 * @param newHost The host to be updated.
+	 * @param host The host to be updated.
+	 * @param newName The new name of the host.
 	 *
-	 * @return The newly returned host.
+	 * @return The updated host.
 	 *
 	 * @throws TskCoreException
 	 */
-	public Host updateHost(Host newHost) throws TskCoreException {
-		if (newHost == null) {
+	public Host updateHostName(Host host, String newName) throws TskCoreException {
+		if (host == null) {
 			throw new TskCoreException("Illegal argument passed to updateHost: No host argument provided.");
-		} else if (newHost.getName() == null) {
-			throw new TskCoreException(String.format("Illegal argument passed to updateHost: Host with id %d has no name", newHost.getHostId()));
+		} else if (newName == null) {
+			throw new TskCoreException(String.format("Illegal argument passed to updateHost: Host with id %d has no name", host.getHostId()));
 		}
 
+		long hostId = host.getHostId();
 		Host updatedHost = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
@@ -193,16 +195,16 @@ public final class HostManager {
 			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
 
 			preparedStatement.clearParameters();
-			preparedStatement.setString(1, newHost.getName());
-			preparedStatement.setLong(2, newHost.getHostId());
+			preparedStatement.setString(1, newName);
+			preparedStatement.setLong(2, hostId);
 
 			connection.executeUpdate(preparedStatement);
 
-			updatedHost = getHost(newHost.getHostId(), connection).orElseThrow(()
+			updatedHost = getHost(hostId, connection).orElseThrow(()
 					-> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "))));
 
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating host with name = %s", newHost.getName()), ex);
+			throw new TskCoreException(String.format("Error updating host with name = %s", newName), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
