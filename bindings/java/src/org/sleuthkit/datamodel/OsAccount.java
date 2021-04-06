@@ -466,8 +466,11 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Abstracts host specific attributes of an OS account. As an example, last
-	 * login on a specific host.
+	 * Abstracts attributes of an OS account. An attribute may be specific to a
+	 * host, or applicable across all hosts.
+	 *
+	 * As an example, last login time is host specific, whereas last password
+	 * reset date is independent of a host.
 	 *
 	 */
 	public final class OsAccountAttribute extends AbstractAttribute {
@@ -483,8 +486,9 @@ public final class OsAccount extends AbstractContent {
 		 * @param valueInt      Int value.
 		 * @param osAccount     Account which the attribute pertains to.
 		 * @param host          Host on which the attribute applies to. Pass
-		 *                      Null if
-		 * @param sourceObj     Source where the attribute was found.
+		 *                      Null if the attribute applies to all the hosts in
+		 *                      the realm.
+		 * @param sourceObj     Source where the attribute was found, may be null.
 		 */
 		public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, OsAccount osAccount, Host host, Content sourceObj) {
 			super(attributeType, valueInt);

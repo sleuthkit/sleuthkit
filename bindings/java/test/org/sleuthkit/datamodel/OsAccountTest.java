@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
 import org.sleuthkit.datamodel.OsAccountManager.OsAccountUpdateResult;
-import org.sleuthkit.datamodel.OsAccountRealmManager.RealmUpdateStatus;
+import org.sleuthkit.datamodel.OsAccountRealmManager.OsRealmUpdateResult;
 
 /**
  *
@@ -512,11 +512,11 @@ public class OsAccountTest {
 		assertEquals(localRealm2.getScopeHost().orElse(null).getName().equalsIgnoreCase(hostName2), true);
 		
 		// update the a realm name on a existing realm.
-		RealmUpdateStatus realmUpdateStatus = caseDB.getOsAccountRealmManager().updateRealm(localRealm2, null, realmName2 );
-		assertEquals(realmUpdateStatus.getUpdateStatusCode(), OsAccountRealmManager.RealmUpdateStatusEnum.UPDATED );
-		assertTrue(realmUpdateStatus.getUpdatedRealm().isPresent());
+		OsRealmUpdateResult realmUpdateResult = caseDB.getOsAccountRealmManager().updateRealm(localRealm2, null, realmName2 );
+		assertEquals(realmUpdateResult.getUpdateStatus(), OsAccountRealmManager.OsRealmUpdateStatus.UPDATED );
+		assertTrue(realmUpdateResult.getUpdatedRealm().isPresent());
 		
-		OsAccountRealm updatedRealm2 = realmUpdateStatus.getUpdatedRealm().get();
+		OsAccountRealm updatedRealm2 = realmUpdateResult.getUpdatedRealm().get();
 		assertTrue(updatedRealm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr2));
 		assertTrue(updatedRealm2.getRealmNames().get(0).equalsIgnoreCase(realmName2));
 		
