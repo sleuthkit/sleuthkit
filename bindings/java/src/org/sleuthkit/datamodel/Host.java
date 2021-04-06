@@ -27,8 +27,8 @@ import java.util.Objects;
 public final class Host {
 
 	private final long id;
-	private String name;
-	private HostDbStatus status;
+	private final String name;
+	private final HostDbStatus status;
 
 	Host(long id, String name) {
 		this(id, name, HostDbStatus.ACTIVE);
@@ -57,32 +57,14 @@ public final class Host {
 	public String getName() {
 		return name;
 	}
-
-	/**
-	 * Sets the name for the host.
-	 * @param newName The new name.
-	 */
-	public void setName(String newName) {
-		this.name = newName;
-	}
-	
 	
 	/**
 	 * Gets the status for the host.
 	 *
 	 * @return Host status.
 	 */
-	public HostDbStatus getStatus() {
+	HostDbStatus getStatus() {
 		return status;
-	}
-	
-	/**
-	 * Sets the status for the host.
-	 *
-	 * @param status Host status.
-	 */
-	public void setStatus(HostDbStatus status) {
-		this.status = status;
 	}
 		
 	@Override
