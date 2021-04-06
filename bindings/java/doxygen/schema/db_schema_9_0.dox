@@ -26,26 +26,25 @@ Some general notes on this schema:
 <ul>
 <li> New columns:
 <ul>
-<li>added_date_time, acquisition_tool_settings, acquisition_tool_name, acquisition_tool_version in data_source_info
+<li>host_id, added_date_time, acquisition_tool_settings, acquisition_tool_name, acquisition_tool_version in data_source_info
 <li>category_type in artifact_types
-<li>host_id in data_source_info
 <li>owner_uid, os_account_obj_id in tsk_files
 </ul>
 <li> New tables:
 <ul>
-<li>tsk_file_attributes
-<li>tsk_analysis_results
 <li>tsk_aggregate_score
-<li>tsk_persons
-<li>tsk_hosts
-<li>tsk_os_account_realms
-<li>tsk_os_accounts
-<li>tsk_os_account_attributes
-<li>tsk_os_account_instances
+<li>tsk_analysis_results
 <li>tsk_data_artifacts
+<li>tsk_file_attributes
+<li>tsk_hosts
 <li>tsk_host_addresses
 <li>tsk_host_address_dns_ip_map
 <li>tsk_host_address_usage
+<li>tsk_os_accounts
+<li>tsk_os_account_attributes
+<li>tsk_os_account_instances
+<li>tsk_os_account_realms
+<li>tsk_persons
 </ul>
 </ul>
 </ul>
@@ -72,13 +71,18 @@ Every object (image, volume system, file, etc.) has an entry in this table.  Thi
 - **type** - Object type (as org.sleuthkit.datamodel.TskData.ObjectType enum)
 
 
-# Data Source/Device Tables 
+# Data Source / Device Tables 
 ## data_source_info
 Contains information about a data source, which could be an image.  This is where we group data sources into devices (based on device ID).
 - **obj_id** - Id of image/data source in tsk_objects
 - **device_id** - Unique ID (GUID) for the device that contains the data source
 - **time_zone** - Timezone that the data source was originally located in
 - **acquisition_details** - Notes on the acquisition of the data source
+- **added_date_time** - Timestamp of when the data source was added
+- **acquisition_tool_name** - Name of the tool used to acquire the image
+- **acquisition_tool_settings** - Specific settings used by the tool to acquire the image
+- **acquisition_tool_version** - Version of the acquisition tool
+- **host_id** - Host associated with this image (must be set)
 
 
 # Disk Image Tables
@@ -169,6 +173,8 @@ Contains one for for every file found in the images.  Has the basic metadata for
 - **parent_path** - Full path of parent folder. Must begin and end with a '/' (Note that a single '/' is valid)
 - **mime_type** - MIME type of the file content, if it has been detected. 
 - **extension** - File extension
+- **owner_uid** - Unique ID of the owner (SID in Windows)
+- **os_account_obj_id** - ID of optional associated OS account
 
 ## tsk_file_layout
 Stores the layout of a file within the image.  A file will have one or more rows in this table depending on how fragmented it was. All file types use this table (file system, carved, unallocated blocks, etc.).
@@ -221,6 +227,20 @@ Stores artifacts associated with objects.
 - **artifact_type_id** - Type of artifact (references artifact_type_id in blackboard_artifact_types)
 - **review_status_id** - Review status (references review_status_id in review_statuses)
 
+## tsk_analysis_results
+TODO
+
+## tsk_data_artifacts
+Additional information for data artifacts
+TODO
+
+## blackboard_artifact_types
+Types of artifacts
+- **artifact_type_id** - Id for the type (this is used by the blackboard_artifacts table)
+- **type_name** - A string identifier for the type (unique)
+- **display_name** - A display name for the type (not unique, should be human readable)
+- **category_type** - Indicates whether this is a data artifact or an analysis result
+
 ## blackboard_attributes
 Stores name value pairs associated with an artifact. Only one of the value columns should be populated.
 - **artifact_id** - Id of the associated artifact
@@ -235,12 +255,6 @@ Stores name value pairs associated with an artifact. Only one of the value colum
 - **value_int64** - A long integer / timestamp (should be NULL unless the value type is long)
 - **value_double** - A double (should be NULL unless the value type is double)
 
-## blackboard_artifact_types
-Types of artifacts
-- **artifact_type_id** - Id for the type (this is used by the blackboard_artifacts table)
-- **type_name** - A string identifier for the type (unique)
-- **display_name** - A display name for the type (not unique, should be human readable)
-
 ## blackboard_attribute_types
 Types of attribute
 - **attribute_type_id** - Id for the type (this is used by the blackboard_attributes table)
@@ -248,12 +262,66 @@ Types of attribute
 - **display_name** - A display name for the type (not unique, should be human readable)
 - **value_type** - Expected type of data for the attribute type (see blackboard_attributes)
 
+## tsk_file_attributes
+TODO
+
 ## review_statuses
 Review status of an artifact. Should mirror the org.sleuthkit.datamodel.BlackboardArtifact.ReviewStatus enum.
 - **review_status_id** - Id of the status 
 - **review_status_name** - Internal name of the status
 - **display_name** - Display name (should be human readable)
 
+## tsk_aggregate_score
+TODO
+
+# Hosts / Persons
+Stores data related to hosts and persons
+
+## tsk_persons
+Stores persons for the case. Hosts are optionally associated with a person.
+- **id** - Id of the person
+- **name** - Name of the person (should be human readable)
+
+## tsk_hosts
+Stores hosts for the case. Each data source must be associated with a host.
+- **id** - Id of the host
+- **name** - Name of the host (should be human readable)
+- **db_status** - Status of the host (active/merged/deleted)
+- **person_id** - Optional id of associated person
+- **merged_into** - Tracks destination for merged hosts
+
+## tsk_host_addresses
+Stores host addresses
+- **id** - Id of the host address
+- **address_type** - Type of address (as org.sleuthkit.datamodel.HostAddress.HostAddressType enum)
+- **address** - Address
+
+## tsk_host_address_dns_ip_map
+Maps related DNS addresses and IP addresses
+- **id** - Id of the mapping
+- **dns_address_id** - Id of the DNS address in tsk_host_addresses
+- **ip_address_id** - Id of the IP address in tsk_host_addresses
+- **source_obj_id** - Id of the object used to determine this mapping (references tsk_objects)
+- **time** - Timestamp when this mapping was recorded
+
+## tsk_host_address_usage
+TODO
+
+
+# Operating System Accounts
+Stores data related to operating system accounts
+
+## tsk_os_accounts
+TODO
+
+## tsk_os_account_attributes
+TODO
+
+## tsk_os_account_instances
+TODO
+
+## tsk_os_account_realms
+TODO
 
 # Communication Accounts
 Stores data related to communications between two parties. It is highly recommended to use 
