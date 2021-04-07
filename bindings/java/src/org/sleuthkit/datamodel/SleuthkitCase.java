@@ -3090,6 +3090,8 @@ public class SleuthkitCase {
 							break;
 						case HOST_ADDRESS:
 							break;
+						case UNSUPPORTED:
+							break;
 						default:
 							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
 					}
@@ -5657,7 +5659,7 @@ public class SleuthkitCase {
 				content = hostAddressManager.getHostAddress(id);
 				break;
 			default:
-				throw new TskCoreException("Could not obtain Content object with ID: " + id);
+				content = new UnsupportedContent(this, id);
 		}
 
 		return content;

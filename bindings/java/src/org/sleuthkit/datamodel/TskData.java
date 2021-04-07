@@ -634,7 +634,8 @@ public class TskData {
 		REPORT(6),	///< Report - see reports for more details
 		POOL(7),	///< Pool
 		OS_ACCOUNT(8), ///< OS Account - see tsk_os_accounts for more details
-		HOST_ADDRESS(9) ///< Host Address - see tsk_host_addresses for more details
+		HOST_ADDRESS(9), ///< Host Address - see tsk_host_addresses for more details
+		UNSUPPORTED(-1) ///< Unsupported type
 		; 
 		private final short objectType;
 
@@ -664,8 +665,7 @@ public class TskData {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException(
-					MessageFormat.format(bundle.getString("TskData.objectTypeEnum.exception.msg1.text"), objectType));
+			return UNSUPPORTED;
 		}
 	}
 
