@@ -231,10 +231,10 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					METADATA_LAST_PRINTED, METADATA_LAST_SAVED, METADATA_CREATED, PROGRAM_EXECUTION,
 					RECENT_DOCUMENTS, REGISTRY, BACKUP_EVENT_START, BACKUP_EVENT, BACKUP_EVENT_END,
 					BLUETOOTH_PAIRING, CALENDAR_ENTRY_START, CALENDAR_ENTRY_END,
-					DELETE_PROGRAM, DELETE_PROGRAM_DELETED,
+					DELETE_PROGRAM,
 					OS_INFO, WIFI_NETWORK, USER_DEVICE_EVENT, USER_DEVICE_EVENT_START, USER_DEVICE_EVENT_END,
 					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION,
-					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER, INSTALLED_PROG);
+					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER);
 
 			return builder.build();
 		}
@@ -722,38 +722,30 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_DELETED_PROG),
 			new BlackboardAttribute.Type(TSK_DATETIME),
-			new BlackboardAttribute.Type(TSK_PROG_NAME));
+			new BlackboardAttribute.Type(TSK_PROG_NAME));	
 	
-	TimelineEventType DELETE_PROGRAM_DELETED = new TimelineEventArtifactTypeSingleDescription(50,
-			getBundle().getString("TimelineEventType.DeletedProgramDeleted.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_DELETED_PROG),
-			new BlackboardAttribute.Type(TSK_DATETIME_DELETED),
-			new BlackboardAttribute.Type(TSK_PROG_NAME));
-	
-	
-	TimelineEventType OS_INFO = new TimelineEventArtifactTypeSingleDescription(51,
+	TimelineEventType OS_INFO = new TimelineEventArtifactTypeSingleDescription(50,
 			getBundle().getString("TimelineEventType.OSInfo.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_OS_INFO),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 
-	TimelineEventType PROGRAM_NOTIFICATION = new TimelineEventArtifactTypeSingleDescription(52,
+	TimelineEventType PROGRAM_NOTIFICATION = new TimelineEventArtifactTypeSingleDescription(51,
 			getBundle().getString("TimelineEventType.ProgramNotification.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_PROG_NOTIFICATIONS),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 	
-	TimelineEventType SCREEN_SHOT = new TimelineEventArtifactTypeSingleDescription(53,
+	TimelineEventType SCREEN_SHOT = new TimelineEventArtifactTypeSingleDescription(52,
 			getBundle().getString("TimelineEventType.ScreenShot.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_SCREEN_SHOTS),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 		
-	TimelineEventType SERVICE_ACCOUNT = new TimelineEventArtifactTypeImpl(54,
+	TimelineEventType SERVICE_ACCOUNT = new TimelineEventArtifactTypeImpl(53,
 			getBundle().getString("TimelineEventType.ServiceAccount.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_SERVICE_ACCOUNT),
@@ -766,7 +758,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT = new TimelineEventArtifactTypeImpl(55,
+	TimelineEventType USER_DEVICE_EVENT = new TimelineEventArtifactTypeImpl(54,
 			getBundle().getString("TimelineEventType.UserDeviceEvent.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -780,7 +772,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT_START = new TimelineEventArtifactTypeImpl(56,
+	TimelineEventType USER_DEVICE_EVENT_START = new TimelineEventArtifactTypeImpl(55,
 			getBundle().getString("TimelineEventType.UserDeviceEventStart.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -794,7 +786,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT_END = new TimelineEventArtifactTypeImpl(57,
+	TimelineEventType USER_DEVICE_EVENT_END = new TimelineEventArtifactTypeImpl(56,
 			getBundle().getString("TimelineEventType.UserDeviceEventEnd.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -808,42 +800,35 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType WEB_CACHE = new URLArtifactEventType(58,
+	TimelineEventType WEB_CACHE = new URLArtifactEventType(57,
 			getBundle().getString("TimelineEventType.WebCache.text"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_CACHE),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
 	
-	TimelineEventType WIFI_NETWORK = new TimelineEventArtifactTypeSingleDescription(59,
+	TimelineEventType WIFI_NETWORK = new TimelineEventArtifactTypeSingleDescription(58,
 			getBundle().getString("TimelineEventType.WIFINetwork.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_WIFI_NETWORK),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_SSID));
 	
-	TimelineEventType INSTALLED_PROG = new TimelineEventArtifactTypeSingleDescription(60,
-			getBundle().getString("TimelineEventType.InstalledProgram.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
-			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
-			new BlackboardAttribute.Type(TSK_PROG_NAME));
-	
-	TimelineEventType WEB_HISTORY_CREATED = new URLArtifactEventType(61,
+	TimelineEventType WEB_HISTORY_CREATED = new URLArtifactEventType(59,
 			getBundle().getString("WebTypes.webHistoryCreated.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
 	
-	TimelineEventType BLUETOOTH_ADAPTER = new TimelineEventArtifactTypeSingleDescription(62,
+	TimelineEventType BLUETOOTH_ADAPTER = new TimelineEventArtifactTypeSingleDescription(60,
 			getBundle().getString("TimelineEventType.BluetoothAdapter.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_BLUETOOTH_ADAPTER),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_NAME));
 	
-	TimelineEventType BLUETOOTH_PAIRING_ACCESSED = new TimelineEventArtifactTypeSingleDescription(63,
+	TimelineEventType BLUETOOTH_PAIRING_ACCESSED = new TimelineEventArtifactTypeSingleDescription(61,
 			getBundle().getString("TimelineEventType.BluetoothPairingLastConnection.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_BLUETOOTH_PAIRING),
