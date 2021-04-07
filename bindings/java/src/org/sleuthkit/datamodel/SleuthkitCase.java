@@ -5651,7 +5651,7 @@ public class SleuthkitCase {
 				content = getReportById(id);
 				break;
 			case OS_ACCOUNT:
-				content = this.osAccountManager.getOsAccount(id);
+				content = this.osAccountManager.getOsAccountByObjectId(id);
 				break;
 			case HOST_ADDRESS:
 				content = hostAddressManager.getHostAddress(id);
@@ -6499,14 +6499,14 @@ public class SleuthkitCase {
 
 			// If no host was supplied, make one
 			if (host == null) {
-				host = getHostManager().createHost("LogicalFileSet_" + newObjId + " Host", transaction);
+				host = getHostManager().newHost("LogicalFileSet_" + newObjId + " Host", transaction);
 			}			
 			
 			// Insert a row for the virtual directory of the data source into
 			// the data_source_info table.
 			statement = connection.createStatement();
 			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone, host_id) "
-					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "', " + host.getId() + ");");
+					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "', " + host.getHostId() + ");");
 
 			// Insert a row for the root virtual directory of the data source
 			// into the tsk_files table. Note that its data source object id is
@@ -6656,9 +6656,9 @@ public class SleuthkitCase {
 			// Create a host if needed
 			if (host == null) {
 				if (name.isEmpty()) {
-					host = getHostManager().createHost("Image_" + newObjId + " Host", transaction);
+					host = getHostManager().newHost("Image_" + newObjId + " Host", transaction);
 				} else {
-					host = getHostManager().createHost(name + "_" + newObjId + " Host", transaction);
+					host = getHostManager().newHost(name + "_" + newObjId + " Host", transaction);
 				}
 			}
 
@@ -6669,7 +6669,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
 			preparedStatement.setLong(4, new Date().getTime());
-			preparedStatement.setLong(5, host.getId());
+			preparedStatement.setLong(5, host.getHostId());
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object
@@ -7052,7 +7052,7 @@ public class SleuthkitCase {
 			}
 
 			if(osAccount != null) {
-				osAccountManager.createOsAccountInstance(osAccount, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				osAccountManager.newOsAccountInstance(osAccount, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
 			}
 			
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
@@ -12574,6 +12574,29 @@ public class SleuthkitCase {
 			}
 		}
 
+		/**
+		 * Obtains a write lock on tsk_aggregate_score table. 
+		 * Only PostgreSQL is supported. 
+		 * 
+		 * NOTE: We run into deadlock risks when we start to lock 
+		 * multiple tables. If that need arrises, consider changing 
+		 * to opportunistic locking and single-step transactions. 
+		 */		
+		private class AggregateScoreTablePostgreSQLWriteLock implements DbCommand {
+			private final Connection connection;
+
+			AggregateScoreTablePostgreSQLWriteLock(Connection connection) {
+				this.connection = connection;
+			}
+
+			@Override
+			public void execute() throws SQLException {
+				PreparedStatement preparedStatement = connection.prepareStatement("LOCK TABLE ONLY tsk_aggregate_score in SHARE ROW EXCLUSIVE MODE");
+				preparedStatement.execute();
+		
+			}
+		}
+
 		private class ExecuteQuery implements DbCommand {
 
 			private final Statement statement;
@@ -12816,6 +12839,29 @@ public class SleuthkitCase {
 				connection.rollback();
 			} finally {
 				connection.setAutoCommit(true);
+			}
+		}
+		
+		/**
+		 * Blocks until a write lock can be obtained on the tsk_aggregate_score
+		 * table. Used to ensure only one thread/client is updating the score
+		 * at a time.  Can be called multiple times on the same transaction.
+		 * 
+		 * @throws SQLException
+		 * @throws TskCoreException 
+		 */
+		void getAggregateScoreTableWriteLock() throws SQLException, TskCoreException {
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					AggregateScoreTablePostgreSQLWriteLock tableWriteLock = new AggregateScoreTablePostgreSQLWriteLock(connection);
+					executeCommand(tableWriteLock);
+					break;
+				case SQLITE:
+					// We do nothing here because we assume the entire SQLite DB is already locked from
+					// when the analysis results were added/deleted in the same transaction. 
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
 			}
 		}
 

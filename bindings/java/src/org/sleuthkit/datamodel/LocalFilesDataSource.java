@@ -268,7 +268,7 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 		// This is a check-then-act race condition that may occasionally result
 		// in additional processing but is safer than using locks.
 		if (host == null) {
-			host = getSleuthkitCase().getHostManager().getHost(this);
+			host = getSleuthkitCase().getHostManager().getHostByDataSource(this);
 		}
 		return host;
 	}	

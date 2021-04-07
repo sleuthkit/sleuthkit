@@ -74,6 +74,10 @@ public class ArtifactTest {
 
 			// Create new case db
 			caseDB = SleuthkitCase.newCase(dbPath);
+			
+			// uncomment to manually test with PostgreSQL
+			//CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("HostName", "5432", "User", "Password", TskData.DbType.POSTGRESQL);
+			//caseDB = SleuthkitCase.newCase("TskArtifactTest", connectionInfo, tempDirPath);
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
@@ -161,13 +165,13 @@ public class ArtifactTest {
 		String realmName1 = "realm1";
 		String ownerUid1 = "S-1-5-21-111111111-222222222-3333333333-0001";
 
-		Host host1 = caseDB.getHostManager().createHost(hostname1);
-		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().createWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
-		OsAccount osAccount1 = caseDB.getOsAccountManager().createWindowsOsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		Host host1 = caseDB.getHostManager().newHost(hostname1);
+		OsAccountRealm localRealm1 = caseDB.getOsAccountRealmManager().newWindowsRealm(ownerUid1, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// create a 2nd account on the same host
 		String ownerUid2 = "S-1-5-21-111111111-222222222-3333333333-0009";
-		OsAccount osAccount2 = caseDB.getOsAccountManager().createWindowsOsAccount(ownerUid2, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
+		OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid2, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 		
 		
 		// now find the file abc.text
@@ -200,7 +204,7 @@ public class ArtifactTest {
 		List<AnalysisResult> ars = abcTextFile.getAllAnalysisResults();
 		assertEquals(3, ars.size());
 		
-		// verify the aggregate score - expect HIGH/HIGH - highest of the 3 results added
+		// verify the aggregate score - expect HIGH/Auto - highest of the 3 results added
 		Score aggScore = abcTextFile.getAggregateScore();
 		assertEquals(Score.Significance.NOTABLE.getId(), aggScore.getSignificance().getId());
 		assertEquals(Score.MethodCategory.AUTO.getId(), aggScore.getMethodCategory().getId());
@@ -212,23 +216,44 @@ public class ArtifactTest {
 		ars = abcTextFile.getAllAnalysisResults();
 		assertEquals(2, ars.size());
 		
-		// verify aggregate score - should now be Medium/High
+		// verify aggregate score - should now be Medium/Auto
 		Score newAggScore = abcTextFile.getAggregateScore();
 		assertEquals(Score.Significance.LIKELY_NOTABLE.getId(), newAggScore.getSignificance().getId());
 		assertEquals(Score.MethodCategory.AUTO.getId(), newAggScore.getMethodCategory().getId());
 		
 		
+		// Test Analysis Results in a Transaction
+		SleuthkitCase.CaseDbTransaction transAr = caseDB.beginTransaction();
+		AnalysisResultAdded analysisResultAdded4 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
+		
+		AnalysisResultAdded analysisResultAdded5 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NONE, Score.MethodCategory.USER_DEFINED), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
+
+		transAr.commit();
+		ars = abcTextFile.getAllAnalysisResults();
+		assertEquals(4, ars.size());
+		
+		// verify aggregate score - should now be Good/User
+		newAggScore = abcTextFile.getAggregateScore();
+		assertEquals(Score.Significance.LIKELY_NONE.getId(), newAggScore.getSignificance().getId());
+		assertEquals(Score.MethodCategory.USER_DEFINED.getId(), newAggScore.getMethodCategory().getId());
+
+		
+		
 		// Test: add a new data artifact to the file
-        DataArtifact dataArtifact1 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH), Collections.emptyList(), osAccount1);
+		DataArtifact dataArtifact1 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH), Collections.emptyList(), osAccount1);
         
-		assertTrue(dataArtifact1.getOsAccount().isPresent());
-		assertTrue(dataArtifact1.getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid1));
+		OsAccountManager osAcctMgr = caseDB.getOsAccountManager();
+		
+		assertTrue(dataArtifact1.getOsAccountObjectId().isPresent());
+		assertTrue(osAcctMgr.getOsAccountByObjectId(dataArtifact1.getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid1));
 		
 		
 		// Test: add a second data artifact to file - associate it with a different account
 		DataArtifact dataArtifact2 = abcTextFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CLIPBOARD_CONTENT), Collections.emptyList(), osAccount2);
-		assertTrue(dataArtifact2.getOsAccount().isPresent());
-		assertTrue(dataArtifact2.getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(dataArtifact2.getOsAccountObjectId().isPresent());
+		assertTrue(osAcctMgr.getOsAccountByObjectId(dataArtifact2.getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
 				
 				
 		// and two more 
@@ -239,16 +264,20 @@ public class ArtifactTest {
 		// TEST: get all TSK_GPS_SEARCH data artifacts in the data source
 		List<DataArtifact> gpsArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID(), image.getId());
 		assertEquals(1, gpsArtifacts.size());
-		// verify the account 
-		assertTrue(gpsArtifacts.get(0).getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid1));
+
+		// verify the account was set from the query
+		assertTrue(gpsArtifacts.get(0).getOsAccountObjectId().isPresent());
+		assertTrue(osAcctMgr.getOsAccountByObjectId(gpsArtifacts.get(0).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid1));
+
 		
 		
 		// TEST: get all data artifacts of type TSK_YARA_HIT
 		List<DataArtifact> gpsAreaArtifacts = caseDB.getBlackboard().getDataArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), image.getId());
 		assertEquals(2, gpsAreaArtifacts.size());
 		// verify the account on each
-		assertTrue(gpsAreaArtifacts.get(0).getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid2));
-		assertTrue(gpsAreaArtifacts.get(1).getOsAccount().get().getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(osAcctMgr.getOsAccountByObjectId(gpsAreaArtifacts.get(0).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(osAcctMgr.getOsAccountByObjectId(gpsAreaArtifacts.get(1).getOsAccountObjectId().get()).getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+
 		
 		// Testing that artifacts created using the old methods and new methods are treated the same.
 		// Find the file def.text

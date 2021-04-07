@@ -54,21 +54,6 @@ public final class HostManager {
 	}
 
 	/**
-	 * Get or create host with specified name.
-	 *
-	 * TODO: This should be deleted before release
-	 *
-	 * @param name	Host name.
-	 *
-	 * @return Host with the specified name.
-	 *
-	 * @throws TskCoreException
-	 */
-	public Host getOrCreateHost(String name) throws TskCoreException {
-		return createHost(name);
-	}
-
-	/**
 	 * Create a host with specified name. If a host already exists with the
 	 * given name, it returns the existing host.
 	 *
@@ -78,10 +63,10 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Host createHost(String name) throws TskCoreException {
+	public Host newHost(String name) throws TskCoreException {
 		CaseDbTransaction transaction = db.beginTransaction();
 		try {
-			Host host = createHost(name, transaction);
+			Host host = newHost(name, transaction);
 			transaction.commit();
 			transaction = null;
 			return host;
@@ -116,7 +101,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Host createHost(String name, CaseDbTransaction trans) throws TskCoreException {
+	Host newHost(String name, CaseDbTransaction trans) throws TskCoreException {
 		// must have a name
 		if (Strings.isNullOrEmpty(name)) {
 			throw new TskCoreException("Illegal argument passed to createHost: Host name is required.");
@@ -159,7 +144,7 @@ public final class HostManager {
 			}
 
 			// It may be the case that the host already exists, so try to get it.
-			Optional<Host> optHost = getHost(name, connection);
+			Optional<Host> optHost = getHostByName(name, connection);
 			if (optHost.isPresent()) {
 				return optHost.get();
 			}
@@ -168,21 +153,23 @@ public final class HostManager {
 	}
 
 	/**
-	 * Updates host in database based on the host object provided.
+	 * Updates the name of the provided host.
 	 *
-	 * @param newHost The host to be updated.
+	 * @param host The host to be updated.
+	 * @param newName The new name of the host.
 	 *
-	 * @return The newly returned host.
+	 * @return The updated host.
 	 *
 	 * @throws TskCoreException
 	 */
-	public Host updateHost(Host newHost) throws TskCoreException {
-		if (newHost == null) {
+	public Host updateHostName(Host host, String newName) throws TskCoreException {
+		if (host == null) {
 			throw new TskCoreException("Illegal argument passed to updateHost: No host argument provided.");
-		} else if (newHost.getName() == null) {
-			throw new TskCoreException(String.format("Illegal argument passed to updateHost: Host with id %d has no name", newHost.getId()));
+		} else if (newName == null) {
+			throw new TskCoreException(String.format("Illegal argument passed to updateHost: Host with id %d has no name", host.getHostId()));
 		}
 
+		long hostId = host.getHostId();
 		Host updatedHost = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
@@ -195,16 +182,16 @@ public final class HostManager {
 			PreparedStatement preparedStatement = connection.getPreparedStatement(hostInsertSQL, Statement.RETURN_GENERATED_KEYS);
 
 			preparedStatement.clearParameters();
-			preparedStatement.setString(1, newHost.getName());
-			preparedStatement.setLong(2, newHost.getId());
+			preparedStatement.setString(1, newName);
+			preparedStatement.setLong(2, hostId);
 
 			connection.executeUpdate(preparedStatement);
 
-			updatedHost = getHost(newHost.getId(), connection).orElseThrow(()
+			updatedHost = getHostById(hostId, connection).orElseThrow(()
 					-> new TskCoreException((String.format("Error while fetching newly updated host with id: %d, "))));
 
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating host with name = %s", newHost.getName()), ex);
+			throw new TskCoreException(String.format("Error updating host with name = %s", newName), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
@@ -295,7 +282,7 @@ public final class HostManager {
 	 * @throws TskCoreException
 	 */
 	public List<DataSource> getDataSourcesForHost(Host host) throws TskCoreException {
-		String queryString = "SELECT * FROM data_source_info WHERE host_id = " + host.getId();
+		String queryString = "SELECT * FROM data_source_info WHERE host_id = " + host.getHostId();
 
 		List<DataSource> dataSources = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
@@ -324,9 +311,9 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Optional<Host> getHost(String name) throws TskCoreException {
+	public Optional<Host> getHostByName(String name) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getHost(name, connection);
+			return getHostByName(name, connection);
 		}
 	}
 
@@ -340,7 +327,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<Host> getHost(String name, CaseDbConnection connection) throws TskCoreException {
+	private Optional<Host> getHostByName(String name, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts"
 				+ " WHERE LOWER(name) = LOWER(?)" 
@@ -375,9 +362,9 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Optional<Host> getHost(long id) throws TskCoreException {
+	public Optional<Host> getHostById(long id) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getHost(id, connection);
+			return getHostById(id, connection);
 		}
 	}
 
@@ -391,7 +378,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<Host> getHost(long id, CaseDbConnection connection) throws TskCoreException {
+	private Optional<Host> getHostById(long id, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts WHERE id = " + id;
 
@@ -418,7 +405,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<Host> getHosts() throws TskCoreException {
+	public List<Host> getAllHosts() throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_hosts WHERE db_status = " + HostDbStatus.ACTIVE.getId();
 
 		List<Host> hosts = new ArrayList<>();
@@ -448,7 +435,7 @@ public final class HostManager {
 	 *
 	 * @throws TskCoreException if no host is found or an error occurs.
 	 */
-	public Host getHost(DataSource dataSource) throws TskCoreException {
+	public Host getHostByDataSource(DataSource dataSource) throws TskCoreException {
 
 		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.db_status AS db_status FROM \n"
 				+ "tsk_hosts INNER JOIN data_source_info \n"
@@ -470,70 +457,6 @@ public final class HostManager {
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
-	}
-
-	/**
-	 * Get person for the given host or empty if no associated person.
-	 *
-	 * @param host The host.
-	 *
-	 * @return The parent person or empty if no parent person.
-	 *
-	 * @throws TskCoreException if error occurs.
-	 */
-	public Optional<Person> getPerson(Host host) throws TskCoreException {
-
-		String queryString = "SELECT p.id AS personId, p.name AS name FROM \n"
-				+ "tsk_persons p INNER JOIN tsk_hosts h\n"
-				+ "ON p.id = h.person_id \n"
-				+ "WHERE h.id = " + host.getId();
-
-		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
-			if (rs.next()) {
-				return Optional.of(new Person(rs.getLong("personId"), rs.getString("name")));
-			} else {
-				return Optional.empty();
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting person for host with ID = %d", host.getId()), ex);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
-	 * Set host's parent person.
-	 *
-	 * @param host   The host whose parent will be set.
-	 * @param person The person to be a parent or null to remove any parent
-	 *               person reference from this host.
-	 *
-	 * @throws TskCoreException
-	 */
-	public void setPerson(Host host, Person person) throws TskCoreException {
-		if (host == null) {
-			throw new TskCoreException("Illegal argument passed to setPerson: host must be non-null.");
-		}
-
-		String queryString = (person == null)
-				? String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getId())
-				: String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getId(), host.getId());
-
-		db.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();) {
-			s.executeUpdate(queryString);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting persons"), ex);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
-		}
-
-		db.getPersonManager().fireChangeEvent(person);
 	}
 	
 	/**
@@ -573,8 +496,8 @@ public final class HostManager {
 					"FROM " +
 					"  tsk_host_address_map destMapRow " +
 					"INNER JOIN tsk_host_address_map sourceMapRow ON destMapRow.addr_obj_id = sourceMapRow.addr_obj_id AND destMapRow.time = sourceMapRow.time " +
-					"WHERE destMapRow.host_id = " +  destHost.getId() + 
-					" AND sourceMapRow.host_id = " + sourceHost.getId() + " )";
+					"WHERE destMapRow.host_id = " +  destHost.getHostId() + 
+					" AND sourceMapRow.host_id = " + sourceHost.getHostId() + " )";
 				s.executeUpdate(query);
 				query = makeOsAccountUpdateQuery("tsk_host_address_map", "host_id", sourceHost, destHost);
 				s.executeUpdate(query);
@@ -587,10 +510,10 @@ public final class HostManager {
 			
 				// Mark the source host as merged and change the name to a random string.
 				String mergedName = makeMergedHostName();
-				query = "UPDATE tsk_hosts SET merged_into = " + destHost.getId()
+				query = "UPDATE tsk_hosts SET merged_into = " + destHost.getHostId()
 						+ ", db_status = " + Host.HostDbStatus.MERGED.getId()
 						+ ", name = '" + mergedName + "' " 
-						+ " WHERE id = " + sourceHost.getId();
+						+ " WHERE id = " + sourceHost.getHostId();
 				s.executeUpdate(query);	
 			}
 			
@@ -620,7 +543,7 @@ public final class HostManager {
 	 * @return The query.
 	 */
 	private String makeOsAccountUpdateQuery(String tableName, String columnName, Host sourceHost, Host destHost) {
-		return "UPDATE " + tableName + " SET " + columnName + " = " + destHost.getId() + " WHERE " + columnName + " = " + sourceHost.getId();
+		return "UPDATE " + tableName + " SET " + columnName + " = " + destHost.getHostId() + " WHERE " + columnName + " = " + sourceHost.getHostId();
 	}
 	
 	/**

@@ -1,4 +1,4 @@
-/**
+/*
  * Sleuth Kit Data Model
  *
  * Copyright 2021 Basis Technology Corp.
@@ -25,7 +25,7 @@ import java.util.Set;
  * A utility class for handling Windows specific accounts and SIDs.
  * 
  */
-public final class WindowsAccountUtils {
+final class WindowsAccountUtils {
 	
 	// Special Windows Accounts with short SIDS are given a special realm "address".
 	final static String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
