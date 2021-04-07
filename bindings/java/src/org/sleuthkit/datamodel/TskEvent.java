@@ -209,7 +209,7 @@ public interface TskEvent {
 	/**
 	 * Base event for all person events
 	 */
-	static class PersonTskEvent {
+	static class PersonsTskEvent {
 
 		private final List<Person> persons;
 
@@ -218,7 +218,7 @@ public interface TskEvent {
 		 *
 		 * @param persons The persons that are objects of the event.
 		 */
-		PersonTskEvent(List<Person> persons) {
+		PersonsTskEvent(List<Person> persons) {
 			this.persons = persons;
 		}
 
@@ -235,7 +235,7 @@ public interface TskEvent {
 	/**
 	 * Event fired when persons are created.
 	 */
-	final public static class PersonsAddedTskEvent extends PersonTskEvent {
+	final public static class PersonsAddedTskEvent extends PersonsTskEvent {
 
 		/**
 		 * Main constructor.
@@ -250,7 +250,7 @@ public interface TskEvent {
 	/**
 	 * Event fired when persons are updated.
 	 */
-	final public static class PersonsChangedTskEvent extends PersonTskEvent {
+	final public static class PersonsChangedTskEvent extends PersonsTskEvent {
 
 		/**
 		 * Main constructor.
@@ -265,7 +265,7 @@ public interface TskEvent {
 	/**
 	 * Event fired when persons are deleted.
 	 */
-	final public static class PersonsDeletedTskEvent extends PersonTskEvent {
+	final public static class PersonsDeletedTskEvent extends PersonsTskEvent {
 
 		/**
 		 * Main constructor.
