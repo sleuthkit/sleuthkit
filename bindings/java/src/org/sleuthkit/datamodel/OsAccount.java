@@ -62,7 +62,6 @@ public final class OsAccount extends AbstractContent {
 	private List<OsAccountAttribute> osAccountAttributes = null;
 	private List<OsAccountInstance> osAccountInstances = null;
 
-	
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
 	 * deleted.
@@ -242,10 +241,10 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * This function is used by OsAccountManger to update the list of 
-	 * OsAccount attributes. 
-	 * 
-	 * @param osAccountAttribute The osAccount Attribute that is to be added. 
+	 * This function is used by OsAccountManger to update the list of OsAccount
+	 * attributes.
+	 *
+	 * @param osAccountAttribute The osAccount Attribute that is to be added.
 	 */
 	void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
@@ -272,7 +271,7 @@ public final class OsAccount extends AbstractContent {
 
 	/**
 	 * Get the ID for the account realm. Get the Realm via
-	 * OsAccountRealmManager.getRealmById() NOTE: The realm may get updated as
+	 * OsAccountRealmManager.getRealmByRealmId() NOTE: The realm may get updated as
 	 * more data is parsed, so listen for events to update as needed.
 	 *
 	 * @return
@@ -351,7 +350,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public synchronized List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
+	public List<OsAccountAttribute> getExtendedOsAccountAttributes() throws TskCoreException {
 		if (osAccountAttributes == null) {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}
@@ -419,5 +418,165 @@ public final class OsAccount extends AbstractContent {
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
+	}
+
+	/**
+	 * Abstracts attributes of an OS account. An attribute may be specific to a
+	 * host, or applicable across all hosts.
+	 *
+	 * As an example, last login time is host specific, whereas last password
+	 * reset date is independent of a host.
+	 *
+	 */
+	public final class OsAccountAttribute extends AbstractAttribute {
+
+		private final long osAccountObjId;	// OS account to which this attribute belongs.
+		private final Long hostId; // Host to which this attribute applies, may be null
+		private final Long sourceObjId; // Object id of the source where the attribute was discovered.
+
+		/**
+		 * Creates an os account attribute with int value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueInt      Int value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if the attribute applies to all the hosts in
+		 *                      the realm.
+		 * @param sourceObj     Source where the attribute was found, may be null.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueInt);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with long value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueLong     Long value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueLong);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with double value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueDouble   Double value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueDouble);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with string value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueString   String value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueString);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with byte-array value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueBytes    Bytes value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, byte[] valueBytes, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueBytes);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Constructor to be used when creating an attribute after reading the
+		 * data from the table.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueInt      Int value.
+		 * @param valueLong     Long value.
+		 * @param valueDouble   Double value.
+		 * @param valueString   String value.
+		 * @param valueBytes    Bytes value.
+		 * @param sleuthkitCase Sleuthkit case.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
+				SleuthkitCase sleuthkitCase, OsAccount osAccount, Host host, Content sourceObj) {
+
+			super(attributeType,
+					valueInt, valueLong, valueDouble, valueString, valueBytes,
+					sleuthkitCase);
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Get the host id for the account attribute.
+		 *
+		 * @return Optional with Host id.
+		 */
+		public Optional<Long> getHostId() {
+			return Optional.ofNullable(hostId);
+		}
+
+		/**
+		 * Get the object id of account to which this attribute applies.
+		 *
+		 * @return Account row id.
+		 */
+		public long getOsAccountObjectId() {
+			return osAccountObjId;
+		}
+
+		/**
+		 * Get the object id of the source where the attribute was found.
+		 *
+		 * @return Object id of source.
+		 */
+		public Optional<Long> getSourceObjectId() {
+			return Optional.ofNullable(sourceObjId);
+		}
 	}
 }

@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.OsAccount.OsAccountStatus;
 import org.sleuthkit.datamodel.OsAccount.OsAccountType;
+import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
@@ -74,7 +75,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error in creating the OSAccount.
 	 *
 	 */
-	OsAccount createOsAccount(String uniqueAccountId, OsAccountRealm realm) throws TskCoreException {
+	OsAccount newOsAccount(String uniqueAccountId, OsAccountRealm realm) throws TskCoreException {
 
 		// ensure unique id is provided
 		if (Strings.isNullOrEmpty(uniqueAccountId)) {
@@ -90,7 +91,7 @@ public final class OsAccountManager {
 
 			// try to create account
 			try {
-				OsAccount account = createOsAccount(uniqueAccountId, null, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				OsAccount account = newOsAccount(uniqueAccountId, null, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 				trans.commit();
 				trans = null;
 				return account;
@@ -139,7 +140,7 @@ public final class OsAccountManager {
 	 *                                              user SID.
 	 *
 	 */
-	public OsAccount createWindowsOsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
+	public OsAccount newWindowsOsAccount(String sid, String loginName, String realmName, Host referringHost, OsAccountRealm.RealmScope realmScope) throws TskCoreException, NotUserSIDException {
 
 		if (realmScope == null) {
 			throw new TskCoreException("RealmScope cannot be null. Use UNKNOWN if scope is not known.");
@@ -171,14 +172,14 @@ public final class OsAccountManager {
 			realm = realmOptional.get();
 		} else {
 			// realm was not found, create it.
-			realm = db.getOsAccountRealmManager().createWindowsRealm(sid, realmName, referringHost, realmScope);
+			realm = db.getOsAccountRealmManager().newWindowsRealm(sid, realmName, referringHost, realmScope);
 		}
 
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			// try to create account
 			try {
-				OsAccount account = createOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				OsAccount account = newOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 				trans.commit();
 				trans = null;
 				return account;
@@ -232,7 +233,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException If there is an error creating the account.
 	 */
-	private OsAccount createOsAccount(String uniqueId, String loginName, OsAccountRealm realm, OsAccount.OsAccountStatus accountStatus, CaseDbTransaction trans) throws TskCoreException, SQLException {
+	private OsAccount newOsAccount(String uniqueId, String loginName, OsAccountRealm realm, OsAccount.OsAccountStatus accountStatus, CaseDbTransaction trans) throws TskCoreException, SQLException {
 
 		if (Objects.isNull(realm)) {
 			throw new TskCoreException("Cannot create an OS Account, realm is NULL.");
@@ -513,7 +514,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	public void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
+	public void newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");
 		}
@@ -528,7 +529,7 @@ public final class OsAccountManager {
 		}
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			createOsAccountInstance(osAccount, dataSource, instanceType, connection);
+			newOsAccountInstance(osAccount, dataSource, instanceType, connection);
 		}
 	}
 
@@ -544,7 +545,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	void createOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	void newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");
@@ -553,7 +554,7 @@ public final class OsAccountManager {
 			throw new TskCoreException("Cannot create account instance with null data source.");
 		}
 
-		createOsAccountInstance(osAccount, dataSource.getId(), instanceType, connection);
+		newOsAccountInstance(osAccount, dataSource.getId(), instanceType, connection);
 	}
 
 	/**
@@ -568,7 +569,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	void createOsAccountInstance(OsAccount osAccount, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	void newOsAccountInstance(OsAccount osAccount, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");
@@ -837,9 +838,9 @@ public final class OsAccountManager {
 		}
 
 		// update the dest account core 
-		AccountUpdateStatus updateStatus = this.updateOsAccountCore(destAccount, destAddr, destLoginName, trans);
+		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(destAccount, destAddr, destLoginName, trans);
 		
-		if (updateStatus.getUpdateStatusCode() == AccountUpdateStatusEnum.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
+		if (updateStatus.getUpdateStatusCode() == OsAccountUpdateStatus.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
 			mergedDestAccount = updateStatus.getUpdatedAccount().get();
 		}
 		
@@ -854,9 +855,9 @@ public final class OsAccountManager {
 		}
 		
 		// update the dest account properties 
-		updateStatus = this.updateOsAccountProperties(destAccount, destFullName, null, null, destCreationTime, trans);
+		updateStatus = this.updateStandardOsAccountAttributes(destAccount, destFullName, null, null, destCreationTime, trans);
 		
-		if (updateStatus.getUpdateStatusCode() == AccountUpdateStatusEnum.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
+		if (updateStatus.getUpdateStatusCode() == OsAccountUpdateStatus.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
 			mergedDestAccount = updateStatus.getUpdatedAccount().get();
 		}
 		
@@ -976,7 +977,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public void addOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
+	public void addExtendedOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
 	
 		synchronized (account) {  // synchronized to prevent multiple threads trying to add osAccount attributes concurrently to the same osAccount.
 			db.acquireSingleUserCaseWriteLock();
@@ -1090,7 +1091,7 @@ public final class OsAccountManager {
 					sourceContent = this.db.getContentById(sourceObjId);
 				}
 				BlackboardAttribute.Type attributeType = db.getAttributeType(rs.getInt("attribute_type_id"));
-				OsAccountAttribute attribute = new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"),
+				OsAccountAttribute attribute = account.new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"),
 						rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
 						db, account, host, sourceContent);
 
@@ -1150,16 +1151,16 @@ public final class OsAccountManager {
 	 * @param accountStatus Account status, may be null.
 	 * @param creationTime  Creation time, may be null.
 	 *
-	 * @return AccountUpdateStatus Account update status, and updated account.
+	 * @return OsAccountUpdateResult Account update status, and updated account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	public AccountUpdateStatus updateOsAccountProperties(OsAccount osAccount, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime) throws TskCoreException {
+	public OsAccountUpdateResult updateStandardOsAccountAttributes(OsAccount osAccount, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime) throws TskCoreException {
 
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			AccountUpdateStatus updateStatus = updateOsAccountProperties(osAccount, fullName, accountType, accountStatus, creationTime, trans);
+			OsAccountUpdateResult updateStatus = updateStandardOsAccountAttributes(osAccount, fullName, accountType, accountStatus, creationTime, trans);
 			
 			trans.commit();
 			trans = null;
@@ -1185,42 +1186,41 @@ public final class OsAccountManager {
 	 * @param creationTime  Creation time, may be null.
 	 * @param trans         Transaction to use for database operation.
 	 *
-	 * @return AccountUpdateStatus Account update status, and updated account.
+	 * @return OsAccountUpdateResult Account update status, and updated account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	AccountUpdateStatus updateOsAccountProperties(OsAccount osAccount, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime, CaseDbTransaction trans) throws TskCoreException {
+	OsAccountUpdateResult updateStandardOsAccountAttributes(OsAccount osAccount, String fullName, OsAccountType accountType, OsAccountStatus accountStatus, Long creationTime, CaseDbTransaction trans) throws TskCoreException {
 
-		AccountUpdateStatusEnum updateStatusCode = AccountUpdateStatusEnum.NO_CHANGE;
+		OsAccountUpdateStatus updateStatusCode = OsAccountUpdateStatus.NO_CHANGE;
 
 		try {
 			CaseDbConnection connection = trans.getConnection();
 
 			if (!StringUtils.isBlank(fullName)) {
 				updateAccountColumn(osAccount.getId(), "full_name", fullName, connection);
-				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (Objects.nonNull(accountType)) {
 				updateAccountColumn(osAccount.getId(), "type", accountType, connection);
-				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (Objects.nonNull(accountStatus)) {
 				updateAccountColumn(osAccount.getId(), "status", accountStatus, connection);
-				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (Objects.nonNull(creationTime)) {
-				//newCreationTime = creationTime;
 				updateAccountColumn(osAccount.getId(), "created_date", creationTime, connection);
-				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			// if nothing has been changed, return
-			if (updateStatusCode == AccountUpdateStatusEnum.NO_CHANGE) {
-				return new AccountUpdateStatus(updateStatusCode, null);
+			if (updateStatusCode == OsAccountUpdateStatus.NO_CHANGE) {
+				return new OsAccountUpdateResult(updateStatusCode, null);
 			}
 
 			// get the updated account from database
@@ -1229,7 +1229,7 @@ public final class OsAccountManager {
 			// register the updated account with the transaction to fire off an event
 			trans.registerChangedOsAccount(updatedAccount);
 
-			return new AccountUpdateStatus(updateStatusCode, updatedAccount);
+			return new OsAccountUpdateResult(updateStatusCode, updatedAccount);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating account with addr = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
@@ -1253,7 +1253,7 @@ public final class OsAccountManager {
 
 		String updateSQL = "UPDATE tsk_os_accounts "
 				+ " SET " + colName + " = ? "
-				+ " WHERE os_account_obj_id = ?";	// 5
+				+ " WHERE os_account_obj_id = ?";
 
 		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 		preparedStatement.clearParameters();
@@ -1278,6 +1278,32 @@ public final class OsAccountManager {
 	}
 	
 	/**
+	 * Updates the signature of the specified account, if the db status of the
+	 * account is active.
+	 *
+	 * @param accountObjId Object id of the account to be updated.
+	 * @param signature    New signature.
+	 * @param connection   Database connection to use.
+	 *
+	 * @throws SQLException If there is an error updating the database.
+	 */
+	private void updateAccountSignature(long accountObjId, String signature, CaseDbConnection connection) throws SQLException {
+
+		String updateSQL = "UPDATE tsk_os_accounts SET "
+					+ "		signature = "
+					+ "       CASE WHEN db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + " THEN ? ELSE signature END  "
+					+ " WHERE os_account_obj_id = ?";	// 8
+
+		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+		preparedStatement.clearParameters();
+
+		preparedStatement.setString(1, signature);
+		preparedStatement.setLong(2, accountObjId);
+		
+		connection.executeUpdate(preparedStatement);
+	}
+	
+	/**
 	 * Update the address and/or login name for the specified account in the
 	 * database. Also update the realm addr/name if needed.
 	 * 
@@ -1291,16 +1317,16 @@ public final class OsAccountManager {
 	 * @param realmName     Realm name for the account.
 	 * @param referringHost Host.
 	 *
-	 * @return AccountUpdateStatus Account update status, and the updated
-	 *         account.
+	 * @return OsAccountUpdateResult Account update status, and the updated
+         account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	public AccountUpdateStatus updateWindowsOsAccountCore(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
+	public OsAccountUpdateResult updateCoreWindowsOsAccountAttributes(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			AccountUpdateStatus updateStatus = this.updateWindowsOsAccountCore(osAccount, accountSid, loginName, realmName, referringHost, trans);
+			OsAccountUpdateResult updateStatus = this.updateCoreWindowsOsAccountAttributes(osAccount, accountSid, loginName, realmName, referringHost, trans);
 
 			trans.commit();
 			trans = null;
@@ -1326,13 +1352,13 @@ public final class OsAccountManager {
 	 * @param loginName Login name, may be null.
 	 * @param realmName Account realm name. May be null if accountSid is not null.
 	 *
-	 * @return AccountUpdateStatus Account update status, and the updated
-	 *         account.
+	 * @return OsAccountUpdateResult Account update status, and the updated
+         account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	private AccountUpdateStatus  updateWindowsOsAccountCore(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
+	private OsAccountUpdateResult updateCoreWindowsOsAccountAttributes(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
 						
 		// first get and update the realm - if we have the info to find the realm
 		if ( !StringUtils.isBlank(accountSid) || !StringUtils.isBlank(realmName) ) {
@@ -1340,7 +1366,7 @@ public final class OsAccountManager {
 		}
 		
 		// now update the account core data
-		AccountUpdateStatus updateStatus = this.updateOsAccountCore(osAccount, accountSid, loginName, trans);
+		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, loginName, trans);
 		
 		return updateStatus;
 	}
@@ -1362,15 +1388,15 @@ public final class OsAccountManager {
 	 * @param address   Account address, may be null.
 	 * @param loginName Login name, may be null.
 	 *
-	 * @return AccountUpdateStatus Account update status, and the updated
-	 *         account.
+	 * @return OsAccountUpdateResult Account update status, and the updated
+         account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
-	private AccountUpdateStatus updateOsAccountCore(OsAccount osAccount, String address, String loginName, CaseDbTransaction trans) throws TskCoreException {
+	private OsAccountUpdateResult updateOsAccountCore(OsAccount osAccount, String address, String loginName, CaseDbTransaction trans) throws TskCoreException {
 
-		AccountUpdateStatusEnum updateStatusCode = AccountUpdateStatusEnum.NO_CHANGE;
+		OsAccountUpdateStatus updateStatusCode = OsAccountUpdateStatus.NO_CHANGE;
 		OsAccount updatedAccount;
 
 		try {
@@ -1388,23 +1414,23 @@ public final class OsAccountManager {
 
 			if (StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address)) {
 				updateAccountColumn(osAccount.getId(), "addr", address, connection);
-				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (StringUtils.isBlank(osAccount.getLoginName().orElse(null)) && !StringUtils.isBlank(loginName)) {
 				updateAccountColumn(osAccount.getId(), "login_name", loginName, connection);
-				updateStatusCode = AccountUpdateStatusEnum.UPDATED;
+				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
-			// update signature if needed, only for active acounts
-			if (updateStatusCode == AccountUpdateStatusEnum.UPDATED && osAccount.getOsAccountDbStatus() == OsAccount.OsAccountDbStatus.ACTIVE) {
+			// update signature if needed
+			if (updateStatusCode == OsAccountUpdateStatus.UPDATED) {
 				String newSignature = getOsAccountSignature(address, loginName);
-				updateAccountColumn(osAccount.getId(), "signature", newSignature, connection);
+				updateAccountSignature(osAccount.getId(), newSignature, connection);
 			}
 
 			// if nothing is changed, return
-			if (updateStatusCode == AccountUpdateStatusEnum.NO_CHANGE) {
-				return new AccountUpdateStatus(updateStatusCode, null);
+			if (updateStatusCode == OsAccountUpdateStatus.NO_CHANGE) {
+				return new OsAccountUpdateResult(updateStatusCode, osAccount);
 			}
 			// get the updated account from database
 			updatedAccount = getOsAccountByObjectId(osAccount.getId(), connection);
@@ -1412,7 +1438,7 @@ public final class OsAccountManager {
 			// register the updated account with the transaction to fire off an event
 			trans.registerChangedOsAccount(updatedAccount);
 
-			return new AccountUpdateStatus(updateStatusCode, updatedAccount);
+			return new OsAccountUpdateResult(updateStatusCode, updatedAccount);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
@@ -1661,7 +1687,7 @@ public final class OsAccountManager {
 	/**
 	 * Status of an account update.
 	 */
-	public enum AccountUpdateStatusEnum {
+	public enum OsAccountUpdateStatus {
 
 		NO_CHANGE,	/// no change was made to account.
 		UPDATED,	/// account was updated
@@ -1671,18 +1697,18 @@ public final class OsAccountManager {
 	/**
 	 * Container that encapsulates the account update status and the updated account.
 	 */
-	public final static class AccountUpdateStatus {
+	public final static class OsAccountUpdateResult {
 		
-		private final AccountUpdateStatusEnum updateStatusCode;
+		private final OsAccountUpdateStatus updateStatus;
 		private final OsAccount updatedAccount;
 		
-		AccountUpdateStatus(AccountUpdateStatusEnum updateStatusEnum, OsAccount updatedAccount) {
-			this.updateStatusCode = updateStatusEnum;
+		OsAccountUpdateResult(OsAccountUpdateStatus updateStatus, OsAccount updatedAccount) {
+			this.updateStatus = updateStatus;
 			this.updatedAccount = updatedAccount;
 		}
 
-		public AccountUpdateStatusEnum getUpdateStatusCode() {
-			return updateStatusCode;
+		public OsAccountUpdateStatus getUpdateStatusCode() {
+			return updateStatus;
 		}
 
 		public Optional<OsAccount> getUpdatedAccount() {
