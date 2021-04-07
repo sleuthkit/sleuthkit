@@ -20,10 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Abstracts an OS user account. OS Accounts have a scope, which is defined by
@@ -53,11 +51,11 @@ public final class OsAccount extends AbstractContent {
 	// It is either addr if addr is defined,
 	// or the login_name if login_name is defined.
 
-	private String fullName;	// full name, may be null
-	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
-	private OsAccountStatus osAccountStatus = null;
+	private final String fullName;	// full name, may be null
+	private final OsAccountType osAccountType;
+	private final OsAccountStatus osAccountStatus;
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
-	private Long creationTime = null;
+	private final Long creationTime;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
 	private List<OsAccountInstance> osAccountInstances = null;
@@ -210,17 +208,20 @@ public final class OsAccount extends AbstractContent {
 	 * @param sleuthkitCase  The SleuthKit case (case database) that contains
 	 *                       the artifact data.
 	 * @param osAccountobjId Obj id of the account in tsk_objects table.
-	 * @param realmId	       Realm - defines the scope of this account.
+	 * @param realmId        Realm - defines the scope of this account.
 	 * @param loginName      Login name for the account. May be null.
 	 * @param uniqueId       An id unique within the realm - a SID or uid. May
 	 *                       be null, only if login name is not null.
 	 * @param signature	     A unique signature constructed from realm id and
 	 *                       loginName or uniqueId.
+	 * @param fullName       Full name.
+	 * @param creationTime   Account creation time.
+	 * @param accountType    Account type.
 	 * @param accountStatus  Account status.
 	 * @param dbStatus       Status of row in database.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature,
-			OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature, 
+			String fullName, Long creationTime, OsAccountType accountType, OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
 
 		super(sleuthkitCase, osAccountobjId, signature);
 
@@ -230,59 +231,11 @@ public final class OsAccount extends AbstractContent {
 		this.loginName = loginName;
 		this.addr = uniqueId;
 		this.signature = signature;
+		this.fullName = fullName;
+		this.creationTime = creationTime;
+		this.osAccountType = accountType;
 		this.osAccountStatus = accountStatus;
 		this.osAccountDbStatus = accountDbStatus;
-	}
-
-	/**
-	 * Sets the account user's full name, such as "John Doe", if it is not
-	 * already set.
-	 *
-	 * @param fullName Full name.
-	 *
-	 * @return Returns true of the name is set, false if the name was not
-	 *         changed.
-	 */
-	boolean setFullName(String fullName) {
-		if (StringUtils.isBlank(this.fullName) && StringUtils.isNotBlank(fullName)) {
-			this.fullName = fullName;
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Sets account type for the account, if it has not already been set.
-	 *
-	 * @param osAccountType Account type.
-	 *
-	 * @return Returns true of the account type is set, false if the account
-	 *         type was not changed.
-	 */
-	boolean setOsAccountType(OsAccountType osAccountType) {
-		if (Objects.isNull(this.osAccountType) && Objects.nonNull(osAccountType)) {
-			this.osAccountType = osAccountType;
-			return true;
-		}
-
-		return false;
-	}
-
-
-	/**
-	 * Set account creation time, if not already set.
-	 *
-	 * @param creationTime Creation time.
-	 *
-	 * @return Returns true of the creation time is set, false if the time was
-	 *         not changed.
-	 */
-	boolean setCreationTime(Long creationTime) {
-		if (Objects.isNull(this.creationTime) && Objects.nonNull(creationTime)) {
-			this.creationTime = creationTime;
-			return true;
-		}
-		return false;
 	}
 
 	/**
@@ -291,7 +244,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @param osAccountAttribute The osAccount Attribute that is to be added.
 	 */
-	void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
+	synchronized void  setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
 	}
 
@@ -355,7 +308,7 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Get account creation time.
 	 *
-	 * @return Account creation time, returns 0 if creation time is not known.
+	 * @return Optional with account creation time.
 	 */
 	public Optional<Long> getCreationTime() {
 		return Optional.ofNullable(creationTime);
@@ -364,19 +317,19 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Get account type.
 	 *
-	 * @return Account type.
+	 * @return Optional with account type.
 	 */
-	public OsAccountType getOsAccountType() {
-		return osAccountType;
+	public Optional<OsAccountType> getOsAccountType() {
+		return Optional.ofNullable(osAccountType);
 	}
 
 	/**
 	 * Get account status.
 	 *
-	 * @return Account status.
+	 * @return Optional with account status.
 	 */
-	public OsAccountStatus getOsAccountStatus() {
-		return osAccountStatus;
+	public Optional<OsAccountStatus> getOsAccountStatus() {
+		return Optional.ofNullable(osAccountStatus);
 	}
 
 	/**
@@ -395,7 +348,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<OsAccountAttribute> getExtendedOsAccountAttributes() throws TskCoreException {
+	public synchronized List<OsAccountAttribute> getExtendedOsAccountAttributes() throws TskCoreException {
 		if (osAccountAttributes == null) {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}
@@ -409,7 +362,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
+	public synchronized List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
 		if (osAccountInstances == null) {
 			osAccountInstances = sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
 		}
