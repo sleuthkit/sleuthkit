@@ -20,10 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Abstracts an OS user account. OS Accounts have a scope, which is defined by
@@ -246,7 +244,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @param osAccountAttribute The osAccount Attribute that is to be added.
 	 */
-	void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
+	synchronized void  setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
 	}
 
@@ -350,7 +348,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<OsAccountAttribute> getExtendedOsAccountAttributes() throws TskCoreException {
+	public synchronized List<OsAccountAttribute> getExtendedOsAccountAttributes() throws TskCoreException {
 		if (osAccountAttributes == null) {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}
@@ -364,7 +362,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
+	public synchronized List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
 		if (osAccountInstances == null) {
 			osAccountInstances = sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
 		}
