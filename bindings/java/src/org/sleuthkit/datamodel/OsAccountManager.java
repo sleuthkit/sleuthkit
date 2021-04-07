@@ -599,6 +599,11 @@ public final class OsAccountManager {
 			// add to the cache.
 			osAccountInstanceCache.add(accountInstance);
 
+			// update account instances
+			List<OsAccountInstance> currentInstancesList = getOsAccountInstances(osAccount, connection);
+			currentInstancesList.add(accountInstance);
+			osAccount.setInstancesInternal(currentInstancesList);
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding os account instance for account = %s, data source object id = %d", osAccount.getAddr().orElse(osAccount.getLoginName().orElse("UNKNOWN")), dataSourceObjId), ex);
 		} finally {
@@ -1116,12 +1121,28 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getOsAccountInstances(account, connection);
+		} 
+	}
+	
+	/**
+	 * Get a list of OsAccountInstances for the give OsAccount.
+	 *
+	 * @param account    Account to retrieve instance for.
+	 * @param connection Database connection to use.
+	 *
+	 * @return List of OsAccountInstances, the list maybe empty if none were
+	 *         found.
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<OsAccountInstance> getOsAccountInstances(OsAccount account, CaseDbConnection connection ) throws TskCoreException {
 		List<OsAccountInstance> instanceList = new ArrayList<>();
 		String queryString = String.format("SELECT * FROM tsk_os_account_instances WHERE os_account_obj_id = %d", account.getId());
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				Statement s = connection.createStatement();
+		try ( Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			while (rs.next()) {
