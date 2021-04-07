@@ -23,6 +23,8 @@ Some general notes on this schema:
 
 # Schema Information
 
+This was a big change. Tables were added to support analsis results, OS accounts, Hosts & Person strcture of data sources, and host addresses (IPs, DNS, etc.). It has a major version change because there are new Content enum types (OsAccount and HostAddress). 
+
 <ul>
 <li><b>Autopsy versions: </b> Autopsy 4.19
 <li><b>Changes from version 8.6:</b>
@@ -73,6 +75,22 @@ Every object (image, volume system, file, etc.) has an entry in this table.  Thi
 - **par_obj_id** - The object id of the parent object (NULL for root objects). The parent of a volume system is an image, the parent of a directory is a directory or filesystem, the parent of a filesystem is a volume or an image, etc.
 - **type** - Object type (as org.sleuthkit.datamodel.TskData.ObjectType enum)
 
+
+# Hosts / Persons
+Stores data related to hosts and persons, which can help organize data sources. 
+
+## tsk_persons
+Stores persons for the case. A peron is someone who owns or used a data source in the case. 
+- **id** - Id of the person
+- **name** - Name of the person (should be human readable)
+
+## tsk_hosts
+Stores hosts that have a data source in the case. Each data source must be associated with a host.  These are NOT created for a reference to an external host (such as a web domain). 
+- **id** - Id of the host
+- **name** - Name of the host (should be human readable)
+- **db_status** - Status of the host (active/merged/deleted as org.sleuthkit.datamodel.Host.HostDbStatus)
+- **person_id** - Optional id of associated person
+- **merged_into** - Stores the host ID that this host was merged into
 
 # Data Source / Device Tables 
 ## data_source_info
@@ -199,7 +217,7 @@ Methods that can be used to store files on local disks to prevent them from bein
 - **name** -  Display name of technique
 
 ## tsk_file_attributes
-Extended attributes for a particular file
+Stores extended attributes for a particular file that do not have a column in tsk_files. Custom BlackboardAttribute types can be defined. 
 - **id** - Id of the attribute
 - **obj_id** - File this attribute is associated with (references tsk_files)
 - **attribute_type_id** - Id for the type of attribute (can be looked up in the blackboard_attribute_types)
@@ -231,10 +249,10 @@ NOTE: This table is not used in any code.
 
 
 # Blackboard Tables 
-The \ref mod_bbpage "Blackboard" is used to store results from analysis modules. 
+The \ref mod_bbpage "Blackboard" is used to store results and derived data from analysis modules. 
 
 ## blackboard_artifacts
-Stores artifacts associated with objects.
+Stores artifacts associated with objects. 
 - **artifact_id** - Id of the artifact (assigned by the database)
 - **obj_id** - Id of the associated object
 - **artifact_obj_id** - Object id of the artifact
@@ -244,17 +262,17 @@ Stores artifacts associated with objects.
 - **review_status_id** - Review status (references review_status_id in review_statuses)
 
 ## tsk_analysis_results
-Additional information for analysis results
+Additional information for artifacts that are analysis results
 - **artifact_obj_id** - Object id of the associated artifact (artifact_obj_id column in blackboard_artifacts)
-- **conclusion** - Text description of conclusion
-- **significance** - Significance (as org.sleuthkit.datamodel.Score.Significance enum)
-- **method_category** - Category of the method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
-- **configuration** - Text description of configuration
-- **justification** - Text description of justification
-- **ignore_score** - true if score should be ignored, false (0) otherwise
+- **significance** - Significance to show if the result shows the object is relevant (as org.sleuthkit.datamodel.Score.Significance enum)
+- **method_category** - Category of the analysis method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
+- **conclusion** - Optional, text description of the conclusion of the analysis method. 
+- **configuration** - Otional, text description of the analysis method configuration (such as what hash set or keyword list was used)
+- **justification** - Optional, text description of justification of the conclusion and significance. 
+- **ignore_score** - True (1) if score should be ignored when calculating aggregate score, false (0) otherwise. This allows users to ignore a false positive.
 
 ## tsk_data_artifacts
-Additional information for data artifacts
+Additional information for artifacts that store extracted data. 
 - **artifact_obj_id** - Object id of the associated artifact (artifact_obj_id column in blackboard_artifacts)
 - **os_account_obj_id** - Object id of the associated OS account
 
@@ -293,36 +311,25 @@ Review status of an artifact. Should mirror the org.sleuthkit.datamodel.Blackboa
 - **display_name** - Display name (should be human readable)
 
 ## tsk_aggregate_score
-Stores the score of an object
+Stores the score of an object that is a combination of the various analysis result scores
 - **obj_id** - Id of the object that corresponds to this score
 - **data_source_obj_id** - Id of the data source the object belongs to
 - **significance** - Significance (as org.sleuthkit.datamodel.Score.Significance enum)
 - **method_category** - Category of the method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
 
-# Hosts / Persons
-Stores data related to hosts and persons
 
-## tsk_persons
-Stores persons for the case. Hosts are optionally associated with a person.
-- **id** - Id of the person
-- **name** - Name of the person (should be human readable)
 
-## tsk_hosts
-Stores hosts for the case. Each data source must be associated with a host.
-- **id** - Id of the host
-- **name** - Name of the host (should be human readable)
-- **db_status** - Status of the host (active/merged/deleted)
-- **person_id** - Optional id of associated person
-- **merged_into** - Tracks destination for merged hosts
+# Host Addresses
+Host addresses are various forms of identifiers assigned to a computer, such as host names or MAC addresses. These tables store data that is also stored in the data artifacts, but these tables allow for correlation and scoring of specific hosts. 
 
 ## tsk_host_addresses
-Stores host addresses
+One entry is created in this table for each host address found in the data source.  Examples include domain names (www.sleuthkit.org), IP addresses, and BlueTooth MAC addresses.
 - **id** - Id of the host address
 - **address_type** - Type of address (as org.sleuthkit.datamodel.HostAddress.HostAddressType enum)
-- **address** - Address
+- **address** - Address (must be unique within the scope of address_type). 
 
 ## tsk_host_address_dns_ip_map
-Maps related DNS addresses and IP addresses
+Stores data if host names and IP addresses were resolved between each other. 
 - **id** - Id of the mapping
 - **dns_address_id** - Id of the DNS address in tsk_host_addresses
 - **ip_address_id** - Id of the IP address in tsk_host_addresses
@@ -330,24 +337,35 @@ Maps related DNS addresses and IP addresses
 - **time** - Timestamp when this mapping was recorded
 
 ## tsk_host_address_usage
-Tracks usages of host addresses
+Tracks which artifacts and files had a reference to a given host address. This is used to show what other artifacts used the same address. 
 - **id** - Id of the usage
 - **addr_obj_id** - Id of the host address
-- **obj_id** - Id of the object related to the usage (references tsk_objects)
+- **obj_id** - Id of the object that had a reference/usage to the address (references tsk_objects)
 - **data_source_obj_id** - Id of the data source associated with the usage
 
 
 # Operating System Accounts
-Stores data related to operating system accounts
+Stores data related to operating system accounts.  Communication-related accounts (such as email or social media) are stored in other tables (see Communication Acccounts below).
+
+
+## tsk_os_account_realms
+Every OS Account must belong to a realm, which defines the scope of the account.  Realms can be local to a given computer or domain-based. 
+- **realm_name** - Display bame of the realm (realm_name or realm_addr must be set)
+- **realm_addr** - Address/ID of the realm (realm_name or realm_addr must be set)
+- **realm_signature** - Used internally for unique clause.  realm_addr if it is set.  Otherwise, realm_name.
+- **scope_host_id** - Optional host that this realm is scoped to.  By default, realms are scoped to a given host. 
+- **scope_confidence** - Confidence of the scope of the realm (as org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence enum)
+- **db_status** - Status of this realm in the database (as org.sleuthkit.datamodel.OsAccountRealm.RealmDbStatus enum)
+- **merged_into** - For merged realms, set to the id of the realm they were merged in to.
 
 ## tsk_os_accounts
 Stores operating system accounts
 - **os_account_obj_id** - Id of the OS account
+- **realm_id** - Id of the associated realm (references tsk_os_account_realms)
 - **login_name** - Login name (login name or addr must be present)
-- **full_name** - Full name
-- **realm_id** - Optional id of the associated realm (references tsk_os_account_realms)
-- **addr** - Address (login name or addr must be present)
+- **addr** - Address/ID of account (login name or addr must be present)
 - **signature** - Used internally for unique clause
+- **full_name** - Full name
 - **status** - Status of the account (as org.sleuthkit.datamodel.OsAccount.OsAccountStatus enum)
 - **type** - Type of account (as org.sleuthkit.datamodel.OsAccount.OsAccountType enum)
 - **created_date** - Timestamp of account creation
@@ -355,11 +373,11 @@ Stores operating system accounts
 - **merged_into** - For merged accounts, set to the id of the account they were merged in to.
 
 ## tsk_os_account_attributes
-Stores attributes for an OS account. Similar to blackboard_attributes.
+Stores additional attributes for an OS account. Similar to blackboard_attributes. Attributes can either be specific to a host or domain-scoped. 
 - **id** - Id of the attribute
 - **os_account_obj_id** - Id of the associated OS account
-- **host_id** - Optional id of the associated host
-- **source_obj_id** - Optional id of the source of this attribute (references tsk_objects)
+- **host_id** - Host Id if the attribute is scoped to the host.  NULL if the attribute is domain-scoped.
+- **source_obj_id** - Optional object id of where the attribute data was derived from (such as a registry hive) (references tsk_objects)
 - **attribute_type_id** - Type of attribute (see org.sleuthkit.datamodel.BlackboardAttribute.BlackboardAttribute.Type)
 - **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
 - **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
@@ -369,22 +387,12 @@ Stores attributes for an OS account. Similar to blackboard_attributes.
 - **value_double** - A double (should be NULL unless the value type is double)
 
 ## tsk_os_account_instances
-Records that an OS account is associated with a specific data source
+Records that an OS account is associated with a specific data source.  For example, the account logged in, accessed data, etc. 
 - **id** - Id of the OS account instance
-- **os_account_obj_id** - Id of the OS account
+- **os_account_obj_id** - Id of the OS account that was referenced
 - **data_source_obj_id** - Id of the data source
-- **instance_type** - Type (as org.sleuthkit.datamodel.OsAccountInstance.OsAccountInstanceType enum)
+- **instance_type** - Type of instance (as org.sleuthkit.datamodel.OsAccountInstance.OsAccountInstanceType enum)
 
-## tsk_os_account_realms
-Stores realms that OS accounts belong to
-- **id** - Id of the realm
-- **realm_name** - Name of the realm (realm_name or realm_addr must be set)
-- **realm_addr** - Address of the realm (realm_name or realm_addr must be set)
-- **realm_signature** - Used internally for unique clause
-- **scope_host_id** - Optional host that this realm is scoped to
-- **scope_confidence** - Confidence of the scope of the realm (as org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence enum)
-- **db_status** - Status of this realm in the database (as org.sleuthkit.datamodel.OsAccountRealm.RealmDbStatus enum)
-- **merged_into** - For merged realms, set to the id of the realm they were merged in to.
 
 # Communication Accounts
 Stores data related to communications between two parties. It is highly recommended to use 
