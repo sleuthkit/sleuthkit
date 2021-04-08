@@ -1050,8 +1050,8 @@ public final class OsAccountManager {
 			} finally {
 				db.releaseSingleUserCaseWriteLock();
 			}
+			// set the atrribute list in account to the most current list from the database
 			List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
-			currentAttribsList.addAll(accountAttributes);
 			account.setAttributesInternal(currentAttribsList);
 		}
 		fireChangeEvent(account);
