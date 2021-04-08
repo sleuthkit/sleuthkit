@@ -100,7 +100,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 7);
+			= new CaseDbSchemaVersionNumber(9, 0);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -994,7 +994,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot3toSchema8dot4(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot4toSchema8dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot5toSchema8dot6(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema8dot6toSchema8dot7(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot6toSchema9dot0(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -2345,7 +2345,7 @@ public class SleuthkitCase {
 	}	
 
 	@SuppressWarnings("deprecation")
-	private CaseDbSchemaVersionNumber updateFromSchema8dot6toSchema8dot7(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private CaseDbSchemaVersionNumber updateFromSchema8dot6toSchema9dot0(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 8) {
 			return schemaVersion;
 		}
@@ -2564,7 +2564,7 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE )");
 		
 		
-			return new CaseDbSchemaVersionNumber(8, 7);
+			return new CaseDbSchemaVersionNumber(9, 0);
 
 		} finally {
 			closeStatement(statement);

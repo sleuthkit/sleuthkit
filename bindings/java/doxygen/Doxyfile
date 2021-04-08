@@ -767,6 +767,7 @@ INPUT                  = main.dox \
                          communications.dox \
                          schema/schema_list.dox \
                          schema/db_schema_8_6.dox \
+                         schema/db_schema_9_0.dox \
                          ../src
 
 # This tag can be used to specify the character encoding of the source files

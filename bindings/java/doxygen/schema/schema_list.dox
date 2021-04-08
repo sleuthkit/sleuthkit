@@ -3,9 +3,10 @@
 This page contians links to the documention for selected versions of the TSK & Autopsy database schema.
 
 - Current Schema
- - \subpage db_schema_8_6_page 
+ - \subpage db_schema_9_0_page 
  
 - Older Schemas
+ - \subpage db_schema_8_6_page 
  - <a href="https://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema">Schema version 7.2</a>
  - <a href="https://wiki.sleuthkit.org/index.php?title=SQLite_Database_v6_Schema">Schema version 6</a>
  - <a href="https://wiki.sleuthkit.org/index.php?title=SQLite_Database_v3_Schema">Schema version 3</a>
