@@ -40,6 +40,7 @@ import org.sleuthkit.datamodel.OsAccount.OsAccountType;
 import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskEvent.OsAccountsChangedTskEvent;
 
 /**
  * Responsible for creating/updating/retrieving the OS accounts for files and
@@ -1532,35 +1533,14 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Fires an OsAccountAddedEvent for the given OsAccount. Do not call this
-	 * with an open transaction.
-	 *
-	 * @param account Newly created account.
-	 */
-	private void fireCreationEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsCreationEvent(Collections.singletonList(account)));
-	}
-
-	/**
 	 * Fires an OsAccountChangeEvent for the given OsAccount. Do not call this
 	 * with an open transaction.
 	 *
 	 * @param account Updated account.
 	 */
 	private void fireChangeEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsUpdateEvent(Collections.singletonList(account)));
+		db.fireTSKEvent(new OsAccountsChangedTskEvent(Collections.singletonList(account)));
 	}
-
-	/**
-	 * Fires an OsAccountDeleteEvent for the given OsAccount. Do not call this
-	 * with an open transaction.
-	 *
-	 * @param account Deleted account.
-	 */
-	private void fireDeleteEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsDeleteEvent(Collections.singletonList(account.getId())));
-	}	
-
 
 	/**
 	 * Created an account signature for an OS Account. This signature is simply
@@ -1587,87 +1567,6 @@ public final class OsAccountManager {
 			throw new TskCoreException("OS Account must have either a uniqueID or a login name.");
 		}
 		return signature;
-	}
-
-	/**
-	 * Event fired by OsAccountManager to indicate that a new OsAccount was
-	 * created.
-	 */
-	public static final class OsAccountsCreationEvent {
-
-		private final List<OsAccount> accountList;
-
-		/**
-		 * Constructs a new AddedEvent
-		 *
-		 * @param accountList List newly created accounts.
-		 */
-		OsAccountsCreationEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
-		}
-
-		/**
-		 * Returns a list of the added OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
-	}
-
-	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * updated.
-	 */
-	public static final class OsAccountsUpdateEvent {
-
-		private final List<OsAccount> accountList;
-
-		/**
-		 * Constructs a new ChangeEvent
-		 *
-		 * @param accountList List newly created accounts.
-		 */
-		OsAccountsUpdateEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
-		}
-
-		/**
-		 * Returns a list of the updated OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
-	}
-
-	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * deleted.
-	 */
-	public static final class OsAccountsDeleteEvent {
-
-		private final List<Long> accountObjectIds;
-
-		/**
-		 * Constructs a new DeleteEvent
-		 *
-		 * @param accountList List newly deleted accounts.
-		 */
-		OsAccountsDeleteEvent(List<Long> accountObjectIds) {
-			this.accountObjectIds = accountObjectIds;
-		}
-
-		/**
-		 * Returns a list of the deleted OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<Long> getOsAcountObjectIds() {
-			return Collections.unmodifiableList(accountObjectIds);
-		}
 	}
 
 	/**

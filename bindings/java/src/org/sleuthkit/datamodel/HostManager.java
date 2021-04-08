@@ -32,6 +32,8 @@ import java.util.UUID;
 import org.sleuthkit.datamodel.Host.HostDbStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskEvent.HostsChangedTskEvent;
+import org.sleuthkit.datamodel.TskEvent.HostsDeletedTskEvent;
 
 /**
  * Responsible for creating/updating/retrieving Hosts.
@@ -560,7 +562,7 @@ public final class HostManager {
 	 * @param newValue The new value for the host.
 	 */
 	private void fireChangeEvent(Host newValue) {
-		db.fireTSKEvent(new HostsUpdateEvent(Collections.singletonList(newValue)));
+		db.fireTSKEvent(new HostsChangedTskEvent(Collections.singletonList(newValue)));
 	}
 
 	/**
@@ -570,77 +572,6 @@ public final class HostManager {
 	 * @param deleted The deleted host.
 	 */
 	private void fireDeletedEvent(Host deleted) {
-		db.fireTSKEvent(new HostsDeletionEvent(Collections.singletonList(deleted)));
-	}
-
-	/**
-	 * Base event for all host events
-	 */
-	static class BaseHostEvent {
-
-		private final List<Host> hosts;
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The hosts that are objects of the event.
-		 */
-		BaseHostEvent(List<Host> hosts) {
-			this.hosts = Collections.unmodifiableList(new ArrayList<>(hosts));
-		}
-
-		/**
-		 * Returns the hosts affected in the event.
-		 *
-		 * @return The hosts affected in the event.
-		 */
-		public List<Host> getHosts() {
-			return hosts;
-		}
-	}
-
-	/**
-	 * Event fired when hosts are created.
-	 */
-	public static final class HostsCreationEvent extends BaseHostEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The added hosts.
-		 */
-		HostsCreationEvent(List<Host> hosts) {
-			super(hosts);
-		}
-	}
-
-	/**
-	 * Event fired when hosts are updated.
-	 */
-	public static final class HostsUpdateEvent extends BaseHostEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The new values for the hosts that were changed.
-		 */
-		HostsUpdateEvent(List<Host> hosts) {
-			super(hosts);
-		}
-	}
-
-	/**
-	 * Event fired when hosts are deleted.
-	 */
-	public static final class HostsDeletionEvent extends BaseHostEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The hosts that were deleted.
-		 */
-		HostsDeletionEvent(List<Host> hosts) {
-			super(hosts);
-		}
+		db.fireTSKEvent(new HostsDeletedTskEvent(Collections.singletonList(deleted)));
 	}
 }

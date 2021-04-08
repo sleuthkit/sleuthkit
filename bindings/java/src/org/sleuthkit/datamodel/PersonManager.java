@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.TskEvent.PersonsAddedTskEvent;
 
 /**
  * Responsible for creating/updating/retrieving Persons.
@@ -393,7 +394,7 @@ public final class PersonManager {
 	 * @param added The person that was created.
 	 */
 	private void fireCreationEvent(Person added) {
-		db.fireTSKEvent(new PersonsCreationEvent(Collections.singletonList(added)));
+		db.fireTSKEvent(new PersonsAddedTskEvent(Collections.singletonList(added)));
 	}
 
 	/**
@@ -402,81 +403,10 @@ public final class PersonManager {
 	 * @param newValue The person value that has changed.
 	 */
 	void fireChangeEvent(Person newValue) {
-		db.fireTSKEvent(new PersonsUpdateEvent(Collections.singletonList(newValue)));
+		db.fireTSKEvent(new TskEvent.PersonsChangedTskEvent(Collections.singletonList(newValue)));
 	}
 
 	private void fireDeletedEvent(Person deleted) {
-		db.fireTSKEvent(new PersonsDeletionEvent(Collections.singletonList(deleted)));
-	}
-
-	/**
-	 * Base event for all person events
-	 */
-	static class BasePersonEvent {
-
-		private final List<Person> persons;
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param persons The persons that are objects of the event.
-		 */
-		BasePersonEvent(List<Person> persons) {
-			this.persons = Collections.unmodifiableList(new ArrayList<>(persons));
-		}
-
-		/**
-		 * Returns the persons affected in the event.
-		 *
-		 * @return The persons affected in the event.
-		 */
-		public List<Person> getPersons() {
-			return persons;
-		}
-	}
-
-	/**
-	 * Event fired when persons are created.
-	 */
-	public static final class PersonsCreationEvent extends BasePersonEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param persons The added persons.
-		 */
-		PersonsCreationEvent(List<Person> persons) {
-			super(persons);
-		}
-	}
-
-	/**
-	 * Event fired when persons are updated.
-	 */
-	public static final class PersonsUpdateEvent extends BasePersonEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param persons The new values for the persons that were changed.
-		 */
-		PersonsUpdateEvent(List<Person> persons) {
-			super(persons);
-		}
-	}
-
-	/**
-	 * Event fired when persons are deleted.
-	 */
-	public static final class PersonsDeletionEvent extends BasePersonEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param persons The persons that were deleted.
-		 */
-		PersonsDeletionEvent(List<Person> persons) {
-			super(persons);
-		}
+		db.fireTSKEvent(new TskEvent.PersonsDeletedTskEvent(Collections.singletonList(deleted)));
 	}
 }
