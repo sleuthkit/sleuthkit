@@ -286,7 +286,7 @@ A contact book entry in an application file or database.
 Programs that have been deleted from the system.
 
 ### REQUIRED ATTRIBUTES
-- TSK_DATETIME
+- TSK_DATETIME (Date/Time the program was deleted)
 - TSK_PROG_NAME (Program that was deleted)
 
 ### OPTIONAL Attributes

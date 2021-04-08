@@ -231,7 +231,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					METADATA_LAST_PRINTED, METADATA_LAST_SAVED, METADATA_CREATED, PROGRAM_EXECUTION,
 					RECENT_DOCUMENTS, REGISTRY, BACKUP_EVENT_START, BACKUP_EVENT, BACKUP_EVENT_END,
 					BLUETOOTH_PAIRING, CALENDAR_ENTRY_START, CALENDAR_ENTRY_END,
-					DELETE_PROGRAM,
+					PROGRAM_DELETED,
 					OS_INFO, WIFI_NETWORK, USER_DEVICE_EVENT, USER_DEVICE_EVENT_START, USER_DEVICE_EVENT_END,
 					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION,
 					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER);
@@ -717,7 +717,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardAttribute.Type(TSK_DATETIME_END),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 	
-	TimelineEventType DELETE_PROGRAM = new TimelineEventArtifactTypeSingleDescription(49,
+	TimelineEventType PROGRAM_DELETED = new TimelineEventArtifactTypeSingleDescription(49,
 			getBundle().getString("TimelineEventType.DeletedProgram.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_DELETED_PROG),
