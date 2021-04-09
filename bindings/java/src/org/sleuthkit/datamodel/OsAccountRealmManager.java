@@ -387,26 +387,31 @@ public final class OsAccountRealmManager {
 				+ " SET " + colName + " = ? "
 				+ " WHERE id = ?";
 
-		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
-		preparedStatement.clearParameters();
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
 
-		if (Objects.isNull(colValue)) {
-			preparedStatement.setNull(1, Types.NULL); // handle null value
-		} else {
-			if (colValue instanceof String) {
-				preparedStatement.setString(1, (String) colValue);
-			} else if (colValue instanceof Long) {
-				preparedStatement.setLong(1, (Long) colValue);
-			} else if (colValue instanceof Integer) {
-				preparedStatement.setInt(1, (Integer) colValue);
+			if (Objects.isNull(colValue)) {
+				preparedStatement.setNull(1, Types.NULL); // handle null value
 			} else {
-				throw new TskCoreException(String.format("Unhandled column data type received while updating the realm (id = %d) ", realmId));
+				if (colValue instanceof String) {
+					preparedStatement.setString(1, (String) colValue);
+				} else if (colValue instanceof Long) {
+					preparedStatement.setLong(1, (Long) colValue);
+				} else if (colValue instanceof Integer) {
+					preparedStatement.setInt(1, (Integer) colValue);
+				} else {
+					throw new TskCoreException(String.format("Unhandled column data type received while updating the realm (id = %d) ", realmId));
+				}
 			}
-		}
 
-		preparedStatement.setLong(2, realmId);
-		
-		connection.executeUpdate(preparedStatement);
+			preparedStatement.setLong(2, realmId);
+
+			connection.executeUpdate(preparedStatement);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	private final static String REALM_QUERY_STRING = "SELECT realms.id as realm_id, realms.realm_name as realm_name,"

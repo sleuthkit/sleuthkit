@@ -1277,26 +1277,31 @@ public final class OsAccountManager {
 				+ " SET " + colName + " = ? "
 				+ " WHERE os_account_obj_id = ?";
 
-		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
-		preparedStatement.clearParameters();
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
 
-		if (Objects.isNull(colValue)) {
-			preparedStatement.setNull(1, Types.NULL); // handle null value
-		} else {
-			if (colValue instanceof String) {
-				preparedStatement.setString(1, (String) colValue);
-			} else if (colValue instanceof Long) {
-				preparedStatement.setLong(1, (Long) colValue);
-			} else if (colValue instanceof Integer) {
-				preparedStatement.setInt(1, (Integer) colValue);
+			if (Objects.isNull(colValue)) {
+				preparedStatement.setNull(1, Types.NULL); // handle null value
 			} else {
-				throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				if (colValue instanceof String) {
+					preparedStatement.setString(1, (String) colValue);
+				} else if (colValue instanceof Long) {
+					preparedStatement.setLong(1, (Long) colValue);
+				} else if (colValue instanceof Integer) {
+					preparedStatement.setInt(1, (Integer) colValue);
+				} else {
+					throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				}
 			}
-		}
 
-		preparedStatement.setLong(2, accountObjId);
-		
-		connection.executeUpdate(preparedStatement);
+			preparedStatement.setLong(2, accountObjId);
+
+			connection.executeUpdate(preparedStatement);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	/**
@@ -1421,7 +1426,6 @@ public final class OsAccountManager {
 		OsAccountUpdateStatus updateStatusCode = OsAccountUpdateStatus.NO_CHANGE;
 		OsAccount updatedAccount;
 
-		db.acquireSingleUserCaseWriteLock();
 		try {
 			CaseDbConnection connection = trans.getConnection();
 
@@ -1469,9 +1473,6 @@ public final class OsAccountManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
 		}
-		finally {
-			db.releaseSingleUserCaseWriteLock();
-		}	
 	}
 
 	/**
