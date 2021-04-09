@@ -1421,6 +1421,7 @@ public final class OsAccountManager {
 		OsAccountUpdateStatus updateStatusCode = OsAccountUpdateStatus.NO_CHANGE;
 		OsAccount updatedAccount;
 
+		db.acquireSingleUserCaseWriteLock();
 		try {
 			CaseDbConnection connection = trans.getConnection();
 
@@ -1444,16 +1445,19 @@ public final class OsAccountManager {
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
-			// update signature if needed
-			if (updateStatusCode == OsAccountUpdateStatus.UPDATED) {
-				String newSignature = getOsAccountSignature(address, loginName);
-				updateAccountSignature(osAccount.getId(), newSignature, connection);
-			}
-
 			// if nothing is changed, return
 			if (updateStatusCode == OsAccountUpdateStatus.NO_CHANGE) {
 				return new OsAccountUpdateResult(updateStatusCode, osAccount);
 			}
+
+			// update signature if needed, based on the most current addr/loginName
+			OsAccount currAccount = getOsAccountByObjectId(osAccount.getId(), connection);
+			String newAddress = currAccount.getAddr().orElse(null);
+			String newLoginName = currAccount.getLoginName().orElse(null);
+
+			String newSignature = getOsAccountSignature(newAddress, newLoginName);
+			updateAccountSignature(osAccount.getId(), newSignature, connection);
+
 			// get the updated account from database
 			updatedAccount = getOsAccountByObjectId(osAccount.getId(), connection);
 
@@ -1465,9 +1469,11 @@ public final class OsAccountManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
 		}
+		finally {
+			db.releaseSingleUserCaseWriteLock();
+		}	
 	}
 
-	
 	/**
 	 * Returns a list of hosts where the OsAccount has appeared.
 	 *

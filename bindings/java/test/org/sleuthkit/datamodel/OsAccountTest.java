@@ -906,4 +906,70 @@ public class OsAccountTest {
 	
 	}
 	
+	
+	@Test
+	public void windowsAccountUpdateTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
+
+		
+		String hostname1 = "host55555";
+		Host host1 = caseDB.getHostManager().newHost(hostname1);
+		
+	
+		// Test 1: create an account with a SID alone. Then update the loginName.
+		
+		String ownerUid1 = "S-1-5-21-111111111-222222222-555555555-0001";
+		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, null, null, host1, OsAccountRealm.RealmScope.DOMAIN);
+		
+		
+		// now update the account login name
+		String loginname1 = "jbravo";
+		
+		OsAccountUpdateResult updateResult = caseDB.getOsAccountManager().updateCoreWindowsOsAccountAttributes(osAccount1, null, loginname1, null, host1);
+		assertEquals(updateResult.getUpdateStatusCode(), OsAccountManager.OsAccountUpdateStatus.UPDATED);
+		assertEquals(updateResult.getUpdatedAccount().isPresent(), true);
+		OsAccount updatedAccount = updateResult.getUpdatedAccount().orElseThrow(() ->  new TskCoreException("Updated account not found."));
+		
+		// verify that account has both addr and loginName, and that signature is the addr
+		assertTrue(updatedAccount.getAddr().orElse("").equalsIgnoreCase(ownerUid1));
+		assertTrue(updatedAccount.getLoginName().orElse("").equalsIgnoreCase(loginname1));
+		assertTrue(updatedAccount.getSignature().equalsIgnoreCase(ownerUid1));	// account signature should not change
+		
+		
+		String realmAddr1 = "S-1-5-21-111111111-222222222-555555555";
+		String realmSignature1 = realmAddr1 + "_DOMAIN";	// for a domain realm - signature is sid/name + "_DOMAIN"
+		
+		OsAccountRealm realm1 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount.getRealmId());
+		assertTrue(realm1.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1));
+		assertTrue(realm1.getSignature().equalsIgnoreCase(realmSignature1));	
+		
+		
+		// TBD Test2: create an account with realmName/loginname and then update the SID
+		
+		String loginname2 = "janeB";
+		String realmName2 = "realm55555";
+		OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(null, loginname2, realmName2, host1, OsAccountRealm.RealmScope.DOMAIN);
+		
+		assertFalse(osAccount2.getAddr().isPresent());
+		assertTrue(osAccount2.getLoginName().orElse("").equalsIgnoreCase(loginname2));
+		assertTrue(osAccount2.getSignature().equalsIgnoreCase(loginname2));	// account signature should be the login name
+		
+		// now update the account SID
+		String ownerUid2 = "S-1-5-21-111111111-222222222-555555555-0007";
+		OsAccountUpdateResult updateResult2 = caseDB.getOsAccountManager().updateCoreWindowsOsAccountAttributes(osAccount2, ownerUid2, null, realmName2, host1);
+		assertEquals(updateResult2.getUpdateStatusCode(), OsAccountManager.OsAccountUpdateStatus.UPDATED);
+		assertEquals(updateResult2.getUpdatedAccount().isPresent(), true);
+		OsAccount updatedAccount2 = updateResult2.getUpdatedAccount().orElseThrow(() ->  new TskCoreException("Updated account not found."));
+		
+		// verify that account has both addr and loginName, and that signature is the addr
+		assertTrue(updatedAccount2.getAddr().orElse("").equalsIgnoreCase(ownerUid2));
+		assertTrue(updatedAccount2.getLoginName().orElse("").equalsIgnoreCase(loginname2));
+		assertTrue(updatedAccount2.getSignature().equalsIgnoreCase(ownerUid2));	// account signature should now be addr
+		
+		// RAMAN TODO: CT-4284
+//		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount2.getRealmId());
+//		assertTrue(realm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1));
+//		assertTrue(realm2.getSignature().equalsIgnoreCase(realmSignature1));	
+	}
+	
+	
 }
