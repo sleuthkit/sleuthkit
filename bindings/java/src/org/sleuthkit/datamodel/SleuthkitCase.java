@@ -5516,11 +5516,12 @@ public class SleuthkitCase {
 	 *                          within tsk core
 	 */
 	ObjectInfo getParentInfo(long contentId) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
+		CaseDbConnection connection = null;
 		Statement s = null;
 		ResultSet rs = null;
 		try {
+			connection = connections.getConnection();
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT parent.obj_id AS obj_id, parent.type AS type " //NON-NLS
 					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child " //NON-NLS
@@ -5536,7 +5537,9 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
-			connection.close();
+			if (connection != null) {
+				connection.close();
+			}
 			releaseSingleUserCaseReadLock();
 		}
 	}
