@@ -33,7 +33,7 @@ public class UnsupportedContent extends AbstractContent {
 	 * @param obj_id    object id
 	 */
 	protected UnsupportedContent(SleuthkitCase db, long obj_id) {
-		super(db, obj_id, "UnsupportedContent");
+		super(db, obj_id, "Unsupported Content");
 	}
 
 	@Override
