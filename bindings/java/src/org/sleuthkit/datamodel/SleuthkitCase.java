@@ -2446,7 +2446,7 @@ public class SleuthkitCase {
 				+ "realm_addr TEXT DEFAULT NULL, "		// a sid/uid or some some other identifier, may be null
 				+ "realm_signature TEXT NOT NULL, "		// Signature exists only to prevent duplicates. It is  made up of realm address/name and scope host
 				+ "scope_host_id " + bigIntDataType + " DEFAULT NULL, " // if the realm scope is a single host
-				+ "name_type INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
+				+ "scope_confidence INTEGER, "	// indicates whether we know for sure the realm scope or if we are inferring it
 				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 				+ "merged_into " + bigIntDataType + " DEFAULT NULL, "	
 				+ "UNIQUE(realm_signature), "
@@ -2486,7 +2486,7 @@ public class SleuthkitCase {
 					+ "status INTEGER, " // enabled/disabled/deleted
 					+ "type INTEGER, " // service/interactive
 					+ "created_date " + bigIntDataType + " DEFAULT NULL, "
-					+ "db_status INTEGER, " // active/merged/deleted
+					+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 			        + "merged_into " + bigIntDataType + " DEFAULT NULL, "
 					+ "UNIQUE(signature, realm_id), "
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
@@ -5516,11 +5516,12 @@ public class SleuthkitCase {
 	 *                          within tsk core
 	 */
 	ObjectInfo getParentInfo(long contentId) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
+		CaseDbConnection connection = null;
 		Statement s = null;
 		ResultSet rs = null;
 		try {
+			connection = connections.getConnection();
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT parent.obj_id AS obj_id, parent.type AS type " //NON-NLS
 					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child " //NON-NLS
@@ -5536,7 +5537,9 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
-			connection.close();
+			if (connection != null) {
+				connection.close();
+			}
 			releaseSingleUserCaseReadLock();
 		}
 	}

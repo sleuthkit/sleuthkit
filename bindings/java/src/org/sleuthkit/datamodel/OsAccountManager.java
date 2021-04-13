@@ -209,9 +209,9 @@ public final class OsAccountManager {
 				}
 
 				// create failed for some other reason, throw an exception
-				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %d",
+				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %s",
 						(sid != null) ? sid : "Null", (loginName != null) ? loginName : "Null",
-						(realmName != null) ? realmName : "Null", referringHost), ex);
+						(realmName != null) ? realmName : "Null", referringHost.getName()), ex);
 
 			}
 		} finally {
@@ -1277,26 +1277,31 @@ public final class OsAccountManager {
 				+ " SET " + colName + " = ? "
 				+ " WHERE os_account_obj_id = ?";
 
-		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
-		preparedStatement.clearParameters();
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
 
-		if (Objects.isNull(colValue)) {
-			preparedStatement.setNull(1, Types.NULL); // handle null value
-		} else {
-			if (colValue instanceof String) {
-				preparedStatement.setString(1, (String) colValue);
-			} else if (colValue instanceof Long) {
-				preparedStatement.setLong(1, (Long) colValue);
-			} else if (colValue instanceof Integer) {
-				preparedStatement.setInt(1, (Integer) colValue);
+			if (Objects.isNull(colValue)) {
+				preparedStatement.setNull(1, Types.NULL); // handle null value
 			} else {
-				throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				if (colValue instanceof String) {
+					preparedStatement.setString(1, (String) colValue);
+				} else if (colValue instanceof Long) {
+					preparedStatement.setLong(1, (Long) colValue);
+				} else if (colValue instanceof Integer) {
+					preparedStatement.setInt(1, (Integer) colValue);
+				} else {
+					throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				}
 			}
-		}
 
-		preparedStatement.setLong(2, accountObjId);
-		
-		connection.executeUpdate(preparedStatement);
+			preparedStatement.setLong(2, accountObjId);
+
+			connection.executeUpdate(preparedStatement);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	/**
@@ -1444,16 +1449,19 @@ public final class OsAccountManager {
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
-			// update signature if needed
-			if (updateStatusCode == OsAccountUpdateStatus.UPDATED) {
-				String newSignature = getOsAccountSignature(address, loginName);
-				updateAccountSignature(osAccount.getId(), newSignature, connection);
-			}
-
 			// if nothing is changed, return
 			if (updateStatusCode == OsAccountUpdateStatus.NO_CHANGE) {
 				return new OsAccountUpdateResult(updateStatusCode, osAccount);
 			}
+
+			// update signature if needed, based on the most current addr/loginName
+			OsAccount currAccount = getOsAccountByObjectId(osAccount.getId(), connection);
+			String newAddress = currAccount.getAddr().orElse(null);
+			String newLoginName = currAccount.getLoginName().orElse(null);
+
+			String newSignature = getOsAccountSignature(newAddress, newLoginName);
+			updateAccountSignature(osAccount.getId(), newSignature, connection);
+
 			// get the updated account from database
 			updatedAccount = getOsAccountByObjectId(osAccount.getId(), connection);
 
@@ -1467,7 +1475,6 @@ public final class OsAccountManager {
 		}
 	}
 
-	
 	/**
 	 * Returns a list of hosts where the OsAccount has appeared.
 	 *

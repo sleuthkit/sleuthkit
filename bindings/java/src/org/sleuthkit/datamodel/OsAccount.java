@@ -46,7 +46,7 @@ public final class OsAccount extends AbstractContent {
 	private final String loginName;	// user login name - may be null
 	private final String addr;	// a unique user sid/uid, may be null
 
-	private String signature;		// This exists only to prevent duplicates.
+	private final String signature;		// This exists only to prevent duplicates.
 	// Together realm_id & signature must be unique for each account.
 	// It is either addr if addr is defined,
 	// or the login_name if login_name is defined.
@@ -378,16 +378,6 @@ public final class OsAccount extends AbstractContent {
 		}
 
 		return Collections.unmodifiableList(osAccountInstances);
-	}
-
-	/**
-	 * Updates the account signature with unique id or name.
-	 *
-	 * @throws TskCoreException If there is an error updating the account
-	 *                          signature.
-	 */
-	private void updateSignature() throws TskCoreException {
-		signature = OsAccountManager.getOsAccountSignature(this.addr, this.loginName);
 	}
 
 	/**
