@@ -40,6 +40,7 @@ import org.sleuthkit.datamodel.OsAccount.OsAccountType;
 import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskEvent.OsAccountsChangedTskEvent;
 
 /**
  * Responsible for creating/updating/retrieving the OS accounts for files and
@@ -599,6 +600,11 @@ public final class OsAccountManager {
 			// add to the cache.
 			osAccountInstanceCache.add(accountInstance);
 
+			// update account instances
+			List<OsAccountInstance> currentInstancesList = getOsAccountInstances(osAccount, connection);
+			currentInstancesList.add(accountInstance);
+			osAccount.setInstancesInternal(currentInstancesList);
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding os account instance for account = %s, data source object id = %d", osAccount.getAddr().orElse(osAccount.getLoginName().orElse("UNKNOWN")), dataSourceObjId), ex);
 		} finally {
@@ -1044,8 +1050,8 @@ public final class OsAccountManager {
 			} finally {
 				db.releaseSingleUserCaseWriteLock();
 			}
+			// set the atrribute list in account to the most current list from the database
 			List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
-			currentAttribsList.addAll(accountAttributes);
 			account.setAttributesInternal(currentAttribsList);
 		}
 		fireChangeEvent(account);
@@ -1116,12 +1122,28 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getOsAccountInstances(account, connection);
+		} 
+	}
+	
+	/**
+	 * Get a list of OsAccountInstances for the give OsAccount.
+	 *
+	 * @param account    Account to retrieve instance for.
+	 * @param connection Database connection to use.
+	 *
+	 * @return List of OsAccountInstances, the list maybe empty if none were
+	 *         found.
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<OsAccountInstance> getOsAccountInstances(OsAccount account, CaseDbConnection connection ) throws TskCoreException {
 		List<OsAccountInstance> instanceList = new ArrayList<>();
 		String queryString = String.format("SELECT * FROM tsk_os_account_instances WHERE os_account_obj_id = %d", account.getId());
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				Statement s = connection.createStatement();
+		try ( Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			while (rs.next()) {
@@ -1255,26 +1277,31 @@ public final class OsAccountManager {
 				+ " SET " + colName + " = ? "
 				+ " WHERE os_account_obj_id = ?";
 
-		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
-		preparedStatement.clearParameters();
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
 
-		if (Objects.isNull(colValue)) {
-			preparedStatement.setNull(1, Types.NULL); // handle null value
-		} else {
-			if (colValue instanceof String) {
-				preparedStatement.setString(1, (String) colValue);
-			} else if (colValue instanceof Long) {
-				preparedStatement.setLong(1, (Long) colValue);
-			} else if (colValue instanceof Integer) {
-				preparedStatement.setInt(1, (Integer) colValue);
+			if (Objects.isNull(colValue)) {
+				preparedStatement.setNull(1, Types.NULL); // handle null value
 			} else {
-				throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				if (colValue instanceof String) {
+					preparedStatement.setString(1, (String) colValue);
+				} else if (colValue instanceof Long) {
+					preparedStatement.setLong(1, (Long) colValue);
+				} else if (colValue instanceof Integer) {
+					preparedStatement.setInt(1, (Integer) colValue);
+				} else {
+					throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				}
 			}
-		}
 
-		preparedStatement.setLong(2, accountObjId);
-		
-		connection.executeUpdate(preparedStatement);
+			preparedStatement.setLong(2, accountObjId);
+
+			connection.executeUpdate(preparedStatement);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	/**
@@ -1422,16 +1449,19 @@ public final class OsAccountManager {
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
-			// update signature if needed
-			if (updateStatusCode == OsAccountUpdateStatus.UPDATED) {
-				String newSignature = getOsAccountSignature(address, loginName);
-				updateAccountSignature(osAccount.getId(), newSignature, connection);
-			}
-
 			// if nothing is changed, return
 			if (updateStatusCode == OsAccountUpdateStatus.NO_CHANGE) {
 				return new OsAccountUpdateResult(updateStatusCode, osAccount);
 			}
+
+			// update signature if needed, based on the most current addr/loginName
+			OsAccount currAccount = getOsAccountByObjectId(osAccount.getId(), connection);
+			String newAddress = currAccount.getAddr().orElse(null);
+			String newLoginName = currAccount.getLoginName().orElse(null);
+
+			String newSignature = getOsAccountSignature(newAddress, newLoginName);
+			updateAccountSignature(osAccount.getId(), newSignature, connection);
+
 			// get the updated account from database
 			updatedAccount = getOsAccountByObjectId(osAccount.getId(), connection);
 
@@ -1445,7 +1475,6 @@ public final class OsAccountManager {
 		}
 	}
 
-	
 	/**
 	 * Returns a list of hosts where the OsAccount has appeared.
 	 *
@@ -1511,35 +1540,14 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Fires an OsAccountAddedEvent for the given OsAccount. Do not call this
-	 * with an open transaction.
-	 *
-	 * @param account Newly created account.
-	 */
-	private void fireCreationEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsCreationEvent(Collections.singletonList(account)));
-	}
-
-	/**
 	 * Fires an OsAccountChangeEvent for the given OsAccount. Do not call this
 	 * with an open transaction.
 	 *
 	 * @param account Updated account.
 	 */
 	private void fireChangeEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsUpdateEvent(Collections.singletonList(account)));
+		db.fireTSKEvent(new OsAccountsChangedTskEvent(Collections.singletonList(account)));
 	}
-
-	/**
-	 * Fires an OsAccountDeleteEvent for the given OsAccount. Do not call this
-	 * with an open transaction.
-	 *
-	 * @param account Deleted account.
-	 */
-	private void fireDeleteEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsDeleteEvent(Collections.singletonList(account.getId())));
-	}	
-
 
 	/**
 	 * Created an account signature for an OS Account. This signature is simply
@@ -1566,87 +1574,6 @@ public final class OsAccountManager {
 			throw new TskCoreException("OS Account must have either a uniqueID or a login name.");
 		}
 		return signature;
-	}
-
-	/**
-	 * Event fired by OsAccountManager to indicate that a new OsAccount was
-	 * created.
-	 */
-	public static final class OsAccountsCreationEvent {
-
-		private final List<OsAccount> accountList;
-
-		/**
-		 * Constructs a new AddedEvent
-		 *
-		 * @param accountList List newly created accounts.
-		 */
-		OsAccountsCreationEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
-		}
-
-		/**
-		 * Returns a list of the added OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
-	}
-
-	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * updated.
-	 */
-	public static final class OsAccountsUpdateEvent {
-
-		private final List<OsAccount> accountList;
-
-		/**
-		 * Constructs a new ChangeEvent
-		 *
-		 * @param accountList List newly created accounts.
-		 */
-		OsAccountsUpdateEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
-		}
-
-		/**
-		 * Returns a list of the updated OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
-	}
-
-	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * deleted.
-	 */
-	public static final class OsAccountsDeleteEvent {
-
-		private final List<Long> accountObjectIds;
-
-		/**
-		 * Constructs a new DeleteEvent
-		 *
-		 * @param accountList List newly deleted accounts.
-		 */
-		OsAccountsDeleteEvent(List<Long> accountObjectIds) {
-			this.accountObjectIds = accountObjectIds;
-		}
-
-		/**
-		 * Returns a list of the deleted OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<Long> getOsAcountObjectIds() {
-			return Collections.unmodifiableList(accountObjectIds);
-		}
 	}
 
 	/**

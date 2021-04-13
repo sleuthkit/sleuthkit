@@ -1,0 +1,543 @@
+/*! \page db_schema_9_0_page TSK & Autopsy Database Schema (Schema version 9.0)
+
+[TOC]
+
+# Introduction
+
+This page outlines version 9.0 the database that is used by The Sleuth Kit and Autopsy. The goal of this page is to provide short descriptions for each table and column and not focus on foreign key requirements, etc. If you want that level of detail, then refer to the actual schema in addition to this. 
+
+Each Autopsy release is associated with a schema version with a major and minor version number. If a case with an older schema version is opened in a new version of Autopsy, the case will automatically be updated to the current schema. Going the other direction (opening a case that was created with a newer version of Autopsy), two things may happen:
+- If the case database has the same major number as the version of Autopsy being used, the case should generally be able to be opened and used.
+- If the case database has a higher major number than the version of Autopsy being used, an error will be displayed when attempting to open the case. 
+
+You can find a basic graphic of some of the table relationships <a href="https://docs.google.com/drawings/d/1omR_uUAp1fQt720oJ-kk8C48BXmVa3PNjPZCDdT0Tb4/edit?usp#sharing">here</a>
+
+
+Some general notes on this schema:
+- Nearly every type of data is assigned a unique ID, called the Object ID
+- The objects form a hierarchy, that shows where data came from.  A child comes from its parent.  
+ - For example, disk images are the root, with a volume system below it, then a file system, and then files and directories. 
+- This schema has been designed to store data beyond the file system data that The Sleuth Kit supports. It can store carved files, a folder full of local files, etc.
+- The Blackboard is used to store artifacts, which contain attributes (name/value pairs).  Artifacts are used to store data types that do not have more formal tables. Module writers can make whatever artifact types they want. See \ref mod_bbpage for more details. 
+- The Sleuth Kit will make virtual files to span the unallocated space.  They will have a naming format of 'Unalloc_[PARENT-OBJECT-ID]_[BYTE-START]_[BYTE-END]'.
+
+# Schema Information
+
+This was a big change. Tables were added to support analsis results, OS accounts, Hosts & Person strcture of data sources, and host addresses (IPs, DNS, etc.). It has a major version change because there are new Content enum types (OsAccount and HostAddress). 
+
+<ul>
+<li><b>Autopsy versions: </b> Autopsy 4.19
+<li><b>Changes from version 8.6:</b>
+<ul>
+<li> New columns:
+<ul>
+<li>host_id, added_date_time, acquisition_tool_settings, acquisition_tool_name, acquisition_tool_version in data_source_info
+<li>category_type in artifact_types
+<li>owner_uid, os_account_obj_id in tsk_files
+</ul>
+<li> New tables:
+<ul>
+<li>tsk_aggregate_score
+<li>tsk_analysis_results
+<li>tsk_data_artifacts
+<li>tsk_file_attributes
+<li>tsk_hosts
+<li>tsk_host_addresses
+<li>tsk_host_address_dns_ip_map
+<li>tsk_host_address_usage
+<li>tsk_os_accounts
+<li>tsk_os_account_attributes
+<li>tsk_os_account_instances
+<li>tsk_os_account_realms
+<li>tsk_persons
+</ul>
+</ul>
+</ul>
+
+
+# General Information Tables 
+## tsk_db_info 
+Metadata about the database.
+- **schema_ver** - Major version number of the current database schema
+- **tsk_ver** - Version of TSK used to create database
+- **schema_minor_version** - Minor version number of the current database schema
+
+## tsk_db_info_extended
+Name & Value pair table to store any information about the database.  For example, which schema it was created with. etc. 
+- **name** - Any string name
+- **value** - Any string value
+
+
+# Object Tables 
+## tsk_objects 
+Every object (image, volume system, file, etc.) has an entry in this table.  This table allows you to find the parent of a given object and allows objects to be tagged and have children.  This table provides items with a unique object id.  The details of the object are in other tables.  
+- **obj_id** - Unique id 
+- **par_obj_id** - The object id of the parent object (NULL for root objects). The parent of a volume system is an image, the parent of a directory is a directory or filesystem, the parent of a filesystem is a volume or an image, etc.
+- **type** - Object type (as org.sleuthkit.datamodel.TskData.ObjectType enum)
+
+
+# Hosts / Persons
+Stores data related to hosts and persons, which can help organize data sources. 
+
+## tsk_persons
+Stores persons for the case. A peron is someone who owns or used a data source in the case. 
+- **id** - Id of the person
+- **name** - Name of the person (should be human readable)
+
+## tsk_hosts
+Stores hosts that have a data source in the case. Each data source must be associated with a host.  These are NOT created for a reference to an external host (such as a web domain). 
+- **id** - Id of the host
+- **name** - Name of the host (should be human readable)
+- **db_status** - Status of the host (active/merged/deleted as org.sleuthkit.datamodel.Host.HostDbStatus)
+- **person_id** - Optional id of associated person
+- **merged_into** - Stores the host ID that this host was merged into
+
+# Data Source / Device Tables 
+## data_source_info
+Contains information about a data source, which could be an image.  This is where we group data sources into devices (based on device ID).
+- **obj_id** - Id of image/data source in tsk_objects
+- **device_id** - Unique ID (GUID) for the device that contains the data source
+- **time_zone** - Timezone that the data source was originally located in
+- **acquisition_details** - Notes on the acquisition of the data source
+- **added_date_time** - Timestamp of when the data source was added
+- **acquisition_tool_name** - Name of the tool used to acquire the image
+- **acquisition_tool_settings** - Specific settings used by the tool to acquire the image
+- **acquisition_tool_version** - Version of the acquisition tool
+- **host_id** - Host associated with this image (must be set)
+
+
+# Disk Image Tables
+
+## tsk_image_info 
+Contains information about each set of images that is stored in the database. 
+- **obj_id** - Id of image in tsk_objects
+- **type** - Type of disk image format (as org.sleuthkit.datamodel.TskData.TSK_IMG_TYPE_ENUM)
+- **ssize** - Sector size of device in bytes
+- **tzone** - Timezone where image is from (the same format that TSK tools want as input)
+- **size** - Size of the original image (in bytes) 
+- **md5** - MD5 hash of the image (for compressed data such as E01, the hashes are of the decompressed image, not the E01 itself)
+- **sha1** - SHA-1 hash of the image
+- **sha256** - SHA-256 hash of the image
+- **display_name** - Display name of the image
+
+## tsk_image_names
+Stores path(s) to file(s) on disk that make up an image set.
+- **obj_id** - Id of image in tsk_objects
+- **name** - Path to location of image file on disk
+- **sequence** - Position in sequence of image parts
+
+
+# Volume System Tables
+## tsk_vs_info
+Contains one row for every volume system found in the images.
+- **obj_id** - Id of volume system in tsk_objects
+- **vs_type** - Type of volume system / media management (as org.sleuthkit.datamodel.TskData.TSK_VS_TYPE_ENUM)
+- **img_offset** - Byte offset where VS starts in disk image
+- **block_size** - Size of blocks in bytes
+
+## tsk_vs_parts
+Contains one row for every volume / partition in the images. 
+- **obj_id** - Id of volume in tsk_objects
+- **addr** - Address of the partition
+- **start** - Sector offset of start of partition
+- **length** - Number of sectors in partition
+- **desc** - Description of partition (volume system type-specific)
+- **flags** - Flags for partition (as org.sleuthkit.datamodel.TskData.TSK_VS_PART_FLAG_ENUM)
+
+## tsk_pool_info 
+Contains information about pools (for APFS, logical disk management, etc.)
+- **obj_id** - Id of pool in tsk_objects
+- **pool_type** - Type of pool (as org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM)
+
+# File System Tables
+## tsk_fs_info
+Contains one for for every file system in the images. 
+- **obj_id** - Id of filesystem in tsk_objects
+- **data_source_obj_id** - Id of the data source for the file system
+- **img_offset** - Byte offset that filesystem starts at
+- **fs_type** - Type of file system (as org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM)
+- **block_size** - Size of each block (in bytes)
+- **block_count** - Number of blocks in filesystem
+- **root_inum** - Metadata address of root directory
+- **first_inum** - First valid metadata address
+- **last_inum** - Last valid metadata address
+- **display_name** - Display name of file system (could be volume label)
+
+## tsk_files
+Contains one for for every file found in the images.  Has the basic metadata for the file. 
+- **obj_id** - Id of file in tsk_objects
+- **fs_obj_id** - Id of filesystem in tsk_objects (NULL if file is not located in a file system -- carved in unpartitioned space, etc.)
+- **data_source_obj_id** - Id of the data source for the file
+- **attr_type** - Type of attribute (as org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM)
+- **attr_id** - Id of attribute
+- **name** - Name of attribute. Will be NULL if attribute doesn't have a name.  Must not have any slashes in it. 
+- **meta_addr** - Address of the metadata structure that the name points to
+- **meta_seq** - Sequence of the metadata address
+- **type** - Type of file: filesystem, carved, etc. (as org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM enum)
+- **has_layout** - True if file has an entry in tsk_file_layout
+- **has_path** - True if file has an entry in tsk_files_path
+- **dir_type** - File type information: directory, file, etc. (as org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM)
+- **meta_type** - File type (as org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM)
+- **dir_flags** -  Flags that describe allocation status etc. (as org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM)
+- **meta_flags** - Flags for the file for its allocation status etc. (as org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM)
+- **size** - File size in bytes
+- **ctime** - Last file / metadata status change time (stored in number of seconds since Jan 1, 1970 UTC)
+- **crtime** - Created time
+- **atime** - Last file content accessed time
+- **mtime** - Last file content modification time
+- **mode** - Unix-style permissions (as org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM)
+- **uid** - Owner id
+- **gid** - Group id
+- **md5** - MD5 hash of file contents
+- **sha256** - SHA-256 hash of file contents
+- **known** - Known status of file (as org.sleuthkit.datamodel.TskData.FileKnown)
+- **parent_path** - Full path of parent folder. Must begin and end with a '/' (Note that a single '/' is valid)
+- **mime_type** - MIME type of the file content, if it has been detected. 
+- **extension** - File extension
+- **owner_uid** - Unique ID of the owner (SID in Windows)
+- **os_account_obj_id** - ID of optional associated OS account
+
+## tsk_file_layout
+Stores the layout of a file within the image.  A file will have one or more rows in this table depending on how fragmented it was. All file types use this table (file system, carved, unallocated blocks, etc.).
+- **obj_id** - Id of file in tsk_objects
+- **sequence** - Position of the run in the file (0-based and the obj_id and sequence pair will be unique in the table)
+- **byte_start** - Byte offset of fragment relative to the start of the image file
+- **byte_len** - Length of fragment in bytes
+
+
+## tsk_files_path
+If a "locally-stored" file has been imported into the database for analysis, then this table stores its path.  Used for derived files and other files that are not directly in the image file.
+- **obj_id** - Id of file in tsk_objects
+- **path** - Path to where the file is locally stored in a file system
+- **encoding_type** - Method used to store the file on the disk 
+
+## file_encoding_types 
+Methods that can be used to store files on local disks to prevent them from being quarantined by antivirus
+- **encoding_type** - ID of method used to store data.  See org.sleuthkit.datamodel.TskData.EncodingType enum 
+- **name** -  Display name of technique
+
+## tsk_file_attributes
+Stores extended attributes for a particular file that do not have a column in tsk_files. Custom BlackboardAttribute types can be defined. 
+- **id** - Id of the attribute
+- **obj_id** - File this attribute is associated with (references tsk_files)
+- **attribute_type_id** - Id for the type of attribute (can be looked up in the blackboard_attribute_types)
+- **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
+- **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
+- **value_text** - A string of text (should be NULL unless the value type is string)
+- **value_int32** - An integer (should be NULL unless the value type is int)
+- **value_int64** - A long integer / timestamp (should be NULL unless the value type is long)
+- **value_double** - A double (should be NULL unless the value type is double)
+
+## tsk_files_derived_method
+Derived files are those that result from analyzing another file.  For example, files that are extracted from a ZIP file will be considered derived.  This table keeps track of the derivation techniques that were used to make the derived files. 
+
+NOTE: This table is not used in any code.
+
+- **derived_id** - Unique id for the derivation method. 
+- **tool_name** - Name of derivation method/tool
+- **tool_version** - Version of tool used in derivation method
+- **other** - Other details
+
+## tsk_files_derived
+Each derived file has a row that captures the information needed to re-derive it
+
+NOTE: This table is not used in any code.
+
+- **obj_id** - Id of file in tsk_objects
+- **derived_id** - Id of derivation method in tsk_files_derived_method
+- **rederive** - Details needed to re-derive file (will be specific to the derivation method)
+
+
+# Blackboard Tables 
+The \ref mod_bbpage "Blackboard" is used to store results and derived data from analysis modules. 
+
+## blackboard_artifacts
+Stores artifacts associated with objects. 
+- **artifact_id** - Id of the artifact (assigned by the database)
+- **obj_id** - Id of the associated object
+- **artifact_obj_id** - Object id of the artifact
+- **artifact_type_id** - Id for the type of artifact (can be looked up in the blackboard_artifact_types table)
+- **data_source_obj_id** - Id of the data source for the artifact
+- **artifact_type_id** - Type of artifact (references artifact_type_id in blackboard_artifact_types)
+- **review_status_id** - Review status (references review_status_id in review_statuses)
+
+## tsk_analysis_results
+Additional information for artifacts that are analysis results
+- **artifact_obj_id** - Object id of the associated artifact (artifact_obj_id column in blackboard_artifacts)
+- **significance** - Significance to show if the result shows the object is relevant (as org.sleuthkit.datamodel.Score.Significance enum)
+- **method_category** - Category of the analysis method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
+- **conclusion** - Optional, text description of the conclusion of the analysis method. 
+- **configuration** - Otional, text description of the analysis method configuration (such as what hash set or keyword list was used)
+- **justification** - Optional, text description of justification of the conclusion and significance. 
+- **ignore_score** - True (1) if score should be ignored when calculating aggregate score, false (0) otherwise. This allows users to ignore a false positive.
+
+## tsk_data_artifacts
+Additional information for artifacts that store extracted data. 
+- **artifact_obj_id** - Object id of the associated artifact (artifact_obj_id column in blackboard_artifacts)
+- **os_account_obj_id** - Object id of the associated OS account
+
+## blackboard_artifact_types
+Types of artifacts
+- **artifact_type_id** - Id for the type (this is used by the blackboard_artifacts table)
+- **type_name** - A string identifier for the type (unique)
+- **display_name** - A display name for the type (not unique, should be human readable)
+- **category_type** - Indicates whether this is a data artifact or an analysis result
+
+## blackboard_attributes
+Stores name value pairs associated with an artifact. Only one of the value columns should be populated.
+- **artifact_id** - Id of the associated artifact
+- **artifact_type_id** - Artifact type of the associated artifact
+- **source** - Source string, should be module name that created the entry
+- **context** - Additional context string
+- **attribute_type_id** - Id for the type of attribute (can be looked up in the blackboard_attribute_types)
+- **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
+- **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
+- **value_text** - A string of text (should be NULL unless the value type is string)
+- **value_int32** - An integer (should be NULL unless the value type is int)
+- **value_int64** - A long integer / timestamp (should be NULL unless the value type is long)
+- **value_double** - A double (should be NULL unless the value type is double)
+
+## blackboard_attribute_types
+Types of attribute
+- **attribute_type_id** - Id for the type (this is used by the blackboard_attributes table)
+- **type_name** - A string identifier for the type (unique)
+- **display_name** - A display name for the type (not unique, should be human readable)
+- **value_type** - Expected type of data for the attribute type (see blackboard_attributes)
+
+## review_statuses
+Review status of an artifact. Should mirror the org.sleuthkit.datamodel.BlackboardArtifact.ReviewStatus enum.
+- **review_status_id** - Id of the status 
+- **review_status_name** - Internal name of the status
+- **display_name** - Display name (should be human readable)
+
+## tsk_aggregate_score
+Stores the score of an object that is a combination of the various analysis result scores
+- **obj_id** - Id of the object that corresponds to this score
+- **data_source_obj_id** - Id of the data source the object belongs to
+- **significance** - Significance (as org.sleuthkit.datamodel.Score.Significance enum)
+- **method_category** - Category of the method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
+
+
+
+# Host Addresses
+Host addresses are various forms of identifiers assigned to a computer, such as host names or MAC addresses. These tables store data that is also stored in the data artifacts, but these tables allow for correlation and scoring of specific hosts. 
+
+## tsk_host_addresses
+One entry is created in this table for each host address found in the data source.  Examples include domain names (www.sleuthkit.org), IP addresses, and BlueTooth MAC addresses.
+- **id** - Id of the host address
+- **address_type** - Type of address (as org.sleuthkit.datamodel.HostAddress.HostAddressType enum)
+- **address** - Address (must be unique within the scope of address_type). 
+
+## tsk_host_address_dns_ip_map
+Stores data if host names and IP addresses were resolved between each other. 
+- **id** - Id of the mapping
+- **dns_address_id** - Id of the DNS address in tsk_host_addresses
+- **ip_address_id** - Id of the IP address in tsk_host_addresses
+- **source_obj_id** - Id of the object used to determine this mapping (references tsk_objects)
+- **time** - Timestamp when this mapping was recorded
+
+## tsk_host_address_usage
+Tracks which artifacts and files had a reference to a given host address. This is used to show what other artifacts used the same address. 
+- **id** - Id of the usage
+- **addr_obj_id** - Id of the host address
+- **obj_id** - Id of the object that had a reference/usage to the address (references tsk_objects)
+- **data_source_obj_id** - Id of the data source associated with the usage
+
+
+# Operating System Accounts
+Stores data related to operating system accounts.  Communication-related accounts (such as email or social media) are stored in other tables (see Communication Acccounts below).
+
+
+## tsk_os_account_realms
+Every OS Account must belong to a realm, which defines the scope of the account.  Realms can be local to a given computer or domain-based. 
+- **realm_name** - Display bame of the realm (realm_name or realm_addr must be set)
+- **realm_addr** - Address/ID of the realm (realm_name or realm_addr must be set)
+- **realm_signature** - Used internally for unique clause.  realm_addr if it is set.  Otherwise, realm_name.
+- **scope_host_id** - Optional host that this realm is scoped to.  By default, realms are scoped to a given host. 
+- **scope_confidence** - Confidence of the scope of the realm (as org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence enum)
+- **db_status** - Status of this realm in the database (as org.sleuthkit.datamodel.OsAccountRealm.RealmDbStatus enum)
+- **merged_into** - For merged realms, set to the id of the realm they were merged in to.
+
+## tsk_os_accounts
+Stores operating system accounts
+- **os_account_obj_id** - Id of the OS account
+- **realm_id** - Id of the associated realm (references tsk_os_account_realms)
+- **login_name** - Login name (login name or addr must be present)
+- **addr** - Address/ID of account (login name or addr must be present)
+- **signature** - Used internally for unique clause
+- **full_name** - Full name
+- **status** - Status of the account (as org.sleuthkit.datamodel.OsAccount.OsAccountStatus enum)
+- **type** - Type of account (as org.sleuthkit.datamodel.OsAccount.OsAccountType enum)
+- **created_date** - Timestamp of account creation
+- **db_status** - Status of this account in the database (active/merged/deleted)
+- **merged_into** - For merged accounts, set to the id of the account they were merged in to.
+
+## tsk_os_account_attributes
+Stores additional attributes for an OS account. Similar to blackboard_attributes. Attributes can either be specific to a host or domain-scoped. 
+- **id** - Id of the attribute
+- **os_account_obj_id** - Id of the associated OS account
+- **host_id** - Host Id if the attribute is scoped to the host.  NULL if the attribute is domain-scoped.
+- **source_obj_id** - Optional object id of where the attribute data was derived from (such as a registry hive) (references tsk_objects)
+- **attribute_type_id** - Type of attribute (see org.sleuthkit.datamodel.BlackboardAttribute.BlackboardAttribute.Type)
+- **value_type** - The type of the value (see org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE)
+- **value_byte** - A blob of binary data (should be NULL unless the value type is byte)
+- **value_text** - A string of text (should be NULL unless the value type is string)
+- **value_int32** - An integer (should be NULL unless the value type is int)
+- **value_int64** - A long integer / timestamp (should be NULL unless the value type is long)
+- **value_double** - A double (should be NULL unless the value type is double)
+
+## tsk_os_account_instances
+Records that an OS account is associated with a specific data source.  For example, the account logged in, accessed data, etc. 
+- **id** - Id of the OS account instance
+- **os_account_obj_id** - Id of the OS account that was referenced
+- **data_source_obj_id** - Id of the data source
+- **instance_type** - Type of instance (as org.sleuthkit.datamodel.OsAccountInstance.OsAccountInstanceType enum)
+
+
+# Communication Accounts
+Stores data related to communications between two parties. It is highly recommended to use 
+the org.sleuthkit.datamodel.CommunicationsManager API to create/access this type of data
+(see the \ref mod_compage page).
+
+## accounts
+Stores communication accounts (email, phone number, etc.).  Note that this does not include OS accounts. 
+- **account_id** - Id for the account within the scope of the database (i.e. Row Id) (used in the account_relationships table)
+- **account_type_id** - The type of account (must match an account_type_id entry from the account_types table)
+- **account_unique_identifier** - The phone number/email/other identifier associated with the account that is unique within the Account Type 
+
+## account_types
+Types of accounts and service providers (Phone, email, Twitter, Facebook, etc.)
+- **account_type_id** - Id for the type (this is used by the accounts table)
+- **type_name** - A string identifier for the type (unique)
+- **display_name** - A display name for the type (not unique, should be human readable)
+
+## account_relationships
+Stores non-directional relationships between two accounts if they communicated or had references to each other (such as contact book)
+- **relationship_id** -  Id for the relationship
+- **account1_id** - Id of the first participant (from account_id column in accounts table)
+- **account2_id** - Id of the second participant (from account_id column in accounts table)
+- **relationship_source_obj_id** - Id of the artifact this relationship was derived from (artifact_id column from the blackboard_artifacts)
+- **date_time** - Time the communication took place, stored in number of seconds since Jan 1, 1970 UTC (NULL if unknown)
+- **relationship_type** - The type of relationship (as org.sleuthkit.datamodel.Relationship.Type)
+- **data_source_obj_id** - Id of the data source this relationship came from (from obj_id in data_source_info)
+
+# Timeline
+Stores data used to populate various timelines. Two tables are used to reduce data duplication. It is highly recommended to use 
+the org.sleuthkit.datamodel.TimelineManager API to create/access this type of data.  
+
+## tsk_event_types
+Stores the types for events. The super_type_id column is used to arrange the types into a tree.
+- **event_type_id** - Id for the type
+- **display_name** - Display name for the type (unique, should be human readable)
+- **super_type_id** - Parent type for the type (used for building heirarchy; references the event_type_id in this table)
+
+## tsk_event_descriptions
+Stores descriptions of an event. This table exists to reduce duplicate data that is common to events. For example, a file will have only one row in tsk_event_descriptions, but could have 4+ rows in tsk_events that all refer to the same description. Note that the combination of the full_description, content_obj_id, and artifact_id columns must be unique.
+- **event_description_id** - Id for the event description
+- **full_description** - Full length description of the event (required).  For example, the full file path including file name. 
+- **med_description** - Medium length description of the event (may be null).  For example, a file may have only the first three folder names.
+- **short_description** - Short length description of the event (may be null).  For example, a file may have only its first folder name. 
+- **data_source_obj_id** -  Object id of the data source for the event source (references obj_id column in data_source_info)
+- **content_obj_id** - If the event is from a non-artifact, then this is the object id from that source.  If the event is from an artifact, then this is the object id of the artifact's source. (references obj_id column in tsk_objects)
+- **artifact_id** - If the event is from a non-artifact, this is null. If the event is from an artifact, then this is the id of the artifact (references artifact_id column in blackboard_artifacts) (may be null)
+- **hash_hit** - 1 if the file associated with the event has a hash set hit, 0 otherwise
+- **tagged** - 1 if the direct source of the event has been tagged, 0 otherwise
+
+## tsk_events
+Stores each event. A file, artifact, or other type of content can have several rows in this table. One for each time stamp. 
+- **event_id** - Id for the event
+- **event_type_id** - Event type id (references event_type_id column in tsk_event_types)
+- **event_description_id** - Event description id (references event_description_id column in tsk_event_descriptions)
+- **time** -  Time the event occurred, in seconds from the UNIX epoch
+
+# Examiners and Reports
+
+## tsk_examiners
+Encapsulates the concept of an examiner associated with a case.
+- **examiner_id** - Id for the examiner
+- **login_name** - Login name for the examiner (must be unique)
+- **display_name** - Display name for the examiner (may be null)
+
+## reports
+Stores information on generated reports.
+- **obj_id** - Id of the report
+- **path** - Full path to the report (including file name)
+- **crtime** - Time the report was created, in seconds from the UNIX epoch
+- **src_module_name** - Name of the module that created the report
+- **report_name** - Name of the report (can be empty string)
+
+# Tags 
+
+## tag_names
+Defines what tag names the user has created and can therefore be applied.
+- **tag_name_id** - Unique ID for each tag name
+- **display_name** - Display name of tag
+- **description**  - Description  (can be empty string)
+- **color** - Color choice for tag (can be empty string)
+- **knownStatus** - Stores whether a tag is notable/bad (as org.sleuthkit.datamodel.TskData.FileKnown enum)
+- **tag_set_id** - Id of the tag set the tag name belongs to (references tag_set_id in tsk_tag_sets, may be null)
+- **rank** - Used to order the tag names for a given tag set for display purposes
+
+## tsk_tag_sets
+Used to group entries from the tag_names table. An object can have only one tag from a tag set at a time. 
+- **tag_set_id** - Id of the tag set
+- **name** - Name of the tag set (unique, should be human readable)
+
+## content_tags
+One row for each file tagged.  
+- **tag_id** - unique ID
+- **obj_id** - object id of Content that has been tagged
+- **tag_name_id** - Tag name that was used
+- **comment**  - optional comment 
+- **begin_byte_offset** - optional byte offset into file that was tagged
+- **end_byte_offset** - optional byte ending offset into file that was tagged
+- **examiner_id** - Examiner that tagged the artifact (references examiner_id in tsk_examiners)
+
+## blackboard_artifact_tags
+One row for each artifact that is tagged.
+- **tag_id** - unique ID
+- **artifact_id** - Artifact ID of artifact that was tagged
+- **tag_name_id** - Tag name that was used
+- **comment** - Optional comment
+- **examiner_id** - Examiner that tagged the artifact (references examiner_id in tsk_examiners)
+
+
+# Ingest Module Status
+These tables keep track in Autopsy which modules were run on the data sources.
+
+## ingest_module_types
+Defines the types of ingest modules supported. Must exactly match the names and ordering in the org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType enum.
+- **type_id** - Id for the ingest module type
+- **type_name** - Internal name for the ingest module type
+
+## ingest_modules
+Defines which modules were installed and run on at least one data source.  One row for each module. 
+- **ingest_module_id** - Id of the ingest module
+- **display_name** - Display name for the ingest module (should be human readable)
+- **unique_name** - Unique name for the ingest module
+- **type_id** - Type of ingest module (references type_id from ingest_module_types)
+- **version** - Version of the ingest module
+
+## ingest_job_status_types
+Defines the status options for ingest jobs. Must match the names and ordering in the org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType enum.
+- **type_id** - Id for the ingest job status type
+- **type_name** - Internal name for the ingest job status type
+
+##  ingest_jobs
+One row is created each time ingest is started, which is a set of modules in a pipeline. 
+- **ingest_job_id** - Id of the ingest job
+- **obj_id** - Id of the data source ingest is being run on
+- **host_name** - Name of the host that is running the ingest job
+- **start_date_time** - Time the ingest job started (stored in number of milliseconds since Jan 1, 1970 UTC)
+- **end_date_time** - Time the ingest job finished (stored in number of milliseconds since Jan 1, 1970 UTC)
+- **status_id** - Ingest job status (references type_id from ingest_job_status_types)
+- **settings_dir** - Directory of the job's settings (may be an empty string)
+
+##  ingest_job_modules
+Defines the order of the modules in a given pipeline (i.e. ingest_job).
+- **ingest_job_id** - Id for the ingest job (references ingest_job_id in ingest_jobs)
+- **ingest_module_id** - Id of the ingest module (references ingest_module_id in ingest_modules)
+- **pipeline_position** - Order that the ingest module was run
+
+
+*/

@@ -242,12 +242,22 @@ public final class OsAccount extends AbstractContent {
 	 * This function is used by OsAccountManger to update the list of OsAccount
 	 * attributes.
 	 *
-	 * @param osAccountAttribute The osAccount Attribute that is to be added.
+	 * @param osAccountAttributes The osAccount attributes that are to be added.
 	 */
 	synchronized void  setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
 	}
 
+	/**
+	 * This function is used by OsAccountManger to update the list of OsAccount
+	 * instances.
+	 *
+	 * @param osAccountInstanes The osAccount instances that are to be added.
+	 */
+	synchronized void  setInstancesInternal(List<OsAccountInstance> osAccountInstances) {
+		this.osAccountInstances = osAccountInstances;
+	}
+	
 	/**
 	 * Get the account Object Id that is unique within the scope of the case.
 	 *

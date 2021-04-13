@@ -45,7 +45,7 @@ You can also access the data in its tree form by starting with org.sleuthkit.dat
 The Sleuth Kit has its own database schema that is shared with Autopsy and other tools. The primary way it gets populated is via the Java code. 
 
 - Database Schema Documentation:
- - \subpage db_schema_8_6_page 
+ - \subpage db_schema_9_0_page 
  - \subpage db_schema_page "Older schemas"
 - Refer to \subpage query_database_page if you are going to use one of the SleuthkitCase methods that requires you to specify a query. 
 - Refer to \subpage insert_and_update_database_page if you are a Sleuth Kit developer and want to avoid database issues.
