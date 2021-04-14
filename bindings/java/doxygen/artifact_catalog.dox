@@ -184,8 +184,6 @@ Details about System/aplication/file backups.
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME_START (Date/Time the backup happened)
-     or 
-  TSK_DATETIME
   
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME_END (Date/Time the backup ended)
@@ -286,9 +284,7 @@ A contact book entry in an application file or database.
 Programs that have been deleted from the system.
 
 ### REQUIRED ATTRIBUTES
-- TSK_DATETIME_DELETED (Date/Time the program was deleted)
-     or 
-  TSK_DATETIME
+- TSK_DATETIME (Date/Time the program was deleted)
 - TSK_PROG_NAME (Program that was deleted)
 
 ### OPTIONAL Attributes
@@ -459,8 +455,7 @@ Details about an installed program.
 - TSK_PROG_NAME (Name of the installed program)
 
 ### OPTIONAL ATTRIBUTES
-- TSK_DATETIME (A date and time associated with the installed program, e.g., the last modified time, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_CREATED (When the program was installed, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME (When the program was installed, in seconds since 1970-01-01T00:00:00Z)
 - TSK_PATH (Path to the installed program in the data source)
 - TSK_PATH_SOURCE (Path to an Android Package Kit (APK) file for an Android program)
 - TSK_PERMISSIONS (Permissions of the installed program)
@@ -678,8 +673,6 @@ Activity on the system or from an application.  Example usage is a mobile device
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME_START (When activity started)
-    or 
-  TSK_DATETIME
 
 ### OPTIONAL ATTRIBUTES
 - TSK_ACTIVITY_TYPE (Activity type i.e.: On or Off)
