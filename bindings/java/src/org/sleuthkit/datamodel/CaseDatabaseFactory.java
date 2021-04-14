@@ -28,7 +28,6 @@ import java.sql.Statement;
 import java.util.Properties;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import static org.sleuthkit.datamodel.BundleProvider.getBundle;
 import org.sleuthkit.datamodel.SQLHelper.PostgreSQLHelper;
 import org.sleuthkit.datamodel.SQLHelper.SQLiteHelper;
 
@@ -552,15 +551,6 @@ class CaseDatabaseFactory {
 				+ " display_name TEXT UNIQUE NOT NULL , "
 				+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
 
-		
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(0, '" + getBundle().getString("RootEventType.eventTypes.name") + "', null)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(1, '" + getBundle().getString("BaseTypes.fileSystem.name") + "', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(2, '" + getBundle().getString("BaseTypes.webActivity.name") +"', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(3, '" + getBundle().getString("BaseTypes.miscTypes.name") + "', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(4, '" + getBundle().getString("FileSystemTypes.fileModified.name") + "', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(5, '" + getBundle().getString("FileSystemTypes.fileAccessed.name") + "', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(6, '" + getBundle().getString("FileSystemTypes.fileCreated.name") + "', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(7, '" + getBundle().getString("FileSystemTypes.fileChanged.name") + "', 1)");
 		/*
 		* Regarding the timeline event tables schema, note that several columns
 		* in the tsk_event_descriptions table seem, at first glance, to be
