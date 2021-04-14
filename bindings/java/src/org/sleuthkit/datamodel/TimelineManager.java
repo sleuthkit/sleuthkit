@@ -41,7 +41,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
@@ -117,25 +116,25 @@ public final class TimelineManager {
 		this.caseDB = caseDB;
 
 		List<TimelineEventType> fullList = new ArrayList<>();
-			fullList.addAll(ROOT_CATEGORY_AND_FILESYSTEM_TYPES);
-			fullList.addAll(PREDEFINED_EVENT_TYPES);
+		fullList.addAll(ROOT_CATEGORY_AND_FILESYSTEM_TYPES);
+		fullList.addAll(PREDEFINED_EVENT_TYPES);
 
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (final CaseDbConnection con = caseDB.getConnection();
 				final PreparedStatement pStatement = con.prepareStatement(
-						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES (?, ?, ?)"), 
+						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES (?, ?, ?)"),
 						Statement.NO_GENERATED_KEYS)) {
 			for (TimelineEventType type : fullList) {
 				pStatement.setLong(1, type.getTypeID());
 				pStatement.setString(2, escapeSingleQuotes(type.getDisplayName()));
-				if(type != type.getParent()) {
+				if (type != type.getParent()) {
 					pStatement.setLong(3, type.getParent().getTypeID());
 				} else {
 					pStatement.setNull(3, java.sql.Types.INTEGER);
 				}
-				
+
 				con.executeUpdate(pStatement);
-				eventTypeIDMap.put(type.getTypeID(), type);	
+				eventTypeIDMap.put(type.getTypeID(), type);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to initialize timeline event types", ex); // NON-NLS
