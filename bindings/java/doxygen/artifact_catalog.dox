@@ -184,8 +184,6 @@ Details about System/aplication/file backups.
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME_START (Date/Time the backup happened)
-     or 
-  TSK_DATETIME
   
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME_END (Date/Time the backup ended)
@@ -675,8 +673,6 @@ Activity on the system or from an application.  Example usage is a mobile device
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME_START (When activity started)
-    or 
-  TSK_DATETIME
 
 ### OPTIONAL ATTRIBUTES
 - TSK_ACTIVITY_TYPE (Activity type i.e.: On or Off)
