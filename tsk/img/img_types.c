@@ -30,6 +30,7 @@ typedef struct {
  */
 static IMG_TYPES img_open_table[] = {
     {"raw", TSK_IMG_TYPE_RAW, "Single or split raw file (dd)"},
+    {"qcow2", TSK_IMG_TYPE_QCOW2, "QEMU Copy On Write"},
 #if HAVE_LIBAFFLIB
     {"aff", TSK_IMG_TYPE_AFF_AFF, "Advanced Forensic Format"},
     {"afd", TSK_IMG_TYPE_AFF_AFD, "AFF Multiple File"},
