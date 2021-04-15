@@ -551,14 +551,6 @@ class CaseDatabaseFactory {
 				+ " display_name TEXT UNIQUE NOT NULL , "
 				+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
 
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(0, 'Event Types', null)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(1, 'File System', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(2, 'Web Activity', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(3, 'Misc Types', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(4, 'Modified', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(5, 'Accessed', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(6, 'Created', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(7, 'Changed', 1)");
 		/*
 		* Regarding the timeline event tables schema, note that several columns
 		* in the tsk_event_descriptions table seem, at first glance, to be
