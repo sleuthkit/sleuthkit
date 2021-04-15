@@ -23,7 +23,7 @@ Some general notes on this schema:
 
 # Schema Information
 
-This was a big change. Tables were added to support analsis results, OS accounts, Hosts & Person strcture of data sources, and host addresses (IPs, DNS, etc.). It has a major version change because there are new Content enum types (OsAccount and HostAddress). 
+This was a big change. Tables were added to support analsis results, OS accounts, Hosts & Person strcture of data sources, and host addresses (IPs, DNS, etc.). It has a major version change because there are new Content enum types (OsAccount and HostAddress). More information on how to use these new objects can be found on the \ref mod_dspage and \ref mod_os_accounts_page pages.
 
 <ul>
 <li><b>Autopsy versions: </b> Autopsy 4.19
