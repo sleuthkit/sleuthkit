@@ -64,13 +64,13 @@ We recommend that the OS account addresses or names that were parsed from the da
 There are three unique elements to creating and updating OS accounts when adding data to the case database:
 
 <ol>
-<li>You cannot create or update OS accounts in a multi-step org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction. To avoid duplicates across multiple node systems, you need to insert and update in a single step. If you have a transaction open while creating accounts, the database will likely go into a deadlock in single-user cases because the thread can not have two connections at the same time.
+<li>When creating and updating OS accounts in the case database, you need to avoid some pitfalls involving doing a lot of work in a transaction. Why? For single-user cases, if you have created a org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction, you should never call another database access method unless it allows you to pass in the CaseDbTransaction you are using. Otherwise, the method that you call will attempt to create its own transaction and because you already have the underlying SQLite case database locked, the called method will block forever waiting for a lock it cannot obtain. For a multi-user case, you will run the risk of attempting to create rows in the case database that would duplicate rows created by another user on another machine. In this scenario, uniqueness constraints will cause your entire transaction to fail and everything you have done up to that point will be rolled back and will have to be redone.
 
-This means that if you are using CaseDbTransation to add a lot of files or artifacts, you'll need to:
+This means that if you want to use a CaseDbTransation to add a lot of files or artifacts associated with OS accounts, you'll need to:
 <ol type="a">
-<li>Pre-process the data to identify what accounts you need to find references to 
-<li>See if the OS accounts already exist and update or make new ones
-<li>Add the files and artifacts with references to the OsAccounts
+<li>Pre-process the data to identify what OS accounts you need to find references to 
+<li>See if the OS Accounts already exist and either update them or make new ones
+<li>Start the transaction and add the files and artifacts with the refrences to the OsAccounts
 </ol>
 
 <li>You need to check if you have more information than what is already stored (e.g., maybe the realm name was unknown).
