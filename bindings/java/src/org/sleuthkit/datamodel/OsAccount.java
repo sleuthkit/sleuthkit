@@ -220,7 +220,7 @@ public final class OsAccount extends AbstractContent {
 	 * @param accountStatus  Account status.
 	 * @param dbStatus       Status of row in database.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature, 
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature,
 			String fullName, Long creationTime, OsAccountType accountType, OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
 
 		super(sleuthkitCase, osAccountobjId, signature);
@@ -244,7 +244,7 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @param osAccountAttributes The osAccount attributes that are to be added.
 	 */
-	synchronized void  setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
+	synchronized void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
 	}
 
@@ -254,10 +254,10 @@ public final class OsAccount extends AbstractContent {
 	 *
 	 * @param osAccountInstanes The osAccount instances that are to be added.
 	 */
-	synchronized void  setInstancesInternal(List<OsAccountInstance> osAccountInstances) {
+	synchronized void setInstancesInternal(List<OsAccountInstance> osAccountInstances) {
 		this.osAccountInstances = osAccountInstances;
 	}
-	
+
 	/**
 	 * Get the account Object Id that is unique within the scope of the case.
 	 *
@@ -279,8 +279,8 @@ public final class OsAccount extends AbstractContent {
 
 	/**
 	 * Get the ID for the account realm. Get the Realm via
-	 * OsAccountRealmManager.getRealmByRealmId() NOTE: The realm may get updated as
-	 * more data is parsed, so listen for events to update as needed.
+	 * OsAccountRealmManager.getRealmByRealmId() NOTE: The realm may get updated
+	 * as more data is parsed, so listen for events to update as needed.
 	 *
 	 * @return
 	 */
@@ -439,9 +439,10 @@ public final class OsAccount extends AbstractContent {
 		 * @param valueInt      Int value.
 		 * @param osAccount     Account which the attribute pertains to.
 		 * @param host          Host on which the attribute applies to. Pass
-		 *                      Null if the attribute applies to all the hosts in
-		 *                      the realm.
-		 * @param sourceObj     Source where the attribute was found, may be null.
+		 *                      Null if the attribute applies to all the hosts
+		 *                      in the realm.
+		 * @param sourceObj     Source where the attribute was found, may be
+		 *                      null.
 		 */
 		public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, OsAccount osAccount, Host host, Content sourceObj) {
 			super(attributeType, valueInt);

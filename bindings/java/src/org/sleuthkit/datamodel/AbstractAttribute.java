@@ -24,11 +24,10 @@ import java.util.Objects;
 /**
  * Attributes are a name-value pairs. Abstract Attribute provides the base
  * functionality for a name value pair with type safety (analogous to a C union)
- *
  */
 public abstract class AbstractAttribute {
 
-	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray(); 
+	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
 	private BlackboardAttribute.Type attributeType;
 
@@ -40,7 +39,6 @@ public abstract class AbstractAttribute {
 
 	private SleuthkitCase sleuthkitCase;
 
-	
 	/**
 	 * Constructs an attribute with an integer value. The attribute should be
 	 * added to an appropriate artifact.
@@ -63,7 +61,6 @@ public abstract class AbstractAttribute {
 		this.valueString = "";
 		this.valueBytes = new byte[0];
 	}
-
 
 	/**
 	 * Constructs an attribute with a long/datetime value. The attribute should
@@ -91,7 +88,6 @@ public abstract class AbstractAttribute {
 		this.valueBytes = new byte[0];
 	}
 
-
 	/**
 	 * Constructs an attribute with a double value. The attribute should be
 	 * added to an appropriate artifact.
@@ -114,7 +110,6 @@ public abstract class AbstractAttribute {
 		this.valueString = "";
 		this.valueBytes = new byte[0];
 	}
-
 
 	/**
 	 * Constructs an attribute with a string value. The attribute should be
@@ -143,7 +138,6 @@ public abstract class AbstractAttribute {
 		}
 		this.valueBytes = new byte[0];
 	}
-
 
 	/**
 	 * Constructs an attribute with a byte array value. The attribute should be
@@ -177,15 +171,15 @@ public abstract class AbstractAttribute {
 	 * based on a query of the blackboard _attributes table in the case
 	 * database.
 	 *
-	 * @param attributeTypeID  The attribute type id. 
-	 * @param valueType        The attribute value type.
-	 * @param valueInt         The value from the the value_int32 column.
-	 * @param valueLong        The value from the the value_int64 column.
-	 * @param valueDouble      The value from the the value_double column.
-	 * @param valueString      The value from the the value_text column.
-	 * @param valueBytes       The value from the the value_byte column.
-	 * @param sleuthkitCase    A reference to the SleuthkitCase object
-	 *                         representing the case database.
+	 * @param attributeTypeID The attribute type id.
+	 * @param valueType       The attribute value type.
+	 * @param valueInt        The value from the the value_int32 column.
+	 * @param valueLong       The value from the the value_int64 column.
+	 * @param valueDouble     The value from the the value_double column.
+	 * @param valueString     The value from the the value_text column.
+	 * @param valueBytes      The value from the the value_byte column.
+	 * @param sleuthkitCase   A reference to the SleuthkitCase object
+	 *                        representing the case database.
 	 */
 	AbstractAttribute(BlackboardAttribute.Type attributeType,
 			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
@@ -226,13 +220,13 @@ public abstract class AbstractAttribute {
 					}
 				}
 				return Integer.toString(getValueInt());
-			case LONG: 
+			case LONG:
 				return Long.toString(getValueLong());
 			case DOUBLE:
 				return Double.toString(getValueDouble());
 			case BYTE:
 				return bytesToHexString(getValueBytes());
-			case DATETIME: 
+			case DATETIME:
 				// once we have TSK timezone, that should be used here.
 				return TimeUtilities.epochToTime(getValueLong());
 			case JSON: {
@@ -311,11 +305,10 @@ public abstract class AbstractAttribute {
 		return Arrays.copyOf(valueBytes, valueBytes.length);
 	}
 
-
 	SleuthkitCase getCaseDatabase() {
 		return this.sleuthkitCase;
 	}
-	
+
 	/**
 	 * Sets the reference to the SleuthkitCase object that represents the case
 	 * database.
@@ -343,7 +336,7 @@ public abstract class AbstractAttribute {
 		}
 		return new String(hexChars);
 	}
-	
+
 	/**
 	 * Replace all NUL characters in the string with the SUB character
 	 *
@@ -354,7 +347,6 @@ public abstract class AbstractAttribute {
 	final String replaceNulls(String text) {
 		return text.replace((char) 0x00, (char) 0x1A);
 	}
-
 
 	boolean isAttributeEquals(Object that) {
 		if (that instanceof AbstractAttribute) {

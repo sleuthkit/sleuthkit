@@ -50,17 +50,16 @@ public final class Person {
 	public String getName() {
 		return name;
 	}
-	
+
 	/**
-	 * Sets the name for the person.
-	 * Does not update the database.
+	 * Sets the name for the person. Does not update the database.
 	 *
 	 * @param newName The new name.
 	 */
 	public void setName(String newName) {
 		this.name = newName;
-	}	
-		
+	}
+
 	@Override
 	public int hashCode() {
 		int hash = 5;
@@ -92,6 +91,5 @@ public final class Person {
 
 		return true;
 	}
-
 
 }

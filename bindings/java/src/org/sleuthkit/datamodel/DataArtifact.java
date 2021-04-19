@@ -20,21 +20,18 @@ package org.sleuthkit.datamodel;
 
 import java.util.Optional;
 
-
 /**
  * DataArtifact is a category of artifact types that are simply data directly
  * extracted from a data source.
- *
  */
 public final class DataArtifact extends BlackboardArtifact {
-	
+
 	// data artifacts may have a OS Account associated with them.
 	private final Long osAccountObjId;
-	
-	
+
 	/**
-	 *  Constructs a DataArtifact.
-	 * 
+	 * Constructs a DataArtifact.
+	 *
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
 	 * @param artifactID       The unique id for this artifact.
@@ -47,7 +44,7 @@ public final class DataArtifact extends BlackboardArtifact {
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
-	 * @param osAccountObjId        OsAccount associated with this artifact, may be
+	 * @param osAccountObjId   OsAccount associated with this artifact, may be
 	 *                         null.
 	 * @param isNew            The object is newly created.
 	 */
@@ -55,8 +52,7 @@ public final class DataArtifact extends BlackboardArtifact {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.osAccountObjId = osAccountObjId;
 	}
-	
-		
+
 	/**
 	 * Gets the OS Account for this artifact.
 	 *
@@ -67,6 +63,5 @@ public final class DataArtifact extends BlackboardArtifact {
 	public Optional<Long> getOsAccountObjectId() throws TskCoreException {
 		return Optional.ofNullable(osAccountObjId);
 	}
-	
-	
+
 }

@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import java.util.Objects;
 
 /**
- *
  * Encapsulates a host.
  */
 public final class Host {
@@ -57,7 +56,7 @@ public final class Host {
 	public String getName() {
 		return name;
 	}
-	
+
 	/**
 	 * Gets the status for the host.
 	 *
@@ -66,7 +65,7 @@ public final class Host {
 	HostDbStatus getStatus() {
 		return status;
 	}
-		
+
 	@Override
 	public int hashCode() {
 		int hash = 5;
@@ -106,7 +105,6 @@ public final class Host {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");
-		
 
 		private final int id;
 		private final String name;
@@ -133,5 +131,5 @@ public final class Host {
 			return null;
 		}
 	}
-	
+
 }

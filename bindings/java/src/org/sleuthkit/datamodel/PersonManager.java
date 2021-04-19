@@ -32,7 +32,6 @@ import org.sleuthkit.datamodel.TskEvent.PersonsAddedTskEvent;
 
 /**
  * Responsible for creating/updating/retrieving Persons.
- *
  */
 public final class PersonManager {
 
@@ -270,7 +269,7 @@ public final class PersonManager {
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
 		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getPersonId();
-		whereStatement +=  " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
+		whereStatement += " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 
 		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
 
@@ -323,7 +322,7 @@ public final class PersonManager {
 			throw new TskCoreException(String.format("Error getting person with name = %s", name), ex);
 		}
 	}
-	
+
 	/**
 	 * Get person for the given host or empty if no associated person.
 	 *
@@ -356,7 +355,7 @@ public final class PersonManager {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Set host's parent person.
 	 *
@@ -386,7 +385,7 @@ public final class PersonManager {
 		}
 
 		db.getPersonManager().fireChangeEvent(person);
-	}	
+	}
 
 	/**
 	 * Fires an event when a person is created.

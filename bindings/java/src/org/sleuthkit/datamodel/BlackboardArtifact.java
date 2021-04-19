@@ -197,7 +197,6 @@ public class BlackboardArtifact implements Content {
 		return this.artifactTypeName;
 	}
 
-
 	/**
 	 * Gets the artifact type display name for this artifact.
 	 *
@@ -399,18 +398,17 @@ public class BlackboardArtifact implements Content {
 	 *                          operation is to be performed, managed by the
 	 *                          caller. Null is not permitted.
 	 *
-	 * @throws TskCoreException         If an error occurs and the attributes
-	 *                                  were not added to the artifact.
-										If <code>caseDbTransaction</code> is
-	 *                                  null or if <code>attributes</code> is
-	 *                                  null or empty.
+	 * @throws TskCoreException If an error occurs and the attributes were not
+	 *                          added to the artifact. If
+	 *                          <code>caseDbTransaction</code> is null or if
+	 *                          <code>attributes</code> is null or empty.
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
 
 		if (Objects.isNull(attributes) || attributes.isEmpty()) {
 			throw new TskCoreException("Illegal argument passed to addAttributes: null or empty attributes passed to addAttributes");
 		}
-		if (Objects.isNull(caseDbTransaction) ) {
+		if (Objects.isNull(caseDbTransaction)) {
 			throw new TskCoreException("Illegal argument passed to addAttributes: null caseDbTransaction passed to addAttributes");
 		}
 		try {
@@ -424,7 +422,6 @@ public class BlackboardArtifact implements Content {
 			throw new TskCoreException("Error adding blackboard attributes", ex);
 		}
 	}
-
 
 	/**
 	 * This overiding implementation returns the unique path of the parent. It
@@ -489,7 +486,6 @@ public class BlackboardArtifact implements Content {
 		return sleuthkitCase.getScoringManager().getAggregateScore(artifactObjId);
 
 	}
-
 
 	@Override
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
@@ -896,8 +892,6 @@ public class BlackboardArtifact implements Content {
 		}
 
 	}
-
-
 
 	/**
 	 * An artifact type.
@@ -1408,11 +1402,8 @@ public class BlackboardArtifact implements Content {
 		 */
 		TSK_GPS_AREA(67, "TSK_GPS_AREA",
 				bundle.getString("BlackboardArtifact.tskGPSArea.text"), Category.DATA_ARTIFACT),
-
 		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
-				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),
-
-		;
+				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),;
 
 		/*
 		 * To developers: For each new artifact, ensure that: - The enum value
@@ -1441,7 +1432,7 @@ public class BlackboardArtifact implements Content {
 		 * @param typeId      The type id.
 		 * @param label       The type name.
 		 * @param displayName The type display name.
-		 * @param category	  The type category.
+		 * @param category	   The type category.
 		 */
 		private ARTIFACT_TYPE(int typeId, String label, String displayName, Category category) {
 			this.typeId = typeId;
@@ -1548,7 +1539,7 @@ public class BlackboardArtifact implements Content {
 	 * data.
 	 */
 	public enum Category {
-                // NOTE: The schema code defaults to '0', so that code must be updated too if DATA_ARTIFACT changes from being 0
+		// NOTE: The schema code defaults to '0', so that code must be updated too if DATA_ARTIFACT changes from being 0
 		DATA_ARTIFACT(0, "DATA_ARTIFACT", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.DataArtifact")), // artifact is data that is directly/indirectly extracted from a data source.
 		ANALYSIS_RESULT(1, "ANALYSIS_RESULT", ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("CategoryType.AnalysisResult")); // artifacts represents outcome of analysis of data.
 
