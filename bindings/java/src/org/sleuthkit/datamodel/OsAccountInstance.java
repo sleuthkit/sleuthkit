@@ -61,7 +61,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 		this.dataSourceId = dataSourceObjId;
 		this.instanceType = instanceType;
 	}
-	
+
 	/**
 	 * Construct the OsAccountInstance doing a lazy construction on the data
 	 * source object.
@@ -174,16 +174,17 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 */
 	public enum OsAccountInstanceType {
 		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user launched a program on the host
-		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")),	// user accesed a resource for read/write
-		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text") );	// user was referenced, e.g. in a event log.
+		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")), // user accesed a resource for read/write
+		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text"));	// user was referenced, e.g. in a event log.
 
 		private final int id;
 		private final String name;
 		private final String description;
 
-		OsAccountInstanceType(int id, String name, String description) {			this.id = id;
+		OsAccountInstanceType(int id, String name, String description) {
+			this.id = id;
 			this.name = name;
-			this.description = description ;
+			this.description = description;
 		}
 
 		/**
@@ -203,7 +204,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 		public String getName() {
 			return name;
 		}
-		
+
 		/**
 		 * Get account instance type description.
 		 *
