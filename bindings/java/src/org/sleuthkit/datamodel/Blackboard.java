@@ -322,7 +322,9 @@ public final class Blackboard {
 	 * Get all analysis results for a given object.
 	 *
 	 * @param sourceObjId Object id.
-	 * @param connection  Database connection to use. 	 *
+	 * @param connection  Database connection to use.
+	 *
+	 *
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -344,7 +346,6 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<AnalysisResult> getAnalysisResults(long sourceObjId, int artifactTypeId) throws TskCoreException {
-
 		// Get the artifact type to check that it in the analysis result category.
 		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeId);
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
@@ -353,7 +354,6 @@ public final class Blackboard {
 
 		String whereClause = " types.artifact_type_id = " + artifactTypeId
 				+ " AND arts.obj_id = " + sourceObjId;
-
 		return getAnalysisResultsWhere(whereClause);
 	}
 
@@ -892,7 +892,6 @@ public final class Blackboard {
 						break;
 				}
 
-								
 				/*
 				 * If the exact attribute was found, mark it as a match to
 				 * continue looping through the expected attributes list.
