@@ -149,7 +149,7 @@ public final class Blackboard {
 			throw new BlackboardException("Failed to get or add artifact type", ex);
 		}
 	}
-	
+
 	/**
 	 * Adds new analysis result artifact.
 	 *
@@ -166,46 +166,46 @@ public final class Blackboard {
 	 *                        artifact.
 	 * @param transaction     DB transaction to use.
 	 *
-	* @return AnalysisResultAdded The analysis return added and the
-         current aggregate score of content.
+	 * @return AnalysisResultAdded The analysis return added and the current
+	 *         aggregate score of content.
 	 *
 	 * @throws BlackboardException exception thrown if a critical error occurs
 	 *                             within TSK core
 	 */
-	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, 
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score,
 			String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction) throws BlackboardException {
-		
+
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 			throw new BlackboardException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", artifactType.getTypeName()));
 		}
-		
+
 		try {
 			// add analysis result
-			AnalysisResult analysisResult =  caseDb.newAnalysisResult(artifactType, objId, dataSourceObjId, score, conclusion, configuration, justification, transaction.getConnection());
-			
+			AnalysisResult analysisResult = caseDb.newAnalysisResult(artifactType, objId, dataSourceObjId, score, conclusion, configuration, justification, transaction.getConnection());
+
 			// add the given attributes
 			if (attributesList != null && !attributesList.isEmpty()) {
 				analysisResult.addAttributes(attributesList, transaction);
 			}
-			
+
 			// update the final score for the object 
 			Score aggregateScore = caseDb.getScoringManager().updateAggregateScoreAfterAddition(objId, dataSourceObjId, analysisResult.getScore(), transaction);
-			
+
 			// return the analysis result and the current aggregate score.
 			return new AnalysisResultAdded(analysisResult, aggregateScore);
-			
-		}  catch (TskCoreException ex) {
+
+		} catch (TskCoreException ex) {
 			throw new BlackboardException("Failed to add analysis result.", ex);
 		}
 	}
-	
+
 	/**
 	 * Delete the specified analysis result.
 	 *
-	 * Deletes the result from blackboard_artifacts and tsk_analysis_results, and recalculates and
-	 * updates the aggregate score of the content. Fires an event to indicate that
-	 * the analysis result has been deleted and that the score of the item has
-	 * changed.
+	 * Deletes the result from blackboard_artifacts and tsk_analysis_results,
+	 * and recalculates and updates the aggregate score of the content. Fires an
+	 * event to indicate that the analysis result has been deleted and that the
+	 * score of the item has changed.
 	 *
 	 * @param analysisResult AnalysisResult to delete.
 	 *
@@ -220,44 +220,47 @@ public final class Blackboard {
 			Score score = deleteAnalysisResult(analysisResult, transaction);
 			transaction.commit();
 			transaction = null;
-			
+
 			return score;
-		}  finally {
+		} finally {
 			if (transaction != null) {
 				transaction.rollback();
 			}
 		}
 	}
-	
+
 	/**
 	 * Delete the specified analysis result.
 	 *
-	 * Deletes the result from blackboard_artifacts and tsk_analysis_results, and recalculates and
-	 * updates the aggregate score of the content. 
+	 * Deletes the result from blackboard_artifacts and tsk_analysis_results,
+	 * and recalculates and updates the aggregate score of the content.
+	 *
 	 * @param artifactObjId Artifact Obj Id to be deleted
 	 * @param transaction
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public Score deleteAnalysisResult(long artifactObjId, CaseDbTransaction transaction) throws TskCoreException {
 
 		List<AnalysisResult> analysisResults = getAnalysisResultsWhere(" arts.artifact_obj_id = " + artifactObjId, transaction.getConnection());
-		
-		if(analysisResults.isEmpty()) {
+
+		if (analysisResults.isEmpty()) {
 			throw new TskCoreException(String.format("Analysis Result not found for artifact obj id %d", artifactObjId));
 		}
-		
+
 		return deleteAnalysisResult(analysisResults.get(0), transaction);
 	}
-	
+
 	/**
 	 * Delete the specified analysis result.
 	 *
-	 * Deletes the result from blackboard_artifacts and tsk_analysis_results, and recalculates and
-	 * updates the aggregate score of the content. 
+	 * Deletes the result from blackboard_artifacts and tsk_analysis_results,
+	 * and recalculates and updates the aggregate score of the content.
 	 *
 	 * @param analysisResult AnalysisResult to delete.
-	 * @param transaction Transaction to use for database operations.
+	 * @param transaction    Transaction to use for database operations.
 	 *
 	 * @return New score of the content.
 	 *
@@ -267,129 +270,99 @@ public final class Blackboard {
 
 		try {
 			CaseDbConnection connection = transaction.getConnection();
-			
+
 			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
 			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
-			
+
 			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
 			deleteStatement.clearParameters();
 			deleteStatement.setLong(1, analysisResult.getId());
 
 			deleteStatement.executeUpdate();
-			
+
 			// register the deleted result with the transaction so an event can be fired for it. 
 			transaction.registerDeletedAnalysisResult(analysisResult.getObjectID());
-			
+
 			return caseDb.getScoringManager().updateAggregateScoreAfterDeletion(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), transaction);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
-		} 
+		}
 	}
-	
+
 	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-				+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
-				+ " arts.review_status_id AS review_status_id, " //NON-NLS
-				+ " results.conclusion AS conclusion,  results.significance AS significance,  results.method_category AS method_category,  "
-				+ " results.configuration AS configuration,  results.justification AS justification "
-				+ " FROM blackboard_artifacts AS arts "
-				+ " JOIN blackboard_artifact_types AS types " //NON-NLS
-				+ "		ON arts.artifact_type_id = types.artifact_type_id" //NON-NLS
-				+ " LEFT JOIN tsk_analysis_results AS results "
-				+ "		ON arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
-				+ " WHERE arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
-				+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
+			+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
+			+ " arts.review_status_id AS review_status_id, " //NON-NLS
+			+ " results.conclusion AS conclusion,  results.significance AS significance,  results.method_category AS method_category,  "
+			+ " results.configuration AS configuration,  results.justification AS justification "
+			+ " FROM blackboard_artifacts AS arts "
+			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
+			+ "		ON arts.artifact_type_id = types.artifact_type_id" //NON-NLS
+			+ " LEFT JOIN tsk_analysis_results AS results "
+			+ "		ON arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
+			+ " WHERE arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
+			+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
 	/**
 	 * Get all analysis results for a given object.
 	 *
-	 * @param objId Object id.
-	
+	 * @param sourceObjId Object id.
+	 *
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	public List<AnalysisResult> getAnalysisResults(long objId) throws TskCoreException {
-		return getAnalysisResultsWhere(" arts.obj_id = " + objId);
+	public List<AnalysisResult> getAnalysisResults(long sourceObjId) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.obj_id = " + sourceObjId);
 	}
-	
+
 	/**
 	 * Get all analysis results for a given object.
 	 *
-	 * @param objId Object id.
-	 * @param connection Database connection to use. 
-	
+	 * @param sourceObjId Object id.
+	 * @param connection  Database connection to use. 	 *
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	List<AnalysisResult> getAnalysisResults(long objId, CaseDbConnection connection) throws TskCoreException {
-		return getAnalysisResultsWhere(" arts.obj_id = " + objId, connection);
+	List<AnalysisResult> getAnalysisResults(long sourceObjId, CaseDbConnection connection) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.obj_id = " + sourceObjId, connection);
 	}
-	
+
 	/**
 	 * Get analysis results of the given type, for the given object.
 	 *
-	 * @param objId Object id.
+	 * @param sourceObjId    Object id.
 	 * @param artifactTypeId Result type to get.
-	
+	 *
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	public List<AnalysisResult> getAnalysisResults(long objId, int artifactTypeId) throws TskCoreException {
-		
+	public List<AnalysisResult> getAnalysisResults(long sourceObjId, int artifactTypeId) throws TskCoreException {
+
 		// Get the artifact type to check that it in the analysis result category.
 		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeId);
 		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
 		}
-		
+
 		String whereClause = " types.artifact_type_id = " + artifactTypeId
-							 + " AND arts.obj_id = " + objId; 
-		
+				+ " AND arts.obj_id = " + sourceObjId;
+
 		return getAnalysisResultsWhere(whereClause);
 	}
-	
-//	/**
-//	 * Get all analysis results of a given type, for a given data source.
-//	 *
-//	 * @param dataSourceObjId Data source to look under.
-//	 * @param artifactTypeId  Type of results to get.
-//	 *
-//	 * @return list of analysis results.
-//	 *
-//	 * @throws TskCoreException exception thrown if a critical error occurs
-//	 *                          within TSK core.
-//	 */
 
-// To keep the public API footprint minimal and necessary, this API is commented out 
-// till Autopsy implements and intgerates the concept of AnalysisResults. 
-// At that time, this api could be uncommented or deleted if it is not needed.
-	
-//	public List<AnalysisResult> getAnalysisResultsForDataSource(long dataSourceObjId, int artifactTypeId) throws TskCoreException {
-//		
-//		// Get the artifact type to check that it in the analysis result category.
-//		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeId);
-//		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
-//			throw new TskCoreException(String.format("Artifact type id %d is not in analysis result catgeory.", artifactTypeId));
-//		}
-//
-//		String whereClause = " types.artifact_type_id = " + artifactTypeId
-//				+ " AND arts.data_source_obj_id = " + dataSourceObjId;  // NON-NLS
-//		
-//		return getAnalysisResultsWhere(whereClause);
-//	}
-	
 	/**
 	 * Get all analysis results matching the given where sub-clause.
-	 * 
 	 *
-	 * @param whereClause Where sub clause, specifies conditions to match.  
+	 *
+	 * @param whereClause Where sub clause, specifies conditions to match.
+	 *
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -399,18 +372,18 @@ public final class Blackboard {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			return getAnalysisResultsWhere(whereClause, connection);
-		}
-		finally {
+		} finally {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
+
 	/**
-	 * Get all analysis results matching the given where sub-clause.
-	 * Uses the given database connection to execute the query.
+	 * Get all analysis results matching the given where sub-clause. Uses the
+	 * given database connection to execute the query.
 	 *
-	 * @param whereClause Where sub clause, specifies conditions to match.  
-	 * @param connection Database connection to use. 
-	 * 
+	 * @param whereClause Where sub clause, specifies conditions to match.
+	 * @param connection  Database connection to use.
+	 *
 	 * @return list of analysis results.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -420,41 +393,41 @@ public final class Blackboard {
 
 		final String queryString = ANALYSIS_RESULT_QUERY_STRING
 				+ " AND " + whereClause;
-							
-		try (	Statement statement = connection.createStatement();
+
+		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
-			
+
 			List<AnalysisResult> analysisResults = resultSetToAnalysisResults(resultSet);
 			return analysisResults;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting analysis results for WHERE clause = '%s'", whereClause), ex);
 		}
 	}
-	
+
 	/**
 	 * Get the analysis results by its artifact_obj_id.
 	 *
-	 * @param artifactObjId  Artifact object id of the analysis result.
+	 * @param artifactObjId Artifact object id of the analysis result.
 	 *
 	 * @return AnalysisResult.
 	 *
 	 * @throws TskCoreException If a critical error occurred within TSK core.
 	 */
 	AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
-		
-		String whereClause = " arts.artifact_obj_id = " + artifactObjId; 
+
+		String whereClause = " arts.artifact_obj_id = " + artifactObjId;
 		List<AnalysisResult> results = getAnalysisResultsWhere(whereClause);
-		
+
 		if (results.isEmpty()) { // throw an error if no analysis result found by id.
 			throw new TskCoreException(String.format("Error getting analysis result with id = '%d'", artifactObjId));
 		}
 		if (results.size() > 1) { // should not happen - throw an error
 			throw new TskCoreException(String.format("Multiple analysis results found with id = '%d'", artifactObjId));
 		}
-		
+
 		return results.get(0);
 	}
-	
+
 	/**
 	 * Creates AnalysisResult objects for the result set of a table query of the
 	 * form "SELECT * FROM blackboard_artifacts JOIN WHERE XYZ".
@@ -486,20 +459,19 @@ public final class Blackboard {
 		return analysisResults;
 	}
 
-	
 	private final static String DATA_ARTIFACT_QUERY_STRING = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
-				+ "artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, " //NON-NLS
-				+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
-				+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
-			    + " data_artifacts.os_account_obj_id as os_account_obj_id " //NON-NLS
-				+ " FROM blackboard_artifacts AS artifacts "
-				+ " JOIN blackboard_artifact_types AS types " //NON-NLS
-				+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
-				+ " LEFT JOIN tsk_data_artifacts AS data_artifacts "
-				+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
-				+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
-				+ "     AND types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS
-	
+			+ "artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, " //NON-NLS
+			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
+			+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
+			+ " data_artifacts.os_account_obj_id as os_account_obj_id " //NON-NLS
+			+ " FROM blackboard_artifacts AS artifacts "
+			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
+			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
+			+ " LEFT JOIN tsk_data_artifacts AS data_artifacts "
+			+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
+			+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
+			+ "     AND types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS
+
 	/**
 	 * Get all data artifacts of a given type for a given data source.
 	 *
@@ -512,30 +484,28 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<DataArtifact> getDataArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
-		
+
 		// Get the artifact type to check that it in the data artifact category.
 		BlackboardArtifact.Type artifactType = caseDb.getArtifactType(artifactTypeID);
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type id %d is not in data artifact catgeory.", artifactTypeID));
 		}
-		
+
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = "artifacts.data_source_obj_id = " + dataSourceObjId
 					+ " AND artifacts.artifact_type_id = " + artifactTypeID;
 
 			return getDataArtifactsWhere(whereClause, connection);
-		}
-		finally {
+		} finally {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
-	
-	
+
 	/**
 	 * Get all data artifacts of a given type.
 	 *
-	 * @param artifactTypeID  Artifact type to get.
+	 * @param artifactTypeID Artifact type to get.
 	 *
 	 * @return List of data artifacts. May be an empty list.
 	 *
@@ -548,22 +518,21 @@ public final class Blackboard {
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type id %d is not in data artifact catgeory.", artifactTypeID));
 		}
-		
+
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
-			String whereClause =  " artifacts.artifact_type_id = " + artifactTypeID;
-			
+			String whereClause = " artifacts.artifact_type_id = " + artifactTypeID;
+
 			return getDataArtifactsWhere(whereClause, connection);
-		}
-		finally {
+		} finally {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Get the data artifact with the given artifact obj id.
 	 *
-	 * @param artifactObjId  Object id of the data artifact to get.
+	 * @param artifactObjId Object id of the data artifact to get.
 	 *
 	 * @return Data artifact with given artifact object id.
 	 *
@@ -588,8 +557,7 @@ public final class Blackboard {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
-	
-	
+
 	/**
 	 * Get all data artifacts matching the given where sub-clause. Uses the
 	 * given database connection to execute the query.
@@ -616,7 +584,7 @@ public final class Blackboard {
 			throw new TskCoreException(String.format("Error getting data artifacts with queryString = %s", queryString), ex);
 		}
 	}
-	
+
 	/**
 	 * Creates DataArtifacts objects for the resultset of a table query of the
 	 * form "SELECT * FROM blackboard_artifacts JOIN data_artifacts WHERE ...".
@@ -637,12 +605,12 @@ public final class Blackboard {
 		ArrayList<DataArtifact> dataArtifacts = new ArrayList<>();
 
 		while (resultSet.next()) {
-			
+
 			Long osAccountObjId = resultSet.getLong("os_account_obj_id");
-			if (resultSet.wasNull()) {	
+			if (resultSet.wasNull()) {
 				osAccountObjId = null;
 			}
-			
+
 			dataArtifacts.add(new DataArtifact(caseDb, resultSet.getLong("artifact_id"), resultSet.getLong("obj_id"),
 					resultSet.getLong("artifact_obj_id"),
 					resultSet.getObject("data_source_obj_id") != null ? resultSet.getLong("data_source_obj_id") : null,
@@ -652,8 +620,7 @@ public final class Blackboard {
 
 		return dataArtifacts;
 	}
-	
-	
+
 	/**
 	 * Gets an attribute type, creating it if it does not already exist. Use
 	 * this method to define custom attribute types.
@@ -753,12 +720,12 @@ public final class Blackboard {
 		return caseDb.getArtifactsHelper("blackboard_artifacts.data_source_obj_id = " + dataSourceObjId
 				+ " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
 	}
-	
+
 	/**
-	 * Get all blackboard artifacts of the given type(s) for the given data source(s). Does not included rejected
-	 * artifacts.
+	 * Get all blackboard artifacts of the given type(s) for the given data
+	 * source(s). Does not included rejected artifacts.
 	 *
-	 * @param artifactTypes  list of artifact types to get
+	 * @param artifactTypes    list of artifact types to get
 	 * @param dataSourceObjIds data sources to look under
 	 *
 	 * @return list of blackboard artifacts
@@ -766,13 +733,13 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public List<BlackboardArtifact> getArtifacts(Collection<BlackboardArtifact.Type> artifactTypes, 
+	public List<BlackboardArtifact> getArtifacts(Collection<BlackboardArtifact.Type> artifactTypes,
 			Collection<Long> dataSourceObjIds) throws TskCoreException {
-		
+
 		if (artifactTypes.isEmpty() || dataSourceObjIds.isEmpty()) {
 			return new ArrayList<>();
 		}
-		
+
 		String typeQuery = "";
 		for (BlackboardArtifact.Type type : artifactTypes) {
 			if (!typeQuery.isEmpty()) {
@@ -780,7 +747,7 @@ public final class Blackboard {
 			}
 			typeQuery += "blackboard_artifact_types.artifact_type_id = " + type.getTypeID();
 		}
-		
+
 		String dsQuery = "";
 		for (long dsId : dataSourceObjIds) {
 			if (!dsQuery.isEmpty()) {
@@ -788,11 +755,11 @@ public final class Blackboard {
 			}
 			dsQuery += "blackboard_artifacts.data_source_obj_id = " + dsId;
 		}
-		
+
 		String fullQuery = "( " + typeQuery + " ) AND ( " + dsQuery + " );";
-		
+
 		return caseDb.getArtifactsHelper(fullQuery);
-	}	
+	}
 
 	/**
 	 * Gets count of blackboard artifacts of given type that match a given WHERE
@@ -890,7 +857,6 @@ public final class Blackboard {
 			boolean match = false;
 			for (BlackboardAttribute fileAttribute : fileAttributesList) {
 				BlackboardAttribute.Type attributeType = fileAttribute.getAttributeType();
-
 				if (attributeType.getTypeID() != expectedAttribute.getAttributeType().getTypeID()) {
 					continue;
 				}
@@ -926,6 +892,7 @@ public final class Blackboard {
 						break;
 				}
 
+								
 				/*
 				 * If the exact attribute was found, mark it as a match to
 				 * continue looping through the expected attributes list.
@@ -984,68 +951,6 @@ public final class Blackboard {
 		}
 	}
 
-
-	/**
-	 * Add a new blackboard artifact with the given type.
-	 *
-	 * This api executes in the context of a transaction if one is provided.
-	 *
-	 * @param artifactType    The type of the artifact.
-	 * @param sourceObjId     The content that is the source of this artifact.
-	 * @param dataSourceObjId The data source the artifact source content
-	 *                        belongs to, may be the same as the sourceObjId.
-	 * @param attributes      The attributes. May be empty or null. 
-	 * @param transaction     The transaction in the scope of which the
-	 *                        operation is to be performed. Null may be
-	 *                        provided, if one is not available. 
-	 *
-	 * @return a new blackboard artifact
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within tsk core
-	 * 
-	 * @deprecated Use the newDataArtifact() API to create an artifact with attributes.
-	 */
-	@Deprecated
-	public BlackboardArtifact newBlackboardArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, long dataSourceObjId,
-			Collection<BlackboardAttribute> attributes, final CaseDbTransaction transaction) throws TskCoreException {
-
-	    CaseDbTransaction localTrans = null;
-		boolean isNewLocalTx = false;
-		if (transaction == null) {
-			localTrans = caseDb.beginTransaction();
-			isNewLocalTx = true;
-		}else {
-			localTrans = transaction;
-		}
-
-		try {
-			BlackboardArtifact blackboardArtifact = caseDb.newBlackboardArtifact(artifactType.getTypeID(), sourceObjId,
-					artifactType.getTypeName(), artifactType.getDisplayName(),
-					dataSourceObjId, localTrans.getConnection());
-
-			if (Objects.nonNull(attributes) && !attributes.isEmpty()) {
-				blackboardArtifact.addAttributes(attributes, localTrans);
-			}
-
-			if (isNewLocalTx) {
-				localTrans.commit();
-			}
-			return blackboardArtifact;
-
-		} catch (TskCoreException ex) {
-			try {
-				if (isNewLocalTx) {
-					localTrans.rollback();
-				}
-			} catch (TskCoreException ex2) {
-				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
-						+ "Error invoking newBlackboardArtifact with dataSourceObjId: " + dataSourceObjId + ",  sourceObjId: " + sourceObjId, ex2);
-			}
-			throw ex;
-		}
-	}
-
 	/**
 	 * Add a new data artifact with the given type.
 	 *
@@ -1064,11 +969,11 @@ public final class Blackboard {
 	 */
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
 			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
-		
+
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
 		}
-		
+
 		Long osAccountObjdId = null;
 		if (osAccount != null) {
 			osAccountObjdId = osAccount.getId();
@@ -1090,8 +995,7 @@ public final class Blackboard {
 			throw ex;
 		}
 	}
-	
-	
+
 	/**
 	 * Add a new data artifact with the given type.
 	 *
@@ -1103,7 +1007,7 @@ public final class Blackboard {
 	 *                        belongs to, may be the same as the sourceObjId.
 	 *                        May be null.
 	 * @param attributes      The attributes. May be empty or null.
-	 * @param osAccountObjId       The OS account associated with the artifact. May
+	 * @param osAccountObjId  The OS account associated with the artifact. May
 	 *                        be null.
 	 * @param transaction     The transaction in the scope of which the
 	 *                        operation is to be performed.
@@ -1129,10 +1033,10 @@ public final class Blackboard {
 			try (ResultSet resultSet = statement.getGeneratedKeys()) {
 				resultSet.next();
 				DataArtifact dataArtifact = new DataArtifact(caseDb, resultSet.getLong(1), //last_insert_rowid()
-									sourceObjId, artifact_obj_id, dataSourceObjId, artifactType.getTypeID(), 
-									artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, 
-									osAccountObjId, true);
-				
+						sourceObjId, artifact_obj_id, dataSourceObjId, artifactType.getTypeID(),
+						artifactType.getTypeName(), artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED,
+						osAccountObjId, true);
+
 				// Add a row in tsk_data_artifact if the os account is present
 				if (osAccountObjId != null) {
 					String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
@@ -1158,7 +1062,7 @@ public final class Blackboard {
 			caseDb.releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Event published by SleuthkitCase when one or more artifacts are posted. A
 	 * posted artifact is complete (all attributes have been added) and ready
@@ -1189,7 +1093,7 @@ public final class Blackboard {
 		}
 
 		public Collection<BlackboardArtifact> getArtifacts() {
-			return artifacts;
+			return ImmutableSet.copyOf(artifacts);
 		}
 
 		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
@@ -1204,7 +1108,7 @@ public final class Blackboard {
 		}
 
 		public Collection<BlackboardArtifact.Type> getArtifactTypes() {
-			return artifactTypes;
+			return ImmutableSet.copyOf(artifactTypes);
 		}
 	}
 }
