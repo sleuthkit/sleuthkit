@@ -125,7 +125,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 
 	@Override
 	default int compareTo(TimelineEventType otherType) {
-		return Comparator.comparing(TimelineEventType::getTypeID).compare(this, otherType);
+		return Comparator.comparing(TimelineEventType::getDisplayName).compare(this, otherType);
 	}
 
 	/**
@@ -181,9 +181,18 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	TimelineEventType ROOT_EVENT_TYPE = new TimelineEventTypeImpl(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
 			HierarchyLevel.ROOT, null) {
+				
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
+			ImmutableSortedSet.Builder<TimelineEventType> builder = ImmutableSortedSet.orderedBy(new Comparator<TimelineEventType>() {
+				@Override
+				public int compare(TimelineEventType o1, TimelineEventType o2) {
+					return ((Long) o1.getTypeID()).compareTo(o2.getTypeID());
+				}
+			});
+
+			builder.add(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
+			return builder.build();
 		}
 	};
 
@@ -218,14 +227,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet<TimelineEventType> getChildren() {
-			ImmutableSortedSet.Builder<TimelineEventType> builder = ImmutableSortedSet.orderedBy(new Comparator<TimelineEventType>() {
-				@Override
-				public int compare(TimelineEventType o1, TimelineEventType o2) {
-					return o1.getDisplayName().compareTo(o2.getDisplayName());
-				}
-			});
-
-			builder.add(CALL_LOG, CALL_LOG_END, DEVICES_ATTACHED, EMAIL, EMAIL_RCVD,
+			return ImmutableSortedSet.of(CALL_LOG, CALL_LOG_END, DEVICES_ATTACHED, EMAIL, EMAIL_RCVD,
 					EXIF, GPS_BOOKMARK, GPS_LAST_KNOWN_LOCATION, GPS_TRACKPOINT,
 					GPS_ROUTE, GPS_SEARCH, GPS_TRACK, INSTALLED_PROGRAM, LOG_ENTRY, MESSAGE,
 					METADATA_LAST_PRINTED, METADATA_LAST_SAVED, METADATA_CREATED, PROGRAM_EXECUTION,
@@ -236,7 +238,6 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION,
 					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER);
 
-			return builder.build();
 		}
 	};
 
