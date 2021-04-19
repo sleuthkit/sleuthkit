@@ -19,13 +19,11 @@
 package org.sleuthkit.datamodel;
 
 /**
- * An AnalysisResult represents the outcome of some analysis technique
- * that was applied to some data (i.e. Content) to determine the data's
- * relevance.  The result should have a conclusion and a relevance 
- * score. The score of the AnalysisResult will be used to calculate
- * the aggregate score of the parent data.  Additional metadata can be
- * stored as BlackboardAttributes.
- *
+ * An AnalysisResult represents the outcome of some analysis technique that was
+ * applied to some data (i.e. Content) to determine the data's relevance. The
+ * result should have a conclusion and a relevance score. The score of the
+ * AnalysisResult will be used to calculate the aggregate score of the parent
+ * data. Additional metadata can be stored as BlackboardAttributes.
  */
 public class AnalysisResult extends BlackboardArtifact {
 
@@ -37,7 +35,7 @@ public class AnalysisResult extends BlackboardArtifact {
 	private boolean ignoreResult = false; // ignore this analysis result when computing score of the parent object.
 
 	/**
-	 * Constructs an analysis result. 
+	 * Constructs an analysis result.
 	 *
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
@@ -57,7 +55,7 @@ public class AnalysisResult extends BlackboardArtifact {
 	 * @param configuration    Configuration used for analysis. May be null.
 	 * @param justification	   Justification for the analysis. May be null.
 	 */
-	AnalysisResult( SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Score score, String conclusion, String configuration, String justification) {
+	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		this.score = score;
 		this.conclusion = (conclusion != null) ? conclusion : "";
@@ -65,9 +63,8 @@ public class AnalysisResult extends BlackboardArtifact {
 		this.justification = (justification != null) ? justification : "";
 	}
 
-	
 	/**
-	 * Constructs an analysis result. 
+	 * Constructs an analysis result.
 	 *
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
@@ -88,7 +85,6 @@ public class AnalysisResult extends BlackboardArtifact {
 	 * @param configuration    Configuration used for analysis. May be null.
 	 * @param justification	   Justification for the analysis. May be null.
 	 */
-	
 	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, Long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew, Score score, String conclusion, String configuration, String justification) {
 		super(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus, isNew);
 		this.score = score;
@@ -134,8 +130,8 @@ public class AnalysisResult extends BlackboardArtifact {
 	}
 
 	/**
-	 * Sets if this result is to be ignored when calculating
-     * the aggregate score of the parent object. 
+	 * Sets if this result is to be ignored when calculating the aggregate score
+	 * of the parent object.
 	 *
 	 * @param ignore if the result should be ignored or not.
 	 */
