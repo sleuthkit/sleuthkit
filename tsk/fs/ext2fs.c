@@ -650,7 +650,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
             if (index + sizeof(ext2fs_ea_entry) + strlen("data") > ea_buf_len) {
                 break;
             }
-            ext2fs_ea_entry *ea_entry = (ext2fs_ea_entry*) &(ea_buf[index]);
+            ea_entry = (ext2fs_ea_entry*) &(ea_buf[index]);
         }
     }
 
