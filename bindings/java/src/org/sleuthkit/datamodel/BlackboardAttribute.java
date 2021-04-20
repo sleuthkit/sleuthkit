@@ -327,7 +327,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 			BlackboardAttribute other = (BlackboardAttribute) that;
 			Object[] thisObject = new Object[]{this.getSources(), this.getContext()};
 			Object[] otherObject = new Object[]{other.getSources(), other.getContext()};
-			return isAttributeEquals(that) && Objects.deepEquals(thisObject, otherObject);
+			return areValuesEqual(that) && Objects.deepEquals(thisObject, otherObject);
 		} else {
 			return false;
 		}
