@@ -2598,6 +2598,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
+            if (mftSeenList != NULL)
+                tsk_stack_free(mftSeenList);
             tsk_error_errstr2_concat(" - proc_attrlist");
             return TSK_ERR;
         }
@@ -2627,6 +2629,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 free(mft);
                 free(map);
                 free(buf);
+                if (mftSeenList != NULL)
+                    tsk_stack_free(mftSeenList);
                 return TSK_COR;
             }
         }
@@ -2654,6 +2658,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
+            if (mftSeenList != NULL)
+                tsk_stack_free(mftSeenList);
             return TSK_COR;
         }
 
