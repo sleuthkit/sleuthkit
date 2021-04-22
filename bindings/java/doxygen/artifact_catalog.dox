@@ -750,13 +750,13 @@ Contains autofill data for a person's address. Form data is usually saved by a W
 - TSK_LOCATION (The address of the person, e.g., 123 Main St.)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_COMMENT (Comment if the autofill data is encrypted)
 - TSK_COUNT (Number of times the Web form data was used)
 - TSK_DATETIME_ACCESSED (Last accessed timestamp of the Web form data, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DATETIME_MODIFIED (Last modified timestamp of the Web form data, in seconds since 1970-01-01T00:00:00Z)
 - TSK_EMAIL (Email address from the form data)
 - TSK_NAME_PERSON (Name of a person from the form data)
 - TSK_PHONE_NUMBER (Phone number from the form data)
-
 
 
 ---
@@ -769,10 +769,11 @@ Contains autofill data for a Web form. Form data is usually saved by a Web brows
 - TSK_VALUE (Value of the autofill field)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_COMMENT (Comment if the form autofill data is encrypted)
 - TSK_COUNT (Number of times this Web form data has been used)
 - TSK_DATETIME_CREATED (Datetime this Web form autofill data was created, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DATETIME_ACCESSED (Datetime this Web form data was last accessed, in seconds since 1970-01-01T00:00:00Z)
-
+- TSK_PROG_NAME (The application that stored this form information)
 
 
 ---
