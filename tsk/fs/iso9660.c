@@ -90,10 +90,11 @@ iso9660_inode_list_free(TSK_FS_INFO * fs)
  * @param buf Buffer of data to process
  * @param count Length of buffer in bytes.
  * @param hFile File handle to print details to  (or NULL for no printing)
+ * @param recursion_depth Recursion depth to limit the number of self-calls
  * @returns NULL on error
  */
 static rockridge_ext *
-parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
+parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_depth)
 {
     rockridge_ext *rr;
     ISO_INFO *iso = (ISO_INFO *) fs;
@@ -102,6 +103,11 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "parse_susp: count is: %d\n", count);
+
+    // 32 is an arbitrary chosen value.
+    if (recursion_depth > 32) {
+        return NULL;
+    }
 
     // allocate the output data structure
     rr = (rockridge_ext *) tsk_malloc(sizeof(rockridge_ext));
@@ -156,8 +162,15 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
                     ssize_t cnt =
                         tsk_fs_read(fs, off, buf2,
                         tsk_getu32(fs->endian, ce->celen_m));
+
                     if (cnt == tsk_getu32(fs->endian, ce->celen_m)) {
-                        parse_susp(fs, buf2, (int) cnt, hFile);
+                        rockridge_ext *rr_sub_entry = rr_sub_entry = parse_susp(fs, buf2, (int) cnt, hFile, recursion_depth + 1);
+
+                        // Prevent an infinite loop
+                        if (rr_sub_entry == NULL) {
+                          free(buf2);
+                          return NULL;
+			}
                     }
                     else if (tsk_verbose) {
                         fprintf(stderr,
@@ -675,7 +688,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 in_node->inode.rr =
                     parse_susp(fs,
                     &buf[b_offs + sizeof(iso9660_dentry) + dentry->fi_len],
-                    extra_bytes, NULL);
+                    extra_bytes, NULL, 0);
                 if (in_node->inode.rr == NULL) {
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
@@ -2123,10 +2136,12 @@ iso9660_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile
             cnt =
                 tsk_fs_read(fs, dinode->susp_off, buf2,
                 (size_t) dinode->susp_len);
+
+            rockridge_ext *rr_entry = NULL;
             if (cnt == dinode->susp_len) {
-                parse_susp(fs, buf2, (int) cnt, hFile);
+                rr_entry = parse_susp(fs, buf2, (int) cnt, hFile, 0);
             }
-            else {
+            if (rr_entry == NULL) {
                 fprintf(hFile, "Error reading Rock Ridge Location\n");
                 if (tsk_verbose) {
                     fprintf(stderr,
