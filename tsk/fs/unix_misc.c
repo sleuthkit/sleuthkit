@@ -180,6 +180,7 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
             }
             tsk_error_set_errstr2("unix_make_data_run_indir: Block %"
                 PRIuDADDR, addr);
+            free(data_run);
             return -1;
         }
     }
