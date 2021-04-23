@@ -2470,6 +2470,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             (void *) &load_file)) {
         tsk_error_errstr2_concat("- processing attrlist");
         free(mft);
+        free(buf);
         free(map);
         return TSK_ERR;
     }
