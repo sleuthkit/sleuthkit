@@ -164,6 +164,55 @@ public final class Blackboard {
 	 * @param justification   Justification, may be null or an empty string.
 	 * @param attributesList  Attributes to be attached to this analysis result
 	 *                        artifact.
+	 *
+	 * @return AnalysisResultAdded The analysis return added and the current
+	 *         aggregate score of content.
+	 *
+	 * @throws TskCoreException
+	 * @throws BlackboardException exception thrown if a critical error occurs
+	 *                             within TSK core
+	 */
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score,
+			String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList)
+			throws BlackboardException, TskCoreException {
+
+		if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			throw new BlackboardException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", artifactType.getTypeName()));
+		}
+
+		CaseDbTransaction transaction = caseDb.beginTransaction();
+		try {
+			AnalysisResultAdded analysisResult = newAnalysisResult(artifactType, objId, dataSourceObjId, score,
+					conclusion, configuration, justification, attributesList);
+			transaction.commit();
+			return analysisResult;
+		} catch (TskCoreException | BlackboardException ex) {
+			try {
+				transaction.rollback();
+			} catch (TskCoreException ex2) {
+				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
+						+ "Error invoking newAnalysisResult with dataSourceObjId: "
+						+ (dataSourceObjId == null ? "<null>" : dataSourceObjId)
+						+ ",  sourceObjId: " + objId, ex2);
+			}
+			throw ex;
+		}
+	}
+
+	/**
+	 * Adds new analysis result artifact.
+	 *
+	 * @param artifactType    Type of analysis result artifact to create.
+	 * @param objId           Object id of parent.
+	 * @param dataSourceObjId Data source object id, may be null.
+	 * @param score	          Score associated with this analysis result.
+	 * @param conclusion      Conclusion of the analysis, may be null or an
+	 *                        empty string.
+	 * @param configuration   Configuration associated with this analysis, may
+	 *                        be null or an empty string.
+	 * @param justification   Justification, may be null or an empty string.
+	 * @param attributesList  Attributes to be attached to this analysis result
+	 *                        artifact.
 	 * @param transaction     DB transaction to use.
 	 *
 	 * @return AnalysisResultAdded The analysis return added and the current

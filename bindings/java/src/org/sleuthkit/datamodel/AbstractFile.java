@@ -1405,11 +1405,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
-		// don't let them make more than 1 GEN_INFO
-		if (artifactTypeID == BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
-			return getGenInfoArtifact(true);
-		}
-		return getSleuthkitCase().newBlackboardArtifact(artifactTypeID, getId(), dataSourceObjectId);
+		return super.newArtifact(artifactTypeID);
 	}
 
 	/**

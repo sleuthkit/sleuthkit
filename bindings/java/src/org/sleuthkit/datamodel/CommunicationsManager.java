@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -47,7 +48,7 @@ import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 public final class CommunicationsManager {
 
 	private static final Logger LOGGER = Logger.getLogger(CommunicationsManager.class.getName());
-
+	private static final BlackboardArtifact.Type ACCOUNT_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT);
 	private final SleuthkitCase db;
 
 	private final Map<Account.Type, Integer> accountTypeToTypeIdMap
@@ -355,10 +356,10 @@ public final class CommunicationsManager {
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
 			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
 
-		if(sourceArtifact.getDataSourceObjectID() == null) {
+		if (sourceArtifact.getDataSourceObjectID() == null) {
 			throw new TskDataException("Source Artifact does not have a valid data source.");
 		}
-		
+
 		if (relationshipType.isCreatableFrom(sourceArtifact) == false) {
 			throw new TskDataException("Can not make a " + relationshipType.getDisplayName()
 					+ " relationship from a" + sourceArtifact.getDisplayName());
@@ -387,10 +388,10 @@ public final class CommunicationsManager {
 						+ "Recipient source ID" + recipient.getDataSourceObjectID() + " != relationship source ID" + sourceArtifact.getDataSourceObjectID());
 			}
 		}
-		
+
 		// Set up the query for the prepared statement
 		String query = "INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
-						+ "VALUES (?,?,?,?,?,?)";
+				+ "VALUES (?,?,?,?,?,?)";
 		switch (db.getDatabaseType()) {
 			case POSTGRESQL:
 				query = "INSERT " + query + " ON CONFLICT DO NOTHING";
@@ -400,13 +401,13 @@ public final class CommunicationsManager {
 				break;
 			default:
 				throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
-		}		
-		
-		CaseDbTransaction trans = db.beginTransaction();	
+		}
+
+		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			SleuthkitCase.CaseDbConnection connection = trans.getConnection();
 			PreparedStatement preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
-			
+
 			for (int i = 0; i < accountIDs.size(); i++) {
 				for (int j = i + 1; j < accountIDs.size(); j++) {
 					long account1_id = accountIDs.get(i);
@@ -509,13 +510,29 @@ public final class CommunicationsManager {
 	 *                          case database.
 	 */
 	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
+		if (sourceFile == null) {
+			throw new TskCoreException("Source file not provided.");
+		}
+
 		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
 		if (accountArtifact == null) {
-			accountArtifact = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, sourceFile.getId());
-			Collection<BlackboardAttribute> attributes = new ArrayList<>();
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()));
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID));
-			accountArtifact.addAttributes(attributes);
+			long fileObjId = sourceFile.getId();
+			Long dsObjId = sourceFile.getDataSource() == null ? null : sourceFile.getDataSource().getId();
+
+			Optional<Long> osAccountId = (sourceFile instanceof AbstractFile)
+					? ((AbstractFile) sourceFile).getOsAccountObjectId()
+					: Optional.empty();
+
+			OsAccount osAccount = osAccountId.isPresent()
+					? db.getOsAccountManager().getOsAccountByObjectId(osAccountId.get())
+					: null;
+
+			List<BlackboardAttribute> attributes = Arrays.asList(
+					new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()),
+					new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID)
+			);
+			
+			accountArtifact = db.getBlackboard().newDataArtifact(ACCOUNT_TYPE, fileObjId, dsObjId, attributes, osAccount);
 			try {
 				db.getBlackboard().postArtifact(accountArtifact, moduleName);
 			} catch (BlackboardException ex) {
