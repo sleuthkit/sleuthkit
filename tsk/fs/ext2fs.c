@@ -427,6 +427,9 @@ static uint8_t
         return 1;
     }
 
+    // Ensure the bitmap buffer is initialized.
+    memset(ext2fs->imap_buf, 0, fs->block_size);
+
     cnt = tsk_fs_read(fs, addr * fs->block_size, 
         (char *) ext2fs->imap_buf, ext2fs->fs_info.block_size);
 
@@ -978,7 +981,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
     /*
      * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
      */
-    if ((inum - ibase) > fs->block_size*8) {
+    if ((ibase > inum) || (inum - ibase) >= (fs->block_size * 8)) {
         tsk_release_lock(&ext2fs->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
@@ -1214,7 +1217,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         /*
          * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
          */
-        if ((inum - ibase) > fs->block_size*8) {
+        if ((ibase > inum) || (inum - ibase) >= (fs->block_size * 8)) {
             tsk_release_lock(&ext2fs->lock);
             free(dino_buf);
             tsk_fs_file_close(fs_file);
