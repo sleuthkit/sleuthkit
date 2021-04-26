@@ -23,7 +23,6 @@ import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -535,7 +534,6 @@ public class BlackboardArtifact implements Content {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	@Override
-	@Deprecated
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		// Currently we don't have any artifacts derived from an artifact.
 		return new ArrayList<BlackboardArtifact>();
@@ -597,7 +595,6 @@ public class BlackboardArtifact implements Content {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	@Override
-	@Deprecated
 	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		// Currently we don't have any artifacts derived from an artifact.
 		return 0;
@@ -716,7 +713,6 @@ public class BlackboardArtifact implements Content {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	@Override
-	@Deprecated
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		throw new TskCoreException("Cannot create artifact of an artifact. Not supported.");
 	}
@@ -903,7 +899,7 @@ public class BlackboardArtifact implements Content {
 	public static final class Type implements Serializable {
 
 		private static final long serialVersionUID = 1L;
-
+		
 		/**
 		 * A generic information artifact.
 		 */
@@ -1392,7 +1388,6 @@ public class BlackboardArtifact implements Content {
 		 *
 		 * @param type An element of the ARTIFACT_TYPE enum.
 		 */
-		@Deprecated
 		public Type(ARTIFACT_TYPE type) {
 			this(type.getTypeID(), type.getLabel(), type.getDisplayName(), type.getCategory());
 		}
@@ -1484,7 +1479,6 @@ public class BlackboardArtifact implements Content {
 	 * http://sleuthkit.org/sleuthkit/docs/jni-docs/latest/artifact_catalog_page.html
 	 * for details on the standard attributes for each artifact type.
 	 */
-	@Deprecated
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
 		/**
@@ -1935,7 +1929,6 @@ public class BlackboardArtifact implements Content {
 		 *
 		 * @return The enum element.
 		 */
-		@Deprecated
 		static public ARTIFACT_TYPE fromLabel(String label) {
 			for (ARTIFACT_TYPE value : ARTIFACT_TYPE.values()) {
 				if (value.getLabel().equals(label)) {
@@ -1955,7 +1948,6 @@ public class BlackboardArtifact implements Content {
 		 *
 		 * @return the corresponding enum
 		 */
-		@Deprecated
 		static public ARTIFACT_TYPE fromID(int id) {
 			for (ARTIFACT_TYPE value : ARTIFACT_TYPE.values()) {
 				if (value.getTypeID() == id) {
