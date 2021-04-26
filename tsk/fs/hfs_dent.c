@@ -367,11 +367,12 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
 * structure or a new structure.
 * @param a_addr Address of directory to process.
+* @param recursion_depth Recursion depth to limit the number of self-calls
 * @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
 hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
     uint32_t cnid;              /* catalog node ID of the entry (= inum) */

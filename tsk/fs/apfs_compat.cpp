@@ -226,8 +226,8 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   };
 
   _fsinfo.dir_open_meta = [](TSK_FS_INFO* fs, TSK_FS_DIR** a_fs_dir,
-                             TSK_INUM_T inode) {
-    return to_fs(fs).dir_open_meta(a_fs_dir, inode);
+                             TSK_INUM_T inode, int recursion_depth) {
+    return to_fs(fs).dir_open_meta(a_fs_dir, inode, recursion_depth);
   };
 
   _fsinfo.fscheck = [](TSK_FS_INFO*, FILE*) {
@@ -478,7 +478,8 @@ uint8_t tsk_apfs_fsstat(TSK_FS_INFO* fs_info, apfs_fsstat_info* info) try {
 }
 
 TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(TSK_FS_DIR** a_fs_dir,
-                                            TSK_INUM_T inode_num) const
+                                            TSK_INUM_T inode_num,
+                                            int recursion_depth) const
     noexcept try {
   // Sanity checks
   if (a_fs_dir == NULL) {
