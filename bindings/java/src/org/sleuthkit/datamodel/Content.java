@@ -173,6 +173,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
+	@Deprecated
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
 
 	/**
@@ -298,6 +299,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
+	@Deprecated
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
 
 	/**
@@ -361,6 +363,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
+	@Deprecated
 	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
 
 	/**

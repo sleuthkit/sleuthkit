@@ -265,6 +265,7 @@ public class Report implements Content {
 		return db.getBlackboard().newDataArtifact(artifactType, objectId, this.getDataSource().getId(), attributesList, osAccount);
 	}
 	
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());
@@ -301,6 +302,7 @@ public class Report implements Content {
 		return db.getBlackboardArtifacts(artifactTypeID, objectId);
 	}
 
+	@Deprecated
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return getArtifacts(type.getTypeID());
@@ -344,6 +346,7 @@ public class Report implements Content {
 		return db.getBlackboardArtifactsCount(artifactTypeID, objectId);
 	}
 
+	@Deprecated
 	@Override
 	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return getArtifactsCount(type.getTypeID());

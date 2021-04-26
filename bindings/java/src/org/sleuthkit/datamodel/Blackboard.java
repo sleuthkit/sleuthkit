@@ -809,6 +809,7 @@ public final class Blackboard {
 	 * @throws TskCoreException If there is a problem getting artifacts or
 	 * attributes.
 	 */
+	@Deprecated
 	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType,
 			Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 

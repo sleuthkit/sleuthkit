@@ -113,6 +113,7 @@ public interface SleuthkitItemVisitor<T> {
 	 *
 	 * @return result of the visit
 	 */
+	@Deprecated
 	T visit(BlackboardArtifact.ARTIFACT_TYPE tw);
 
 	/**
@@ -249,6 +250,7 @@ public interface SleuthkitItemVisitor<T> {
 			return defaultVisit(ba);
 		}
 
+		@Deprecated
 		@Override
 		public T visit(BlackboardArtifact.ARTIFACT_TYPE tw) {
 			return defaultVisit(tw);

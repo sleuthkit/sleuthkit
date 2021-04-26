@@ -354,6 +354,7 @@ public abstract class AbstractContent implements Content {
 	}
 	
 	@Override
+	@Deprecated
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());
 	}
@@ -382,6 +383,7 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
+	@Deprecated
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return getArtifacts(type.getTypeID());
 	}
@@ -464,6 +466,7 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
+	@Deprecated
 	public long getArtifactsCount(ARTIFACT_TYPE type) throws TskCoreException {
 		return db.getBlackboardArtifactsCount(type, objId);
 	}
