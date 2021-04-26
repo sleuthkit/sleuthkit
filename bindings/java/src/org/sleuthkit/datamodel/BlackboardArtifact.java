@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -899,7 +900,7 @@ public class BlackboardArtifact implements Content {
 	public static final class Type implements Serializable {
 
 		private static final long serialVersionUID = 1L;
-		
+
 		/**
 		 * A generic information artifact.
 		 */
