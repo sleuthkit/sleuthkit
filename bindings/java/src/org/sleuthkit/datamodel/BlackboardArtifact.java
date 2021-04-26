@@ -940,14 +940,6 @@ public class BlackboardArtifact implements Content {
 		public static final Type TSK_RECENT_OBJECT = new BlackboardArtifact.Type(6, "TSK_RECENT_OBJ", bundle.getString("BlackboardArtifact.tsk.recentObject.text"), Category.DATA_ARTIFACT);
 
 		/**
-		 * A GPS track point (geolocation data).
-		 *
-		 * @deprecated Use TSK_GPS_TRACK instead
-		 */
-		@Deprecated
-		public static final Type TSK_GPS_TRACKPOINT = new BlackboardArtifact.Type(7, "TSK_GPS_TRACKPOINT", bundle.getString("BlackboardArtifact.tskGpsTrackpoint.text"), Category.DATA_ARTIFACT);
-
-		/**
 		 * An installed program.
 		 */
 		public static final Type TSK_INSTALLED_PROG = new BlackboardArtifact.Type(8, "TSK_INSTALLED_PROG", bundle.getString("BlackboardArtifact.tskInstalledProg.text"), Category.DATA_ARTIFACT);
@@ -994,44 +986,14 @@ public class BlackboardArtifact implements Content {
 		public static final Type TSK_METADATA_EXIF = new BlackboardArtifact.Type(16, "TSK_METADATA_EXIF", bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT);
 
 		/**
-		 * A tag applied to a file.
-		 *
-		 * @deprecated Tags are no longer treated as artifacts.
-		 */
-		@Deprecated
-		public static final Type TSK_TAG_FILE = new BlackboardArtifact.Type(17, "TSK_TAG_FILE", bundle.getString("BlackboardArtifact.tagFile.text"), Category.ANALYSIS_RESULT);
-
-		/**
-		 * A tag applied to an artifact.
-		 *
-		 * @deprecated Tags are no longer treated as artifacts.
-		 */
-		@Deprecated
-		public static final Type TSK_TAG_ARTIFACT = new BlackboardArtifact.Type(18, "TSK_TAG_ARTIFACT", bundle.getString("BlackboardArtifact.tskTagArtifact.text"), Category.ANALYSIS_RESULT);
-
-		/**
 		 * Information pertaining to an operating system.
 		 */
 		public static final Type TSK_OS_INFO = new BlackboardArtifact.Type(19, "TSK_OS_INFO", bundle.getString("BlackboardArtifact.tskOsInfo.text"), Category.DATA_ARTIFACT);
 
 		/**
-		 * An operating system user account.
-		 */
-		@Deprecated
-		public static final Type TSK_OS_ACCOUNT = new BlackboardArtifact.Type(20, "TSK_OS_ACCOUNT", bundle.getString("BlackboardArtifact.tskOsAccount.text"), Category.DATA_ARTIFACT);
-
-		/**
 		 * An application or Web service account.
 		 */
 		public static final Type TSK_SERVICE_ACCOUNT = new BlackboardArtifact.Type(21, "TSK_SERVICE_ACCOUNT", bundle.getString("BlackboardArtifact.tskServiceAccount.text"), Category.DATA_ARTIFACT);
-
-		/**
-		 * Output from an external tool or module (raw text).
-		 *
-		 * @deprecated Tool output should be saved as a report.
-		 */
-		@Deprecated
-		public static final Type TSK_TOOL_OUTPUT = new BlackboardArtifact.Type(22, "TSK_TOOL_OUTPUT", bundle.getString("BlackboardArtifact.tskToolOutput.text"), Category.DATA_ARTIFACT);
 
 		/**
 		 * A contact extracted from a phone, or from an address
@@ -1290,7 +1252,6 @@ public class BlackboardArtifact implements Content {
 				TSK_WEB_HISTORY,
 				TSK_WEB_DOWNLOAD,
 				TSK_RECENT_OBJECT,
-				TSK_GPS_TRACKPOINT,
 				TSK_INSTALLED_PROG,
 				TSK_KEYWORD_HIT,
 				TSK_HASHSET_HIT,
@@ -1300,12 +1261,8 @@ public class BlackboardArtifact implements Content {
 				TSK_EXTRACTED_TEXT,
 				TSK_WEB_SEARCH_QUERY,
 				TSK_METADATA_EXIF,
-				TSK_TAG_FILE,
-				TSK_TAG_ARTIFACT,
 				TSK_OS_INFO,
-				TSK_OS_ACCOUNT,
 				TSK_SERVICE_ACCOUNT,
-				TSK_TOOL_OUTPUT,
 				TSK_CONTACT,
 				TSK_MESSAGE,
 				TSK_CALLLOG,
