@@ -939,6 +939,7 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_RECENT_OBJECT = new BlackboardArtifact.Type(6, "TSK_RECENT_OBJ", bundle.getString("BlackboardArtifact.tsk.recentObject.text"), Category.DATA_ARTIFACT);
 
+		// 7 was used for deprecated TSK_GPS_TRACKPOINT. 
 		/**
 		 * An installed program.
 		 */
@@ -985,16 +986,20 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_METADATA_EXIF = new BlackboardArtifact.Type(16, "TSK_METADATA_EXIF", bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT);
 
+		// 17 was used for deprecated TSK_TAG_FILE. 
+		// 18 was used for deprecated TSK_TAG_ARTIFACT. 
 		/**
 		 * Information pertaining to an operating system.
 		 */
 		public static final Type TSK_OS_INFO = new BlackboardArtifact.Type(19, "TSK_OS_INFO", bundle.getString("BlackboardArtifact.tskOsInfo.text"), Category.DATA_ARTIFACT);
 
+		// 20 was used for deprecated TSK_OS_ACCOUNT.
 		/**
 		 * An application or Web service account.
 		 */
 		public static final Type TSK_SERVICE_ACCOUNT = new BlackboardArtifact.Type(21, "TSK_SERVICE_ACCOUNT", bundle.getString("BlackboardArtifact.tskServiceAccount.text"), Category.DATA_ARTIFACT);
 
+		// 22 was used for deprecated TSK_TOOL_OUTPUT.
 		/**
 		 * A contact extracted from a phone, or from an address
 		 * book/email/messaging application. Use methods in
@@ -1151,15 +1156,7 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_WEB_FORM_ADDRESS = new BlackboardArtifact.Type(50, "TSK_WEB_FORM_ADDRESSES ", bundle.getString("BlackboardArtifact.tskWebFormAddresses.text"), Category.DATA_ARTIFACT);
 
-		/**
-		 * Indicates source of a file/object
-		 *
-		 * @deprecated TSK_ASSOCIATED_OBJECT should be used instead to associate
-		 * the file/object with its source artifact/object..
-		 */
-		@Deprecated
-		public static final Type TSK_DOWNLOAD_SOURCE = new BlackboardArtifact.Type(51, "TSK_DOWNLOAD_SOURCE", bundle.getString("BlackboardArtifact.tskDownloadSource.text"), Category.DATA_ARTIFACT);
-
+		// 51 was used for deprecated TSK_DOWNLOAD_SOURCE
 		/**
 		 * Indicates web cache data
 		 */
@@ -1242,6 +1239,8 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
+		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES list.
+
 		/**
 		 * A list of all the standard artifact types.
 		 */
@@ -1291,7 +1290,6 @@ public class BlackboardArtifact implements Content {
 				TSK_DATA_SOURCE_USAGE,
 				TSK_WEB_FORM_AUTOFILL,
 				TSK_WEB_FORM_ADDRESS,
-				TSK_DOWNLOAD_SOURCE,
 				TSK_WEB_CACHE,
 				TSK_TL_EVENT,
 				TSK_CLIPBOARD_CONTENT,
