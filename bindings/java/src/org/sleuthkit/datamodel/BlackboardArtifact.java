@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1026,6 +1027,7 @@ public class BlackboardArtifact implements Content {
 	 * http://sleuthkit.org/sleuthkit/docs/jni-docs/latest/artifact_catalog_page.html
 	 * for details on the standard attributes for each artifact type.
 	 */
+	@Deprecated
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
 		/**
@@ -1531,6 +1533,458 @@ public class BlackboardArtifact implements Content {
 
 	}
 
+	/**
+	 * A generic information artifact.
+	 */
+	public static final BlackboardArtifact.Type TSK_GEN_INFO = new BlackboardArtifact.Type(1, "TSK_GEN_INFO", bundle.getString("BlackboardArtifact.tskGenInfo.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A Web bookmark. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+	 * create bookmark artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_BOOKMARK = new BlackboardArtifact.Type(2, "TSK_WEB_BOOKMARK", bundle.getString("BlackboardArtifact.tskWebBookmark.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A Web cookie. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+	 * create cookie artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_COOKIE = new BlackboardArtifact.Type(3, "TSK_WEB_COOKIE", bundle.getString("BlackboardArtifact.tskWebCookie.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A Web history. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+	 * create history artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_HISTORY = new BlackboardArtifact.Type(4, "TSK_WEB_HISTORY", bundle.getString("BlackboardArtifact.tskWebHistory.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A Web download. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+	 * create download artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_DOWNLOAD = new BlackboardArtifact.Type(5, "TSK_WEB_DOWNLOAD", bundle.getString("BlackboardArtifact.tskWebDownload.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A recent object.
+	 */
+	public static final BlackboardArtifact.Type TSK_RECENT_OBJECT = new BlackboardArtifact.Type(6, "TSK_RECENT_OBJ", bundle.getString("BlackboardArtifact.tsk.recentObject.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A GPS track point (geolocation data).
+	 *
+	 * @deprecated Use TSK_GPS_TRACK instead
+	 */
+	@Deprecated
+	public static final BlackboardArtifact.Type TSK_GPS_TRACKPOINT = new BlackboardArtifact.Type(7, "TSK_GPS_TRACKPOINT", bundle.getString("BlackboardArtifact.tskGpsTrackpoint.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An installed program.
+	 */
+	public static final BlackboardArtifact.Type TSK_INSTALLED_PROG = new BlackboardArtifact.Type(8, "TSK_INSTALLED_PROG", bundle.getString("BlackboardArtifact.tskInstalledProg.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A search hit for a keyword.
+	 */
+	public static final BlackboardArtifact.Type TSK_KEYWORD_HIT = new BlackboardArtifact.Type(9, "TSK_KEYWORD_HIT", bundle.getString("BlackboardArtifact.tskKeywordHits.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * A hit for a hash set (hash database).
+	 */
+	public static final BlackboardArtifact.Type TSK_HASHSET_HIT = new BlackboardArtifact.Type(10, "TSK_HASHSET_HIT", bundle.getString("BlackboardArtifact.tskHashsetHit.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * An attached device.
+	 */
+	public static final BlackboardArtifact.Type TSK_DEVICE_ATTACHED = new BlackboardArtifact.Type(11, "TSK_DEVICE_ATTACHED", bundle.getString("BlackboardArtifact.tskDeviceAttached.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An meta-artifact to call attention to a file deemed to be interesting.
+	 */
+	public static final BlackboardArtifact.Type TSK_INTERESTING_FILE_HIT = new BlackboardArtifact.Type(12, "TSK_INTERESTING_FILE_HIT", bundle.getString("BlackboardArtifact.tskInterestingFileHit.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * An email message.
+	 */
+	public static final BlackboardArtifact.Type TSK_EMAIL_MSG = new BlackboardArtifact.Type(13, "TSK_EMAIL_MSG", bundle.getString("BlackboardArtifact.tskEmailMsg.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Text extracted from the source content.
+	 */
+	public static final BlackboardArtifact.Type TSK_EXTRACTED_TEXT = new BlackboardArtifact.Type(14, "TSK_EXTRACTED_TEXT", bundle.getString("BlackboardArtifact.tskExtractedText.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A Web search engine query extracted from Web history.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_SEARCH_QUERY = new BlackboardArtifact.Type(15, "TSK_WEB_SEARCH_QUERY", bundle.getString("BlackboardArtifact.tskWebSearchQuery.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * EXIF metadata.
+	 */
+	public static final BlackboardArtifact.Type TSK_METADATA_EXIF = new BlackboardArtifact.Type(16, "TSK_METADATA_EXIF", bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A tag applied to a file.
+	 *
+	 * @deprecated Tags are no longer treated as artifacts.
+	 */
+	@Deprecated
+	public static final BlackboardArtifact.Type TSK_TAG_FILE = new BlackboardArtifact.Type(17, "TSK_TAG_FILE", bundle.getString("BlackboardArtifact.tagFile.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * A tag applied to an artifact.
+	 *
+	 * @deprecated Tags are no longer treated as artifacts.
+	 */
+	@Deprecated
+	public static final BlackboardArtifact.Type TSK_TAG_ARTIFACT = new BlackboardArtifact.Type(18, "TSK_TAG_ARTIFACT", bundle.getString("BlackboardArtifact.tskTagArtifact.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * Information pertaining to an operating system.
+	 */
+	public static final BlackboardArtifact.Type TSK_OS_INFO = new BlackboardArtifact.Type(19, "TSK_OS_INFO", bundle.getString("BlackboardArtifact.tskOsInfo.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An operating system user account.
+	 */
+	@Deprecated
+	public static final BlackboardArtifact.Type TSK_OS_ACCOUNT = new BlackboardArtifact.Type(20, "TSK_OS_ACCOUNT", bundle.getString("BlackboardArtifact.tskOsAccount.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An application or Web service account.
+	 */
+	public static final BlackboardArtifact.Type TSK_SERVICE_ACCOUNT = new BlackboardArtifact.Type(21, "TSK_SERVICE_ACCOUNT", bundle.getString("BlackboardArtifact.tskServiceAccount.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Output from an external tool or module (raw text).
+	 *
+	 * @deprecated Tool output should be saved as a report.
+	 */
+	@Deprecated
+	public static final BlackboardArtifact.Type TSK_TOOL_OUTPUT = new BlackboardArtifact.Type(22, "TSK_TOOL_OUTPUT", bundle.getString("BlackboardArtifact.tskToolOutput.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A contact extracted from a phone, or from an address book/email/messaging
+	 * application. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper to
+	 * create contact artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_CONTACT = new BlackboardArtifact.Type(23, "TSK_CONTACT", bundle.getString("BlackboardArtifact.tskContact.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An SMS/MMS message extracted from phone, or from another messaging
+	 * application, like IM. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper to
+	 * create message artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_MESSAGE = new BlackboardArtifact.Type(24, "TSK_MESSAGE", bundle.getString("BlackboardArtifact.tskMessage.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A phone call log extracted from a phone or softphone application. Use
+	 * methods in
+	 * org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper to
+	 * create call log artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_CALLLOG = new BlackboardArtifact.Type(25, "TSK_CALLLOG", bundle.getString("BlackboardArtifact.tskCalllog.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A calendar entry from a phone, PIM, or a calendar application.
+	 */
+	public static final BlackboardArtifact.Type TSK_CALENDAR_ENTRY = new BlackboardArtifact.Type(26, "TSK_CALENDAR_ENTRY", bundle.getString("BlackboardArtifact.tskCalendarEntry.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A speed dial entry from a phone.
+	 */
+	public static final BlackboardArtifact.Type TSK_SPEED_DIAL_ENTRY = new BlackboardArtifact.Type(27, "TSK_SPEED_DIAL_ENTRY", bundle.getString("BlackboardArtifact.tskSpeedDialEntry.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A bluetooth pairing entry.
+	 */
+	public static final BlackboardArtifact.Type TSK_BLUETOOTH_PAIRING = new BlackboardArtifact.Type(28, "TSK_BLUETOOTH_PAIRING", bundle.getString("BlackboardArtifact.tskBluetoothPairing.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A GPS bookmark / way point that the user saved.
+	 */
+	public static final BlackboardArtifact.Type TSK_GPS_BOOKMARK = new BlackboardArtifact.Type(29, "TSK_GPS_BOOKMARK", bundle.getString("BlackboardArtifact.tskGpsBookmark.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A GPS last known location record.
+	 */
+	public static final BlackboardArtifact.Type TSK_GPS_LAST_KNOWN_LOCATION = new BlackboardArtifact.Type(30, "TSK_GPS_LAST_KNOWN_LOCATION", bundle.getString("BlackboardArtifact.tskGpsLastKnownLocation.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A GPS search record.
+	 */
+	public static final BlackboardArtifact.Type TSK_GPS_SEARCH = new BlackboardArtifact.Type(31, "TSK_GPS_SEARCH", bundle.getString("BlackboardArtifact.tskGpsSearch.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Application run information.
+	 */
+	public static final BlackboardArtifact.Type TSK_PROG_RUN = new BlackboardArtifact.Type(32, "TSK_PROG_RUN", bundle.getString("BlackboardArtifact.tskProgRun.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An encrypted file.
+	 */
+	public static final BlackboardArtifact.Type TSK_ENCRYPTION_DETECTED = new BlackboardArtifact.Type(33, "TSK_ENCRYPTION_DETECTED", bundle.getString("BlackboardArtifact.tskEncryptionDetected.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * A file with an extension that does not match its MIME type.
+	 */
+	public static final BlackboardArtifact.Type TSK_EXT_MISMATCH_DETECTED = new BlackboardArtifact.Type(34, "TSK_EXT_MISMATCH_DETECTED", bundle.getString("BlackboardArtifact.tskExtMismatchDetected.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * An meta-artifact to call attention to an artifact deemed to be
+	 * interesting.
+	 */
+	public static final BlackboardArtifact.Type TSK_INTERESTING_ARTIFACT_HIT = new BlackboardArtifact.Type(35, "TSK_INTERESTING_ARTIFACT_HIT", bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * A route based on GPS coordinates. Use
+	 * org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addRoute() to
+	 * create route artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_GPS_ROUTE = new BlackboardArtifact.Type(36, "TSK_GPS_ROUTE", bundle.getString("BlackboardArtifact.tskGpsRoute.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A remote drive.
+	 */
+	public static final BlackboardArtifact.Type TSK_REMOTE_DRIVE = new BlackboardArtifact.Type(37, "TSK_REMOTE_DRIVE", bundle.getString("BlackboardArtifact.tskRemoteDrive.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A human face was detected in a media file.
+	 */
+	public static final BlackboardArtifact.Type TSK_FACE_DETECTED = new BlackboardArtifact.Type(38, "TSK_FACE_DETECTED", bundle.getString("BlackboardArtifact.tskFaceDetected.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * An account.
+	 */
+	public static final BlackboardArtifact.Type TSK_ACCOUNT = new BlackboardArtifact.Type(39, "TSK_ACCOUNT", bundle.getString("BlackboardArtifact.tskAccount.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An encrypted file.
+	 */
+	public static final BlackboardArtifact.Type TSK_ENCRYPTION_SUSPECTED = new BlackboardArtifact.Type(40, "TSK_ENCRYPTION_SUSPECTED", bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text"), Category.ANALYSIS_RESULT);
+
+	/*
+	 * A classifier detected an object in a media file.
+	 */
+	public static final BlackboardArtifact.Type TSK_OBJECT_DETECTED = new BlackboardArtifact.Type(41, "TSK_OBJECT_DETECTED", bundle.getString("BlackboardArtifact.tskObjectDetected.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * A wireless network.
+	 */
+	public static final BlackboardArtifact.Type TSK_WIFI_NETWORK = new BlackboardArtifact.Type(42, "TSK_WIFI_NETWORK", bundle.getString("BlackboardArtifact.tskWIFINetwork.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Information related to a device.
+	 */
+	public static final BlackboardArtifact.Type TSK_DEVICE_INFO = new BlackboardArtifact.Type(43, "TSK_DEVICE_INFO", bundle.getString("BlackboardArtifact.tskDeviceInfo.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A SIM card.
+	 */
+	public static final BlackboardArtifact.Type TSK_SIM_ATTACHED = new BlackboardArtifact.Type(44, "TSK_SIM_ATTACHED", bundle.getString("BlackboardArtifact.tskSimAttached.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A bluetooth adapter.
+	 */
+	public static final BlackboardArtifact.Type TSK_BLUETOOTH_ADAPTER = new BlackboardArtifact.Type(45, "TSK_BLUETOOTH_ADAPTER", bundle.getString("BlackboardArtifact.tskBluetoothAdapter.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A wireless network adapter.
+	 */
+	public static final BlackboardArtifact.Type TSK_WIFI_NETWORK_ADAPTER = new BlackboardArtifact.Type(46, "TSK_WIFI_NETWORK_ADAPTER", bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Indicates a verification failure
+	 */
+	public static final BlackboardArtifact.Type TSK_VERIFICATION_FAILED = new BlackboardArtifact.Type(47, "TSK_VERIFICATION_FAILED", bundle.getString("BlackboardArtifact.tskVerificationFailed.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * Categorization information for a data source.
+	 */
+	public static final BlackboardArtifact.Type TSK_DATA_SOURCE_USAGE = new BlackboardArtifact.Type(48, "TSK_DATA_SOURCE_USAGE", bundle.getString("BlackboardArtifact.tskDataSourceUsage.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * Indicates auto fill data from a Web form. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+	 * create web form autofill artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_FORM_AUTOFILL = new BlackboardArtifact.Type(49, "TSK_WEB_FORM_AUTOFILL", bundle.getString("BlackboardArtifact.tskWebFormAutofill.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Indicates an person's address filled in a web form. Use methods in
+	 * org.sleuthkit.datamodel.blackboardutils.WebBrowserArtifactsHelper to
+	 * create web form address artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_FORM_ADDRESS = new BlackboardArtifact.Type(50, "TSK_WEB_FORM_ADDRESSES ", bundle.getString("BlackboardArtifact.tskWebFormAddresses.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Indicates source of a file/object
+	 *
+	 * @deprecated TSK_ASSOCIATED_OBJECT should be used instead to associate the
+	 * file/object with its source artifact/object..
+	 */
+	@Deprecated
+	public static final BlackboardArtifact.Type TSK_DOWNLOAD_SOURCE = new BlackboardArtifact.Type(51, "TSK_DOWNLOAD_SOURCE", bundle.getString("BlackboardArtifact.tskDownloadSource.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Indicates web cache data
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_CACHE = new BlackboardArtifact.Type(52, "TSK_WEB_CACHE", bundle.getString("BlackboardArtifact.tskWebCache.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * A generic (timeline) event.
+	 */
+	public static final BlackboardArtifact.Type TSK_TL_EVENT = new BlackboardArtifact.Type(53, "TSK_TL_EVENT", bundle.getString("BlackboardArtifact.tskTLEvent.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Indicates clipboard content
+	 */
+	public static final BlackboardArtifact.Type TSK_CLIPBOARD_CONTENT = new BlackboardArtifact.Type(54, "TSK_CLIPBOARD_CONTENT", bundle.getString("BlackboardArtifact.tskClipboardContent.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * An associated object.
+	 */
+	public static final BlackboardArtifact.Type TSK_ASSOCIATED_OBJECT = new BlackboardArtifact.Type(55, "TSK_ASSOCIATED_OBJECT", bundle.getString("BlackboardArtifact.tskAssociatedObject.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Indicates file may have been created by the user.
+	 */
+	public static final BlackboardArtifact.Type TSK_USER_CONTENT_SUSPECTED = new BlackboardArtifact.Type(56, "TSK_USER_CONTENT_SUSPECTED", bundle.getString("BlackboardArtifact.tskUserContentSuspected.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * Stores metadata about an object.
+	 */
+	public static final BlackboardArtifact.Type TSK_METADATA = new BlackboardArtifact.Type(57, "TSK_METADATA", bundle.getString("BlackboardArtifact.tskMetadata.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Stores a GPS track log. Use
+	 * org.sleuthkit.datamodel.blackboardutils.GeoArtifactsHelper.addTrack() to
+	 * create track artifacts.
+	 */
+	public static final BlackboardArtifact.Type TSK_GPS_TRACK = new BlackboardArtifact.Type(58, "TSK_GPS_TRACK", bundle.getString("BlackboardArtifact.tskTrack.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Stores a role on a given domain.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_ACCOUNT_TYPE = new BlackboardArtifact.Type(59, "TSK_WEB_ACCOUNT_TYPE", bundle.getString("BlackboardArtifact.tskWebAccountType.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * Screen shots from device or Application.
+	 */
+	public static final BlackboardArtifact.Type TSK_SCREEN_SHOTS = new BlackboardArtifact.Type(60, "TSK_SCREEN_SHOTS", bundle.getString("BlackboardArtifact.tskScreenShots.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Notifications Sent to User.
+	 */
+	public static final BlackboardArtifact.Type TSK_PROG_NOTIFICATIONS = new BlackboardArtifact.Type(62, "TSK_PROG_NOTIFICATIONS", bundle.getString("BlackboardArtifact.tskProgNotifications.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * System/Application/File backup.
+	 */
+	public static final BlackboardArtifact.Type TSK_BACKUP_EVENT = new BlackboardArtifact.Type(63, "TSK_BACKUP_EVENT", bundle.getString("BlackboardArtifact.tskBackupEvent.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Programs that have been deleted.
+	 */
+	public static final BlackboardArtifact.Type TSK_DELETED_PROG = new BlackboardArtifact.Type(64, "TSK_DELETED_PROG", bundle.getString("BlackboardArtifact.tskDeletedProg.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Activity on the System/Application.
+	 */
+	public static final BlackboardArtifact.Type TSK_USER_DEVICE_EVENT = new BlackboardArtifact.Type(65, "TSK_USER_DEVICE_EVENT", bundle.getString("BlackboardArtifact.tskUserDeviceEvent.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Indicates that the file had a yara pattern match hit.
+	 */
+	public static final BlackboardArtifact.Type TSK_YARA_HIT = new BlackboardArtifact.Type(66, "TSK_YARA_HIT", bundle.getString("BlackboardArtifact.tskYaraHit.text"), Category.ANALYSIS_RESULT);
+
+	/**
+	 * Stores the outline of an area using GPS coordinates.
+	 */
+	public static final BlackboardArtifact.Type TSK_GPS_AREA = new BlackboardArtifact.Type(67, "TSK_GPS_AREA", bundle.getString("BlackboardArtifact.tskGPSArea.text"), Category.DATA_ARTIFACT);
+
+	/**
+	 * Defines a category for a particular domain.
+	 */
+	public static final BlackboardArtifact.Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
+
+	
+	/**
+	 * A list of all the standard artifact types.
+	 */
+	static final List<BlackboardArtifact.Type> STANDARD_TYPES = Arrays.asList(
+			TSK_GEN_INFO,
+			TSK_WEB_BOOKMARK,
+			TSK_WEB_COOKIE,
+			TSK_WEB_HISTORY,
+			TSK_WEB_DOWNLOAD,
+			TSK_RECENT_OBJECT,
+			TSK_GPS_TRACKPOINT,
+			TSK_INSTALLED_PROG,
+			TSK_KEYWORD_HIT,
+			TSK_HASHSET_HIT,
+			TSK_DEVICE_ATTACHED,
+			TSK_INTERESTING_FILE_HIT,
+			TSK_EMAIL_MSG,
+			TSK_EXTRACTED_TEXT,
+			TSK_WEB_SEARCH_QUERY,
+			TSK_METADATA_EXIF,
+			TSK_TAG_FILE,
+			TSK_TAG_ARTIFACT,
+			TSK_OS_INFO,
+			TSK_OS_ACCOUNT,
+			TSK_SERVICE_ACCOUNT,
+			TSK_TOOL_OUTPUT,
+			TSK_CONTACT,
+			TSK_MESSAGE,
+			TSK_CALLLOG,
+			TSK_CALENDAR_ENTRY,
+			TSK_SPEED_DIAL_ENTRY,
+			TSK_BLUETOOTH_PAIRING,
+			TSK_GPS_BOOKMARK,
+			TSK_GPS_LAST_KNOWN_LOCATION,
+			TSK_GPS_SEARCH,
+			TSK_PROG_RUN,
+			TSK_ENCRYPTION_DETECTED,
+			TSK_EXT_MISMATCH_DETECTED,
+			TSK_INTERESTING_ARTIFACT_HIT,
+			TSK_GPS_ROUTE,
+			TSK_REMOTE_DRIVE,
+			TSK_FACE_DETECTED,
+			TSK_ACCOUNT,
+			TSK_ENCRYPTION_SUSPECTED,
+			TSK_OBJECT_DETECTED,
+			TSK_WIFI_NETWORK,
+			TSK_DEVICE_INFO,
+			TSK_SIM_ATTACHED,
+			TSK_BLUETOOTH_ADAPTER,
+			TSK_WIFI_NETWORK_ADAPTER,
+			TSK_VERIFICATION_FAILED,
+			TSK_DATA_SOURCE_USAGE,
+			TSK_WEB_FORM_AUTOFILL,
+			TSK_WEB_FORM_ADDRESS,
+			TSK_DOWNLOAD_SOURCE,
+			TSK_WEB_CACHE,
+			TSK_TL_EVENT,
+			TSK_CLIPBOARD_CONTENT,
+			TSK_ASSOCIATED_OBJECT,
+			TSK_USER_CONTENT_SUSPECTED,
+			TSK_METADATA,
+			TSK_GPS_TRACK,
+			TSK_WEB_ACCOUNT_TYPE,
+			TSK_SCREEN_SHOTS,
+			TSK_PROG_NOTIFICATIONS,
+			TSK_BACKUP_EVENT,
+			TSK_DELETED_PROG,
+			TSK_USER_DEVICE_EVENT,
+			TSK_YARA_HIT,
+			TSK_GPS_AREA,
+			TSK_WEB_CATEGORIZATION
+	);
+	
 	/**
 	 * Enumeration to encapsulate categories of artifact.
 	 *
