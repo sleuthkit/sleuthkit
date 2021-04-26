@@ -5034,6 +5034,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
 	 */
+	@Deprecated
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
 		BlackboardArtifact.Type type = getArtifactType(artifactTypeID);
 		return newBlackboardArtifact(artifactTypeID, obj_id, type.getTypeName(), type.getDisplayName());
@@ -5050,6 +5051,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
 	 */
+	@Deprecated
 	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
 		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
 	}
