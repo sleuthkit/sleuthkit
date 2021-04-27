@@ -320,6 +320,7 @@ public abstract class AbstractContent implements Content {
 		return hash;
 	}
 
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		// don't let them make more than 1 GEN_INFO
@@ -388,6 +389,8 @@ public abstract class AbstractContent implements Content {
 		return artifact;
 	}
 
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());

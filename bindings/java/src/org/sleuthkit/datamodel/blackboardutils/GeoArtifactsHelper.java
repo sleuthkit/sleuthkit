@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel.blackboardutils;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
@@ -40,6 +41,11 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardAttribute.Type WAYPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS);
 	private static final BlackboardAttribute.Type TRACKPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS);
 	private static final BlackboardAttribute.Type AREAPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_AREAPOINTS);
+	
+	private static final BlackboardArtifact.Type GPS_TRACK_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
+	private static final BlackboardArtifact.Type GPS_ROUTE_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
+	private static final BlackboardArtifact.Type GPS_AREA_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA);
+	
 	private final String programName;
 
 	/**
@@ -105,8 +111,10 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			attributes.addAll(moreAttributes);
 		}
 
-		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
-		artifact.addAttributes(attributes);
+		Content content = getContent();
+		BlackboardArtifact artifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(GPS_TRACK_TYPE, attributes)
+				: content.newDataArtifact(GPS_TRACK_TYPE, attributes, null);
 
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
@@ -124,7 +132,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 * @param creationTime   The time at which the route was created as
 	 *                       milliseconds from the Java epoch of
 	 *                       1970-01-01T00:00:00Z, may be null.
-	 * @param wayPoints      The waypoints that make up the route.  This list
+	 * @param wayPoints      The waypoints that make up the route. This list
 	 *                       should be non-null and non-empty.
 	 * @param moreAttributes Additional attributes for the TSK_GPS_ROUTE
 	 *                       artifact, may be null.
@@ -143,7 +151,6 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			throw new IllegalArgumentException(String.format("addRoute was passed a null or empty list of waypoints"));
 		}
 
-		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 
 		attributes.add(BlackboardJsonAttrUtil.toAttribute(WAYPOINTS_ATTR_TYPE, getModuleName(), wayPoints));
@@ -164,20 +171,24 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			attributes.addAll(moreAttributes);
 		}
 
-		artifact.addAttributes(attributes);
-
+		Content content = getContent();
+		BlackboardArtifact artifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(GPS_ROUTE_TYPE, attributes)
+				: content.newDataArtifact(GPS_ROUTE_TYPE, attributes, null);
+		
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
 		return artifact;
 	}
+
 	/**
 	 * Adds a TSK_GPS_AREA artifact to the case database. A Global Positioning
-	 * System (GPS) area artifact records an area on the map outlines by
-	 * an ordered set of GPS coordinates.
+	 * System (GPS) area artifact records an area on the map outlines by an
+	 * ordered set of GPS coordinates.
 	 *
 	 * @param areaName       The name of the GPS area, may be null.
-	 * @param areaPoints     The points that make up the outline of the area.  This list
-	 *                       should be non-null and non-empty.
+	 * @param areaPoints     The points that make up the outline of the area.
+	 *                       This list should be non-null and non-empty.
 	 * @param moreAttributes Additional attributes for the TSK_GPS_AREA
 	 *                       artifact, may be null.
 	 *
@@ -194,8 +205,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		if (areaPoints == null || areaPoints.isEmpty()) {
 			throw new IllegalArgumentException(String.format("addArea was passed a null or empty list of points"));
 		}
-		
-		BlackboardArtifact artifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA);
+
 		List<BlackboardAttribute> attributes = new ArrayList<>();
 		attributes.add(BlackboardJsonAttrUtil.toAttribute(AREAPOINTS_ATTR_TYPE, getModuleName(), areaPoints));
 
@@ -211,8 +221,11 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 			attributes.addAll(moreAttributes);
 		}
 
-		artifact.addAttributes(attributes);
-
+		Content content = getContent();
+		BlackboardArtifact artifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(GPS_AREA_TYPE, attributes)
+				: content.newDataArtifact(GPS_AREA_TYPE, attributes, null);
+		
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
 		return artifact;

@@ -21,10 +21,14 @@ package org.sleuthkit.datamodel.blackboardutils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
+import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
+import org.sleuthkit.datamodel.OsAccount;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -33,7 +37,8 @@ import org.sleuthkit.datamodel.TskCoreException;
  *
  */
 public final class ArtifactsHelper extends ArtifactHelperBase {
-
+	private static final BlackboardArtifact.Type INSTALLED_PROG_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_INSTALLED_PROG);
+	
 	/**
 	 * Creates an artifact helper for modules to create artifacts.
 	 *
@@ -81,17 +86,24 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 
 		BlackboardArtifact installedProgramArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// create artifact
-		installedProgramArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG);
-
+		Content content = getContent();
+		Optional<Long> osAccountId = (content instanceof AbstractFile) ? 
+				((AbstractFile) content).getOsAccountObjectId() : 
+				Optional.empty();
+		
+		OsAccount osAccount = osAccountId.isPresent() ?
+				getSleuthkitCase().getOsAccountManager().getOsAccountByObjectId(dateInstalled) :
+				null;
+		
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
 		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, dateInstalled, attributes);
 
 		// add the attributes 
 		attributes.addAll(otherAttributesList);
-		installedProgramArtifact.addAttributes(attributes);
+
+		// create artifact
+		installedProgramArtifact = content.newDataArtifact(INSTALLED_PROG_TYPE, attributes, osAccount);
 
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName());

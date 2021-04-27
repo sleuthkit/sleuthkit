@@ -232,6 +232,7 @@ public class Report implements Content {
 		return Collections.<Long>emptyList();
 	}
 
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		if (artifactTypeID != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
@@ -241,27 +242,13 @@ public class Report implements Content {
 		long fileObjId = getId();
 		long dsObjId = getDataSource() == null ? null : getDataSource().getId();
 
-		switch (KEYWORD_HIT_TYPE.getCategory()) {
-			case DATA_ARTIFACT:
-				return db.getBlackboard().newDataArtifact(
-						KEYWORD_HIT_TYPE,
-						fileObjId,
-						dsObjId,
-						Collections.emptyList(),
-						null);
-			case ANALYSIS_RESULT:
-			{
-				try {
-					return db.getBlackboard().newAnalysisResult(
-							KEYWORD_HIT_TYPE, fileObjId, dsObjId, Score.SCORE_UNKNOWN,
-							null, null, null, Collections.emptyList())
-							.getAnalysisResult();
-				} catch (BlackboardException ex) {
-					throw new TskCoreException("Unable to get analysis result for keword hit.", ex);
-				}
-			}
-			default:
-				throw new TskCoreException("Unknown category: " + KEYWORD_HIT_TYPE.getCategory().getName());
+		try {
+			return db.getBlackboard().newAnalysisResult(
+					KEYWORD_HIT_TYPE, fileObjId, dsObjId, Score.SCORE_UNKNOWN,
+					null, null, null, Collections.emptyList())
+					.getAnalysisResult();
+		} catch (BlackboardException ex) {
+			throw new TskCoreException("Unable to get analysis result for keword hit.", ex);
 		}
 	}
 
@@ -289,6 +276,8 @@ public class Report implements Content {
 		return db.getBlackboard().newDataArtifact(artifactType, objectId, this.getDataSource().getId(), attributesList, osAccount);
 	}
 
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());

@@ -27,6 +27,7 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
+import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Account;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
@@ -47,7 +48,13 @@ import org.sleuthkit.datamodel.TskCoreException;
 public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 	private static final Logger LOGGER = Logger.getLogger(WebBrowserArtifactsHelper.class.getName());
-	
+	private static final BlackboardArtifact.Type WEB_BOOKMARK_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK);
+	private static final BlackboardArtifact.Type WEB_COOKIE_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE);
+	private static final BlackboardArtifact.Type WEB_DOWNLOAD_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD);
+	private static final BlackboardArtifact.Type WEB_FORM_ADDRESS_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS);
+	private static final BlackboardArtifact.Type WEB_FORM_AUTOFILL_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL);
+	private static final BlackboardArtifact.Type WEB_HISTORY_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
+		
 	/**
 	 * Creates a WebBrowserArtifactsHelper.
 	 *
@@ -97,11 +104,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addWebBookmark(String url, String title, long creationTime, String progName,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact bookMarkArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// create artifact
-		bookMarkArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
@@ -113,7 +116,11 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		bookMarkArtifact.addAttributes(attributes);
+		
+		Content content = getContent();
+		BlackboardArtifact bookMarkArtifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(WEB_BOOKMARK_TYPE, attributes)
+				: content.newDataArtifact(WEB_BOOKMARK_TYPE, attributes, null);
 
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(bookMarkArtifact, getModuleName());
@@ -167,11 +174,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 			long creationTime, String name, String value, String programName,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact cookieArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// create artifact
-		cookieArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
@@ -184,8 +187,12 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		cookieArtifact.addAttributes(attributes);
-
+		
+		Content content = getContent();
+		BlackboardArtifact cookieArtifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(WEB_COOKIE_TYPE, attributes)
+				: content.newDataArtifact(WEB_COOKIE_TYPE, attributes, null);
+		
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(cookieArtifact, getModuleName());
 
@@ -229,11 +236,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addWebDownload(String url, long startTime, String path, String programName,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact webDownloadArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// reate artifact
-		webDownloadArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH, getModuleName(), path));
@@ -245,8 +248,12 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		webDownloadArtifact.addAttributes(attributes);
-
+		
+		Content content = getContent();
+		BlackboardArtifact webDownloadArtifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(WEB_DOWNLOAD_TYPE, attributes)
+				: content.newDataArtifact(WEB_DOWNLOAD_TYPE, attributes, null);
+		
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(webDownloadArtifact, getModuleName());
 
@@ -300,7 +307,6 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 			long creationTime, long accessTime, int count,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact webFormAddressArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 		
 		CommunicationsManager commManager = this.getSleuthkitCase().getCommunicationsManager();
@@ -320,10 +326,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", phoneNumber), ex);
 			}
 		}
-
-		// create artifact
-		webFormAddressArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS);
-
+		
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), personName));
 
@@ -336,9 +339,11 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COUNT, count, attributes);
 
 		// add artifact
-		attributes.addAll(otherAttributesList);
-		webFormAddressArtifact.addAttributes(attributes);
-
+		Content content = getContent();
+		BlackboardArtifact webFormAddressArtifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(WEB_FORM_ADDRESS_TYPE, attributes)
+				: content.newDataArtifact(WEB_FORM_ADDRESS_TYPE, attributes, null);
+		
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(webFormAddressArtifact, getModuleName());
 
@@ -386,11 +391,8 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addWebFormAutofill(String name, String value,
 			long creationTime, long accessTime, int count,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
-		BlackboardArtifact webFormAutofillArtifact;
+		
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// create artifact
-		webFormAutofillArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), name));
@@ -402,8 +404,12 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		webFormAutofillArtifact.addAttributes(attributes);
 
+		Content content = getContent();
+		BlackboardArtifact webFormAutofillArtifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(WEB_FORM_AUTOFILL_TYPE, attributes)
+				: content.newDataArtifact(WEB_FORM_AUTOFILL_TYPE, attributes, null);
+		
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(webFormAutofillArtifact, getModuleName());
 
@@ -452,11 +458,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 			String referrer, String title, String programName,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact webHistoryArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// create artifact
-		webHistoryArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, getModuleName(), url));
@@ -470,8 +472,12 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		webHistoryArtifact.addAttributes(attributes);
-
+		
+		Content content = getContent();
+		BlackboardArtifact webHistoryArtifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(WEB_HISTORY_TYPE, attributes)
+				: content.newDataArtifact(WEB_HISTORY_TYPE, attributes, null);
+		
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(webHistoryArtifact, getModuleName());
 

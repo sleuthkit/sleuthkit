@@ -676,7 +676,9 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated
 	 */
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		throw new TskCoreException("Cannot create artifact of an artifact. Not supported.");
@@ -711,7 +713,9 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated 
 	 */
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		throw new TskCoreException("Cannot create artifact of an artifact. Not supported.");

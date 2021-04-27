@@ -160,7 +160,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated As of 4.11.1, please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException;
 
 	/**
@@ -172,7 +174,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated As of 4.11.1, please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
 
 	/**
