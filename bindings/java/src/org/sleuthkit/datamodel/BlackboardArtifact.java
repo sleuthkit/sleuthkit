@@ -676,7 +676,7 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
-	 * @deprecated
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
 	 */
 	@Deprecated
 	@Override
@@ -713,7 +713,7 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
-	 * @deprecated 
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
 	 */
 	@Deprecated
 	@Override

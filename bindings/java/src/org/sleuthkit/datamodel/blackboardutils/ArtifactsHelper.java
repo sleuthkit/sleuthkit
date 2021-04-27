@@ -84,16 +84,7 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact installedProgramArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-		Content content = getContent();
-		Optional<Long> osAccountId = (content instanceof AbstractFile) ? 
-				((AbstractFile) content).getOsAccountObjectId() : 
-				Optional.empty();
-		
-		OsAccount osAccount = osAccountId.isPresent() ?
-				getSleuthkitCase().getOsAccountManager().getOsAccountByObjectId(dateInstalled) :
-				null;
 		
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
@@ -103,8 +94,11 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 		attributes.addAll(otherAttributesList);
 
 		// create artifact
-		installedProgramArtifact = content.newDataArtifact(INSTALLED_PROG_TYPE, attributes, osAccount);
-
+		Content content = getContent();
+		BlackboardArtifact installedProgramArtifact = (content instanceof AbstractFile)
+				? ((AbstractFile) content).newDataArtifact(INSTALLED_PROG_TYPE, attributes)
+				: content.newDataArtifact(INSTALLED_PROG_TYPE, attributes, null);
+		
 		// post artifact 
 		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName());
 
