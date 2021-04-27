@@ -183,7 +183,7 @@ public final class Blackboard {
 		CaseDbTransaction transaction = caseDb.beginTransaction();
 		try {
 			AnalysisResultAdded analysisResult = newAnalysisResult(artifactType, objId, dataSourceObjId, score,
-					conclusion, configuration, justification, attributesList);
+					conclusion, configuration, justification, attributesList, transaction);
 			transaction.commit();
 			return analysisResult;
 		} catch (TskCoreException | BlackboardException ex) {
