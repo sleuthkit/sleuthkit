@@ -604,7 +604,8 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         int64_t addr_offset = 0;
 
         /* allocate a new tsk_fs_attr_run */
-        if ((data_run = tsk_fs_attr_run_alloc()) == NULL) {
+        data_run = tsk_fs_attr_run_alloc();
+        if (data_run == NULL) {
             tsk_fs_attr_run_free(*a_data_run_head);
             *a_data_run_head = NULL;
             return TSK_ERR;
@@ -2059,8 +2060,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
                 tsk_error_set_errstr("ntfs_proc_attrseq: Compression unit size 2^%d too large",
                     tsk_getu16(fs->endian, attr->c.nr.compusize));
-                if (fs_attr_run)
+                if (fs_attr_run) {
                     tsk_fs_attr_run_free(fs_attr_run);
+                    fs_attr_run = NULL;
+                }
                 return TSK_COR;
             }
 
@@ -2100,9 +2103,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                             TSK_FS_ATTR_RES)) == NULL) {
                     tsk_error_errstr2_concat(" - proc_attrseq: getnew");
                     // JRB: Coverity found leak.
-                    if (fs_attr_run)
+                    if (fs_attr_run) {
                         tsk_fs_attr_run_free(fs_attr_run);
-                    fs_attr_run = NULL;
+                        fs_attr_run = NULL;
+                    }
                     return TSK_ERR;
                 }
 
@@ -2142,10 +2146,15 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
                     
                     // If the run wasn't saved to the attribute, free it now
-                    if (fs_attr_run && (fs_attr->nrd.run == NULL))
+                    if (fs_attr_run && (fs_attr->nrd.run == NULL)) {
                         tsk_fs_attr_run_free(fs_attr_run);
+                        fs_attr_run = NULL;
+                    }
                     return TSK_COR;
                 }
+                // fs_file has taken over management of fs_attr_run
+                fs_attr_run = NULL;
+
                 // set the special functions
                 if (fs_file->meta->flags & TSK_FS_META_FLAG_COMP) {
                     fs_attr->w = ntfs_attr_walk_special;
@@ -2156,6 +2165,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             else {
                 if (tsk_fs_attr_add_run(fs, fs_attr, fs_attr_run)) {
                     tsk_error_errstr2_concat(" - proc_attrseq: put run");
+                    if (fs_attr_run) {
+                        tsk_fs_attr_run_free(fs_attr_run);
+                        fs_attr_run = NULL;
+                    }
                     return TSK_COR;
                 }
             }
