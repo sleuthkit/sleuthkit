@@ -1155,11 +1155,15 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     }
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+    fs_file = tsk_fs_file_alloc(fs);
+    if (fs_file == NULL)
         return 1;
-    if ((fs_file->meta =
-            tsk_fs_meta_alloc(EXT2FS_FILE_CONTENT_LEN)) == NULL)
+
+    fs_file->meta = tsk_fs_meta_alloc(EXT2FS_FILE_CONTENT_LEN);
+    if (fs_file->meta == NULL) {
+        free(fs_file);
         return 1;
+    }
 
     // we need to handle fs->last_inum specially because it is for the
     // virtual ORPHANS directory.  Handle it outside of the loop.
@@ -1174,7 +1178,11 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     size =
         ext2fs->inode_size >
         sizeof(ext2fs_inode) ? ext2fs->inode_size : sizeof(ext2fs_inode);
-    if ((dino_buf = (ext2fs_inode *) tsk_malloc(size)) == NULL) {
+
+    dino_buf = (ext2fs_inode *) tsk_malloc(size);
+    if (dino_buf == NULL) {
+        free(fs_file->meta);
+        free(fs_file);
         return 1;
     }
 
@@ -1196,6 +1204,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         if (ext2fs_imap_load(ext2fs, grp_num)) {
             tsk_release_lock(&ext2fs->lock);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
             return 1;
         }
         ibase =
@@ -1208,6 +1217,8 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         if ((inum - ibase) > fs->block_size*8) {
             tsk_release_lock(&ext2fs->lock);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
             tsk_error_set_errstr("%s: Invalid offset into imap_buf (inum %" PRIuINUM " - ibase %" PRIuINUM ")",
@@ -1227,8 +1238,9 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             continue;
 
         if (ext2fs_dinode_load(ext2fs, inum, dino_buf, &ea_buf, &ea_buf_len)) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             return 1;
         }
 
@@ -1257,20 +1269,23 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          * to the application.
          */
         if (ext2fs_dinode_copy(ext2fs, fs_file, inum, dino_buf, ea_buf, ea_buf_len)) {
-            tsk_fs_meta_close(fs_file->meta);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             return 1;
         }
 
         retval = a_action(fs_file, a_ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             return 1;
         }
     }
@@ -1282,8 +1297,9 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         int retval;
 
         if (tsk_fs_dir_make_orphan_dir_meta(fs, fs_file->meta)) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             return 1;
         }
         /* call action */
@@ -1291,11 +1307,14 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         if (retval == TSK_WALK_STOP) {
             tsk_fs_file_close(fs_file);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
+            tsk_fs_file_close(fs_file);
+
             return 1;
         }
     }
@@ -1303,8 +1322,8 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     /*
      * Cleanup.
      */
-    tsk_fs_file_close(fs_file);
     free(dino_buf);
+    tsk_fs_file_close(fs_file);
 
     return 0;
 }

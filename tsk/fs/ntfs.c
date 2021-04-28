@@ -375,9 +375,20 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             ("dinode_lookup: More Update Sequence Entries than MFT size");
         return TSK_COR;
     }
-    if (tsk_getu16(fs->endian, mft->upd_off) + 
-            sizeof(ntfs_upd) + 
-            2*(tsk_getu16(fs->endian, mft->upd_cnt) - 1) > a_ntfs->mft_rsize_b) {
+    uint16_t upd_cnt = tsk_getu16(fs->endian, mft->upd_cnt);
+    uint16_t upd_off = tsk_getu16(fs->endian, mft->upd_off);
+
+    // Make sure upd_cnt > 0 to prevent an integer wrap around.
+    if ((upd_cnt == 0) || (upd_cnt > (((a_ntfs->mft_rsize_b) / 2) + 1))) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+            ("dinode_lookup: Invalid update count value out of bounds");
+        return TSK_COR;
+    }
+    size_t mft_rsize_b = ((size_t) upd_cnt - 1) * 2;
+
+    if ((size_t) upd_off + sizeof(ntfs_upd) > (a_ntfs->mft_rsize_b - mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
@@ -386,9 +397,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     }
 
     /* Apply the update sequence structure template */
-    upd =
-        (ntfs_upd *) ((uintptr_t) a_buf + tsk_getu16(fs->endian,
-            mft->upd_off));
+
+    upd = (ntfs_upd *) ((uintptr_t) a_buf + upd_off);
     /* Get the sequence value that each 16-bit value should be */
     sig_seq = tsk_getu16(fs->endian, upd->upd_val);
     /* cycle through each sector */
