@@ -402,7 +402,7 @@ public final class PersonManager {
 	 * @param newValue The person value that has changed.
 	 */
 	void fireChangeEvent(Person newValue) {
-		db.fireTSKEvent(new TskEvent.PersonsChangedTskEvent(Collections.singletonList(newValue)));
+		db.fireTSKEvent(new TskEvent.PersonsUpdatedTskEvent(Collections.singletonList(newValue)));
 	}
 
 	private void fireDeletedEvent(Person deleted) {

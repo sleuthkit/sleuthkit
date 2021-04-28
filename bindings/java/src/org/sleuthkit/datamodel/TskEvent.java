@@ -172,14 +172,14 @@ public interface TskEvent {
 	/**
 	 * An event fired when hosts are updated.
 	 */
-	public static final class HostsChangedTskEvent extends HostsTskEvent {
+	public static final class HostsUpdatedTskEvent extends HostsTskEvent {
 
 		/**
 		 * Constructs an event fired when hosts are updated.
 		 *
 		 * @param hosts The hosts.
 		 */
-		HostsChangedTskEvent(List<Host> hosts) {
+		HostsUpdatedTskEvent(List<Host> hosts) {
 			super(hosts);
 		}
 
@@ -245,14 +245,14 @@ public interface TskEvent {
 	/**
 	 * An event fired when OS accounts are updated.
 	 */
-	public static final class OsAccountsChangedTskEvent extends OsAccountsTskEvent {
+	public static final class OsAccountsUpdatedTskEvent extends OsAccountsTskEvent {
 
 		/**
 		 * Constructs an event fired when OS accounts are updated.
 		 *
 		 * @param accountList The OS accounts.
 		 */
-		OsAccountsChangedTskEvent(List<OsAccount> accountList) {
+		OsAccountsUpdatedTskEvent(List<OsAccount> accountList) {
 			super(accountList);
 		}
 
@@ -318,14 +318,14 @@ public interface TskEvent {
 	/**
 	 * An event fired when persons are updated.
 	 */
-	final public static class PersonsChangedTskEvent extends PersonsTskEvent {
+	final public static class PersonsUpdatedTskEvent extends PersonsTskEvent {
 
 		/**
 		 * Constructs an event fired when persons are updated.
 		 *
 		 * @param persons The persons.
 		 */
-		PersonsChangedTskEvent(List<Person> persons) {
+		PersonsUpdatedTskEvent(List<Person> persons) {
 			super(persons);
 		}
 

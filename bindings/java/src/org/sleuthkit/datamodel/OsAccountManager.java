@@ -40,7 +40,7 @@ import org.sleuthkit.datamodel.OsAccount.OsAccountType;
 import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import org.sleuthkit.datamodel.TskEvent.OsAccountsChangedTskEvent;
+import org.sleuthkit.datamodel.TskEvent.OsAccountsUpdatedTskEvent;
 
 /**
  * Responsible for creating/updating/retrieving the OS accounts for files and
@@ -1537,7 +1537,7 @@ public final class OsAccountManager {
 	 * @param account Updated account.
 	 */
 	private void fireChangeEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsChangedTskEvent(Collections.singletonList(account)));
+		db.fireTSKEvent(new OsAccountsUpdatedTskEvent(Collections.singletonList(account)));
 	}
 
 	/**

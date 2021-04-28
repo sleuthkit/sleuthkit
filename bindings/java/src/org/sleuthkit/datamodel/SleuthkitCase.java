@@ -13182,7 +13182,7 @@ public class SleuthkitCase {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsAddedTskEvent(accountsAdded));
 				}
 				if (!accountsChanged.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsChangedTskEvent(accountsChanged));
+					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsUpdatedTskEvent(accountsChanged));
 				}
 				if (!deletedOsAccountObjectIds.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsDeletedTskEvent(deletedOsAccountObjectIds));
