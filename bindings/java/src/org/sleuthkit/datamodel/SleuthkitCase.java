@@ -5047,7 +5047,6 @@ public class SleuthkitCase {
 	 * @deprecated As of 4.11.1, please use newDataArtifact or newAnalysisResult.
 	 */
 	@Deprecated
-	@SuppressWarnings("deprecation")
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
 		BlackboardArtifact.Type type = getArtifactType(artifactTypeID);
 		if (type == null) {
