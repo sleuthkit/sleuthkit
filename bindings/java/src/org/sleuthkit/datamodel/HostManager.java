@@ -571,6 +571,6 @@ public final class HostManager {
 	 * @param deleted The deleted host.
 	 */
 	private void fireDeletedEvent(Host deleted) {
-		db.fireTSKEvent(new HostsDeletedTskEvent(Collections.singletonList(deleted)));
+		db.fireTSKEvent(new HostsDeletedTskEvent(Collections.singletonList(deleted.getHostId())));
 	}
 }

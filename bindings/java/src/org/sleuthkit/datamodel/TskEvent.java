@@ -23,257 +23,328 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *
- * A marker interface for events published by SleuthKit.
+ * An interface and implementations for data model events.
  */
 public interface TskEvent {
 
 	/**
-	 * Event to indicate that analysis results were deleted.
+	 * An abstract base class for data model events.
+	 *
+	 * @param <T> A data model object type parameter.
 	 */
-	final public static class AnalysisResultsDeletedTskEvent {
+	abstract static class DataModelObjectsEvent<T> implements TskEvent {
 
-		private final List<Long> deletedResultObjIds;
+		private final List<T> dataModelObjects;
 
 		/**
-		 * Constructs a new AnalysisResultsDeletedEvent.
+		 * Constructs an abstract base class for data model events.
 		 *
-		 * @param deletedResults List of deleted results.
+		 * @param dataModelObjects The data model objects that are the subject
+		 *                         of the event.
 		 */
-		AnalysisResultsDeletedTskEvent(List<Long> deletedResultObjIds) {
-			this.deletedResultObjIds = deletedResultObjIds;
+		DataModelObjectsEvent(List<T> dataModelObjects) {
+			this.dataModelObjects = new ArrayList<>();
+			this.dataModelObjects.addAll(dataModelObjects);
 		}
 
 		/**
-		 * Returns a list of deleted results.
+		 * Gets the data model objects that are the subjects of the event.
 		 *
-		 * @return List of AnalysisResult.
+		 * @return The data model objects.
+		 */
+		List<T> getDataModelObjects() {
+			return Collections.unmodifiableList(dataModelObjects);
+		}
+
+	}
+
+	/**
+	 * An abstract base class for data model object deletion events.
+	 */
+	abstract static class DataModelObjectsDeletedEvent extends DataModelObjectsEvent<Long> {
+
+		/**
+		 * Constructs an abstract base class for data model object deletion
+		 * events.
+		 *
+		 * @param deletedObjIds The unique numeric IDs (TSK object IDs, case
+		 *                      database row IDs, etc.) of the deleted data
+		 *                      model objects.
+		 */
+		DataModelObjectsDeletedEvent(List<Long> deletedObjIds) {
+			super(deletedObjIds);
+		}
+
+		/**
+		 * Gets the unique numeric IDs (TSK object IDs, case database row IDs,
+		 * etc.) of the deleted data model objects.
+		 *
+		 * @return The object IDs.
 		 */
 		public List<Long> getObjectIds() {
-			return Collections.unmodifiableList(deletedResultObjIds);
+			return getDataModelObjects();
 		}
+
 	}
 
 	/**
-	 * Base event for all host events
+	 * An event fired when the aggregate scores of one or more objects change.
 	 */
-	static class HostTskEvent {
-
-		private final List<Host> hosts;
+	final public static class AggregateScoresChangedEvent extends DataModelObjectsEvent<ScoreChange> {
 
 		/**
-		 * Main constructor.
+		 * Constructs an event fired when the aggregate scores of one or more
+		 * objects change.
 		 *
-		 * @param hosts The hosts that are objects of the event.
+		 * @param scoreChanges The score changes.
 		 */
-		HostTskEvent(List<Host> hosts) {
-			this.hosts = hosts;
+		AggregateScoresChangedEvent(List<ScoreChange> scoreChanges) {
+			super(scoreChanges);
 		}
 
 		/**
-		 * Returns the hosts affected in the event.
+		 * Gets the score changes.
 		 *
-		 * @return The hosts affected in the event.
+		 * @return The score changes.
+		 */
+		public List<ScoreChange> getScoreChanges() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * An event fired when analysis results are deleted.
+	 */
+	final public static class AnalysisResultsDeletedTskEvent extends DataModelObjectsDeletedEvent {
+
+		/**
+		 * Constructs an event fired when analysis results are deleted.
+		 *
+		 * @param deletedResults The object IDs of the deleted analysis results.
+		 */
+		AnalysisResultsDeletedTskEvent(List<Long> deletedResultObjIds) {
+			super(deletedResultObjIds);
+		}
+
+	}
+
+	/**
+	 * An abstract base class for host events.
+	 */
+	abstract static class HostsTskEvent extends DataModelObjectsEvent<Host> {
+
+		/**
+		 * Constructs a super class for a host event.
+		 *
+		 * @param hosts The hosts that are the subjects of the event.
+		 */
+		HostsTskEvent(List<Host> hosts) {
+			super(hosts);
+		}
+
+		/**
+		 * Gets the hosts.
+		 *
+		 * @return The hosts.
 		 */
 		public List<Host> getHosts() {
-			return Collections.unmodifiableList(new ArrayList<>(hosts));
+			return getDataModelObjects();
 		}
 	}
 
 	/**
-	 * Event fired when hosts are created.
+	 * An event fired when hosts are added.
 	 */
-	public static final class HostsAddedTskEvent extends HostTskEvent {
+	public static final class HostsAddedTskEvent extends HostsTskEvent {
 
 		/**
-		 * Main constructor.
+		 * Constructs an event fired when hosts are added.
 		 *
-		 * @param hosts The added hosts.
+		 * @param hosts The hosts.
 		 */
 		HostsAddedTskEvent(List<Host> hosts) {
 			super(hosts);
 		}
+
 	}
 
 	/**
-	 * Event fired when hosts are updated.
+	 * An event fired when hosts are updated.
 	 */
-	public static final class HostsChangedTskEvent extends HostTskEvent {
+	public static final class HostsChangedTskEvent extends HostsTskEvent {
 
 		/**
-		 * Main constructor.
+		 * Constructs an event fired when hosts are updated.
 		 *
-		 * @param hosts The new values for the hosts that were changed.
+		 * @param hosts The hosts.
 		 */
 		HostsChangedTskEvent(List<Host> hosts) {
 			super(hosts);
 		}
+
 	}
 
 	/**
-	 * Event fired when hosts are deleted.
+	 * An event fired when hosts are deleted.
 	 */
-	public static final class HostsDeletedTskEvent extends HostTskEvent {
+	public static final class HostsDeletedTskEvent extends DataModelObjectsDeletedEvent {
 
 		/**
-		 * Main constructor.
+		 * Constructs an event fired when hosts are deleted.
 		 *
-		 * @param hosts The hosts that were deleted.
+		 * @param deletedHostObjIds The object IDs of the deleted hosts.
 		 */
-		HostsDeletedTskEvent(List<Host> hosts) {
-			super(hosts);
+		HostsDeletedTskEvent(List<Long> deletedHostObjIds) {
+			super(deletedHostObjIds);
 		}
+
 	}
 
 	/**
-	 * Event fired by OsAccountManager to indicate that a new OsAccount was
-	 * created.
+	 * An abstract base class for OS account events.
 	 */
-	public static final class OsAccountsAddedTskEvent {
-
-		private final List<OsAccount> accountList;
+	abstract static class OsAccountsTskEvent extends DataModelObjectsEvent<OsAccount> {
 
 		/**
-		 * Constructs a new AddedEvent
+		 * Constructs an abstract base class for OS account events.
 		 *
-		 * @param accountList List newly created accounts.
+		 * @param hosts The OS accounts that are the subjects of the event.
+		 */
+		OsAccountsTskEvent(List<OsAccount> osAccounts) {
+			super(osAccounts);
+		}
+
+		/**
+		 * Gets the OS accounts.
+		 *
+		 * @return The OS accounts.
+		 */
+		public List<OsAccount> getOsAcounts() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * An event fired when OS accounts are added.
+	 */
+	public static final class OsAccountsAddedTskEvent extends OsAccountsTskEvent {
+
+		/**
+		 * Constructs an event fired when OS accounts are added.
+		 *
+		 * @param accountList The OS accounts.
 		 */
 		OsAccountsAddedTskEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
+			super(accountList);
 		}
 
-		/**
-		 * Returns a list of the added OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
 	}
 
 	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * updated.
+	 * An event fired when OS accounts are updated.
 	 */
-	public static final class OsAccountsChangedTskEvent {
-
-		private final List<OsAccount> accountList;
+	public static final class OsAccountsChangedTskEvent extends OsAccountsTskEvent {
 
 		/**
-		 * Constructs a new ChangeEvent
+		 * Constructs an event fired when OS accounts are updated.
 		 *
-		 * @param accountList List newly created accounts.
+		 * @param accountList The OS accounts.
 		 */
 		OsAccountsChangedTskEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
+			super(accountList);
 		}
 
-		/**
-		 * Returns a list of the updated OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
 	}
 
 	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * deleted.
+	 * An event fired when OS accounts are deleted.
 	 */
-	public static final class OsAccountsDeletedTskEvent {
-
-		private final List<Long> accountObjectIds;
+	public static final class OsAccountsDeletedTskEvent extends DataModelObjectsDeletedEvent {
 
 		/**
-		 * Constructs a new DeleteEvent
+		 * Constructs an event fired when OS accounts are deleted.
 		 *
-		 * @param accountList List newly deleted accounts.
+		 * @param accountList The object IDs of the deleted OS accounts.
 		 */
 		OsAccountsDeletedTskEvent(List<Long> accountObjectIds) {
-			this.accountObjectIds = accountObjectIds;
+			super(accountObjectIds);
 		}
 
-		/**
-		 * Returns a list of the deleted OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<Long> getOsAcountObjectIds() {
-			return Collections.unmodifiableList(accountObjectIds);
-		}
 	}
 
 	/**
-	 * Base event for all person events
+	 * An abstract base class for person events.
 	 */
-	static class PersonsTskEvent {
-
-		private final List<Person> persons;
+	static abstract class PersonsTskEvent extends DataModelObjectsEvent<Person> {
 
 		/**
-		 * Main constructor.
+		 * Csontructs an abstract base class for person events.
 		 *
-		 * @param persons The persons that are objects of the event.
+		 * @param persons The persons that are the subjects of the event.
 		 */
 		PersonsTskEvent(List<Person> persons) {
-			this.persons = persons;
+			super(persons);
 		}
 
 		/**
-		 * Returns the persons affected in the event.
+		 * Gets the affected persons.
 		 *
-		 * @return The persons affected in the event.
+		 * @return The affected persons.
 		 */
 		public List<Person> getPersons() {
-			return Collections.unmodifiableList(new ArrayList<>(persons));
+			return getDataModelObjects();
 		}
+
 	}
 
 	/**
-	 * Event fired when persons are created.
+	 * An event fired when persons are added.
 	 */
 	final public static class PersonsAddedTskEvent extends PersonsTskEvent {
 
 		/**
-		 * Main constructor.
+		 * Constructs an event fired when persons are added.
 		 *
-		 * @param persons The added persons.
+		 * @param persons The persons.
 		 */
 		PersonsAddedTskEvent(List<Person> persons) {
 			super(persons);
 		}
+
 	}
 
 	/**
-	 * Event fired when persons are updated.
+	 * An event fired when persons are updated.
 	 */
 	final public static class PersonsChangedTskEvent extends PersonsTskEvent {
 
 		/**
-		 * Main constructor.
+		 * Constructs an event fired when persons are updated.
 		 *
-		 * @param persons The new values for the persons that were changed.
+		 * @param persons The persons.
 		 */
 		PersonsChangedTskEvent(List<Person> persons) {
 			super(persons);
 		}
+
 	}
 
 	/**
-	 * Event fired when persons are deleted.
+	 * An event fired when persons are deleted.
 	 */
-	final public static class PersonsDeletedTskEvent extends PersonsTskEvent {
+	final public static class PersonsDeletedTskEvent extends DataModelObjectsDeletedEvent {
 
 		/**
-		 * Main constructor.
+		 * Constructs an event fired when persons are deleted.
 		 *
-		 * @param persons The persons that were deleted.
+		 * @param persons The persons.
 		 */
-		PersonsDeletedTskEvent(List<Person> persons) {
-			super(persons);
+		PersonsDeletedTskEvent(List<Long> personObjectIDs) {
+			super(personObjectIDs);
 		}
+
 	}
+
 }
