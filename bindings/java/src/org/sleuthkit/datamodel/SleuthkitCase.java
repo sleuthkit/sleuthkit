@@ -13181,17 +13181,8 @@ public class SleuthkitCase {
 				close();
 
 				if (!scoreChangeMap.isEmpty()) {
-					// Group the score changes by data source id
-					Map<Long, List<ScoreChange>> changesByDataSource = scoreChangeMap.values().stream()
-							.collect(Collectors.groupingBy(ScoreChange::getDataSourceObjectId));
-
-					// Fire an event for each data source with a list of score changes.
-					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
-						sleuthkitCase.fireTSKEvent(new AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
-					}
+					sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(scoreChangeMap.values().stream().collect(Collectors.toList())));
 				}
-
-				// Fire events for any new or changed objects
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.HostsAddedTskEvent(hostsAdded));
 				}
