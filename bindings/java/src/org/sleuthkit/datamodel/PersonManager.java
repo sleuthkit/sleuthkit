@@ -406,6 +406,6 @@ public final class PersonManager {
 	}
 
 	private void fireDeletedEvent(Person deleted) {
-		db.fireTSKEvent(new TskEvent.PersonsDeletedTskEvent(Collections.singletonList(deleted)));
+		db.fireTSKEvent(new TskEvent.PersonsDeletedTskEvent(Collections.singletonList(deleted.getPersonId())));
 	}
 }
