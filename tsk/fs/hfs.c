@@ -3894,6 +3894,12 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         return 0;
     }
 
+    if (attrFile.nodeSize < sizeof(hfs_btree_node)) {
+        error_returned
+            ("hfs_load_extended_attrs: node size too small");
+        return 1;
+    }
+
     // A place to hold one node worth of data
     nodeData = (uint8_t *) malloc(attrFile.nodeSize);
     if (nodeData == NULL) {
