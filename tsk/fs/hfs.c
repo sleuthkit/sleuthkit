@@ -3897,6 +3897,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     if (attrFile.nodeSize < sizeof(hfs_btree_node)) {
         error_returned
             ("hfs_load_extended_attrs: node size too small");
+        close_attr_file(&attrFile);
         return 1;
     }
 
