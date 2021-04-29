@@ -164,13 +164,15 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
                         tsk_getu32(fs->endian, ce->celen_m));
 
                     if (cnt == tsk_getu32(fs->endian, ce->celen_m)) {
-                        rockridge_ext *rr_sub_entry = rr_sub_entry = parse_susp(fs, buf2, (int) cnt, hFile, recursion_depth + 1);
+                        rockridge_ext *rr_sub_entry = parse_susp(fs, buf2, (int) cnt, hFile, recursion_depth + 1);
 
                         // Prevent an infinite loop
                         if (rr_sub_entry == NULL) {
                           free(buf2);
+                          free(rr);
                           return NULL;
 			}
+                        free(rr_sub_entry);
                     }
                     else if (tsk_verbose) {
                         fprintf(stderr,
