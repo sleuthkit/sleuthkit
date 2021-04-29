@@ -797,7 +797,9 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
     pt_len = tsk_getu32(fs->endian, svd->pt_size_m);
 
     while (pt_len > 0) {
-        char utf16_buf[ISO9660_MAXNAMLEN_JOL + 1];      // UTF-16 name from img
+        // Since further on cnt + 1 is used and cnt can be ISO9660_MAXNAMLEN_JOL
+        // + 2 ensures utf16_buf is sufficiently large.
+        char utf16_buf[ISO9660_MAXNAMLEN_JOL + 2];      // UTF-16 name from img
         char utf8buf[2 * ISO9660_MAXNAMLEN_JOL + 1];    // UTF-8 version of name
         int readlen;
         TSK_OFF_T extent;       /* offset of extent for current directory */
@@ -825,7 +827,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
         if (dir.len_di > ISO9660_MAXNAMLEN_JOL)
             readlen = ISO9660_MAXNAMLEN_JOL;
 
-        memset(utf16_buf, 0, ISO9660_MAXNAMLEN_JOL);
+        memset(utf16_buf, 0, ISO9660_MAXNAMLEN_JOL + 2);
         /* get UCS-2 filename for the entry */
         cnt = tsk_fs_read(fs, pt_offs, (char *) utf16_buf, readlen);
         if (cnt != dir.len_di) {
