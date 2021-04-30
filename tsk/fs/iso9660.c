@@ -313,7 +313,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
 
             rr_nm = (iso9660_rr_nm_entry *) buf;
 
-            if ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 - 1> (uintptr_t)end) {
+            if ((rr_nm->len < 6) || ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 - 1> (uintptr_t)end)) {
                 if (tsk_verbose) 
                     tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name\n");
                 break;
