@@ -198,7 +198,7 @@ typedef struct {
 
 static uint8_t
 hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key, int cur_keylen,
     TSK_OFF_T key_off, void *ptr)
 {
     HFS_DIR_OPEN_META_INFO *info = (HFS_DIR_OPEN_META_INFO *) ptr;

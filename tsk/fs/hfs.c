@@ -707,11 +707,17 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
  */
 int
 hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
-    const hfs_btree_key_cat * key2)
+    int keylen1, const hfs_btree_key_cat * key2)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
     uint32_t cnid1, cnid2;
 
+    if (keylen1 < 6) {
+        // Note that it would be better to return an error value here
+        // but the current function interface does not support this
+        // Also see issue #2365
+        return -1;
+    }
     cnid1 = tsk_getu32(fs->endian, key1->parent_cnid);
     cnid2 = tsk_getu32(fs->endian, key2->parent_cnid);
 
@@ -720,7 +726,7 @@ hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
     if (cnid1 > cnid2)
         return 1;
 
-    return hfs_unicode_compare(hfs, &key1->name, &key2->name);
+    return hfs_unicode_compare(hfs, &key1->name, keylen1 - 6, &key2->name);
 }
 
 
@@ -890,7 +896,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
 
                 /* save the info from this record unless it is too big */
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, key,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, key, keylen,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_ERR) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -1012,7 +1018,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 //                rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_LEAF_STOP) {
                     is_done = 1;
@@ -1058,7 +1064,7 @@ typedef struct {
 
 static uint8_t
 hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key, int cur_keylen,
     TSK_OFF_T key_off, void *ptr)
 {
     HFS_CAT_GET_RECORD_OFFSET_DATA *offset_data = (HFS_CAT_GET_RECORD_OFFSET_DATA *)ptr;
@@ -1073,14 +1079,14 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
             tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid));
 
     if (level_type == HFS_BT_NODE_TYPE_IDX) {
-        int diff = hfs_cat_compare_keys(hfs, cur_key, targ_key);
+        int diff = hfs_cat_compare_keys(hfs, cur_key, cur_keylen, targ_key);
         if (diff < 0)
             return HFS_BTREE_CB_IDX_LT;
         else
             return HFS_BTREE_CB_IDX_EQGT;
     }
     else {
-        int diff = hfs_cat_compare_keys(hfs, cur_key, targ_key);
+        int diff = hfs_cat_compare_keys(hfs, cur_key, cur_keylen, targ_key);
 
         // see if this record is for our file or if we passed the interesting entries
         if (diff < 0) {
@@ -1653,9 +1659,15 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 
 static uint8_t
 hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key, int cur_keylen,
     TSK_OFF_T key_off, void *ptr)
 {
+    if (cur_keylen < 6) {
+        // Note that it would be better to return an error value here
+        // but the current function interface does not support this
+        // Also see issue #2365
+        return -1;
+    }
     // NOTE: This assumes that the biggest inum is the last one that we
     // see.  the traverse method does not currently promise that as part of
     // its callback "contract".
