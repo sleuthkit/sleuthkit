@@ -363,11 +363,8 @@ public interface TskEvent {
 
 	/**
 	 * An abstract super class for person and host association change events.
-	 *
-	 * @param <T> The type of the representation of the hosts, i.e., either a
-	 *            Host object or a host ID object.
 	 */
-	static abstract class PersonHostsTskEvent<T> extends TskObjectsEvent<T> {
+	static abstract class PersonHostsTskEvent extends TskObjectsEvent<Host> {
 
 		private final Person person;
 
@@ -378,7 +375,7 @@ public interface TskEvent {
 		 * @param person The person that is the subject of the event.
 		 * @param hosts  The hosts that are the subjects of the event.
 		 */
-		PersonHostsTskEvent(Person person, List<T> hosts) {
+		PersonHostsTskEvent(Person person, List<Host> hosts) {
 			super(hosts);
 			this.person = person;
 		}
@@ -397,7 +394,7 @@ public interface TskEvent {
 		 *
 		 * @return The hosts.
 		 */
-		public List<T> getHosts() {
+		public List<Host> getHosts() {
 			return getDataModelObjects();
 		}
 
@@ -406,7 +403,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more hosts are added to a person.
 	 */
-	public final static class HostsAddedToPersonTskEvent extends PersonHostsTskEvent<Host> {
+	public final static class HostsAddedToPersonTskEvent extends PersonHostsTskEvent {
 
 		/**
 		 * Contructs an event published when one or more hosts are added to a
@@ -424,16 +421,16 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more hosts are removed from a person.
 	 */
-	public final static class HostsRemovedFromPersonTskEvent extends PersonHostsTskEvent<Long> {
+	public final static class HostsRemovedFromPersonTskEvent extends PersonHostsTskEvent {
 
 		/**
 		 * Contructs an event published when one or more hosts are removed from
 		 * a person.
 		 *
 		 * @param person  The person.
-		 * @param hostIds The host IDs of the hosts.
+		 * @param hostIds The hosts.
 		 */
-		HostsRemovedFromPersonTskEvent(Person person, List<Long> hostIds) {
+		HostsRemovedFromPersonTskEvent(Person person, List<Host> hostIds) {
 			super(person, hostIds);
 		}
 
