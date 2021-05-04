@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.base.Optional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -344,10 +345,12 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
-	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
+		// TODO
+		DataArtifact artifact =  db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
 
-		DataArtifact artifact =  db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccount);
-		if(osAccount != null) {
+		if(osAccountId != null) {
+			OsAccount osAccount = db.getOsAccountManager().getOsAccountByObjectId(osAccountId);
 			db.getOsAccountManager().newOsAccountInstance(osAccount, (DataSource)getDataSource(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
 		}
 		return artifact;
