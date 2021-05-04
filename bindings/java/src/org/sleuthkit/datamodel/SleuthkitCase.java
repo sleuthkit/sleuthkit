@@ -3814,7 +3814,9 @@ public class SleuthkitCase {
 	 * @return List of standard blackboard artifact types
 	 *
 	 * @throws TskCoreException
+	 * @deprecated Please use getArtifactTypesInUse.
 	 */
+	@Deprecated
 	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypesInUse() throws TskCoreException {
 		String typeIdList = "";
 		for (int i = 0; i < BlackboardArtifact.ARTIFACT_TYPE.values().length; ++i) {
@@ -4079,11 +4081,30 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
+	 * @deprecated Please use getBlackboardArtifacts(BlackboardArtifact.Type artifactType, long obj_id) instead.
+	 * 
 	 */
+	@Deprecated
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
 		return getBlackboardArtifacts(artifactType.getTypeID(), obj_id);
 	}
 
+	/**
+	 * Get all blackboard artifacts of a given type for the given object id.
+	 * Does not included rejected artifacts.
+	 *
+	 * @param artifactType The artifact type.
+	 * @param obj_id       The object id.
+	 *
+	 * @return A list of blackboard artifacts.
+	 *
+	 * @throws TskCoreException Exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(BlackboardArtifact.Type artifactType, long obj_id) throws TskCoreException {
+		return getBlackboardArtifacts(artifactType.getTypeID(), obj_id);
+	}
+	
 	/**
 	 * Get count of all blackboard artifacts of a given type for the given
 	 * object id. Does not include rejected artifacts.

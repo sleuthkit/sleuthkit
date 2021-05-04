@@ -1493,8 +1493,10 @@ public class BlackboardArtifact implements Content {
 		 *
 		 * @param id The type id.
 		 *
-		 * @return the corresponding enum
+		 * @return The corresponding enum.
+		 * @deprecated This method is deprecated.  Please use getArtifactTypesInUse() instead.
 		 */
+		@Deprecated
 		static public ARTIFACT_TYPE fromID(int id) {
 			for (ARTIFACT_TYPE value : ARTIFACT_TYPE.values()) {
 				if (value.getTypeID() == id) {
@@ -1525,6 +1527,8 @@ public class BlackboardArtifact implements Content {
 		 * @return An object of type T.
 		 */
 		@Override
+		@Deprecated
+		@SuppressWarnings("deprecation")
 		public <T> T accept(SleuthkitItemVisitor<T> visitor) {
 			return visitor.visit(this);
 		}
