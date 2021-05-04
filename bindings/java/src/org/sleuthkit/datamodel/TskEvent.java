@@ -65,8 +65,8 @@ public interface TskEvent {
 	final public static class AggregateScoresChangedEvent extends DataModelObjectsTskEvent<ScoreChange> {
 
 		/**
-		 * Constructs an event published when the aggregate scores of one or more
-		 * data model objects change.
+		 * Constructs an event published when the aggregate scores of one or
+		 * more data model objects change.
 		 *
 		 * @param scoreChanges The score changes.
 		 */
@@ -267,7 +267,7 @@ public interface TskEvent {
 		 *
 		 * @return The host IDs.
 		 */
-		public List<Long> getOsAccountIds() {
+		public List<Long> getOsAccountObjectIds() {
 			return getDataModelObjects();
 		}
 
@@ -347,7 +347,7 @@ public interface TskEvent {
 		/**
 		 * Gets the unique IDs of the deleted persons.
 		 *
-		 * @return The host IDs.
+		 * @return The person IDs.
 		 */
 		public List<Long> getPersonIds() {
 			return getDataModelObjects();
@@ -365,6 +365,13 @@ public interface TskEvent {
 
 		private final Person person;
 
+		/**
+		 * Constructs the base class part of a person and host association
+		 * change event.
+		 *
+		 * @param person The person.
+		 * @param hosts  The hosts.
+		 */
 		PersonHostsTskEvent(Person person, List<T> hosts) {
 			super(hosts);
 			this.person = person;
@@ -414,8 +421,8 @@ public interface TskEvent {
 	final public static class HostsRemovedFromPersonTskEvent extends PersonHostsTskEvent<Long> {
 
 		/**
-		 * Contructs an event published when one or more hosts are removed from a
-		 * person.
+		 * Contructs an event published when one or more hosts are removed from
+		 * a person.
 		 *
 		 * @param person  The person.
 		 * @param hostIds The host IDs of the hosts.
