@@ -65,7 +65,7 @@ public interface TskEvent {
 	 * An event published when the aggregate scores of one or more data model
 	 * objects change.
 	 */
-	final public static class AggregateScoresChangedEvent extends TskObjectsEvent<ScoreChange> {
+	public final static class AggregateScoresChangedEvent extends TskObjectsEvent<ScoreChange> {
 
 		/**
 		 * Constructs an event published when the aggregate scores of one or
@@ -142,7 +142,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more hosts are added.
 	 */
-	public static final class HostsAddedTskEvent extends HostsTskEvent {
+	public final static class HostsAddedTskEvent extends HostsTskEvent {
 
 		/**
 		 * Constructs an event published when one or more hosts are added.
@@ -158,7 +158,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more hosts are updated.
 	 */
-	public static final class HostsUpdatedTskEvent extends HostsTskEvent {
+	public final static class HostsUpdatedTskEvent extends HostsTskEvent {
 
 		/**
 		 * Constructs an event published when one or more hosts are updated.
@@ -174,7 +174,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more hosts are deleted.
 	 */
-	public static final class HostsDeletedTskEvent extends TskObjectsEvent<Long> {
+	public final static class HostsDeletedTskEvent extends TskObjectsEvent<Long> {
 
 		/**
 		 * Constructs an event published when one or more hosts are deleted.
@@ -224,7 +224,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more OS accounts are added.
 	 */
-	public static final class OsAccountsAddedTskEvent extends OsAccountsTskEvent {
+	public final static class OsAccountsAddedTskEvent extends OsAccountsTskEvent {
 
 		/**
 		 * Constructs an event published when one or more OS accounts are added.
@@ -240,7 +240,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more OS accounts are updated.
 	 */
-	public static final class OsAccountsUpdatedTskEvent extends OsAccountsTskEvent {
+	public final static class OsAccountsUpdatedTskEvent extends OsAccountsTskEvent {
 
 		/**
 		 * Constructs an event published when OS accounts are updated.
@@ -256,7 +256,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more OS accounts are deleted.
 	 */
-	public static final class OsAccountsDeletedTskEvent extends TskObjectsEvent<Long> {
+	public final static class OsAccountsDeletedTskEvent extends TskObjectsEvent<Long> {
 
 		/**
 		 * Constructs an event published when one or more OS accounts are
@@ -307,7 +307,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more persons are added.
 	 */
-	final public static class PersonsAddedTskEvent extends PersonsTskEvent {
+	public final static class PersonsAddedTskEvent extends PersonsTskEvent {
 
 		/**
 		 * Constructs an event published when one or more persons are added.
@@ -323,7 +323,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more persons are updated.
 	 */
-	final public static class PersonsUpdatedTskEvent extends PersonsTskEvent {
+	public final static class PersonsUpdatedTskEvent extends PersonsTskEvent {
 
 		/**
 		 * Constructs an event published when one or more persons are updated.
@@ -339,7 +339,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more persons are deleted.
 	 */
-	final public static class PersonsDeletedTskEvent extends TskObjectsEvent<Long> {
+	public final static class PersonsDeletedTskEvent extends TskObjectsEvent<Long> {
 
 		/**
 		 * Constructs an event published when one or more persons are deleted.
@@ -397,7 +397,7 @@ public interface TskEvent {
 		 *
 		 * @return The hosts.
 		 */
-		List<T> getHosts() {
+		public List<T> getHosts() {
 			return getDataModelObjects();
 		}
 
@@ -406,7 +406,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more hosts are added to a person.
 	 */
-	final public static class HostsAddedToPersonTskEvent extends PersonHostsTskEvent<Host> {
+	public final static class HostsAddedToPersonTskEvent extends PersonHostsTskEvent<Host> {
 
 		/**
 		 * Contructs an event published when one or more hosts are added to a
@@ -424,7 +424,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more hosts are removed from a person.
 	 */
-	final public static class HostsRemovedFromPersonTskEvent extends PersonHostsTskEvent<Long> {
+	public final static class HostsRemovedFromPersonTskEvent extends PersonHostsTskEvent<Long> {
 
 		/**
 		 * Contructs an event published when one or more hosts are removed from
