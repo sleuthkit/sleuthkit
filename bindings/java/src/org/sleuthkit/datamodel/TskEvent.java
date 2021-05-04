@@ -32,7 +32,7 @@ public interface TskEvent {
 	 *
 	 * @param <T> A data model object type parameter.
 	 */
-	abstract static class DataModelObjectsEvent<T> implements TskEvent {
+	abstract static class DataModelObjectsTskEvent<T> implements TskEvent {
 
 		private final List<T> dataModelObjects;
 
@@ -42,7 +42,7 @@ public interface TskEvent {
 		 * @param dataModelObjects The data model objects that are the subject
 		 *                         of the event.
 		 */
-		DataModelObjectsEvent(List<T> dataModelObjects) {
+		DataModelObjectsTskEvent(List<T> dataModelObjects) {
 			this.dataModelObjects = new ArrayList<>();
 			this.dataModelObjects.addAll(dataModelObjects);
 		}
@@ -59,38 +59,9 @@ public interface TskEvent {
 	}
 
 	/**
-	 * An abstract base class for data model object deletion events.
-	 */
-	abstract static class DataModelObjectsDeletedEvent extends DataModelObjectsEvent<Long> {
-
-		/**
-		 * Constructs an abstract base class for data model object deletion
-		 * events.
-		 *
-		 * @param deletedObjIds The unique numeric IDs (TSK object IDs, case
-		 *                      database row IDs, etc.) of the deleted data
-		 *                      model objects.
-		 */
-		DataModelObjectsDeletedEvent(List<Long> deletedObjIds) {
-			super(deletedObjIds);
-		}
-
-		/**
-		 * Gets the unique numeric IDs (TSK object IDs, case database row IDs,
-		 * etc.) of the deleted data model objects.
-		 *
-		 * @return The object IDs.
-		 */
-		public List<Long> getObjectIds() {
-			return getDataModelObjects();
-		}
-
-	}
-
-	/**
 	 * An event fired when the aggregate scores of one or more objects change.
 	 */
-	final public static class AggregateScoresChangedEvent extends DataModelObjectsEvent<ScoreChange> {
+	final public static class AggregateScoresChangedEvent extends DataModelObjectsTskEvent<ScoreChange> {
 
 		/**
 		 * Constructs an event fired when the aggregate scores of one or more
@@ -116,7 +87,7 @@ public interface TskEvent {
 	/**
 	 * An event fired when analysis results are deleted.
 	 */
-	final public static class AnalysisResultsDeletedTskEvent extends DataModelObjectsDeletedEvent {
+	final public static class AnalysisResultsDeletedTskEvent extends DataModelObjectsTskEvent<Long> {
 
 		/**
 		 * Constructs an event fired when analysis results are deleted.
@@ -127,12 +98,21 @@ public interface TskEvent {
 			super(deletedResultObjIds);
 		}
 
+		/**
+		 * Gets the object IDs of the deleted analysis results.
+		 *
+		 * @return The object IDs.
+		 */
+		public List<Long> getAnalysisResultIds() {
+			return getDataModelObjects();
+		}
+
 	}
 
 	/**
 	 * An abstract base class for host events.
 	 */
-	abstract static class HostsTskEvent extends DataModelObjectsEvent<Host> {
+	abstract static class HostsTskEvent extends DataModelObjectsTskEvent<Host> {
 
 		/**
 		 * Constructs a super class for a host event.
@@ -188,7 +168,7 @@ public interface TskEvent {
 	/**
 	 * An event fired when hosts are deleted.
 	 */
-	public static final class HostsDeletedTskEvent extends DataModelObjectsDeletedEvent {
+	public static final class HostsDeletedTskEvent extends DataModelObjectsTskEvent<Long> {
 
 		/**
 		 * Constructs an event fired when hosts are deleted.
@@ -199,12 +179,21 @@ public interface TskEvent {
 			super(deletedHostObjIds);
 		}
 
+		/**
+		 * Gets the unique IDs of the deleted hosts.
+		 *
+		 * @return The host IDs.
+		 */
+		public List<Long> getHostIds() {
+			return getDataModelObjects();
+		}
+
 	}
 
 	/**
 	 * An abstract base class for OS account events.
 	 */
-	abstract static class OsAccountsTskEvent extends DataModelObjectsEvent<OsAccount> {
+	abstract static class OsAccountsTskEvent extends DataModelObjectsTskEvent<OsAccount> {
 
 		/**
 		 * Constructs an abstract base class for OS account events.
@@ -261,7 +250,7 @@ public interface TskEvent {
 	/**
 	 * An event fired when OS accounts are deleted.
 	 */
-	public static final class OsAccountsDeletedTskEvent extends DataModelObjectsDeletedEvent {
+	public static final class OsAccountsDeletedTskEvent extends DataModelObjectsTskEvent<Long> {
 
 		/**
 		 * Constructs an event fired when OS accounts are deleted.
@@ -272,12 +261,21 @@ public interface TskEvent {
 			super(accountObjectIds);
 		}
 
+		/**
+		 * Gets the unique IDs of the deleted OS accounts.
+		 *
+		 * @return The host IDs.
+		 */
+		public List<Long> getOsAccountIds() {
+			return getDataModelObjects();
+		}
+
 	}
 
 	/**
 	 * An abstract base class for person events.
 	 */
-	static abstract class PersonsTskEvent extends DataModelObjectsEvent<Person> {
+	static abstract class PersonsTskEvent extends DataModelObjectsTskEvent<Person> {
 
 		/**
 		 * Csontructs an abstract base class for person events.
@@ -334,7 +332,7 @@ public interface TskEvent {
 	/**
 	 * An event fired when persons are deleted.
 	 */
-	final public static class PersonsDeletedTskEvent extends DataModelObjectsDeletedEvent {
+	final public static class PersonsDeletedTskEvent extends DataModelObjectsTskEvent<Long> {
 
 		/**
 		 * Constructs an event fired when persons are deleted.
@@ -343,6 +341,86 @@ public interface TskEvent {
 		 */
 		PersonsDeletedTskEvent(List<Long> personObjectIDs) {
 			super(personObjectIDs);
+		}
+
+		/**
+		 * Gets the unique IDs of the deleted persons.
+		 *
+		 * @return The host IDs.
+		 */
+		public List<Long> getPersonIds() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * An abstract base class for person and host association change events.
+	 *
+	 * @param <T> The representation of the hosts, i.e., either a Host object or
+	 *            a host ID object.
+	 */
+	static abstract class PersonHostsTskEvent<T> extends DataModelObjectsTskEvent<T> {
+
+		private final Person person;
+
+		PersonHostsTskEvent(Person person, List<T> hosts) {
+			super(hosts);
+			this.person = person;
+		}
+
+		/**
+		 * Gets the person.
+		 *
+		 * @return The person.
+		 */
+		public Person getPerson() {
+			return person;
+		}
+
+		/**
+		 * Gets the hosts.
+		 *
+		 * @return The hosts.
+		 */
+		List<T> getHosts() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * An event fired when one or more hosts are added to a person.
+	 */
+	final public static class HostsAddedToPersonTskEvent extends PersonHostsTskEvent<Host> {
+
+		/**
+		 * Contructs an event fired when one or more hosts are added to a
+		 * person.
+		 *
+		 * @param person The person.
+		 * @param hosts  The hosts.
+		 */
+		HostsAddedToPersonTskEvent(Person person, List<Host> hosts) {
+			super(person, hosts);
+		}
+
+	}
+
+	/**
+	 * An event fired when one or more hosts are removed from a person.
+	 */
+	final public static class HostsRemovedFromPersonTskEvent extends PersonHostsTskEvent<Long> {
+
+		/**
+		 * Contructs an event fired when one or more hosts are removed from a
+		 * person.
+		 *
+		 * @param person  The person.
+		 * @param hostIds The host IDs of the hosts.
+		 */
+		HostsRemovedFromPersonTskEvent(Person person, List<Long> hostIds) {
+			super(person, hostIds);
 		}
 
 	}
