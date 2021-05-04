@@ -28,7 +28,7 @@ import java.util.List;
 public interface TskEvent {
 
 	/**
-	 * An abstract base class for data model events.
+	 * An abstract base class for data model object events.
 	 *
 	 * @param <T> A data model object type parameter.
 	 */
@@ -37,9 +37,9 @@ public interface TskEvent {
 		private final List<T> dataModelObjects;
 
 		/**
-		 * Constructs an abstract base class for data model events.
+		 * Constructs the abstract base class part for data model object events.
 		 *
-		 * @param dataModelObjects The data model objects that are the subject
+		 * @param dataModelObjects The data model objects that are the subjects
 		 *                         of the event.
 		 */
 		DataModelObjectsTskEvent(List<T> dataModelObjects) {
