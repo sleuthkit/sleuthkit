@@ -105,7 +105,7 @@ public final class PersonManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 
-		publishPersonUpdatedEvent(person);
+		db.fireTSKEvent(new TskEvent.PersonsUpdatedTskEvent(Collections.singletonList(person)));
 		return person;
 	}
 
@@ -140,7 +140,7 @@ public final class PersonManager {
 		}
 
 		if (deletedPerson != null) {
-			publishPersonDeletedEvent(deletedPerson);
+			db.fireTSKEvent(new TskEvent.PersonsDeletedTskEvent(Collections.singletonList(deletedPerson.getPersonId())));
 		}
 	}
 
@@ -253,7 +253,7 @@ public final class PersonManager {
 		}
 
 		if (toReturn != null) {
-			publishPersonAddedEvent(toReturn);
+			db.fireTSKEvent(new PersonsAddedTskEvent(Collections.singletonList(toReturn)));
 		}
 		return toReturn;
 	}
@@ -422,31 +422,4 @@ public final class PersonManager {
 		}
 	}
 
-	/**
-	 * Publishes a person added event.
-	 *
-	 * @param The person.
-	 */
-	private void publishPersonAddedEvent(Person person) {
-		db.fireTSKEvent(new PersonsAddedTskEvent(Collections.singletonList(person)));
-	}
-
-	/**
-	 * Publishes a person updated event.
-	 *
-	 * @param The person.
-	 */
-	private void publishPersonUpdatedEvent(Person person) {
-		db.fireTSKEvent(new TskEvent.PersonsUpdatedTskEvent(Collections.singletonList(person)));
-	}
-
-	/**
-	 * Publishes a person deleted event.
-	 *
-	 * @param The person.
-	 */
-	private void publishPersonDeletedEvent(Person person) {
-		db.fireTSKEvent(new TskEvent.PersonsDeletedTskEvent(Collections.singletonList(person.getPersonId())));
-	}
-	
 }
