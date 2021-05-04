@@ -175,8 +175,6 @@ public final class PersonManager {
 	 */
 	public Optional<Person> getPerson(long id) throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_persons WHERE id = " + id;
-
-		List<Person> persons = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -268,11 +266,10 @@ public final class PersonManager {
 	 * @throws TskCoreException
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
-		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getPersonId();
-		whereStatement += " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
-
-		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
-
+		if (person == null) {
+			throw new TskCoreException("Illegal argument: person must be non-null");
+		}		
+		String queryString = "SELECT * FROM tsk_hosts WHERE person_id = " + person.getPersonId() + " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -393,12 +390,12 @@ public final class PersonManager {
 	 * Removes one or more hosts from a person.
 	 *
 	 * @param person The person.
-	 * @param host   The hosts.
+	 * @param hosts   The hosts.
 	 *
 	 * @throws TskCoreException Exception thrown if the operation cannot be
 	 *                          completed.
 	 */
-	public void removeHostFromPerson(Person person, List<Host> hosts) throws TskCoreException {
+	public void removeHostsFromPerson(Person person, List<Host> hosts) throws TskCoreException {
 		if (person == null) {
 			throw new TskCoreException("Illegal argument: person must be non-null");
 		}
