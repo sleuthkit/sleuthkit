@@ -50,12 +50,10 @@ exfatfs_is_cluster_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
     uint8_t bitmap_byte;
     ssize_t bytes_read = 0;
 
-    assert(a_fatfs != NULL);
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
         return -1;
     }
 
-    assert((a_cluster_addr >= FATFS_FIRST_CLUSTER_ADDR) && (a_cluster_addr <= a_fatfs->lastclust));
     if ((a_cluster_addr < FATFS_FIRST_CLUSTER_ADDR) || (a_cluster_addr > a_fatfs->lastclust)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -109,7 +107,6 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
     EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
     uint8_t i = 0;
     
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -176,7 +173,6 @@ exfatfs_is_vol_guid_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_
     const char *func_name = "exfatfs_is_vol_guid_dentry";
     EXFATFS_VOL_GUID_DIR_ENTRY *dentry = (EXFATFS_VOL_GUID_DIR_ENTRY*)a_dentry;
     
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -217,7 +213,6 @@ exfatfs_is_alloc_bitmap_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STA
     uint32_t first_cluster_of_bitmap = 0;
     uint64_t length_of_alloc_bitmap_in_bytes = 0;
 
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -297,7 +292,6 @@ exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STA
     uint64_t table_size = 0;
     uint32_t first_cluster_of_table = 0;
 
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -377,7 +371,6 @@ exfatfs_is_texfat_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_EN
     const char *func_name = "exfatfs_is_texfat_dentry";
     EXFATFS_TEXFAT_DIR_ENTRY *dentry = (EXFATFS_TEXFAT_DIR_ENTRY*)a_dentry;
     
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -412,7 +405,6 @@ exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLO
     const char *func_name = "exfatfs_is_texfat_dentry";
     EXFATFS_TEXFAT_DIR_ENTRY *dentry = (EXFATFS_TEXFAT_DIR_ENTRY*)a_dentry;
     
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -476,7 +468,6 @@ exfatfs_is_file_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endi
     const char *func_name = "exfatfs_is_file_dentry";
     EXFATFS_FILE_DIR_ENTRY *dentry = (EXFATFS_FILE_DIR_ENTRY*)a_dentry;
 
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -587,7 +578,6 @@ exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM
     uint64_t file_size = 0;
     uint32_t first_cluster = 0;
 
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -647,7 +637,6 @@ exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry)
     const char *func_name = "exfatfs_is_file_name_dentry";
     EXFATFS_FILE_NAME_DIR_ENTRY *dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_dentry;
     
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
@@ -675,7 +664,6 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
 {
     const char *func_name = "exfatfs_is_dentry";
 
-    assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }

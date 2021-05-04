@@ -164,13 +164,15 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
                         tsk_getu32(fs->endian, ce->celen_m));
 
                     if (cnt == tsk_getu32(fs->endian, ce->celen_m)) {
-                        rockridge_ext *rr_sub_entry = rr_sub_entry = parse_susp(fs, buf2, (int) cnt, hFile, recursion_depth + 1);
+                        rockridge_ext *rr_sub_entry = parse_susp(fs, buf2, (int) cnt, hFile, recursion_depth + 1);
 
                         // Prevent an infinite loop
                         if (rr_sub_entry == NULL) {
                           free(buf2);
+                          free(rr);
                           return NULL;
 			}
+                        free(rr_sub_entry);
                     }
                     else if (tsk_verbose) {
                         fprintf(stderr,
@@ -311,7 +313,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
 
             rr_nm = (iso9660_rr_nm_entry *) buf;
 
-            if ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 - 1> (uintptr_t)end) {
+            if ((rr_nm->len < 6) || ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 - 1> (uintptr_t)end)) {
                 if (tsk_verbose) 
                     tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name\n");
                 break;
@@ -550,6 +552,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
                                         "iso9660_load_inodes_dir: UTF-16 name length is too large, bailing\n");
+                        free(in_node);
+                        in_node = NULL;
                         break;
                     }
 
@@ -595,6 +599,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
                                         "iso9660_load_inodes_dir: ASCII name length is too large, bailing\n");
+                        free(in_node);
+                        in_node = NULL;
                         break;
                     }
 
@@ -608,6 +614,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     tsk_error_set_errno(TSK_ERR_FS_ARG);
                     tsk_error_set_errstr
                         ("Invalid ctype in iso9660_load_inodes_dir");
+                    free(in_node);
+                    in_node = NULL;
                     return -1;
                 }
 
@@ -631,6 +639,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: length of name after processing is 0. bailing\n");
                     free(in_node);
+                    in_node = NULL;
                     break;
                     
                 }
@@ -650,6 +659,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                                 "iso9660_load_inodes_dir: file starts past end of image (%"PRIu32"). bailing\n",
                                 tsk_getu32(fs->endian, dentry->ext_loc_m));
                 free(in_node);
+                in_node = NULL;
                 break;
             }
             in_node->offset =
@@ -661,6 +671,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                                 "iso9660_load_inodes_dir: file ends past end of image (%"PRIu32" bytes). bailing\n",
                                 tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset);
                 free(in_node);
+                in_node = NULL;
                 break;
             }
             /* record size to make sure fifos show up as unique files */
@@ -694,6 +705,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: parse_susp returned error (%s). bailing\n", tsk_error_get());
                     free(in_node);
+                    in_node = NULL;
                     break;
                 }
                 
@@ -797,7 +809,9 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
     pt_len = tsk_getu32(fs->endian, svd->pt_size_m);
 
     while (pt_len > 0) {
-        char utf16_buf[ISO9660_MAXNAMLEN_JOL + 1];      // UTF-16 name from img
+        // Since further on cnt + 1 is used and cnt can be ISO9660_MAXNAMLEN_JOL
+        // + 2 ensures utf16_buf is sufficiently large.
+        char utf16_buf[ISO9660_MAXNAMLEN_JOL + 2];      // UTF-16 name from img
         char utf8buf[2 * ISO9660_MAXNAMLEN_JOL + 1];    // UTF-8 version of name
         int readlen;
         TSK_OFF_T extent;       /* offset of extent for current directory */
@@ -825,7 +839,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
         if (dir.len_di > ISO9660_MAXNAMLEN_JOL)
             readlen = ISO9660_MAXNAMLEN_JOL;
 
-        memset(utf16_buf, 0, ISO9660_MAXNAMLEN_JOL);
+        memset(utf16_buf, 0, ISO9660_MAXNAMLEN_JOL + 2);
         /* get UCS-2 filename for the entry */
         cnt = tsk_fs_read(fs, pt_offs, (char *) utf16_buf, readlen);
         if (cnt != dir.len_di) {
