@@ -4893,8 +4893,11 @@ public class SleuthkitCase {
 					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
-					+ "FROM tsk_file_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.obj_id = " + file.getId()
-					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+					+ "FROM tsk_file_attributes AS attrs "
+					+ " INNER JOIN blackboard_attribute_types AS types "
+					+ " ON attrs.attribute_type_id = types.attribute_type_id "
+					+ " WHERE attrs.obj_id = " + file.getId() );
+			
 			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 			while (rs.next()) {
 				int attributeTypeId = rs.getInt("attribute_type_id");
