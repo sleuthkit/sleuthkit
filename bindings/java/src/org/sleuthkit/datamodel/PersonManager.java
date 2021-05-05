@@ -366,7 +366,7 @@ public final class PersonManager {
 		if (person == null) {
 			throw new TskCoreException("Illegal argument: person must be non-null");
 		}
-		if (hosts == null) {
+		if (hosts == null || hosts.isEmpty()){
 			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
 		}
 		List<Host> hostsAdded = new ArrayList<>();
@@ -399,7 +399,7 @@ public final class PersonManager {
 		if (person == null) {
 			throw new TskCoreException("Illegal argument: person must be non-null");
 		}
-		if (hosts == null) {
+		if (hosts == null || hosts.isEmpty()){
 			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
 		}
 		List<Host> hostsRemoved = new ArrayList<>();
