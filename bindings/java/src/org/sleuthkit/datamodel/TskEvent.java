@@ -91,7 +91,7 @@ public interface TskEvent {
 	/**
 	 * An event published when one or more analysis results are deleted.
 	 */
-	final public static class AnalysisResultsDeletedTskEvent extends TskObjectsEvent<Long> {
+	public final static class AnalysisResultsDeletedTskEvent extends TskObjectsEvent<Long> {
 
 		/**
 		 * Constructs an event published when one or more analysis results are
