@@ -576,7 +576,7 @@ public final class OsAccountManager {
 		}
 
 		// check cache first
-		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, dataSourceObjId, instanceType);
+		OsAccountInstance accountInstance = new OsAccountInstance(db, osAccount, dataSourceObjId, instanceType);
 		if (osAccountInstanceCache.contains(accountInstance)) {
 			return;
 		}
@@ -584,17 +584,7 @@ public final class OsAccountManager {
 		// create the instance 
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, instance_type)"
-					+ " VALUES (?, ?, ?)"); // NON-NLS
-
-			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.RETURN_GENERATED_KEYS);
-			preparedStatement.clearParameters();
-
-			preparedStatement.setLong(1, osAccount.getId());
-			preparedStatement.setLong(2, dataSourceObjId);
-			preparedStatement.setInt(3, instanceType.getId());
-
-			connection.executeUpdate(preparedStatement);
+			newOsAccountInstanceSql(osAccount.getId(), dataSourceObjId, instanceType, connection);
 
 			// add to the cache.
 			osAccountInstanceCache.add(accountInstance);
@@ -609,6 +599,63 @@ public final class OsAccountManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+	}
+
+	/**
+	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
+	 * instance already exists in the table.
+	 *
+	 * @param osAccountId     Account id for which an instance needs to be
+	 *                        added.
+	 * @param dataSourceObjId Data source where the instance is found.
+	 * @param instanceType    Instance type.
+	 * @param connection      The current database connection.
+	 *
+	 * @throws TskCoreException If there is an error creating the account
+	 *                          instance.
+	 */
+	void newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+		// check cache first
+		OsAccountInstance accountInstance = new OsAccountInstance(db, osAccountId, dataSourceObjId, instanceType);
+		if (osAccountInstanceCache.contains(accountInstance)) {
+			return;
+		}
+
+		// create the instance 
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			newOsAccountInstanceSql(osAccountId, dataSourceObjId, instanceType, connection);
+			// add to the cache.
+			osAccountInstanceCache.add(accountInstance);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error adding os account instance id = %d, data source object id = %d", osAccountId, dataSourceObjId), ex);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Performs only the sql update portion of creating the new os account.
+	 *
+	 * @param osAccountId     The os account id.
+	 * @param dataSourceObjId The data source object id.
+	 * @param instanceType    Instance type.
+	 * @param connection      The current database connection.
+	 *
+	 * @throws SQLException
+	 */
+	private void newOsAccountInstanceSql(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws SQLException {
+		String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, instance_type)"
+				+ " VALUES (?, ?, ?)"); // NON-NLS
+
+		PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.RETURN_GENERATED_KEYS);
+		preparedStatement.clearParameters();
+
+		preparedStatement.setLong(1, osAccountId);
+		preparedStatement.setLong(2, dataSourceObjId);
+		preparedStatement.setInt(3, instanceType.getId());
+
+		connection.executeUpdate(preparedStatement);
 	}
 
 	/**

@@ -698,7 +698,6 @@ public class BlackboardArtifact implements Content {
 
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
-
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
 
