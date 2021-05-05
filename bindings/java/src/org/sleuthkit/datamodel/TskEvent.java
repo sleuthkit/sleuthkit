@@ -137,6 +137,7 @@ public interface TskEvent {
 		public List<Host> getHosts() {
 			return getDataModelObjects();
 		}
+		
 	}
 
 	/**
