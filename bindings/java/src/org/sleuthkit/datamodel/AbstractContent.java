@@ -350,7 +350,7 @@ public abstract class AbstractContent implements Content {
 		DataArtifact artifact =  db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
 
 		if(osAccountId != null) {
-			db.getOsAccountManager().newOsAccountInstance(osAccountId, (DataSource)getDataSource(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+			db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
 		}
 		return artifact;
 	}

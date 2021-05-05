@@ -20,8 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * An OsAccountInstance represents the appearance of a particular OsAccount on a
@@ -29,27 +27,26 @@ import java.util.logging.Logger;
  */
 public class OsAccountInstance implements Comparable<OsAccountInstance> {
 
-	private final long accountId;
-	private OsAccount account;
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
+	private final SleuthkitCase skCase;
+	private final long accountId;
+	private final long dataSourceId;
 	private final OsAccountInstanceType instanceType;
 
-	private final long dataSourceId;
+	private OsAccount account;
 	private DataSource dataSource = null;
-
-	private SleuthkitCase skCase;
-
-	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Construct with OsAccount and DataSource instances.
 	 *
+	 * @param skCase       The case instance.
 	 * @param account      The instance account.
 	 * @param dataSource   The instance data source
 	 * @param instanceType The instance type.
 	 */
-	OsAccountInstance(OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
-		this(account.getId(), dataSource.getId(), instanceType);
+	OsAccountInstance(SleuthkitCase skCase, OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
+		this(skCase, account.getId(), dataSource.getId(), instanceType);
 		this.dataSource = dataSource;
 		this.account = account;
 	}
@@ -77,18 +74,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 * @param instanceType    The instance type.
 	 */
 	OsAccountInstance(SleuthkitCase skCase, long accountId, long dataSourceObjId, OsAccountInstanceType instanceType) {
-		this(accountId, dataSourceObjId, instanceType);
 		this.skCase = skCase;
-	}
-
-	/**
-	 * Construct with OsAccount id and DataSource instances.
-	 *
-	 * @param accountId       The id of the instance account.
-	 * @param dataSourceObjId The instance data source object id.
-	 * @param instanceType    The instance type.
-	 */
-	private OsAccountInstance(long accountId, long dataSourceObjId, OsAccountInstanceType instanceType) {
 		this.accountId = accountId;
 		this.dataSourceId = dataSourceObjId;
 		this.instanceType = instanceType;
@@ -101,9 +87,6 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 */
 	public OsAccount getOsAccount() throws TskCoreException {
 		if (account == null) {
-			if (skCase == null) {
-				throw new TskCoreException("No cached os account and no sleuthkit case to query for os account by id.");
-			}
 			try {
 				account = skCase.getOsAccountManager().getOsAccountByObjectId(accountId);
 			} catch (TskCoreException ex) {
@@ -123,10 +106,6 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 */
 	public DataSource getDataSource() throws TskCoreException {
 		if (dataSource == null) {
-			if (skCase == null) {
-				throw new TskCoreException("No cached data source and no sleuthkit case to query for data source id.");
-			}
-
 			try {
 				dataSource = skCase.getDataSource(dataSourceId);
 			} catch (TskDataException ex) {
