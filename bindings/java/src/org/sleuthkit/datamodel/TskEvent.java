@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * An interface and implementations for data model events.
+ * Data model events.
  */
 public interface TskEvent {
 

@@ -257,19 +257,20 @@ public final class PersonManager {
 	}
 
 	/**
-	 * Get all hosts associated with the given person.
+	 * Gets all hosts associated with the given person, or, if the given person
+	 * is null, gets all hosts not associated with any person.
 	 *
-	 * @param person The person.
+	 * @param person The person. May be null.
 	 *
 	 * @return The list of hosts corresponding to the person.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException Excetpion thrown if there is an issue querying
+	 *                          teh case database.
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
-		if (person == null) {
-			throw new TskCoreException("Illegal argument: person must be non-null");
-		}		
-		String queryString = "SELECT * FROM tsk_hosts WHERE person_id = " + person.getPersonId() + " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
+		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getPersonId();
+		whereStatement += " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
+		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -366,13 +367,14 @@ public final class PersonManager {
 		if (person == null) {
 			throw new TskCoreException("Illegal argument: person must be non-null");
 		}
-		if (hosts == null || hosts.isEmpty()){
+		if (hosts == null || hosts.isEmpty()) {
 			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
 		}
 		List<Host> hostsAdded = new ArrayList<>();
 		String sql = null;
 		db.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = this.db.getConnection(); Statement statement = connection.createStatement()) {
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement statement = connection.createStatement()) {
 			for (Host host : hosts) {
 				sql = String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getPersonId(), host.getHostId());
 				statement.executeUpdate(sql);
@@ -390,7 +392,7 @@ public final class PersonManager {
 	 * Removes one or more hosts from a person.
 	 *
 	 * @param person The person.
-	 * @param hosts   The hosts.
+	 * @param hosts  The hosts.
 	 *
 	 * @throws TskCoreException Exception thrown if the operation cannot be
 	 *                          completed.
@@ -399,7 +401,7 @@ public final class PersonManager {
 		if (person == null) {
 			throw new TskCoreException("Illegal argument: person must be non-null");
 		}
-		if (hosts == null || hosts.isEmpty()){
+		if (hosts == null || hosts.isEmpty()) {
 			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
 		}
 		List<Host> hostsRemoved = new ArrayList<>();
@@ -418,5 +420,5 @@ public final class PersonManager {
 			db.fireTSKEvent(new TskEvent.HostsRemovedFromPersonTskEvent(person, hostsRemoved));
 		}
 	}
-
+	
 }
