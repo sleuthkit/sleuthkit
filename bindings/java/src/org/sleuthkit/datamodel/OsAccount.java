@@ -249,16 +249,6 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * This function is used by OsAccountManger to update the list of OsAccount
-	 * instances.
-	 *
-	 * @param osAccountInstanes The osAccount instances that are to be added.
-	 */
-	synchronized void setInstancesInternal(List<OsAccountInstance> osAccountInstances) {
-		this.osAccountInstances = osAccountInstances;
-	}
-
-	/**
 	 * Get the account Object Id that is unique within the scope of the case.
 	 *
 	 * @return Account id.
@@ -373,11 +363,7 @@ public final class OsAccount extends AbstractContent {
 	 * @throws TskCoreException
 	 */
 	public synchronized List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
-		if (osAccountInstances == null) {
-			osAccountInstances = sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
-		}
-
-		return Collections.unmodifiableList(osAccountInstances);
+		return sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
 	}
 
 	/**
