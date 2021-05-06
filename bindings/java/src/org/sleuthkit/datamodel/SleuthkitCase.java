@@ -5055,7 +5055,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
-	 * @deprecated As of 4.11.1, please use newDataArtifact or newAnalysisResult.
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
 	@Deprecated
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
@@ -5099,13 +5099,12 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
-	 * @deprecated As of 4.11.1, please use newDataArtifact or newAnalysisResult.
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
 	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
-		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
-		//return newBlackboardArtifact(artifactType.getTypeID(), obj_id);
+		return newBlackboardArtifact(artifactType.getTypeID(), obj_id);
 	}
 
 	/**
@@ -5121,7 +5120,10 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id, long data_source_obj_id) throws TskCoreException {
 		BlackboardArtifact.Type type = getArtifactType(artifactTypeID);
 		try (CaseDbConnection connection = connections.getConnection()) {
@@ -5129,6 +5131,7 @@ public class SleuthkitCase {
 		}
 	}
 
+	@Deprecated
 	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName) throws TskCoreException {
 		try (CaseDbConnection connection = connections.getConnection()) {
 			long data_source_obj_id = getDataSourceObjectId(connection, obj_id);
@@ -5160,6 +5163,7 @@ public class SleuthkitCase {
 		return statement;
 	}
 
+	@Deprecated
 	BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
 		try {
