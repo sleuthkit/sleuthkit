@@ -456,40 +456,6 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Create and add a data artifact associated with this AbstractFile.
-	 *
-	 * @param artifactType   Type of analysis result artifact to create.
-	 * @param attributesList Additional attributes to attach to this data
-	 *                       artifact.
-	 *
-	 * @return DataArtifact New data artifact.
-	 *
-	 * @throws TskCoreException If a critical error occurred within tsk core.
-	 */
-	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
-			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
-		}
-
-		CaseDbTransaction transaction = getSleuthkitCase().beginTransaction();
-		try {
-			DataArtifact dataArtifact = getSleuthkitCase().getBlackboard()
-					.newDataArtifact(artifactType, getId(), getDataSourceObjectId(), attributesList, getOsAccountObjectId().orElse(null), transaction);
-			
-			transaction.commit();
-			return dataArtifact;
-		} catch (TskCoreException ex) {
-			try {
-				transaction.rollback();
-			} catch (TskCoreException ex2) {
-				LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception. "
-						+ "Error invoking newDataArtifact with dataSourceObjId: " + getDataSourceObjectId() + ",  sourceObjId: " + getId(), ex2);
-			}
-			throw ex;
-		}
-	}
-
-	/**
 	 * Gets the MIME type of this file.
 	 *
 	 * @return The MIME type name or null if the MIME type has not been set.
@@ -1442,6 +1408,23 @@ public abstract class AbstractFile extends AbstractContent {
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		return super.newArtifact(artifactTypeID);
+	}
+
+	/**
+	 * Create and add a data artifact associated with this abstract file. This
+	 * method creates the data artifact with the os account id associated with
+	 * this abstract file if one exits.
+	 *
+	 * @param artifactType   Type of data artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return super.newDataArtifact(artifactType, attributesList, osAccountObjId);
 	}
 
 	/**

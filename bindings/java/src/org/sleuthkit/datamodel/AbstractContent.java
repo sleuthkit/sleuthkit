@@ -343,7 +343,7 @@ public abstract class AbstractContent implements Content {
 
 		switch (artifactType.getCategory()) {
 			case DATA_ARTIFACT:
-				return db.getBlackboard().newDataArtifact(artifactType, thisObjId, dsObjId, Collections.emptyList(), getOsAccount());
+				return db.getBlackboard().newDataArtifact(artifactType, thisObjId, dsObjId, Collections.emptyList(), getOsAccountId());
 			case ANALYSIS_RESULT: {
 				try {
 					AnalysisResultAdded addedResult = db.getBlackboard().newAnalysisResult(
@@ -380,11 +380,12 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
-	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount) throws TskCoreException {
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
+		// TODO
+		DataArtifact artifact =  db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
 
-		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccount);
-		if (osAccount != null) {
-			db.getOsAccountManager().newOsAccountInstance(osAccount, (DataSource) getDataSource(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+		if(osAccountId != null) {
+			db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
 		}
 		return artifact;
 	}
@@ -433,19 +434,17 @@ public abstract class AbstractContent implements Content {
 	 * Returns the OS Account associated with this content if this is a file.
 	 * Otherwise, returns null.
 	 *
-	 * @return The OS Account associated with this content if this is a file.
+	 * @return The OS Account ID associated with this content if this is a file.
 	 *         Otherwise, returns null.
 	 *
 	 * @throws TskCoreException
 	 */
-	private OsAccount getOsAccount() throws TskCoreException {
+	private Long getOsAccountId() throws TskCoreException {
 		Optional<Long> osAccountId = (this instanceof AbstractFile)
 				? ((AbstractFile) this).getOsAccountObjectId()
 				: Optional.empty();
 
-		return osAccountId.isPresent()
-				? db.getOsAccountManager().getOsAccountByObjectId(osAccountId.get())
-				: null;
+		return osAccountId.orElse(null);
 	}
 
 	@Override
@@ -461,14 +460,13 @@ public abstract class AbstractContent implements Content {
 			if (create) {
 				long thisObjId = getId();
 				Long dsObjId = getDataSource() != null ? getDataSource().getId() : null;
-				OsAccount osAccount = getOsAccount();
 
 				retArt = db.getBlackboard().newDataArtifact(
 						GEN_INFO_TYPE,
 						thisObjId,
 						dsObjId,
 						Collections.emptyList(),
-						osAccount);
+						getOsAccountId());
 			} else {
 				return null;
 			}

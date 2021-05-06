@@ -523,7 +523,7 @@ public final class OsAccountManager {
 		}
 
 		// check cache first
-		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, dataSource, instanceType);
+		OsAccountInstance accountInstance = new OsAccountInstance(db, osAccount, dataSource, instanceType);
 		if (osAccountInstanceCache.contains(accountInstance)) {
 			return;
 		}
@@ -575,8 +575,43 @@ public final class OsAccountManager {
 			throw new TskCoreException("Cannot create account instance with null account.");
 		}
 
+		newOsAccountInstance(osAccount.getId(), dataSourceObjId, instanceType, connection);
+	}
+
+	/**
+	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
+	 * instance already exists in the table.
+	 *
+	 * @param osAccountId     Account id for which an instance needs to be
+	 *                        added.
+	 * @param dataSourceObjId Data source id where the instance is found.
+	 * @param instanceType    Instance type.
+	 *
+	 * @throws TskCoreException If there is an error creating the account
+	 *                          instance.
+	 */
+	void newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			newOsAccountInstance(osAccountId, dataSourceObjId, instanceType, connection);
+		}
+	}
+
+	/**
+	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
+	 * instance already exists in the table.
+	 *
+	 * @param osAccountId     Account id for which an instance needs to be
+	 *                        added.
+	 * @param dataSourceObjId Data source id where the instance is found.
+	 * @param instanceType    Instance type.
+	 * @param connection      The current database connection.
+	 *
+	 * @throws TskCoreException If there is an error creating the account
+	 *                          instance.
+	 */
+	void newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 		// check cache first
-		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, dataSourceObjId, instanceType);
+		OsAccountInstance accountInstance = new OsAccountInstance(db, osAccountId, dataSourceObjId, instanceType);
 		if (osAccountInstanceCache.contains(accountInstance)) {
 			return;
 		}
@@ -590,7 +625,7 @@ public final class OsAccountManager {
 			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.RETURN_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 
-			preparedStatement.setLong(1, osAccount.getId());
+			preparedStatement.setLong(1, osAccountId);
 			preparedStatement.setLong(2, dataSourceObjId);
 			preparedStatement.setInt(3, instanceType.getId());
 
@@ -598,14 +633,8 @@ public final class OsAccountManager {
 
 			// add to the cache.
 			osAccountInstanceCache.add(accountInstance);
-
-			// update account instances
-			List<OsAccountInstance> currentInstancesList = getOsAccountInstances(osAccount, connection);
-			currentInstancesList.add(accountInstance);
-			osAccount.setInstancesInternal(currentInstancesList);
-
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding os account instance for account = %s, data source object id = %d", osAccount.getAddr().orElse(osAccount.getLoginName().orElse("UNKNOWN")), dataSourceObjId), ex);
+			throw new TskCoreException(String.format("Error adding os account instance id = %d, data source object id = %d", osAccountId, dataSourceObjId), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}

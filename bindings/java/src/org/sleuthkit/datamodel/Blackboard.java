@@ -1011,29 +1011,24 @@ public final class Blackboard {
 	 *                        belongs to, may be the same as the sourceObjId.
 	 *                        May be null.
 	 * @param attributes      The attributes. May be empty or null.
-	 * @param osAccount       The OS account associated with the artifact. May
-	 *                        be null.
+	 * @param osAccountId     The OS account id associated with the artifact.
+	 *                        May be null.
 	 *
 	 * @return DataArtifact A new data artifact.
 	 *
 	 * @throws TskCoreException If a critical error occurs within tsk core.
 	 */
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
-			Collection<BlackboardAttribute> attributes, OsAccount osAccount) throws TskCoreException {
+			Collection<BlackboardAttribute> attributes, Long osAccountId) throws TskCoreException {
 
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
 		}
 
-		Long osAccountObjdId = null;
-		if (osAccount != null) {
-			osAccountObjdId = osAccount.getId();
-		}
-
 		CaseDbTransaction transaction = caseDb.beginTransaction();
 		try {
 			DataArtifact dataArtifact = newDataArtifact(artifactType, sourceObjId, dataSourceObjId,
-					attributes, osAccountObjdId, transaction);
+					attributes, osAccountId, transaction);
 			transaction.commit();
 			return dataArtifact;
 		} catch (TskCoreException ex) {
