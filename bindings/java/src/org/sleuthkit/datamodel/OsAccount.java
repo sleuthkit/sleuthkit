@@ -58,7 +58,6 @@ public final class OsAccount extends AbstractContent {
 	private final Long creationTime;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
-	private List<OsAccountInstance> osAccountInstances = null;
 
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
