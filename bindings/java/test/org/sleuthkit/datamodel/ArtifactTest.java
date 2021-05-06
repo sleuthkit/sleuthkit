@@ -359,7 +359,7 @@ public class ArtifactTest {
 		DataArtifact dataArt1 = defTextFile.newDataArtifact(dataArtType, java.util.Collections.emptyList(), null);
 		DataArtifact dataArt2 = defTextFile.newDataArtifact(dataArtType, java.util.Collections.emptyList(), osAccount2.getId());
 		
-		@SuppressWarnings("Deprecated")
+		@SuppressWarnings("deprecation")
 		BlackboardArtifact bbArt1 = defTextFile.newArtifact(dataArtType.getTypeID());
 		DataArtifact dataArt3 = defTextFile.newDataArtifact(dataArtType, java.util.Collections.emptyList(), osAccount2.getId());
 		DataArtifact dataArt4 = caseDB.getBlackboard().newDataArtifact(dataArtType, defTextFile.getId(), fs.getDataSource().getId(), java.util.Collections.emptyList(), osAccount2.getId());
