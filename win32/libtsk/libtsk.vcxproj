@@ -308,6 +308,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\pool\pool_read.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
     <ClCompile Include="..\..\tsk\util\crypto.cpp" />
+    <ClCompile Include="..\..\tsk\util\detect_encryption.c" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -420,6 +421,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\pool\tsk_pool.h" />
     <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
     <ClInclude Include="..\..\tsk\util\crypto.hpp" />
+    <ClInclude Include="..\..\tsk\util\detect_encryption.h" />
     <ClInclude Include="..\..\tsk\util\lw_shared_ptr.hpp" />
     <ClInclude Include="..\..\tsk\util\span.hpp" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />

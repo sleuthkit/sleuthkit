@@ -38,14 +38,12 @@ bool TskIsImageSupported::isImageEncrypted()
     return m_wasEncryptionFound;
 }
 
-
 uint8_t TskIsImageSupported::handleError() 
 {
     // we don't care about errors for this use case
-    //fprintf(stderr, "%s", tsk_error_get());
+    fprintf(stderr, "handleError: %s\n", tsk_error_get());
     return 0;
 }
-
 
 TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,
                                                  const char * /*path*/)
@@ -53,10 +51,11 @@ TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,
     return TSK_OK;
 }
 
-
 TSK_FILTER_ENUM
-TskIsImageSupported::filterFs(TSK_FS_INFO * /*fs_info*/)
+TskIsImageSupported::filterFs(TSK_FS_INFO * fs_info)
 {
+    printf("filterFs()\n");
+    fflush(stdout);
     m_wasDataFound = true;
     return TSK_FILTER_SKIP;
 }
@@ -78,8 +77,9 @@ TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)
+TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
+    printf("filterVol()\n");
     m_wasDataFound = true;
-    return TSK_FILTER_SKIP;
+    return TSK_FILTER_CONT;
 }

@@ -358,8 +358,8 @@ extern "C" {
 #define TSK_ERR_FS_GENFS	(TSK_ERR_FS | 15)
 #define TSK_ERR_FS_CORRUPT	(TSK_ERR_FS | 16)
 #define TSK_ERR_FS_ATTR_NOTFOUND (TSK_ERR_FS | 17)
-#define TSK_ERR_FS_MAX		18
-
+#define TSK_ERR_FS_ENCRYPTED    (TSK_ERR_FS | 18)
+#define TSK_ERR_FS_MAX		19
 
 #define TSK_ERR_HDB_UNKTYPE     (TSK_ERR_HDB | 0)
 #define TSK_ERR_HDB_UNSUPTYPE   (TSK_ERR_HDB | 1)

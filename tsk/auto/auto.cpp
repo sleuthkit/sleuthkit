@@ -311,6 +311,8 @@ TSK_WALK_RET_ENUM
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 {
+    printf("In original findFilesInVs\n");
+    fflush(stdout);
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
@@ -468,11 +470,21 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                         }
                     }
                     else {
+                        printf("Checking APFS encryption...\n");
+                       // encryption_detected_result* result = isEncrypted(pool_img, 0);
+                        //if (result->isEncrypted) {
+                        //    tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                        //    tsk_error_set_errstr2(
+                        //        "Possible encrypted APFS file system");
+                        //}
+                        //else {
+                            tsk_error_set_errstr2(
+                                "findFilesInPool: Error opening APFS file system");
+                            registerError();
+                        //}
+
                         pool_img->close(pool_img);
                         pool->close(pool);
-                        tsk_error_set_errstr2(
-                            "findFilesInPool: Error opening APFS file system");
-                        registerError();
                         return TSK_ERR;
                     }
 

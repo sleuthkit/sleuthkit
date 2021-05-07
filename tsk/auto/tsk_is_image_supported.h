@@ -22,8 +22,11 @@
 
 
 #include "tsk/tsk_tools_i.h"
+#include "tsk/util/detect_encryption.h"
 
 class TskIsImageSupported:public TskAuto {
+
+
 public:
     TskIsImageSupported();
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
