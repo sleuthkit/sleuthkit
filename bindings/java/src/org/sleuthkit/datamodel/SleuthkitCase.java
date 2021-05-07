@@ -105,7 +105,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 0);
+			= new CaseDbSchemaVersionNumber(9, 1);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1007,6 +1007,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot4toSchema8dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot5toSchema8dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot6toSchema9dot0(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot0toSchema9dot1(dbSchemaVersion, connection);
+				
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -2583,6 +2585,29 @@ public class SleuthkitCase {
 		}
 	}
 
+	private CaseDbSchemaVersionNumber updateFromSchema9dot0toSchema9dot1(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 0) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			
+			// add an index on tsk_file_attributes table.
+			statement.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
+
+			return new CaseDbSchemaVersionNumber(9, 1);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}	
+	
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
@@ -3338,7 +3363,7 @@ public class SleuthkitCase {
 					String sha256 = resultSet.getString("sha256");
 					String name = resultSet.getString("display_name");
 
-					List<String> imagePaths = getImagePathsById(objectId);
+					List<String> imagePaths = getImagePathsById(objectId, connection);
 					if (name == null) {
 						if (imagePaths.size() > 0) {
 							String path = imagePaths.get(0);
@@ -4905,8 +4930,11 @@ public class SleuthkitCase {
 					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
-					+ "FROM tsk_file_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.obj_id = " + file.getId()
-					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+					+ "FROM tsk_file_attributes AS attrs "
+					+ " INNER JOIN blackboard_attribute_types AS types "
+					+ " ON attrs.attribute_type_id = types.attribute_type_id "
+					+ " WHERE attrs.obj_id = " + file.getId() );
+			
 			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 			while (rs.next()) {
 				int attributeTypeId = rs.getInt("attribute_type_id");
@@ -9327,15 +9355,15 @@ public class SleuthkitCase {
 	 * Returns a list of fully qualified file paths based on an image object ID.
 	 *
 	 * @param objectId The object id of the data source.
+	 * @param connection Database connection to use.
 	 *
 	 * @return List of file paths.
 	 *
 	 * @throws TskCoreException Thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	private List<String> getImagePathsById(long objectId) throws TskCoreException {
+	private List<String> getImagePathsById(long objectId, CaseDbConnection connection) throws TskCoreException {
 		List<String> imagePaths = new ArrayList<String>();
-		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -9350,7 +9378,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
 
