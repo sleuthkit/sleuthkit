@@ -3327,7 +3327,7 @@ public class SleuthkitCase {
 					String sha256 = resultSet.getString("sha256");
 					String name = resultSet.getString("display_name");
 
-					List<String> imagePaths = getImagePathsById(objectId);
+					List<String> imagePaths = getImagePathsById(objectId, connection);
 					if (name == null) {
 						if (imagePaths.size() > 0) {
 							String path = imagePaths.get(0);
@@ -9192,15 +9192,15 @@ public class SleuthkitCase {
 	 * Returns a list of fully qualified file paths based on an image object ID.
 	 *
 	 * @param objectId The object id of the data source.
+	 * @param connection Database connection to use.
 	 *
 	 * @return List of file paths.
 	 *
 	 * @throws TskCoreException Thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	private List<String> getImagePathsById(long objectId) throws TskCoreException {
+	private List<String> getImagePathsById(long objectId, CaseDbConnection connection) throws TskCoreException {
 		List<String> imagePaths = new ArrayList<String>();
-		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -9215,7 +9215,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
 
