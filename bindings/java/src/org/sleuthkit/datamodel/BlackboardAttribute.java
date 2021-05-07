@@ -609,11 +609,11 @@ public class BlackboardAttribute extends AbstractAttribute {
 		public static final Type TSK_HOST = new Type(154, "TSK_HOST", bundle.getString("BlackboardAttribute.tskHost.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_HOME_DIR = new Type(155, "TSK_HOME_DIR", bundle.getString("BlackboardAttribute.tskHomeDir.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_IS_ADMIN = new Type(156, "TSK_IS_ADMIN", bundle.getString("BlackboardAttribute.tskIsAdmin.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
-
 		// NOTE: When adding a new standard BlackboardAttribute.Type, add the instance and then add to the STANDARD_TYPES list.
 		/**
 		 * A list of all the standard attribute types.
 		 */
+		
 		static final List<Type> STANDARD_TYPES = Collections.unmodifiableList(Arrays.asList(
 				TSK_URL,
 				TSK_DATETIME,
