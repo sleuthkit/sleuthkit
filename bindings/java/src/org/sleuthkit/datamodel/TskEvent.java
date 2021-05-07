@@ -97,8 +97,8 @@ public interface TskEvent {
 		 * Constructs an event published when one or more analysis results are
 		 * deleted.
 		 *
-		 * @param deletedResults The TSK object IDs of the deleted analysis
-		 *                       results.
+		 * @param deletedResultObjIds The TSK object IDs of the deleted analysis
+		 *                            results.
 		 */
 		AnalysisResultsDeletedTskEvent(List<Long> deletedResultObjIds) {
 			super(deletedResultObjIds);
@@ -109,7 +109,7 @@ public interface TskEvent {
 		 *
 		 * @return The TSK object IDs.
 		 */
-		public List<Long> getAnalysisResultIds() {
+		public List<Long> getAnalysisResultObjectIds() {
 			return getDataModelObjects();
 		}
 
@@ -137,7 +137,7 @@ public interface TskEvent {
 		public List<Host> getHosts() {
 			return getDataModelObjects();
 		}
-		
+
 	}
 
 	/**
@@ -203,7 +203,7 @@ public interface TskEvent {
 	abstract static class OsAccountsTskEvent extends TskObjectsEvent<OsAccount> {
 
 		/**
-		 * Constructs the super class part for an OS account event.
+		 * Constructs the super class part of an OS account event.
 		 *
 		 * @param hosts The OS accounts that are the subjects of the event.
 		 */
@@ -286,7 +286,7 @@ public interface TskEvent {
 	static abstract class PersonsTskEvent extends TskObjectsEvent<Person> {
 
 		/**
-		 * Constructs the super class part for a person event.
+		 * Constructs the super class part of a person event.
 		 *
 		 * @param persons The persons that are the subjects of the event.
 		 */

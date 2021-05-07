@@ -264,8 +264,8 @@ public final class PersonManager {
 	 *
 	 * @return The list of hosts corresponding to the person.
 	 *
-	 * @throws TskCoreException Excetpion thrown if there is an issue querying
-	 *                          teh case database.
+	 * @throws TskCoreException Exception thrown if there is an issue querying
+	 *                          the case database.
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
 		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getPersonId();
@@ -373,8 +373,7 @@ public final class PersonManager {
 		List<Host> hostsAdded = new ArrayList<>();
 		String sql = null;
 		db.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement statement = connection.createStatement()) {
+		try (CaseDbConnection connection = this.db.getConnection(); Statement statement = connection.createStatement()) {
 			for (Host host : hosts) {
 				sql = String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getPersonId(), host.getHostId());
 				statement.executeUpdate(sql);
@@ -384,7 +383,9 @@ public final class PersonManager {
 			throw new TskCoreException(String.format(sql == null ? "Error connecting to case database" : "Error executing '" + sql + "'"), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
-			db.fireTSKEvent(new TskEvent.HostsAddedToPersonTskEvent(person, hostsAdded));
+			if (!hostsAdded.isEmpty()) {
+				db.fireTSKEvent(new TskEvent.HostsAddedToPersonTskEvent(person, hostsAdded));
+			}
 		}
 	}
 
@@ -417,8 +418,10 @@ public final class PersonManager {
 			throw new TskCoreException(String.format(sql == null ? "Error connecting to case database" : "Error executing '" + sql + "'"), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
-			db.fireTSKEvent(new TskEvent.HostsRemovedFromPersonTskEvent(person, hostsRemoved));
+			if (!hostsRemoved.isEmpty()) {
+				db.fireTSKEvent(new TskEvent.HostsRemovedFromPersonTskEvent(person, hostsRemoved));
+			}
 		}
 	}
-	
+
 }
