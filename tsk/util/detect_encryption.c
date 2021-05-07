@@ -99,7 +99,7 @@ calculateEntropy(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
 // May return null on error.
 // Client must free the result when finished. 
 encryption_detected_result*
-isEncrypted(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
+detectEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
 
     encryption_detected_result* result = (encryption_detected_result*)tsk_malloc(sizeof(encryption_detected_result));
     if (result == NULL) {
