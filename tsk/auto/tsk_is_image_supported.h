@@ -37,8 +37,10 @@ public:
     virtual uint8_t handleError();
     bool isImageSupported();
     bool isImageEncrypted();
+    void printEncryptionStatus();
     
 private:
     bool m_wasDataFound;
     bool m_wasEncryptionFound;
+    bool m_wasFileSystemFound;
 };

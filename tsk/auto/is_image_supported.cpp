@@ -26,6 +26,7 @@ TskIsImageSupported::TskIsImageSupported()
 {
     m_wasDataFound = false;
     m_wasEncryptionFound = false;
+    m_wasFileSystemFound = false;
 }
 
 bool TskIsImageSupported::isImageSupported()
@@ -38,10 +39,32 @@ bool TskIsImageSupported::isImageEncrypted()
     return m_wasEncryptionFound;
 }
 
+void TskIsImageSupported::printEncryptionStatus() {
+    printf("Encryption status: ");
+    if (!m_wasEncryptionFound) {
+        printf("No encryption found\n");
+        return;
+    }
+
+    if (m_wasFileSystemFound) {
+        printf("Partial encryption found\n");
+    }
+    else {
+        printf("Full encryption found\n");
+    }
+}
+
 uint8_t TskIsImageSupported::handleError() 
 {
-    // we don't care about errors for this use case
+
     fprintf(stderr, "handleError: %s\n", tsk_error_get());
+    TSK_ERROR_INFO* lastError = tsk_error_get_info();
+    if (lastError != NULL) {
+        uint32_t errCode = lastError->t_errno;
+        if (errCode == TSK_ERR_FS_ENCRYPTED) {
+            m_wasEncryptionFound = true;
+        }
+    }
     return 0;
 }
 
@@ -54,9 +77,8 @@ TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,
 TSK_FILTER_ENUM
 TskIsImageSupported::filterFs(TSK_FS_INFO * fs_info)
 {
-    printf("filterFs()\n");
-    fflush(stdout);
     m_wasDataFound = true;
+    m_wasFileSystemFound = true;
     return TSK_FILTER_SKIP;
 }
 
@@ -79,7 +101,6 @@ TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 TSK_FILTER_ENUM
 TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
-    printf("filterVol()\n");
     m_wasDataFound = true;
     return TSK_FILTER_CONT;
 }

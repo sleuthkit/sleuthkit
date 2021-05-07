@@ -140,13 +140,15 @@ main(int argc, char **argv1)
         tsk_printf("false\n");
     }
 
+    imageProcessor.printEncryptionStatus();
+    /*
     tsk_printf("Is Encrypted: ");
     if (imageProcessor.isImageEncrypted()) {
         tsk_printf("true\n");
     }
     else {
         tsk_printf("false\n");
-    }
+    }*/
     
     exit(0);
 }

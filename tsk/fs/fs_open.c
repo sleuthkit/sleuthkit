@@ -197,8 +197,6 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             tsk_error_reset();
 
             // Check if the file system appears to be encrypted
-            printf("Checking for encryption\n");
-            fflush(stdout);
             encryption_detected_result* result = isEncrypted(a_img_info, a_offset);
             if (result != NULL) {
                 if (result->isEncrypted) {
@@ -212,7 +210,6 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
             }
         }
-        printf("Found good file system\n");
         return fs_first;
     }
     else if (TSK_FS_TYPE_ISNTFS(a_ftype)) {
