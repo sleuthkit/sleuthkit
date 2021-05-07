@@ -1413,7 +1413,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Create and add a data artifact associated with this abstract file. This
 	 * method creates the data artifact with the os account id associated with
-	 * this abstract file if one exits.
+	 * this abstract file if one exists.
 	 *
 	 * @param artifactType   Type of data artifact to create.
 	 * @param attributesList Additional attributes to attach to this data
