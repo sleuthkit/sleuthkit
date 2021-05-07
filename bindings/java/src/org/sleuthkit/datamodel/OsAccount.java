@@ -117,7 +117,7 @@ public final class OsAccount extends AbstractContent {
 	 * are generally invisible - they will not be returned by any queries on the
 	 * string fields.
 	 */
-	public enum OsAccountDbStatus {
+	enum OsAccountDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");
@@ -130,7 +130,7 @@ public final class OsAccount extends AbstractContent {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -138,7 +138,7 @@ public final class OsAccount extends AbstractContent {
 			return name;
 		}
 
-		public static OsAccountDbStatus fromID(int typeId) {
+		static OsAccountDbStatus fromID(int typeId) {
 			for (OsAccountDbStatus type : OsAccountDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;
