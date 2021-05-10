@@ -199,14 +199,17 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             // Check if the file system appears to be encrypted
             encryption_detected_result* result = detectEncryption(a_img_info, a_offset);
             if (result != NULL) {
-                if (result->isEncrypted) {
+                if (result->encryptionType == ENCRYPTION_DETECTED_SIGNATURE) {
                     tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                    tsk_error_set_errstr(result->desc);
+                } else if (result->encryptionType == ENCRYPTION_DETECTED_ENTROPY) {
+                    tsk_error_set_errno(TSK_ERR_FS_POSSIBLY_ENCRYPTED);
                     tsk_error_set_errstr(result->desc);
                 }
                 free(result);
+                result = NULL;
             }
             else {
-
                 tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
             }
         }

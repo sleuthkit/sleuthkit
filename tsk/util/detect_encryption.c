@@ -11,7 +11,7 @@
 #include "detect_encryption.h"
 
 int
-detectSignature(char * signature, int signatureLen, int startingOffset, int endingOffset, char * buf, int bufLen) {
+detectSignature(const char * signature, size_t signatureLen, int startingOffset, int endingOffset, const char * buf, size_t bufLen) {
 
     for (int offset = startingOffset; offset <= endingOffset; offset++) {
         if (offset + signatureLen >= bufLen) {
@@ -26,37 +26,19 @@ detectSignature(char * signature, int signatureLen, int startingOffset, int endi
 }
 
 int
-detectLUKS(char * buf, int len) {
+detectLUKS(const char * buf, size_t len) {
     const char * signature = "LUKS\xba\xbe";
     return detectSignature(signature, strlen(signature), 0, 0, buf, len);
 }
 
 // Returns 1 if bitlocker signature is found, 0 otherwise
 int
-detectBitLocker(char * buf, int len) {
+detectBitLocker(const char * buf, size_t len) {
 
     // Look for the signature near the beginning of the buffer
     const char * signature = "-FVE-FS-";
     return detectSignature(signature, strlen(signature), 0, 32, buf, len);
-
-    /*
-    for (int i = 0; i < 32; i++) {
-        if (i + strlen(signature) >= len) {
-            break;
-        }
-       
-        if (strncmp(signature, &buf[i], strlen(signature)) == 0) {
-          //  printf("matches!\n");
-            return 1;
-        }
-        //printf("no match\n");
-        fflush(stdout);
-    }*/
-
-
-    return 0;
 }
-
 
 double
 calculateEntropy(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
@@ -65,11 +47,11 @@ calculateEntropy(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
         byteCounts[i] = 0;
     }
 
-    int bufLen = 65536;
+    size_t bufLen = 65536;
     char buf[65536];
-    int bytesRead = 0;
+    size_t bytesRead = 0;
     for (int i = 1; i < 100; i++) {
-
+        // TODO more bounds checking
         if (offset + i * bufLen > img_info->size) {
             break;
         }
@@ -105,7 +87,7 @@ detectEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     if (result == NULL) {
         return result;
     }
-    result->isEncrypted = 0;
+    result->encryptionType = ENCRYPTION_DETECTED_NONE;
     result->desc[0] = '\0';
 
     if (img_info == NULL) {
@@ -123,26 +105,32 @@ detectEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
         return result;
     }
 
-    calculateEntropy(img_info, offset);
+
 
     if (detectBitLocker(buf, len)) {
-        result->isEncrypted = 1;
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
         snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "BitLocker encryption detected");
+        free(buf);
         return result;
     }
 
     if (detectLUKS(buf, len)) {
-        result->isEncrypted = 1;
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
         snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "LUKS encryption detected");
+        free(buf);
         return result;
     }
 
-    // TODO - threshold
-    //if (calculate_entropy(img_info, offset) > 80) {
-        // TODO
-    //}
-
     free(buf);
+
+    // Final test - check entropy
+    double entropy = calculateEntropy(img_info, offset);
+    if (entropy > 6.5) {
+        result->encryptionType = ENCRYPTION_DETECTED_ENTROPY;
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "High entropy detected (%1.2lf)", entropy);
+        free(buf);
+        return result;
+    }
 
     return result;
 }

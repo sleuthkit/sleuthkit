@@ -42,5 +42,6 @@ public:
 private:
     bool m_wasDataFound;
     bool m_wasEncryptionFound;
+    bool m_wasPossibleEncryptionFound;
     bool m_wasFileSystemFound;
 };

@@ -16,11 +16,17 @@
 #include "tsk/base/tsk_base_i.h"
 #include <math.h>
 
-typedef struct encryption_detected_result {
-    int isEncrypted;  // 1 if encryption was found, 0 if not
-    char desc[TSK_ERROR_STRING_MAX_LENGTH];
-}encryption_detected_result;
+typedef enum {
+    ENCRYPTION_DETECTED_NONE = 0,
+    ENCRYPTION_DETECTED_SIGNATURE = 1,
+    ENCRYPTION_DETECTED_ENTROPY = 2
+} encryption_detected_type;
 
-encryption_detected_result* isEncrypted(TSK_IMG_INFO * img_info, TSK_DADDR_T offset);
+typedef struct encryption_detected_result {
+    encryption_detected_type encryptionType;
+    char desc[TSK_ERROR_STRING_MAX_LENGTH];
+} encryption_detected_result;
+
+encryption_detected_result* detectEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset);
 
 #endif

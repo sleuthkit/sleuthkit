@@ -26,6 +26,7 @@ TskIsImageSupported::TskIsImageSupported()
 {
     m_wasDataFound = false;
     m_wasEncryptionFound = false;
+    m_wasPossibleEncryptionFound = false;
     m_wasFileSystemFound = false;
 }
 
@@ -41,16 +42,26 @@ bool TskIsImageSupported::isImageEncrypted()
 
 void TskIsImageSupported::printEncryptionStatus() {
     printf("Encryption status: ");
-    if (!m_wasEncryptionFound) {
+    if (!m_wasEncryptionFound && !m_wasPossibleEncryptionFound) {
         printf("No encryption found\n");
         return;
     }
 
-    if (m_wasFileSystemFound) {
-        printf("Partial encryption found\n");
+    if (m_wasEncryptionFound) {
+        if (m_wasFileSystemFound) {
+            printf("Partial encryption found\n");
+        }
+        else {
+            printf("Full encryption found\n");
+        }
     }
-    else {
-        printf("Full encryption found\n");
+    else if (m_wasPossibleEncryptionFound) {
+        if (m_wasFileSystemFound) {
+            printf("Possible partial encryption found\n");
+        }
+        else {
+            printf("Possible full encryption found\n");
+        }
     }
 }
 
@@ -63,6 +74,9 @@ uint8_t TskIsImageSupported::handleError()
         uint32_t errCode = lastError->t_errno;
         if (errCode == TSK_ERR_FS_ENCRYPTED) {
             m_wasEncryptionFound = true;
+        }
+        else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
+            m_wasPossibleEncryptionFound = true;
         }
     }
     return 0;
