@@ -1320,6 +1320,7 @@ public class BlackboardArtifact implements Content {
 		 * @param typeID      The id of the type.
 		 * @param displayName The display name of the type.
 		 */
+		@Deprecated
 		public Type(int typeID, String typeName, String displayName) {
 			this(typeID, typeName, displayName, Category.DATA_ARTIFACT);
 		}
