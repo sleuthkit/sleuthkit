@@ -375,6 +375,9 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX score_significance_category ON tsk_aggregate_score(significance, method_category)");
 			stmt.execute("CREATE INDEX score_datasource_obj_id ON tsk_aggregate_score(data_source_obj_id)");
 			
+			stmt.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
+			
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);
 		}

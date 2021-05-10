@@ -20,10 +20,6 @@ package org.sleuthkit.datamodel;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,6 +30,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.HostAddress.HostAddressType;
 
@@ -686,6 +684,8 @@ public class HostAddressManager {
 		}
 	}
 
+	private static final Pattern IPV4_PATTERN =
+            Pattern.compile("^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(\\.(?!$)|$)){4}$");
 	/**
 	 * Test if an address is IPv4.
 	 *
@@ -694,39 +694,39 @@ public class HostAddressManager {
 	 * @return true if it is IPv4 format, false otherwise.
 	 */
 	private static boolean isIPv4(String ipAddress) {
-		boolean isIPv4 = false;
-
 		if (ipAddress != null) {
-			try {
-				InetAddress inetAddress = InetAddress.getByName(ipAddress);
-				isIPv4 = (inetAddress instanceof Inet4Address) && inetAddress.getHostAddress().equals(ipAddress);
-			} catch (UnknownHostException ex) {
-				return false;
-			}
+			return IPV4_PATTERN.matcher(ipAddress).matches();
 		}
-
-		return isIPv4;
+		return false;
 	}
 
+	
+	private static final Pattern IPV6_STD_PATTERN = 
+            Pattern.compile("^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$");
+    private static final Pattern IPV6_HEX_COMPRESSED_PATTERN = 
+            Pattern.compile("^((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)$");
+
+   
+    private static boolean isIPv6StdAddress(final String input) {
+        return IPV6_STD_PATTERN.matcher(input).matches();
+    }
+    private static boolean isIPv6HexCompressedAddress(final String input) {
+        return IPV6_HEX_COMPRESSED_PATTERN.matcher(input).matches();
+    }
+	
 	/**
 	 * Test if an address is IPv6.
 	 *
 	 * @param ipAddress The address.
 	 *
-	 * @return true if it is IPv4 format, false otherwise.
+	 * @return true if it is IPv6 format, false otherwise.
 	 */
 	private static boolean isIPv6(String ipAddress) {
-		boolean isIPv6 = false;
-
+	
 		if (ipAddress != null) {
-			try {
-				InetAddress inetAddress = InetAddress.getByName(ipAddress);
-				isIPv6 = (inetAddress instanceof Inet6Address);
-			} catch (UnknownHostException ex) {
-				return false;
-			}
+			 return isIPv6StdAddress(ipAddress) || isIPv6HexCompressedAddress(ipAddress);
 		}
 
-		return isIPv6;
+		return false;
 	}
 }

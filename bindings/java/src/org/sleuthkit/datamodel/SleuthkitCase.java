@@ -104,7 +104,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 0);
+			= new CaseDbSchemaVersionNumber(9, 1);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1005,6 +1005,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot4toSchema8dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot5toSchema8dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot6toSchema9dot0(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot0toSchema9dot1(dbSchemaVersion, connection);
+				
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -2582,6 +2584,29 @@ public class SleuthkitCase {
 		}
 	}
 
+	private CaseDbSchemaVersionNumber updateFromSchema9dot0toSchema9dot1(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 0) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			
+			// add an index on tsk_file_attributes table.
+			statement.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
+
+			return new CaseDbSchemaVersionNumber(9, 1);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}	
+	
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
@@ -3801,11 +3826,12 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
 			ArrayList<BlackboardArtifact.Type> artifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
 				artifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type"))));
 			}
 			return artifactTypes;
 		} catch (SQLException ex) {
@@ -3877,14 +3903,17 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s,
 					"SELECT DISTINCT arts.artifact_type_id AS artifact_type_id, "
-					+ "types.type_name AS type_name, types.display_name AS display_name "
+					+ "types.type_name AS type_name, "
+					+ "types.display_name AS display_name, "
+					+ "types.category_type AS category_type "
 					+ "FROM blackboard_artifact_types AS types "
 					+ "INNER JOIN blackboard_artifacts AS arts "
 					+ "ON arts.artifact_type_id = types.artifact_type_id"); //NON-NLS
 			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
 				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type"))));
 			}
 			return uniqueArtifactTypes;
 		} catch (SQLException ex) {
@@ -4694,7 +4723,8 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 				this.typeNameToArtifactTypeMap.put(artTypeName, type);
 			}
@@ -4733,7 +4763,8 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 				this.typeIdToArtifactTypeMap.put(artTypeId, type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
 			}
@@ -4893,8 +4924,11 @@ public class SleuthkitCase {
 					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
-					+ "FROM tsk_file_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.obj_id = " + file.getId()
-					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+					+ "FROM tsk_file_attributes AS attrs "
+					+ " INNER JOIN blackboard_attribute_types AS types "
+					+ " ON attrs.attribute_type_id = types.attribute_type_id "
+					+ " WHERE attrs.obj_id = " + file.getId() );
+			
 			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 			while (rs.next()) {
 				int attributeTypeId = rs.getInt("attribute_type_id");
