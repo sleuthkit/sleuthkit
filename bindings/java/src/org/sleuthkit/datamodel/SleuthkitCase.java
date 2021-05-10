@@ -2718,7 +2718,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public CaseDbTransaction beginTransaction() throws TskCoreException {
-		return new CaseDbTransaction(this, connections.getConnection());
+		return new CaseDbTransaction(this);
 	}
 
 	/**
@@ -13093,18 +13093,21 @@ public class SleuthkitCase {
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
 
-		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
-			this.connection = connection;
+		private CaseDbTransaction(SleuthkitCase sleuthkitCase) throws TskCoreException {
 			this.sleuthkitCase = sleuthkitCase;
+			
+			sleuthkitCase.acquireSingleUserCaseWriteLock();
+			this.connection = sleuthkitCase.getConnection();
 			try {
 				synchronized (threadsWithOpenTransactionLock) {
 					this.connection.beginTransaction();
 					threadsWithOpenTransaction.add(Thread.currentThread().getId());
 				}
 			} catch (SQLException ex) {
+				sleuthkitCase.releaseSingleUserCaseWriteLock();
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
-			sleuthkitCase.acquireSingleUserCaseWriteLock();
+			
 		}
 
 		/**
