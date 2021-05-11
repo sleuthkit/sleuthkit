@@ -197,7 +197,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             tsk_error_reset();
 
             // Check if the file system appears to be encrypted
-            encryption_detected_result* result = detectEncryption(a_img_info, a_offset);
+            encryption_detected_result* result = detectVolumeEncryption(a_img_info, a_offset);
             if (result != NULL) {
                 if (result->encryptionType == ENCRYPTION_DETECTED_SIGNATURE) {
                     tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
@@ -243,8 +243,6 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
     } 
     else if (TSK_FS_TYPE_ISAPFS(a_ftype)) {
-        printf("Specifically opening fs as APFS\n");
-        fflush(stdout);
         return apfs_open(a_img_info, a_offset, a_ftype, a_pass);
     }
     tsk_error_reset();

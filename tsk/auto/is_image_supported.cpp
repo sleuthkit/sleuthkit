@@ -32,7 +32,7 @@ TskIsImageSupported::TskIsImageSupported()
 
 bool TskIsImageSupported::isImageSupported()
 {
-    return m_wasDataFound ;
+    return m_wasDataFound;
 }
 
 bool TskIsImageSupported::isImageEncrypted()
@@ -67,8 +67,7 @@ void TskIsImageSupported::printEncryptionStatus() {
 
 uint8_t TskIsImageSupported::handleError() 
 {
-
-    fprintf(stderr, "handleError: %s\n", tsk_error_get());
+    // If encryption was found, update the flags
     TSK_ERROR_INFO* lastError = tsk_error_get_info();
     if (lastError != NULL) {
         uint32_t errCode = lastError->t_errno;
