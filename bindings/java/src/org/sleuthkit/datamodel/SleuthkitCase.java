@@ -5109,9 +5109,7 @@ public class SleuthkitCase {
 				return content.newAnalysisResult(type, Score.SCORE_UNKNOWN, null, null, null, Collections.emptyList())
 						.getAnalysisResult();
 			case DATA_ARTIFACT:
-				return (content instanceof AbstractFile)
-						? ((AbstractFile) content).newDataArtifact(type, Collections.emptyList())
-						: content.newDataArtifact(type, Collections.emptyList(), null);
+				return content.newDataArtifact(type, Collections.emptyList());
 			default:
 				throw new TskCoreException("Unknown category type: " + category.getName());
 		}

@@ -112,9 +112,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		Content content = getContent();
-		BlackboardArtifact artifact = (content instanceof AbstractFile)
-				? ((AbstractFile) content).newDataArtifact(GPS_TRACK_TYPE, attributes)
-				: content.newDataArtifact(GPS_TRACK_TYPE, attributes, null);
+		BlackboardArtifact artifact = content.newDataArtifact(GPS_TRACK_TYPE, attributes);
 
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
@@ -172,9 +170,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		Content content = getContent();
-		BlackboardArtifact artifact = (content instanceof AbstractFile)
-				? ((AbstractFile) content).newDataArtifact(GPS_ROUTE_TYPE, attributes)
-				: content.newDataArtifact(GPS_ROUTE_TYPE, attributes, null);
+		BlackboardArtifact artifact = content.newDataArtifact(GPS_ROUTE_TYPE, attributes);
 		
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
@@ -222,9 +218,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		Content content = getContent();
-		BlackboardArtifact artifact = (content instanceof AbstractFile)
-				? ((AbstractFile) content).newDataArtifact(GPS_AREA_TYPE, attributes)
-				: content.newDataArtifact(GPS_AREA_TYPE, attributes, null);
+		BlackboardArtifact artifact = content.newDataArtifact(GPS_AREA_TYPE, attributes);
 		
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 

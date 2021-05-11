@@ -524,9 +524,7 @@ public final class CommunicationsManager {
 					new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID)
 			);
 
-			accountArtifact = (sourceFile instanceof AbstractFile)
-					? ((AbstractFile) sourceFile).newDataArtifact(ACCOUNT_TYPE, attributes) 
-					: sourceFile.newDataArtifact(ACCOUNT_TYPE, attributes, null);
+			accountArtifact = sourceFile.newDataArtifact(ACCOUNT_TYPE, attributes);
 			
 			try {
 				db.getBlackboard().postArtifact(accountArtifact, moduleName);

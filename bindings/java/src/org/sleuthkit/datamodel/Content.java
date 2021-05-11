@@ -200,6 +200,24 @@ public interface Content extends SleuthkitVisitableItem {
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
 
 	/**
+	 * Create and add a data artifact associated with this abstract file. This
+	 * method creates the data artifact with the os account id associated with
+	 * this abstract file if one exists.
+	 *
+	 * @param artifactType   Type of data artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public default DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return newDataArtifact(artifactType, attributesList, null);
+	}
+	
+	
+	/**
 	 * Create and add a data artifact associated with this content.
 	 *
 	 * @param artifactType   Type of analysis result artifact to create.

@@ -1423,8 +1423,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @throws TskCoreException If a critical error occurred within tsk core.
 	 */
+	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		return super.newDataArtifact(artifactType, attributesList, osAccountObjId);
+		return super.newDataArtifact(artifactType, attributesList, getOsAccountObjectId().orElse(null));
 	}
 
 	/**
