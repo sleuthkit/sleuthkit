@@ -2,7 +2,7 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -72,9 +72,11 @@ uint8_t TskIsImageSupported::handleError()
     if (lastError != NULL) {
         uint32_t errCode = lastError->t_errno;
         if (errCode == TSK_ERR_FS_ENCRYPTED) {
+            tsk_error_print(stdout);
             m_wasEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
+            tsk_error_print(stdout);
             m_wasPossibleEncryptionFound = true;
         }
     }

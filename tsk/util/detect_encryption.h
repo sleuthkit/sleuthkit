@@ -1,7 +1,7 @@
 /*
 ** The Sleuth Kit
 **
-** Copyright (c) 2013 Basis Technology Corp.  All rights reserved
+** Copyright (c) 2021 Basis Technology Corp.  All rights reserved
 ** Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
 **
 ** This software is distributed under the Common Public License 1.0
