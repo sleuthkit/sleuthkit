@@ -363,10 +363,10 @@ public interface TskEvent {
 	}
 
 	/**
-	 * An abstract super class for person and host association change events.
+	 * An event published when one or more hosts are added to a person.
 	 */
-	static abstract class PersonHostsTskEvent extends TskObjectsEvent<Host> {
-
+	public final static class HostsAddedToPersonTskEvent extends TskObjectsEvent<Host> {
+		
 		private final Person person;
 
 		/**
@@ -376,8 +376,47 @@ public interface TskEvent {
 		 * @param person The person that is the subject of the event.
 		 * @param hosts  The hosts that are the subjects of the event.
 		 */
-		PersonHostsTskEvent(Person person, List<Host> hosts) {
+		HostsAddedToPersonTskEvent(Person person, List<Host> hosts) {
 			super(hosts);
+			this.person = person;
+		}
+		
+		/**
+		 * Gets the person.
+		 *
+		 * @return The person.
+		 */
+		public Person getPerson() {
+			return person;
+		}		
+		
+		/**
+		 * Gets the hosts.
+		 *
+		 * @return The hosts.
+		 */
+		public List<Host> getHosts() {
+			return getDataModelObjects();
+		}
+				
+	}
+
+	/**
+	 * An event published when one or more hosts are removed from a person.
+	 */
+	public final static class HostsRemovedFromPersonTskEvent extends TskObjectsEvent<Long> {
+
+		private final Person person;
+				
+		/**
+		 * Contructs an event published when one or more hosts are removed from
+		 * a person.
+		 *
+		 * @param person  The person.
+		 * @param hostIds The host IDs of the hosts.
+		 */
+		HostsRemovedFromPersonTskEvent(Person person, List<Long> hostIds) {
+			super(hostIds);
 			this.person = person;
 		}
 
@@ -388,53 +427,17 @@ public interface TskEvent {
 		 */
 		public Person getPerson() {
 			return person;
-		}
-
+		}				
+		
 		/**
-		 * Gets the hosts.
+		 * Gets the host IDs of the deleted hosts.
 		 *
-		 * @return The hosts.
+		 * @return The host IDs.
 		 */
-		public List<Host> getHosts() {
+		public List<Long> getHostIds() {
 			return getDataModelObjects();
-		}
-
-	}
-
-	/**
-	 * An event published when one or more hosts are added to a person.
-	 */
-	public final static class HostsAddedToPersonTskEvent extends PersonHostsTskEvent {
-
-		/**
-		 * Contructs an event published when one or more hosts are added to a
-		 * person.
-		 *
-		 * @param person The person.
-		 * @param hosts  The hosts.
-		 */
-		HostsAddedToPersonTskEvent(Person person, List<Host> hosts) {
-			super(person, hosts);
-		}
-
-	}
-
-	/**
-	 * An event published when one or more hosts are removed from a person.
-	 */
-	public final static class HostsRemovedFromPersonTskEvent extends PersonHostsTskEvent {
-
-		/**
-		 * Contructs an event published when one or more hosts are removed from
-		 * a person.
-		 *
-		 * @param person  The person.
-		 * @param hostIds The hosts.
-		 */
-		HostsRemovedFromPersonTskEvent(Person person, List<Host> hostIds) {
-			super(person, hostIds);
-		}
-
+		}		
+		
 	}
 
 }

@@ -405,14 +405,14 @@ public final class PersonManager {
 		if (hosts == null || hosts.isEmpty()) {
 			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
 		}
-		List<Host> hostsRemoved = new ArrayList<>();
+		List<Long> hostsRemoved = new ArrayList<>();
 		String sql = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = this.db.getConnection(); Statement statement = connection.createStatement()) {
 			for (Host host : hosts) {
 				sql = String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getHostId());
 				statement.executeUpdate(sql);
-				hostsRemoved.add(host);
+				hostsRemoved.add(host.getHostId());
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format(sql == null ? "Error connecting to case database" : "Error executing '" + sql + "'"), ex);
