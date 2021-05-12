@@ -90,7 +90,7 @@ TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterFs(TSK_FS_INFO * fs_info)
+TskIsImageSupported::filterFs(TSK_FS_INFO * /*fs_info*/)
 {
     m_wasDataFound = true;
     m_wasFileSystemFound = true;
@@ -114,7 +114,7 @@ TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * vs_part)
+TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)
 {
     m_wasDataFound = true;
     return TSK_FILTER_CONT;
