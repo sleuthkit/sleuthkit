@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.TskEvent.PersonsAddedTskEvent;
 
@@ -267,11 +268,11 @@ public final class PersonManager {
 	 *                          database.
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
-		return getHosts("SELECT * FROM tsk_hosts WHERE person_id = " + person.getPersonId());
+		return executeHostsQuery("SELECT * FROM tsk_hosts WHERE person_id = " + person.getPersonId());
 	}
 
 	/**
-	 * Gest all hosts not associated with any person.
+	 * Gets all hosts not associated with any person.
 	 *
 	 * @return The hosts.
 	 *
@@ -279,7 +280,7 @@ public final class PersonManager {
 	 *                          database.
 	 */
 	public List<Host> getHostsWithoutPersons() throws TskCoreException {
-		return getHosts("SELECT * FROM tsk_hosts WHERE WHERE person_id IS NULL");
+		return executeHostsQuery("SELECT * FROM tsk_hosts WHERE person_id IS NULL");
 	}
 
 	/**
@@ -292,7 +293,7 @@ public final class PersonManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private List<Host> getHosts(String hostsQuery) throws TskCoreException {
+	private List<Host> executeHostsQuery(String hostsQuery) throws TskCoreException {
 		String sql = hostsQuery + " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
@@ -304,7 +305,7 @@ public final class PersonManager {
 			}
 			return hosts;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error executing '" + hostsQuery + "'"), ex);
+			throw new TskCoreException(String.format("Error executing '" + sql + "'"), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -390,23 +391,7 @@ public final class PersonManager {
 		if (hosts == null || hosts.isEmpty()) {
 			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
 		}
-		List<Host> hostsAdded = new ArrayList<>();
-		String sql = null;
-		db.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = this.db.getConnection(); Statement statement = connection.createStatement()) {
-			for (Host host : hosts) {
-				sql = String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getPersonId(), host.getHostId());
-				statement.executeUpdate(sql);
-				hostsAdded.add(host);
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format(sql == null ? "Error connecting to case database" : "Error executing '" + sql + "'"), ex);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
-			if (!hostsAdded.isEmpty()) {
-				db.fireTSKEvent(new TskEvent.HostsAddedToPersonTskEvent(person, hostsAdded));
-			}
-		}
+		executeHostsUpdate(person, getHostIds(hosts), new TskEvent.HostsAddedToPersonTskEvent(person, hosts));
 	}
 
 	/**
@@ -424,23 +409,54 @@ public final class PersonManager {
 		if (hosts == null || hosts.isEmpty()) {
 			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
 		}
-		List<Long> hostsRemoved = new ArrayList<>();
-		String sql = null;
+		List<Long> hostIds = getHostIds(hosts);
+		executeHostsUpdate(null, hostIds, new TskEvent.HostsRemovedFromPersonTskEvent(person, hostIds));
+	}
+
+	/**
+	 * Executes an update of the person_id column for one or more hosts in the
+	 * tsk_hosts table in the case database.
+	 *
+	 * @param person  The person to get the person ID from or null if the person
+	 *                ID of the hosts should be set to NULL.
+	 * @param hostIds The host IDs of the hosts.
+	 * @param event   A TSK event to be published if the update succeeds.
+	 *
+	 * @throws TskCoreException Thrown if the update fails.
+	 */
+	private void executeHostsUpdate(Person person, List<Long> hostIds, TskEvent event) throws TskCoreException {
+		String updateSql = null;
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = this.db.getConnection(); Statement statement = connection.createStatement()) {
-			for (Host host : hosts) {
-				sql = String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getHostId());
-				statement.executeUpdate(sql);
-				hostsRemoved.add(host.getHostId());
-			}
+			updateSql = (person == null)
+					? String.format("UPDATE tsk_hosts SET person_id = NULL")
+					: String.format("UPDATE tsk_hosts SET person_id = %d", person.getPersonId());
+			String hostIdsCsvList = hostIds.stream()
+					.map(hostId -> hostId.toString())
+					.collect(Collectors.joining(","));
+			updateSql += " WHERE id IN (" + hostIdsCsvList + ")";
+			statement.executeUpdate(updateSql);
+			db.fireTSKEvent(event);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format(sql == null ? "Error connecting to case database" : "Error executing '" + sql + "'"), ex);
+			throw new TskCoreException(String.format(updateSql == null ? "Error connecting to case database" : "Error executing '" + updateSql + "'"), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
-			if (!hostsRemoved.isEmpty()) {
-				db.fireTSKEvent(new TskEvent.HostsRemovedFromPersonTskEvent(person, hostsRemoved));
-			}
 		}
+	}
+
+	/**
+	 * Gets a list of host IDs from a list of hosts.
+	 *
+	 * @param hosts The hosts.
+	 *
+	 * @return The host IDs.
+	 */
+	private List<Long> getHostIds(List<Host> hosts) {
+		List<Long> hostIds = new ArrayList<>();
+		hostIds.addAll(hosts.stream()
+				.map(host -> host.getHostId())
+				.collect(Collectors.toList()));
+		return hostIds;
 	}
 
 }
