@@ -257,9 +257,9 @@ public final class PersonManager {
 	}
 
 	/**
-	 * Gets all hosts associated with a given person.
+	 * Get all hosts associated with the given person.
 	 *
-	 * @param person The person.
+	 * @param person The list of hosts corresponding to the person.
 	 *
 	 * @return The hosts.
 	 *
@@ -271,7 +271,7 @@ public final class PersonManager {
 	}
 
 	/**
-	 * Gest all hosts not assocviated with a person.
+	 * Gest all hosts not associated with any person.
 	 *
 	 * @return The hosts.
 	 *
@@ -293,11 +293,12 @@ public final class PersonManager {
 	 * @throws TskCoreException
 	 */
 	private List<Host> getHosts(String hostsQuery) throws TskCoreException {
+		String sql = hostsQuery + " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, hostsQuery)) {
+				ResultSet rs = connection.executeQuery(s, sql)) {
 			while (rs.next()) {
 				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status"))));
 			}
