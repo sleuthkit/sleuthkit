@@ -25,11 +25,17 @@
 TskIsImageSupported::TskIsImageSupported()
 {
     m_wasDataFound = false;
+    m_wasEncryptionFound = false;
 }
 
 bool TskIsImageSupported::isImageSupported()
 {
     return m_wasDataFound ;
+}
+
+bool TskIsImageSupported::isImageEncrypted()
+{
+    return m_wasEncryptionFound;
 }
 
 
@@ -55,6 +61,21 @@ TskIsImageSupported::filterFs(TSK_FS_INFO * /*fs_info*/)
     return TSK_FILTER_SKIP;
 }
 
+TSK_FILTER_ENUM
+TskIsImageSupported::filterPool(const TSK_POOL_INFO * pool_info)
+{
+    // There's nothing to do, but we need to override this to allow the pool
+    // to be processed.
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM
+TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
+{
+    // There's nothing to do, but we need to override this to allow the pool
+    // to be processed.
+    return TSK_FILTER_CONT;
+}
 
 TSK_FILTER_ENUM
 TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)

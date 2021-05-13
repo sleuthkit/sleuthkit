@@ -28,10 +28,14 @@ public:
     TskIsImageSupported();
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
     bool isImageSupported();
+    bool isImageEncrypted();
     
 private:
     bool m_wasDataFound;
+    bool m_wasEncryptionFound;
 };

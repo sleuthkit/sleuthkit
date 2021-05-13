@@ -3825,11 +3825,12 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
 			ArrayList<BlackboardArtifact.Type> artifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
 				artifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type"))));
 			}
 			return artifactTypes;
 		} catch (SQLException ex) {
@@ -3901,14 +3902,17 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s,
 					"SELECT DISTINCT arts.artifact_type_id AS artifact_type_id, "
-					+ "types.type_name AS type_name, types.display_name AS display_name "
+					+ "types.type_name AS type_name, "
+					+ "types.display_name AS display_name, "
+					+ "types.category_type AS category_type "
 					+ "FROM blackboard_artifact_types AS types "
 					+ "INNER JOIN blackboard_artifacts AS arts "
 					+ "ON arts.artifact_type_id = types.artifact_type_id"); //NON-NLS
 			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
 				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type"))));
 			}
 			return uniqueArtifactTypes;
 		} catch (SQLException ex) {
@@ -4719,7 +4723,8 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 				this.typeNameToArtifactTypeMap.put(artTypeName, type);
 			}
@@ -4758,7 +4763,8 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"), BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+						rs.getString("type_name"), rs.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 				this.typeIdToArtifactTypeMap.put(artTypeId, type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
 			}
@@ -7981,6 +7987,52 @@ public class SleuthkitCase {
 	}	
 
 	/**
+	 * Utility class to create keys for the cache used in isRootDirectory().
+	 * The dataSourceId must be set but the fileSystemId can be null 
+	 * (for local directories, for example).
+	 */
+	private class RootDirectoryKey {
+		private long dataSourceId;
+		private Long fileSystemId;
+		
+		RootDirectoryKey(long dataSourceId, Long fileSystemId) {
+			this.dataSourceId = dataSourceId;
+			this.fileSystemId = fileSystemId;
+		}
+		
+        @Override
+        public int hashCode() {
+            int hash = 7;
+			hash = 41 * hash + Objects.hashCode(dataSourceId);
+            hash = 41 * hash + Objects.hashCode(fileSystemId);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+			
+			RootDirectoryKey otherKey = (RootDirectoryKey)obj;
+			if (dataSourceId != otherKey.dataSourceId) {
+				return false;
+			}
+			
+			if (fileSystemId != null) {
+				return fileSystemId.equals(otherKey.fileSystemId);
+			}
+			return (otherKey.fileSystemId == null);
+		}
+	}
+	
+	/**
 	 * Check whether a given AbstractFile is the "root" directory. True if the
 	 * AbstractFile either has no parent or its parent is an image, volume,
 	 * volume system, or file system.
@@ -7992,8 +8044,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 */
-	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
-		
+	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {	
 		// First check if we know the root directory for this data source and optionally 
 		// file system. There is only one root, so if we know it we can simply compare 
 		// this file ID to the known root directory.
@@ -8052,7 +8103,6 @@ public class SleuthkitCase {
 					rootDirectoryMap.put(key, file.getId());
 				}
 				isRootDirectoryCache.put(file.getId(), true);
-				
 				return true; // The file has no parent
 			}
 		} catch (SQLException ex) {

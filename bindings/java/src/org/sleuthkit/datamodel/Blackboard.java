@@ -663,7 +663,9 @@ public final class Blackboard {
 	public List<BlackboardArtifact.Type> getArtifactTypesInUse(long dataSourceObjId) throws TskCoreException {
 
 		final String queryString = "SELECT DISTINCT arts.artifact_type_id AS artifact_type_id, "
-				+ "types.type_name AS type_name, types.display_name AS display_name "
+				+ "types.type_name AS type_name, "
+				+ "types.display_name AS display_name, "
+				+ "types.category_type AS category_type "
 				+ "FROM blackboard_artifact_types AS types "
 				+ "INNER JOIN blackboard_artifacts AS arts "
 				+ "ON arts.artifact_type_id = types.artifact_type_id "
@@ -677,7 +679,8 @@ public final class Blackboard {
 			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<>();
 			while (resultSet.next()) {
 				uniqueArtifactTypes.add(new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
-						resultSet.getString("type_name"), resultSet.getString("display_name")));
+						resultSet.getString("type_name"), resultSet.getString("display_name"), 
+						BlackboardArtifact.Category.fromID(resultSet.getInt("category_type"))));
 			}
 			return uniqueArtifactTypes;
 		} catch (SQLException ex) {
