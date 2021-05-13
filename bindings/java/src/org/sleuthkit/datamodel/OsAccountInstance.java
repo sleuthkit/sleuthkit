@@ -27,39 +27,28 @@ import java.util.ResourceBundle;
  */
 public class OsAccountInstance implements Comparable<OsAccountInstance> {
 
-	private DataSource dataSource = null;
-	private final OsAccount account;
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+
+	private final SleuthkitCase skCase;
+	private final long accountId;
+	private final long dataSourceId;
 	private final OsAccountInstanceType instanceType;
 
-	private final long dataSourceId;
-
-	private SleuthkitCase skCase;
-
-	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private OsAccount account;
+	private DataSource dataSource = null;
 
 	/**
 	 * Construct with OsAccount and DataSource instances.
 	 *
+	 * @param skCase       The case instance.
 	 * @param account      The instance account.
 	 * @param dataSource   The instance data source
 	 * @param instanceType The instance type.
 	 */
-	OsAccountInstance(OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
-		this(account, dataSource.getId(), instanceType);
+	OsAccountInstance(SleuthkitCase skCase, OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
+		this(skCase, account.getId(), dataSource.getId(), instanceType);
 		this.dataSource = dataSource;
-	}
-
-	/**
-	 * Construct with OsAccount and DataSource instances.
-	 *
-	 * @param account         The instance account.
-	 * @param dataSourceObjId The instance data source object id.
-	 * @param instanceType    The instance type.
-	 */
-	OsAccountInstance(OsAccount account, long dataSourceObjId, OsAccountInstanceType instanceType) {
 		this.account = account;
-		this.dataSourceId = dataSourceObjId;
-		this.instanceType = instanceType;
 	}
 
 	/**
@@ -72,10 +61,23 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 * @param instanceType The instance type.
 	 */
 	OsAccountInstance(SleuthkitCase skCase, OsAccount account, long dataSourceId, OsAccountInstanceType instanceType) {
+		this(skCase, account.getId(), dataSourceId, instanceType);
 		this.account = account;
-		this.dataSourceId = dataSourceId;
-		this.instanceType = instanceType;
+	}
+
+	/**
+	 * Construct with OsAccount and DataSource instances.
+	 *
+	 * @param skCase          The case instance
+	 * @param accountId       The id of the instance account.
+	 * @param dataSourceObjId The instance data source object id.
+	 * @param instanceType    The instance type.
+	 */
+	OsAccountInstance(SleuthkitCase skCase, long accountId, long dataSourceObjId, OsAccountInstanceType instanceType) {
 		this.skCase = skCase;
+		this.accountId = accountId;
+		this.dataSourceId = dataSourceObjId;
+		this.instanceType = instanceType;
 	}
 
 	/**
@@ -83,7 +85,15 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 *
 	 * @return The OsAccount object.
 	 */
-	public OsAccount getOsAccount() {
+	public OsAccount getOsAccount() throws TskCoreException {
+		if (account == null) {
+			try {
+				account = skCase.getOsAccountManager().getOsAccountByObjectId(accountId);
+			} catch (TskCoreException ex) {
+				throw new TskCoreException(String.format("Failed to get OsAccount for id %d", accountId), ex);
+			}
+		}
+
 		return account;
 	}
 
@@ -134,7 +144,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 			return Long.compare(dataSourceId, other.getDataSourceId());
 		}
 
-		return Long.compare(account.getId(), other.getOsAccount().getId());
+		return Long.compare(accountId, other.accountId);
 	}
 
 	@Override
@@ -149,7 +159,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 			return false;
 		}
 		final OsAccountInstance other = (OsAccountInstance) obj;
-		if (this.account.getId() != other.getOsAccount().getId()) {
+		if (this.accountId != other.accountId) {
 			return false;
 		}
 
@@ -160,7 +170,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	public int hashCode() {
 		int hash = 7;
 		hash = 67 * hash + Objects.hashCode(this.dataSourceId);
-		hash = 67 * hash + Objects.hashCode(this.account.getId());
+		hash = 67 * hash + Objects.hashCode(this.accountId);
 		hash = 67 * hash + Objects.hashCode(this.instanceType);
 		return hash;
 	}

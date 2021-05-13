@@ -58,7 +58,6 @@ public final class OsAccount extends AbstractContent {
 	private final Long creationTime;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
-	private List<OsAccountInstance> osAccountInstances = null;
 
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
@@ -118,7 +117,7 @@ public final class OsAccount extends AbstractContent {
 	 * are generally invisible - they will not be returned by any queries on the
 	 * string fields.
 	 */
-	public enum OsAccountDbStatus {
+	enum OsAccountDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");
@@ -131,7 +130,7 @@ public final class OsAccount extends AbstractContent {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -139,7 +138,7 @@ public final class OsAccount extends AbstractContent {
 			return name;
 		}
 
-		public static OsAccountDbStatus fromID(int typeId) {
+		static OsAccountDbStatus fromID(int typeId) {
 			for (OsAccountDbStatus type : OsAccountDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;
@@ -246,16 +245,6 @@ public final class OsAccount extends AbstractContent {
 	 */
 	synchronized void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
 		this.osAccountAttributes = osAccountAttributes;
-	}
-
-	/**
-	 * This function is used by OsAccountManger to update the list of OsAccount
-	 * instances.
-	 *
-	 * @param osAccountInstanes The osAccount instances that are to be added.
-	 */
-	synchronized void setInstancesInternal(List<OsAccountInstance> osAccountInstances) {
-		this.osAccountInstances = osAccountInstances;
 	}
 
 	/**
@@ -373,11 +362,7 @@ public final class OsAccount extends AbstractContent {
 	 * @throws TskCoreException
 	 */
 	public synchronized List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
-		if (osAccountInstances == null) {
-			osAccountInstances = sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
-		}
-
-		return Collections.unmodifiableList(osAccountInstances);
+		return sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
 	}
 
 	/**
