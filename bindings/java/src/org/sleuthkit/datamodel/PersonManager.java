@@ -259,9 +259,9 @@ public final class PersonManager {
 	/**
 	 * Get all hosts associated with the given person.
 	 *
-	 * @param person The list of hosts corresponding to the person.
+	 * @param person The person.
 	 *
-	 * @return The hosts.
+	 * @return The list of hosts corresponding to the person.
 	 *
 	 * @throws TskCoreException Thrown if there is an issue querying the case
 	 *                          database.
