@@ -7940,13 +7940,13 @@ public class SleuthkitCase {
 	 * (for local directories, for example).
 	 */
 	private class RootDirectoryKey {
-		private long dataSourceId;
-		private Long fileSystemId;
+        private long dataSourceId;
+        private Long fileSystemId;
 
-		RootDirectoryKey(long dataSourceId, Long fileSystemId) {
-			this.dataSourceId = dataSourceId;
-			this.fileSystemId = fileSystemId;
-		}
+        RootDirectoryKey(long dataSourceId, Long fileSystemId) {
+            this.dataSourceId = dataSourceId;
+            this.fileSystemId = fileSystemId;
+        }
 
         @Override
         public int hashCode() {
@@ -7994,7 +7994,7 @@ public class SleuthkitCase {
 	 */
 	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
 		
-				// First check if we know the root directory for this data source and optionally 
+		// First check if we know the root directory for this data source and optionally 
 		// file system. There is only one root, so if we know it we can simply compare 
 		// this file ID to the known root directory.
 		Long fsObjId = null;
