@@ -25,6 +25,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1243,11 +1244,10 @@ public class BlackboardArtifact implements Content {
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
 		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES list.
-
 		/**
 		 * A list of all the standard artifact types.
 		 */
-		static final List<Type> STANDARD_TYPES = Arrays.asList(
+		static final List<Type> STANDARD_TYPES = Collections.unmodifiableList(Arrays.asList(
 				TSK_GEN_INFO,
 				TSK_WEB_BOOKMARK,
 				TSK_WEB_COOKIE,
@@ -1309,7 +1309,7 @@ public class BlackboardArtifact implements Content {
 				TSK_YARA_HIT,
 				TSK_GPS_AREA,
 				TSK_WEB_CATEGORIZATION
-		);
+		));
 
 		private final String typeName;
 		private final int typeID;
