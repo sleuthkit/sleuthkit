@@ -36,9 +36,9 @@ Consult the \ref artifact_catalog_page "artifact catalog" for a list of built-in
 There are may ways to create artifacts, but we will focus on creating them through the Blackboard class or directly through a Content object. Regardless of how they are created, all artifacts must be associated with a Content object. 
 
 <ul>
-<li>org.sleuthkit.datamodel.AbstractContent.newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId)
+<li>org.sleuthkit.datamodel.AbstractContent.newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, OsAccount osAccount)
 <li>org.sleuthkit.datamodel.AbstractContent.newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList)
-<li>org.sleuthkit.datamodel.Blackboard.newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId, Collection<BlackboardAttribute> attributes, Long osAccountId)
+<li>org.sleuthkit.datamodel.Blackboard.newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId, Collection<BlackboardAttribute> attributes, OsAccount osAccount)
 <li>org.sleuthkit.datamodel.Blackboard.newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, 
 			String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction)
 </ul>

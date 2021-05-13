@@ -1413,23 +1413,6 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Create and add a data artifact associated with this abstract file. This
-	 * method creates the data artifact with the os account id associated with
-	 * this abstract file if one exits.
-	 *
-	 * @param artifactType   Type of data artifact to create.
-	 * @param attributesList Additional attributes to attach to this data
-	 *                       artifact.
-	 *
-	 * @return DataArtifact New data artifact.
-	 *
-	 * @throws TskCoreException If a critical error occurred within tsk core.
-	 */
-	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		return super.newDataArtifact(artifactType, attributesList, osAccountObjId);
-	}
-
-	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
 	 *
