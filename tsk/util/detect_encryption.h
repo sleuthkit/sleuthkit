@@ -31,4 +31,6 @@ typedef struct encryption_detected_result {
 
 encryption_detected_result* detectVolumeEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset);
 
+encryption_detected_result* detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset);
+
 #endif

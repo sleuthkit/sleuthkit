@@ -40,14 +40,65 @@ detectBitLocker(const char * buf, size_t len) {
 
     // Look for the signature near the beginning of the buffer
     const char * signature = "-FVE-FS-";
+    return detectSignature(signature, strlen(signature), 0, 16, buf, len);
+}
+
+// Returns 1 if FileVault signature is found, 0 otherwise
+int
+detectFileVault(const char * buf, size_t len) {
+    const char * signature = "encrdsa";
+    return detectSignature(signature, strlen(signature), 0, 0, buf, len);
+}
+
+// Returns 1 if Check Point signature is found, 0 otherwise
+int
+detectCheckPoint(const char * buf, size_t len) {
+    // Look for the signature near the beginning of the buffer
+    const char * signature = "Protect";
+    return detectSignature(signature, strlen(signature), 80, 100, buf, len);
+}
+
+// Returns 1 if McAfee Safeboot signature is found, 0 otherwise
+int
+detectMcAfee(const char * buf, size_t len) {
+    // Look for the signature near the beginning of the buffer. Check two capitalizations.
+    const char * signature = "Safeboot";
+    const char * altSignature = "SafeBoot";
+    return (detectSignature(signature, strlen(signature), 0, 32, buf, len)
+        | detectSignature(altSignature, strlen(altSignature), 0, 32, buf, len));
+}
+
+// Returns 1 if Guardian Edge signature is found, 0 otherwise
+int
+detectGuardianEdge(const char * buf, size_t len) {
+    // Look for the signature near the beginning of the buffer
+    const char * signature = "PCGM";
     return detectSignature(signature, strlen(signature), 0, 32, buf, len);
 }
 
-// Returns 1 if FileVault is found, 0 otherwise
+// Returns 1 if Sophos Safeguard signature is found, 0 otherwise
 int
-detectFileVault(const char * buf, size_t len) {
+detectSophos(const char * buf, size_t len) {
     // Look for the signature near the beginning of the buffer
-    const char * signature = "encrdsa";
+    const char * signature = "SGM400";
+    const char * altSignature = "SGE400";
+    return (detectSignature(signature, strlen(signature), 110, 150, buf, len)
+        | detectSignature(altSignature, strlen(altSignature), 110, 150, buf, len));
+}
+
+// Returns 1 if WinMagic SecureDoc signature is found, 0 otherwise
+int
+detectWinMagic(const char * buf, size_t len) {
+    // Look for the signature near the beginning of the buffer
+    const char * signature = "WMSD";
+    return detectSignature(signature, strlen(signature), 236, 256, buf, len);
+}
+
+// Returns 1 if Symantec PGP signature is found, 0 otherwise
+int
+detectSymantecPGP(const char * buf, size_t len) {
+    // Look for the signature near the beginning of the buffer
+    const char * signature = "\xeb\x48\x90PGPGUARD";
     return detectSignature(signature, strlen(signature), 0, 32, buf, len);
 }
 
@@ -167,5 +218,94 @@ detectVolumeEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     return result;
 }
 
+/**
+* Detect full disk encryption in the image starting at the given offset.
+* May return null on error. Note that client is responsible for freeing the result.
+*
+* @param img_info The open image
+* @param offset   The offset for the beginning of the image TODO TODO do we need this??
+*
+* @return encryption_detected_result containing the result of the check. null for certain types of errors.
+*/
+encryption_detected_result*
+detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
+
+    encryption_detected_result* result = (encryption_detected_result*)tsk_malloc(sizeof(encryption_detected_result));
+    if (result == NULL) {
+        return result;
+    }
+    result->encryptionType = ENCRYPTION_DETECTED_NONE;
+    result->desc[0] = '\0';
+
+    if (img_info == NULL) {
+        return result;
+    }
+    if (offset > (uint64_t)img_info->size) {
+        return result;
+    }
+
+    // Read the beginning of the image. There should be room for all the signature searches.
+    size_t len = 1024;
+    char* buf = (char*)tsk_malloc(len);
+    if (buf == NULL) {
+        return result;
+    }
+    if (tsk_img_read(img_info, offset, buf, len) != len) {
+        free(buf);
+        return result;
+    }
+
+    // Look for Symatec PGP signature
+    if (detectSymantecPGP(buf, len)) {
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Symantec PGP encryption detected");
+        free(buf);
+        return result;
+    }
+
+    // Look for McAfee Safeboot signature
+    if (detectMcAfee(buf, len)) {
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "McAfee Safeboot encryption detected");
+        free(buf);
+        return result;
+    }
+
+    // Look for Sophos Safeguard
+    if (detectSophos(buf, len)) {
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Sophos Safeguard encryption detected");
+        free(buf);
+        return result;
+    }
+
+    // Look for Guardian Edge signature
+    if (detectGuardianEdge(buf, len)) {
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Guardian Edge encryption detected");
+        free(buf);
+        return result;
+    }
+
+    // Look for Check Point signature
+    if (detectCheckPoint(buf, len)) {
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Check Point full disk encryption detected");
+        free(buf);
+        return result;
+    }
+
+    // Look for WinMagic SecureDoc signature
+    if (detectWinMagic(buf, len)) {
+        result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "WinMagic SecureDoc encryption detected");
+        free(buf);
+        return result;
+    }
+    printf("No disk encryption found\n");
+    fflush(stdout);
+    free(buf);
+    return result;
+}
 
 

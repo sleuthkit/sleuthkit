@@ -332,7 +332,8 @@ extern "C" {
 #define TSK_ERR_VS_BUF		(TSK_ERR_VS | 5)
 #define TSK_ERR_VS_BLK_NUM	(TSK_ERR_VS | 6)
 #define TSK_ERR_VS_ARG	    (TSK_ERR_VS | 7)
-#define TSK_ERR_VS_MAX		8
+#define TSK_ERR_VS_ENCRYPTED    (TSK_ERR_VS | 8)
+#define TSK_ERR_VS_MAX		9
 
 #define TSK_ERR_POOL_UNKTYPE    (TSK_ERR_POOL | 0)
 #define TSK_ERR_POOL_UNSUPTYPE  (TSK_ERR_IMG | 1)

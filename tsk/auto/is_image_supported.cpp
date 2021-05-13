@@ -71,7 +71,8 @@ uint8_t TskIsImageSupported::handleError()
     TSK_ERROR_INFO* lastError = tsk_error_get_info();
     if (lastError != NULL) {
         uint32_t errCode = lastError->t_errno;
-        if (errCode == TSK_ERR_FS_ENCRYPTED) {
+
+        if (errCode == TSK_ERR_FS_ENCRYPTED || errCode == TSK_ERR_VS_ENCRYPTED) {
             tsk_error_print(stdout);
             m_wasEncryptionFound = true;
         }
