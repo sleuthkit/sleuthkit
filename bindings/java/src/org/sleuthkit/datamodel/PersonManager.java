@@ -257,33 +257,53 @@ public final class PersonManager {
 	}
 
 	/**
-	 * Gets all hosts associated with the given person, or, if the given person
-	 * is null, gets all hosts not associated with any person.
+	 * Gets all hosts associated with a given person.
 	 *
-	 * @param person The person. May be null.
+	 * @param person The person.
 	 *
-	 * @return The list of hosts corresponding to the person.
+	 * @return The hosts.
 	 *
-	 * @throws TskCoreException Exception thrown if there is an issue querying
-	 *                          the case database.
+	 * @throws TskCoreException Thrown if there is an issue querying the case
+	 *                          database.
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
-		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getPersonId();
-		whereStatement += " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
-		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
+		return getHosts("SELECT * FROM tsk_hosts WHERE person_id = " + person.getPersonId());
+	}
+
+	/**
+	 * Gest all hosts not assocviated with a person.
+	 *
+	 * @return The hosts.
+	 *
+	 * @throws TskCoreException Thrown if there is an issue querying the case
+	 *                          database.
+	 */
+	public List<Host> getHostsWithoutPersons() throws TskCoreException {
+		return getHosts("SELECT * FROM tsk_hosts WHERE WHERE person_id IS NULL");
+	}
+
+	/**
+	 * Executes a query of the tsk_hosts table in the case database.
+	 *
+	 * @param hostsQuery The SQL query to execute.
+	 *
+	 * @throws TskCoreException Thrown if there is an issue querying the case
+	 *                          database.
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<Host> getHosts(String hostsQuery) throws TskCoreException {
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
+				ResultSet rs = connection.executeQuery(s, hostsQuery)) {
 			while (rs.next()) {
 				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status"))));
 			}
-
 			return hosts;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting host for data source: " + person.getName()), ex);
+			throw new TskCoreException(String.format("Error executing '" + hostsQuery + "'"), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -360,8 +380,7 @@ public final class PersonManager {
 	 * @param person The person.
 	 * @param hosts  The hosts.
 	 *
-	 * @throws TskCoreException Exception thrown if the operation cannot be
-	 *                          completed.
+	 * @throws TskCoreException Thrown if the operation cannot be completed.
 	 */
 	public void addHostsToPerson(Person person, List<Host> hosts) throws TskCoreException {
 		if (person == null) {
@@ -395,8 +414,7 @@ public final class PersonManager {
 	 * @param person The person.
 	 * @param hosts  The hosts.
 	 *
-	 * @throws TskCoreException Exception thrown if the operation cannot be
-	 *                          completed.
+	 * @throws TskCoreException Thrown if the operation cannot be completed.
 	 */
 	public void removeHostsFromPerson(Person person, List<Host> hosts) throws TskCoreException {
 		if (person == null) {
