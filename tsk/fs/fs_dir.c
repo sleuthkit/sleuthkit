@@ -790,6 +790,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                             PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
                     }
 
+                    tsk_fs_dir_close(fs_dir);
+                    fs_file->name = NULL;
+                    tsk_fs_file_close(fs_file);
                     if (indexToOrderedIndex != NULL) {
                         free(indexToOrderedIndex);
                     }

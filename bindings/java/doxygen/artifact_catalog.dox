@@ -184,8 +184,6 @@ Details about System/aplication/file backups.
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME_START (Date/Time the backup happened)
-     or 
-  TSK_DATETIME
   
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME_END (Date/Time the backup ended)
@@ -198,7 +196,9 @@ Details about a Bluetooth adapter.
 
 ### REQUIRED ATTRIBUTES
 - TSK_MAC_ADDRESS (MAC address of the Bluetooth adapter)
-
+- TSK_NAME (Name of the device)
+- TSK_DATETIME (Time device was last seen)
+- TSK_DEVICE_ID (UUID of the device)
 
 
 ---
@@ -211,7 +211,8 @@ Details about a Bluetooth pairing event.
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (When the pairing occurred, in seconds since 1970-01-01T00:00:00Z)
 - TSK_MAC_ADDRESS (MAC address of the Bluetooth device)
-
+- TSK_DEVICE_ID (UUID of the device)
+- TSK_DATETIME_ACCESSED (Last Connection Time)
 
 
 ---
@@ -221,9 +222,9 @@ A calendar entry in an application file or database.
 ### REQUIRED ATTRIBUTES
 - TSK_CALENDAR_ENTRY_TYPE (E.g., Reminder, Event, Birthday, etc.)
 - TSK_DATETIME_START (Start of the entry, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DESCRIPTION (Description of the entry, such as a note)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_DESCRIPTION (Description of the entry, such as a note)
 - TSK_LOCATION (Location of the entry, such as an address)
 - TSK_DATETIME_END (End of the entry, in seconds since 1970-01-01T00:00:00Z)
 
@@ -283,9 +284,7 @@ A contact book entry in an application file or database.
 Programs that have been deleted from the system.
 
 ### REQUIRED ATTRIBUTES
-- TSK_DATETIME_DELETED (Date/Time the program was deleted)
-     or 
-  TSK_DATETIME
+- TSK_DATETIME (Date/Time the program was deleted)
 - TSK_PROG_NAME (Program that was deleted)
 
 ### OPTIONAL Attributes
@@ -347,7 +346,7 @@ An email message found in an application file or database.
 Text extracted from some content.
 
 ### REQUIRED ATTRIBUTES
-TSK_TEXT (The extracted text)
+- TSK_TEXT (The extracted text)
 
 ---
 ## TSK_GEN_INFO
@@ -456,11 +455,11 @@ Details about an installed program.
 - TSK_PROG_NAME (Name of the installed program)
 
 ### OPTIONAL ATTRIBUTES
-- TSK_DATETIME (A date and time associated with the installed program, e.g., the last modified time, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_CREATED (When the program was installed, in seconds since 1970-01-01T00:00:00Z)
+- TSK_DATETIME (When the program was installed, in seconds since 1970-01-01T00:00:00Z)
 - TSK_PATH (Path to the installed program in the data source)
 - TSK_PATH_SOURCE (Path to an Android Package Kit (APK) file for an Android program)
 - TSK_PERMISSIONS (Permissions of the installed program)
+- TSK_VERSION (Version number of the program)
 
 ---
 ## TSK_MESSAGE
@@ -518,34 +517,6 @@ EXIF metadata found in an image or audio file.
 
 
 ---
-## TSK_OS_ACCOUNT
-Details about an operating system account recovered from the data source. Examples include user or administrator accounts.
-
-### REQUIRED ATTRIBUTES
-- TSK_ACCOUNT_TYPE (Account type, e.g., Administrator, User, etc.)
-- TSK_USER_NAME (The user name associated with the account)
-
-### OPTIONAL ATTRIBUTES
-- TSK_ACCOUNT_SETTINGS (Account settings such as if the account is set to auto lock or requires a home directory)
-- TSK_COUNT (Number of logins)
-- TSK_DATETIME_ACCESSED (Datetime of last login, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_CREATED (Datetime of account creation, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_PASSWORD_FAIL (Datetime of the last failed login, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DATETIME_PASSWORD_RESET (Datetime of last password reset, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DESCRIPTION (Description of the account, e.g., "My personal school account")
-- TSK_DISPLAY_NAME (Full name of the user associated with the account)
-- TSK_EMAIL (Email address associated with the account)
-- TSK_FLAG (Account flags such as indication that the account is a server trust account) 
-- TSK_GROUPS (Groups that this account is included in)
-- TSK_PASSWORD_HINT (The password hint description)
-- TSK_PASSWORD_SETTINGS (Password settings such as if the password has been set to expire or is required for login)
-- TSK_PATH (Home directory of the account. Ex: "C:/Users/John/")
-- TSK_USER_ID (User security identifier, e.g., SID)
-- TSK_NAME (Name of person associated with the account)
-
-
-
----
 ## TSK_OS_INFO
 Details about an operating system recovered from the data source.
 
@@ -586,9 +557,9 @@ The number of times a program/application was run.
 
 ### REQUIRED ATTRIBUTES
 - TSK_PROG_NAME (Name of the application)
-- TSK_COUNT (Number of times program was run, should be at least 1)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_COUNT (Number of times program was run, should be at least 1)
 - TSK_DATETIME (Timestamp that application was run last, in seconds since 1970-01-01T00:00:00Z)
 - TSK_BYTES_SENT (Number of bytes sent)
 - TSK_BYTES_RECEIVED (Number of bytes received)
@@ -702,8 +673,6 @@ Activity on the system or from an application.  Example usage is a mobile device
 
 ### REQUIRED ATTRIBUTES
 - TSK_DATETIME_START (When activity started)
-    or 
-  TSK_DATETIME
 
 ### OPTIONAL ATTRIBUTES
 - TSK_ACTIVITY_TYPE (Activity type i.e.: On or Off)
@@ -781,13 +750,13 @@ Contains autofill data for a person's address. Form data is usually saved by a W
 - TSK_LOCATION (The address of the person, e.g., 123 Main St.)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_COMMENT (Comment if the autofill data is encrypted)
 - TSK_COUNT (Number of times the Web form data was used)
 - TSK_DATETIME_ACCESSED (Last accessed timestamp of the Web form data, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DATETIME_MODIFIED (Last modified timestamp of the Web form data, in seconds since 1970-01-01T00:00:00Z)
 - TSK_EMAIL (Email address from the form data)
 - TSK_NAME_PERSON (Name of a person from the form data)
 - TSK_PHONE_NUMBER (Phone number from the form data)
-
 
 
 ---
@@ -800,10 +769,11 @@ Contains autofill data for a Web form. Form data is usually saved by a Web brows
 - TSK_VALUE (Value of the autofill field)
 
 ### OPTIONAL ATTRIBUTES
+- TSK_COMMENT (Comment if the form autofill data is encrypted)
 - TSK_COUNT (Number of times this Web form data has been used)
 - TSK_DATETIME_CREATED (Datetime this Web form autofill data was created, in seconds since 1970-01-01T00:00:00Z)
 - TSK_DATETIME_ACCESSED (Datetime this Web form data was last accessed, in seconds since 1970-01-01T00:00:00Z)
-
+- TSK_PROG_NAME (The application that stored this form information)
 
 
 ---
@@ -821,6 +791,7 @@ A Web history entry.
 - TSK_TITLE (Title of the Web page that was visited)
 - TSK_URL_DECODED (The decoded URL)
 - TSK_USER_NAME (Name of the user that viewed the Web page)
+- TSK_DATETIME_CREATED (The datetime the page was created, ie: offline pages)
 
 
 
@@ -848,7 +819,8 @@ Details about a WiFi network.
 ### OPTIONAL ATTRIBUTES
 - TSK_DATETIME (Timestamp, in seconds since 1970-01-01T00:00:00Z. This timestamp could be last connected time or creation time)
 - TSK_DEVICE_ID (String that uniquely identifies the WiFi network)
-
+- TSK_MAC_ADDRESS (Mac address of the adapter)
+- TSK_DEVICE_MODEL (Model of the decvice)
 
 
 ---

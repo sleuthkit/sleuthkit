@@ -239,7 +239,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // the number of bytes read
         if (sector_aligned_buf != NULL) {
             memcpy(buf, sector_aligned_buf + rel_offset % raw_info->img_info.sector_size, len);
-            cnt = cnt - offset_to_read % raw_info->img_info.sector_size;
+            cnt = cnt - rel_offset % raw_info->img_info.sector_size;
             if (cnt < 0) {
                 cnt = -1;
             }

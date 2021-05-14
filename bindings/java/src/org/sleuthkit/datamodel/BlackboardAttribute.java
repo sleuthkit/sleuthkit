@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2020 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,7 @@ import java.util.logging.Logger;
  * attribute by calling the appropriate BlackboardAttribute constructor. It can
  * also be used to do blackboard queries involving the custom type.
  */
-public class BlackboardAttribute extends AbstractAttribute{
+public class BlackboardAttribute extends AbstractAttribute {
 
 	private static final Logger LOGGER = Logger.getLogger(BlackboardAttribute.class.getName());
 
@@ -50,9 +50,9 @@ public class BlackboardAttribute extends AbstractAttribute{
 
 	private String context;
 	private String sources;
-	
+
 	private long artifactID;
-	
+
 	// Cached parent artifact. This field is populated lazily upon the first
 	// call to getParentArtifact().
 	private BlackboardArtifact parentArtifact;
@@ -311,7 +311,6 @@ public class BlackboardAttribute extends AbstractAttribute{
 		return parentArtifact;
 	}
 
-
 	@Override
 	public int hashCode() {
 		return Objects.hash(
@@ -327,7 +326,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 			BlackboardAttribute other = (BlackboardAttribute) that;
 			Object[] thisObject = new Object[]{this.getSources(), this.getContext()};
 			Object[] otherObject = new Object[]{other.getSources(), other.getContext()};
-			return isAttributeEquals(that) && Objects.deepEquals(thisObject, otherObject);
+			return areValuesEqual(that) && Objects.deepEquals(thisObject, otherObject);
 		} else {
 			return false;
 		}
@@ -343,6 +342,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 *
 	 * @return The value as a string.
 	 */
+	@Override
 	public String getDisplayString() {
 		switch (getAttributeType().getValueType()) {
 			case DATETIME: {
@@ -351,7 +351,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 						BlackboardArtifact parent = getParentArtifact();
 						parentDataSourceID = parent.getDataSourceObjectID();
 					}
-					final Content dataSource = getCaseDatabase().getContentById(parentDataSourceID);
+					final Content dataSource = parentDataSourceID != null ? getCaseDatabase().getContentById(parentDataSourceID) : null;
 					if ((dataSource != null) && (dataSource instanceof Image)) {
 						// return the date/time string in the timezone associated with the datasource,
 						Image image = (Image) dataSource;
@@ -364,7 +364,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 				// return time string in default timezone
 				return TimeUtilities.epochToTime(getValueLong());
 			}
-			default:{
+			default: {
 				return super.getDisplayString();
 			}
 		}
@@ -399,12 +399,12 @@ public class BlackboardAttribute extends AbstractAttribute{
 	}
 
 	/**
-	 * Sets the parent data source id. The parent data source is defined
-	 * as being the data source of the parent artifact.
+	 * Sets the parent data source id. The parent data source is defined as
+	 * being the data source of the parent artifact.
 	 *
 	 * @param parentDataSourceID The parent data source id.
 	 */
-	void setParentDataSourceID(long parentDataSourceID) {
+	void setParentDataSourceID(Long parentDataSourceID) {
 		this.parentDataSourceID = parentDataSourceID;
 	}
 
@@ -424,6 +424,345 @@ public class BlackboardAttribute extends AbstractAttribute{
 	 * Represents the type of an attribute.
 	 */
 	public static final class Type implements Serializable {
+
+		public static final Type TSK_URL = new Type(1, "TSK_URL", bundle.getString("BlackboardAttribute.tskUrl.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DATETIME = new Type(2, "TSK_DATETIME", bundle.getString("BlackboardAttribute.tskDatetime.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_NAME = new Type(3, "TSK_NAME", bundle.getString("BlackboardAttribute.tskName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PROG_NAME = new Type(4, "TSK_PROG_NAME", bundle.getString("BlackboardAttribute.tskProgName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_VALUE = new Type(6, "TSK_VALUE", bundle.getString("BlackboardAttribute.tskValue.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_FLAG = new Type(7, "TSK_FLAG", bundle.getString("BlackboardAttribute.tskFlag.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PATH = new Type(8, "TSK_PATH", bundle.getString("BlackboardAttribute.tskPath.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_KEYWORD = new Type(10, "TSK_KEYWORD", bundle.getString("BlackboardAttribute.tskKeyword.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_KEYWORD_REGEXP = new Type(11, "TSK_KEYWORD_REGEXP", bundle.getString("BlackboardAttribute.tskKeywordRegexp.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_KEYWORD_PREVIEW = new Type(12, "TSK_KEYWORD_PREVIEW", bundle.getString("BlackboardAttribute.tskKeywordPreview.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+
+		// TSK_KEYWORD_SET (id: 13) has been deprecated.  Please use TSK_SET_NAME instead.
+		public static final Type TSK_USER_NAME = new Type(14, "TSK_USER_NAME", bundle.getString("BlackboardAttribute.tskUserName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DOMAIN = new Type(15, "TSK_DOMAIN", bundle.getString("BlackboardAttribute.tskDomain.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PASSWORD = new Type(16, "TSK_PASSWORD", bundle.getString("BlackboardAttribute.tskPassword.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_NAME_PERSON = new Type(17, "TSK_NAME_PERSON", bundle.getString("BlackboardAttribute.tskNamePerson.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DEVICE_MODEL = new Type(18, "TSK_DEVICE_MODEL", bundle.getString("BlackboardAttribute.tskDeviceModel.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DEVICE_MAKE = new Type(19, "TSK_DEVICE_MAKE", bundle.getString("BlackboardAttribute.tskDeviceMake.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DEVICE_ID = new Type(20, "TSK_DEVICE_ID", bundle.getString("BlackboardAttribute.tskDeviceId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL = new Type(21, "TSK_EMAIL", bundle.getString("BlackboardAttribute.tskEmail.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_HASH_MD5 = new Type(22, "TSK_HASH_MD5", bundle.getString("BlackboardAttribute.tskHashMd5.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_HASH_SHA1 = new Type(23, "TSK_HASH_SHA1", bundle.getString("BlackboardAttribute.tskHashSha1.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_HASH_SHA2_256 = new Type(24, "TSK_HASH_SHA2_256", bundle.getString("BlackboardAttribute.tskHashSha225.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_HASH_SHA2_512 = new Type(25, "TSK_HASH_SHA2_512", bundle.getString("BlackboardAttribute.tskHashSha2512.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_TEXT = new Type(26, "TSK_TEXT", bundle.getString("BlackboardAttribute.tskText.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_TEXT_FILE = new Type(27, "TSK_TEXT_FILE", bundle.getString("BlackboardAttribute.tskTextFile.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_TEXT_LANGUAGE = new Type(28, "TSK_TEXT_LANGUAGE", bundle.getString("BlackboardAttribute.tskTextLanguage.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_ENTROPY = new Type(29, "TSK_ENTROPY", bundle.getString("BlackboardAttribute.tskEntropy.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+
+		// TSK_HASHSET_NAME (id: 30) has been deprecated.  Please use TSK_SET_NAME instead.
+		// TSK_INTERESTING_FILE (id: 31) has been deprecated.  Please use TSK_INTERESTING_FILE_HIT instead.
+		public static final Type TSK_REFERRER = new Type(32, "TSK_REFERRER", bundle.getString("BlackboardAttribute.tskReferrer.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DATETIME_ACCESSED = new Type(33, "TSK_DATETIME_ACCESSED", bundle.getString("BlackboardAttribute.tskDateTimeAccessed.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_IP_ADDRESS = new Type(34, "TSK_IP_ADDRESS", bundle.getString("BlackboardAttribute.tskIpAddress.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PHONE_NUMBER = new Type(35, "TSK_PHONE_NUMBER", bundle.getString("BlackboardAttribute.tskPhoneNumber.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PATH_ID = new Type(36, "TSK_PATH_ID", bundle.getString("BlackboardAttribute.tskPathId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
+		public static final Type TSK_SET_NAME = new Type(37, "TSK_SET_NAME", bundle.getString("BlackboardAttribute.tskSetName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+
+		// TSK_ENCRYPTION_DETECTED (id: 38) has been deprecated.  Please use TSK_ENCRYPTION_DETECTED as an artifact.
+		public static final Type TSK_MALWARE_DETECTED = new Type(39, "TSK_MALWARE_DETECTED", bundle.getString("BlackboardAttribute.tskMalwareDetected.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+		public static final Type TSK_STEG_DETECTED = new Type(40, "TSK_STEG_DETECTED", bundle.getString("BlackboardAttribute.tskStegDetected.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+		public static final Type TSK_EMAIL_TO = new Type(41, "TSK_EMAIL_TO", bundle.getString("BlackboardAttribute.tskEmailTo.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL_CC = new Type(42, "TSK_EMAIL_CC", bundle.getString("BlackboardAttribute.tskEmailCc.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL_BCC = new Type(43, "TSK_EMAIL_BCC", bundle.getString("BlackboardAttribute.tskEmailBcc.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL_FROM = new Type(44, "TSK_EMAIL_FROM", bundle.getString("BlackboardAttribute.tskEmailFrom.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL_CONTENT_PLAIN = new Type(45, "TSK_EMAIL_CONTENT_PLAIN", bundle.getString("BlackboardAttribute.tskEmailContentPlain.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL_CONTENT_HTML = new Type(46, "TSK_EMAIL_CONTENT_HTML", bundle.getString("BlackboardAttribute.tskEmailContentHtml.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL_CONTENT_RTF = new Type(47, "TSK_EMAIL_CONTENT_RTF", bundle.getString("BlackboardAttribute.tskEmailContentRtf.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_MSG_ID = new Type(48, "TSK_MSG_ID", bundle.getString("BlackboardAttribute.tskMsgId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_MSG_REPLY_ID = new Type(49, "TSK_MSG_REPLY_ID", bundle.getString("BlackboardAttribute.tskMsgReplyId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DATETIME_RCVD = new Type(50, "TSK_DATETIME_RCVD", bundle.getString("BlackboardAttribute.tskDateTimeRcvd.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_DATETIME_SENT = new Type(51, "TSK_DATETIME_SENT", bundle.getString("BlackboardAttribute.tskDateTimeSent.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_SUBJECT = new Type(52, "TSK_SUBJECT", bundle.getString("BlackboardAttribute.tskSubject.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_TITLE = new Type(53, "TSK_TITLE", bundle.getString("BlackboardAttribute.tskTitle.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_GEO_LATITUDE = new Type(54, "TSK_GEO_LATITUDE", bundle.getString("BlackboardAttribute.tskGeoLatitude.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_GEO_LONGITUDE = new Type(55, "TSK_GEO_LONGITUDE", bundle.getString("BlackboardAttribute.tskGeoLongitude.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_GEO_VELOCITY = new Type(56, "TSK_GEO_VELOCITY", bundle.getString("BlackboardAttribute.tskGeoVelocity.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_GEO_ALTITUDE = new Type(57, "TSK_GEO_ALTITUDE", bundle.getString("BlackboardAttribute.tskGeoAltitude.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_GEO_BEARING = new Type(58, "TSK_GEO_BEARING", bundle.getString("BlackboardAttribute.tskGeoBearing.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_GEO_HPRECISION = new Type(59, "TSK_GEO_HPRECISION", bundle.getString("BlackboardAttribute.tskGeoHPrecision.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_GEO_VPRECISION = new Type(60, "TSK_GEO_VPRECISION", bundle.getString("BlackboardAttribute.tskGeoVPrecision.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_GEO_MAPDATUM = new Type(61, "TSK_GEO_MAPDATUM", bundle.getString("BlackboardAttribute.tskGeoMapDatum.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+
+		// TSK_FILE_TYPE_SIG (id: 62) has been deprecated.  Please use the mime type field of the AbstractFile object instead.
+		public static final Type TSK_FILE_TYPE_EXT = new Type(63, "TSK_FILE_TYPE_EXT", bundle.getString("BlackboardAttribute.tskFileTypeExt.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+
+		// TSK_TAGGED_ARTIFACT (id: 64) has been deprected.  Please create a tag as an artifact.
+		// TSK_TAG_NAME (id: 65) has been deprecated.  Please create a tag as an artifact.
+		public static final Type TSK_COMMENT = new Type(66, "TSK_COMMENT", bundle.getString("BlackboardAttribute.tskComment.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_URL_DECODED = new Type(67, "TSK_URL_DECODED", bundle.getString("BlackboardAttribute.tskUrlDecoded.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DATETIME_CREATED = new Type(68, "TSK_DATETIME_CREATED", bundle.getString("BlackboardAttribute.tskDateTimeCreated.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_DATETIME_MODIFIED = new Type(69, "TSK_DATETIME_MODIFIED", bundle.getString("BlackboardAttribute.tskDateTimeModified.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_PROCESSOR_ARCHITECTURE = new Type(70, "TSK_PROCESSOR_ARCHITECTURE", bundle.getString("BlackboardAttribute.tskProcessorArchitecture.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_VERSION = new Type(71, "TSK_VERSION", bundle.getString("BlackboardAttribute.tskVersion.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_USER_ID = new Type(72, "TSK_USER_ID", bundle.getString("BlackboardAttribute.tskUserId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DESCRIPTION = new Type(73, "TSK_DESCRIPTION", bundle.getString("BlackboardAttribute.tskDescription.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_MESSAGE_TYPE = new Type(74, "TSK_MESSAGE_TYPE", bundle.getString("BlackboardAttribute.tskMessageType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // SMS or MMS or IM ...
+		public static final Type TSK_PHONE_NUMBER_HOME = new Type(75, "TSK_PHONE_NUMBER_HOME", bundle.getString("BlackboardAttribute.tskPhoneNumberHome.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PHONE_NUMBER_OFFICE = new Type(76, "TSK_PHONE_NUMBER_OFFICE", bundle.getString("BlackboardAttribute.tskPhoneNumberOffice.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PHONE_NUMBER_MOBILE = new Type(77, "TSK_PHONE_NUMBER_MOBILE", bundle.getString("BlackboardAttribute.tskPhoneNumberMobile.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PHONE_NUMBER_FROM = new Type(78, "TSK_PHONE_NUMBER_FROM", bundle.getString("BlackboardAttribute.tskPhoneNumberFrom.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PHONE_NUMBER_TO = new Type(79, "TSK_PHONE_NUMBER_TO", bundle.getString("BlackboardAttribute.tskPhoneNumberTo.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DIRECTION = new Type(80, "TSK_DIRECTION", bundle.getString("BlackboardAttribute.tskDirection.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Msg/Call direction: incoming, outgoing
+		public static final Type TSK_EMAIL_HOME = new Type(81, "TSK_EMAIL_HOME", bundle.getString("BlackboardAttribute.tskEmailHome.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_EMAIL_OFFICE = new Type(82, "TSK_EMAIL_OFFICE", bundle.getString("BlackboardAttribute.tskEmailOffice.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_DATETIME_START = new Type(83, "TSK_DATETIME_START", bundle.getString("BlackboardAttribute.tskDateTimeStart.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME); // start time of an event - call log, Calendar entry
+		public static final Type TSK_DATETIME_END = new Type(84, "TSK_DATETIME_END", bundle.getString("BlackboardAttribute.tskDateTimeEnd.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME); // end time of an event - call log, Calendar entry
+		public static final Type TSK_CALENDAR_ENTRY_TYPE = new Type(85, "TSK_CALENDAR_ENTRY_TYPE", bundle.getString("BlackboardAttribute.tskCalendarEntryType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // meeting, task,
+		public static final Type TSK_LOCATION = new Type(86, "TSK_LOCATION", bundle.getString("BlackboardAttribute.tskLocation.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Location string associated with an event - Conf Room Name, Address ....
+		public static final Type TSK_SHORTCUT = new Type(87, "TSK_SHORTCUT", bundle.getString("BlackboardAttribute.tskShortcut.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
+		public static final Type TSK_DEVICE_NAME = new Type(88, "TSK_DEVICE_NAME", bundle.getString("BlackboardAttribute.tskDeviceName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
+		public static final Type TSK_CATEGORY = new Type(89, "TSK_CATEGORY", bundle.getString("BlackboardAttribute.tskCategory.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // category/type, possible value set varies by the artifact
+		public static final Type TSK_EMAIL_REPLYTO = new Type(90, "TSK_EMAIL_REPLYTO", bundle.getString("BlackboardAttribute.tskEmailReplyTo.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // ReplyTo address
+		public static final Type TSK_SERVER_NAME = new Type(91, "TSK_SERVER_NAME", bundle.getString("BlackboardAttribute.tskServerName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
+		public static final Type TSK_COUNT = new Type(92, "TSK_COUNT", bundle.getString("BlackboardAttribute.tskCount.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER); // Count related to the artifact
+		public static final Type TSK_MIN_COUNT = new Type(93, "TSK_MIN_COUNT", bundle.getString("BlackboardAttribute.tskMinCount.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER); // Minimum number/count
+		public static final Type TSK_PATH_SOURCE = new Type(94, "TSK_PATH_SOURCE", bundle.getString("BlackboardAttribute.tskPathSource.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Path to a source file related to the artifact
+		public static final Type TSK_PERMISSIONS = new Type(95, "TSK_PERMISSIONS", bundle.getString("BlackboardAttribute.tskPermissions.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Permissions
+		public static final Type TSK_ASSOCIATED_ARTIFACT = new Type(96, "TSK_ASSOCIATED_ARTIFACT", bundle.getString("BlackboardAttribute.tskAssociatedArtifact.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG); // Artifact ID of a related artifact
+		public static final Type TSK_ISDELETED = new Type(97, "TSK_ISDELETED", bundle.getString("BlackboardAttribute.tskIsDeleted.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // boolean to indicate that the artifact is recovered fom deleted content
+		public static final Type TSK_GEO_LATITUDE_START = new Type(98, "TSK_GEO_LATITUDE_START", bundle.getString("BlackboardAttribute.tskGeoLatitudeStart.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE); // Starting location lattitude
+		public static final Type TSK_GEO_LATITUDE_END = new Type(99, "TSK_GEO_LATITUDE_END", bundle.getString("BlackboardAttribute.tskGeoLatitudeEnd.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE); // Ending location lattitude
+		public static final Type TSK_GEO_LONGITUDE_START = new Type(100, "TSK_GEO_LONGITUDE_START", bundle.getString("BlackboardAttribute.tskGeoLongitudeStart.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE); // Starting location longitude
+		public static final Type TSK_GEO_LONGITUDE_END = new Type(101, "TSK_GEO_LONGITUDE_END", bundle.getString("BlackboardAttribute.tskGeoLongitudeEnd.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE); //Ending Location longitude
+		public static final Type TSK_READ_STATUS = new Type(102, "TSK_READ_STATUS", bundle.getString("BlackboardAttribute.tskReadStatus.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER); // Message read status: 1 if read, 0 if unread
+		public static final Type TSK_LOCAL_PATH = new Type(103, "TSK_LOCAL_PATH", bundle.getString("BlackboardAttribute.tskLocalPath.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Local path to a network drive
+		public static final Type TSK_REMOTE_PATH = new Type(104, "TSK_REMOTE_PATH", bundle.getString("BlackboardAttribute.tskRemotePath.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Remote path of a network drive
+		public static final Type TSK_TEMP_DIR = new Type(105, "TSK_TEMP_DIR", bundle.getString("BlackboardAttribute.tskTempDir.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Default temporary files directory
+		public static final Type TSK_PRODUCT_ID = new Type(106, "TSK_PRODUCT_ID", bundle.getString("BlackboardAttribute.tskProductId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Product ID
+		public static final Type TSK_OWNER = new Type(107, "TSK_OWNER", bundle.getString("BlackboardAttribute.tskOwner.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Registered owner of a piece of software
+		public static final Type TSK_ORGANIZATION = new Type(108, "TSK_ORGANIZATION", bundle.getString("BlackboardAttribute.tskOrganization.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING); // Registered Organization for a piece of software
+		public static final Type TSK_CARD_NUMBER = new Type(109, "TSK_CARD_NUMBER", bundle.getString("BlackboardAttribute.tskCardNumber.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CARD_EXPIRATION = new Type(110, "TSK_CARD_EXPIRATION", bundle.getString("BlackboardAttribute.tskCardExpiration.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CARD_SERVICE_CODE = new Type(111, "TSK_CARD_SERVICE_CODE", bundle.getString("BlackboardAttribute.tskCardServiceCode.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CARD_DISCRETIONARY = new Type(112, "TSK_CARD_DISCRETIONARY", bundle.getString("BlackboardAttribute.tskCardDiscretionary.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CARD_LRC = new Type(113, "TSK_CARD_LRC", bundle.getString("BlackboardAttribute.tskCardLRC.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_KEYWORD_SEARCH_DOCUMENT_ID = new Type(114, "TSK_KEYWORD_SEARCH_DOCUMENT_ID", bundle.getString("BlackboardAttribute.tskKeywordSearchDocumentID.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CARD_SCHEME = new Type(115, "TSK_CARD_SCHEME", bundle.getString("BlackboardAttribute.tskCardScheme.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CARD_TYPE = new Type(116, "TSK_CARD_TYPE", bundle.getString("BlackboardAttribute.tskCardType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_BRAND_NAME = new Type(117, "TSK_BRAND_NAME", bundle.getString("BlackboardAttribute.tskBrandName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_BANK_NAME = new Type(118, "TSK_BANK_NAME", bundle.getString("BlackboardAttribute.tskBankName.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_COUNTRY = new Type(119, "TSK_COUNTRY", bundle.getString("BlackboardAttribute.tskCountry.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CITY = new Type(120, "TSK_CITY", bundle.getString("BlackboardAttribute.tskCity.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_ACCOUNT_TYPE = new Type(121, "TSK_ACCOUNT_TYPE", bundle.getString("BlackboardAttribute.tskAccountType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+
+		/**
+		 * Keyword search type: exact match, sub-string, or regex.
+		 */
+		public static final Type TSK_KEYWORD_SEARCH_TYPE = new Type(122, "TSK_KEYWORD_SEARCH_TYPE", bundle.getString("BlackboardAttribute.tskKeywordSearchType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+		public static final Type TSK_HEADERS = new Type(123, "TSK_HEADERS", bundle.getString("BlackboardAttribute.tskHeaders.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_ID = new Type(124, "TSK_ID", bundle.getString("BlackboardAttribute.tskId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_SSID = new Type(125, "TSK_SSID", bundle.getString("BlackboardAttribute.tskSsid.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_BSSID = new Type(126, "TSK_BSSID", bundle.getString("BlackboardAttribute.tskBssid.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_MAC_ADDRESS = new Type(127, "TSK_MAC_ADDRESS", bundle.getString("BlackboardAttribute.tskMacAddress.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_IMEI = new Type(128, "TSK_IMEI", bundle.getString("BlackboardAttribute.tskImei.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_IMSI = new Type(129, "TSK_IMSI", bundle.getString("BlackboardAttribute.tskImsi.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_ICCID = new Type(130, "TSK_ICCID", bundle.getString("BlackboardAttribute.tskIccid.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_THREAD_ID = new Type(131, "TSK_THREAD_ID", bundle.getString("BlackboardAttribute.tskthreadid.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		/**
+		 * The event type of a TSK_TL_EVENT artifact. The value should be the id
+		 * of the EventType in the tsk_event_types table.
+		 */
+		public static final Type TSK_TL_EVENT_TYPE = new Type(132, "TSK_TL_EVENT_TYPE", bundle.getString("BlackboardAttribute.tskTLEventType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
+		public static final Type TSK_DATETIME_DELETED = new Type(133, "TSK_DATETIME_DELETED", bundle.getString("BlackboardAttribute.tskdatetimedeleted.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_DATETIME_PASSWORD_RESET = new Type(134, "TSK_DATETIME_PASSWORD_RESET", bundle.getString("BlackboardAttribute.tskdatetimepwdreset.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_DATETIME_PASSWORD_FAIL = new Type(135, "TSK_DATETIME_PWD_FAIL", bundle.getString("BlackboardAttribute.tskdatetimepwdfail.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_DISPLAY_NAME = new Type(136, "TSK_DISPLAY_NAME", bundle.getString("BlackboardAttribute.tskdisplayname.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PASSWORD_SETTINGS = new Type(137, "TSK_PASSWORD_SETTINGS", bundle.getString("BlackboardAttribute.tskpasswordsettings.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_ACCOUNT_SETTINGS = new Type(138, "TSK_ACCOUNT_SETTINGS", bundle.getString("BlackboardAttribute.tskaccountsettings.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_PASSWORD_HINT = new Type(139, "TSK_PASSWORD_HINT", bundle.getString("BlackboardAttribute.tskpasswordhint.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_GROUPS = new Type(140, "TSK_GROUPS", bundle.getString("BlackboardAttribute.tskgroups.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		/*
+		 * Use
+		 * org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments
+		 * to create and process TSK_ATTACHMENTS attributes.
+		 */
+		public static final Type TSK_ATTACHMENTS = new Type(141, "TSK_ATTACHMENTS", bundle.getString("BlackboardAttribute.tskattachments.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON);
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints
+		 * to create and process TSK_GEO_TRACKPOINTS attributes.
+		 */
+		public static final Type TSK_GEO_TRACKPOINTS = new Type(142, "TSK_GEO_TRACKPOINTS", bundle.getString("BlackboardAttribute.tskgeopath.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON);
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints
+		 * to create and process TSK_GEO_WAYPOINTS attributes.
+		 */
+		public static final Type TSK_GEO_WAYPOINTS = new Type(143, "TSK_GEO_WAYPOINTS", bundle.getString("BlackboardAttribute.tskgeowaypoints.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON);
+		public static final Type TSK_DISTANCE_TRAVELED = new Type(144, "TSK_DISTANCE_TRAVELED", bundle.getString("BlackboardAttribute.tskdistancetraveled.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_DISTANCE_FROM_HOMEPOINT = new Type(145, "TSK_DISTANCE_FROM_HOMEPOINT", bundle.getString("BlackboardAttribute.tskdistancefromhome.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
+		public static final Type TSK_HASH_PHOTODNA = new Type(146, "TSK_HASH_PHOTODNA", bundle.getString("BlackboardAttribute.tskhashphotodna.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_BYTES_SENT = new Type(147, "TSK_BYTES_SENT", bundle.getString("BlackboardAttribute.tskbytessent.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
+		public static final Type TSK_BYTES_RECEIVED = new Type(148, "TSK_BYTES_RECEIVED", bundle.getString("BlackboardAttribute.tskbytesreceived.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
+		public static final Type TSK_LAST_PRINTED_DATETIME = new Type(149, "TSK_LAST_PRINTED_DATETIME", bundle.getString("BlackboardAttribute.tsklastprinteddatetime.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
+		public static final Type TSK_RULE = new Type(150, "TSK_RULE", bundle.getString("BlackboardAttribute.tskrule.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_ACTIVITY_TYPE = new Type(151, "TSK_ACTIVITY_TYPE", bundle.getString("BlackboardAttribute.tskActivityType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		/*
+		 * Use org.sleuthkit.datamodel.blackboardutils.attributes.GeoAreaPoints
+		 * to create and process TSK_GEO_AREAPOINTS attributes.
+		 */
+		public static final Type TSK_GEO_AREAPOINTS = new Type(152, "TSK_GEO_AREAPOINTS", bundle.getString("BlackboardAttribute.tskgeoareapoints.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON);
+		public static final Type TSK_REALM = new Type(153, "TSK_REALM", bundle.getString("BlackboardAttribute.tskRealm.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_HOST = new Type(154, "TSK_HOST", bundle.getString("BlackboardAttribute.tskHost.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_HOME_DIR = new Type(155, "TSK_HOME_DIR", bundle.getString("BlackboardAttribute.tskHomeDir.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_IS_ADMIN = new Type(156, "TSK_IS_ADMIN", bundle.getString("BlackboardAttribute.tskIsAdmin.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+		// NOTE: When adding a new standard BlackboardAttribute.Type, add the instance and then add to the STANDARD_TYPES list.
+		/**
+		 * A list of all the standard attribute types.
+		 */
+		
+		static final List<Type> STANDARD_TYPES = Collections.unmodifiableList(Arrays.asList(
+				TSK_URL,
+				TSK_DATETIME,
+				TSK_NAME,
+				TSK_PROG_NAME,
+				TSK_VALUE,
+				TSK_FLAG,
+				TSK_PATH,
+				TSK_KEYWORD,
+				TSK_KEYWORD_REGEXP,
+				TSK_KEYWORD_PREVIEW,
+				TSK_USER_NAME,
+				TSK_DOMAIN,
+				TSK_PASSWORD,
+				TSK_NAME_PERSON,
+				TSK_DEVICE_MODEL,
+				TSK_DEVICE_MAKE,
+				TSK_DEVICE_ID,
+				TSK_EMAIL,
+				TSK_HASH_MD5,
+				TSK_HASH_SHA1,
+				TSK_HASH_SHA2_256,
+				TSK_HASH_SHA2_512,
+				TSK_TEXT,
+				TSK_TEXT_FILE,
+				TSK_TEXT_LANGUAGE,
+				TSK_ENTROPY,
+				TSK_REFERRER,
+				TSK_DATETIME_ACCESSED,
+				TSK_IP_ADDRESS,
+				TSK_PHONE_NUMBER,
+				TSK_PATH_ID,
+				TSK_SET_NAME,
+				TSK_MALWARE_DETECTED,
+				TSK_STEG_DETECTED,
+				TSK_EMAIL_TO,
+				TSK_EMAIL_CC,
+				TSK_EMAIL_BCC,
+				TSK_EMAIL_FROM,
+				TSK_EMAIL_CONTENT_PLAIN,
+				TSK_EMAIL_CONTENT_HTML,
+				TSK_EMAIL_CONTENT_RTF,
+				TSK_MSG_ID,
+				TSK_MSG_REPLY_ID,
+				TSK_DATETIME_RCVD,
+				TSK_DATETIME_SENT,
+				TSK_SUBJECT,
+				TSK_TITLE,
+				TSK_GEO_LATITUDE,
+				TSK_GEO_LONGITUDE,
+				TSK_GEO_VELOCITY,
+				TSK_GEO_ALTITUDE,
+				TSK_GEO_BEARING,
+				TSK_GEO_HPRECISION,
+				TSK_GEO_VPRECISION,
+				TSK_GEO_MAPDATUM,
+				TSK_FILE_TYPE_EXT,
+				TSK_COMMENT,
+				TSK_URL_DECODED,
+				TSK_DATETIME_CREATED,
+				TSK_DATETIME_MODIFIED,
+				TSK_PROCESSOR_ARCHITECTURE,
+				TSK_VERSION,
+				TSK_USER_ID,
+				TSK_DESCRIPTION,
+				TSK_MESSAGE_TYPE,
+				TSK_PHONE_NUMBER_HOME,
+				TSK_PHONE_NUMBER_OFFICE,
+				TSK_PHONE_NUMBER_MOBILE,
+				TSK_PHONE_NUMBER_FROM,
+				TSK_PHONE_NUMBER_TO,
+				TSK_DIRECTION,
+				TSK_EMAIL_HOME,
+				TSK_EMAIL_OFFICE,
+				TSK_DATETIME_START,
+				TSK_DATETIME_END,
+				TSK_CALENDAR_ENTRY_TYPE,
+				TSK_LOCATION,
+				TSK_SHORTCUT,
+				TSK_DEVICE_NAME,
+				TSK_CATEGORY,
+				TSK_EMAIL_REPLYTO,
+				TSK_SERVER_NAME,
+				TSK_COUNT,
+				TSK_MIN_COUNT,
+				TSK_PATH_SOURCE,
+				TSK_PERMISSIONS,
+				TSK_ASSOCIATED_ARTIFACT,
+				TSK_ISDELETED,
+				TSK_GEO_LATITUDE_START,
+				TSK_GEO_LATITUDE_END,
+				TSK_GEO_LONGITUDE_START,
+				TSK_GEO_LONGITUDE_END,
+				TSK_READ_STATUS,
+				TSK_LOCAL_PATH,
+				TSK_REMOTE_PATH,
+				TSK_TEMP_DIR,
+				TSK_PRODUCT_ID,
+				TSK_OWNER,
+				TSK_ORGANIZATION,
+				TSK_CARD_NUMBER,
+				TSK_CARD_EXPIRATION,
+				TSK_CARD_SERVICE_CODE,
+				TSK_CARD_DISCRETIONARY,
+				TSK_CARD_LRC,
+				TSK_KEYWORD_SEARCH_DOCUMENT_ID,
+				TSK_CARD_SCHEME,
+				TSK_CARD_TYPE,
+				TSK_BRAND_NAME,
+				TSK_BANK_NAME,
+				TSK_COUNTRY,
+				TSK_CITY,
+				TSK_ACCOUNT_TYPE,
+				TSK_KEYWORD_SEARCH_TYPE,
+				TSK_HEADERS,
+				TSK_ID,
+				TSK_SSID,
+				TSK_BSSID,
+				TSK_MAC_ADDRESS,
+				TSK_IMEI,
+				TSK_IMSI,
+				TSK_ICCID,
+				TSK_THREAD_ID,
+				TSK_TL_EVENT_TYPE,
+				TSK_DATETIME_DELETED,
+				TSK_DATETIME_PASSWORD_RESET,
+				TSK_DATETIME_PASSWORD_FAIL,
+				TSK_DISPLAY_NAME,
+				TSK_PASSWORD_SETTINGS,
+				TSK_ACCOUNT_SETTINGS,
+				TSK_PASSWORD_HINT,
+				TSK_GROUPS,
+				TSK_ATTACHMENTS,
+				TSK_GEO_TRACKPOINTS,
+				TSK_GEO_WAYPOINTS,
+				TSK_DISTANCE_TRAVELED,
+				TSK_DISTANCE_FROM_HOMEPOINT,
+				TSK_HASH_PHOTODNA,
+				TSK_BYTES_SENT,
+				TSK_BYTES_RECEIVED,
+				TSK_LAST_PRINTED_DATETIME,
+				TSK_RULE,
+				TSK_ACTIVITY_TYPE,
+				TSK_GEO_AREAPOINTS,
+				TSK_REALM,
+				TSK_HOST,
+				TSK_HOME_DIR,
+				TSK_IS_ADMIN
+		));
 
 		private static final long serialVersionUID = 1L;
 		private final String typeName;
@@ -1190,8 +1529,7 @@ public class BlackboardAttribute extends AbstractAttribute{
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_IS_ADMIN(156, "TSK_IS_ADMIN",
 				bundle.getString("BlackboardAttribute.tskIsAdmin.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
-		;
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),;
 
 		private final int typeID;
 		private final String typeName;

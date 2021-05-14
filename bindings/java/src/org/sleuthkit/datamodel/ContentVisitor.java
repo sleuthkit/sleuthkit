@@ -165,6 +165,24 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(Report r);
+	
+	/**
+	 * Act on (visit) a OsAccount object
+	 *
+	 * @param act OsAccount object to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(OsAccount act);
+	
+	/**
+	 * Act on (visit) an UnsupportedContent object
+	 *
+	 * @param uc UnsupportedContent object to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(UnsupportedContent uc);
 
 	/**
 	 * The default content visitor - quickest method for implementing a custom
@@ -253,6 +271,16 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(Report r) {
 			return defaultVisit(r);
+		}
+		
+		@Override
+		public T visit(OsAccount act) {
+			return defaultVisit(act);
+		}
+		
+		@Override
+		public T visit(UnsupportedContent uc) {
+			return defaultVisit(uc);
 		}
 	}
 }

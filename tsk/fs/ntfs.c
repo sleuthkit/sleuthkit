@@ -375,9 +375,20 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             ("dinode_lookup: More Update Sequence Entries than MFT size");
         return TSK_COR;
     }
-    if (tsk_getu16(fs->endian, mft->upd_off) + 
-            sizeof(ntfs_upd) + 
-            2*(tsk_getu16(fs->endian, mft->upd_cnt) - 1) > a_ntfs->mft_rsize_b) {
+    uint16_t upd_cnt = tsk_getu16(fs->endian, mft->upd_cnt);
+    uint16_t upd_off = tsk_getu16(fs->endian, mft->upd_off);
+
+    // Make sure upd_cnt > 0 to prevent an integer wrap around.
+    if ((upd_cnt == 0) || (upd_cnt > (((a_ntfs->mft_rsize_b) / 2) + 1))) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+            ("dinode_lookup: Invalid update count value out of bounds");
+        return TSK_COR;
+    }
+    size_t mft_rsize_b = ((size_t) upd_cnt - 1) * 2;
+
+    if ((size_t) upd_off + sizeof(ntfs_upd) > (a_ntfs->mft_rsize_b - mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
@@ -386,9 +397,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     }
 
     /* Apply the update sequence structure template */
-    upd =
-        (ntfs_upd *) ((uintptr_t) a_buf + tsk_getu16(fs->endian,
-            mft->upd_off));
+
+    upd = (ntfs_upd *) ((uintptr_t) a_buf + upd_off);
     /* Get the sequence value that each 16-bit value should be */
     sig_seq = tsk_getu16(fs->endian, upd->upd_val);
     /* cycle through each sector */
@@ -594,7 +604,8 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         int64_t addr_offset = 0;
 
         /* allocate a new tsk_fs_attr_run */
-        if ((data_run = tsk_fs_attr_run_alloc()) == NULL) {
+        data_run = tsk_fs_attr_run_alloc();
+        if (data_run == NULL) {
             tsk_fs_attr_run_free(*a_data_run_head);
             *a_data_run_head = NULL;
             return TSK_ERR;
@@ -2049,8 +2060,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
                 tsk_error_set_errstr("ntfs_proc_attrseq: Compression unit size 2^%d too large",
                     tsk_getu16(fs->endian, attr->c.nr.compusize));
-                if (fs_attr_run)
+                if (fs_attr_run) {
                     tsk_fs_attr_run_free(fs_attr_run);
+                    fs_attr_run = NULL;
+                }
                 return TSK_COR;
             }
 
@@ -2090,9 +2103,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                             TSK_FS_ATTR_RES)) == NULL) {
                     tsk_error_errstr2_concat(" - proc_attrseq: getnew");
                     // JRB: Coverity found leak.
-                    if (fs_attr_run)
+                    if (fs_attr_run) {
                         tsk_fs_attr_run_free(fs_attr_run);
-                    fs_attr_run = NULL;
+                        fs_attr_run = NULL;
+                    }
                     return TSK_ERR;
                 }
 
@@ -2132,10 +2146,15 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
                     
                     // If the run wasn't saved to the attribute, free it now
-                    if (fs_attr_run && (fs_attr->nrd.run == NULL))
+                    if (fs_attr_run && (fs_attr->nrd.run == NULL)) {
                         tsk_fs_attr_run_free(fs_attr_run);
+                        fs_attr_run = NULL;
+                    }
                     return TSK_COR;
                 }
+                // fs_file has taken over management of fs_attr_run
+                fs_attr_run = NULL;
+
                 // set the special functions
                 if (fs_file->meta->flags & TSK_FS_META_FLAG_COMP) {
                     fs_attr->w = ntfs_attr_walk_special;
@@ -2146,6 +2165,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             else {
                 if (tsk_fs_attr_add_run(fs, fs_attr, fs_attr_run)) {
                     tsk_error_errstr2_concat(" - proc_attrseq: put run");
+                    if (fs_attr_run) {
+                        tsk_fs_attr_run_free(fs_attr_run);
+                        fs_attr_run = NULL;
+                    }
                     return TSK_COR;
                 }
             }
@@ -2598,6 +2621,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
+            if (mftSeenList != NULL)
+                tsk_stack_free(mftSeenList);
             tsk_error_errstr2_concat(" - proc_attrlist");
             return TSK_ERR;
         }
@@ -2627,6 +2652,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 free(mft);
                 free(map);
                 free(buf);
+                if (mftSeenList != NULL)
+                    tsk_stack_free(mftSeenList);
                 return TSK_COR;
             }
         }
@@ -2654,6 +2681,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
+            if (mftSeenList != NULL)
+                tsk_stack_free(mftSeenList);
             return TSK_COR;
         }
 

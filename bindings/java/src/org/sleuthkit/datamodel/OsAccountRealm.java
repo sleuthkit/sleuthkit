@@ -18,9 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Realm encapsulates the scope of an OsAccount. An account is unique within a realm.
@@ -38,13 +41,16 @@ public final class OsAccountRealm {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private final long id;	// row id 
-	private String realmName; // realm name - may be updated later. For example, a Windows domain name. 
-	private String realmAddr; // realm address - may be updated later.  For example, the numbers and dashes in a Windows SID.
+	
+	// a realm may have multiple names - for exmple, for a user ABCCorp\\user1 or user1@ABCcorp.com - 'ABCCorp' and 'ABCcorp.com' both refer to the same realm.
+	// currently we only support a single name, this could be expanded in future.
+	private final String realmName; // realm name
+	
+	private final String realmAddr; // realm address
 	private String signature; // either realm address or name (if address is not known)
 	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
 	private final RealmDbStatus dbStatus; // Status of row in database.
-	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 	
 	/**
 	 * Creates OsAccountRealm.
@@ -72,17 +78,25 @@ public final class OsAccountRealm {
 	 * 
 	 * @return Realm id.
 	 */
-	long getId() {
+	long getRealmId() {
 		return id;
 	}
 
 	/**
-	 * Get the realm name.
+	 * Get realm names list.
 	 *
-	 * @return Optional with realm name.
+	 * Currently we only support a single name for realm, so this list may have
+	 * at most a single name. And the list may be empty if there is no name.
+	 *
+	 * @return List of realm names, may be empty.
 	 */
-	public Optional<String> getRealmName() {
-		return Optional.ofNullable(realmName);
+	public List<String> getRealmNames() {
+		List<String> namesList = new ArrayList<>();
+		if (!Objects.isNull(realmName)) {
+			namesList.add(realmName);
+		}
+
+		return namesList;
 	}
 
 	/**
@@ -126,7 +140,7 @@ public final class OsAccountRealm {
 	 * 
 	 * @return Realm database status. 
 	 */
-	public RealmDbStatus getDbStatus() {
+	RealmDbStatus getDbStatus() {
 		return dbStatus;
 	}	
 
@@ -246,75 +260,29 @@ public final class OsAccountRealm {
 			return null;
 		}
 	}
-	
-	/**
-	 * Set the realm name if it is not already set.
-	 *
-	 * @param name Realm name to set.
-	 *
-	 * @return Returns true of the name is set, false if the name was not
-	 *         changed.
-	 */
-	public boolean setRealmName(String name) {
-		if (Objects.isNull(this.realmName) && Objects.nonNull(name)) {
-			this.realmName = name;
-			updateSignature();
-			this.isDirty = true;
-			
-			return true;
-		}
 		
-		return false;
-	}
-
-	/**
-	 * Set the realm address if it is not already set.
-	 *
-	 * @param addr Realm address to set.
-	 *
-	 * @return Returns true of the address is set, false if the address was not
+	 /**
+	  * Set the signature for the account realm.
+	  * 
+	  * @param signature Realm signature.
+	  * 
+	  * @return Returns true of the address is set, false if the address was not
 	 *         changed.
-	 */
-	public boolean setRealmAddr(String addr) {
-		if (Objects.isNull(this.realmAddr) && Objects.nonNull(addr)) {
-			this.realmAddr = addr;
-			updateSignature();
-			this.isDirty = true;
+	  */
+	boolean setSignature(String signature) {
+		if (StringUtils.isNotBlank(signature)) {
+			this.signature = signature;
 			return true;
 		}
 		
 		return false;
 	}
 	
-	/**
-	 * Get the dirty flag. Indicates whether the realm has any changes that need
-	 * to be updated in the database.
-	 *
-	 * @return True if the object is dirty, false otherwise.
-	 */
-	boolean isDirty() {
-		return isDirty;
-	}
-		
-	/**
-	 * Reset the dirty flag. Indicates that the realm has been updated in the
-	 * database.
-	 */
-	void resetDirty() {
-		this.isDirty = false;
-	}
-	
-	/**
-	 * Updates the signature with realm address or realm name.
-	 */
-	private void updateSignature() {
-		signature = OsAccountRealmManager.makeRealmSignature(realmAddr, realmName, host);
-	}
 	
 	/**
 	 * Encapsulates status of realm row.
 	 */
-	public enum RealmDbStatus {
+	enum RealmDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");	
@@ -327,7 +295,7 @@ public final class OsAccountRealm {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -335,7 +303,7 @@ public final class OsAccountRealm {
 			return name;
 		}
 
-		public static RealmDbStatus fromID(int typeId) {
+		static RealmDbStatus fromID(int typeId) {
 			for (RealmDbStatus type : RealmDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;
@@ -345,28 +313,4 @@ public final class OsAccountRealm {
 		}
 	}
 	
-	
-//	/**
-//	 * Set the realm scope host if it is not already set.
-//	 *
-//	 * @param host Realm scope host to set.
-//	 */
-//	public void setHost(Host host) {
-//		if (Objects.isNull(this.host) && Objects.nonNull(host)) {
-//			this.host = host;
-//			this.isDirty = true;
-//		}
-//	}
-
-//	/**
-//	 * Set the realm scope confidence if it is different from current value..
-//	 *
-//	 * @param scopeConfidence Realm scope confidence to set.
-//	 */
-//	public void setScopeConfidence(ScopeConfidence scopeConfidence) {
-//		if (this.scopeConfidence.getId() != scopeConfidence.getId()) {
-//			this.scopeConfidence = scopeConfidence;
-//			this.isDirty = true;
-//		}
-//	}
 }

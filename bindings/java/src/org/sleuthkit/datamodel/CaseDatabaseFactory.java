@@ -290,7 +290,7 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "conclusion TEXT, "
 				+ "significance INTEGER NOT NULL, "
-				+ "confidence INTEGER NOT NULL, "
+				+ "method_category INTEGER NOT NULL, "
 				+ "configuration TEXT, justification TEXT, "
 				+ "ignore_score INTEGER DEFAULT 0, " // boolean	
 				+ "FOREIGN KEY(artifact_obj_id) REFERENCES blackboard_artifacts(artifact_obj_id) ON DELETE CASCADE"
@@ -299,7 +299,7 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_aggregate_score( obj_id " + dbQueryHelper.getBigIntType() + " PRIMARY KEY, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + ", "
 				+ "significance INTEGER NOT NULL, "
-				+ "confidence INTEGER NOT NULL, "
+				+ "method_category INTEGER NOT NULL, "
 				+ "UNIQUE (obj_id),"
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
@@ -372,8 +372,11 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX events_time ON tsk_events(time)");
 			
 			// analysis results and scores indices
-			stmt.execute("CREATE INDEX score_significance_confidence ON tsk_aggregate_score(significance,confidence)");
+			stmt.execute("CREATE INDEX score_significance_category ON tsk_aggregate_score(significance, method_category)");
 			stmt.execute("CREATE INDEX score_datasource_obj_id ON tsk_aggregate_score(data_source_obj_id)");
+			
+			stmt.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
+			
 			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);
@@ -413,7 +416,9 @@ class CaseDatabaseFactory {
 				+ "name TEXT NOT NULL, " // host name
 				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 				+ "person_id INTEGER, "
+				+ "merged_into " + dbQueryHelper.getBigIntType() + ", "
 				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
+				+ "FOREIGN KEY(merged_into) REFERENCES tsk_hosts(id), "
 				+ "UNIQUE(name)) ");
 
 		stmt.execute("CREATE TABLE  tsk_host_addresses (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
@@ -494,17 +499,15 @@ class CaseDatabaseFactory {
 				+ "login_name TEXT DEFAULT NULL, "	// login name, if available, may be null
 				+ "full_name TEXT DEFAULT NULL, "	// full name, if available, may be null
 				+ "realm_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "		// realm for the account 
-				+ "unique_id TEXT DEFAULT NULL, "	// SID/UID, if available
-				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the unique_id or the login_name whichever is not null.
+				+ "addr TEXT DEFAULT NULL, "	// SID/UID, if available
+				+ "signature TEXT NOT NULL, "	// This exists only to prevent duplicates.  It is either the addr or the login_name whichever is not null.
 				+ "status INTEGER, "    // enabled/disabled/deleted
 				+ "type INTEGER, "	// service/interactive
 				+ "created_date " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
-				+ "person_id INTEGER, "	
 				+ "db_status INTEGER DEFAULT 0, " // active/merged/deleted
 			    + "merged_into " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
 				+ "UNIQUE(signature, realm_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(person_id) REFERENCES tsk_persons(id) ON DELETE SET NULL, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id),"
 				+ "FOREIGN KEY(merged_into) REFERENCES tsk_os_accounts(os_account_obj_id) )");
 		
@@ -532,12 +535,10 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_os_account_instances (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
-				+ "host_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "instance_type INTEGER NOT NULL, "	// PerformedActionOn/ReferencedOn
-				+ "UNIQUE(os_account_obj_id, data_source_obj_id, host_id), "
+				+ "UNIQUE(os_account_obj_id, data_source_obj_id), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id), " 
-				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id))");
+				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE ) ");
 		
 		// References blackboard_artifacts, tsk_os_accounts
 		stmt.execute("CREATE TABLE tsk_data_artifacts ( "
@@ -553,14 +554,6 @@ class CaseDatabaseFactory {
 				+ " display_name TEXT UNIQUE NOT NULL , "
 				+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
 
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(0, 'Event Types', null)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(1, 'File System', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(2, 'Web Activity', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(3, 'Misc Types', 0)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(4, 'Modified', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(5, 'Accessed', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(6, 'Created', 1)");
-		stmt.execute("INSERT INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES(7, 'Changed', 1)");
 		/*
 		* Regarding the timeline event tables schema, note that several columns
 		* in the tsk_event_descriptions table seem, at first glance, to be

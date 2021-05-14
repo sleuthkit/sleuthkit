@@ -18,52 +18,47 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
- * Abstracts an OS user account. OS Accounts have a scope,
- * which is defined by their parent OsAccountRealm.
+ * Abstracts an OS user account. OS Accounts have a scope, which is defined by
+ * their parent OsAccountRealm.
  *
  * An OS user account may own files and (some) artifacts.
  *
- * OsAcounts can be created with minimal data and updated 
- * as more is learned. Caller must call update() to save
- * any new data. 
+ * OsAcounts can be created with minimal data and updated as more is learned.
+ * Caller must call update() to save any new data.
  */
 public final class OsAccount extends AbstractContent {
-	
+
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	final static Long NO_ACCOUNT = null;
 	final static String NO_OWNER_ID = null;
 
 	private final SleuthkitCase sleuthkitCase;
-	
-	private final long osAccountobjId;	// Object ID within the database
-	private final OsAccountRealm realm;		// realm where the loginname/uniqueId is unique - a domain or a host name.
-	private String loginName;	// user login name - may be null
-	private String uniqueId;	// a unique user sid/uid, may be null
-	
-	private String signature;		// This exists only to prevent duplicates.
-									// Together realm_id & signature must be unique for each account.
-									// It is either unique_id if unique_id is defined,
-									// or the login_name if login_name is defined.
 
-	private String fullName;	// full name, may be null
-	private OsAccountType osAccountType = OsAccountType.UNKNOWN;
-	private OsAccountStatus osAccountStatus = null;
+	private final long osAccountObjId;	// Object ID within the database
+	private final long realmId;		// realm where the account exists in (could be local or domain scoped)
+	private final String loginName;	// user login name - may be null
+	private final String addr;	// a unique user sid/uid, may be null
+
+	private final String signature;		// This exists only to prevent duplicates.
+	// Together realm_id & signature must be unique for each account.
+	// It is either addr if addr is defined,
+	// or the login_name if login_name is defined.
+
+	private final String fullName;	// full name, may be null
+	private final OsAccountType osAccountType;
+	private final OsAccountStatus osAccountStatus;
 	private final OsAccountDbStatus osAccountDbStatus;  // Status of row in the database
-	private Long creationTime = null;
+	private final Long creationTime;
 
 	private List<OsAccountAttribute> osAccountAttributes = null;
-	
-	private boolean isDirty = false; // indicates that some member value has changed since construction and it should be updated in the database.
 
-	
 	/**
 	 * Encapsulates status of an account - whether is it active or disabled or
 	 * deleted.
@@ -116,16 +111,16 @@ public final class OsAccount extends AbstractContent {
 			return null;
 		}
 	}
-	
+
 	/**
-	 * Encapsulates status of OsAccount row.
-	 * OsAccounts that are not "Active" are generally invisible -
-	 * they will not be returned by any queries on the string fields.
+	 * Encapsulates status of OsAccount row. OsAccounts that are not "Active"
+	 * are generally invisible - they will not be returned by any queries on the
+	 * string fields.
 	 */
-	public enum OsAccountDbStatus {
+	enum OsAccountDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
-		DELETED(2, "Deleted");	
+		DELETED(2, "Deleted");
 
 		private final int id;
 		private final String name;
@@ -135,7 +130,7 @@ public final class OsAccount extends AbstractContent {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -143,7 +138,7 @@ public final class OsAccount extends AbstractContent {
 			return name;
 		}
 
-		public static OsAccountDbStatus fromID(int typeId) {
+		static OsAccountDbStatus fromID(int typeId) {
 			for (OsAccountDbStatus type : OsAccountDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;
@@ -206,273 +201,80 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
-	 * Describes the relationship between an os account instance and the host
-	 * where the instance was found.
-	 *
-	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host (such as in a log file)
-	 */
-	public enum OsAccountInstanceType {
-		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user launched a program on the host
-		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")),	// user accesed a resource for read/write
-		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text") );	// user was referenced, e.g. in a event log.
-		
-		private final int id;
-		private final String name;
-		private final String description;
-
-		OsAccountInstanceType(int id, String name, String description) {
-			this.id = id;
-			this.name = name;
-			this.description = description ;
-		}
-
-		/**
-		 * Get account instance type id.
-		 *
-		 * @return Account instance type id.
-		 */
-		public int getId() {
-			return id;
-		}
-
-		/**
-		 * Get account instance type name.
-		 *
-		 * @return Account instance type name.
-		 */
-		public String getName() {
-			return name;
-		}
-
-		/**
-		 * Get account instance type description.
-		 *
-		 * @return Account instance type description.
-		 */
-		public String getDescription() {
-			return description;
-		}
-		
-		/**
-		 * Gets account instance type enum from id.
-		 *
-		 * @param typeId Id to look for.
-		 *
-		 * @return Account instance type enum.
-		 */
-		public static OsAccountInstanceType fromID(int typeId) {
-			for (OsAccountInstanceType statusType : OsAccountInstanceType.values()) {
-				if (statusType.ordinal() == typeId) {
-					return statusType;
-				}
-			}
-			return null;
-		}
-	}
-
-	/**
 	 * Constructs an OsAccount with a realm/username and unique id, and
 	 * signature.
 	 *
 	 * @param sleuthkitCase  The SleuthKit case (case database) that contains
 	 *                       the artifact data.
 	 * @param osAccountobjId Obj id of the account in tsk_objects table.
-	 * @param realm	         Realm - defines the scope of this account.
+	 * @param realmId        Realm - defines the scope of this account.
 	 * @param loginName      Login name for the account. May be null.
 	 * @param uniqueId       An id unique within the realm - a SID or uid. May
 	 *                       be null, only if login name is not null.
 	 * @param signature	     A unique signature constructed from realm id and
 	 *                       loginName or uniqueId.
+	 * @param fullName       Full name.
+	 * @param creationTime   Account creation time.
+	 * @param accountType    Account type.
 	 * @param accountStatus  Account status.
 	 * @param dbStatus       Status of row in database.
 	 */
-	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, OsAccountRealm realm, String loginName, String uniqueId, String signature, 
-			OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
-		
+	OsAccount(SleuthkitCase sleuthkitCase, long osAccountobjId, long realmId, String loginName, String uniqueId, String signature,
+			String fullName, Long creationTime, OsAccountType accountType, OsAccountStatus accountStatus, OsAccountDbStatus accountDbStatus) {
+
 		super(sleuthkitCase, osAccountobjId, signature);
-		
+
 		this.sleuthkitCase = sleuthkitCase;
-		this.osAccountobjId = osAccountobjId;
-		this.realm = realm;
+		this.osAccountObjId = osAccountobjId;
+		this.realmId = realmId;
 		this.loginName = loginName;
-		this.uniqueId = uniqueId;
+		this.addr = uniqueId;
 		this.signature = signature;
+		this.fullName = fullName;
+		this.creationTime = creationTime;
+		this.osAccountType = accountType;
 		this.osAccountStatus = accountStatus;
 		this.osAccountDbStatus = accountDbStatus;
 	}
 
 	/**
-	 * Set the account login name, such as "jdoe", if not already set.
+	 * This function is used by OsAccountManger to update the list of OsAccount
+	 * attributes.
 	 *
-	 * @param loginName Login name to set.
-	 *
-	 * @return Returns true of the login name is set, false if the name was not
-	 *         changed.
+	 * @param osAccountAttributes The osAccount attributes that are to be added.
 	 */
-	public boolean setLoginName(String loginName) {
-		if (this.loginName == null) {
-			this.loginName = loginName;
-			updateSignature();
-			this.isDirty = true;
-			return true;
-		}
-		return false;
+	synchronized void setAttributesInternal(List<OsAccountAttribute> osAccountAttributes) {
+		this.osAccountAttributes = osAccountAttributes;
 	}
 
-	/**
-	 * Set the account unique id, such as SID or UID, if not already set.
-	 * 
-	 * @param uniqueId Id to set.
-	 * 
-	 * @return Returns true of the unique id is set, false if the unique id was not
-	 *         changed.
-	 */
-	public boolean setUniqueId(String uniqueId) {
-		if (this.uniqueId == null) {
-			this.uniqueId = uniqueId;
-			updateSignature();
-			this.isDirty = true;
-			return true;
-		}
-		return false;
-	}
-	
-	
-	/**
-	 * Sets the account user's full name, such as "John Doe", if it is not
-	 * already set.
-	 *
-	 * @param fullName Full name.
-	 *
-	 * @return Returns true of the name is set, false if the name was not
-	 *         changed.
-	 */
-	public boolean setFullName(String fullName) {
-		if (this.fullName == null) {
-			this.fullName = fullName;
-			this.isDirty = true;
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Sets account type for the account, if it has not already been set.
-	 *
-	 * @param osAccountType Account type.
-	 *
-	 * @return Returns true of the account type is set, false if the account
-	 *         type was not changed.
-	 */
-	public boolean setOsAccountType(OsAccountType osAccountType) {
-		if (this.osAccountType == null) {
-			this.osAccountType = osAccountType;
-			this.isDirty = true;
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Sets account status for the account, if it is not already set.
-	 *
-	 * @param osAccountStatus Account status.
-	 * 
-	 * @return Returns true of the account status is set, false if the account
-	 *         status was not changed.
-	 */
-	public boolean setOsAccountStatus(OsAccountStatus osAccountStatus) {
-		if (this.osAccountStatus == null) {
-			this.osAccountStatus = osAccountStatus;
-			this.isDirty = true;
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Set account creation time, if not already set.
-	 *
-	 * @param creationTime Creation time.
-	 * 
-	 * @return Returns true of the creation time is set, false if the time was not
-	 *         changed.
-	 */
-	public boolean setCreationTime(Long creationTime) {
-		if (this.creationTime == null) {
-			this.creationTime = creationTime;
-			this.isDirty = true;
-			return true;
-		}
-		return false;
-	}
-
-	
-	/**
-	 * Get the dirty flag. Indicates whether the account has any changes that need
-	 * to be updated in the database.
-	 *
-	 * @return True if the object is dirty, false otherwise.
-	 */
-	boolean isDirty() {
-		return isDirty;
-	}
-	
-	/**
-	 * Reset the dirty flag. Indicates that the account has been updated in the
-	 * database.
-	 * 
-	 */
-	void resetDirty() {
-		this.isDirty = false;
-	}
-	
-	
-	/**
-	 * Adds account attributes to the account. Attributes can be at a host-level
-	 * or domain-level (for domain-scoped accounts).
-	 *
-	 * @param osAccountAttributes List of attributes to add.
-	 *
-	 * @throws TskCoreException
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public void addAttributes(List<OsAccountAttribute> osAccountAttributes) throws TskCoreException {
-		sleuthkitCase.getOsAccountManager().addOsAccountAttributes(this, osAccountAttributes);
-		osAccountAttributes.addAll(osAccountAttributes);
-	}
-
-		
 	/**
 	 * Get the account Object Id that is unique within the scope of the case.
 	 *
 	 * @return Account id.
 	 */
 	public long getId() {
-		return osAccountobjId;
+		return osAccountObjId;
 	}
 
 	/**
-	 * Get the unique identifier for the account, such as UID or SID.
-	 * The id is unique within the account realm.
+	 * Get the unique identifier for the account, such as UID or SID. The id is
+	 * unique within the account realm.
 	 *
 	 * @return Optional unique identifier.
 	 */
-	public Optional<String> getUniqueIdWithinRealm() {
-		return Optional.ofNullable(uniqueId);
+	public Optional<String> getAddr() {
+		return Optional.ofNullable(addr);
 	}
 
 	/**
-	 * Get the account realm.
+	 * Get the ID for the account realm. Get the Realm via
+	 * OsAccountRealmManager.getRealmByRealmId() NOTE: The realm may get updated
+	 * as more data is parsed, so listen for events to update as needed.
 	 *
-	 * @return OsAccountRealm.
+	 * @return
 	 */
-	public OsAccountRealm getRealm() {
-		return realm;
+	public long getRealmId() {
+		return realmId;
 	}
 
 	/**
@@ -493,7 +295,6 @@ public final class OsAccount extends AbstractContent {
 		return signature;
 	}
 
-	
 	/**
 	 * Get account user full name, such as "John Doe"
 	 *
@@ -506,7 +307,7 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Get account creation time.
 	 *
-	 * @return Account creation time, returns 0 if creation time is not known.
+	 * @return Optional with account creation time.
 	 */
 	public Optional<Long> getCreationTime() {
 		return Optional.ofNullable(creationTime);
@@ -515,21 +316,21 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Get account type.
 	 *
-	 * @return Account type.
+	 * @return Optional with account type.
 	 */
-	public OsAccountType getOsAccountType() {
-		return osAccountType;
+	public Optional<OsAccountType> getOsAccountType() {
+		return Optional.ofNullable(osAccountType);
 	}
 
 	/**
 	 * Get account status.
 	 *
-	 * @return Account status.
+	 * @return Optional with account status.
 	 */
-	public OsAccountStatus getOsAccountStatus() {
-		return osAccountStatus;
+	public Optional<OsAccountStatus> getOsAccountStatus() {
+		return Optional.ofNullable(osAccountStatus);
 	}
-	
+
 	/**
 	 * Get account status in the database.
 	 *
@@ -543,26 +344,29 @@ public final class OsAccount extends AbstractContent {
 	 * Get additional account attributes.
 	 *
 	 * @return List of additional account attributes. May return an empty list.
-	 * 
+	 *
 	 * @throws TskCoreException
 	 */
-	public List<OsAccountAttribute> getOsAccountAttributes() throws TskCoreException {
+	public synchronized List<OsAccountAttribute> getExtendedOsAccountAttributes() throws TskCoreException {
 		if (osAccountAttributes == null) {
 			osAccountAttributes = sleuthkitCase.getOsAccountManager().getOsAccountAttributes(this);
 		}
 		return Collections.unmodifiableList(osAccountAttributes);
 	}
-	
+
 	/**
-	 * Updates the account signature with unique id or name.
+	 * Return the os account instances.
+	 *
+	 * @return List of all the OsAccountInstances. May return an empty list.
+	 *
+	 * @throws TskCoreException
 	 */
-	private void updateSignature() {
-		signature = OsAccountManager.getAccountSignature(this.uniqueId, this.loginName);
+	public synchronized List<OsAccountInstance> getOsAccountInstances() throws TskCoreException {
+		return sleuthkitCase.getOsAccountManager().getOsAccountInstances(this);
 	}
-	
+
 	/**
-	 * Gets the SleuthKit case  database for this
-	 * account.
+	 * Gets the SleuthKit case database for this account.
 	 *
 	 * @return The SleuthKit case object.
 	 */
@@ -570,7 +374,7 @@ public final class OsAccount extends AbstractContent {
 	public SleuthkitCase getSleuthkitCase() {
 		return sleuthkitCase;
 	}
-	
+
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// No data to read. 
@@ -590,15 +394,173 @@ public final class OsAccount extends AbstractContent {
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
-		// TODO: need to implement this when OS Accounts are part of the Autopsy tree.
-		
-		throw new UnsupportedOperationException("Not supported yet."); 
+
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		// TODO: need to implement this when OS Accounts are part of the Autopsy tree.
-		
-		throw new UnsupportedOperationException("Not supported yet."); 
+		return v.visit(this);
+	}
+
+	/**
+	 * Abstracts attributes of an OS account. An attribute may be specific to a
+	 * host, or applicable across all hosts.
+	 *
+	 * As an example, last login time is host specific, whereas last password
+	 * reset date is independent of a host.
+	 *
+	 */
+	public final class OsAccountAttribute extends AbstractAttribute {
+
+		private final long osAccountObjId;	// OS account to which this attribute belongs.
+		private final Long hostId; // Host to which this attribute applies, may be null
+		private final Long sourceObjId; // Object id of the source where the attribute was discovered.
+
+		/**
+		 * Creates an os account attribute with int value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueInt      Int value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if the attribute applies to all the hosts
+		 *                      in the realm.
+		 * @param sourceObj     Source where the attribute was found, may be
+		 *                      null.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueInt);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with long value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueLong     Long value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, long valueLong, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueLong);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with double value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueDouble   Double value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, double valueDouble, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueDouble);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with string value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueString   String value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, String valueString, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueString);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Creates an os account attribute with byte-array value.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueBytes    Bytes value.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		public OsAccountAttribute(BlackboardAttribute.Type attributeType, byte[] valueBytes, OsAccount osAccount, Host host, Content sourceObj) {
+			super(attributeType, valueBytes);
+
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Constructor to be used when creating an attribute after reading the
+		 * data from the table.
+		 *
+		 * @param attributeType Attribute type.
+		 * @param valueInt      Int value.
+		 * @param valueLong     Long value.
+		 * @param valueDouble   Double value.
+		 * @param valueString   String value.
+		 * @param valueBytes    Bytes value.
+		 * @param sleuthkitCase Sleuthkit case.
+		 * @param osAccount     Account which the attribute pertains to.
+		 * @param host          Host on which the attribute applies to. Pass
+		 *                      Null if it applies across hosts.
+		 * @param sourceObj     Source where the attribute was found.
+		 */
+		OsAccountAttribute(BlackboardAttribute.Type attributeType, int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
+				SleuthkitCase sleuthkitCase, OsAccount osAccount, Host host, Content sourceObj) {
+
+			super(attributeType,
+					valueInt, valueLong, valueDouble, valueString, valueBytes,
+					sleuthkitCase);
+			this.osAccountObjId = osAccount.getId();
+			this.hostId = (host != null ? host.getHostId() : null);
+			this.sourceObjId = (sourceObj != null ? sourceObj.getId() : null);
+		}
+
+		/**
+		 * Get the host id for the account attribute.
+		 *
+		 * @return Optional with Host id.
+		 */
+		public Optional<Long> getHostId() {
+			return Optional.ofNullable(hostId);
+		}
+
+		/**
+		 * Get the object id of account to which this attribute applies.
+		 *
+		 * @return Account row id.
+		 */
+		public long getOsAccountObjectId() {
+			return osAccountObjId;
+		}
+
+		/**
+		 * Get the object id of the source where the attribute was found.
+		 *
+		 * @return Object id of source.
+		 */
+		public Optional<Long> getSourceObjectId() {
+			return Optional.ofNullable(sourceObjId);
+		}
 	}
 }

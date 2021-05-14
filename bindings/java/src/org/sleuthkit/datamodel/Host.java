@@ -21,14 +21,13 @@ package org.sleuthkit.datamodel;
 import java.util.Objects;
 
 /**
- *
  * Encapsulates a host.
  */
 public final class Host {
 
 	private final long id;
-	private String name;
-	private HostDbStatus status;
+	private final String name;
+	private final HostDbStatus status;
 
 	Host(long id, String name) {
 		this(id, name, HostDbStatus.ACTIVE);
@@ -45,7 +44,7 @@ public final class Host {
 	 *
 	 * @return Row id.
 	 */
-	public long getId() {
+	public long getHostId() {
 		return id;
 	}
 
@@ -59,32 +58,14 @@ public final class Host {
 	}
 
 	/**
-	 * Sets the name for the host.
-	 * @param newName The new name.
-	 */
-	public void setName(String newName) {
-		this.name = newName;
-	}
-	
-	
-	/**
 	 * Gets the status for the host.
 	 *
 	 * @return Host status.
 	 */
-	public HostDbStatus getStatus() {
+	HostDbStatus getStatus() {
 		return status;
 	}
-	
-	/**
-	 * Sets the status for the host.
-	 *
-	 * @param status Host status.
-	 */
-	public void setStatus(HostDbStatus status) {
-		this.status = status;
-	}
-		
+
 	@Override
 	public int hashCode() {
 		int hash = 5;
@@ -120,11 +101,10 @@ public final class Host {
 	/**
 	 * Encapsulates status of host row.
 	 */
-	public enum HostDbStatus {
+	enum HostDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");
-		
 
 		private final int id;
 		private final String name;
@@ -134,7 +114,7 @@ public final class Host {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -142,7 +122,7 @@ public final class Host {
 			return name;
 		}
 
-		public static HostDbStatus fromID(int typeId) {
+		static HostDbStatus fromID(int typeId) {
 			for (HostDbStatus type : HostDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;
@@ -151,5 +131,5 @@ public final class Host {
 			return null;
 		}
 	}
-	
+
 }

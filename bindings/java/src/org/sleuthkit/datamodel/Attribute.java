@@ -192,7 +192,7 @@ public class Attribute extends AbstractAttribute{
 		if (this == that) {
 			return true;
 		} else if (that instanceof Attribute) {
- 			return isAttributeEquals(that);
+ 			return areValuesEqual(that);
 		} else {
 			return false;
 		}

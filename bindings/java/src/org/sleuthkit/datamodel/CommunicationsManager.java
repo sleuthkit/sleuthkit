@@ -355,6 +355,10 @@ public final class CommunicationsManager {
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
 			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
 
+		if(sourceArtifact.getDataSourceObjectID() == null) {
+			throw new TskDataException("Source Artifact does not have a valid data source.");
+		}
+		
 		if (relationshipType.isCreatableFrom(sourceArtifact) == false) {
 			throw new TskDataException("Can not make a " + relationshipType.getDisplayName()
 					+ " relationship from a" + sourceArtifact.getDisplayName());
@@ -370,7 +374,7 @@ public final class CommunicationsManager {
 
 		if (null != sender) {
 			accountIDs.add(sender.getAccount().getAccountID());
-			if (sender.getDataSourceObjectID() != sourceArtifact.getDataSourceObjectID()) {
+			if (!sender.getDataSourceObjectID().equals(sourceArtifact.getDataSourceObjectID())) {
 				throw new TskDataException("Sender and relationship are from different data sources :"
 						+ "Sender source ID" + sender.getDataSourceObjectID() + " != relationship source ID" + sourceArtifact.getDataSourceObjectID());
 			}
@@ -378,7 +382,7 @@ public final class CommunicationsManager {
 
 		for (AccountFileInstance recipient : recipients) {
 			accountIDs.add(recipient.getAccount().getAccountID());
-			if (recipient.getDataSourceObjectID() != sourceArtifact.getDataSourceObjectID()) {
+			if (!recipient.getDataSourceObjectID().equals(sourceArtifact.getDataSourceObjectID())) {
 				throw new TskDataException("Recipient and relationship are from different data sources :"
 						+ "Recipient source ID" + recipient.getDataSourceObjectID() + " != relationship source ID" + sourceArtifact.getDataSourceObjectID());
 			}

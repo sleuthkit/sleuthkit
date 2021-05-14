@@ -25,7 +25,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import org.sleuthkit.datamodel.Score.Confidence;
+import org.sleuthkit.datamodel.Score.MethodCategory;
 import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -88,21 +88,21 @@ public class ScoringManager {
 	 * @param objId Object id.
 	 * @param connection Connection to use for the query.
 	 *
-	 * @return Score, if it is found, Score(UNKNOWN,NONE) otherwise.
+	 * @return Score, if it is found, SCORE_UNKNOWN otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
-		String queryString = "SELECT significance, confidence FROM tsk_aggregate_score WHERE obj_id = " + objId;
+	Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
+		String queryString = "SELECT significance, method_category FROM tsk_aggregate_score WHERE obj_id = " + objId;
 
 		try {
 			db.acquireSingleUserCaseReadLock();
 
 			try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
 				if (rs.next()) {
-					return new Score(Significance.fromID(rs.getInt("significance")), Confidence.fromID(rs.getInt("confidence")));
+					return new Score(Significance.fromID(rs.getInt("significance")), MethodCategory.fromID(rs.getInt("method_category")));
 				} else {
-					return new Score(Significance.UNKNOWN, Confidence.NONE);
+					return Score.SCORE_UNKNOWN;
 				}
 			} catch (SQLException ex) {
 				throw new TskCoreException("SQLException thrown while running query: " + queryString, ex);
@@ -137,10 +137,10 @@ public class ScoringManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
+	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbConnection connection) throws TskCoreException {
 
-		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , confidence) VALUES (?, ?, ?, ?)"
-				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, confidence = ?";
+		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , method_category) VALUES (?, ?, ?, ?)"
+				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, method_category = ?";
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
@@ -154,10 +154,10 @@ public class ScoringManager {
 				preparedStatement.setNull(2, java.sql.Types.NULL);
 			}
 			preparedStatement.setInt(3, score.getSignificance().getId());
-			preparedStatement.setInt(4, score.getConfidence().getId());
+			preparedStatement.setInt(4, score.getMethodCategory().getId());
 
 			preparedStatement.setInt(5, score.getSignificance().getId());
-			preparedStatement.setInt(6, score.getConfidence().getId());
+			preparedStatement.setInt(6, score.getMethodCategory().getId());
 
 			connection.executeUpdate(preparedStatement);
 		} catch (SQLException ex) {
@@ -171,72 +171,143 @@ public class ScoringManager {
 
 
 	/**
-	 * Updates the score for the specified object, if the given analysis result
-	 * score is higher than the score the object already has.
+	 * Updates the score for the specified object after a result has been
+	 * added. Is optimized to do nothing if the new score is less than the
+	 * current aggregate score. 
 	 *
 	 * @param objId              Object id.
 	 * @param dataSourceObjectId Object id of the data source, may be null.
-	 * @param resultScore        Score for a newly added analysis result.
+	 * @param newResultScore        Score for a newly added analysis result.
 	 * @param transaction        Transaction to use for the update.
 	 *
 	 * @return Aggregate score for the object.
 	 *
 	 * @throws TskCoreException
 	 */
-	Score updateAggregateScore(long objId, Long dataSourceObjectId, Score resultScore, CaseDbTransaction transaction) throws TskCoreException {
+	Score updateAggregateScoreAfterAddition(long objId, Long dataSourceObjectId, Score newResultScore, CaseDbTransaction transaction) throws TskCoreException {
 
+		/* get an exclusive write lock on the DB before we read anything so that we know we are
+		 * the only one reading existing scores and updating.  The risk is that two computers
+		 * could update the score and the aggregate score ends up being incorrect. 
+		 * 
+		 * NOTE: The alternative design is to add a 'version' column for opportunistic locking
+		 * and calculate these outside of a transaction.  We opted for table locking for performance
+		 * reasons so that we can still add the analysis results in a batch.  That remains an option
+		 * if we get into deadlocks with the current design. 
+		 */
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+			connection.getAggregateScoreTableWriteLock();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting exclusive write lock on aggregate score table", ex);//NON-NLS
+		}
+			
+		
 		// Get the current score 
-		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
+		Score currentAggregateScore = ScoringManager.this.getAggregateScore(objId, transaction);
 
 		// If current score is Unknown And newscore is not Unknown - allow None (good) to be recorded
 		// or if the new score is higher than the current score
-		if  ( (currentScore.compareTo(Score.SCORE_UNKNOWN) == 0 && resultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
-			  || (Score.getScoreComparator().compare(resultScore, currentScore) > 0)) {
-			ScoringManager.this.setAggregateScore(objId, dataSourceObjectId, resultScore, transaction);
+		if  ( (currentAggregateScore.compareTo(Score.SCORE_UNKNOWN) == 0 && newResultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
+			  || (Score.getScoreComparator().compare(newResultScore, currentAggregateScore) > 0)) {
+			setAggregateScore(objId, dataSourceObjectId, newResultScore, transaction);
 			
 			// register score change in the transaction.
-			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, resultScore));
-			return resultScore;
+			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentAggregateScore, newResultScore));
+			return newResultScore;
 		} else {
 			// return the current score
-			return currentScore;
+			return currentAggregateScore;
 		}
+	}
+	
+	/**
+	 * Recalculate the aggregate score after an analysis result was 
+	 * deleted.
+	 * 
+	 * @param objId Content that had result deleted from
+	 * @param dataSourceObjectId Data source content is in
+	 * @param transaction 
+	 * @return New Score
+	 * @throws TskCoreException 
+	 */
+	Score updateAggregateScoreAfterDeletion(long objId, Long dataSourceObjectId, CaseDbTransaction transaction) throws TskCoreException {
+
+		CaseDbConnection connection = transaction.getConnection();
+		
+		/* get an exclusive write lock on the DB before we read anything so that we know we are
+		 * the only one reading existing scores and updating.  The risk is that two computers
+		 * could update the score and the aggregate score ends up being incorrect. 
+		 * 
+		 * NOTE: The alternative design is to add a 'version' column for opportunistic locking
+		 * and calculate these outside of a transaction.  We opted for table locking for performance
+		 * reasons so that we can still add the analysis results in a batch.  That remains an option
+		 * if we get into deadlocks with the current design. 
+		 */
+		try {
+			connection.getAggregateScoreTableWriteLock();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting exclusive write lock on aggregate score table", ex);//NON-NLS
+		}
+			
+		// Get the current score 
+		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
+
+		// Calculate the score from scratch by getting all of them and getting the highest
+		List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResults(objId, connection);
+		Score newScore = Score.SCORE_UNKNOWN;
+		for (AnalysisResult iter : analysisResults) {
+			Score iterScore = iter.getScore();
+			if (Score.getScoreComparator().compare(iterScore, newScore) > 0) {
+				newScore = iterScore;
+			}
+		}
+		// NOTE: Add logic here in the future to get tag score
+		
+		
+		// only change the DB if we got a new score. 
+		if (newScore.compareTo(currentScore) != 0) {
+			setAggregateScore(objId, dataSourceObjectId, newScore, connection);
+
+			// register the score change with the transaction so an event can be fired for it. 
+			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, newScore));
+		}
+		return newScore;
 	}
 
 	/**
 	 * Get the count of contents within the specified data source
-	 * with the specified aggregate score.
+	 * with the specified significance.
 	 *
 	 * @param dataSourceObjectId Data source object id.
-	 * @param aggregateScore Score to look for.
+	 * @param significance Significance to look for.
 	 *
 	 * @return Number of contents with given score.
 	 * @throws TskCoreException if there is an error getting the count. 
 	 */
-	public long getContentCount(long dataSourceObjectId, Score aggregateScore) throws TskCoreException {
+	public long getContentCount(long dataSourceObjectId, Score.Significance significance) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getContentCount(dataSourceObjectId, aggregateScore, connection);
+			return getContentCount(dataSourceObjectId, significance, connection);
 		} 
 	}
 
 
 	/**
-	 * Get the count of contents with the specified score. Uses the specified
-	 * transaction to obtain the database connection.
+	 * Get the count of contents with the specified significance. Uses the
+	 * specified database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
-	 * @param aggregateScore       Score to look for.
-	 * @param transaction Transaction from which to get the connection.
+	 * @param significance       Significance to look for.
+	 * @param connection         Database connection to use..
 	 *
 	 * @return Number of contents with given score.
 	 *
-	 * @throws TskCoreException if there is an error getting the count. 
+	 * @throws TskCoreException if there is an error getting the count.
 	 */
-	private long getContentCount(long dataSourceObjectId, Score aggregateScore, CaseDbConnection connection) throws TskCoreException {
+	private long getContentCount(long dataSourceObjectId, Score.Significance significance, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT COUNT(obj_id) AS count FROM tsk_aggregate_score"
 				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
-				+ " AND significance = " + aggregateScore.getSignificance().getId()
-				+ " AND confidence = " + aggregateScore.getConfidence().getId();
+				+ " AND significance = " + significance.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (Statement statement = connection.createStatement();
@@ -248,7 +319,7 @@ public class ScoringManager {
 			}
 			return count;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting count of items with score = " + aggregateScore.toString(), ex);
+			throw new TskCoreException("Error getting count of items with significance = " + significance.toString(), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -256,36 +327,37 @@ public class ScoringManager {
 	
 	/**
 	 * Get the contents with the specified score.
-	 * 
+	 *
 	 * @param dataSourceObjectId Data source object id.
-	 * @param aggregateScore Score to look for.
+	 * @param significance       Significance to look for.
 	 *
 	 * @return Collection of contents with given score.
+	 * 
+	 * @throws TskCoreException if there is an error getting the contents.
 	 */
-	public List<Content> getContent(long dataSourceObjectId, Score aggregateScore) throws TskCoreException {
+	public List<Content> getContent(long dataSourceObjectId, Score.Significance significance) throws TskCoreException {
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getContent(dataSourceObjectId, aggregateScore, connection);
+			return getContent(dataSourceObjectId, significance, connection);
 		} 
 	}
 
 	/**
-	 * Gets the contents with the specified score. Uses the specified transaction
-	 * to obtain the database connection.
+	 * Gets the contents with the specified score. Uses the specified
+	 * database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
-	 * @param aggregateScore       Score to look for.
-	 * @param connection Connection to use for the query.
+	 * @param significance       Significance to look for.
+	 * @param connection         Connection to use for the query.
 	 *
 	 * @return List of contents with given score.
 	 *
 	 * @throws TskCoreException
 	 */
-	private List<Content> getContent(long dataSourceObjectId, Score aggregateScore, CaseDbConnection connection) throws TskCoreException {
+	private List<Content> getContent(long dataSourceObjectId, Score.Significance significance, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT obj_id FROM tsk_aggregate_score"
 				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
-				+ " AND significance = " + aggregateScore.getSignificance().getId()
-				+ " AND confidence = " + aggregateScore.getConfidence().getId();
-
+				+ " AND significance = " + significance.getId();
+			
 		db.acquireSingleUserCaseReadLock();
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
@@ -297,7 +369,7 @@ public class ScoringManager {
 			}
 			return items;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting list of items with score = " + aggregateScore.toString(), ex);
+			throw new TskCoreException("Error getting list of items with significance = " + significance.toString(), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
