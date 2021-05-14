@@ -7987,52 +7987,6 @@ public class SleuthkitCase {
 	}	
 
 	/**
-	 * Utility class to create keys for the cache used in isRootDirectory().
-	 * The dataSourceId must be set but the fileSystemId can be null 
-	 * (for local directories, for example).
-	 */
-	private class RootDirectoryKey {
-		private long dataSourceId;
-		private Long fileSystemId;
-		
-		RootDirectoryKey(long dataSourceId, Long fileSystemId) {
-			this.dataSourceId = dataSourceId;
-			this.fileSystemId = fileSystemId;
-		}
-		
-        @Override
-        public int hashCode() {
-            int hash = 7;
-			hash = 41 * hash + Objects.hashCode(dataSourceId);
-            hash = 41 * hash + Objects.hashCode(fileSystemId);
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-			
-			RootDirectoryKey otherKey = (RootDirectoryKey)obj;
-			if (dataSourceId != otherKey.dataSourceId) {
-				return false;
-			}
-			
-			if (fileSystemId != null) {
-				return fileSystemId.equals(otherKey.fileSystemId);
-			}
-			return (otherKey.fileSystemId == null);
-		}
-	}
-	
-	/**
 	 * Check whether a given AbstractFile is the "root" directory. True if the
 	 * AbstractFile either has no parent or its parent is an image, volume,
 	 * volume system, or file system.
