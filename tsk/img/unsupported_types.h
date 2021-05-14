@@ -15,6 +15,12 @@
 #include "tsk/img/tsk_img.h"
 #include "tsk/base/tsk_base_i.h"
 
-char * detectUnsupportedType(TSK_IMG_INFO * img_info);
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern char* detectUnsupportedType(TSK_IMG_INFO * img_info);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -11,7 +11,7 @@
 #include "unsupported_types.h"
 
 int
-detectSignature(const char * signature, size_t signatureLen, const char * buf, size_t bufLen) {
+detectImageSignature(const char * signature, size_t signatureLen, const char * buf, size_t bufLen) {
 
     if (signatureLen >= bufLen) {
         return 0;
@@ -29,7 +29,7 @@ detectSignature(const char * signature, size_t signatureLen, const char * buf, s
  *
  * @return The name of the image type or null if it doesn't match a known type.
  */
-char * detectUnsupportedType(TSK_IMG_INFO * img_info) {
+char* detectUnsupportedType(TSK_IMG_INFO * img_info) {
 
     // Read the beginning of the image. There should be room for all the signature searches.
     size_t len = 1024;
@@ -37,6 +37,7 @@ char * detectUnsupportedType(TSK_IMG_INFO * img_info) {
     if (buf == NULL) {
         return NULL;
     }
+
     if (tsk_img_read(img_info, 0, buf, len) != len) {
         free(buf);
         return NULL;
@@ -49,26 +50,26 @@ char * detectUnsupportedType(TSK_IMG_INFO * img_info) {
     }
     result[0] = '\0';
 
-    if (detectSignature("EVF2\r\n\x81\x00", 8, buf, len)) {
+    if (detectImageSignature("EVF2\r\n\x81\x00", 8, buf, len)) {
         strcpy(result, "EWF Version 2 (Ex01)");
     }
-    else if (detectSignature("ADSEGMENTEDFILE", 15, buf, len)) {
+    else if (detectImageSignature("ADSEGMENTEDFILE", 15, buf, len)) {
         strcpy(result, "Custom Content Image (AD1)");
     }
-    else if (detectSignature("Rar!\x1a\x07", 6, buf, len)) {
+    else if (detectImageSignature("Rar!\x1a\x07", 6, buf, len)) {
         strcpy(result, "RAR Archive");
     }
-    else if (detectSignature("7z\xbc\xaf\x27\x1c", 6, buf, len)) {
+    else if (detectImageSignature("7z\xbc\xaf\x27\x1c", 6, buf, len)) {
         strcpy(result, "7-Zip Archive");
     }
-    else if (detectSignature("PK\x03\x04", 4, buf, len) || detectSignature("PK\x05\x06", 4, buf, len)
-        || (detectSignature("PK\x07\x08", 4, buf, len))) {
+    else if (detectImageSignature("PK\x03\x04", 4, buf, len) || detectImageSignature("PK\x05\x06", 4, buf, len)
+        || (detectImageSignature("PK\x07\x08", 4, buf, len))) {
         strcpy(result, "Zip Archive");
     }
-    else if (detectSignature("BZh", 3, buf, len)) {
+    else if (detectImageSignature("BZh", 3, buf, len)) {
         strcpy(result, "Bzip Archive");
     }
-    else if (detectSignature("\x1f\x8b", 2, buf, len)) {
+    else if (detectImageSignature("\x1f\x8b", 2, buf, len)) {
         strcpy(result, "Gzip Archive");
     }
 

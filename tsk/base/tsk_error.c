@@ -42,8 +42,7 @@ static const char *tsk_err_img_str[TSK_ERR_IMG_MAX] = {
     "Invalid magic value",      // 10
     "Error writing data",
     "Error converting file name",
-    "Incorrect or missing password",
-    "Unsupported image type"
+    "Incorrect or missing password"
 };
 
 
