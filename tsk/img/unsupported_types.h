@@ -15,6 +15,6 @@
 #include "tsk/img/tsk_img.h"
 #include "tsk/base/tsk_base_i.h"
 
-const char * detectUnsupportedType(TSK_IMG_INFO * img_info);
+char * detectUnsupportedType(TSK_IMG_INFO * img_info);
 
 #endif

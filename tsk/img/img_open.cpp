@@ -17,6 +17,7 @@
 #include "tsk_img_i.h"
 
 #include "raw.h"
+#include "unsupported_types.h"
 
 #if HAVE_LIBAFFLIB
 #include "aff.h"
@@ -219,6 +220,16 @@ tsk_img_open(int num_img,
 
         // otherwise, try raw
         if ((img_info = raw_open(num_img, images, a_ssize)) != NULL) {
+
+            // Check if the image type is actually a known unsupported type
+            char * imageType = detectUnsupportedType(img_info);
+            if (imageType != NULL) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNSUPPORTED);
+                tsk_error_set_errstr(imageType);
+                free(imageType);
+            }
+
             break;
         }
         else if (tsk_error_get_errno() != 0) {
