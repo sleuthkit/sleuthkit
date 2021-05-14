@@ -473,6 +473,26 @@ public final class Blackboard {
 			+ "     AND types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS
 
 	/**
+	 * Gets all data artifacts for a given data source.
+	 *
+	 * @param dataSource The data source.
+	 *
+	 * @return A list of the data artifacts, possibly empty.
+	 *
+	 * @throws TskCoreException The exception is thrown if there is an error
+	 *                          querying the case database.
+	 */
+	public List<DataArtifact> getDataArtifacts(Content dataSource) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			String whereClause = " artifacts.data_source_obj_id = " + dataSource.getId();
+			return getDataArtifactsWhere(whereClause, connection);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}	
+	
+	/**
 	 * Get all data artifacts of a given type for a given data source.
 	 *
 	 * @param artifactTypeID  Artifact type to get.
