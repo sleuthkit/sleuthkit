@@ -2729,7 +2729,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public CaseDbTransaction beginTransaction() throws TskCoreException {
-		return new CaseDbTransaction(this, connections.getConnection());
+		return new CaseDbTransaction(this);
 	}
 
 	/**
@@ -7974,21 +7974,21 @@ public class SleuthkitCase {
 			closeStatement(queryStatement);
 		}
 	}
-
+	
 	/**
 	 * Utility class to create keys for the cache used in isRootDirectory().
 	 * The dataSourceId must be set but the fileSystemId can be null 
 	 * (for local directories, for example).
 	 */
 	private class RootDirectoryKey {
-		private long dataSourceId;
-		private Long fileSystemId;
-		
-		RootDirectoryKey(long dataSourceId, Long fileSystemId) {
-			this.dataSourceId = dataSourceId;
-			this.fileSystemId = fileSystemId;
-		}
-		
+        private long dataSourceId;
+        private Long fileSystemId;
+
+        RootDirectoryKey(long dataSourceId, Long fileSystemId) {
+            this.dataSourceId = dataSourceId;
+            this.fileSystemId = fileSystemId;
+        }
+
         @Override
         public int hashCode() {
             int hash = 7;
@@ -8008,19 +8008,19 @@ public class SleuthkitCase {
             if (getClass() != obj.getClass()) {
                 return false;
             }
-			
+
 			RootDirectoryKey otherKey = (RootDirectoryKey)obj;
 			if (dataSourceId != otherKey.dataSourceId) {
 				return false;
 			}
-			
+
 			if (fileSystemId != null) {
 				return fileSystemId.equals(otherKey.fileSystemId);
 			}
 			return (otherKey.fileSystemId == null);
 		}
-	}
-	
+	}	
+
 	/**
 	 * Check whether a given AbstractFile is the "root" directory. True if the
 	 * AbstractFile either has no parent or its parent is an image, volume,
@@ -8033,8 +8033,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 */
-	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {	
-
+	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {		
 		// First check if we know the root directory for this data source and optionally 
 		// file system. There is only one root, so if we know it we can simply compare 
 		// this file ID to the known root directory.
@@ -8094,6 +8093,7 @@ public class SleuthkitCase {
 				}
 				isRootDirectoryCache.put(file.getId(), true);
 				return true; // The file has no parent
+				
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to lookup parent of file (%s) with id %d", file.getName(), file.getId()), ex);
@@ -13226,18 +13226,21 @@ public class SleuthkitCase {
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
 
-		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
-			this.connection = connection;
+		private CaseDbTransaction(SleuthkitCase sleuthkitCase) throws TskCoreException {
 			this.sleuthkitCase = sleuthkitCase;
+			
+			sleuthkitCase.acquireSingleUserCaseWriteLock();
+			this.connection = sleuthkitCase.getConnection();
 			try {
 				synchronized (threadsWithOpenTransactionLock) {
 					this.connection.beginTransaction();
 					threadsWithOpenTransaction.add(Thread.currentThread().getId());
 				}
 			} catch (SQLException ex) {
+				sleuthkitCase.releaseSingleUserCaseWriteLock();
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
-			sleuthkitCase.acquireSingleUserCaseWriteLock();
+			
 		}
 
 		/**
