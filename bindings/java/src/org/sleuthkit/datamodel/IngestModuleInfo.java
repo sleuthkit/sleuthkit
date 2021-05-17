@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.ResourceBundle;
 
 /**
- * Class representing information about an ingest module, used in ingest job
+ * Represents information about an ingest module factory, used in ingest job
  * info to show which ingest modules were run.
  */
 public final class IngestModuleInfo {
@@ -32,14 +32,17 @@ public final class IngestModuleInfo {
 	 * Used to keep track of the module types
 	 */
 	public static enum IngestModuleType {
-		//DO NOT CHANGE ORDER
+		/*
+		 * IMPORTANT: DO NOT CHANGE ORDER, THE ORDINAL VALUES OF THE ENUM ARE
+		 * STORED IN THE CASE DATABASE
+		 */
 		DATA_SOURCE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.DataSourceLevel.displayName")),
 		FILE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.FileLevel.displayName")),
 		DATA_ARTIFACT(bundle.getString("IngestModuleInfo.IngestModuleType.DataArtifact.displayName")),
-		MULTIPLE(""); // RJCTODO
-		
+		MULTIPLE("IngestModuleInfo.IngestModuleType.DataArtifact.displayName");
+
 		private final String displayName;
-		
+
 		private IngestModuleType(String displayName) {
 			this.displayName = displayName;
 		}
