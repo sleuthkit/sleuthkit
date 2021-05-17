@@ -1311,18 +1311,7 @@ public class BlackboardArtifact implements Content {
 		private final int typeID;
 		private final String displayName;
 		private final Category category;
-
-		/**
-		 * Constructs a custom artifact type.
-		 *
-		 * @param typeName    The name of the type.
-		 * @param typeID      The id of the type.
-		 * @param displayName The display name of the type.
-		 */
-		public Type(int typeID, String typeName, String displayName) {
-			this(typeID, typeName, displayName, Category.DATA_ARTIFACT);
-		}
-
+		
 		/**
 		 * Constructs a custom artifact type.
 		 *
@@ -1331,7 +1320,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The display name of the type.
 		 * @param category    The artifact type category.
 		 */
-		public Type(int typeID, String typeName, String displayName, Category category) {
+		Type(int typeID, String typeName, String displayName, Category category) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
