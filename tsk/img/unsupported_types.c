@@ -10,6 +10,11 @@
 
 #include "unsupported_types.h"
 
+/**
+ * Compare the beginning of the buffer with the given signature.
+ *
+ * @return 1 if the signature is found, 0 otherwise
+ */
 int
 detectImageSignature(const char * signature, size_t signatureLen, const char * buf, size_t bufLen) {
 
@@ -29,10 +34,10 @@ detectImageSignature(const char * signature, size_t signatureLen, const char * b
  *
  * @return The name of the image type or null if it doesn't match a known type.
  */
-char* detectUnsupportedType(TSK_IMG_INFO * img_info) {
+char* detectUnsupportedImageType(TSK_IMG_INFO * img_info) {
 
     // Read the beginning of the image. There should be room for all the signature searches.
-    size_t len = 1024;
+    size_t len = 32;
     char* buf = (char*)tsk_malloc(len);
     if (buf == NULL) {
         return NULL;
@@ -50,17 +55,20 @@ char* detectUnsupportedType(TSK_IMG_INFO * img_info) {
     }
     result[0] = '\0';
 
-    if (detectImageSignature("EVF2\r\n\x81\x00", 8, buf, len)) {
-        strcpy(result, "EWF Version 2 (Ex01)");
-    }
-    else if (detectImageSignature("ADSEGMENTEDFILE", 15, buf, len)) {
+    if (detectImageSignature("ADSEGMENTEDFILE", 15, buf, len)) {
         strcpy(result, "Custom Content Image (AD1)");
+    }
+    else if (detectImageSignature("EVF2\r\n\x81\x00", 8, buf, len)) {
+        strcpy(result, "EWF Version 2 (Ex01)");
     }
     else if (detectImageSignature("Rar!\x1a\x07", 6, buf, len)) {
         strcpy(result, "RAR Archive");
     }
     else if (detectImageSignature("7z\xbc\xaf\x27\x1c", 6, buf, len)) {
         strcpy(result, "7-Zip Archive");
+    }
+    else if (detectImageSignature("[Dumps]", 7, buf, len)) {
+        strcpy(result, "Cellebrite (UFD)");
     }
     else if (detectImageSignature("PK\x03\x04", 4, buf, len) || detectImageSignature("PK\x05\x06", 4, buf, len)
         || (detectImageSignature("PK\x07\x08", 4, buf, len))) {

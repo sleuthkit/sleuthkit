@@ -84,8 +84,6 @@ uint8_t
 
     m_internalOpen = true;
     m_img_info = tsk_img_open(a_numImg, a_images, a_imgType, a_sSize);
-    printf("openImage error code from tsk_img_open()\n");
-    tsk_error_print(stdout);
     if (m_img_info)
         return 0;
     else

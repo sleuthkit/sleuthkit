@@ -18,7 +18,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern char* detectUnsupportedType(TSK_IMG_INFO * img_info);
+extern char* detectUnsupportedImageType(TSK_IMG_INFO * img_info);
 #ifdef __cplusplus
 }
 #endif
