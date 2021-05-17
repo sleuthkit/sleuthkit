@@ -343,7 +343,7 @@ public abstract class AbstractContent implements Content {
 
 		switch (artifactType.getCategory()) {
 			case DATA_ARTIFACT:
-				return db.getBlackboard().newDataArtifact(artifactType, thisObjId, dsObjId, Collections.emptyList(), getOsAccountId());
+				return this.newDataArtifact(artifactType, Collections.emptyList());
 			case ANALYSIS_RESULT: {
 				try {
 					AnalysisResultAdded addedResult = db.getBlackboard().newAnalysisResult(
@@ -429,22 +429,6 @@ public abstract class AbstractContent implements Content {
 		return getGenInfoArtifact(true);
 	}
 
-	/**
-	 * Returns the OS Account associated with this content if this is a file.
-	 * Otherwise, returns null.
-	 *
-	 * @return The OS Account ID associated with this content if this is a file.
-	 *         Otherwise, returns null.
-	 *
-	 * @throws TskCoreException
-	 */
-	private Long getOsAccountId() throws TskCoreException {
-		Optional<Long> osAccountId = (this instanceof AbstractFile)
-				? ((AbstractFile) this).getOsAccountObjectId()
-				: Optional.empty();
-
-		return osAccountId.orElse(null);
-	}
 
 	@Override
 	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException {
@@ -457,15 +441,7 @@ public abstract class AbstractContent implements Content {
 		BlackboardArtifact retArt;
 		if (arts.isEmpty()) {
 			if (create) {
-				long thisObjId = getId();
-				Long dsObjId = getDataSource() != null ? getDataSource().getId() : null;
-
-				retArt = db.getBlackboard().newDataArtifact(
-						GEN_INFO_TYPE,
-						thisObjId,
-						dsObjId,
-						Collections.emptyList(),
-						getOsAccountId());
+				retArt = this.newDataArtifact(GEN_INFO_TYPE, Collections.emptyList());
 			} else {
 				return null;
 			}
