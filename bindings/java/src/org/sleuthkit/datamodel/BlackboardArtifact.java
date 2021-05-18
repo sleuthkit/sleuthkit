@@ -191,6 +191,20 @@ public class BlackboardArtifact implements Content {
 	public int getArtifactTypeID() {
 		return this.artifactTypeId;
 	}
+	
+	/**
+	 * Gets the artifact type for this artifact.
+	 * 
+	 * @return The artifact type.
+	 */
+	public BlackboardArtifact.Type getType() throws TskCoreException {
+		BlackboardArtifact.Type standardTypesValue = BlackboardArtifact.Type.STANDARD_TYPES.get(getArtifactTypeID());
+		if (standardTypesValue != null) {
+			return standardTypesValue;
+		} else {
+			return getSleuthkitCase().getArtifactType(getArtifactTypeID());
+		}
+	}
 
 	/**
 	 * Gets the artifact type name for this artifact.
@@ -1241,9 +1255,9 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
-		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES list.
+		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
 		/**
-		 * A list of all the standard artifact types.
+		 * A map of all the standard artifact types' id to the type.
 		 */
 		static final Map<Integer, Type> STANDARD_TYPES = Collections.unmodifiableMap(Stream.of(
 				TSK_GEN_INFO,
