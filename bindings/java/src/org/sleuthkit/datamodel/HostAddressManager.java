@@ -52,12 +52,19 @@ public class HostAddressManager {
 	private final Cache<Long, Byte> recentHostNameAndIpMappingCache = CacheBuilder.newBuilder().maximumSize(200000).build();
 
 	/**
-	 * Recently added or accessed Host Address Object Ids are cached. This is
+	 * Recently added or accessed Host Address Objects are cached. This is
 	 * here to improve performance of the
 	 * {@link #hostAddressExists(org.sleuthkit.datamodel.HostAddress.HostAddressType, java.lang.String)}
-	 * check.
+	 * check as well as the {@link #getHostAddress(org.sleuthkit.datamodel.HostAddress.HostAddressType, java.lang.String) }
 	 */
-	private final Cache<String, Long> recentHostAddresstCache = CacheBuilder.newBuilder().maximumSize(200000).build();
+	private final Cache<String, HostAddress> recentHostAddresstCache = CacheBuilder.newBuilder().maximumSize(200000).build();
+
+	/**
+	 * Recently added host address usage is cached. This is intended to improve 
+	 * the performance of {@link #addUsage(org.sleuthkit.datamodel.Content, org.sleuthkit.datamodel.HostAddress) }
+	 * Key: DatasourceId # Host Id. Value : Content Id
+	 */
+	private final Cache<String, Long> hostAddressUsageCache = CacheBuilder.newBuilder().maximumSize(200000).build();
 
 	/**
 	 * Construct a HostAddressManager for the given SleuthkitCase.
@@ -98,6 +105,12 @@ public class HostAddressManager {
 	 * @throws TskCoreException
 	 */
 	private Optional<HostAddress> getHostAddress(HostAddress.HostAddressType type, String address, CaseDbConnection connection) throws TskCoreException {
+		
+		HostAddress hostAddress = recentHostAddresstCache.getIfPresent(type.getId() + "#" + address.toLowerCase());
+		if (Objects.nonNull(hostAddress)) {
+			return Optional.of(hostAddress);
+		}
+		
 		String queryString = "SELECT * FROM tsk_host_addresses"
 				+ " WHERE LOWER(address) = LOWER(?)";
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
@@ -189,8 +202,9 @@ public class HostAddressManager {
 			preparedStatement.setString(3, address.toLowerCase());
 
 			connection.executeUpdate(preparedStatement);
-			recentHostAddresstCache.put(addressType.getId() + "#" + address.toLowerCase(), objId);
-			return new HostAddress(db, objId, addressType, address);
+			HostAddress hostAddress =  new HostAddress(db, objId, addressType, address);
+			recentHostAddresstCache.put(addressType.getId() + "#" + address.toLowerCase(), hostAddress);
+			return hostAddress;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding host address of type = %s, with address = %s", type.getName(), address), ex);
 		} finally {
@@ -307,8 +321,9 @@ public class HostAddressManager {
 				long objId = rs.getLong("id");
 				int type = rs.getInt("address_type");
 				String address = rs.getString("address");
-				recentHostAddresstCache.put(type + "#" + address, objId);
-				return new HostAddress(db, objId, HostAddress.HostAddressType.fromID(type), address);
+				HostAddress hostAddress = new HostAddress(db, objId, HostAddress.HostAddressType.fromID(type), address);
+				recentHostAddresstCache.put(type + "#" + address, hostAddress);
+				return hostAddress;
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting host address with id = %d", id), ex);
@@ -469,12 +484,12 @@ public class HostAddressManager {
 	 */
 	public Optional<Long> hostAddressExists(HostAddress.HostAddressType type, String address) throws TskCoreException {
 
-		Long id = recentHostAddresstCache.getIfPresent(type.getId() + "#" + address.toLowerCase());
-		if (Objects.nonNull(id)) {
-			return Optional.of(id);
+		HostAddress hostAddress = recentHostAddresstCache.getIfPresent(type.getId() + "#" + address.toLowerCase());
+		if (Objects.nonNull(hostAddress)) {
+			return Optional.of(hostAddress.getId());
 		}
 
-		String queryString = "SELECT id, address_type FROM tsk_host_addresses"
+		String queryString = "SELECT id, address_type, address FROM tsk_host_addresses"
 				+ " WHERE LOWER(address) = LOWER(?)";
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
 			queryString += " AND address_type IN (" + HostAddress.HostAddressType.IPV4.getId() + ", " + HostAddress.HostAddressType.IPV6.getId()
@@ -494,7 +509,9 @@ public class HostAddressManager {
 				} else {
 					long objId = rs.getLong("id");
 					int addrType = rs.getInt("address_type");
-					recentHostAddresstCache.put(addrType + "#" + address.toLowerCase(), objId);
+					String addr = rs.getString("address");
+					HostAddress hostAddr = new HostAddress(db, objId, HostAddress.HostAddressType.fromID(addrType), addr);
+					recentHostAddresstCache.put(addrType + "#" + address.toLowerCase(), hostAddr);					
 					return Optional.of(objId);
 				}
 			}
@@ -587,6 +604,13 @@ public class HostAddressManager {
 	 * @param hostAddress The host address.
 	 */
 	public void addUsage(Content content, HostAddress hostAddress) throws TskCoreException {
+		
+		String key = content.getDataSource().getId() + "#" + hostAddress.getId();
+		Long cachedValue = hostAddressUsageCache.getIfPresent(key);
+		if (null != cachedValue && cachedValue == content.getId()) {
+			return;
+		}
+		
 		final String insertSQL = db.getInsertOrIgnoreSQL(" INTO tsk_host_address_usage(addr_obj_id, obj_id, data_source_obj_id) "
 				+ " VALUES(" + hostAddress.getId() + ", " + content.getId() + ", " + content.getDataSource().getId() + ") ");
 
@@ -594,6 +618,7 @@ public class HostAddressManager {
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement()) {
 			connection.executeUpdate(s, insertSQL);
+			hostAddressUsageCache.put(key, content.getId());
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), content.getId()), ex);
 		} finally {
