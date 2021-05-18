@@ -1257,7 +1257,7 @@ public class BlackboardArtifact implements Content {
 
 		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
 		/**
-		 * A map of all the standard artifact types' id to the type.
+		 * All standard artifact types with ids mapped to the type.
 		 */
 		static final Map<Integer, Type> STANDARD_TYPES = Collections.unmodifiableMap(Stream.of(
 				TSK_GEN_INFO,
