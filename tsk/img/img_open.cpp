@@ -277,22 +277,6 @@ tsk_img_open(int num_img,
     /* we have a good img_info, set up the cache lock */
     tsk_init_lock(&(img_info->cache_lock));
 
-    // Check if the image type is actually a known unsupported type.
-    // If we're in auto-detect mode and we find a known unsupported type, stop processing it.
-    if (type == TSK_IMG_TYPE_DETECT && img_info->itype == TSK_IMG_TYPE_RAW) {
-        char * imageType = detectUnsupportedImageType(img_info);
-        if (imageType != NULL) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
-            tsk_error_set_errstr(imageType);
-            free(imageType);
-
-            tsk_img_close(img_info);
-            img_info = NULL;
-            return NULL;
-        }
-    }
-
     return img_info;
 }
 
