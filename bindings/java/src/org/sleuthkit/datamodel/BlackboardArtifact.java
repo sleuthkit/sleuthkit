@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
@@ -1243,7 +1245,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * A list of all the standard artifact types.
 		 */
-		static final List<Type> STANDARD_TYPES = Collections.unmodifiableList(Arrays.asList(
+		static final Map<Integer, Type> STANDARD_TYPES = Collections.unmodifiableMap(Stream.of(
 				TSK_GEN_INFO,
 				TSK_WEB_BOOKMARK,
 				TSK_WEB_COOKIE,
@@ -1305,7 +1307,7 @@ public class BlackboardArtifact implements Content {
 				TSK_YARA_HIT,
 				TSK_GPS_AREA,
 				TSK_WEB_CATEGORIZATION
-		));
+		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
 		private final int typeID;
