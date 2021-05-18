@@ -1656,9 +1656,16 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
 
     /* process leaf nodes */
     if (tsk_getu16(fs_info->endian, header->eh_depth) == 0) {
+        uint16_t num_entries = tsk_getu16(fs_info->endian, header->eh_entries);
+
+        // Ensure buf is sufficiently large
+        // Otherwise extents[i] below can cause an OOB read
+        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
+            free(buf);
+            return 1;
+        }
         ext2fs_extent *extents = (ext2fs_extent *) (header + 1);
-        for (i = 0; i < tsk_getu16(fs_info->endian, header->eh_entries);
-            i++) {
+        for (i = 0; i < num_entries; i++) {
             ext2fs_extent extent = extents[i];
             if (ext2fs_make_data_run_extent(fs_info, fs_attr, &extent)) {
                 free(buf);
@@ -1668,9 +1675,16 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
     }
     /* recurse on interior nodes */
     else {
+        uint16_t num_entries = tsk_getu16(fs_info->endian, header->eh_entries);
+
+        // Ensure buf is sufficiently large
+        // Otherwise indices[i] below can cause an OOB read
+        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
+            free(buf);
+            return 1;
+        }
         ext2fs_extent_idx *indices = (ext2fs_extent_idx *) (header + 1);
-        for (i = 0; i < tsk_getu16(fs_info->endian, header->eh_entries);
-            i++) {
+        for (i = 0; i < num_entries; i++) {
             ext2fs_extent_idx *index = &indices[i];
             TSK_DADDR_T child_block =
                 (((uint32_t) tsk_getu16(fs_info->endian,
@@ -1880,10 +1894,9 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     }
     
     if (depth == 0) {       /* leaf node */
-        if (num_entries >
-            (fs_info->block_size -
-             sizeof(ext2fs_extent_header)) /
-            sizeof(ext2fs_extent)) {
+        // Ensure fs_meta->content_ptr is sufficiently large
+        // Otherwise extents[i] below can cause an OOB read
+        if ((fs_meta->content_len < sizeof(ext2fs_extent_header)) || (num_entries > (fs_meta->content_len - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
             tsk_error_set_errstr
             ("ext2fs_load_attr: Inode reports too many extents");
@@ -1901,11 +1914,10 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     else {                  /* interior node */
         TSK_FS_ATTR *fs_attr_extent;
         int32_t extent_index_size;
-        
-        if (num_entries >
-            (fs_info->block_size -
-             sizeof(ext2fs_extent_header)) /
-            sizeof(ext2fs_extent_idx)) {
+
+        // Ensure fs_meta->content_ptr is sufficiently large
+        // Otherwise indices[i] below can cause an OOB read
+        if ((fs_meta->content_len < sizeof(ext2fs_extent_header)) || (num_entries > (fs_meta->content_len - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
             tsk_error_set_errstr
             ("ext2fs_load_attr: Inode reports too many extent indices");
