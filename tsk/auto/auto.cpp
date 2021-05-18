@@ -84,10 +84,15 @@ uint8_t
 
     m_internalOpen = true;
     m_img_info = tsk_img_open(a_numImg, a_images, a_imgType, a_sSize);
+    TSK_ERROR_INFO* lastError = tsk_error_get_info();
+    if (lastError != NULL && lastError->t_errno == TSK_ERR_IMG_UNSUPTYPE) {
+        registerError();
+    }
     if (m_img_info)
         return 0;
-    else
+    else {
         return 1;
+    }
 }
 
 /**
