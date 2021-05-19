@@ -101,7 +101,7 @@ public final class Host {
 	/**
 	 * Encapsulates status of host row.
 	 */
-	public enum HostDbStatus {
+	enum HostDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");
@@ -114,7 +114,7 @@ public final class Host {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -122,7 +122,7 @@ public final class Host {
 			return name;
 		}
 
-		public static HostDbStatus fromID(int typeId) {
+		static HostDbStatus fromID(int typeId) {
 			for (HostDbStatus type : HostDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;

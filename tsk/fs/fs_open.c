@@ -206,6 +206,9 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                     tsk_error_set_errno(TSK_ERR_FS_POSSIBLY_ENCRYPTED);
                     tsk_error_set_errstr(result->desc);
                 }
+                else {
+                    tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                }
                 free(result);
                 result = NULL;
             }
