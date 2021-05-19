@@ -66,7 +66,6 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
-
             
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
@@ -78,8 +77,6 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-                
-
 
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
@@ -100,8 +97,7 @@ main(int argc, char **argv1)
 
         case _TSK_T('V'):
             tsk_version_print(stdout);
-            exit(0);
-                
+            exit(0);            
         }
     }
 
@@ -125,7 +121,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    // Run findFilesInImage to process the image and set the flags
+    // Run findFilesInImage to process the image and detect data / encryption
     int findFilesResult;
     findFilesResult = imageProcessor.findFilesInImg();
 
@@ -140,13 +136,7 @@ main(int argc, char **argv1)
         tsk_printf("false\n");
     }
 
-    tsk_printf("Is Encrypted: ");
-    if (imageProcessor.isImageEncrypted()) {
-        tsk_printf("true\n");
-    }
-    else {
-        tsk_printf("false\n");
-    }
+    imageProcessor.printEncryptionStatus();
     
     exit(0);
 }
