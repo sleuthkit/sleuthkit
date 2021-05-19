@@ -302,8 +302,6 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
         free(buf);
         return result;
     }
-    printf("No disk encryption found\n");
-    fflush(stdout);
     free(buf);
     return result;
 }
