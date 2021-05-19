@@ -212,9 +212,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 *
 	 * @throws TskCoreException If a critical error occurred within tsk core.
 	 */
-	public default DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-		return newDataArtifact(artifactType, attributesList, null);
-	}
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
 	
 	
 	/**

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -388,6 +387,13 @@ public abstract class AbstractContent implements Content {
 		}
 		return artifact;
 	}
+	
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return newDataArtifact(artifactType, attributesList, null);
+	}
+	
+	
 
 	@Deprecated
 	@SuppressWarnings("deprecation")

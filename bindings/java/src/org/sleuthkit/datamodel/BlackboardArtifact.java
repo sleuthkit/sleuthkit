@@ -704,6 +704,11 @@ public class BlackboardArtifact implements Content {
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
+	
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return newDataArtifact(artifactType, attributesList, null);
+	}
 
 	/**
 	 * Create and add an artifact associated with this content to the blackboard

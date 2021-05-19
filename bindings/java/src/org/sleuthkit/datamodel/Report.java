@@ -276,6 +276,11 @@ public class Report implements Content {
 		return db.getBlackboard().newDataArtifact(artifactType, objectId, this.getDataSource().getId(), attributesList, osAccountId);
 	}
 
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return newDataArtifact(artifactType, attributesList, null);
+	}
+	
 	@Deprecated
 	@SuppressWarnings("deprecation")
 	@Override
