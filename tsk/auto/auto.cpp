@@ -322,8 +322,12 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     TSK_VS_INFO *vs_info;
     // Use mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
-        /* we're going to ignore this error to avoid confusion if the
-         * fs_open passes. */
+
+        /* If the error code is for encryption, we will register it. Otherwise,
+         * ignore this error to avoid confusion if the fs_open passes. */
+        if (tsk_error_get_errno() == TSK_ERR_VS_ENCRYPTED) {
+            registerError();
+        }
         tsk_error_reset();
 
         if(tsk_verbose)

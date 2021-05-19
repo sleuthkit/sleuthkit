@@ -55,6 +55,7 @@ static const char *tsk_err_mm_str[TSK_ERR_VS_MAX] = {
     "Invalid buffer size",      // 5
     "Invalid sector address",
     "Invalid API argument",
+    "Encryption detected",
 };
 
 static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
