@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
@@ -188,6 +190,20 @@ public class BlackboardArtifact implements Content {
 	 */
 	public int getArtifactTypeID() {
 		return this.artifactTypeId;
+	}
+	
+	/**
+	 * Gets the artifact type for this artifact.
+	 * 
+	 * @return The artifact type.
+	 */
+	public BlackboardArtifact.Type getType() throws TskCoreException {
+		BlackboardArtifact.Type standardTypesValue = BlackboardArtifact.Type.STANDARD_TYPES.get(getArtifactTypeID());
+		if (standardTypesValue != null) {
+			return standardTypesValue;
+		} else {
+			return getSleuthkitCase().getArtifactType(getArtifactTypeID());
+		}
 	}
 
 	/**
@@ -1239,11 +1255,11 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
-		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES list.
+		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
 		/**
-		 * A list of all the standard artifact types.
+		 * All standard artifact types with ids mapped to the type.
 		 */
-		static final List<Type> STANDARD_TYPES = Collections.unmodifiableList(Arrays.asList(
+		static final Map<Integer, Type> STANDARD_TYPES = Collections.unmodifiableMap(Stream.of(
 				TSK_GEN_INFO,
 				TSK_WEB_BOOKMARK,
 				TSK_WEB_COOKIE,
@@ -1305,24 +1321,13 @@ public class BlackboardArtifact implements Content {
 				TSK_YARA_HIT,
 				TSK_GPS_AREA,
 				TSK_WEB_CATEGORIZATION
-		));
+		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
 		private final int typeID;
 		private final String displayName;
 		private final Category category;
-
-		/**
-		 * Constructs a custom artifact type.
-		 *
-		 * @param typeName    The name of the type.
-		 * @param typeID      The id of the type.
-		 * @param displayName The display name of the type.
-		 */
-		public Type(int typeID, String typeName, String displayName) {
-			this(typeID, typeName, displayName, Category.DATA_ARTIFACT);
-		}
-
+		
 		/**
 		 * Constructs a custom artifact type.
 		 *
@@ -1331,7 +1336,7 @@ public class BlackboardArtifact implements Content {
 		 * @param displayName The display name of the type.
 		 * @param category    The artifact type category.
 		 */
-		public Type(int typeID, String typeName, String displayName, Category category) {
+		Type(int typeID, String typeName, String displayName, Category category) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
