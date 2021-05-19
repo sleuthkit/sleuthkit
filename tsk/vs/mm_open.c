@@ -15,7 +15,7 @@
  */
 
 #include "tsk_vs_i.h"
-#include "tsk\util\detect_encryption.h"
+#include "tsk/util/detect_encryption.h"
 
 
 /**
