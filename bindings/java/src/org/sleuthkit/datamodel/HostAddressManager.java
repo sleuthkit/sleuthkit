@@ -57,7 +57,7 @@ public class HostAddressManager {
 	 * {@link #hostAddressExists(org.sleuthkit.datamodel.HostAddress.HostAddressType, java.lang.String)}
 	 * check as well as the {@link #getHostAddress(org.sleuthkit.datamodel.HostAddress.HostAddressType, java.lang.String) }
 	 */
-	private final Cache<String, HostAddress> recentHostAddresstCache = CacheBuilder.newBuilder().maximumSize(200000).build();
+	private final Cache<String, HostAddress> recentHostAddressCache = CacheBuilder.newBuilder().maximumSize(200000).build();
 
 	/**
 	 * Recently added host address usage is cached. This is intended to improve 
@@ -106,7 +106,7 @@ public class HostAddressManager {
 	 */
 	private Optional<HostAddress> getHostAddress(HostAddress.HostAddressType type, String address, CaseDbConnection connection) throws TskCoreException {
 		
-		HostAddress hostAddress = recentHostAddresstCache.getIfPresent(type.getId() + "#" + address.toLowerCase());
+		HostAddress hostAddress = recentHostAddressCache.getIfPresent(createRecentHostAddressKey(type, address));
 		if (Objects.nonNull(hostAddress)) {
 			return Optional.of(hostAddress);
 		}
@@ -129,7 +129,9 @@ public class HostAddressManager {
 				if (!rs.next()) {
 					return Optional.empty();	// no match found
 				} else {
-					return Optional.of(new HostAddress(db, rs.getLong("id"), HostAddressType.fromID(rs.getInt("address_type")), address));
+					HostAddress newHostAddress = new HostAddress(db, rs.getLong("id"), HostAddressType.fromID(rs.getInt("address_type")), address);
+					recentHostAddressCache.put(createRecentHostAddressKey(newHostAddress.getAddressType(), address), newHostAddress);
+					return Optional.of(newHostAddress);					
 				}
 			}
 		} catch (SQLException ex) {
@@ -137,6 +139,30 @@ public class HostAddressManager {
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
+	}
+
+	/**
+	 * Create a key string for use as a cache key.
+	 *
+	 * @param type    Address type.
+	 * @param address Address.
+	 *
+	 * @return Cache key defined as typeId + # + address lowercased.
+	 */
+	private String createRecentHostAddressKey(HostAddressType type, String address) {
+		return createRecentHostAddressKey(type.getId(), address);
+	}
+
+	/**
+	 * Create a key string for use as a cache key.
+	 *
+	 * @param typeId  Address type Id.
+	 * @param address Address.
+	 *
+	 * @return Cache key defined as typeId + # + address lowercased.
+	 */
+	private String createRecentHostAddressKey(int typeId, String address) {
+		return typeId + "#" + address.toLowerCase();
 	}
 
 	/**
@@ -203,7 +229,7 @@ public class HostAddressManager {
 
 			connection.executeUpdate(preparedStatement);
 			HostAddress hostAddress =  new HostAddress(db, objId, addressType, address);
-			recentHostAddresstCache.put(addressType.getId() + "#" + address.toLowerCase(), hostAddress);
+			recentHostAddressCache.put(createRecentHostAddressKey(addressType, address), hostAddress);
 			return hostAddress;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding host address of type = %s, with address = %s", type.getName(), address), ex);
@@ -322,7 +348,7 @@ public class HostAddressManager {
 				int type = rs.getInt("address_type");
 				String address = rs.getString("address");
 				HostAddress hostAddress = new HostAddress(db, objId, HostAddress.HostAddressType.fromID(type), address);
-				recentHostAddresstCache.put(type + "#" + address, hostAddress);
+				recentHostAddressCache.put(createRecentHostAddressKey(type, address), hostAddress);
 				return hostAddress;
 			}
 		} catch (SQLException ex) {
@@ -484,7 +510,7 @@ public class HostAddressManager {
 	 */
 	public Optional<Long> hostAddressExists(HostAddress.HostAddressType type, String address) throws TskCoreException {
 
-		HostAddress hostAddress = recentHostAddresstCache.getIfPresent(type.getId() + "#" + address.toLowerCase());
+		HostAddress hostAddress = recentHostAddressCache.getIfPresent(createRecentHostAddressKey(type, address));
 		if (Objects.nonNull(hostAddress)) {
 			return Optional.of(hostAddress.getId());
 		}
@@ -511,7 +537,7 @@ public class HostAddressManager {
 					int addrType = rs.getInt("address_type");
 					String addr = rs.getString("address");
 					HostAddress hostAddr = new HostAddress(db, objId, HostAddress.HostAddressType.fromID(addrType), addr);
-					recentHostAddresstCache.put(addrType + "#" + address.toLowerCase(), hostAddr);					
+					recentHostAddressCache.put(createRecentHostAddressKey(addrType, address), hostAddr);					
 					return Optional.of(objId);
 				}
 			}
