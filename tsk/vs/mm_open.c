@@ -178,7 +178,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             tsk_error_reset();
 
             // Check whether the volume system appears to be encrypted.
-            // Note that detectVolumeEncryption does not do an entropy calculation - high entropy 
+            // Note that detectDiskEncryption does not do an entropy calculation - high entropy 
             // files will be reported by tsk_fs_open_img().
             encryption_detected_result* result = detectDiskEncryption(img_info, offset);
             if (result != NULL) {
