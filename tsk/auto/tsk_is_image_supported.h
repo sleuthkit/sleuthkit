@@ -2,7 +2,7 @@
  ** The Sleuth Kit
  ** 
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -22,8 +22,11 @@
 
 
 #include "tsk/tsk_tools_i.h"
+#include "tsk/util/detect_encryption.h"
 
 class TskIsImageSupported:public TskAuto {
+
+
 public:
     TskIsImageSupported();
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
@@ -34,8 +37,11 @@ public:
     virtual uint8_t handleError();
     bool isImageSupported();
     bool isImageEncrypted();
+    void printEncryptionStatus();
     
 private:
     bool m_wasDataFound;
     bool m_wasEncryptionFound;
+    bool m_wasPossibleEncryptionFound;
+    bool m_wasFileSystemFound;
 };
