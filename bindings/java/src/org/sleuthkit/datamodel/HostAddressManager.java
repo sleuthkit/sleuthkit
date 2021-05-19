@@ -62,9 +62,10 @@ public class HostAddressManager {
 	/**
 	 * Recently added host address usage is cached. This is intended to improve 
 	 * the performance of {@link #addUsage(org.sleuthkit.datamodel.Content, org.sleuthkit.datamodel.HostAddress) }
-	 * Key: DatasourceId # Host Id. Value : Content Id
+	 * Key: DatasourceId # Host Id # Content Id. Value has no significance. it will be set to true if there is 
+	 * a value in cache for the key.
 	 */
-	private final Cache<String, Long> hostAddressUsageCache = CacheBuilder.newBuilder().maximumSize(200000).build();
+	private final Cache<String, Boolean> hostAddressUsageCache = CacheBuilder.newBuilder().maximumSize(200000).build();
 
 	/**
 	 * Construct a HostAddressManager for the given SleuthkitCase.
@@ -631,9 +632,9 @@ public class HostAddressManager {
 	 */
 	public void addUsage(Content content, HostAddress hostAddress) throws TskCoreException {
 		
-		String key = content.getDataSource().getId() + "#" + hostAddress.getId();
-		Long cachedValue = hostAddressUsageCache.getIfPresent(key);
-		if (null != cachedValue && cachedValue == content.getId()) {
+		String key = content.getDataSource().getId() + "#" + hostAddress.getId() + "#" + content.getId();
+		Boolean cachedValue = hostAddressUsageCache.getIfPresent(key);
+		if (null != cachedValue) {
 			return;
 		}
 		
@@ -644,7 +645,7 @@ public class HostAddressManager {
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement()) {
 			connection.executeUpdate(s, insertSQL);
-			hostAddressUsageCache.put(key, content.getId());
+			hostAddressUsageCache.put(key, true);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error associating host address %s with artifact with id %d", hostAddress.getAddress(), content.getId()), ex);
 		} finally {
