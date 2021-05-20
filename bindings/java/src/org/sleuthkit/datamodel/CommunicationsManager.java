@@ -516,9 +516,6 @@ public final class CommunicationsManager {
 
 		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
 		if (accountArtifact == null) {
-			long fileObjId = sourceFile.getId();
-			Long dsObjId = sourceFile.getDataSource() == null ? null : sourceFile.getDataSource().getId();
-
 			List<BlackboardAttribute> attributes = Arrays.asList(
 					new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()),
 					new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID)
