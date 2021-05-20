@@ -44,4 +44,5 @@ private:
     bool m_wasEncryptionFound;
     bool m_wasPossibleEncryptionFound;
     bool m_wasFileSystemFound;
+    bool m_wasUnsupported;
 };

@@ -28,6 +28,7 @@ TskIsImageSupported::TskIsImageSupported()
     m_wasEncryptionFound = false;
     m_wasPossibleEncryptionFound = false;
     m_wasFileSystemFound = false;
+    m_wasUnsupported = false;
 }
 
 bool TskIsImageSupported::isImageSupported()
@@ -41,6 +42,12 @@ bool TskIsImageSupported::isImageEncrypted()
 }
 
 void TskIsImageSupported::printEncryptionStatus() {
+
+    if (m_wasUnsupported) {
+        printf("Image was an unsupported type");
+        return;
+    }
+
     printf("Encryption status: ");
     if (!m_wasEncryptionFound && !m_wasPossibleEncryptionFound) {
         printf("No encryption found\n");
@@ -79,6 +86,10 @@ uint8_t TskIsImageSupported::handleError()
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
             tsk_error_print(stdout);
             m_wasPossibleEncryptionFound = true;
+        }
+        else if (errCode == TSK_ERR_IMG_UNSUPTYPE) {
+            tsk_error_print(stdout);
+            m_wasUnsupported = true;
         }
     }
     return 0;
