@@ -136,7 +136,10 @@ public final class Blackboard {
 	 *                             artifact type.
 	 */
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName, BlackboardArtifact.Category category) throws BlackboardException {
-
+		if (category == null) {
+			throw new BlackboardException("Category provided must be non-null");
+		}
+		
 		try {
 			return caseDb.addBlackboardArtifactType(typeName, displayName, category);
 		} catch (TskDataException typeExistsEx) {

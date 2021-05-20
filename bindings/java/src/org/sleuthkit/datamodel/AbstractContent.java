@@ -327,12 +327,6 @@ public abstract class AbstractContent implements Content {
 			return getGenInfoArtifact(true);
 		}
 		BlackboardArtifact.Type artifactType = db.getArtifactType(artifactTypeID);
-		if (artifactType.getCategory() == null) {
-			throw new TskCoreException(String.format("Unable to determine category for artifact type: %s (id: %d)",
-					artifactType.getDisplayName() == null ? "<null>" : artifactType.getDisplayName(),
-					artifactType.getTypeID()));
-		}
-
 		switch (artifactType.getCategory()) {
 			case DATA_ARTIFACT:
 				return this.newDataArtifact(artifactType, Collections.emptyList());
