@@ -73,6 +73,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Category;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
@@ -5085,10 +5086,36 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
 		BlackboardArtifact.Type type = getArtifactType(artifactTypeID);
-		return newBlackboardArtifact(artifactTypeID, obj_id, type.getTypeName(), type.getDisplayName());
+		if (type == null) {
+			throw new TskCoreException("Unknown artifact type for id: " + artifactTypeID);
+		}
+		
+		Category category = type.getCategory();
+		if (category == null) {
+			throw new TskCoreException(String.format("No category for %s (id: %d)", 
+					type.getDisplayName() == null ? "<null>" : type.getDisplayName(),
+					type.getTypeID()));
+		}
+		
+		Content content = getContentById(obj_id);
+		if (content == null) {
+			throw new TskCoreException("No content found for object id: " + obj_id);
+		}
+		
+		switch (category) {
+			case ANALYSIS_RESULT: 
+				return content.newAnalysisResult(type, Score.SCORE_UNKNOWN, null, null, null, Collections.emptyList())
+						.getAnalysisResult();
+			case DATA_ARTIFACT:
+				return content.newDataArtifact(type, Collections.emptyList());
+			default:
+				throw new TskCoreException("Unknown category type: " + category.getName());
+		}
 	}
 
 	/**
@@ -5101,9 +5128,12 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
-		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
+		return newBlackboardArtifact(artifactType.getTypeID(), obj_id);
 	}
 
 	/**
@@ -5119,7 +5149,10 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id, long data_source_obj_id) throws TskCoreException {
 		BlackboardArtifact.Type type = getArtifactType(artifactTypeID);
 		try (CaseDbConnection connection = connections.getConnection()) {
@@ -5127,6 +5160,7 @@ public class SleuthkitCase {
 		}
 	}
 
+	@Deprecated
 	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName) throws TskCoreException {
 		try (CaseDbConnection connection = connections.getConnection()) {
 			long data_source_obj_id = getDataSourceObjectId(connection, obj_id);
@@ -5158,6 +5192,7 @@ public class SleuthkitCase {
 		return statement;
 	}
 
+	@Deprecated
 	BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
 		try {

@@ -694,7 +694,9 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
 	 */
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		throw new TskCoreException("Cannot create artifact of an artifact. Not supported.");
@@ -718,6 +720,11 @@ public class BlackboardArtifact implements Content {
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
+	
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return newDataArtifact(artifactType, attributesList, null);
+	}
 
 	/**
 	 * Create and add an artifact associated with this content to the blackboard
@@ -728,7 +735,9 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
 	 */
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		throw new TskCoreException("Cannot create artifact of an artifact. Not supported.");
