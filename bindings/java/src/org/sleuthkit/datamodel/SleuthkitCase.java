@@ -4744,9 +4744,10 @@ public class SleuthkitCase {
 	 *
 	 * @param artTypeId An artifact type id.
 	 *
-	 * @return An artifact type or null if the artifact type does not exist.
+	 * @return The artifact type.
 	 *
-	 * @throws TskCoreException If an error occurs accessing the case database.
+	 * @throws TskCoreException If an error occurs accessing the case database 
+	 *						    or no value is found.
 	 *
 	 */
 	BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
@@ -4767,8 +4768,10 @@ public class SleuthkitCase {
 						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 				this.typeIdToArtifactTypeMap.put(artTypeId, type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+				return type;
+			} else {
+				throw new TskCoreException("No artifact type found matching id: " + artTypeId);
 			}
-			return type;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type from the database", ex);
 		} finally {
