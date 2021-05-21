@@ -1072,7 +1072,6 @@ public final class Blackboard {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
 		}
 
-		caseDb.acquireSingleUserCaseWriteLock();
 		try {
 			CaseDbConnection connection = transaction.getConnection();
 			long artifact_obj_id = caseDb.addObject(sourceObjId, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
@@ -1107,8 +1106,6 @@ public final class Blackboard {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating a data artifact with type id = %d, objId = %d, and data source oj id = %d ", artifactType.getTypeID(), sourceObjId, dataSourceObjId), ex);
-		} finally {
-			caseDb.releaseSingleUserCaseWriteLock();
 		}
 	}
 

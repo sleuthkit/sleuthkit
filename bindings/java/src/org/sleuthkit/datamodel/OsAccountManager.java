@@ -241,40 +241,37 @@ public final class OsAccountManager {
 
 		String signature = getOsAccountSignature(uniqueId, loginName);
 		OsAccount account;
-		db.acquireSingleUserCaseWriteLock();
-		try {
-			CaseDbConnection connection = trans.getConnection();
 
-			// first create a tsk_object for the OsAccount.
-			// RAMAN TODO: need to get the correct parent obj id.  
-			//            Create an Object Directory parent and used its id.
-			long parentObjId = 0;
+		CaseDbConnection connection = trans.getConnection();
 
-			int objTypeId = TskData.ObjectType.OS_ACCOUNT.getObjectType();
-			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
+		// first create a tsk_object for the OsAccount.
+		// RAMAN TODO: need to get the correct parent obj id.  
+		//            Create an Object Directory parent and used its id.
+		long parentObjId = 0;
 
-			String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, addr, signature, status)"
-					+ " VALUES (?, ?, ?, ?, ?, ?)"; // NON-NLS
+		int objTypeId = TskData.ObjectType.OS_ACCOUNT.getObjectType();
+		long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
 
-			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.NO_GENERATED_KEYS);
-			preparedStatement.clearParameters();
+		String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, addr, signature, status)"
+				+ " VALUES (?, ?, ?, ?, ?, ?)"; // NON-NLS
 
-			preparedStatement.setLong(1, osAccountObjId);
+		PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.NO_GENERATED_KEYS);
+		preparedStatement.clearParameters();
 
-			preparedStatement.setString(2, loginName);
-			preparedStatement.setLong(3, realm.getRealmId());
+		preparedStatement.setLong(1, osAccountObjId);
 
-			preparedStatement.setString(4, uniqueId);
-			preparedStatement.setString(5, signature);
-			preparedStatement.setInt(6, accountStatus.getId());
+		preparedStatement.setString(2, loginName);
+		preparedStatement.setLong(3, realm.getRealmId());
 
-			connection.executeUpdate(preparedStatement);
+		preparedStatement.setString(4, uniqueId);
+		preparedStatement.setString(5, signature);
+		preparedStatement.setInt(6, accountStatus.getId());
 
-			account = new OsAccount(db, osAccountObjId, realm.getRealmId(), loginName, uniqueId, signature,
-					null, null, null, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
-		}
+		connection.executeUpdate(preparedStatement);
+
+		account = new OsAccount(db, osAccountObjId, realm.getRealmId(), loginName, uniqueId, signature,
+				null, null, null, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
+
 		trans.registerAddedOsAccount(account);
 		return account;
 	}

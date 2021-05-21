@@ -213,9 +213,11 @@ public final class PersonManager {
 		}
 
 		Person toReturn = null;
-		CaseDbConnection connection = this.db.getConnection();
+		CaseDbConnection connection = null;
 		db.acquireSingleUserCaseWriteLock();
 		try {
+			connection = db.getConnection();
+		
 			// First try to load it from the database. This is a case-insensitive look-up
 			// to attempt to prevent having two entries with the same lower-case name.
 			Optional<Person> person = getPerson(name, connection);
@@ -239,16 +241,16 @@ public final class PersonManager {
 				}
 			}
 		} catch (SQLException ex) {
-			// The insert may have failed because this person was just added on another thread, so try getting the person again.
-			// (Note: the SingleUserCaseWriteLock is a no-op for multi-user cases so acquiring it does not prevent this situation)
-			Optional<Person> person = getPerson(name, connection);
-			if (person.isPresent()) {
-				return person.get();
-			} else {
-				throw new TskCoreException(String.format("Error adding person with name = %s", name), ex);
+			if (connection != null) {
+				// The insert may have failed because this person was just added on another thread, so try getting the person again.
+				// (Note: the SingleUserCaseWriteLock is a no-op for multi-user cases so acquiring it does not prevent this situation)
+				Optional<Person> person = getPerson(name, connection);
+				if (person.isPresent()) {
+					return person.get();
+				}
 			}
+			throw new TskCoreException(String.format("Error adding person with name = %s", name), ex);
 		} finally {
-			connection.close();
 			db.releaseSingleUserCaseWriteLock();
 		}
 
