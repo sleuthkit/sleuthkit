@@ -7562,12 +7562,31 @@ public class SleuthkitCase {
 			boolean isFile, Content parentObj,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+		CaseDbTransaction transaction = beginTransaction();
+		try {
+			DerivedFile df = addDerivedFile(fileName, localPath,
+					size, ctime, crtime, atime, mtime,
+					isFile, parentObj,
+					rederiveDetails, toolName, toolVersion,
+					otherDetails, encodingType, transaction);
+			transaction.commit();
+			return df;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+	
+	public DerivedFile addDerivedFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile, Content parentObj,
+			String rederiveDetails, String toolName, String toolVersion,
+			String otherDetails, TskData.EncodingType encodingType, CaseDbTransaction transaction) throws TskCoreException {
 		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
 		localPath = localPath.replaceAll("^[/\\\\]+", "");
 
 		TimelineManager timelineManager = getTimelineManager();
 
-		CaseDbTransaction transaction = beginTransaction();
 		CaseDbConnection connection = transaction.getConnection();
 		try {
 			final long parentId = parentObj.getId();
@@ -7638,7 +7657,12 @@ public class SleuthkitCase {
 			statement.setString(19, parentPath);
 
 			// root data source object id
-			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
+			long dataSourceObjId;
+			if (parentObj instanceof AbstractFile) {
+				dataSourceObjId = ((AbstractFile)parentObj).getDataSourceObjectId();
+			} else {
+				dataSourceObjId = getDataSourceObjectId(connection, parentId);
+			}
 			statement.setLong(20, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			//extension
@@ -7656,14 +7680,11 @@ public class SleuthkitCase {
 					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
-			transaction.commit();
+
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
 			return derivedFile;
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
-		} finally {
-			connection.close();
 		}
 	}
 
