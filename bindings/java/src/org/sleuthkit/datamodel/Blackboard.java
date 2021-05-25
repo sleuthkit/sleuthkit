@@ -356,6 +356,37 @@ public final class Blackboard {
 			+ " WHERE arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
 			+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
+	
+	/**
+	 * Get all analysis results of given artifact type.
+	 *
+	 * @param artifactTypeId The artifact type id for which to search.
+	 *
+	 * @return The list of analysis results.
+	 *
+	 * @throws TskCoreException Exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public List<AnalysisResult> getAnalysisResultsByType(int artifactTypeId) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.artifact_type_id = " + artifactTypeId);
+	}
+
+	/**
+	 * Get all analysis results of given artifact type.
+	 *
+	 * @param artifactTypeId The artifact type id for which to search.
+	 * @param dataSourceObjId Object Id of the data source to look under.
+	 * 
+	 * @return The list of analysis results.
+	 *
+	 * @throws TskCoreException Exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public List<AnalysisResult> getAnalysisResultsByType(int artifactTypeId, long dataSourceObjId) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.artifact_type_id = " + artifactTypeId + " AND arts.data_source_obj_id = " + dataSourceObjId);
+	}
+
+	
 	/**
 	 * Get all analysis results for a given object.
 	 *
