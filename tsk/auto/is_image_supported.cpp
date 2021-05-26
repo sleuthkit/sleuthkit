@@ -71,7 +71,8 @@ void TskIsImageSupported::printResults() {
     printf("Encryption Type: ");
     if (strnlen(m_encryptionDesc, 1024) > 0) {
         printf("%s", m_encryptionDesc);
-    } else if (strnlen(m_possibleEncryptionDesc, 1024) > 0) {
+    } 
+    else if (strnlen(m_possibleEncryptionDesc, 1024) > 0) {
         printf("%s", m_possibleEncryptionDesc);
     }
     else {
