@@ -333,6 +333,16 @@ public class Report implements Content {
 	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
 		return db.getBlackboard().getAnalysisResults(objectId);
 	}
+	
+	@Override
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
+		return db.getBlackboard().getDataArtifactsBySource(objectId);
+	}
+
+	@Override
+	public boolean hasDataArtifacts() throws TskCoreException {
+		return db.getBlackboard().hasDataArtifacts(objectId);
+	}
 
 	@Override
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {

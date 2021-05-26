@@ -331,6 +331,15 @@ public interface Content extends SleuthkitVisitableItem {
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
 
 	/**
+	 * Get all data artifacts associated with this content.
+	 *
+	 * @return A list of data artifacts.
+	 *
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException;
+		
+	/**
 	 * Get all analysis results associated with this content.
 	 *
 	 * @return A list of analysis results.
@@ -339,6 +348,15 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException;
 
+	/**
+	 * Returns true if there is at least one data artifact associated with this content.
+	 * 
+	 * @return True if there is at least one data artifact associated with this content.
+	 * 
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public boolean hasDataArtifacts() throws TskCoreException;
+	
 	/**
 	 * Get the names of all the hashsets that this content is in.
 	 *

@@ -400,7 +400,58 @@ public final class Blackboard {
 	public List<AnalysisResult> getAnalysisResults(long sourceObjId) throws TskCoreException {
 		return getAnalysisResultsWhere(" arts.obj_id = " + sourceObjId);
 	}
+	
+	
+	/**
+	 * Get all data artifacts for a given object.
+	 *
+	 * @param sourceObjId Object id.
+	 *
+	 * @return List of data artifacts.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	List<DataArtifact> getDataArtifactsBySource(long sourceObjId) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			return getDataArtifactsWhere(String.format(" arts.obj_id = " + sourceObjId), connection);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	
+	/**
+	 * Returns true if there are data artifacts belonging to the sourceObjId.
+	 * @param sourceObjId The source content object id.
+	 * @return True if there are data artifacts belonging to this source obj id.
+	 * @throws TskCoreException 
+	 */
+	boolean hasDataArtifacts(long sourceObjId) throws TskCoreException {
+		String queryString = "SELECT COUNT(*) AS count FROM blackboard_artifacts bba "
+				+ " INNER JOIN tsk_data_artifacts da "
+				+ " ON bba.artifact_obj_id = da.artifact_obj_id "
+				+ "WHERE bba.obj_id = " + sourceObjId;
 
+		caseDb.acquireSingleUserCaseReadLock();
+		try (SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+			if (resultSet.next()) {
+				return resultSet.getLong("count") > 0;
+			}
+			return false;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifact types is use for data source." + ex.getMessage(), ex);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}
+
+
+	
+	
 	/**
 	 * Get all analysis results for a given object.
 	 *
@@ -1007,6 +1058,7 @@ public final class Blackboard {
 		return true;
 
 	}
+
 
 	/**
 	 * A Blackboard exception.
