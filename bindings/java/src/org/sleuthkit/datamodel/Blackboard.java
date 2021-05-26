@@ -496,7 +496,7 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException If a critical error occurred within TSK core.
 	 */
-	AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
+	public AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
 
 		String whereClause = " arts.artifact_obj_id = " + artifactObjId;
 		List<AnalysisResult> results = getAnalysisResultsWhere(whereClause);
@@ -622,7 +622,7 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	DataArtifact getDataArtifactById(long artifactObjId) throws TskCoreException {
+	public DataArtifact getDataArtifactById(long artifactObjId) throws TskCoreException {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = " artifacts.artifact_obj_id = " + artifactObjId;
