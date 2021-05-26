@@ -480,7 +480,8 @@ public final class TimelineManager {
 		String insertDescriptionSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (PreparedStatement insertDescriptionStmt = connection.prepareStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+		try {
+			PreparedStatement insertDescriptionStmt = connection.getPreparedStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS);
 			insertDescriptionStmt.clearParameters();
 			insertDescriptionStmt.setLong(1, dataSourceObjId);
 			insertDescriptionStmt.setLong(2, fileObjId);
@@ -868,7 +869,8 @@ public final class TimelineManager {
 		String insertEventSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (PreparedStatement insertRowStmt = connection.prepareStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);) {
+		try {
+			PreparedStatement insertRowStmt = connection.getPreparedStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);
 			insertRowStmt.clearParameters();
 			insertRowStmt.setLong(1, type.getTypeID());
 			insertRowStmt.setLong(2, descriptionID);
