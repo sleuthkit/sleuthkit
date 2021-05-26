@@ -160,7 +160,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException;
 
 	/**
@@ -172,7 +174,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
 
 	/**
@@ -195,6 +199,22 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
 
+	/**
+	 * Create and add a data artifact associated with this abstract file. This
+	 * method creates the data artifact with the os account id associated with
+	 * this abstract file if one exists.
+	 *
+	 * @param artifactType   Type of data artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
+	
+	
 	/**
 	 * Create and add a data artifact associated with this content.
 	 *

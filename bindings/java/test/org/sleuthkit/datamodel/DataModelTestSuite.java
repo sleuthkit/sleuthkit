@@ -136,12 +136,11 @@ public class DataModelTestSuite {
 			String timezone = "";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false, "");
 			try {
-				process.run(imagePaths.toArray(new String[imagePaths.size()]));
+				process.run("Data Source ID", imagePaths.toArray(new String[imagePaths.size()]));
 			} catch (TskDataException ex) {
 				inp.add(ex);
 			}
 			writeExceptions(standardFile.getAbsolutePath(), inp);
-			process.commit();
 
 			// dump the database based on the specific test testType
 			OutputStreamWriter standardWriter = testType.traverse(sk, standardFile.getAbsolutePath());

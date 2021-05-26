@@ -7,6 +7,8 @@ import org.sleuthkit.datamodel.TagName.HTML_COLOR;
  */
 public class PublicTagName extends TagName {
 
+	private static final long serialVersionUID = 1L;
+
 	public PublicTagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
 		super(id, displayName, description, color, knownStatus, tagSetId, rank);
 	}
