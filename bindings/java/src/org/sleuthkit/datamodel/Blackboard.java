@@ -415,7 +415,7 @@ public final class Blackboard {
 	List<DataArtifact> getDataArtifactsBySource(long sourceObjId) throws TskCoreException {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
-			return getDataArtifactsWhere(String.format(" arts.obj_id = " + sourceObjId), connection);
+			return getDataArtifactsWhere(String.format(" artifacts.obj_id = " + sourceObjId), connection);
 		} finally {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
@@ -429,10 +429,12 @@ public final class Blackboard {
 	 * @throws TskCoreException 
 	 */
 	boolean hasDataArtifacts(long sourceObjId) throws TskCoreException {
-		String queryString = "SELECT COUNT(*) AS count FROM blackboard_artifacts bba "
-				+ " INNER JOIN tsk_data_artifacts da "
-				+ " ON bba.artifact_obj_id = da.artifact_obj_id "
-				+ "WHERE bba.obj_id = " + sourceObjId;
+		String queryString = "SELECT COUNT(*)AS count " //NON-NLS
+			+ " FROM blackboard_artifacts AS arts "
+			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
+			+ "		ON arts.artifact_type_id = types.artifact_type_id" //NON-NLS
+			+ " WHERE types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID()
+			+ " AND arts.obj_id = " + sourceObjId;
 
 		caseDb.acquireSingleUserCaseReadLock();
 		try (SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
