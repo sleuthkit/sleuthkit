@@ -428,12 +428,34 @@ public final class Blackboard {
 	 * @return True if there are data artifacts belonging to this source obj id.
 	 * @throws TskCoreException 
 	 */
-	boolean hasDataArtifacts(long sourceObjId) throws TskCoreException {
-		String queryString = "SELECT COUNT(*)AS count " //NON-NLS
+	public boolean hasDataArtifacts(long sourceObjId) throws TskCoreException {
+		return hasCategoryTypeArtifacts(BlackboardArtifact.Category.DATA_ARTIFACT, sourceObjId);
+	}
+	
+	/**
+	 * Returns true if there are analysis results belonging to the sourceObjId.
+	 * @param sourceObjId The source content object id.
+	 * @return True if there are analysis results belonging to this source obj id.
+	 * @throws TskCoreException 
+	 */
+	public boolean hasAnalysisResults(long sourceObjId) throws TskCoreException {
+		return hasCategoryTypeArtifacts(BlackboardArtifact.Category.ANALYSIS_RESULT, sourceObjId);
+	}
+	
+	
+	/**
+	 * Returns true if there are artifacts of the given category belonging to the sourceObjId.
+	 * @param category The category of the artifacts.
+	 * @param sourceObjId The source content object id.
+	 * @return True if there are artifacts of the given category belonging to this source obj id.
+	 * @throws TskCoreException 
+	 */
+	private boolean hasCategoryTypeArtifacts(BlackboardArtifact.Category category, long sourceObjId) throws TskCoreException {
+		String queryString = "SELECT COUNT(*) AS count " //NON-NLS
 			+ " FROM blackboard_artifacts AS arts "
 			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
 			+ "		ON arts.artifact_type_id = types.artifact_type_id" //NON-NLS
-			+ " WHERE types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID()
+			+ " WHERE types.category_type = " + category.getID()
 			+ " AND arts.obj_id = " + sourceObjId;
 
 		caseDb.acquireSingleUserCaseReadLock();

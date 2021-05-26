@@ -340,11 +340,6 @@ public class Report implements Content {
 	}
 
 	@Override
-	public boolean hasDataArtifacts() throws TskCoreException {
-		return db.getBlackboard().hasDataArtifacts(objectId);
-	}
-
-	@Override
 	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
 		return db.getBlackboard().getAnalysisResults(objectId, artifactType.getTypeID());
 	}

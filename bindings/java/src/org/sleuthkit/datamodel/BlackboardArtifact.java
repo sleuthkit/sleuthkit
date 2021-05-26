@@ -503,11 +503,6 @@ public class BlackboardArtifact implements Content {
 	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
 		return sleuthkitCase.getBlackboard().getDataArtifactsBySource(artifactObjId);
 	}
-
-	@Override
-	public boolean hasDataArtifacts() throws TskCoreException {
-		return sleuthkitCase.getBlackboard().hasDataArtifacts(artifactObjId);
-	}
 	
 	@Override
 	public Score getAggregateScore() throws TskCoreException {

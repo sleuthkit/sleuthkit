@@ -349,15 +349,6 @@ public interface Content extends SleuthkitVisitableItem {
 	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException;
 
 	/**
-	 * Returns true if there is at least one data artifact associated with this content.
-	 * 
-	 * @return True if there is at least one data artifact associated with this content.
-	 * 
-	 * @throws TskCoreException If critical error occurred within tsk core.
-	 */
-	public boolean hasDataArtifacts() throws TskCoreException;
-	
-	/**
 	 * Get the names of all the hashsets that this content is in.
 	 *
 	 * @return the names of the hashsets that this content is in
