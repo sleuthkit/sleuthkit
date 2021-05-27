@@ -7638,7 +7638,7 @@ public class SleuthkitCase {
 			statement.setString(19, parentPath);
 
 			// root data source object id
-			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
+			long dataSourceObjId = getDataSourceObjectId(connection, parentObj);
 			statement.setLong(20, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			//extension
@@ -7760,7 +7760,7 @@ public class SleuthkitCase {
 
 			connection.commitTransaction();
 
-			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
+			long dataSourceObjId = getDataSourceObjectId(connection, parentObj);
 			final String extension = extractExtension(derivedFile.getName());
 			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
 					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, derivedFile.getOwnerUid().orElse(null), derivedFile.getOsAccountObjectId().orElse(null));
@@ -7940,7 +7940,7 @@ public class SleuthkitCase {
 				dataSourceObjId = parentFile.getDataSourceObjectId();
 			} else {
 				parentPath = "/";
-				dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
+				dataSourceObjId = getDataSourceObjectId(connection, parent);
 			}
 			statement.setString(19, parentPath);
 			statement.setLong(20, dataSourceObjId);
@@ -8260,6 +8260,26 @@ public class SleuthkitCase {
 					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
 				}
 			}
+		}
+	}
+	
+	/**
+	 * Given a Content object, return its data source object ID.
+	 * For AbstractFiles, this simply returns the data source ID field.
+	 * 
+	 * @param connection A case database connection.
+	 * @param content    The content to look up the data source object ID.
+	 * 
+	 * @return 
+	 */
+	private long getDataSourceObjectId(CaseDbConnection connection, Content content) throws TskCoreException {
+		if (content == null) {
+			throw new TskCoreException("Null Content parameter given");
+		}
+		if (content instanceof AbstractFile) {
+			return ((AbstractFile)content).getDataSourceObjectId();
+		} else {
+			return getDataSourceObjectId(connection, content.getId());
 		}
 	}
 
