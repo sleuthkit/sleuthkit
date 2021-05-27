@@ -184,7 +184,7 @@ detectVolumeEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for BitLocker signature
     if (detectBitLocker(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "BitLocker encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "BitLocker");
         free(buf);
         return result;
     }
@@ -192,7 +192,7 @@ detectVolumeEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for Linux Unified Key Setup (LUKS) signature
     if (detectLUKS(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "LUKS encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "LUKS");
         free(buf);
         return result;
     }
@@ -200,7 +200,7 @@ detectVolumeEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for FileVault
     if (detectFileVault(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "FileVault encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "FileVault");
         free(buf);
         return result;
     }
@@ -211,7 +211,7 @@ detectVolumeEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     double entropy = calculateEntropy(img_info, offset);
     if (entropy > 7.5) {
         result->encryptionType = ENCRYPTION_DETECTED_ENTROPY;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "High entropy detected (%1.2lf)", entropy);
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "High entropy (%1.2lf)", entropy);
         return result;
     }
 
@@ -258,7 +258,7 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for Symatec PGP signature
     if (detectSymantecPGP(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Symantec PGP encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Symantec PGP");
         free(buf);
         return result;
     }
@@ -266,7 +266,7 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for McAfee Safeboot signature
     if (detectMcAfee(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "McAfee Safeboot encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "McAfee Safeboot");
         free(buf);
         return result;
     }
@@ -274,7 +274,7 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for Sophos Safeguard
     if (detectSophos(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Sophos Safeguard encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Sophos Safeguard");
         free(buf);
         return result;
     }
@@ -282,7 +282,7 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for Guardian Edge signature
     if (detectGuardianEdge(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Guardian Edge encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Guardian Edge");
         free(buf);
         return result;
     }
@@ -290,7 +290,7 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for Check Point signature
     if (detectCheckPoint(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Check Point full disk encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "Check Point");
         free(buf);
         return result;
     }
@@ -298,7 +298,7 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     // Look for WinMagic SecureDoc signature
     if (detectWinMagic(buf, len)) {
         result->encryptionType = ENCRYPTION_DETECTED_SIGNATURE;
-        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "WinMagic SecureDoc encryption detected");
+        snprintf(result->desc, TSK_ERROR_STRING_MAX_LENGTH, "WinMagic SecureDoc");
         free(buf);
         return result;
     }
