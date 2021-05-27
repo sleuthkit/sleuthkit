@@ -23,8 +23,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.Score.MethodCategory;
 import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -65,6 +69,46 @@ public class ScoringManager {
 			return getAggregateScore(objId, connection);
 		}
 	}
+
+	/**
+	 * Get the aggregate scores for the given list of object ids.
+	 *
+	 * @param objIds Object id list.
+	 *
+	 * @return Map<Long, Score> Each input object id will be mapped. If a score 
+	 * is not found for an object Unknown score will be mapped.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Map<Long, Score> getAggregateScores(List<Long> objIds) throws TskCoreException {
+
+		if (objIds.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		String queryString = "SELECT obj_id, significance, method_category FROM tsk_aggregate_score WHERE obj_id in "
+				+ objIds.stream().map(l -> l.toString()).collect(Collectors.joining(",", "(", ")"));
+
+		Map<Long, Score> results = objIds.stream().collect(Collectors.toMap( key -> key, key -> Score.SCORE_UNKNOWN));
+		try (CaseDbConnection connection = db.getConnection()) {
+
+			db.acquireSingleUserCaseReadLock();
+
+			try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
+				while (rs.next()) {
+					Long objId = rs.getLong("obj_id");
+					Score score = new Score(Significance.fromID(rs.getInt("significance")), MethodCategory.fromID(rs.getInt("method_category")));
+					results.put(objId, score);
+				}
+			} catch (SQLException ex) {
+				throw new TskCoreException("SQLException thrown while running query: " + queryString, ex);
+			}
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+		return results;
+	}
+
 
 	/**
 	 * Get the aggregate score for the given object. Uses the connection from the
