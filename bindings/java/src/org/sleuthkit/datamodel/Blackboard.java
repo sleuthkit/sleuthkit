@@ -356,6 +356,37 @@ public final class Blackboard {
 			+ " WHERE arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
 			+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
+	
+	/**
+	 * Get all analysis results of given artifact type.
+	 *
+	 * @param artifactTypeId The artifact type id for which to search.
+	 *
+	 * @return The list of analysis results.
+	 *
+	 * @throws TskCoreException Exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public List<AnalysisResult> getAnalysisResultsByType(int artifactTypeId) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.artifact_type_id = " + artifactTypeId);
+	}
+
+	/**
+	 * Get all analysis results of given artifact type.
+	 *
+	 * @param artifactTypeId The artifact type id for which to search.
+	 * @param dataSourceObjId Object Id of the data source to look under.
+	 * 
+	 * @return The list of analysis results.
+	 *
+	 * @throws TskCoreException Exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	public List<AnalysisResult> getAnalysisResultsByType(int artifactTypeId, long dataSourceObjId) throws TskCoreException {
+		return getAnalysisResultsWhere(" arts.artifact_type_id = " + artifactTypeId + " AND arts.data_source_obj_id = " + dataSourceObjId);
+	}
+
+	
 	/**
 	 * Get all analysis results for a given object.
 	 *
@@ -465,7 +496,7 @@ public final class Blackboard {
 	 *
 	 * @throws TskCoreException If a critical error occurred within TSK core.
 	 */
-	AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
+	public AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
 
 		String whereClause = " arts.artifact_obj_id = " + artifactObjId;
 		List<AnalysisResult> results = getAnalysisResultsWhere(whereClause);
@@ -591,7 +622,7 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	DataArtifact getDataArtifactById(long artifactObjId) throws TskCoreException {
+	public DataArtifact getDataArtifactById(long artifactObjId) throws TskCoreException {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			String whereClause = " artifacts.artifact_obj_id = " + artifactObjId;
