@@ -429,7 +429,7 @@ public final class Blackboard {
 	 * @throws TskCoreException 
 	 */
 	public boolean hasDataArtifacts(long sourceObjId) throws TskCoreException {
-		return hasCategoryTypeArtifacts(BlackboardArtifact.Category.DATA_ARTIFACT, sourceObjId);
+		return hasArtifactsOfCategory(BlackboardArtifact.Category.DATA_ARTIFACT, sourceObjId);
 	}
 	
 	/**
@@ -439,7 +439,7 @@ public final class Blackboard {
 	 * @throws TskCoreException 
 	 */
 	public boolean hasAnalysisResults(long sourceObjId) throws TskCoreException {
-		return hasCategoryTypeArtifacts(BlackboardArtifact.Category.ANALYSIS_RESULT, sourceObjId);
+		return hasArtifactsOfCategory(BlackboardArtifact.Category.ANALYSIS_RESULT, sourceObjId);
 	}
 	
 	
@@ -450,7 +450,7 @@ public final class Blackboard {
 	 * @return True if there are artifacts of the given category belonging to this source obj id.
 	 * @throws TskCoreException 
 	 */
-	private boolean hasCategoryTypeArtifacts(BlackboardArtifact.Category category, long sourceObjId) throws TskCoreException {
+	private boolean hasArtifactsOfCategory(BlackboardArtifact.Category category, long sourceObjId) throws TskCoreException {
 		String queryString = "SELECT COUNT(*) AS count " //NON-NLS
 			+ " FROM blackboard_artifacts AS arts "
 			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
