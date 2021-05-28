@@ -1437,7 +1437,11 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             myflags |= TSK_FS_BLOCK_FLAG_UNALLOC;
                         }
 
-                        if (fs_attr->size - off > fs->block_size)
+                        // Unclear what the behavior should be here
+                        // assuming POSIX like behavior is likely the required approach
+                        if (off >= fs_attr->size)
+                            read_len = 0;
+                        else if (fs_attr->size - off > fs->block_size)
                             read_len = fs->block_size;
                         else
                             read_len = (size_t) (fs_attr->size - off);
