@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
 
 /**
@@ -52,10 +53,10 @@ public class TaggingManager {
 	 */
 	public List<TagSet> getTagSets() throws TskCoreException {
 		List<TagSet> tagSetList = new ArrayList<>();
-		CaseDbConnection connection = skCase.getConnection();
+		
 		skCase.acquireSingleUserCaseReadLock();
 		String getAllTagSetsQuery = "SELECT * FROM tsk_tag_sets";
-		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(getAllTagSetsQuery);) {
+		try (CaseDbConnection connection = skCase.getConnection();Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(getAllTagSetsQuery);) {
 			while (resultSet.next()) {
 				int setID = resultSet.getInt("tag_set_id");
 				String setName = resultSet.getString("name");
@@ -65,7 +66,6 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error occurred getting TagSet list.", ex);
 		} finally {
-			connection.close();
 			skCase.releaseSingleUserCaseReadLock();
 		}
 		return tagSetList;
@@ -88,10 +88,8 @@ public class TaggingManager {
 
 		TagSet tagSet = null;
 
-		CaseDbConnection connection = skCase.getConnection();
-		skCase.acquireSingleUserCaseWriteLock();
-		try (Statement stmt = connection.createStatement()) {
-			connection.beginTransaction();
+		CaseDbTransaction trans = skCase.beginTransaction();
+		try (Statement stmt = trans.getConnection().createStatement()) {
 			String query = String.format("INSERT INTO tsk_tag_sets (name) VALUES('%s')", name);
 
 			if (skCase.getDatabaseType() == POSTGRESQL) {
@@ -123,13 +121,10 @@ public class TaggingManager {
 				}
 				tagSet = new TagSet(setID, name, updatedTags);
 			}
-			connection.commitTransaction();
+			trans.commit();
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
+			trans.rollback();
 			throw new TskCoreException(String.format("Error adding tag set %s", name), ex);
-		} finally {
-			connection.close();
-			skCase.releaseSingleUserCaseWriteLock();
 		}
 
 		return tagSet;
@@ -154,22 +149,17 @@ public class TaggingManager {
 			throw new TskCoreException("Unable to delete TagSet (%d). TagSet TagName list contains TagNames that are currently in use.");
 		}
 
-		try (CaseDbConnection connection = skCase.getConnection()) {
-			skCase.acquireSingleUserCaseWriteLock();
-			try (Statement stmt = connection.createStatement()) {
-				connection.beginTransaction();
-				String queryTemplate = "DELETE FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)";
-				stmt.execute(String.format(queryTemplate, tagSet.getId()));
+		CaseDbTransaction trans = skCase.beginTransaction();
+		try (Statement stmt = trans.getConnection().createStatement()) {
+			String queryTemplate = "DELETE FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)";
+			stmt.execute(String.format(queryTemplate, tagSet.getId()));
 
-				queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
-				stmt.execute(String.format(queryTemplate, tagSet.getId()));
-				connection.commitTransaction();
-			} catch (SQLException ex) {
-				connection.rollbackTransaction();
-				throw new TskCoreException(String.format("Error deleting tag set where id = %d.", tagSet.getId()), ex);
-			} finally {
-				skCase.releaseSingleUserCaseWriteLock();
-			}
+			queryTemplate = "DELETE FROM tsk_tag_sets WHERE tag_set_id = '%d'";
+			stmt.execute(String.format(queryTemplate, tagSet.getId()));
+			trans.commit();
+		} catch (SQLException ex) {
+			trans.rollback();
+			throw new TskCoreException(String.format("Error deleting tag set where id = %d.", tagSet.getId()), ex);
 		}
 	}
 
@@ -191,11 +181,10 @@ public class TaggingManager {
 			return null;
 		}
 		
-		CaseDbConnection connection = skCase.getConnection();
 		skCase.acquireSingleUserCaseReadLock();
 		TagSet tagSet = null;
 		String sqlQuery = String.format("SELECT * FROM tsk_tag_sets WHERE tag_set_id = %d", tagName.getTagSetId());
-		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(sqlQuery);) {
+		try (CaseDbConnection connection = skCase.getConnection();Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(sqlQuery);) {
 			if (resultSet.next()) {
 				int setID = resultSet.getInt("tag_set_id");
 				String setName = resultSet.getString("name");
@@ -205,7 +194,6 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error occurred getting TagSet for TagName '%s' (ID=%d)", tagName.getDisplayName(), tagName.getId()), ex);
 		} finally {
-			connection.close();
 			skCase.releaseSingleUserCaseReadLock();
 		}
 	}
@@ -228,12 +216,10 @@ public class TaggingManager {
 			throw new IllegalArgumentException("NULL argument passed to addArtifactTag");
 		}
 
-		CaseDbConnection connection = skCase.getConnection();
-		skCase.acquireSingleUserCaseWriteLock();
 		List<BlackboardArtifactTag> removedTags = new ArrayList<>();
 		List<String> removedTagIds = new ArrayList<>();
+		CaseDbTransaction trans = skCase.beginTransaction();
 		try {
-			connection.beginTransaction();
 			// If a TagName is part of a TagSet remove any existing tags from the
 			// set that are currenctly on the artifact
 			long tagSetId = tagName.getTagSetId();
@@ -242,7 +228,7 @@ public class TaggingManager {
 				// TagName for the given artifact.
 				String selectQuery = String.format("SELECT * from blackboard_artifact_tags JOIN tag_names ON tag_names.tag_name_id = blackboard_artifact_tags.tag_name_id JOIN tsk_examiners on tsk_examiners.examiner_id = blackboard_artifact_tags.examiner_id WHERE artifact_id = %d AND tag_names.tag_set_id = %d", artifact.getArtifactID(), tagSetId);
 
-				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
+				try (Statement stmt = trans.getConnection().createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
 								resultSet.getLong("tag_name_id"),
@@ -270,15 +256,15 @@ public class TaggingManager {
 				if (!removedTags.isEmpty()) {
 					// Remove the tags.
 					String removeQuery = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (%s)", String.join(",", removedTagIds));
-					try (Statement stmt = connection.createStatement()) {
+					try (Statement stmt = trans.getConnection().createStatement()) {
 						stmt.executeUpdate(removeQuery);
 					}
 				}
 			}
 
 			// Add the new Tag.
-			BlackboardArtifactTag artifactTag = null;
-			try (Statement stmt = connection.createStatement()) {
+			BlackboardArtifactTag artifactTag;
+			try (Statement stmt = trans.getConnection().createStatement()) {
 				Examiner currentExaminer = skCase.getCurrentExaminer();
 				String query = String.format(
 						"INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, examiner_id) VALUES (%d, %d, '%s', %d)",
@@ -300,16 +286,12 @@ public class TaggingManager {
 				}
 			}
 
-			connection.commitTransaction();
+			trans.commit();
 
 			return new BlackboardArtifactTagChange(artifactTag, removedTags);
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
+			trans.rollback();
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
-		} finally {
-
-			connection.close();
-			skCase.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -327,18 +309,16 @@ public class TaggingManager {
 	 * @throws TskCoreException
 	 */
 	public ContentTagChange addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
-		CaseDbConnection connection = skCase.getConnection();
 		List<ContentTag> removedTags = new ArrayList<>();
 		List<String> removedTagIds = new ArrayList<>();
-		skCase.acquireSingleUserCaseWriteLock();
+		CaseDbTransaction trans = skCase.beginTransaction();
 		try {
-			connection.beginTransaction();
 			long tagSetId = tagName.getTagSetId();
 
 			if (tagSetId > 0) {
 				String selectQuery = String.format("SELECT * from content_tags JOIN tag_names ON tag_names.tag_name_id = content_tags.tag_name_id JOIN tsk_examiners on tsk_examiners.examiner_id = content_tags.examiner_id WHERE obj_id = %d AND tag_names.tag_set_id = %d", content.getId(), tagSetId);
 
-				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
+				try (Statement stmt = trans.getConnection().createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
 								resultSet.getLong("tag_name_id"),
@@ -366,7 +346,7 @@ public class TaggingManager {
 
 				if (!removedTags.isEmpty()) {
 					String removeQuery = String.format("DELETE FROM content_tags WHERE tag_id IN (%s)", String.join(",", removedTagIds));
-					try (Statement stmt = connection.createStatement()) {
+					try (Statement stmt = trans.getConnection().createStatement()) {
 						stmt.executeUpdate(removeQuery);
 					}
 				}
@@ -374,7 +354,7 @@ public class TaggingManager {
 
 			String queryTemplate = "INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset, examiner_id) VALUES (%d, %d, '%s', %d, %d, %d)";
 			ContentTag contentTag = null;
-			try (Statement stmt = connection.createStatement()) {
+			try (Statement stmt = trans.getConnection().createStatement()) {
 				Examiner currentExaminer = skCase.getCurrentExaminer();
 				String query = String.format(queryTemplate,
 						content.getId(),
@@ -397,14 +377,11 @@ public class TaggingManager {
 				}
 			}
 
-			connection.commitTransaction();
+			trans.commit();
 			return new ContentTagChange(contentTag, removedTags);
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
+			trans.rollback();
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
-		} finally {
-			connection.close();
-			skCase.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -419,32 +396,30 @@ public class TaggingManager {
 	 * @throws TskCoreException
 	 */
 	private boolean isTagSetInUse(TagSet tagSet) throws TskCoreException {
+		skCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = skCase.getConnection()) {
 			List<TagName> tagNameList = tagSet.getTagNames();
 			if (tagNameList != null && !tagNameList.isEmpty()) {
-				skCase.acquireSingleUserCaseReadLock();
-				try {
-					String statement = String.format("SELECT tag_id FROM content_tags WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)", tagSet.getId());
-					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
-						if (resultSet.next()) {
-							return true;
-						}
-					} catch (SQLException ex) {
-						throw new TskCoreException(String.format("Failed to determine if TagSet is in use (%s)", tagSet.getId()), ex);
+				String statement = String.format("SELECT tag_id FROM content_tags WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)", tagSet.getId());
+				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
+					if (resultSet.next()) {
+						return true;
 					}
+				} catch (SQLException ex) {
+					throw new TskCoreException(String.format("Failed to determine if TagSet is in use (%s)", tagSet.getId()), ex);
+				}
 
-					statement = String.format("SELECT tag_id FROM blackboard_artifact_tags WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)", tagSet.getId());
-					try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
-						if (resultSet.next()) {
-							return true;
-						}
-					} catch (SQLException ex) {
-						throw new TskCoreException(String.format("Failed to determine if TagSet is in use (%s)", tagSet.getId()), ex);
+				statement = String.format("SELECT tag_id FROM blackboard_artifact_tags WHERE tag_name_id IN (SELECT tag_name_id FROM tag_names WHERE tag_set_id = %d)", tagSet.getId());
+				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(statement)) {
+					if (resultSet.next()) {
+						return true;
 					}
-				} finally {
-					skCase.releaseSingleUserCaseReadLock();
+				} catch (SQLException ex) {
+					throw new TskCoreException(String.format("Failed to determine if TagSet is in use (%s)", tagSet.getId()), ex);
 				}
 			}
+		} finally {
+			skCase.releaseSingleUserCaseReadLock();
 		}
 
 		return false;
@@ -467,11 +442,9 @@ public class TaggingManager {
 
 		List<TagName> tagNameList = new ArrayList<>();
 
-		CaseDbConnection connection = skCase.getConnection();
-
 		skCase.acquireSingleUserCaseReadLock();
 		String query = String.format("SELECT * FROM tag_names WHERE tag_set_id = %d", tagSetId);
-		try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(query)) {
+		try (CaseDbConnection connection = skCase.getConnection();Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(query)) {
 			while (resultSet.next()) {
 				tagNameList.add(new TagName(resultSet.getLong("tag_name_id"),
 						resultSet.getString("display_name"),
@@ -484,7 +457,6 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting tag names for tag set (%d)", tagSetId), ex);
 		} finally {
-			connection.close();
 			skCase.releaseSingleUserCaseReadLock();
 		}
 

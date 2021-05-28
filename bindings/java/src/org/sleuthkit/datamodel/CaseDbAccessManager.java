@@ -248,22 +248,16 @@ public final class CaseDbAccessManager {
 		validateTableName(tableName);
 		validateSQL(tableSchema);
 
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseWriteLock();
-
-		Statement statement = null;
 		String createSQL = "CREATE TABLE IF NOT EXISTS " + tableName + " " + tableSchema;
-		try {
-			statement = connection.createStatement();
+		try (CaseDbConnection connection = tskDB.getConnection();
+				Statement statement = connection.createStatement();) {
 			statement.execute(createSQL);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating table " + tableName, ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
-
 	}
 
 	/**
@@ -350,19 +344,14 @@ public final class CaseDbAccessManager {
 		validateIndexName(indexName);
 		validateSQL(colsSQL);
 
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseWriteLock();
-
-		Statement statement = null;
 		String indexSQL = "CREATE INDEX IF NOT EXISTS " + indexName + " ON " + tableName + " " + colsSQL; // NON-NLS
-		try {
-			statement = connection.createStatement();
+		try (CaseDbConnection connection = tskDB.getConnection();
+			Statement statement = connection.createStatement(); ) {
 			statement.execute(indexSQL);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating index " + tableName, ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -600,21 +589,15 @@ public final class CaseDbAccessManager {
 		
 		validateSQL(sql);
 		
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseReadLock();
-
-		Statement statement = null;
-		ResultSet resultSet;
 		String selectSQL = "SELECT " +  sql; // NON-NLS
-		try {
-			statement = connection.createStatement();
-			resultSet = statement.executeQuery(selectSQL);
+		try (CaseDbConnection connection = tskDB.getConnection();
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(selectSQL)) {
 			queryCallback.process(resultSet);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error running SELECT query.", ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
@@ -631,19 +614,14 @@ public final class CaseDbAccessManager {
 		validateTableName(tableName);
 		validateSQL(sql);
 
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseWriteLock();
-
-		Statement statement = null;
 		String deleteSQL = "DELETE FROM " + tableName + " " + sql; // NON-NLS
-		try {
-			statement = connection.createStatement();
+		try (CaseDbConnection connection = tskDB.getConnection();
+			Statement statement = connection.createStatement();) {
 			statement.executeUpdate(deleteSQL);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from table " + tableName, ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
 	}
