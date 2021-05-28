@@ -674,7 +674,9 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
         memcpy(resident_data + inode_data_len, ea_inline_data, ea_data_len);
     }
 
-    fs_meta->attr = tsk_fs_attrlist_alloc();
+    if (fs_meta->attr == NULL) {
+        fs_meta->attr = tsk_fs_attrlist_alloc();
+    }
     if ((fs_attr =
         tsk_fs_attrlist_getnew(fs_meta->attr,
             TSK_FS_ATTR_RES)) == NULL) {
