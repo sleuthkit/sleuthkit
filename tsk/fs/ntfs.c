@@ -3161,6 +3161,10 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         tsk_error_set_errstr("Error Finding Bitmap Data Attribute");
         goto on_error;
     }
+    uint32_t attr_len = tsk_getu32(fs->endian, data_attr->len);
+    if (attr_len > ntfs->mft_rsize_b) {
+        goto on_error;
+    }
 
     /* convert to generic form */
     if ((ntfs_make_data_run(ntfs,
