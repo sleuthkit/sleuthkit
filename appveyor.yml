@@ -1,8 +1,7 @@
-version: 4.6.0.{build}
+version: develop.{build}
 
 environment: 
   matrix:
-
   - job_name: Windows Build
     appveyor_build_worker_image: Visual Studio 2019
   - job_name: Linux Build
@@ -10,15 +9,14 @@ environment:
   - job_name: macOS Build
     appveyor_build_worker_image: macos-catalina
 
+# TODO: fix Windows Build
 matrix:
-  fast_finish: true
-
+  allow_failures:
+  - job_name: Windows Build
 
 # job-specific configurations
 for: 
-
-  - 
-    matrix:
+  - matrix:
       only:
         - job_name: Windows Build
 
@@ -55,22 +53,34 @@ for:
     test_script:
       - cmd: ant -q -f bindings/java test
 
-  - 
-    matrix:
+  - matrix:
       only:
         - job_name: Linux Build
 
+    install:
+      - sh: sudo apt-get update && sudo apt-get -y install autoconf automake autopoint build-essential g++ git libtool pkg-config
+
     build_script:
       - ./bootstrap
       - ./configure -q
       - make -s
 
-  - 
-    matrix:
+    test_script:
+      - sh: make check; RESULT=$?; if test ${RESULT} -ne 0 && test -f tests/test-suite.log; then cat tests/test-suite.log; fi; exit ${RESULT};
+
+  - matrix:
       only:
         - job_name: macOS Build
 
+    install:
+      - sh: brew update-reset && brew update -q
+      - sh: brew install -q autoconf automake gettext gnu-sed libtool pkg-config || true
+
     build_script:
       - ./bootstrap
       - ./configure -q
       - make -s
+
+    test_script:
+      - sh: make check; RESULT=$?; if test ${RESULT} -ne 0 && test -f tests/test-suite.log; then cat tests/test-suite.log; fi; exit ${RESULT};
+

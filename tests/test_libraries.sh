@@ -4,7 +4,16 @@
 #
 # Currently, tests mmls on image files.  Will need to be refactored as we add more tests. 
 
-EXIT_FAILURE=1
+EXIT_SUCCESS=0;
+EXIT_FAILURE=1;
+EXIT_IGNORE=77;
+
+if test `uname -s` = "Darwin";
+then
+	echo "Mac OS (Darwin) not supported by test script.";
+
+	exit ${EXIT_IGNORE};
+fi
 
 #create data directory
 if [ ! -d "./data" ];then
