@@ -140,7 +140,7 @@ public final class OsAccountRealm {
 	 * 
 	 * @return Realm database status. 
 	 */
-	public RealmDbStatus getDbStatus() {
+	RealmDbStatus getDbStatus() {
 		return dbStatus;
 	}	
 
@@ -282,7 +282,7 @@ public final class OsAccountRealm {
 	/**
 	 * Encapsulates status of realm row.
 	 */
-	public enum RealmDbStatus {
+	enum RealmDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");	
@@ -295,7 +295,7 @@ public final class OsAccountRealm {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -303,7 +303,7 @@ public final class OsAccountRealm {
 			return name;
 		}
 
-		public static RealmDbStatus fromID(int typeId) {
+		static RealmDbStatus fromID(int typeId) {
 			for (RealmDbStatus type : RealmDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;

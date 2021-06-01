@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -57,11 +59,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -194,6 +198,12 @@ public class SleuthkitCase {
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
 	private CaseDbSchemaVersionNumber caseDBSchemaCreationVersion;
 
+	// Objects for caching the result of isRootDirectory(). Lock is for visibility only.
+	private final Object rootDirectoryMapLock = new Object();
+	private final Map<RootDirectoryKey, Long> rootDirectoryMap = new HashMap<>();
+	private final Cache<Long, Boolean> isRootDirectoryCache = 
+			CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
+	
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
 	 * can be larger than the max size of a SparseBitSet
@@ -2718,7 +2728,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public CaseDbTransaction beginTransaction() throws TskCoreException {
-		return new CaseDbTransaction(this, connections.getConnection());
+		return new CaseDbTransaction(this);
 	}
 
 	/**
@@ -7923,6 +7933,52 @@ public class SleuthkitCase {
 			closeStatement(queryStatement);
 		}
 	}
+	
+	/**
+	 * Utility class to create keys for the cache used in isRootDirectory().
+	 * The dataSourceId must be set but the fileSystemId can be null 
+	 * (for local directories, for example).
+	 */
+	private class RootDirectoryKey {
+        private long dataSourceId;
+        private Long fileSystemId;
+
+        RootDirectoryKey(long dataSourceId, Long fileSystemId) {
+            this.dataSourceId = dataSourceId;
+            this.fileSystemId = fileSystemId;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+			hash = 41 * hash + Objects.hashCode(dataSourceId);
+            hash = 41 * hash + Objects.hashCode(fileSystemId);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+
+			RootDirectoryKey otherKey = (RootDirectoryKey)obj;
+			if (dataSourceId != otherKey.dataSourceId) {
+				return false;
+			}
+
+			if (fileSystemId != null) {
+				return fileSystemId.equals(otherKey.fileSystemId);
+			}
+			return (otherKey.fileSystemId == null);
+		}
+	}	
 
 	/**
 	 * Check whether a given AbstractFile is the "root" directory. True if the
@@ -7937,6 +7993,29 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
+		
+		// First check if we know the root directory for this data source and optionally 
+		// file system. There is only one root, so if we know it we can simply compare 
+		// this file ID to the known root directory.
+		Long fsObjId = null;
+		if (file instanceof FsContent) {
+			fsObjId = ((FsContent)file).getFileSystemId();
+		}
+		RootDirectoryKey key = new RootDirectoryKey(file.getDataSourceObjectId(), fsObjId);
+		synchronized(rootDirectoryMapLock) {
+			if (rootDirectoryMap.containsKey(key)) {
+				return rootDirectoryMap.get(key).equals(file.getId());
+			}
+		}
+
+		// Fallback cache. We store the result of each database lookup 
+		// so it won't be done multiple times in a row. In practice, this will
+		// only be used if this method was never called on the root directory. 
+		Boolean isRoot = isRootDirectoryCache.getIfPresent(file.getId());
+		if (isRoot != null) {
+			return isRoot;
+		}
+		
 		CaseDbConnection connection = transaction.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -7954,12 +8033,26 @@ public class SleuthkitCase {
 					return true;
 				}
 				int type = resultSet.getInt("parent_type");
-				return (type == TskData.ObjectType.IMG.getObjectType()
+				boolean result = type == TskData.ObjectType.IMG.getObjectType()
 						|| type == TskData.ObjectType.VS.getObjectType()
 						|| type == TskData.ObjectType.VOL.getObjectType()
-						|| type == TskData.ObjectType.FS.getObjectType());
+						|| type == TskData.ObjectType.FS.getObjectType();
+				if (result == true) {
+					synchronized(rootDirectoryMapLock) {
+						// This is a root directory so save it
+						rootDirectoryMap.put(key, file.getId());
+					}
+				}
+				isRootDirectoryCache.put(file.getId(), result);
+				return result;
 
 			} else {
+				// This is a root directory so save it
+				synchronized(rootDirectoryMapLock) {
+					rootDirectoryMap.put(key, file.getId());
+				}
+				isRootDirectoryCache.put(file.getId(), true);
+				
 				return true; // The file has no parent
 			}
 		} catch (SQLException ex) {
@@ -13093,18 +13186,21 @@ public class SleuthkitCase {
 		private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
 		private static final Object threadsWithOpenTransactionLock = new Object();
 
-		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
-			this.connection = connection;
+		private CaseDbTransaction(SleuthkitCase sleuthkitCase) throws TskCoreException {
 			this.sleuthkitCase = sleuthkitCase;
+			
+			sleuthkitCase.acquireSingleUserCaseWriteLock();
+			this.connection = sleuthkitCase.getConnection();
 			try {
 				synchronized (threadsWithOpenTransactionLock) {
 					this.connection.beginTransaction();
 					threadsWithOpenTransaction.add(Thread.currentThread().getId());
 				}
 			} catch (SQLException ex) {
+				sleuthkitCase.releaseSingleUserCaseWriteLock();
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
-			sleuthkitCase.acquireSingleUserCaseWriteLock();
+			
 		}
 
 		/**
