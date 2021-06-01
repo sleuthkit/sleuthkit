@@ -18,14 +18,27 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Data model events.
  */
 public interface TskEvent {
+
+	/**
+	 * Gets the data source guaranteed to be associated with the event, if
+	 * applicable.
+	 *
+	 * @return The object ID of the data asource associated with the event, if
+	 *         specified.
+	 */
+	default Optional<Long> getDataSourceId() {
+		return Optional.ofNullable(null);
+	}
 
 	/**
 	 * An abstract super class for data model events for one or more data module
@@ -67,14 +80,27 @@ public interface TskEvent {
 	 */
 	public final static class AggregateScoresChangedEvent extends TskObjectsEvent<ScoreChange> {
 
+		private final Long dataSourceObjectId;
+
 		/**
 		 * Constructs an event published when the aggregate scores of one or
 		 * more data model objects change.
 		 *
-		 * @param scoreChanges The score changes.
+		 * @param scoreChanges The score changes, must not be empty.
 		 */
-		AggregateScoresChangedEvent(List<ScoreChange> scoreChanges) {
-			super(scoreChanges);
+		AggregateScoresChangedEvent(Long dataSourceObjectId, ImmutableSet<ScoreChange> scoreChanges) {
+			super(scoreChanges.asList());
+			this.dataSourceObjectId = dataSourceObjectId;
+			scoreChanges.stream().forEach(chg -> {
+				if (!chg.getDataSourceObjectId().equals(dataSourceObjectId)) {
+					throw new IllegalArgumentException("All data source object IDs in List<ScoreChange> must match dataSourceObjectId");
+				}
+			});
+		}
+
+		@Override
+		public Optional<Long> getDataSourceId() {
+			return Optional.ofNullable(dataSourceObjectId);
 		}
 
 		/**
@@ -366,7 +392,7 @@ public interface TskEvent {
 	 * An event published when one or more hosts are added to a person.
 	 */
 	public final static class HostsAddedToPersonTskEvent extends TskObjectsEvent<Host> {
-		
+
 		private final Person person;
 
 		/**
@@ -380,7 +406,7 @@ public interface TskEvent {
 			super(hosts);
 			this.person = person;
 		}
-		
+
 		/**
 		 * Gets the person.
 		 *
@@ -388,8 +414,8 @@ public interface TskEvent {
 		 */
 		public Person getPerson() {
 			return person;
-		}		
-		
+		}
+
 		/**
 		 * Gets the hosts.
 		 *
@@ -398,7 +424,7 @@ public interface TskEvent {
 		public List<Host> getHosts() {
 			return getDataModelObjects();
 		}
-				
+
 	}
 
 	/**
@@ -407,7 +433,7 @@ public interface TskEvent {
 	public final static class HostsRemovedFromPersonTskEvent extends TskObjectsEvent<Long> {
 
 		private final Person person;
-				
+
 		/**
 		 * Contructs an event published when one or more hosts are removed from
 		 * a person.
@@ -427,8 +453,8 @@ public interface TskEvent {
 		 */
 		public Person getPerson() {
 			return person;
-		}				
-		
+		}
+
 		/**
 		 * Gets the host IDs of the deleted hosts.
 		 *
@@ -436,8 +462,8 @@ public interface TskEvent {
 		 */
 		public List<Long> getHostIds() {
 			return getDataModelObjects();
-		}		
-		
+		}
+
 	}
 
 }

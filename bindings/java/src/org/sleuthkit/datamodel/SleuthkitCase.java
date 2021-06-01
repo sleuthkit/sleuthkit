@@ -201,9 +201,9 @@ public class SleuthkitCase {
 	// Objects for caching the result of isRootDirectory(). Lock is for visibility only.
 	private final Object rootDirectoryMapLock = new Object();
 	private final Map<RootDirectoryKey, Long> rootDirectoryMap = new HashMap<>();
-	private final Cache<Long, Boolean> isRootDirectoryCache = 
-			CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
-	
+	private final Cache<Long, Boolean> isRootDirectoryCache
+			= CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
+
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
 	 * can be larger than the max size of a SparseBitSet
@@ -1007,7 +1007,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot5toSchema8dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot6toSchema9dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot0toSchema9dot1(dbSchemaVersion, connection);
-				
+
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -2596,7 +2596,7 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-			
+
 			// add an index on tsk_file_attributes table.
 			statement.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
 
@@ -2605,8 +2605,8 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
@@ -4926,8 +4926,8 @@ public class SleuthkitCase {
 					+ "FROM tsk_file_attributes AS attrs "
 					+ " INNER JOIN blackboard_attribute_types AS types "
 					+ " ON attrs.attribute_type_id = types.attribute_type_id "
-					+ " WHERE attrs.obj_id = " + file.getId() );
-			
+					+ " WHERE attrs.obj_id = " + file.getId());
+
 			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 			while (rs.next()) {
 				int attributeTypeId = rs.getInt("attribute_type_id");
@@ -7933,42 +7933,43 @@ public class SleuthkitCase {
 			closeStatement(queryStatement);
 		}
 	}
-	
+
 	/**
-	 * Utility class to create keys for the cache used in isRootDirectory().
-	 * The dataSourceId must be set but the fileSystemId can be null 
-	 * (for local directories, for example).
+	 * Utility class to create keys for the cache used in isRootDirectory(). The
+	 * dataSourceId must be set but the fileSystemId can be null (for local
+	 * directories, for example).
 	 */
 	private class RootDirectoryKey {
-        private long dataSourceId;
-        private Long fileSystemId;
 
-        RootDirectoryKey(long dataSourceId, Long fileSystemId) {
-            this.dataSourceId = dataSourceId;
-            this.fileSystemId = fileSystemId;
-        }
+		private long dataSourceId;
+		private Long fileSystemId;
 
-        @Override
-        public int hashCode() {
-            int hash = 7;
+		RootDirectoryKey(long dataSourceId, Long fileSystemId) {
+			this.dataSourceId = dataSourceId;
+			this.fileSystemId = fileSystemId;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 7;
 			hash = 41 * hash + Objects.hashCode(dataSourceId);
-            hash = 41 * hash + Objects.hashCode(fileSystemId);
-            return hash;
-        }
+			hash = 41 * hash + Objects.hashCode(fileSystemId);
+			return hash;
+		}
 
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
 
-			RootDirectoryKey otherKey = (RootDirectoryKey)obj;
+			RootDirectoryKey otherKey = (RootDirectoryKey) obj;
 			if (dataSourceId != otherKey.dataSourceId) {
 				return false;
 			}
@@ -7978,7 +7979,7 @@ public class SleuthkitCase {
 			}
 			return (otherKey.fileSystemId == null);
 		}
-	}	
+	}
 
 	/**
 	 * Check whether a given AbstractFile is the "root" directory. True if the
@@ -7993,16 +7994,16 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
-		
+
 		// First check if we know the root directory for this data source and optionally 
 		// file system. There is only one root, so if we know it we can simply compare 
 		// this file ID to the known root directory.
 		Long fsObjId = null;
 		if (file instanceof FsContent) {
-			fsObjId = ((FsContent)file).getFileSystemId();
+			fsObjId = ((FsContent) file).getFileSystemId();
 		}
 		RootDirectoryKey key = new RootDirectoryKey(file.getDataSourceObjectId(), fsObjId);
-		synchronized(rootDirectoryMapLock) {
+		synchronized (rootDirectoryMapLock) {
 			if (rootDirectoryMap.containsKey(key)) {
 				return rootDirectoryMap.get(key).equals(file.getId());
 			}
@@ -8015,7 +8016,7 @@ public class SleuthkitCase {
 		if (isRoot != null) {
 			return isRoot;
 		}
-		
+
 		CaseDbConnection connection = transaction.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -8038,7 +8039,7 @@ public class SleuthkitCase {
 						|| type == TskData.ObjectType.VOL.getObjectType()
 						|| type == TskData.ObjectType.FS.getObjectType();
 				if (result == true) {
-					synchronized(rootDirectoryMapLock) {
+					synchronized (rootDirectoryMapLock) {
 						// This is a root directory so save it
 						rootDirectoryMap.put(key, file.getId());
 					}
@@ -8048,11 +8049,11 @@ public class SleuthkitCase {
 
 			} else {
 				// This is a root directory so save it
-				synchronized(rootDirectoryMapLock) {
+				synchronized (rootDirectoryMapLock) {
 					rootDirectoryMap.put(key, file.getId());
 				}
 				isRootDirectoryCache.put(file.getId(), true);
-				
+
 				return true; // The file has no parent
 			}
 		} catch (SQLException ex) {
@@ -9312,7 +9313,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns a list of fully qualified file paths based on an image object ID.
 	 *
-	 * @param objectId The object id of the data source.
+	 * @param objectId   The object id of the data source.
 	 * @param connection Database connection to use.
 	 *
 	 * @return List of file paths.
@@ -13188,7 +13189,7 @@ public class SleuthkitCase {
 
 		private CaseDbTransaction(SleuthkitCase sleuthkitCase) throws TskCoreException {
 			this.sleuthkitCase = sleuthkitCase;
-			
+
 			sleuthkitCase.acquireSingleUserCaseWriteLock();
 			this.connection = sleuthkitCase.getConnection();
 			try {
@@ -13200,7 +13201,7 @@ public class SleuthkitCase {
 				sleuthkitCase.releaseSingleUserCaseWriteLock();
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
-			
+
 		}
 
 		/**
@@ -13304,7 +13305,11 @@ public class SleuthkitCase {
 				close();
 
 				if (!scoreChangeMap.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(scoreChangeMap.values().stream().collect(Collectors.toList())));
+					Map<Long, List<ScoreChange>> changesByDataSource = scoreChangeMap.values().stream()
+							.collect(Collectors.groupingBy(ScoreChange::getDataSourceObjectId));
+					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
+						sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
+					}
 				}
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.HostsAddedTskEvent(hostsAdded));
