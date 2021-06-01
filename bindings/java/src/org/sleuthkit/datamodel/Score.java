@@ -207,13 +207,13 @@ public class Score implements Comparable<Score> {
 
 	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Priority.NORMAL);
 	
-	// Score is a combination of significance and method category.
+	// Score is a combination of significance and priority.
 	private final Significance significance;
 	private final Priority priority;
 
-	public Score(Significance significance, Priority methodCategory) {
+	public Score(Significance significance, Priority priority) {
 		this.significance = significance;
-		this.priority = methodCategory;
+		this.priority = priority;
 	}
 
 	public Significance getSignificance() {
