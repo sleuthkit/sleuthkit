@@ -11145,16 +11145,31 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public void deleteContentTag(ContentTag tag) throws TskCoreException {
+		CaseDbTransaction trans = beginTransaction();
 		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection();) {
+		try {
 			// DELETE FROM content_tags WHERE tag_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_CONTENT_TAG);
+			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_CONTENT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
-			connection.executeUpdate(statement);
+			trans.getConnection().executeUpdate(statement);
+			
+			// update the aggregate score for the content
+			Long contentId = tag.getContent() != null ? tag.getContent().getId() : null;
+			Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null 
+					? tag.getContent().getDataSource().getId() 
+					: null;
+			
+			this.getScoringManager().updateAggregateScoreAfterDeletion(contentId, dataSourceId, trans);
+			
+			trans.commit();
+			trans = null;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
 			releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -11502,15 +11517,30 @@ public class SleuthkitCase {
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
 		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection();) {
+		CaseDbTransaction trans = beginTransaction();
+		try {
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);
+			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
-			connection.executeUpdate(statement);
+			trans.getConnection().executeUpdate(statement);
+			
+			// update the aggregate score for the parent content
+			Long contentId = tag.getContent() != null ? tag.getContent().getId() : null;
+			Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null 
+					? tag.getContent().getDataSource().getId() 
+					: null;
+			
+			this.getScoringManager().updateAggregateScoreAfterDeletion(contentId, dataSourceId, trans);
+			
+			trans.commit();
+			trans = null;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
 			releaseSingleUserCaseWriteLock();
 		}
 	}

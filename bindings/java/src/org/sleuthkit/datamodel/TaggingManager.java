@@ -32,6 +32,10 @@ import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
  * Provides an API to manage Tags.
  */
 public class TaggingManager {
+	// Score for tags with known bad status
+	private static Score BAD_SCORE = new Score(Score.Significance.NOTABLE, Score.MethodCategory.AUTO);
+	// Score for any other type of tag known status
+	private static Score UNKNOWN_SCORE = new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO);
 
 	private final SleuthkitCase skCase;
 
@@ -285,6 +289,9 @@ public class TaggingManager {
 							artifact, skCase.getContentById(artifact.getObjectID()), tagName, comment, currentExaminer.getLoginName());
 				}
 			}
+			
+			skCase.getScoringManager().updateAggregateScoreAfterAddition(
+					artifact.getObjectID(), artifact.getDataSourceObjectID(), getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
 
@@ -292,6 +299,23 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			trans.rollback();
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
+		}
+	}
+	
+
+	/**
+	 * Returns the score based on this TagName object.
+	 * @param knownStatus The known status of the tag.
+	 * @return The relevant score.
+	 */
+	static Score getTagScore(TskData.FileKnown knownStatus) {
+		switch (knownStatus) {
+			case BAD: 
+				return BAD_SCORE;
+			case UNKNOWN: 
+			case KNOWN:
+			default:
+				return UNKNOWN_SCORE;
 		}
 	}
 
@@ -376,6 +400,10 @@ public class TaggingManager {
 							content, tagName, comment, beginByteOffset, endByteOffset, currentExaminer.getLoginName());
 				}
 			}
+			
+			Long dataSourceId = content.getDataSource() != null ? content.getDataSource().getId() : null;
+			skCase.getScoringManager().updateAggregateScoreAfterAddition(
+					content.getId(), dataSourceId, getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
 			return new ContentTagChange(contentTag, removedTags);

@@ -24,7 +24,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import org.sleuthkit.datamodel.Score.MethodCategory;
 import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -262,8 +264,17 @@ public class ScoringManager {
 				newScore = iterScore;
 			}
 		}
-		// NOTE: Add logic here in the future to get tag score
+
+		// get the maximum score of the calculated aggregate score of analysis results
+		// or the score derived from the maximum known status of a content tag on this content.
+		Optional<Score> tagScore = getTagKnownStatus(objId)
+				.map(knownStatus -> TaggingManager.getTagScore(knownStatus));
 		
+		newScore = Stream.of(Optional.of(newScore), tagScore)
+				.filter(scoreOpt -> scoreOpt.isPresent())
+				.map(Optional::get)
+				.max(Score.getScoreComparator())
+				.orElse(newScore);
 		
 		// only change the DB if we got a new score. 
 		if (newScore.compareTo(currentScore) != 0) {
@@ -273,6 +284,38 @@ public class ScoringManager {
 			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, newScore));
 		}
 		return newScore;
+	}
+	
+	/**
+	 * Retrieves the maximum FileKnown status of any tag associated with the content id.
+	 * @param contentId The object id of the content.
+	 * @return The maximum FileKnown status for this content or empty.
+	 * @throws TskCoreException 
+	 */
+	private Optional<TskData.FileKnown> getTagKnownStatus(long contentId) throws TskCoreException {
+		String queryString = "SELECT tag_names.knownStatus AS knownStatus "
+			 + " FROM content_tags "
+			+ " INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id "
+			+ "	WHERE content_tags.obj_id = " + contentId 
+			+ " ORDER BY tag_names.knownStatus DESC "
+			+ " LIMIT 1 ";
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = db.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+
+			if (resultSet.next()) {
+				return Optional.ofNullable(TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
+			} else {
+				return Optional.empty();
+			}
+	
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting content tag FileKnown status for content with id: " + contentId);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
 	}
 
 	/**
