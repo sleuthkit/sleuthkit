@@ -33,7 +33,7 @@ public interface TskEvent {
 	 * Gets the data source guaranteed to be associated with the event, if
 	 * applicable.
 	 *
-	 * @return The object ID of the data asource associated with the event, if
+	 * @return The object ID of the data source associated with the event, if
 	 *         specified.
 	 */
 	default Optional<Long> getDataSourceId() {
