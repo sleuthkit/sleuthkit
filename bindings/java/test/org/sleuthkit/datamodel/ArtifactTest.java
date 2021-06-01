@@ -186,19 +186,19 @@ public class ArtifactTest {
         
 		// Test: attach an analysis result to the file. 
 		AnalysisResultAdded analysisResultAdded1 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), 
-																		new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Keyword hit found", "", "", attributes);
+																		new Score(Score.Significance.LIKELY_NOTABLE, Score.Priority.NORMAL), "Keyword hit found", "", "", attributes);
    
 		assertEquals(Score.Significance.LIKELY_NOTABLE.getId(), analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId());
-		assertEquals(Score.MethodCategory.AUTO.getId(), analysisResultAdded1.getAnalysisResult().getScore().getMethodCategory().getId());
+		assertEquals(Score.Priority.NORMAL.getId(), analysisResultAdded1.getAnalysisResult().getScore().getPriority().getId());
 		assertTrue(analysisResultAdded1.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"));
 		
 		// Add a 2nd analysis result to the same file
 		AnalysisResultAdded analysisResultAdded2 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
-																	new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Thats a rather intersting file.", "", "", Collections.emptyList());
+																	new Score(Score.Significance.LIKELY_NOTABLE, Score.Priority.NORMAL), "Thats a rather intersting file.", "", "", Collections.emptyList());
    
 		// Add a 3rd analysis result to the same file 
 		AnalysisResultAdded analysisResultAdded3 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED), 
-																	new Score(Score.Significance.NOTABLE, Score.MethodCategory.AUTO), "Highly scrambled text!!", "", "", Collections.emptyList());
+																	new Score(Score.Significance.NOTABLE, Score.Priority.NORMAL), "Highly scrambled text!!", "", "", Collections.emptyList());
 		// get analysis results and verify count
 		
 		List<AnalysisResult> ars = abcTextFile.getAllAnalysisResults();
@@ -207,7 +207,7 @@ public class ArtifactTest {
 		// verify the aggregate score - expect HIGH/Auto - highest of the 3 results added
 		Score aggScore = abcTextFile.getAggregateScore();
 		assertEquals(Score.Significance.NOTABLE.getId(), aggScore.getSignificance().getId());
-		assertEquals(Score.MethodCategory.AUTO.getId(), aggScore.getMethodCategory().getId());
+		assertEquals(Score.Priority.NORMAL.getId(), aggScore.getPriority().getId());
 		
 		// delete an anlysis result 3
 		Score newScore = caseDB.getBlackboard().deleteAnalysisResult(analysisResultAdded3.getAnalysisResult());
@@ -219,16 +219,16 @@ public class ArtifactTest {
 		// verify aggregate score - should now be Medium/Auto
 		Score newAggScore = abcTextFile.getAggregateScore();
 		assertEquals(Score.Significance.LIKELY_NOTABLE.getId(), newAggScore.getSignificance().getId());
-		assertEquals(Score.MethodCategory.AUTO.getId(), newAggScore.getMethodCategory().getId());
+		assertEquals(Score.Priority.NORMAL.getId(), newAggScore.getPriority().getId());
 		
 		
 		// Test Analysis Results in a Transaction
 		SleuthkitCase.CaseDbTransaction transAr = caseDB.beginTransaction();
 		AnalysisResultAdded analysisResultAdded4 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
-																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
+																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NOTABLE, Score.Priority.NORMAL), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
 		
 		AnalysisResultAdded analysisResultAdded5 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
-																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NONE, Score.MethodCategory.USER_DEFINED), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
+																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NONE, Score.Priority.OVERRIDE), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
 
 		transAr.commit();
 		ars = abcTextFile.getAllAnalysisResults();
@@ -237,7 +237,7 @@ public class ArtifactTest {
 		// verify aggregate score - should now be Good/User
 		newAggScore = abcTextFile.getAggregateScore();
 		assertEquals(Score.Significance.LIKELY_NONE.getId(), newAggScore.getSignificance().getId());
-		assertEquals(Score.MethodCategory.USER_DEFINED.getId(), newAggScore.getMethodCategory().getId());
+		assertEquals(Score.Priority.OVERRIDE.getId(), newAggScore.getPriority().getId());
 
 		
 		
@@ -290,7 +290,7 @@ public class ArtifactTest {
 		// Using a custom analysis result to for additional test coverage
 		BlackboardArtifact.Type analysisArtType = caseDB.getBlackboard().getOrAddArtifactType("CUSTOM_ANALYSIS_RESULT", "Custom Analysis Result", BlackboardArtifact.Category.ANALYSIS_RESULT);
 
-		AnalysisResultAdded added0 = defTextFile.newAnalysisResult(analysisArtType, new Score(Score.Significance.UNKNOWN, Score.MethodCategory.AUTO), 
+		AnalysisResultAdded added0 = defTextFile.newAnalysisResult(analysisArtType, new Score(Score.Significance.UNKNOWN, Score.Priority.NORMAL), 
 				"", "", null, java.util.Collections.emptyList());
 		trans = caseDB.beginTransaction();
 		AnalysisResultAdded added1 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), Score.SCORE_UNKNOWN, 
@@ -299,7 +299,7 @@ public class ArtifactTest {
 				"", "", null, java.util.Collections.emptyList(), trans);
 		AnalysisResultAdded added3 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), Score.SCORE_UNKNOWN, 
 				"", "config3", null, java.util.Collections.emptyList(), trans);
-		AnalysisResultAdded added4 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), new Score(Score.Significance.NOTABLE, Score.MethodCategory.AUTO), 
+		AnalysisResultAdded added4 = caseDB.getBlackboard().newAnalysisResult(analysisArtType, defTextFile.getId(), fs.getDataSource().getId(), new Score(Score.Significance.NOTABLE, Score.Priority.NORMAL), 
 				"", "", null, java.util.Collections.emptyList(), trans);
 		trans.commit();
 		BlackboardArtifact bbArt2 = defTextFile.newArtifact(analysisArtType.getTypeID());
