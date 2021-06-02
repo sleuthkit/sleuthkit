@@ -24,12 +24,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.sleuthkit.datamodel.Score.MethodCategory;
+import org.sleuthkit.datamodel.Score.Priority;
 import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -89,7 +88,7 @@ public class ScoringManager {
 			return Collections.emptyMap();
 		}
 
-		String queryString = "SELECT obj_id, significance, method_category FROM tsk_aggregate_score WHERE obj_id in "
+		String queryString = "SELECT obj_id, significance, priority FROM tsk_aggregate_score WHERE obj_id in "
 				+ objIds.stream().map(l -> l.toString()).collect(Collectors.joining(",", "(", ")"));
 
 		Map<Long, Score> results = objIds.stream().collect(Collectors.toMap( key -> key, key -> Score.SCORE_UNKNOWN));
@@ -98,7 +97,7 @@ public class ScoringManager {
 			try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
 				while (rs.next()) {
 					Long objId = rs.getLong("obj_id");
-					Score score = new Score(Significance.fromID(rs.getInt("significance")), MethodCategory.fromID(rs.getInt("method_category")));
+					Score score = new Score(Significance.fromID(rs.getInt("significance")), Priority.fromID(rs.getInt("priority")));
 					results.put(objId, score);
 				}
 			} catch (SQLException ex) {
@@ -138,10 +137,10 @@ public class ScoringManager {
 	 * @throws TskCoreException
 	 */
 	private Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
-		String queryString = "SELECT significance, method_category FROM tsk_aggregate_score WHERE obj_id = " + objId;
+		String queryString = "SELECT significance, priority FROM tsk_aggregate_score WHERE obj_id = " + objId;
 		try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
 			if (rs.next()) {
-				return new Score(Significance.fromID(rs.getInt("significance")), MethodCategory.fromID(rs.getInt("method_category")));
+				return new Score(Significance.fromID(rs.getInt("significance")), Priority.fromID(rs.getInt("priority")));
 			} else {
 				return Score.SCORE_UNKNOWN;
 			}
@@ -163,8 +162,8 @@ public class ScoringManager {
 	 */
 	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbTransaction transaction) throws TskCoreException {
 
-		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , method_category) VALUES (?, ?, ?, ?)"
-				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, method_category = ?";
+		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , priority) VALUES (?, ?, ?, ?)"
+				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, priority = ?";
 
 		CaseDbConnection connection = transaction.getConnection();
 		try {
@@ -178,10 +177,10 @@ public class ScoringManager {
 				preparedStatement.setNull(2, java.sql.Types.NULL);
 			}
 			preparedStatement.setInt(3, score.getSignificance().getId());
-			preparedStatement.setInt(4, score.getMethodCategory().getId());
+			preparedStatement.setInt(4, score.getPriority().getId());
 
 			preparedStatement.setInt(5, score.getSignificance().getId());
-			preparedStatement.setInt(6, score.getMethodCategory().getId());
+			preparedStatement.setInt(6, score.getPriority().getId());
 
 			connection.executeUpdate(preparedStatement);
 		} catch (SQLException ex) {
