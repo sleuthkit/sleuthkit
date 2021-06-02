@@ -205,6 +205,11 @@ public class Score implements Comparable<Score> {
 		}
 	}
 
+	public static final Score SCORE_NOTABLE = new Score(Significance.NOTABLE, Priority.NORMAL);
+	public static final Score SCORE_LIKELY_NOTABLE = new Score(Significance.LIKELY_NOTABLE, Priority.NORMAL);	
+	public static final Score SCORE_LIKELY_NONE = new Score(Significance.LIKELY_NONE, Priority.NORMAL);
+	public static final Score SCORE_NONE= new Score(Significance.NONE, Priority.NORMAL);
+	
 	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Priority.NORMAL);
 	
 	// Score is a combination of significance and priority.
