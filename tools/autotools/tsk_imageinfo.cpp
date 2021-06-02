@@ -125,18 +125,7 @@ main(int argc, char **argv1)
     int findFilesResult;
     findFilesResult = imageProcessor.findFilesInImg();
 
-    tsk_printf("Is Supported: ");
-    if (findFilesResult != 0) {
-        tsk_printf("false\n");
-    }
-    else if (imageProcessor.isImageSupported()) {
-        tsk_printf("true\n");
-    }
-    else {
-        tsk_printf("false\n");
-    }
-
-    imageProcessor.printEncryptionStatus();
+    imageProcessor.printResults();
     
     exit(0);
 }
