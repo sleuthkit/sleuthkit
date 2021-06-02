@@ -34,9 +34,9 @@ import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
  */
 public class TaggingManager {
 	// Score for tags with known bad status
-	private static Score BAD_SCORE = new Score(Score.Significance.NOTABLE, Score.MethodCategory.AUTO);
+	private static Score BAD_SCORE = new Score(Score.Significance.NOTABLE, Score.Priority.NORMAL);
 	// Score for any other type of tag known status
-	private static Score UNKNOWN_SCORE = new Score(Score.Significance.LIKELY_NOTABLE, Score.MethodCategory.AUTO);
+	private static Score UNKNOWN_SCORE = new Score(Score.Significance.LIKELY_NOTABLE, Score.Priority.NORMAL);
 
 	private final SleuthkitCase skCase;
 
