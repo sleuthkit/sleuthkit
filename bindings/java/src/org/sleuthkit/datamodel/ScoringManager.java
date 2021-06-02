@@ -267,7 +267,7 @@ public class ScoringManager {
 
 		// get the maximum score of the calculated aggregate score of analysis results
 		// or the score derived from the maximum known status of a content tag on this content.
-		Optional<Score> tagScore = getTagKnownStatus(objId)
+		Optional<Score> tagScore = getTagKnownStatus(objId, transaction)
 				.map(knownStatus -> TaggingManager.getTagScore(knownStatus));
 		
 		if (tagScore.isPresent() && Score.getScoreComparator().compare(tagScore.get(), newScore) > 0) {
@@ -285,32 +285,43 @@ public class ScoringManager {
 	}
 	
 	/**
-	 * Retrieves the maximum FileKnown status of any tag associated with the content id.
-	 * @param contentId The object id of the content.
-	 * @return The maximum FileKnown status for this content or empty.
-	 * @throws TskCoreException 
+	 * Retrieves the maximum FileKnown status of any tag associated with the
+	 * object id.
+	 *
+	 * @param objectId   The object id of the item.
+	 * @param transaction The case db transaction to perform this query.
+	 *
+	 * @return The maximum FileKnown status for this object or empty.
+	 *
+	 * @throws TskCoreException
 	 */
-	private Optional<TskData.FileKnown> getTagKnownStatus(long contentId) throws TskCoreException {
-		String queryString = "SELECT tag_names.knownStatus AS knownStatus "
-			 + " FROM content_tags "
-			+ " INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id "
-			+ "	WHERE content_tags.obj_id = " + contentId 
-			+ " ORDER BY tag_names.knownStatus DESC "
-			+ " LIMIT 1 ";
+	private Optional<TskData.FileKnown> getTagKnownStatus(long objectId, CaseDbTransaction transaction) throws TskCoreException {
+		// query content tags and blackboard artifact tags for highest 
+		// known status associated with a tag associated with this object id
+		String queryString = "SELECT tag_names.knownStatus AS knownStatus\n"
+				+ "	FROM (\n"
+				+ "		SELECT ctags.tag_name_id AS tag_name_id FROM content_tags ctags WHERE ctags.obj_id = " + objectId + "\n"
+				+ "	    UNION\n"
+				+ "	    SELECT btags.tag_name_id AS tag_name_id FROM blackboard_artifact_tags btags \n"
+				+ "	    INNER JOIN blackboard_artifacts ba ON btags.artifact_id = ba.artifact_id\n"
+				+ "	    WHERE ba.artifact_obj_id = " + objectId + "\n"
+				+ "	) tag_name_ids\n"
+				+ "	INNER JOIN tag_names ON tag_name_ids.tag_name_id = tag_names.tag_name_id\n"
+				+ "	ORDER BY tag_names.knownStatus DESC\n"
+				+ "	LIMIT 1";
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+		try (Statement statement = transaction.getConnection().createStatement();
+				ResultSet resultSet = transaction.getConnection().executeQuery(statement, queryString);) {
 
 			if (resultSet.next()) {
 				return Optional.ofNullable(TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
 			} else {
 				return Optional.empty();
 			}
-	
+
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting content tag FileKnown status for content with id: " + contentId);
+			throw new TskCoreException("Error getting content tag FileKnown status for content with id: " + objectId);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
