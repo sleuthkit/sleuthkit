@@ -24,6 +24,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
@@ -316,6 +317,49 @@ public class TaggingManager {
 			case KNOWN:
 			default:
 				return UNKNOWN_SCORE;
+		}
+	}
+	
+		/**
+	 * Retrieves the maximum FileKnown status of any tag associated with the
+	 * object id.
+	 *
+	 * @param objectId   The object id of the item.
+	 * @param transaction The case db transaction to perform this query.
+	 *
+	 * @return The maximum FileKnown status for this object or empty.
+	 *
+	 * @throws TskCoreException
+	 */
+	Optional<TskData.FileKnown> getMaxTagKnownStatus(long objectId, CaseDbTransaction transaction) throws TskCoreException {
+		// query content tags and blackboard artifact tags for highest 
+		// known status associated with a tag associated with this object id
+		String queryString = "SELECT tag_names.knownStatus AS knownStatus\n"
+				+ "	FROM (\n"
+				+ "		SELECT ctags.tag_name_id AS tag_name_id FROM content_tags ctags WHERE ctags.obj_id = " + objectId + "\n"
+				+ "	    UNION\n"
+				+ "	    SELECT btags.tag_name_id AS tag_name_id FROM blackboard_artifact_tags btags \n"
+				+ "	    INNER JOIN blackboard_artifacts ba ON btags.artifact_id = ba.artifact_id\n"
+				+ "	    WHERE ba.artifact_obj_id = " + objectId + "\n"
+				+ "	) tag_name_ids\n"
+				+ "	INNER JOIN tag_names ON tag_name_ids.tag_name_id = tag_names.tag_name_id\n"
+				+ "	ORDER BY tag_names.knownStatus DESC\n"
+				+ "	LIMIT 1";
+
+		skCase.acquireSingleUserCaseReadLock();
+		try (Statement statement = transaction.getConnection().createStatement();
+				ResultSet resultSet = transaction.getConnection().executeQuery(statement, queryString);) {
+
+			if (resultSet.next()) {
+				return Optional.ofNullable(TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
+			} else {
+				return Optional.empty();
+			}
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting content tag FileKnown status for content with id: " + objectId);
+		} finally {
+			skCase.releaseSingleUserCaseReadLock();
 		}
 	}
 
