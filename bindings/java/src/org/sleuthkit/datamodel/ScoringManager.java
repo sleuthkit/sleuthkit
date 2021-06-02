@@ -270,11 +270,9 @@ public class ScoringManager {
 		Optional<Score> tagScore = getTagKnownStatus(objId)
 				.map(knownStatus -> TaggingManager.getTagScore(knownStatus));
 		
-		newScore = Stream.of(Optional.of(newScore), tagScore)
-				.filter(scoreOpt -> scoreOpt.isPresent())
-				.map(Optional::get)
-				.max(Score.getScoreComparator())
-				.orElse(newScore);
+		if (tagScore.isPresent() && Score.getScoreComparator().compare(tagScore.get(), newScore) > 0) {
+			newScore = tagScore.get();
+		}
 		
 		// only change the DB if we got a new score. 
 		if (newScore.compareTo(currentScore) != 0) {

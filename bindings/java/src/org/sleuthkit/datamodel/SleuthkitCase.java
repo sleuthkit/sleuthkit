@@ -11525,13 +11525,13 @@ public class SleuthkitCase {
 			statement.setLong(1, tag.getId());
 			trans.getConnection().executeUpdate(statement);
 			
-			// update the aggregate score for the parent content
-			Long contentId = tag.getContent() != null ? tag.getContent().getId() : null;
+			// update the aggregate score for the artifact
+			Long artifactObjId = tag.getArtifact().getId();
 			Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null 
 					? tag.getContent().getDataSource().getId() 
 					: null;
 			
-			this.getScoringManager().updateAggregateScoreAfterDeletion(contentId, dataSourceId, trans);
+			this.getScoringManager().updateAggregateScoreAfterDeletion(artifactObjId, dataSourceId, trans);
 			
 			trans.commit();
 			trans = null;

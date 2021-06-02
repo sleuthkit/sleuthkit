@@ -291,7 +291,7 @@ public class TaggingManager {
 			}
 			
 			skCase.getScoringManager().updateAggregateScoreAfterAddition(
-					artifact.getObjectID(), artifact.getDataSourceObjectID(), getTagScore(tagName.getKnownStatus()), trans);
+					artifact.getId(), artifact.getDataSourceObjectID(), getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
 
