@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.TskEvent.PersonsAddedTskEvent;
 
@@ -105,7 +106,7 @@ public final class PersonManager {
 			db.releaseSingleUserCaseWriteLock();
 		}
 
-		fireChangeEvent(person);
+		db.fireTSKEvent(new TskEvent.PersonsUpdatedTskEvent(Collections.singletonList(person)));
 		return person;
 	}
 
@@ -140,7 +141,7 @@ public final class PersonManager {
 		}
 
 		if (deletedPerson != null) {
-			fireDeletedEvent(deletedPerson);
+			db.fireTSKEvent(new TskEvent.PersonsDeletedTskEvent(Collections.singletonList(deletedPerson.getPersonId())));
 		}
 	}
 
@@ -175,8 +176,6 @@ public final class PersonManager {
 	 */
 	public Optional<Person> getPerson(long id) throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_persons WHERE id = " + id;
-
-		List<Person> persons = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
@@ -255,7 +254,7 @@ public final class PersonManager {
 		}
 
 		if (toReturn != null) {
-			fireCreationEvent(toReturn);
+			db.fireTSKEvent(new PersonsAddedTskEvent(Collections.singletonList(toReturn)));
 		}
 		return toReturn;
 	}
@@ -267,27 +266,48 @@ public final class PersonManager {
 	 *
 	 * @return The list of hosts corresponding to the person.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException Thrown if there is an issue querying the case
+	 *                          database.
 	 */
 	public List<Host> getHostsForPerson(Person person) throws TskCoreException {
-		String whereStatement = (person == null) ? " WHERE person_id IS NULL " : " WHERE person_id = " + person.getPersonId();
-		whereStatement += " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
+		return executeHostsQuery("SELECT * FROM tsk_hosts WHERE person_id = " + person.getPersonId());
+	}
 
-		String queryString = "SELECT * FROM tsk_hosts " + whereStatement;
+	/**
+	 * Gets all hosts not associated with any person.
+	 *
+	 * @return The hosts.
+	 *
+	 * @throws TskCoreException Thrown if there is an issue querying the case
+	 *                          database.
+	 */
+	public List<Host> getHostsWithoutPersons() throws TskCoreException {
+		return executeHostsQuery("SELECT * FROM tsk_hosts WHERE person_id IS NULL");
+	}
 
+	/**
+	 * Executes a query of the tsk_hosts table in the case database.
+	 *
+	 * @param hostsQuery The SQL query to execute.
+	 *
+	 * @throws TskCoreException Thrown if there is an issue querying the case
+	 *                          database.
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<Host> executeHostsQuery(String hostsQuery) throws TskCoreException {
+		String sql = hostsQuery + " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 		List<Host> hosts = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
+				ResultSet rs = connection.executeQuery(s, sql)) {
 			while (rs.next()) {
 				hosts.add(new Host(rs.getLong("id"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status"))));
 			}
-
 			return hosts;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting host for data source: " + person.getName()), ex);
+			throw new TskCoreException(String.format("Error executing '" + sql + "'"), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -359,55 +379,86 @@ public final class PersonManager {
 	}
 
 	/**
-	 * Set host's parent person.
+	 * Adds one or more hosts to a person.
 	 *
-	 * @param host   The host whose parent will be set.
-	 * @param person The person to be a parent or null to remove any parent
-	 *               person reference from this host.
+	 * @param person The person.
+	 * @param hosts  The hosts.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException Thrown if the operation cannot be completed.
 	 */
-	public void setPerson(Host host, Person person) throws TskCoreException {
-		if (host == null) {
-			throw new TskCoreException("Illegal argument passed to setPerson: host must be non-null.");
+	public void addHostsToPerson(Person person, List<Host> hosts) throws TskCoreException {
+		if (person == null) {
+			throw new TskCoreException("Illegal argument: person must be non-null");
 		}
+		if (hosts == null || hosts.isEmpty()) {
+			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
+		}
+		executeHostsUpdate(person, getHostIds(hosts), new TskEvent.HostsAddedToPersonTskEvent(person, hosts));
+	}
 
-		String queryString = (person == null)
-				? String.format("UPDATE tsk_hosts SET person_id = NULL WHERE id = %d", host.getHostId())
-				: String.format("UPDATE tsk_hosts SET person_id = %d WHERE id = %d", person.getPersonId(), host.getHostId());
+	/**
+	 * Removes one or more hosts from a person.
+	 *
+	 * @param person The person.
+	 * @param hosts  The hosts.
+	 *
+	 * @throws TskCoreException Thrown if the operation cannot be completed.
+	 */
+	public void removeHostsFromPerson(Person person, List<Host> hosts) throws TskCoreException {
+		if (person == null) {
+			throw new TskCoreException("Illegal argument: person must be non-null");
+		}
+		if (hosts == null || hosts.isEmpty()) {
+			throw new TskCoreException("Illegal argument: hosts must be non-null and non-empty");
+		}
+		List<Long> hostIds = getHostIds(hosts);
+		executeHostsUpdate(null, hostIds, new TskEvent.HostsRemovedFromPersonTskEvent(person, hostIds));
+	}
 
+	/**
+	 * Executes an update of the person_id column for one or more hosts in the
+	 * tsk_hosts table in the case database.
+	 *
+	 * @param person  The person to get the person ID from or null if the person
+	 *                ID of the hosts should be set to NULL.
+	 * @param hostIds The host IDs of the hosts.
+	 * @param event   A TSK event to be published if the update succeeds.
+	 *
+	 * @throws TskCoreException Thrown if the update fails.
+	 */
+	private void executeHostsUpdate(Person person, List<Long> hostIds, TskEvent event) throws TskCoreException {
+		String updateSql = null;
 		db.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();) {
-			s.executeUpdate(queryString);
+		try (CaseDbConnection connection = this.db.getConnection(); Statement statement = connection.createStatement()) {
+			updateSql = (person == null)
+					? String.format("UPDATE tsk_hosts SET person_id = NULL")
+					: String.format("UPDATE tsk_hosts SET person_id = %d", person.getPersonId());
+			String hostIdsCsvList = hostIds.stream()
+					.map(hostId -> hostId.toString())
+					.collect(Collectors.joining(","));
+			updateSql += " WHERE id IN (" + hostIdsCsvList + ")";
+			statement.executeUpdate(updateSql);
+			db.fireTSKEvent(event);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting persons"), ex);
+			throw new TskCoreException(String.format(updateSql == null ? "Error connecting to case database" : "Error executing '" + updateSql + "'"), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-
-		db.getPersonManager().fireChangeEvent(person);
 	}
 
 	/**
-	 * Fires an event when a person is created.
+	 * Gets a list of host IDs from a list of hosts.
 	 *
-	 * @param added The person that was created.
+	 * @param hosts The hosts.
+	 *
+	 * @return The host IDs.
 	 */
-	private void fireCreationEvent(Person added) {
-		db.fireTSKEvent(new PersonsAddedTskEvent(Collections.singletonList(added)));
+	private List<Long> getHostIds(List<Host> hosts) {
+		List<Long> hostIds = new ArrayList<>();
+		hostIds.addAll(hosts.stream()
+				.map(host -> host.getHostId())
+				.collect(Collectors.toList()));
+		return hostIds;
 	}
 
-	/**
-	 * Fires a change event for the specified person.
-	 *
-	 * @param newValue The person value that has changed.
-	 */
-	void fireChangeEvent(Person newValue) {
-		db.fireTSKEvent(new TskEvent.PersonsChangedTskEvent(Collections.singletonList(newValue)));
-	}
-
-	private void fireDeletedEvent(Person deleted) {
-		db.fireTSKEvent(new TskEvent.PersonsDeletedTskEvent(Collections.singletonList(deleted)));
-	}
 }

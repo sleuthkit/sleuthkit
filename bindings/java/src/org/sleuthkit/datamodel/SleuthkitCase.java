@@ -202,9 +202,9 @@ public class SleuthkitCase {
 	// Objects for caching the result of isRootDirectory(). Lock is for visibility only.
 	private final Object rootDirectoryMapLock = new Object();
 	private final Map<RootDirectoryKey, Long> rootDirectoryMap = new HashMap<>();
-	private final Cache<Long, Boolean> isRootDirectoryCache = 
-			CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
-	
+	private final Cache<Long, Boolean> isRootDirectoryCache
+			= CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
+
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
 	 * can be larger than the max size of a SparseBitSet
@@ -994,7 +994,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot5toSchema8dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot6toSchema9dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot0toSchema9dot1(dbSchemaVersion, connection);
-				
+
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				connection.executeUpdate(statement, "UPDATE tsk_db_info_extended SET value = " + dbSchemaVersion.getMajor() + " WHERE name = '" + SCHEMA_MAJOR_VERSION_KEY + "'"); //NON-NLS
@@ -2413,7 +2413,10 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_analysis_results (artifact_obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "conclusion TEXT, "
 					+ "significance INTEGER NOT NULL, "
-					+ "method_category INTEGER NOT NULL, "
+					/* method_category was a column in a little distributed version of 9.0. 
+					 * It was renamed to priority before public release. The 9.1 upgrade code
+					 * will add the priority column. This is commented out since it was never used. */ 
+					// + "method_category INTEGER NOT NULL, "
 					+ "configuration TEXT, justification TEXT, "
 					+ "ignore_score INTEGER DEFAULT 0 " // boolean	
 					+ ")");
@@ -2421,7 +2424,8 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_aggregate_score( obj_id " + bigIntDataType + " PRIMARY KEY, "
 					+ "data_source_obj_id " + bigIntDataType + ", "
 					+ "significance INTEGER NOT NULL, "
-					+ "method_category INTEGER NOT NULL, "
+					// See comment above on why this is commented out
+					// + "method_category INTEGER NOT NULL, "
 					+ "UNIQUE (obj_id),"
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
@@ -2583,17 +2587,20 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-			
+
 			// add an index on tsk_file_attributes table.
 			statement.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
-
+			
+			statement.execute("ALTER TABLE tsk_analysis_results ADD COLUMN priority INTEGER NOT NULL");
+			statement.execute("ALTER TABLE tsk_aggregate_score ADD COLUMN priority INTEGER NOT NULL");
+			
 			return new CaseDbSchemaVersionNumber(9, 1);
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
@@ -4963,8 +4970,8 @@ public class SleuthkitCase {
 					+ "FROM tsk_file_attributes AS attrs "
 					+ " INNER JOIN blackboard_attribute_types AS types "
 					+ " ON attrs.attribute_type_id = types.attribute_type_id "
-					+ " WHERE attrs.obj_id = " + file.getId() );
-			
+					+ " WHERE attrs.obj_id = " + file.getId());
+
 			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 			while (rs.next()) {
 				int attributeTypeId = rs.getInt("attribute_type_id");
@@ -5296,7 +5303,7 @@ public class SleuthkitCase {
 					analysisResultsStatement.setLong(1, artifactObjId);
 					analysisResultsStatement.setString(2, (conclusion != null) ? conclusion : "");
 					analysisResultsStatement.setInt(3, score.getSignificance().getId());
-					analysisResultsStatement.setInt(4, score.getMethodCategory().getId());
+					analysisResultsStatement.setInt(4, score.getPriority().getId());
 					analysisResultsStatement.setString(5, (configuration != null) ? configuration : "");
 					analysisResultsStatement.setString(6, (justification != null) ? justification : "");
 
@@ -8006,42 +8013,43 @@ public class SleuthkitCase {
 			closeStatement(queryStatement);
 		}
 	}
-	
+
 	/**
-	 * Utility class to create keys for the cache used in isRootDirectory().
-	 * The dataSourceId must be set but the fileSystemId can be null 
-	 * (for local directories, for example).
+	 * Utility class to create keys for the cache used in isRootDirectory(). The
+	 * dataSourceId must be set but the fileSystemId can be null (for local
+	 * directories, for example).
 	 */
 	private class RootDirectoryKey {
-        private long dataSourceId;
-        private Long fileSystemId;
 
-        RootDirectoryKey(long dataSourceId, Long fileSystemId) {
-            this.dataSourceId = dataSourceId;
-            this.fileSystemId = fileSystemId;
-        }
+		private long dataSourceId;
+		private Long fileSystemId;
 
-        @Override
-        public int hashCode() {
-            int hash = 7;
+		RootDirectoryKey(long dataSourceId, Long fileSystemId) {
+			this.dataSourceId = dataSourceId;
+			this.fileSystemId = fileSystemId;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 7;
 			hash = 41 * hash + Objects.hashCode(dataSourceId);
-            hash = 41 * hash + Objects.hashCode(fileSystemId);
-            return hash;
-        }
+			hash = 41 * hash + Objects.hashCode(fileSystemId);
+			return hash;
+		}
 
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
 
-			RootDirectoryKey otherKey = (RootDirectoryKey)obj;
+			RootDirectoryKey otherKey = (RootDirectoryKey) obj;
 			if (dataSourceId != otherKey.dataSourceId) {
 				return false;
 			}
@@ -8051,7 +8059,7 @@ public class SleuthkitCase {
 			}
 			return (otherKey.fileSystemId == null);
 		}
-	}	
+	}
 
 	/**
 	 * Check whether a given AbstractFile is the "root" directory. True if the
@@ -8065,16 +8073,17 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 */
-	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {		
+	private boolean isRootDirectory(AbstractFile file, CaseDbTransaction transaction) throws TskCoreException {
+
 		// First check if we know the root directory for this data source and optionally 
 		// file system. There is only one root, so if we know it we can simply compare 
 		// this file ID to the known root directory.
 		Long fsObjId = null;
 		if (file instanceof FsContent) {
-			fsObjId = ((FsContent)file).getFileSystemId();
+			fsObjId = ((FsContent) file).getFileSystemId();
 		}
 		RootDirectoryKey key = new RootDirectoryKey(file.getDataSourceObjectId(), fsObjId);
-		synchronized(rootDirectoryMapLock) {
+		synchronized (rootDirectoryMapLock) {
 			if (rootDirectoryMap.containsKey(key)) {
 				return rootDirectoryMap.get(key).equals(file.getId());
 			}
@@ -8087,7 +8096,7 @@ public class SleuthkitCase {
 		if (isRoot != null) {
 			return isRoot;
 		}
-		
+
 		CaseDbConnection connection = transaction.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -8110,7 +8119,7 @@ public class SleuthkitCase {
 						|| type == TskData.ObjectType.VOL.getObjectType()
 						|| type == TskData.ObjectType.FS.getObjectType();
 				if (result == true) {
-					synchronized(rootDirectoryMapLock) {
+					synchronized (rootDirectoryMapLock) {
 						// This is a root directory so save it
 						rootDirectoryMap.put(key, file.getId());
 					}
@@ -8120,10 +8129,11 @@ public class SleuthkitCase {
 
 			} else {
 				// This is a root directory so save it
-				synchronized(rootDirectoryMapLock) {
+				synchronized (rootDirectoryMapLock) {
 					rootDirectoryMap.put(key, file.getId());
 				}
 				isRootDirectoryCache.put(file.getId(), true);
+
 				return true; // The file has no parent
 				
 			}
@@ -9413,7 +9423,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns a list of fully qualified file paths based on an image object ID.
 	 *
-	 * @param objectId The object id of the data source.
+	 * @param objectId   The object id of the data source.
 	 * @param connection Database connection to use.
 	 *
 	 * @return List of file paths.
@@ -12450,7 +12460,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (DEFAULT, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
-		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (artifact_obj_id, conclusion, significance, method_category, configuration, justification) " //NON-NLS
+		INSERT_ANALYSIS_RESULT("INSERT INTO tsk_analysis_results (artifact_obj_id, conclusion, significance, priority, configuration, justification) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
@@ -13283,7 +13293,7 @@ public class SleuthkitCase {
 
 		private CaseDbTransaction(SleuthkitCase sleuthkitCase) throws TskCoreException {
 			this.sleuthkitCase = sleuthkitCase;
-			
+
 			sleuthkitCase.acquireSingleUserCaseWriteLock();
 			this.connection = sleuthkitCase.getConnection();
 			try {
@@ -13295,7 +13305,7 @@ public class SleuthkitCase {
 				sleuthkitCase.releaseSingleUserCaseWriteLock();
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
-			
+
 		}
 
 		/**
@@ -13399,17 +13409,12 @@ public class SleuthkitCase {
 				close();
 
 				if (!scoreChangeMap.isEmpty()) {
-					// Group the score changes by data source id
 					Map<Long, List<ScoreChange>> changesByDataSource = scoreChangeMap.values().stream()
 							.collect(Collectors.groupingBy(ScoreChange::getDataSourceObjectId));
-
-					// Fire an event for each data source with a list of score changes.
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
-						sleuthkitCase.fireTSKEvent(new AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
+						sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
 				}
-
-				// Fire events for any new or changed objects
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.HostsAddedTskEvent(hostsAdded));
 				}
@@ -13417,7 +13422,7 @@ public class SleuthkitCase {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsAddedTskEvent(accountsAdded));
 				}
 				if (!accountsChanged.isEmpty()) {
-					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsChangedTskEvent(accountsChanged));
+					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsUpdatedTskEvent(accountsChanged));
 				}
 				if (!deletedOsAccountObjectIds.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsDeletedTskEvent(deletedOsAccountObjectIds));
