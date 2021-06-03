@@ -170,6 +170,11 @@ public class LocalFile extends AbstractFile {
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "LocalFile [\t" + "]\t"; //NON-NLS
 	}
+	
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		return getDataSource().getUniquePath() + parentPath + getName();
+	}
 
 	/**
 	 * Constructs a representation of a local/logical file (e.g., on a user's
