@@ -162,7 +162,7 @@ public class Score implements Comparable<Score> {
 	public enum Priority {
 
 		// Name must not have any spaces.
-		NORMAL(0, "Auto",  "Score.Priority.Normal.displayName.text"),
+		NORMAL(0, "Normmal",  "Score.Priority.Normal.displayName.text"),
 		OVERRIDE(10, "Override", "Score.Priority.Override.displayName.text"); 
 
 		private final int id;
