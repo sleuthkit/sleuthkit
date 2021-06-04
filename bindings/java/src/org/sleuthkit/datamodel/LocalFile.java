@@ -32,8 +32,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * been added to a case.
  */
 public class LocalFile extends AbstractFile {
-	
-	private volatile String uniquePath;
 
 	/**
 	 * Constructs a representation of a local/logical file (e.g., on a user's
@@ -171,15 +169,6 @@ public class LocalFile extends AbstractFile {
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "LocalFile [\t" + "]\t"; //NON-NLS
-	}
-	
-	@Override
-	public String getUniquePath() throws TskCoreException {
-		if (uniquePath == null) {
-			uniquePath = getDataSource().getUniquePath() + parentPath + getName();
-		}
-		
-		return uniquePath;
 	}
 
 	/**

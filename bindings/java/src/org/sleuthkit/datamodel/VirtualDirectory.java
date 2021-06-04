@@ -100,6 +100,15 @@ public class VirtualDirectory extends SpecialDirectory {
 			return super.getDataSource();
 		}
 	}
+	
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		if (this.getDataSourceObjectId() == this.getId()) {
+			return getName();
+		}
+		
+		return super.getUniquePath();
+	}
 
 	/**
 	 * Accepts a content visitor (Visitor design pattern).
