@@ -11156,7 +11156,6 @@ public class SleuthkitCase {
 	 */
 	public void deleteContentTag(ContentTag tag) throws TskCoreException {
 		CaseDbTransaction trans = beginTransaction();
-		acquireSingleUserCaseWriteLock();
 		try {
 			// DELETE FROM content_tags WHERE tag_id = ?
 			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_CONTENT_TAG);
@@ -11180,7 +11179,6 @@ public class SleuthkitCase {
 			if (trans != null) {
 				trans.rollback();
 			}
-			releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -11526,7 +11524,6 @@ public class SleuthkitCase {
 	 * representing the row to delete. @throws TskCoreException
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
 		CaseDbTransaction trans = beginTransaction();
 		try {
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
@@ -11551,7 +11548,6 @@ public class SleuthkitCase {
 			if (trans != null) {
 				trans.rollback();
 			}
-			releaseSingleUserCaseWriteLock();
 		}
 	}
 

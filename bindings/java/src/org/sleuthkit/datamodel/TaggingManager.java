@@ -342,7 +342,6 @@ public class TaggingManager {
 				+ "	ORDER BY tag_names.knownStatus DESC\n"
 				+ "	LIMIT 1";
 
-		skCase.acquireSingleUserCaseReadLock();
 		try (Statement statement = transaction.getConnection().createStatement();
 				ResultSet resultSet = transaction.getConnection().executeQuery(statement, queryString);) {
 
@@ -354,8 +353,6 @@ public class TaggingManager {
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting content tag FileKnown status for content with id: " + objectId);
-		} finally {
-			skCase.releaseSingleUserCaseReadLock();
 		}
 	}
 
