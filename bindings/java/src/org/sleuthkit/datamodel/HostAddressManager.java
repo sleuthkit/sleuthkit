@@ -113,20 +113,17 @@ public class HostAddressManager {
 		if (Objects.nonNull(hostAddress)) {
 			return Optional.of(hostAddress);
 		}
-		
-		String queryString = "SELECT * FROM tsk_host_addresses"
-				+ " WHERE LOWER(address) = LOWER(?)";
+		HostAddress.HostAddressType addressType = type;
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
-			queryString += " AND address_type IN (" + HostAddress.HostAddressType.IPV4.getId() + ", " + HostAddress.HostAddressType.IPV6.getId()
-					+ ", " + HostAddress.HostAddressType.HOSTNAME.getId() + ")";
-		} else {
-			queryString += " AND address_type = " + type.getId();
+			addressType = getDNSType(address);
 		}
-		
+		String queryString = "SELECT * FROM tsk_host_addresses"
+				+ " WHERE address = ?  AND address_type = ?";			
 		try {
 			PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
 			query.clearParameters();
-			query.setString(1, address);
+			query.setString(1, address.toLowerCase());
+			query.setInt(2, addressType.getId());
 			try (ResultSet rs = query.executeQuery()) {
 				if (!rs.next()) {
 					return Optional.empty();	// no match found
@@ -512,20 +509,20 @@ public class HostAddressManager {
 			return Optional.of(hostAddress.getId());
 		}
 
-		String queryString = "SELECT id, address_type, address FROM tsk_host_addresses"
-				+ " WHERE LOWER(address) = LOWER(?)";
+		HostAddress.HostAddressType addressType = type;
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
-			queryString += " AND address_type IN (" + HostAddress.HostAddressType.IPV4.getId() + ", " + HostAddress.HostAddressType.IPV6.getId()
-					+ ", " + HostAddress.HostAddressType.HOSTNAME.getId() + ")";
-		} else {
-			queryString += " AND address_type = " + type.getId();
-		}
+			addressType = getDNSType(address);
+		} 
+		
+		String queryString = "SELECT id, address_type, address FROM tsk_host_addresses"
+				+ " WHERE address = ?  AND address_type = ?"; 
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);) {
 			query.clearParameters();
-			query.setString(1, address);
+			query.setString(1, address.toLowerCase());
+			query.setInt(2, addressType.getId());
 			try (ResultSet rs = query.executeQuery()) {
 				if (!rs.next()) {
 					return Optional.empty();	// no match found
@@ -559,14 +556,14 @@ public class HostAddressManager {
 				+ " JOIN tsk_host_addresses as addresses "
 				+ " ON map.dns_address_id = addresses.id "
 				+ " WHERE addresses.address_type = " + HostAddress.HostAddressType.HOSTNAME.getId()
-				+ " AND LOWER( addresses.address) = LOWER(?)";
+				+ " AND addresses.address = ?";
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			List<HostAddress> IpAddresses = new ArrayList<>();
 			PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
 			query.clearParameters();
-			query.setString(1, hostname);
+			query.setString(1, hostname.toLowerCase());
 			try (ResultSet rs = query.executeQuery()) {
 				while (rs.next()) {
 					long ipAddressObjId = rs.getLong("ip_address_id");
@@ -597,14 +594,14 @@ public class HostAddressManager {
 				+ " ON map.ip_address_id = addresses.id "
 				+ " WHERE ( addresses.address_type = " + HostAddress.HostAddressType.IPV4.getId()
 				+ " OR  addresses.address_type = " + HostAddress.HostAddressType.IPV6.getId() + ")"
-				+ " AND LOWER( addresses.address) = LOWER(?)";
+				+ " AND addresses.address = ?";
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			List<HostAddress> dnsNames = new ArrayList<>();
 			PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
 			query.clearParameters();
-			query.setString(1, ipAddress);
+			query.setString(1, ipAddress.toLowerCase());
 			try (ResultSet rs = query.executeQuery()) {
 				while (rs.next()) {
 					long dnsAddressId = rs.getLong("dns_address_id");
