@@ -331,6 +331,15 @@ public interface Content extends SleuthkitVisitableItem {
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
 
 	/**
+	 * Get all data artifacts associated with this content.
+	 *
+	 * @return A list of data artifacts.
+	 *
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException;
+		
+	/**
 	 * Get all analysis results associated with this content.
 	 *
 	 * @return A list of analysis results.

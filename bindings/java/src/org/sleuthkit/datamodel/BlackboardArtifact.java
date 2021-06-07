@@ -500,6 +500,11 @@ public class BlackboardArtifact implements Content {
 	}
 
 	@Override
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
+		return sleuthkitCase.getBlackboard().getDataArtifactsBySource(artifactObjId);
+	}
+	
+	@Override
 	public Score getAggregateScore() throws TskCoreException {
 		return sleuthkitCase.getScoringManager().getAggregateScore(artifactObjId);
 

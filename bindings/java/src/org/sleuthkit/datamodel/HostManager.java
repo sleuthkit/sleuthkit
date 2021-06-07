@@ -32,7 +32,7 @@ import java.util.UUID;
 import org.sleuthkit.datamodel.Host.HostDbStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import org.sleuthkit.datamodel.TskEvent.HostsChangedTskEvent;
+import org.sleuthkit.datamodel.TskEvent.HostsUpdatedTskEvent;
 import org.sleuthkit.datamodel.TskEvent.HostsDeletedTskEvent;
 
 /**
@@ -561,7 +561,7 @@ public final class HostManager {
 	 * @param newValue The new value for the host.
 	 */
 	private void fireChangeEvent(Host newValue) {
-		db.fireTSKEvent(new HostsChangedTskEvent(Collections.singletonList(newValue)));
+		db.fireTSKEvent(new HostsUpdatedTskEvent(Collections.singletonList(newValue)));
 	}
 
 	/**
@@ -571,6 +571,6 @@ public final class HostManager {
 	 * @param deleted The deleted host.
 	 */
 	private void fireDeletedEvent(Host deleted) {
-		db.fireTSKEvent(new HostsDeletedTskEvent(Collections.singletonList(deleted)));
+		db.fireTSKEvent(new HostsDeletedTskEvent(Collections.singletonList(deleted.getHostId())));
 	}
 }

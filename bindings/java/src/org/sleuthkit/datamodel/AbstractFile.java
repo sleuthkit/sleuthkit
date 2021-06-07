@@ -1045,6 +1045,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		loadLocalFile();
+		/*
 		if (!localFile.exists()) {
 			throw new TskCoreException(
 					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
@@ -1052,7 +1053,7 @@ public abstract class AbstractFile extends AbstractContent {
 		if (!localFile.canRead()) {
 			throw new TskCoreException(
 					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
-		}
+		}*/
 
 		int bytesRead = 0;
 

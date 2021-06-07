@@ -29,13 +29,13 @@ import java.util.ResourceBundle;
  * each of which has a score. The aggregate score for an item is then determined
  * based on its analysis results.
  *
- * A score has two primary fields: Significance and MethodCategory.
+ * A score has two primary fields: Significance and Priority.
  *
- * There are two method categories : Auto and User Defined. "Auto" comes from
- * various (automated) analysis modules assigning a significance. "User Defined"
- * comes from a user manually assigning a significance to the item. The "User
- * Defined" scores will overrule the "Auto" scores. Modules should be
- * creating score with category "Auto".
+ * There are two priorities : Normal and Override. Nearly everything should have
+ * a "Normal" priority. "Override" is used when a user wants to change the score
+ * because of a false positive.  An "Override" score will take priority over 
+ * the combined "Normal" scores.  An item should have only one "Override" score
+ * at a time, but that is not currently enforced. 
  *
  * The significance is a range of how Notable (i.e. "Bad") the item is. The
  * range is from NONE (i.e. "Good") to NOTABLE with values in the middle, such
@@ -157,38 +157,34 @@ public class Score implements Comparable<Score> {
 	}
 
 	/**
-	 * Encapsulates category of methods assigning significance.
-	 *
-	 * Significance assigned by a user overrides the significance assigned by
-	 * automated analysis.
-	 *
+	 * Represents the priority of the score to allow overrides by a user or module
 	 */
-	public enum MethodCategory {
+	public enum Priority {
 
 		// Name must not have any spaces.
-		AUTO(0, "Auto",  "MethodCategory.Auto.displayName.text"),
-		USER_DEFINED(10, "UserDefined", "MethodCategory.UserDefined.displayName.text"); 
+		NORMAL(0, "Normal",  "Score.Priority.Normal.displayName.text"),
+		OVERRIDE(10, "Override", "Score.Priority.Override.displayName.text"); 
 
 		private final int id;
 		private final String name; 
 		private final String displayNameKey; // display name is loaded from resource bundle using this key.
 		
-		private MethodCategory(int id, String name, String displayNameKey) {
+		private Priority(int id, String name, String displayNameKey) {
 			this.id = id;
 			this.name = name;
 			this.displayNameKey = displayNameKey;
 		}
 
-		public static MethodCategory fromString(String name) {
+		public static Priority fromString(String name) {
 			return Arrays.stream(values())
 					.filter(val -> val.getName().equals(name))
-					.findFirst().orElse(AUTO);
+					.findFirst().orElse(NORMAL);
 		}
 
-		static public MethodCategory fromID(int id) {
+		static public Priority fromID(int id) {
 			return Arrays.stream(values())
 					.filter(val -> val.getId() == id)
-					.findFirst().orElse(AUTO);
+					.findFirst().orElse(NORMAL);
 		}
 
 		public int getId() {
@@ -209,32 +205,37 @@ public class Score implements Comparable<Score> {
 		}
 	}
 
-	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, MethodCategory.AUTO);
+	public static final Score SCORE_NOTABLE = new Score(Significance.NOTABLE, Priority.NORMAL);
+	public static final Score SCORE_LIKELY_NOTABLE = new Score(Significance.LIKELY_NOTABLE, Priority.NORMAL);	
+	public static final Score SCORE_LIKELY_NONE = new Score(Significance.LIKELY_NONE, Priority.NORMAL);
+	public static final Score SCORE_NONE= new Score(Significance.NONE, Priority.NORMAL);
 	
-	// Score is a combination of significance and method category.
+	public static final Score SCORE_UNKNOWN = new Score(Significance.UNKNOWN, Priority.NORMAL);
+	
+	// Score is a combination of significance and priority.
 	private final Significance significance;
-	private final MethodCategory methodCategory;
+	private final Priority priority;
 
-	public Score(Significance significance, MethodCategory methodCategory) {
+	public Score(Significance significance, Priority priority) {
 		this.significance = significance;
-		this.methodCategory = methodCategory;
+		this.priority = priority;
 	}
 
 	public Significance getSignificance() {
 		return significance;
 	}
 
-	public MethodCategory getMethodCategory() {
-		return methodCategory;
+	public Priority getPriority() {
+		return priority;
 	}
 
 	@Override
 	public int compareTo(Score other) {
-		// A score is a combination of significance & method category.
-		// Category UserDefined overrides Auto.
-		// If two results have same method category, then the higher significance wins.
-		if (this.getMethodCategory() != other.getMethodCategory()) {
-			return this.getMethodCategory().ordinal() - other.getMethodCategory().ordinal();
+		// A score is a combination of significance & priority.
+		// Priority Override overrides Normal.
+		// If two results have same priority, then the higher significance wins.
+		if (this.getPriority() != other.getPriority()) {
+			return this.getPriority().ordinal() - other.getPriority().ordinal();
 		} else {
 			return this.getSignificance().ordinal() - other.getSignificance().ordinal();
 		}

@@ -465,6 +465,11 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
+		return db.getBlackboard().getDataArtifactsBySource(objId);
+	}
+	
+	@Override
 	public Score getAggregateScore() throws TskCoreException {
 		return db.getScoringManager().getAggregateScore(objId);
 	}
