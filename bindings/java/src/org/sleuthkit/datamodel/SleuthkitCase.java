@@ -5441,7 +5441,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
-
+	
 	/**
 	 * Returns the list of all AbstractFile Children for a given
 	 * AbstractFileParent
@@ -8405,10 +8405,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Find all files in the data source, by name and parent
+	 * Find all files by name and parent
 	 *
-	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
-	 *                   search for the given file name
 	 * @param fileName   Pattern of the name of the file or directory to match
 	 *                   (case insensitive, used in LIKE SQL statement).
 	 * @param parentFile Object for parent file/directory to find children in
@@ -8419,8 +8417,27 @@ public class SleuthkitCase {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<AbstractFile> findFiles(Content dataSource, String fileName, AbstractFile parentFile) throws TskCoreException {
-		return findFiles(dataSource, fileName, parentFile.getName());
+	public List<AbstractFile> findFilesInFolder(String fileName, AbstractFile parentFile) throws TskCoreException {
+		CaseDbConnection connection = null;
+		ResultSet rs = null;
+		acquireSingleUserCaseReadLock();
+		try {
+			connection = connections.getConnection();
+			
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_NAME);
+			statement.clearParameters();
+			long parentId = parentFile.getId();
+			statement.setLong(1, parentId);
+			statement.setString(2, fileName);
+			rs = connection.executeQuery(statement);
+			return resultSetToAbstractFiles(rs, connection);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting AbstractFile children with name=" + fileName + " for Content parent with ID=" + parentFile.getId(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeConnection(connection);
+			releaseSingleUserCaseReadLock();
+		}
 	}
 
 	/**
@@ -12114,6 +12131,11 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_REPORT);
 			statement.setLong(1, report.getId());
 			connection.executeUpdate(statement);
+			// DELETE FROM tsk_objects WHERE tsk_objects.obj_id = ?
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_REPORT_TSK_OBJECT);
+			statement.setLong(1, report.getId());
+			statement.setLong(2, TskData.ObjectType.REPORT.getObjectType());
+			connection.executeUpdate(statement);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error querying reports table", ex);
 		} finally {
@@ -12443,6 +12465,12 @@ public class SleuthkitCase {
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ? AND tsk_files.type = ? ) " //NON-NLS
 				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+		SELECT_FILES_BY_PARENT_AND_NAME("SELECT tsk_files.* " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE (tsk_objects.par_obj_id = ? AND " //NON-NLS
+				+ "LOWER(tsk_files.name) LIKE LOWER(?) AND LOWER(tsk_files.name) NOT LIKE LOWER('%journal%')) "//NON-NLS
+				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
 		SELECT_FILE_IDS_BY_PARENT("SELECT tsk_files.obj_id AS obj_id " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
@@ -12593,6 +12621,7 @@ public class SleuthkitCase {
 		SELECT_REPORT_BY_ID("SELECT * FROM reports WHERE obj_id = ?"), //NON-NLS
 		INSERT_REPORT("INSERT INTO reports (obj_id, path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
 		DELETE_REPORT("DELETE FROM reports WHERE reports.obj_id = ?"), //NON-NLS
+		DELETE_REPORT_TSK_OBJECT("DELETE FROM tsk_objects where tsk_objects.obj_id = ? and tsk_objects.type = ?"),
 		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"), //NON-NLS
 		SELECT_ATTR_BY_VALUE_BYTE("SELECT source FROM blackboard_attributes WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"), //NON-NLS
@@ -14229,6 +14258,28 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error loading all file systems for image with ID {0}", image.getId());
 			return new ArrayList<>();
 		}
+	}
+	
+	/**
+	 * Find all files in the data source, by name and parent
+	 *
+	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
+	 *                   search for the given file name
+	 * @param fileName   Pattern of the name of the file or directory to match
+	 *                   (case insensitive, used in LIKE SQL statement).
+	 * @param parentFile Object for parent file/directory to find children in
+	 *
+	 * @return a list of AbstractFile for files/directories whose name matches
+	 *         fileName and that were inside a directory described by
+	 *         parentFile.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * 
+	 * @deprecated Use findFilesInFolder()
+	 */
+	@Deprecated
+	public List<AbstractFile> findFiles(Content dataSource, String fileName, AbstractFile parentFile) throws TskCoreException {
+		return findFilesInFolder(fileName, parentFile);
 	}
 
 	/**
