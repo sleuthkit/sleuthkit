@@ -1410,7 +1410,11 @@ public abstract class AbstractFile extends AbstractContent {
 
 		if (uniquePath == null) {
 			if (getDataSource() instanceof LocalFilesDataSource) {
-				uniquePath = getDataSource().getUniquePath() + parentPath + getName();
+				if(getDataSource() != this) {
+					uniquePath = getDataSource().getUniquePath() + parentPath + getName();
+				} else {
+					uniquePath =  "/" + getName();
+				}
 			} else {
 				uniquePath = super.getUniquePath();
 			}
