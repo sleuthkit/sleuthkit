@@ -419,6 +419,13 @@ class TskCaseDbBridge {
 						}
 					}
 					
+					// We've seen a case where the root folder comes in with an undefined meta type.
+					// In that case, we alter the type to TSK_FS_META_TYPE_DIR so it will be cached
+					// properly and will not cause errors later for being an unexpected type.
+					if ((fileInfo.parentObjId == fileInfo.fsObjId)
+							&& (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.getValue())) {
+						fileInfo.metaType = TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue();
+					}
 					
                     long objId = addFileToDb(computedParentObjId, 
                         fileInfo.fsObjId, fileInfo.dataSourceObjId,
@@ -442,7 +449,8 @@ class TskCaseDbBridge {
                         fsIdToRootDir.put(fileInfo.fsObjId, objId);
                     }
 
-                    // If the file is a directory, cache the object ID
+                    // If the file is a directory, cache the object ID. Make sure to always cache the root folder
+					// even if its metaType isn't set correctly.
                     if ((fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
                             || (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
                             && (fileInfo.name != null)
