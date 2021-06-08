@@ -1409,9 +1409,10 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getUniquePath() throws TskCoreException {
 
 		if (uniquePath == null) {
-			if (getDataSource() instanceof LocalFilesDataSource) {
-				if(getDataSource() != this) {
-					uniquePath = getDataSource().getUniquePath() + parentPath + getName();
+			Content dataSource = getDataSource();
+			if (dataSource instanceof LocalFilesDataSource) {
+				if(dataSource != this) {
+					uniquePath = dataSource.getUniquePath() + parentPath + getName();
 				} else {
 					uniquePath =  "/" + getName();
 				}
