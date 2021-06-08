@@ -24,6 +24,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
@@ -285,6 +286,9 @@ public class TaggingManager {
 							artifact, skCase.getContentById(artifact.getObjectID()), tagName, comment, currentExaminer.getLoginName());
 				}
 			}
+			
+			skCase.getScoringManager().updateAggregateScoreAfterAddition(
+					artifact.getId(), artifact.getDataSourceObjectID(), getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
 
@@ -292,6 +296,63 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			trans.rollback();
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
+		}
+	}
+	
+
+	/**
+	 * Returns the score based on this TagName object.
+	 * @param knownStatus The known status of the tag.
+	 * @return The relevant score.
+	 */
+	static Score getTagScore(TskData.FileKnown knownStatus) {
+		switch (knownStatus) {
+			case BAD: 
+				return Score.SCORE_NOTABLE;
+			case UNKNOWN: 
+			case KNOWN:
+			default:
+				return Score.SCORE_LIKELY_NOTABLE;
+		}
+	}
+	
+		/**
+	 * Retrieves the maximum FileKnown status of any tag associated with the
+	 * object id.
+	 *
+	 * @param objectId   The object id of the item.
+	 * @param transaction The case db transaction to perform this query.
+	 *
+	 * @return The maximum FileKnown status for this object or empty.
+	 *
+	 * @throws TskCoreException
+	 */
+	Optional<TskData.FileKnown> getMaxTagKnownStatus(long objectId, CaseDbTransaction transaction) throws TskCoreException {
+		// query content tags and blackboard artifact tags for highest 
+		// known status associated with a tag associated with this object id
+		String queryString = "SELECT tag_names.knownStatus AS knownStatus\n"
+				+ "	FROM (\n"
+				+ "		SELECT ctags.tag_name_id AS tag_name_id FROM content_tags ctags WHERE ctags.obj_id = " + objectId + "\n"
+				+ "	    UNION\n"
+				+ "	    SELECT btags.tag_name_id AS tag_name_id FROM blackboard_artifact_tags btags \n"
+				+ "	    INNER JOIN blackboard_artifacts ba ON btags.artifact_id = ba.artifact_id\n"
+				+ "	    WHERE ba.artifact_obj_id = " + objectId + "\n"
+				+ "	) tag_name_ids\n"
+				+ "	INNER JOIN tag_names ON tag_name_ids.tag_name_id = tag_names.tag_name_id\n"
+				+ "	ORDER BY tag_names.knownStatus DESC\n"
+				+ "	LIMIT 1";
+
+		try (Statement statement = transaction.getConnection().createStatement();
+				ResultSet resultSet = transaction.getConnection().executeQuery(statement, queryString);) {
+
+			if (resultSet.next()) {
+				return Optional.ofNullable(TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
+			} else {
+				return Optional.empty();
+			}
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting content tag FileKnown status for content with id: " + objectId);
 		}
 	}
 
@@ -376,6 +437,10 @@ public class TaggingManager {
 							content, tagName, comment, beginByteOffset, endByteOffset, currentExaminer.getLoginName());
 				}
 			}
+			
+			Long dataSourceId = content.getDataSource() != null ? content.getDataSource().getId() : null;
+			skCase.getScoringManager().updateAggregateScoreAfterAddition(
+					content.getId(), dataSourceId, getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
 			return new ContentTagChange(contentTag, removedTags);

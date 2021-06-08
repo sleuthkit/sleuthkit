@@ -25,6 +25,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -283,8 +284,15 @@ public class ScoringManager {
 				newScore = iterScore;
 			}
 		}
-		// NOTE: Add logic here in the future to get tag score
+
+		// get the maximum score of the calculated aggregate score of analysis results
+		// or the score derived from the maximum known status of a content tag on this content.
+		Optional<Score> tagScore = db.getTaggingManager().getMaxTagKnownStatus(objId, transaction)
+				.map(knownStatus -> TaggingManager.getTagScore(knownStatus));
 		
+		if (tagScore.isPresent() && Score.getScoreComparator().compare(tagScore.get(), newScore) > 0) {
+			newScore = tagScore.get();
+		}
 		
 		// only change the DB if we got a new score. 
 		if (newScore.compareTo(currentScore) != 0) {
@@ -295,7 +303,7 @@ public class ScoringManager {
 		}
 		return newScore;
 	}
-
+	
 	/**
 	 * Get the count of contents within the specified data source
 	 * with the specified significance.
