@@ -449,8 +449,7 @@ class TskCaseDbBridge {
                         fsIdToRootDir.put(fileInfo.fsObjId, objId);
                     }
 
-                    // If the file is a directory, cache the object ID. Make sure to always cache the root folder
-					// even if its metaType isn't set correctly.
+                    // If the file is a directory, cache the object ID.
                     if ((fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
                             || (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
                             && (fileInfo.name != null)
