@@ -24,13 +24,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Logger;
 
 /**
- *
+ * Utility class for file-based database queries.
  */
 public class FileManager {
-	private static final Logger LOGGER = Logger.getLogger(FileManager.class.getName());
 
 	private final SleuthkitCase skCase;
 
@@ -70,44 +68,6 @@ public class FileManager {
 			skCase.releaseSingleUserCaseReadLock();
 		}
     }
-	
-	/**
-     * Find all files with the exact given name and exact parent path.
-     * 
-     * @param name Exact file name to match.
-	 * @param path Exact parent path (should start and end with a forward slash).
-     * 
-     * @return A list of matching files.
-     * 
-     * @throws TskCoreException 
-     */
-	/*
-	public List<AbstractFile> findFilesExactNameExactPath(String name, String path) throws TskCoreException {
-		// Database paths will always start and end with a forward slash, so add those if not present
-		String normalizedPath = path;
-		if (!normalizedPath.startsWith("/")) {
-			normalizedPath = "/" + normalizedPath;
-		}
-		if (!normalizedPath.endsWith("/")) {
-			normalizedPath = normalizedPath + "/";
-		}
-		
-		String query = "SELECT tsk_files.* FROM tsk_files JOIN tsk_objects ON tsk_objects.obj_id = tsk_files.obj_id WHERE parent_path = ? AND name = ?";
-		skCase.acquireSingleUserCaseReadLock();
-		try (SleuthkitCase.CaseDbConnection connection = skCase.getConnection()) {
-			PreparedStatement statement = connection.getPreparedStatement(query, Statement.RETURN_GENERATED_KEYS);
-			statement.clearParameters();
-			statement.setString(1, normalizedPath);
-			statement.setString(2, name);
-			try (ResultSet rs = connection.executeQuery(statement)) {
-				return skCase.resultSetToAbstractFiles(rs, connection);
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("SQLException thrown when calling query: " + query + " for parent path = " + path + " and name " + name, ex);
-		} finally {
-			skCase.releaseSingleUserCaseReadLock();
-		}
-	}*/
 	
 	/**
      * Find all files with the exact given name and exact parent path.
