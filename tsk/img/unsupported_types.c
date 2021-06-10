@@ -16,16 +16,26 @@
  * @return 1 if the signature is found, 0 otherwise
  */
 int
-detectImageSignature(const char * signature, size_t signatureLen, const char * buf, size_t bufLen) {
+detectImageSignatureWithOffset(const char * signature, size_t signatureLen, size_t offset, const char * buf, size_t bufLen) {
 
-    if (signatureLen >= bufLen) {
+    if (signatureLen + offset >= bufLen) {
         return 0;
     }
 
-    if (memcmp(signature, buf, signatureLen) == 0) {
+    if (memcmp(signature, buf + offset, signatureLen) == 0) {
         return 1;
     }
     return 0;
+}
+
+/**
+* Compare the beginning of the buffer with the given signature.
+*
+* @return 1 if the signature is found, 0 otherwise
+*/
+int
+detectImageSignature(const char * signature, size_t signatureLen, const char * buf, size_t bufLen) {
+    return detectImageSignatureWithOffset(signature, signatureLen, 0, buf, bufLen);
 }
 
 /**
@@ -37,7 +47,7 @@ detectImageSignature(const char * signature, size_t signatureLen, const char * b
 char* detectUnsupportedImageType(TSK_IMG_INFO * img_info) {
 
     // Read the beginning of the image. There should be room for all the signature searches.
-    size_t len = 32;
+    size_t len = 512;
     char* buf = (char*)tsk_malloc(len);
     if (buf == NULL) {
         return NULL;
@@ -69,6 +79,9 @@ char* detectUnsupportedImageType(TSK_IMG_INFO * img_info) {
     }
     else if (detectImageSignature("[Dumps]", 7, buf, len)) {
         strcpy(result, "Cellebrite (UFD)");
+    }
+    else if (detectImageSignatureWithOffset("ustar", 5, 257, buf, len)) {
+        strcpy(result, "Tar Archive");
     }
     else if (detectImageSignature("PK\x03\x04", 4, buf, len) || detectImageSignature("PK\x05\x06", 4, buf, len)
         || (detectImageSignature("PK\x07\x08", 4, buf, len))) {
