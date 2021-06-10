@@ -222,6 +222,7 @@ public class SleuthkitCase {
 	private TimelineManager timelineMgr;
 	private Blackboard blackboard;
 	private CaseDbAccessManager dbAccessManager;
+	private FileManager fileManager;
 	private TaggingManager taggingMgr;
 	private ScoringManager scoringManager;
 	private OsAccountRealmManager osAccountRealmManager;
@@ -403,6 +404,7 @@ public class SleuthkitCase {
 		}
 
 		blackboard = new Blackboard(this);
+		fileManager = new FileManager(this);
 		communicationsMgr = new CommunicationsManager(this);
 		timelineMgr = new TimelineManager(this);
 		dbAccessManager = new CaseDbAccessManager(this);
@@ -492,6 +494,15 @@ public class SleuthkitCase {
 	 */
 	public Blackboard getBlackboard() {
 		return blackboard;
+	}
+	
+	/**
+	 * Gets the file manager for this case.
+	 * 
+	 * @return The per case FileManager object.
+	 */
+	public FileManager getFileManager() {
+		return fileManager;
 	}
 
 	/**
@@ -9606,7 +9617,7 @@ public class SleuthkitCase {
 	 * @throws SQLException Thrown if there is a problem iterating through the
 	 *                      record set.
 	 */
-	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
+	List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		try {
 			while (rs.next()) {
