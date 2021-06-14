@@ -18,7 +18,7 @@
 int
 detectImageSignatureWithOffset(const char * signature, size_t signatureLen, size_t offset, const char * buf, size_t bufLen) {
 
-    if (signatureLen + offset >= bufLen) {
+    if (signatureLen + offset > bufLen) {
         return 0;
     }
 
@@ -39,6 +39,77 @@ detectImageSignature(const char * signature, size_t signatureLen, const char * b
 }
 
 /**
+* Calculate the checksum on the first block to see if matches the tar format.
+*
+* @return 1 if the checksum is valid, 0 otherwise
+*/
+int
+verifyTarChecksum(const char * buf, size_t bufLen) {
+    if (bufLen < 512) {
+        return 0;
+    }
+
+    // Calculate checksum of first 512 bytes.
+    unsigned int cksum = 0;
+    const int cksumOffset = 148;
+    const int cksumLength = 8;
+    for (int i = 0; i < 512; i++) {
+        // Add each byte. For the checksum bytes, add a space.
+        if ((i < cksumOffset) || (i >= cksumOffset + cksumLength)) {
+            cksum += (unsigned char)buf[i];
+        }
+        else {
+            cksum += ' ';
+        }
+    }
+
+    // Convert the checksum field (octal) to a number
+    unsigned int savedCksum = 0;
+
+    // Skip leading spaces
+    int startingOffset = cksumOffset;
+    for (int i = 0; i < cksumLength; i++) {
+        unsigned char b = buf[cksumOffset + i];
+        if (b == ' ') {
+            startingOffset++;
+        }
+        else {
+            // Hit a non-space character
+            break;
+        }
+    }
+
+    // If the checksum is all spaces, it is not valid
+    if (startingOffset == cksumOffset + cksumLength) {
+        return 0;
+    }
+
+    // Convert octal digits
+    for (int offset = startingOffset; offset < cksumOffset + cksumLength; offset++) {
+        unsigned char b = buf[offset];
+
+        if (b == 0 || b == ' ') {
+            // We're done reading the checksum
+            break;
+        }
+
+        if (b < '0' || b > '7') {
+            // Found an illegal character
+            return 0;
+        }
+
+        // Add the next digit
+        savedCksum = savedCksum << 3 | (b - '0');
+    }
+
+    if (savedCksum == cksum) {
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
  * Check if the given raw image is a known but unsupported type.
  * Return string should be freed by caller.
  *
@@ -46,14 +117,17 @@ detectImageSignature(const char * signature, size_t signatureLen, const char * b
  */
 char* detectUnsupportedImageType(TSK_IMG_INFO * img_info) {
 
-    // Read the beginning of the image. There should be room for all the signature searches.
-    size_t len = 512;
-    char* buf = (char*)tsk_malloc(len);
+    // Read the beginning of the image. Try to read in enough bytes for all signatures.
+    // The tar checksum calculation requires 512 bytes.
+    size_t maxLen = 512; // Bytes to read
+    size_t len;          // The actual number of bytes read
+    char* buf = (char*)tsk_malloc(maxLen);
     if (buf == NULL) {
         return NULL;
     }
 
-    if (tsk_img_read(img_info, 0, buf, len) != len) {
+    len = tsk_img_read(img_info, 0, buf, maxLen);
+    if (len == 0) {
         free(buf);
         return NULL;
     }
@@ -92,6 +166,9 @@ char* detectUnsupportedImageType(TSK_IMG_INFO * img_info) {
     }
     else if (detectImageSignature("\x1f\x8b", 2, buf, len)) {
         strcpy(result, "Gzip Archive");
+    } 
+    else if (verifyTarChecksum(buf, len)) {
+        strcpy(result, "Tar Archive");
     }
 
     free(buf);
