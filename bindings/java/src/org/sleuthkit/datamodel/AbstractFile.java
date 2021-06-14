@@ -102,6 +102,8 @@ public abstract class AbstractFile extends AbstractContent {
 	// different from the numeric uid which is more commonly found 
 	// on Unix based file systems.
 	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
+	
+	private volatile String uniquePath;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -1401,6 +1403,25 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public Optional<Long> getOsAccountObjectId() {
 		return Optional.ofNullable(osAccountObjId);
+	}
+	
+	@Override
+	public String getUniquePath() throws TskCoreException {
+
+		if (uniquePath == null) {
+			Content dataSource = getDataSource();
+			if (dataSource instanceof LocalFilesDataSource) {
+				if(dataSource != this) {
+					uniquePath = dataSource.getUniquePath() + parentPath + getName();
+				} else {
+					uniquePath =  "/" + getName();
+				}
+			} else {
+				uniquePath = super.getUniquePath();
+			}
+		}
+
+		return uniquePath;
 	}
 
 	@Deprecated
