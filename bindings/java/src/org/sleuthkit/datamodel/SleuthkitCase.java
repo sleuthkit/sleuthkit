@@ -222,6 +222,7 @@ public class SleuthkitCase {
 	private TimelineManager timelineMgr;
 	private Blackboard blackboard;
 	private CaseDbAccessManager dbAccessManager;
+	private FileManager fileManager;
 	private TaggingManager taggingMgr;
 	private ScoringManager scoringManager;
 	private OsAccountRealmManager osAccountRealmManager;
@@ -403,6 +404,7 @@ public class SleuthkitCase {
 		}
 
 		blackboard = new Blackboard(this);
+		fileManager = new FileManager(this);
 		communicationsMgr = new CommunicationsManager(this);
 		timelineMgr = new TimelineManager(this);
 		dbAccessManager = new CaseDbAccessManager(this);
@@ -492,6 +494,15 @@ public class SleuthkitCase {
 	 */
 	public Blackboard getBlackboard() {
 		return blackboard;
+	}
+	
+	/**
+	 * Gets the file manager for this case.
+	 * 
+	 * @return The per case FileManager object.
+	 */
+	public FileManager getFileManager() {
+		return fileManager;
 	}
 
 	/**
@@ -2591,8 +2602,8 @@ public class SleuthkitCase {
 			// add an index on tsk_file_attributes table.
 			statement.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
 			
-			statement.execute("ALTER TABLE tsk_analysis_results ADD COLUMN priority INTEGER NOT NULL");
-			statement.execute("ALTER TABLE tsk_aggregate_score ADD COLUMN priority INTEGER NOT NULL");
+			statement.execute("ALTER TABLE tsk_analysis_results ADD COLUMN priority INTEGER NOT NULL DEFAULT " + Score.Priority.NORMAL.getId());
+			statement.execute("ALTER TABLE tsk_aggregate_score ADD COLUMN priority INTEGER NOT NULL DEFAULT " + Score.Priority.NORMAL.getId());
 			
 			return new CaseDbSchemaVersionNumber(9, 1);
 		} finally {
@@ -9636,7 +9647,7 @@ public class SleuthkitCase {
 	 * @throws SQLException Thrown if there is a problem iterating through the
 	 *                      record set.
 	 */
-	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
+	List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		try {
 			while (rs.next()) {
@@ -11202,17 +11213,30 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public void deleteContentTag(ContentTag tag) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection();) {
+		CaseDbTransaction trans = beginTransaction();
+		try {
 			// DELETE FROM content_tags WHERE tag_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_CONTENT_TAG);
+			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_CONTENT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
-			connection.executeUpdate(statement);
+			trans.getConnection().executeUpdate(statement);
+			
+			// update the aggregate score for the content
+			Long contentId = tag.getContent() != null ? tag.getContent().getId() : null;
+			Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null 
+					? tag.getContent().getDataSource().getId() 
+					: null;
+			
+			this.getScoringManager().updateAggregateScoreAfterDeletion(contentId, dataSourceId, trans);
+			
+			trans.commit();
+			trans = null;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
-			releaseSingleUserCaseWriteLock();
+			if (trans != null) {
+				trans.rollback();
+			}
 		}
 	}
 
@@ -11558,17 +11582,30 @@ public class SleuthkitCase {
 	 * representing the row to delete. @throws TskCoreException
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection();) {
+		CaseDbTransaction trans = beginTransaction();
+		try {
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);
+			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
-			connection.executeUpdate(statement);
+			trans.getConnection().executeUpdate(statement);
+			
+			// update the aggregate score for the artifact
+			Long artifactObjId = tag.getArtifact().getId();
+			Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null 
+					? tag.getContent().getDataSource().getId() 
+					: null;
+			
+			this.getScoringManager().updateAggregateScoreAfterDeletion(artifactObjId, dataSourceId, trans);
+			
+			trans.commit();
+			trans = null;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
-			releaseSingleUserCaseWriteLock();
+			if (trans != null) {
+				trans.rollback();
+			}
 		}
 	}
 
