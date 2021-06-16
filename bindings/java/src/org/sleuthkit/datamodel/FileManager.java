@@ -91,14 +91,17 @@ public class FileManager {
 			normalizedPath = normalizedPath + "/";
 		}
 		
-		String query = "SELECT tsk_files.* FROM tsk_files JOIN tsk_objects ON tsk_objects.obj_id = tsk_files.obj_id WHERE parent_path = ? AND name = ? AND data_source_obj_id = ?";
+		String ext = SleuthkitCase.extractExtension(name);
+		
+		String query = "SELECT tsk_files.* FROM tsk_files JOIN tsk_objects ON tsk_objects.obj_id = tsk_files.obj_id WHERE extension = ? AND parent_path = ? AND name = ? AND data_source_obj_id = ?";
 		skCase.acquireSingleUserCaseReadLock();
 		try (SleuthkitCase.CaseDbConnection connection = skCase.getConnection()) {
 			PreparedStatement statement = connection.getPreparedStatement(query, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
-			statement.setString(1, normalizedPath);
-			statement.setString(2, name);
-			statement.setLong(3, dataSource.getId());
+			statement.setString(1, ext);
+			statement.setString(2, normalizedPath);
+			statement.setString(3, name);
+			statement.setLong(4, dataSource.getId());
 			try (ResultSet rs = connection.executeQuery(statement)) {
 				return skCase.resultSetToAbstractFiles(rs, connection);
 			}
