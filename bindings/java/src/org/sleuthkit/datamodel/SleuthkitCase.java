@@ -7897,7 +7897,6 @@ public class SleuthkitCase {
 				isFile, encodingType,
 				parent, transaction);
 	}
-
 	/**
 	 * Adds a local/logical file to the case database. The database operations
 	 * are done within a caller-managed transaction; the caller is responsible
@@ -7930,6 +7929,47 @@ public class SleuthkitCase {
 			long size, long ctime, long crtime, long atime, long mtime,
 			String md5, String sha256, FileKnown known, String mimeType,
 			boolean isFile, TskData.EncodingType encodingType,
+			Content parent, CaseDbTransaction transaction) throws TskCoreException {
+		
+		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
+				md5, sha256, known, mimeType, isFile, encodingType,
+				OsAccount.NO_ACCOUNT, OsAccount.NO_OWNER_ID, parent, transaction);
+		
+	}
+	/**
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
+	 *
+	 * @param fileName     The name of the file.
+	 * @param localPath    The absolute path (including the file name) of the
+	 *                     local/logical in secondary storage.
+	 * @param size         The size of the file in bytes.
+	 * @param ctime        The changed time of the file.
+	 * @param crtime       The creation time of the file.
+	 * @param atime        The accessed time of the file
+	 * @param mtime        The modified time of the file.
+	 * @param md5          The MD5 hash of the file
+	 * @param sha256       the SHA-256 hash of the file.
+	 * @param known        The known status of the file (can be null)
+	 * @param mimeType     The MIME type of the file
+	 * @param isFile       True, unless the file is a directory.
+	 * @param encodingType Type of encoding used on the file
+	 * @param osAccountId  OS account id (can be null)
+	 * @param ownerAccount Owner account (can be null)
+	 * @param parent       The parent of the file (e.g., a virtual directory)
+	 * @param transaction  A caller-managed transaction within which the add
+	 *                     file operations are performed.
+	 *
+	 * @return An object representing the local/logical file.
+	 *
+	 * @throws TskCoreException if there is an error completing a case database
+	 *                          operation.
+	 */
+	public LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			String md5, String sha256, FileKnown known, String mimeType,
+			boolean isFile, TskData.EncodingType encodingType, Long osAccountId, String ownerAccount,
 			Content parent, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
 		Statement queryStatement = null;
@@ -7994,8 +8034,17 @@ public class SleuthkitCase {
 			final String extension = extractExtension(fileName);
 			statement.setString(21, extension);
 
-			statement.setString(22, OsAccount.NO_OWNER_ID); // ownerUid
-			statement.setNull(23, java.sql.Types.BIGINT); // osAccountObjId
+			if (ownerAccount != null) {
+				statement.setString(22, ownerAccount); // ownerUid
+			} else {
+				statement.setNull(22, java.sql.Types.VARCHAR);
+			}
+			
+			if (osAccountId != null) {
+				statement.setLong(23, osAccountId); // osAccountObjId
+			} else {
+				statement.setNull(23, java.sql.Types.BIGINT);
+			}
 
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
@@ -8014,7 +8063,7 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension,
-					OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
+					ownerAccount, osAccountId);
 			getTimelineManager().addEventsForNewFile(localFile, connection);
 			return localFile;
 

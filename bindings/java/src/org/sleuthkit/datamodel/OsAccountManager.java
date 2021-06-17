@@ -174,7 +174,39 @@ public final class OsAccountManager {
 			// realm was not found, create it.
 			realm = db.getOsAccountRealmManager().newWindowsRealm(sid, realmName, referringHost, realmScope);
 		}
+	
+		return newWindowsOsAccount(sid, loginName, realm);
+	}
+		
+	/**
+	 * Creates an OS account with Windows-specific data. If an account already
+	 * exists with the given id or realm/login, then the existing OS account is
+	 * returned.
+	 *
+	 * @param sid           Account sid/uid, can be null if loginName is
+	 *                      supplied.
+	 * @param loginName     Login name, can be null if sid is supplied.
+	 * @param realm         The associated realm.
+	 *
+	 * @return OsAccount.
+	 *
+	 * @throws TskCoreException                     If there is an error in
+	 *                                              creating the OSAccount.
+	 * @throws OsAccountManager.NotUserSIDException If the given SID is not a
+	 *                                              user SID.
+	 *
+	 */
+	public OsAccount newWindowsOsAccount(String sid, String loginName, OsAccountRealm realm) throws TskCoreException, NotUserSIDException {	
 
+		// ensure at least one of the two is supplied - unique id or a login name
+		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
+		}
+		
+		if (!StringUtils.isBlank(sid) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
+			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
+		}
+		
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			// try to create account
@@ -209,8 +241,10 @@ public final class OsAccountManager {
 
 				// create failed for some other reason, throw an exception
 				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %s",
-						(sid != null) ? sid : "Null", (loginName != null) ? loginName : "Null",
-						(realmName != null) ? realmName : "Null", referringHost.getName()), ex);
+						(sid != null) ? sid : "Null", 
+						(loginName != null) ? loginName : "Null",
+						(!realm.getRealmNames().isEmpty()) ? realm.getRealmNames().get(0) : "Null", 
+						realm.getScopeHost().isPresent() ? realm.getScopeHost().get().getName() : "Null"), ex);
 
 			}
 		} finally {
