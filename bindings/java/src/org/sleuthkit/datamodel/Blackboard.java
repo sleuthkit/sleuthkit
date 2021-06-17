@@ -790,7 +790,7 @@ public final class Blackboard {
 	 *						    or no value is found.
 	 *
 	 */
-	BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
+	public BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
 		return caseDb.getArtifactType(artTypeId);
 	}
 	
