@@ -4789,7 +4789,7 @@ public class SleuthkitCase {
 	 *						    or no value is found.
 	 *
 	 */
-	BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
+	public BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
 		if (this.typeIdToArtifactTypeMap.containsKey(artTypeId)) {
 			return typeIdToArtifactTypeMap.get(artTypeId);
 		}
