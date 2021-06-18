@@ -189,7 +189,8 @@ final class WindowsAccountUtils {
 		
 		String realmAddr;
 		
-		if (isWindowsSpecialSid(sid)) {
+		// When copying realms into portable cases, the SID may already be set to the special windows string.
+		if (isWindowsSpecialSid(sid) || sid.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
 			realmAddr = SPECIAL_WINDOWS_REALM_ADDR;
 		} else {
 			// regular SIDs should have at least 5 components: S-1-x-y-z

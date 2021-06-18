@@ -780,6 +780,21 @@ public final class Blackboard {
 	}
 
 	/**
+	 * Get the artifact type associated with an artifact type id.
+	 *
+	 * @param artTypeId An artifact type id.
+	 *
+	 * @return The artifact type.
+	 *
+	 * @throws TskCoreException If an error occurs accessing the case database 
+	 *						    or no value is found.
+	 *
+	 */
+	public BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
+		return caseDb.getArtifactType(artTypeId);
+	}
+	
+	/**
 	 * Gets an attribute type, creating it if it does not already exist. Use
 	 * this method to define custom attribute types.
 	 *
