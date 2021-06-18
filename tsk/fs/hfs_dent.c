@@ -295,6 +295,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This is a normal file in the folder */
         else if (rec_type == HFS_FILE_RECORD) {
+            if ((nodesize < sizeof(hfs_file)) || (rec_off2 >= nodesize - sizeof(hfs_file))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
             hfs_file *file = (hfs_file *) & rec_buf[rec_off2];
             // This could be a hard link.  We need to test this CNID, and follow it if necessary.
             unsigned char is_err;
