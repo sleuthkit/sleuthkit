@@ -896,7 +896,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
 
                 /* save the info from this record unless it is too big */
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, key, keylen,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, key, keylen, nodesize,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_ERR) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -1018,7 +1018,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 //                rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen, nodesize,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_LEAF_STOP) {
                     is_done = 1;
@@ -1064,7 +1064,7 @@ typedef struct {
 
 static uint8_t
 hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key, int cur_keylen,
+    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t node_size,
     TSK_OFF_T key_off, void *ptr)
 {
     HFS_CAT_GET_RECORD_OFFSET_DATA *offset_data = (HFS_CAT_GET_RECORD_OFFSET_DATA *)ptr;
@@ -1659,7 +1659,7 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 
 static uint8_t
 hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key, int cur_keylen,
+    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t node_size,
     TSK_OFF_T key_off, void *ptr)
 {
     if (cur_keylen < 6) {
