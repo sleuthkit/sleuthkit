@@ -7765,10 +7765,11 @@ public class SleuthkitCase {
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
 
+		CaseDbTransaction trans = null;
 		try {
 			Content parentObj = derivedFile.getParent();
 			
-			CaseDbTransaction trans = beginTransaction();
+			trans = beginTransaction();
 			DerivedFile updatedFile = updateDerivedFile(derivedFile, localPath,
 					size, ctime, crtime, atime, mtime,
 					isFile, mimeType,
@@ -7777,7 +7778,9 @@ public class SleuthkitCase {
 			trans.commit();
 			return updatedFile;
 		} catch (TskCoreException ex) {
-			// TODO TODO TODO rollback
+			if (trans != null) {
+				trans.rollback();
+			}
 			throw ex;
 		}
 	}		
