@@ -765,7 +765,7 @@ extern char hfs_is_hard_link(TSK_FS_INFO * fs, TSK_INUM_T inum);
  * @param ptr Pointer to data that was passed into parent
  */
 typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
-    const hfs_btree_key_cat * cur_key, int cur_keylen,
+    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t node_size,
     TSK_OFF_T key_off, void *ptr);
 // return values for callback
 #define HFS_BTREE_CB_IDX_LT     1       // current key is less than target (keeps looking in node)
