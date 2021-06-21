@@ -307,6 +307,33 @@ public interface TskEvent {
 	}
 
 	/**
+	 * An event published when one or more OS account instances are added.
+	 */
+	public final static class OsAcctInstancesAddedTskEvent extends TskObjectsEvent<OsAccountInstance> {
+
+		/**
+		 * Constructs an event published when one or more OS account instances
+		 * are added.
+		 *
+		 * @param hosts The OS account instances that are the subjects of the
+		 *              event.
+		 */
+		OsAcctInstancesAddedTskEvent(List<OsAccountInstance> osAcctInstances) {
+			super(osAcctInstances);
+		}
+
+		/**
+		 * Gets the OS account instances.
+		 *
+		 * @return The OS account instances.
+		 */
+		public List<OsAccountInstance> getOsAccountInstances() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
 	 * An abstract super class for person events.
 	 */
 	static abstract class PersonsTskEvent extends TskObjectsEvent<Person> {
