@@ -315,7 +315,7 @@ public interface TskEvent {
 		 * Constructs an event published when one or more OS account instances
 		 * are added.
 		 *
-		 * @param hosts The OS account instancess that are the subjects of the
+		 * @param hosts The OS account instances that are the subjects of the
 		 *              event.
 		 */
 		OsAcctInstancesAddedTskEvent(List<OsAccountInstance> osAcctInstances) {
