@@ -30,6 +30,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private final SleuthkitCase skCase;
+	private final long instanceId = 0; // RJCTODO
 	private final long accountId;
 	private final long dataSourceId;
 	private final OsAccountInstanceType instanceType;
@@ -78,6 +79,15 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 		this.accountId = accountId;
 		this.dataSourceId = dataSourceObjId;
 		this.instanceType = instanceType;
+	}
+
+	/**
+	 * Gets the instance ID of this OS account instance.
+	 *
+	 * @return The instance ID.
+	 */
+	public long getInstanceId() {
+		return instanceId;
 	}
 
 	/**
