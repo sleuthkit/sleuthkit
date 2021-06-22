@@ -526,7 +526,7 @@ public final class OsAccountManager {
 		 * Check the cache of OS account instances for an existing instance for
 		 * this OS account and data source. Note that the account instance
 		 * created here has a bogus instance ID. This is possible since the
-		 * instance ID is not considered in the equals() and hasCode() methods
+		 * instance ID is not considered in the equals() and hashCode() methods
 		 * of this class.
 		 */
 		synchronized (osAcctInstancesCacheLock) {
@@ -558,7 +558,7 @@ public final class OsAccountManager {
 		 * Check the cache of OS account instances for an existing instance for
 		 * this OS account and data source. Note that the account instance
 		 * created here has a bogus instance ID. This is possible since the
-		 * instance ID is not considered in the equals() and hasCode() methods
+		 * instance ID is not considered in the equals() and hashCode() methods
 		 * of this class.
 		 */
 		synchronized (osAcctInstancesCacheLock) {
@@ -569,13 +569,6 @@ public final class OsAccountManager {
 
 		/*
 		 * Create the OS account instance.
-		 *
-		 * There are some potential issues here: 1) Check-then-act race
-		 * condition with the cache for multi-user cases, 2) we flush the cache
-		 * during merge operatsion, 3) the case database schema and the SQL
-		 * returned by getInsertOrIgnoreSQL() seamlessly prevent duplicates, but
-		 * a valid row ID is returned even if the INSERT is not done. The bottom
-		 * line is that a redundant event may be published.
 		 */
 		db.acquireSingleUserCaseWriteLock();
 		try {
@@ -593,6 +586,16 @@ public final class OsAccountManager {
 					synchronized (osAcctInstancesCacheLock) {
 						osAccountInstanceCache.add(accountInstance);
 					}
+					/*
+					 * There are some potential issues here: 1) Check-then-act
+					 * race condition with the cache for multi-user cases, 2) we
+					 * flush the cache during merge operatsion, 3) the case
+					 * database schema and the SQL returned by
+					 * getInsertOrIgnoreSQL() seamlessly prevent duplicates, but
+					 * a valid row ID is returned even if the INSERT is not
+					 * done. The bottom line is that a redundant event may be
+					 * published.
+					 */
 					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
 				}
 			}
@@ -1110,7 +1113,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
-		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + account.getId();		
+		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + account.getId();
 		return getOsAccountInstances(whereClause);
 	}
 
@@ -1128,8 +1131,8 @@ public final class OsAccountManager {
 		String instanceIds = instanceIDs.stream().map(id -> id.toString()).collect(Collectors.joining(","));
 		String whereClause = "tsk_os_account_instances.id IN (" + instanceIds + ")";
 		return getOsAccountInstances(whereClause);
-	}	
-	
+	}
+
 	/**
 	 * Gets the OS account instances that satisfy the given SQL WHERE clause.
 	 *
@@ -1144,7 +1147,7 @@ public final class OsAccountManager {
 		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
 		String querySQL = "SELECT * FROM tsk_os_account_instances WHERE " + whereClause;
 		db.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = db.getConnection(); 
+		try (CaseDbConnection connection = db.getConnection();
 				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
 				ResultSet results = connection.executeQuery(preparedStatement)) {
 			while (results.next()) {
@@ -1153,7 +1156,7 @@ public final class OsAccountManager {
 				long dataSourceObjId = results.getLong("data_source_obj_id");
 				int instanceType = results.getInt("instance_type");
 				osAcctInstances.add(new OsAccountInstance(db, instanceId, osAccountObjID, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
-			}			
+			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to get OsAccountInstances (SQL = " + querySQL + ")", ex);
 		} finally {
@@ -1161,7 +1164,7 @@ public final class OsAccountManager {
 		}
 		return osAcctInstances;
 	}
-	
+
 	/**
 	 * Updates the properties of the specified account in the database.
 	 *
