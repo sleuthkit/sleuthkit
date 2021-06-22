@@ -39,7 +39,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	private DataSource dataSource;
 
 	/**
-	 * Constructs a representation of an OS account instance. \
+	 * Constructs a representation of an OS account instance.
 	 *
 	 *
 	 * @param skCase          The case database.
@@ -88,7 +88,8 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 *
 	 * @return The OsAccount object.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException Exception thrown if there is an error querying
+	 *                          the case database.
 	 */
 	public OsAccount getOsAccount() throws TskCoreException {
 		if (account == null) {

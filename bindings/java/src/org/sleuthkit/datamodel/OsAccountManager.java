@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
@@ -587,14 +586,18 @@ public final class OsAccountManager {
 						osAccountInstanceCache.add(accountInstance);
 					}
 					/*
-					 * There are some potential issues here: 1) Check-then-act
-					 * race condition with the cache for multi-user cases, 2) we
-					 * flush the cache during merge operatsion, 3) the case
-					 * database schema and the SQL returned by
-					 * getInsertOrIgnoreSQL() seamlessly prevent duplicates, but
-					 * a valid row ID is returned even if the INSERT is not
-					 * done. The bottom line is that a redundant event may be
-					 * published.
+					 * There is a potential issue here. The cache of OS account
+					 * instances is an optimization and was not intended to be
+					 * used as an authoritative indicator of whether or not a
+					 * particular OS account instance was already added to the
+					 * case. In fact, the entire cache is flushed during merge
+					 * operations. But regardless, there is a check-then-act
+					 * race condition for multi-user cases, with or without the
+					 * cache. The case database schema and the SQL returned by
+					 * getInsertOrIgnoreSQL() seamlessly prevents duplicates,
+					 * but a valid row ID is returned even if the INSERT is not
+					 * done. So the bottom line is that a redundant event may be
+					 * published from time to time.
 					 */
 					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
 				}
