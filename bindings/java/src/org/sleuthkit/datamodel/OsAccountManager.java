@@ -593,11 +593,12 @@ public final class OsAccountManager {
 					 * case. In fact, the entire cache is flushed during merge
 					 * operations. But regardless, there is a check-then-act
 					 * race condition for multi-user cases, with or without the
-					 * cache. The case database schema and the SQL returned by
-					 * getInsertOrIgnoreSQL() seamlessly prevents duplicates,
-					 * but a valid row ID is returned even if the INSERT is not
-					 * done. So the bottom line is that a redundant event may be
-					 * published from time to time.
+					 * cache. And although the case database schema and the SQL
+					 * returned by getInsertOrIgnoreSQL() seamlessly prevents
+					 * duplicates in the case database, a valid row ID is
+					 * returned here even if the INSERT is not done. So the
+					 * bottom line is that a redundant event may be published
+					 * from time to time.
 					 */
 					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
 				}
