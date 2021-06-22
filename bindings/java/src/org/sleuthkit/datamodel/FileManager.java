@@ -53,12 +53,11 @@ public class FileManager {
      */
     public List<AbstractFile> findFilesExactName(long parentId, String name) throws TskCoreException {
 		String ext = SleuthkitCase.extractExtension(name);
-		boolean hasExt = org.apache.commons.lang3.StringUtils.isNotEmpty(ext);
 						
 		String query = "SELECT tsk_files.* FROM tsk_files JOIN tsk_objects ON tsk_objects.obj_id = tsk_files.obj_id "
 				+ " WHERE tsk_objects.par_obj_id = ? AND tsk_files.name = ? ";
 		
-		if (hasExt) {
+		if (!ext.isEmpty()) {
 			query += " AND tsk_files.extension = ? ";
 		}
 		
@@ -69,7 +68,7 @@ public class FileManager {
 			statement.setLong(1, parentId);
 			statement.setString(2, name);
 			
-			if (hasExt) {
+			if (!ext.isEmpty()) {
 				statement.setString(3, ext);
 			}
 			

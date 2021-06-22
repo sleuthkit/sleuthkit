@@ -6230,7 +6230,6 @@ public class SleuthkitCase {
 		if (!containsLikeWildcard(fileName)) {
 			ext = SleuthkitCase.extractExtension(fileName);	
 		}
-		boolean hasExt = StringUtils.isNotEmpty(ext);
 		
 		List<AbstractFile> files = new ArrayList<>();
 		CaseDbConnection connection = null;
@@ -6240,17 +6239,17 @@ public class SleuthkitCase {
 			connection = connections.getConnection();
 			
 			PreparedStatement statement;
-			if (hasExt) {
+			if (ext.isEmpty()) {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_NAME);
+				statement.clearParameters();
+				statement.setString(1, fileName.toLowerCase());
+				statement.setLong(2, dataSource.getId());
+			} else {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_EXTENSION_AND_DATA_SOURCE_AND_NAME);
 				statement.clearParameters();
 				statement.setString(1, ext);
 				statement.setString(2, fileName.toLowerCase());
 				statement.setLong(3, dataSource.getId());
-			} else {
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_NAME);
-				statement.clearParameters();
-				statement.setString(1, fileName.toLowerCase());
-				statement.setLong(2, dataSource.getId());
 			}
 
 			resultSet = connection.executeQuery(statement);
@@ -6283,7 +6282,6 @@ public class SleuthkitCase {
 		if (!containsLikeWildcard(fileName)) {
 			ext = SleuthkitCase.extractExtension(fileName);	
 		}
-		boolean hasExt = StringUtils.isNotEmpty(ext);
 		
 		List<AbstractFile> files = new ArrayList<>();
 		CaseDbConnection connection = null;
@@ -6292,19 +6290,19 @@ public class SleuthkitCase {
 		try {
 			connection = connections.getConnection();
 			PreparedStatement statement;
-			if (hasExt) {
+			if (ext.isEmpty()) {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
+				statement.clearParameters();
+				statement.setString(1, fileName.toLowerCase());
+				statement.setString(2, "%" + dirSubString.toLowerCase() + "%"); //NON-NLS
+				statement.setLong(3, dataSource.getId());
+			} else {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_EXTENSION_AND_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
 				statement.clearParameters();
 				statement.setString(1, ext);
 				statement.setString(2, fileName.toLowerCase());
 				statement.setString(3, "%" + dirSubString.toLowerCase() + "%"); //NON-NLS
 				statement.setLong(4, dataSource.getId());
-			} else {
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
-				statement.clearParameters();
-				statement.setString(1, fileName.toLowerCase());
-				statement.setString(2, "%" + dirSubString.toLowerCase() + "%"); //NON-NLS
-				statement.setLong(3, dataSource.getId());
 			}
 			
 			resultSet = connection.executeQuery(statement);
@@ -8530,7 +8528,6 @@ public class SleuthkitCase {
 		if (!containsLikeWildcard(fileName)) {
 			ext = SleuthkitCase.extractExtension(fileName);	
 		}
-		boolean hasExt = StringUtils.isNotEmpty(ext);
 		
 		CaseDbConnection connection = null;
 		ResultSet rs = null;
@@ -8541,17 +8538,17 @@ public class SleuthkitCase {
 			connection = connections.getConnection();
 			
 			PreparedStatement statement;
-			if (hasExt) {
+			if (ext.isEmpty()) {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_NAME);
+				statement.clearParameters();
+				statement.setLong(1, parentId);
+				statement.setString(2, fileName);	
+			} else {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_EXTENSION_AND_PARENT_AND_NAME);
 				statement.clearParameters();
 				statement.setString(1, ext);
 				statement.setLong(2, parentId);
 				statement.setString(3, fileName);	
-			} else {
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_NAME);
-				statement.clearParameters();
-				statement.setLong(1, parentId);
-				statement.setString(2, fileName);				
 			}
 
 			rs = connection.executeQuery(statement);
