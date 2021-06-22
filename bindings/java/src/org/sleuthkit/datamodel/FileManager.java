@@ -52,13 +52,26 @@ public class FileManager {
      * @throws TskCoreException 
      */
     public List<AbstractFile> findFilesExactName(long parentId, String name) throws TskCoreException {
-		String query = "SELECT tsk_files.* FROM tsk_files JOIN tsk_objects ON tsk_objects.obj_id = tsk_files.obj_id WHERE par_obj_id = ? AND name = ?";
+		String ext = SleuthkitCase.extractExtension(name);
+						
+		String query = "SELECT tsk_files.* FROM tsk_files JOIN tsk_objects ON tsk_objects.obj_id = tsk_files.obj_id "
+				+ " WHERE tsk_objects.par_obj_id = ? AND tsk_files.name = ? ";
+		
+		if (!ext.isEmpty()) {
+			query += " AND tsk_files.extension = ? ";
+		}
+		
 		skCase.acquireSingleUserCaseReadLock();
 		try (SleuthkitCase.CaseDbConnection connection = skCase.getConnection()) {
 			PreparedStatement statement = connection.getPreparedStatement(query, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, parentId);
 			statement.setString(2, name);
+			
+			if (!ext.isEmpty()) {
+				statement.setString(3, ext);
+			}
+			
 			try (ResultSet rs = connection.executeQuery(statement)) {
 				return skCase.resultSetToAbstractFiles(rs, connection);
 			}
