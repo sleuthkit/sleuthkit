@@ -6197,6 +6197,22 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Returns true if the string contains a SQL LIKE statement wild card based 
+	 * on https://www.postgresql.org/docs/9.5/functions-matching.html and 
+	 * https://sqlite.org/lang_expr.html#the_like_glob_regexp_and_match_operators.
+	 * 
+	 * @param str The string.
+	 * @return True if it contains a LIKE wild card.
+	 */
+	private static boolean containsLikeWildcard(String str) {
+		if (str == null) {
+			return false;
+		} else {
+			return str.contains("%") || str.contains("_");
+		}
+	}
 
 	/**
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
@@ -6210,7 +6226,10 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if check failed
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName) throws TskCoreException {
-		String ext = SleuthkitCase.extractExtension(fileName);
+		String ext = "";
+		if (!containsLikeWildcard(fileName)) {
+			ext = SleuthkitCase.extractExtension(fileName);	
+		}
 		boolean hasExt = StringUtils.isNotEmpty(ext);
 		
 		List<AbstractFile> files = new ArrayList<>();
@@ -6260,7 +6279,10 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName, String dirSubString) throws TskCoreException {
-		String ext = SleuthkitCase.extractExtension(fileName);
+		String ext = "";
+		if (!containsLikeWildcard(fileName)) {
+			ext = SleuthkitCase.extractExtension(fileName);	
+		}
 		boolean hasExt = StringUtils.isNotEmpty(ext);
 		
 		List<AbstractFile> files = new ArrayList<>();
@@ -8504,7 +8526,10 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> findFilesInFolder(String fileName, AbstractFile parentFile) throws TskCoreException {
-		String ext = SleuthkitCase.extractExtension(fileName);
+		String ext = "";
+		if (!containsLikeWildcard(fileName)) {
+			ext = SleuthkitCase.extractExtension(fileName);	
+		}
 		boolean hasExt = StringUtils.isNotEmpty(ext);
 		
 		CaseDbConnection connection = null;
