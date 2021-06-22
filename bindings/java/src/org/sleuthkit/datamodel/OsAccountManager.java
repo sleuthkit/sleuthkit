@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
@@ -49,8 +50,8 @@ import org.sleuthkit.datamodel.TskEvent.OsAccountsUpdatedTskEvent;
 public final class OsAccountManager {
 
 	private final SleuthkitCase db;
-
-	private final NavigableSet<OsAccountInstance> osAccountInstanceCache = new ConcurrentSkipListSet<>();
+	private final Object osAcctInstancesCacheLock;
+	private final NavigableSet<OsAccountInstance> osAccountInstanceCache;
 
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
@@ -59,7 +60,9 @@ public final class OsAccountManager {
 	 *
 	 */
 	OsAccountManager(SleuthkitCase skCase) {
-		this.db = skCase;
+		db = skCase;
+		osAcctInstancesCacheLock = new Object();
+		osAccountInstanceCache = new ConcurrentSkipListSet<>();
 	}
 
 	/**
@@ -526,8 +529,10 @@ public final class OsAccountManager {
 		 * instance ID is not considered in the equals() and hasCode() methods
 		 * of this class.
 		 */
-		if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccount.getId(), dataSource.getId(), instanceType))) {
-			return;
+		synchronized (osAcctInstancesCacheLock) {
+			if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccount.getId(), dataSource.getId(), instanceType))) {
+				return;
+			}
 		}
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
@@ -556,11 +561,22 @@ public final class OsAccountManager {
 		 * instance ID is not considered in the equals() and hasCode() methods
 		 * of this class.
 		 */
-		if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType))) {
-			return;
+		synchronized (osAcctInstancesCacheLock) {
+			if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType))) {
+				return;
+			}
 		}
 
-		// create the instance 
+		/*
+		 * Create the OS account instance.
+		 *
+		 * There are some potential issues here: 1) Check-then-act race
+		 * condition with the cache for multi-user cases, 2) we flush the cache
+		 * during merge operatsion, 3) the case database schema and the SQL
+		 * returned by getInsertOrIgnoreSQL() seamlessly prevent duplicates, but
+		 * a valid row ID is returned even if the INSERT is not done. The bottom
+		 * line is that a redundant event may be published.
+		 */
 		db.acquireSingleUserCaseWriteLock();
 		try {
 			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, instance_type)"
@@ -574,19 +590,12 @@ public final class OsAccountManager {
 			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
 				if (resultSet.next()) {
 					OsAccountInstance accountInstance = new OsAccountInstance(db, resultSet.getLong(1), osAccountId, dataSourceObjId, instanceType);
-					osAccountInstanceCache.add(accountInstance);
+					synchronized (osAcctInstancesCacheLock) {
+						osAccountInstanceCache.add(accountInstance);
+					}
 					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
 				}
 			}
-			connection.executeUpdate(preparedStatement);
-			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
-				if (resultSet.next()) {
-					OsAccountInstance accountInstance = new OsAccountInstance(db, resultSet.getLong(1), osAccountId, dataSourceObjId, instanceType);
-					osAccountInstanceCache.add(accountInstance);
-					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
-				}
-			}
-
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding OS account instance for OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId), ex);
 		} finally {
@@ -747,7 +756,9 @@ public final class OsAccountManager {
 
 			query = makeOsAccountUpdateQuery("tsk_os_account_instances", sourceAccount, destAccount);
 			s.executeUpdate(query);
-			osAccountInstanceCache.clear();
+			synchronized (osAcctInstancesCacheLock) {
+				osAccountInstanceCache.clear();
+			}
 
 			query = makeOsAccountUpdateQuery("tsk_files", sourceAccount, destAccount);
 			s.executeUpdate(query);
@@ -1090,54 +1101,67 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Get a list of OsAccountInstances for the give OsAccount.
+	 * Gets the OS account instances for a given OS account.
 	 *
-	 * @param account Account to retrieve instance for.
+	 * @param account The OS account.
 	 *
-	 * @return List of OsAccountInstances, the list maybe empty if none were
-	 *         found.
+	 * @return The OS account instances, may be an empty list.
 	 *
 	 * @throws TskCoreException
 	 */
 	List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
-		try (CaseDbConnection connection = db.getConnection()) {
-			return getOsAccountInstances(account, connection);
-		}
+		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + account.getId();		
+		return getOsAccountInstances(whereClause);
 	}
 
 	/**
-	 * Get a list of OsAccountInstances for the give OsAccount.
+	 * Gets the OS account instances with the given instance IDs.
 	 *
-	 * @param account    Account to retrieve instance for.
-	 * @param connection Database connection to use.
+	 * @param instanceIDs The instance IDs.
 	 *
-	 * @return List of OsAccountInstances, the list maybe empty if none were
-	 *         found.
+	 * @return The OS account instances.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException Thrown if there is an error querying the case
+	 *                          database.
 	 */
-	private List<OsAccountInstance> getOsAccountInstances(OsAccount account, CaseDbConnection connection) throws TskCoreException {
-		List<OsAccountInstance> instanceList = new ArrayList<>();
-		String queryString = String.format("SELECT * FROM tsk_os_account_instances WHERE os_account_obj_id = %d", account.getId());
-
-		db.acquireSingleUserCaseReadLock();
-		try (Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-			while (rs.next()) {
-				long instanceId = rs.getLong("id");
-				long dataSourceId = rs.getLong("data_source_obj_id");
-				int instanceType = rs.getInt("instance_type");
-				instanceList.add(new OsAccountInstance(db, instanceId, account, dataSourceId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
-			}
+	public List<OsAccountInstance> getOsAccountInstances(List<Long> instanceIDs) throws TskCoreException {
+		String instanceIds = instanceIDs.stream().map(id -> id.toString()).collect(Collectors.joining(","));
+		String whereClause = "tsk_os_account_instances.id IN (" + instanceIds + ")";
+		return getOsAccountInstances(whereClause);
+	}	
+	
+	/**
+	 * Gets the OS account instances that satisfy the given SQL WHERE clause.
+	 *
+	 * @param whereClause The SQL WHERE clause.
+	 *
+	 * @return The OS account instances.
+	 *
+	 * @throws TskCoreException Thrown if there is an error querying the case
+	 *                          database.
+	 */
+	private List<OsAccountInstance> getOsAccountInstances(String whereClause) throws TskCoreException {
+		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
+		String querySQL = "SELECT * FROM tsk_os_account_instances WHERE " + whereClause;
+		db.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = db.getConnection(); 
+				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
+				ResultSet results = connection.executeQuery(preparedStatement)) {
+			while (results.next()) {
+				long instanceId = results.getLong("id");
+				long osAccountObjID = results.getLong("os_account_obj_id");
+				long dataSourceObjId = results.getLong("data_source_obj_id");
+				int instanceType = results.getInt("instance_type");
+				osAcctInstances.add(new OsAccountInstance(db, instanceId, osAccountObjID, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
+			}			
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Failed to get OsAccountInstance for OsAccount (%d)", account.getId()), ex);
+			throw new TskCoreException("Failed to get OsAccountInstances (SQL = " + querySQL + ")", ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
-
-		return instanceList;
+		return osAcctInstances;
 	}
-
+	
 	/**
 	 * Updates the properties of the specified account in the database.
 	 *
