@@ -156,17 +156,22 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
 
     /* If the source has a full name,  copy it */
     if (a_fs_name_from->name) {
+        size_t name_len = strlen(a_fs_name_from->name);
+
         // make sure there is enough space
-        if (strlen(a_fs_name_from->name) >= a_fs_name_to->name_size) {
-            a_fs_name_to->name_size = strlen(a_fs_name_from->name) + 16;
-            a_fs_name_to->name =
+        if (name_len >= a_fs_name_to->name_size) {
+            char * to_name =
                 (char *) tsk_realloc(a_fs_name_to->name,
-                a_fs_name_to->name_size);
-            if (a_fs_name_to->name == NULL)
+                name_len + 16);
+            if (to_name == NULL)
                 return 1;
+
+            a_fs_name_to->name = to_name;
+            a_fs_name_to->name_size = name_len + 16;
         }
         strncpy(a_fs_name_to->name, a_fs_name_from->name,
-            a_fs_name_to->name_size);
+            name_len);
+        a_fs_name_to->name[name_len] = 0;
     }
     else {
         if (a_fs_name_to->name_size > 0)
