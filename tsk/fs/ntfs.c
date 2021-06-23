@@ -571,6 +571,7 @@ is_clustalloc(NTFS_INFO * ntfs, TSK_DADDR_T addr)
  * @param ntfs File system that attribute is located in.
  * @param start_vcn The starting VCN for this run.
  * @param runlist The raw runlist data from the MFT entry.
+ * @param runlist_size The size of the raw runlist data from the MFT entry.
  * @param a_data_run_head [out] Pointer to pointer of run that is created. (NULL on error and for $BadClust - special case because it is a sparse file for the entire FS).
  * @param totlen [out] Pointer to location where total length of run (in bytes) can be returned (or NULL)
  * @param mnum MFT entry address
@@ -579,7 +580,7 @@ is_clustalloc(NTFS_INFO * ntfs, TSK_DADDR_T addr)
  */
 static TSK_RETVAL_ENUM
 ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
-    ntfs_runlist * runlist_head, TSK_FS_ATTR_RUN ** a_data_run_head,
+    ntfs_runlist * runlist_head, uint32_t runlist_size, TSK_FS_ATTR_RUN ** a_data_run_head,
     TSK_OFF_T * totlen, TSK_INUM_T mnum)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) ntfs;
@@ -588,6 +589,7 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
     unsigned int i, idx;
     TSK_DADDR_T prev_addr = 0;
     TSK_OFF_T file_offset = start_vcn;
+    uint32_t runlist_offset = 0;
 
     run = runlist_head;
     *a_data_run_head = NULL;
@@ -596,11 +598,15 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
     if (totlen)
         *totlen = 0;
 
+    if (runlist_size < 1) {
+        return TSK_ERR;
+    }
+
     /* Cycle through each run in the runlist
      * We go until we find an entry with no length
      * An entry with offset of 0 is for a sparse run
      */
-    while (NTFS_RUNL_LENSZ(run) != 0) {
+    while ((runlist_offset < runlist_size) && NTFS_RUNL_LENSZ(run) != 0) {
         int64_t addr_offset = 0;
 
         /* allocate a new tsk_fs_attr_run */
@@ -755,8 +761,14 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         }
 
         /* Advance run */
-        run = (ntfs_runlist *) ((uintptr_t) run + (1 + NTFS_RUNL_LENSZ(run)
-                + NTFS_RUNL_OFFSZ(run)));
+        uint32_t run_size = 1 + NTFS_RUNL_LENSZ(run) + NTFS_RUNL_OFFSZ(run);
+        run = (ntfs_runlist *) ((uintptr_t) run + run_size);
+
+        // Abritrary limit runlist_offset at INT32_MAX ((1 << 31) - 1)
+        if (run_size > (((uint32_t) 1UL << 31 ) -1) - runlist_offset) {
+            return TSK_ERR;
+        }
+        runlist_offset += run_size;
     }
 
     /* special case for $BADCLUST, which is a sparse file whose size is
@@ -1974,19 +1986,23 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 return TSK_COR;
             }
 
+            uint32_t attr_len = tsk_getu32(fs->endian, attr->len);
+            uint64_t run_start_vcn = tsk_getu64(fs->endian, attr->c.nr.start_vcn);
+            uint16_t run_off = tsk_getu16(fs->endian, attr->c.nr.run_off);
+
             // sanity check
-            if (tsk_getu16(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
+            if ((run_off < 48) || (run_off >= attr_len)) {
                 if (tsk_verbose)
-                    tsk_fprintf(stderr, "ntfs_proc_attrseq: run offset too big\n");
+                    tsk_fprintf(stderr, "ntfs_proc_attrseq: run offset out of bounds\n");
                 break;
             }
 
             /* convert the run to generic form */
             retval = ntfs_make_data_run(ntfs,
-                tsk_getu64(fs->endian, attr->c.nr.start_vcn),
-                (ntfs_runlist *) ((uintptr_t)
-                    attr + tsk_getu16(fs->endian,
-                        attr->c.nr.run_off)), &fs_attr_run, NULL,
+                run_start_vcn,
+                (ntfs_runlist *) ((uintptr_t) attr + run_off),
+                attr_len - run_off,
+                &fs_attr_run, NULL,
                 a_attrinum);
             if (retval != TSK_OK) {
                 tsk_error_errstr2_concat(" - proc_attrseq");
@@ -3135,23 +3151,26 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         tsk_getu16(fs->endian, mft->attr_off));
     data_attr = NULL;
 
+    uint32_t attr_len = 0;
+    uint32_t attr_type = 0;
+
     /* cycle through them */
     while ((uintptr_t) attr + sizeof (ntfs_attr) <=
             ((uintptr_t) mft + (uintptr_t) ntfs->mft_rsize_b)) {
 
-        if ((tsk_getu32(fs->endian, attr->len) == 0) ||
-            (tsk_getu32(fs->endian, attr->type) == 0xffffffff)) {
+        attr_len = tsk_getu32(fs->endian, attr->len);
+        attr_type = tsk_getu32(fs->endian, attr->type);
+
+        if ((attr_len == 0) || (attr_type == 0xffffffff)) {
             break;
         }
 
-        if (tsk_getu32(fs->endian, attr->type) == NTFS_ATYPE_DATA) {
+        if (attr_type == NTFS_ATYPE_DATA) {
             data_attr = attr;
             break;
         }
 
-        attr =
-            (ntfs_attr *) ((uintptr_t) attr + tsk_getu32(fs->endian,
-                attr->len));
+        attr = (ntfs_attr *) ((uintptr_t) attr + attr_len);
     }
 
     /* did we get it? */
@@ -3162,13 +3181,21 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         goto on_error;
     }
 
-    /* convert to generic form */
+    uint64_t run_start_vcn = tsk_getu64(fs->endian, data_attr->c.nr.start_vcn);
+    uint16_t run_off = tsk_getu16(fs->endian, data_attr->c.nr.run_off);
+
+    if ((run_off < 48) || (run_off >= attr_len)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr("Invalid run_off of Bitmap Data Attribute - value out of bounds");
+        goto on_error;
+    }
+    /* convert data run to generic form */
     if ((ntfs_make_data_run(ntfs,
-                tsk_getu64(fs->endian, data_attr->c.nr.start_vcn),
-                (ntfs_runlist
-                    *) ((uintptr_t) data_attr + tsk_getu16(fs->endian,
-                        data_attr->c.nr.run_off)), &(ntfs->bmap),
-                NULL, NTFS_MFT_BMAP)) != TSK_OK) {
+                run_start_vcn,
+                (ntfs_runlist *) ((uintptr_t) data_attr + run_off),
+                attr_len - run_off,
+                &(ntfs->bmap), NULL, NTFS_MFT_BMAP)) != TSK_OK) {
         goto on_error;
     }
     ntfs->bmap_buf = (char *) tsk_malloc(fs->block_size);
