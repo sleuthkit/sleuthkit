@@ -1150,7 +1150,7 @@ public final class OsAccountManager {
 	private List<OsAccountInstance> getOsAccountInstances(String whereClause) throws TskCoreException {
 		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
 		String querySQL = "SELECT * FROM tsk_os_account_instances WHERE " + whereClause;
-		db.acquireSingleUserCaseWriteLock();
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
 				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
 				ResultSet results = connection.executeQuery(preparedStatement)) {
