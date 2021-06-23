@@ -6197,6 +6197,22 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Returns true if the string contains a SQL LIKE statement wild card based 
+	 * on https://www.postgresql.org/docs/9.5/functions-matching.html and 
+	 * https://sqlite.org/lang_expr.html#the_like_glob_regexp_and_match_operators.
+	 * 
+	 * @param str The string.
+	 * @return True if it contains a LIKE wild card.
+	 */
+	private static boolean containsLikeWildcard(String str) {
+		if (str == null) {
+			return false;
+		} else {
+			return str.contains("%") || str.contains("_");
+		}
+	}
 
 	/**
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
@@ -6210,6 +6226,11 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if check failed
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName) throws TskCoreException {
+		String ext = "";
+		if (!containsLikeWildcard(fileName)) {
+			ext = SleuthkitCase.extractExtension(fileName);	
+		}
+		
 		List<AbstractFile> files = new ArrayList<>();
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
@@ -6217,10 +6238,20 @@ public class SleuthkitCase {
 		try {
 			connection = connections.getConnection();
 			
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_NAME);
-			statement.clearParameters();
-			statement.setString(1, fileName.toLowerCase());
-			statement.setLong(2, dataSource.getId());
+			PreparedStatement statement;
+			if (ext.isEmpty()) {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_NAME);
+				statement.clearParameters();
+				statement.setString(1, fileName.toLowerCase());
+				statement.setLong(2, dataSource.getId());
+			} else {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_EXTENSION_AND_DATA_SOURCE_AND_NAME);
+				statement.clearParameters();
+				statement.setString(1, ext);
+				statement.setString(2, fileName.toLowerCase());
+				statement.setLong(3, dataSource.getId());
+			}
+
 			resultSet = connection.executeQuery(statement);
 			files.addAll(resultSetToAbstractFiles(resultSet, connection));
 		} catch (SQLException e) {
@@ -6247,18 +6278,33 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName, String dirSubString) throws TskCoreException {
+		String ext = "";
+		if (!containsLikeWildcard(fileName)) {
+			ext = SleuthkitCase.extractExtension(fileName);	
+		}
+		
 		List<AbstractFile> files = new ArrayList<>();
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
+			PreparedStatement statement;
+			if (ext.isEmpty()) {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
+				statement.clearParameters();
+				statement.setString(1, fileName.toLowerCase());
+				statement.setString(2, "%" + dirSubString.toLowerCase() + "%"); //NON-NLS
+				statement.setLong(3, dataSource.getId());
+			} else {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_EXTENSION_AND_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
+				statement.clearParameters();
+				statement.setString(1, ext);
+				statement.setString(2, fileName.toLowerCase());
+				statement.setString(3, "%" + dirSubString.toLowerCase() + "%"); //NON-NLS
+				statement.setLong(4, dataSource.getId());
+			}
 			
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
-			statement.clearParameters();
-			statement.setString(1, fileName.toLowerCase());
-			statement.setString(2, "%" + dirSubString.toLowerCase() + "%"); //NON-NLS
-			statement.setLong(3, dataSource.getId());
 			resultSet = connection.executeQuery(statement);
 			files.addAll(resultSetToAbstractFiles(resultSet, connection));
 		} catch (SQLException e) {
@@ -8478,17 +8524,33 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> findFilesInFolder(String fileName, AbstractFile parentFile) throws TskCoreException {
+		String ext = "";
+		if (!containsLikeWildcard(fileName)) {
+			ext = SleuthkitCase.extractExtension(fileName);	
+		}
+		
 		CaseDbConnection connection = null;
 		ResultSet rs = null;
+		long parentId = parentFile.getId();
+		
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
 			
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_NAME);
-			statement.clearParameters();
-			long parentId = parentFile.getId();
-			statement.setLong(1, parentId);
-			statement.setString(2, fileName);
+			PreparedStatement statement;
+			if (ext.isEmpty()) {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_NAME);
+				statement.clearParameters();
+				statement.setLong(1, parentId);
+				statement.setString(2, fileName);	
+			} else {
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_EXTENSION_AND_PARENT_AND_NAME);
+				statement.clearParameters();
+				statement.setString(1, ext);
+				statement.setLong(2, parentId);
+				statement.setString(3, fileName);	
+			}
+
 			rs = connection.executeQuery(statement);
 			return resultSetToAbstractFiles(rs, connection);
 		} catch (SQLException ex) {
@@ -12557,6 +12619,13 @@ public class SleuthkitCase {
 				+ "WHERE (tsk_objects.par_obj_id = ? AND " //NON-NLS
 				+ "LOWER(tsk_files.name) LIKE LOWER(?) AND LOWER(tsk_files.name) NOT LIKE LOWER('%journal%')) "//NON-NLS
 				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+		SELECT_FILES_BY_EXTENSION_AND_PARENT_AND_NAME("SELECT tsk_files.* " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE tsk_files.extension = ? AND "
+				+ "(tsk_objects.par_obj_id = ? AND " //NON-NLS
+				+ "LOWER(tsk_files.name) LIKE LOWER(?) AND LOWER(tsk_files.name) NOT LIKE LOWER('%journal%')) "//NON-NLS
+				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
 		SELECT_FILE_IDS_BY_PARENT("SELECT tsk_files.obj_id AS obj_id " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
@@ -12589,7 +12658,9 @@ public class SleuthkitCase {
 		INSERT_FILE_ATTRIBUTE("INSERT INTO tsk_file_attributes (obj_id, attribute_type_id, value_type, value_byte, value_text, value_int32, value_int64, value_double) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?,?)"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
+		SELECT_FILES_BY_EXTENSION_AND_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE extension = ? AND LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
+		SELECT_FILES_BY_EXTENSION_AND_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE extension = ? AND LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 		UPDATE_IMAGE_MD5("UPDATE tsk_image_info SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 		UPDATE_IMAGE_SHA1("UPDATE tsk_image_info SET sha1 = ? WHERE obj_id = ?"), //NON-NLS
