@@ -7654,12 +7654,31 @@ public class SleuthkitCase {
 			boolean isFile, Content parentObj,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+		CaseDbTransaction transaction = beginTransaction();
+		try {
+			DerivedFile df = addDerivedFile(fileName, localPath,
+					size, ctime, crtime, atime, mtime,
+					isFile, parentObj,
+					rederiveDetails, toolName, toolVersion,
+					otherDetails, encodingType, transaction);
+			transaction.commit();
+			return df;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+	
+	public DerivedFile addDerivedFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile, Content parentObj,
+			String rederiveDetails, String toolName, String toolVersion,
+			String otherDetails, TskData.EncodingType encodingType, CaseDbTransaction transaction) throws TskCoreException {
 		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
 		localPath = localPath.replaceAll("^[/\\\\]+", "");
 
 		TimelineManager timelineManager = getTimelineManager();
 
-		CaseDbTransaction transaction = beginTransaction();
 		CaseDbConnection connection = transaction.getConnection();
 		try {
 			final long parentId = parentObj.getId();
@@ -7748,14 +7767,11 @@ public class SleuthkitCase {
 					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
-			transaction.commit();
+
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
 			return derivedFile;
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
-		} finally {
-			closeConnection(connection);
 		}
 	}
 
@@ -7795,16 +7811,38 @@ public class SleuthkitCase {
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
 
+		CaseDbTransaction trans = null;
+		try {
+			Content parentObj = derivedFile.getParent();
+			
+			trans = beginTransaction();
+			DerivedFile updatedFile = updateDerivedFile(derivedFile, localPath,
+					size, ctime, crtime, atime, mtime,
+					isFile, mimeType,
+					rederiveDetails, toolName, toolVersion,
+					otherDetails, encodingType, parentObj, trans);
+			trans.commit();
+			return updatedFile;
+		} catch (TskCoreException ex) {
+			if (trans != null) {
+				trans.rollback();
+			}
+			throw ex;
+		}
+	}		
+		
+	public DerivedFile updateDerivedFile(DerivedFile derivedFile, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile, String mimeType,
+			String rederiveDetails, String toolName, String toolVersion,
+			String otherDetails, TskData.EncodingType encodingType, 
+			Content parentObj, CaseDbTransaction trans) throws TskCoreException {		
+		
 		// Strip off any leading slashes from the local path (leading slashes indicate absolute paths)
 		localPath = localPath.replaceAll("^[/\\\\]+", "");
-
-		CaseDbConnection connection = null;
-		acquireSingleUserCaseWriteLock();
+		
 		ResultSet rs = null;
 		try {
-			connection = connections.getConnection();
-			Content parentObj = derivedFile.getParent();
-			connection.beginTransaction();
 			final long parentId = parentObj.getId();
 			String parentPath = "";
 			if (parentObj instanceof BlackboardArtifact) {
@@ -7814,7 +7852,7 @@ public class SleuthkitCase {
 			}
 			// UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, "
 			// + "size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ? WHERE obj_id = ?"), //NON-NLS
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_DERIVED_FILE);
+			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.UPDATE_DERIVED_FILE);
 			statement.clearParameters();
 
 			//type
@@ -7846,24 +7884,19 @@ public class SleuthkitCase {
 			statement.setLong(10, mtime);
 			statement.setString(11, mimeType);
 			statement.setString(12, String.valueOf(derivedFile.getId()));
-			connection.executeUpdate(statement);
+			trans.getConnection().executeUpdate(statement);
 
 			//add localPath
-			updateFilePath(connection, derivedFile.getId(), localPath, encodingType);
+			updateFilePath(trans.getConnection(), derivedFile.getId(), localPath, encodingType);
 
-			connection.commitTransaction();
-
-			long dataSourceObjId = getDataSourceObjectId(connection, parentObj);
+			long dataSourceObjId = getDataSourceObjectId(trans.getConnection(), parentObj);
 			final String extension = extractExtension(derivedFile.getName());
 			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
 					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, derivedFile.getOwnerUid().orElse(null), derivedFile.getOsAccountObjectId().orElse(null));
 		} catch (SQLException ex) {
-			rollbackTransaction(connection);
 			throw new TskCoreException("Failed to add derived file to case database", ex);
 		} finally {
 			closeResultSet(rs);
-			closeConnection(connection);
-			releaseSingleUserCaseWriteLock();
 		}
 	}
 
