@@ -4010,6 +4010,12 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             uint8_t *recData;   // pointer to the data part of the record
             uint32_t keyFileID;
 
+            if ((attrFile.nodeSize < 2) || (recIndx > ((attrFile.nodeSize - 2) / 2))) {
+                error_detected(TSK_ERR_FS_READ,
+                    "hfs_load_extended_attrs: Unable to process attribute (recIndx exceeds attrFile.nodeSize)");
+                goto on_error;
+            }
+
             // The offset to the record is stored in table at end of node
             uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
