@@ -7237,7 +7237,7 @@ public class SleuthkitCase {
 			}
 
 			if (osAccount != null) {
-				osAccountManager.newOsAccountInstance(osAccount, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				osAccountManager.newOsAccountInstance(osAccount.getId(), dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
 			}
 
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
