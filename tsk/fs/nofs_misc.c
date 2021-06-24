@@ -215,7 +215,7 @@ tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *
  */
 TSK_RETVAL_ENUM
 tsk_fs_nofs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);

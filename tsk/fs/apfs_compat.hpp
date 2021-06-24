@@ -56,5 +56,5 @@ class APFSFSCompat : public APFSJObjTree {
   uint8_t decrypt_block(TSK_DADDR_T, void*) noexcept;
   int name_cmp(const char*, const char*) const noexcept;
 
-  TSK_RETVAL_ENUM dir_open_meta(TSK_FS_DIR**, TSK_INUM_T) const noexcept;
+  TSK_RETVAL_ENUM dir_open_meta(TSK_FS_DIR**, TSK_INUM_T, int) const noexcept;
 };

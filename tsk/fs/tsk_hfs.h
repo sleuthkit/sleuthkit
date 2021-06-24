@@ -740,7 +740,7 @@ extern uint16_t hfs_get_idxkeylen(HFS_INFO * hfs, uint16_t keylen,
 
 
 extern TSK_RETVAL_ENUM hfs_dir_open_meta(TSK_FS_INFO *, TSK_FS_DIR **,
-    TSK_INUM_T);
+    TSK_INUM_T, int);
 extern int hfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
 
 extern uint8_t hfs_jopen(TSK_FS_INFO *, TSK_INUM_T);

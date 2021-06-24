@@ -195,7 +195,7 @@ extern "C" {
 
     extern TSK_RETVAL_ENUM
     fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
-        TSK_OFF_T len, TSK_DADDR_T * addrs);
+        TSK_OFF_T len, TSK_DADDR_T * addrs, int recursion_depth);
 
 #ifdef __cplusplus
 }
