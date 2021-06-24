@@ -483,7 +483,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off + sizeof(hfs_btree_key_ext) > nodesize) {
+                if (rec_off > nodesize - sizeof(hfs_btree_key_ext)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%d vs %"
@@ -578,7 +578,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off >= nodesize) {
+
+                if (rec_off >= nodesize - sizeof(hfs_btree_key_ext)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too large (%d vs %"
@@ -861,7 +862,9 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off >= nodesize) {
+
+                // Need at least 2 bytes for key_len
+                if (rec_off >= nodesize - 2) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in index node %d too large (%d vs %"
