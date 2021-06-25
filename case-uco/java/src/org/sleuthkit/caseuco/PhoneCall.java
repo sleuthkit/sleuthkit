@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
  * This class definition mirrors the PhoneCall observable described in the UCO
  * ontology.
  */
-class PhoneCall extends Facet {
+public class PhoneCall extends Facet {
 
     private String to;
 
@@ -41,32 +41,52 @@ class PhoneCall extends Facet {
         super(PhoneCall.class.getSimpleName());
     }
 
-    PhoneCall setTo(CyberItem to) {
+    public PhoneCall setTo(CyberItem to) {
         this.to = to.getId();
         return this;
     }
 
-    PhoneCall setFrom(CyberItem from) {
+    public PhoneCall setFrom(CyberItem from) {
         this.from = from.getId();
         return this;
     }
 
-    PhoneCall setStartTime(Long startTime) {
+    public PhoneCall setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    PhoneCall setEndTime(Long endTime) {
+    public PhoneCall setEndTime(Long endTime) {
         if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    PhoneCall setCallType(String callType) {
+    public PhoneCall setCallType(String callType) {
         this.callType = callType;
         return this;
+    }
+
+    public String getTo() {
+        return to;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public String getCallType() {
+        return callType;
     }
 }

@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the EnvironmentVariable observable described in
  * the UCO ontology.
  */
-class EnvironmentVariable extends Facet {
+public class EnvironmentVariable extends Facet {
 
     private String value;
 
@@ -30,8 +30,12 @@ class EnvironmentVariable extends Facet {
         super(EnvironmentVariable.class.getSimpleName());
     }
 
-    EnvironmentVariable setValue(String value) {
+    public EnvironmentVariable setValue(String value) {
         this.value = value;
         return this;
+    }
+
+    public String getValue() {
+        return value;
     }
 }

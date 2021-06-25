@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the LatLongCoordinates observable described in
  * the UCO ontology.
  */
-class LatLongCoordinates extends Facet {
+public class LatLongCoordinates extends Facet {
 
     private Double altitude;
 
@@ -34,18 +34,30 @@ class LatLongCoordinates extends Facet {
         super(LatLongCoordinates.class.getSimpleName());
     }
 
-    LatLongCoordinates setAltitude(Double altitude) {
+    public LatLongCoordinates setAltitude(Double altitude) {
         this.altitude = altitude;
         return this;
     }
 
-    LatLongCoordinates setLatitude(Double latitude) {
+    public LatLongCoordinates setLatitude(Double latitude) {
         this.latitude = latitude;
         return this;
     }
 
-    LatLongCoordinates setLongitude(Double longitude) {
+    public LatLongCoordinates setLongitude(Double longitude) {
         this.longitude = longitude;
         return this;
+    }
+
+    public Double getAltitude() {
+        return altitude;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
     }
 }

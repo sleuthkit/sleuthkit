@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the WindowsAccount observable described in the UCO
  * ontology.
  */
-class WindowsAccount extends Facet {
+public class WindowsAccount extends Facet {
     
     private String groups;
     
@@ -30,8 +30,12 @@ class WindowsAccount extends Facet {
         super(WindowsAccount.class.getSimpleName());
     }
     
-    WindowsAccount setGroups(String groups) {
+    public WindowsAccount setGroups(String groups) {
         this.groups = groups;
         return this;
+    }
+
+    public String getGroups() {
+        return groups;
     }
 }

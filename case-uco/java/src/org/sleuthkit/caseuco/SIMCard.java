@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the SIMCard observable described in the UCO
  * ontology.
  */
-class SIMCard extends Facet {
+public class SIMCard extends Facet {
 
     private String IMSI;
 
@@ -32,13 +32,21 @@ class SIMCard extends Facet {
         super(SIMCard.class.getSimpleName());
     }
 
-    SIMCard setIMSI(String IMSI) {
+    public SIMCard setIMSI(String IMSI) {
         this.IMSI = IMSI;
         return this;
     }
 
-    SIMCard setICCID(String ICCID) {
+    public SIMCard setICCID(String ICCID) {
         this.ICCID = ICCID;
         return this;
+    }
+
+    public String getIMSI() {
+        return IMSI;
+    }
+
+    public String getICCID() {
+        return ICCID;
     }
 }

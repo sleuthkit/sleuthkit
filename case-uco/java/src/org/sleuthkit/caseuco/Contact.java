@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Contact observable described in the UCO
  * ontology.
  */
-class Contact extends Facet {
+public class Contact extends Facet {
 
     private String contactName;
 
@@ -30,8 +30,12 @@ class Contact extends Facet {
         super(Contact.class.getSimpleName());
     }
 
-    Contact setContactName(String contactName) {
+    public Contact setContactName(String contactName) {
         this.contactName = contactName;
         return this;
+    }
+
+    public String getContactName() {
+        return contactName;
     }
 }

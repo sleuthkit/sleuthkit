@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
  * This class definition mirrors the CalendarEntry observable described in the
  * UCO ontology.
  */
-class CalendarEntry extends Facet {
+public class CalendarEntry extends Facet {
 
     private String eventType;
 
@@ -39,27 +39,43 @@ class CalendarEntry extends Facet {
         super(CalendarEntry.class.getSimpleName());
     }
 
-    CalendarEntry setEventType(String eventType) {
+    public CalendarEntry setEventType(String eventType) {
         this.eventType = eventType;
         return this;
     }
 
-    CalendarEntry setLocation(Location location) {
+    public CalendarEntry setLocation(Location location) {
         this.location = location.getId();
         return this;
     }
 
-    CalendarEntry setEndTime(Long endTime) {
+    public CalendarEntry setEndTime(Long endTime) {
         if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    CalendarEntry setStartTime(Long startTime) {
+    public CalendarEntry setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
+    }
+
+    public String getEventType() {
+        return eventType;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public String getLocation() {
+        return location;
     }
 }

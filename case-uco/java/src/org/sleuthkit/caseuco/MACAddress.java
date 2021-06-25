@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the MACAddress observable described in the UCO
  * ontology.
  */
-class MACAddress extends Facet {
+public class MACAddress extends Facet {
 
     private String value;
 
@@ -30,8 +30,12 @@ class MACAddress extends Facet {
         super(MACAddress.class.getSimpleName());
     }
 
-    MACAddress setValue(String value) {
+    public MACAddress setValue(String value) {
         this.value = value;
         return this;
+    }
+
+    public String getValue() {
+        return value;
     }
 }

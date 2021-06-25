@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the EmailAddress observable described in the
  * UCO ontology.
  */
-class EmailAddress extends Facet {
+public class EmailAddress extends Facet {
 
     private String value;
 
@@ -30,8 +30,12 @@ class EmailAddress extends Facet {
         super(EmailAddress.class.getSimpleName());
     }
 
-    EmailAddress setValue(String value) {
+    public EmailAddress setValue(String value) {
         this.value = value;
         return this;
+    }
+
+    public String getValue() {
+        return value;
     }
 }

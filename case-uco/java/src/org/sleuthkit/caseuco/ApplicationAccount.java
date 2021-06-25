@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the ApplicationAccount observable described in
  * the UCO ontology.
  */
-class ApplicationAccount extends Facet {
+public class ApplicationAccount extends Facet {
 
     private String application;
 
@@ -30,8 +30,12 @@ class ApplicationAccount extends Facet {
         super(ApplicationAccount.class.getSimpleName());
     }
 
-    ApplicationAccount setApplication(CyberItem application) {
+    public ApplicationAccount setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
+    }
+
+    public String getApplication() {
+        return application;
     }
 }

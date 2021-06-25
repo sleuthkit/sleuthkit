@@ -28,7 +28,7 @@ import org.sleuthkit.caseuco.Hash.HashMethod;
  * This class definition mirrors the ContentData observable described in the UCO
  * ontology.
  */
-class ContentData extends Facet {
+public class ContentData extends Facet {
 
     private Long sizeInBytes;
 
@@ -48,35 +48,59 @@ class ContentData extends Facet {
         this.hashes = new ArrayList<>();
     }
 
-    ContentData setSizeInBytes(long bytes) {
+    public ContentData setSizeInBytes(long bytes) {
         this.sizeInBytes = bytes;
         return this;
     }
 
-    ContentData setMimeType(String mimeType) {
+    public ContentData setMimeType(String mimeType) {
         this.mimeType = mimeType;
         return this;
     }
 
-    ContentData setMd5Hash(String md5Hash) {
+    public ContentData setMd5Hash(String md5Hash) {
         Hash md5HashType = new Hash(md5Hash)
                 .setHashMethod(HashMethod.MD5);
         hashes.add(md5HashType);
         return this;
     }
 
-    ContentData setDataPayload(String dataPayload) {
+    public ContentData setDataPayload(String dataPayload) {
         this.dataPayload = dataPayload;
         return this;
     }
 
-    ContentData setOwner(Identity owner) {
+    public ContentData setOwner(Identity owner) {
         this.owner = owner.getId();
         return this;
     }
     
-    ContentData setDataPayloadReferenceUrl(UcoObject url) {
+    public ContentData setDataPayloadReferenceUrl(UcoObject url) {
         this.dataPayloadReferenceUrl = url.getId();
         return this;
+    }
+
+    public Long getSizeInBytes() {
+        return sizeInBytes;
+    }
+
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public List<Hash> getHashes() {
+        return hashes;
+    }
+
+    public String getDataPayload() {
+        return dataPayload;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public String getDataPayloadReferenceUrl() {
+        return dataPayloadReferenceUrl;
     }
 }

@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
  * This class definition mirrors the Message observable described in the UCO
  * ontology.
  */
-class Message extends Facet {
+public class Message extends Facet {
 
     private String messageText;
 
@@ -39,31 +39,47 @@ class Message extends Facet {
         super(Message.class.getSimpleName());
     }
 
-    Message setMessageText(String messageText) {
+    public Message setMessageText(String messageText) {
         this.messageText = messageText;
         return this;
     }
 
-    Message setApplication(CyberItem application) {
+    public Message setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
     }
 
-    Message setSentTime(Long sentTime) {
+    public Message setSentTime(Long sentTime) {
         if (sentTime != null) {
             this.sentTime = Instant.ofEpochSecond(sentTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    Message setMessageType(String messageType) {
+    public Message setMessageType(String messageType) {
         this.messageType = messageType;
         return this;
     }
 
     @Override
-    Message setId(String id) {
+    public Message setId(String id) {
         super.setId("_:" + id);
         return this;
+    }
+
+    public String getMessageText() {
+        return messageText;
+    }
+
+    public String getApplication() {
+        return application;
+    }
+
+    public String getSentTime() {
+        return sentTime;
+    }
+
+    public String getMessageType() {
+        return messageType;
     }
 }

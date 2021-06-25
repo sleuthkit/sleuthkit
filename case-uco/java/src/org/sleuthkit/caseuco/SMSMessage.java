@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the SMSMessage observable described in the UCO
  * ontology.
  */
-class SMSMessage extends Facet {
+public class SMSMessage extends Facet {
 
     private Boolean isRead;
 
@@ -30,10 +30,14 @@ class SMSMessage extends Facet {
         super(SMSMessage.class.getSimpleName());
     }
 
-    SMSMessage setIsRead(Integer status) {
+    public SMSMessage setIsRead(Integer status) {
         if (status != null) {
             this.isRead = status == 1;
         }
         return this;
+    }
+
+    public Boolean getIsRead() {
+        return isRead;
     }
 }

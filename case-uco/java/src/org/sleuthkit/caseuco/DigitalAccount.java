@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
  * This class definition mirrors the DigitalAccount observable described in the
  * UCO ontology.
  */
-class DigitalAccount extends Facet {
+public class DigitalAccount extends Facet {
 
     private String displayName;
 
@@ -35,15 +35,23 @@ class DigitalAccount extends Facet {
         super(DigitalAccount.class.getSimpleName());
     }
 
-    DigitalAccount setDisplayName(String displayName) {
+    public DigitalAccount setDisplayName(String displayName) {
         this.displayName = displayName;
         return this;
     }
 
-    DigitalAccount setLastLoginTime(Long time) {
+    public DigitalAccount setLastLoginTime(Long time) {
         if (time != null) {
             this.lastLoginTime = Instant.ofEpochSecond(time).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getLastLoginTime() {
+        return lastLoginTime;
     }
 }

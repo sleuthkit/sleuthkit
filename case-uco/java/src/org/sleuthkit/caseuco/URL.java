@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the URL observable described in the UCO
  * ontology.
  */
-class URL extends Facet {
+public class URL extends Facet {
 
     private String fullValue;
 
@@ -32,13 +32,21 @@ class URL extends Facet {
         super(URL.class.getSimpleName());
     }
 
-    URL setFullValue(String fullValue) {
+    public URL setFullValue(String fullValue) {
         this.fullValue = fullValue;
         return this;
     }
 
-    URL setUserName(CyberItem userName) {
+    public URL setUserName(CyberItem userName) {
         this.userName = userName.getId();
         return this;
+    }
+
+    public String getFullValue() {
+        return fullValue;
+    }
+
+    public String getUserName() {
+        return userName;
     }
 }

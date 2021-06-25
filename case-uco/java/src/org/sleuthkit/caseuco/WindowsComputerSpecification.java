@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the WindowsComputerSpecification observable
  * described in the UCO ontology.
  */
-class WindowsComputerSpecification extends Facet {
+public class WindowsComputerSpecification extends Facet {
 
     private String registeredOrganization;
 
@@ -34,18 +34,30 @@ class WindowsComputerSpecification extends Facet {
         super(WindowsComputerSpecification.class.getSimpleName());
     }
 
-    WindowsComputerSpecification setRegisteredOrganization(Identity registeredOrganization) {
+    public WindowsComputerSpecification setRegisteredOrganization(Identity registeredOrganization) {
         this.registeredOrganization = registeredOrganization.getId();
         return this;
     }
 
-    WindowsComputerSpecification setRegisteredOwner(Identity registeredOwner) {
+    public WindowsComputerSpecification setRegisteredOwner(Identity registeredOwner) {
         this.registeredOwner = registeredOwner.getId();
         return this;
     }
 
-    WindowsComputerSpecification setWindowsTempDirectory(CyberItem windowsTempDirectory) {
+    public WindowsComputerSpecification setWindowsTempDirectory(CyberItem windowsTempDirectory) {
         this.windowsTempDirectory = windowsTempDirectory.getId();
         return this;
+    }
+
+    public String getRegisteredOrganization() {
+        return registeredOrganization;
+    }
+
+    public String getRegisteredOwner() {
+        return registeredOwner;
+    }
+
+    public String getWindowsTempDirectory() {
+        return windowsTempDirectory;
     }
 }

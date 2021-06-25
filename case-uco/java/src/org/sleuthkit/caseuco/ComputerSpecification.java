@@ -24,7 +24,7 @@ import com.google.gson.annotations.SerializedName;
  * This class definition mirrors the ComupterSpecification observable described
  * in the UCO ontology.
  */
-class ComputerSpecification extends Facet {
+public class ComputerSpecification extends Facet {
 
     @SerializedName("hostname")
     private String hostName;
@@ -35,13 +35,21 @@ class ComputerSpecification extends Facet {
         super(ComputerSpecification.class.getSimpleName());
     }
 
-    ComputerSpecification setHostName(String hostName) {
+    public ComputerSpecification setHostName(String hostName) {
         this.hostName = hostName;
         return this;
     }
 
-    ComputerSpecification setProcessorArchitecture(String processorArchitecture) {
+    public ComputerSpecification setProcessorArchitecture(String processorArchitecture) {
         this.processorArchitecture = processorArchitecture;
         return this;
+    }
+
+    public String getHostName() {
+        return hostName;
+    }
+
+    public String getProcessorArchitecture() {
+        return processorArchitecture;
     }
 }

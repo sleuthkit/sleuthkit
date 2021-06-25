@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the core Assertion object described in the UCO
  * ontology.
  */
-class Assertion extends UcoObject {
+public class Assertion extends UcoObject {
 
     private String statement;
 
@@ -30,8 +30,12 @@ class Assertion extends UcoObject {
         super(uuid, "Assertion");
     }
 
-    Assertion setStatement(String statement) {
+    public Assertion setStatement(String statement) {
         this.statement = statement;
         return this;
+    }
+
+    public String getStatement() {
+        return statement;
     }
 }

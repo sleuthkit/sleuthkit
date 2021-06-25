@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the IdentityFacet observable described in the
  * UCO ontology.
  */
-class IdentityFacet extends Facet {
+public class IdentityFacet extends Facet {
 
     IdentityFacet() {
         super(IdentityFacet.class.getSimpleName());

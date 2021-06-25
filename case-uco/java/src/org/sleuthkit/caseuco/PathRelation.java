@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the PathRelation observable described in the
  * UCO ontology.
  */
-class PathRelation extends Facet {
+public class PathRelation extends Facet {
 
     private String path;
 
@@ -30,8 +30,12 @@ class PathRelation extends Facet {
         super(PathRelation.class.getSimpleName());
     }
 
-    PathRelation setPath(String path) {
+    public PathRelation setPath(String path) {
         this.path = path;
         return this;
+    }
+
+    public String getPath() {
+        return path;
     }
 }

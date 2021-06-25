@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
  * This class definition mirrors the OperatingSystem observable described in the
  * UCO ontology.
  */
-class OperatingSystem extends Facet {
+public class OperatingSystem extends Facet {
 
     private String installDate;
 
@@ -35,15 +35,23 @@ class OperatingSystem extends Facet {
         super(OperatingSystem.class.getSimpleName());
     }
 
-    OperatingSystem setInstallDate(Long installDate) {
+    public OperatingSystem setInstallDate(Long installDate) {
         if (installDate != null) {
             this.installDate = Instant.ofEpochSecond(installDate).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    OperatingSystem setVersion(String version) {
+    public OperatingSystem setVersion(String version) {
         this.version = version;
         return this;
+    }
+
+    public String getInstallDate() {
+        return installDate;
+    }
+
+    public String getVersion() {
+        return version;
     }
 }

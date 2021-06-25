@@ -21,7 +21,7 @@ package org.sleuthkit.caseuco;
 /**
  * This class definition mirrors the Hash type described in the UCO ontology.
  */
-class Hash extends UcoObject {
+public class Hash extends UcoObject {
 
     private HashMethod hashMethod;
 
@@ -36,7 +36,7 @@ class Hash extends UcoObject {
         this.hashValue = hashValue;
     }
 
-    Hash setHashMethod(HashMethod method) {
+    public Hash setHashMethod(HashMethod method) {
         this.hashMethod = method;
         return this;
     }
@@ -47,5 +47,13 @@ class Hash extends UcoObject {
      */
     enum HashMethod {
         MD5;
+    }
+
+    public HashMethod getHashMethod() {
+        return hashMethod;
+    }
+
+    public String getHashValue() {
+        return hashValue;
     }
 }

@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Account observable described in the UCO
  * ontology.
  */
-class Account extends Facet {
+public class Account extends Facet {
 
     private String accountType;
 
@@ -34,18 +34,30 @@ class Account extends Facet {
         super(Account.class.getSimpleName());
     }
 
-    Account setAccountType(String accountType) {
+    public Account setAccountType(String accountType) {
         this.accountType = accountType;
         return this;
     }
 
-    Account setAccountIdentifier(String accountIdentifier) {
+    public Account setAccountIdentifier(String accountIdentifier) {
         this.accountIdentifier = accountIdentifier;
         return this;
     }
 
-    Account setOwner(Identity owner) {
+    public Account setOwner(Identity owner) {
         this.owner = owner.getId();
         return this;
+    }
+
+    public String getAccountType() {
+        return accountType;
+    }
+
+    public String getAccountIdentifier() {
+        return accountIdentifier;
+    }
+
+    public String getOwner() {
+        return owner;
     }
 }

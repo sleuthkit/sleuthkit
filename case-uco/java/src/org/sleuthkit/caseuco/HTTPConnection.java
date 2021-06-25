@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the HTTPConnection observable described in the
  * UCO ontology.
  */
-class HTTPConnection extends Facet {
+public class HTTPConnection extends Facet {
 
     private String httpRequestHeader;
 
@@ -30,8 +30,12 @@ class HTTPConnection extends Facet {
         super(HTTPConnection.class.getSimpleName());
     }
 
-    HTTPConnection setHttpRequestHeader(String httpRequestHeader) {
+    public HTTPConnection setHttpRequestHeader(String httpRequestHeader) {
         this.httpRequestHeader = httpRequestHeader;
         return this;
+    }
+
+    public String getHttpRequestHeader() {
+        return httpRequestHeader;
     }
 }

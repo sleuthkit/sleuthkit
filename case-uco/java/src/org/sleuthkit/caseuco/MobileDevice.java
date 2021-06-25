@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the MobileDevice observable described in the
  * UCO ontology.
  */
-class MobileDevice extends Facet {
+public class MobileDevice extends Facet {
 
     private String bluetoothDeviceName;
 
@@ -32,13 +32,21 @@ class MobileDevice extends Facet {
         super(MobileDevice.class.getSimpleName());
     }
 
-    MobileDevice setBluetoothDeviceName(String bluetoothDeviceName) {
+    public MobileDevice setBluetoothDeviceName(String bluetoothDeviceName) {
         this.bluetoothDeviceName = bluetoothDeviceName;
         return this;
     }
 
-    MobileDevice setIMEI(String IMEI) {
+    public MobileDevice setIMEI(String IMEI) {
         this.IMEI = IMEI;
         return this;
+    }
+
+    public String getBluetoothDeviceName() {
+        return bluetoothDeviceName;
+    }
+
+    public String getIMEI() {
+        return IMEI;
     }
 }

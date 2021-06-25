@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the WindowsRegistryValue observable described
  * in the UCO ontology.
  */
-class WindowsRegistryValue extends Facet {
+public class WindowsRegistryValue extends Facet {
 
     private String data;
 
@@ -30,8 +30,12 @@ class WindowsRegistryValue extends Facet {
         super(WindowsRegistryValue.class.getSimpleName());
     }
 
-    WindowsRegistryValue setData(String data) {
+    public WindowsRegistryValue setData(String data) {
         this.data = data;
         return this;
+    }
+
+    public String getData() {
+        return data;
     }
 }

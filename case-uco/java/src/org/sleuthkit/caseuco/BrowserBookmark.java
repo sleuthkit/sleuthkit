@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the BrowserBookmark observable described in the
  * UCO ontology.
  */
-class BrowserBookmark extends Facet {
+public class BrowserBookmark extends Facet {
 
     private String urlTargeted;
 
@@ -32,13 +32,21 @@ class BrowserBookmark extends Facet {
         super(BrowserBookmark.class.getSimpleName());
     }
 
-    BrowserBookmark setUrlTargeted(String urlTargeted) {
+    public BrowserBookmark setUrlTargeted(String urlTargeted) {
         this.urlTargeted = urlTargeted;
         return this;
     }
 
-    BrowserBookmark setApplication(CyberItem application) {
+    public BrowserBookmark setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
+    }
+
+    public String getUrlTargeted() {
+        return urlTargeted;
+    }
+
+    public String getApplication() {
+        return application;
     }
 }

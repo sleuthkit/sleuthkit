@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Device observable described in the UCO
  * ontology.
  */
-class Device extends Facet {
+public class Device extends Facet {
 
     private String manufacturer;
 
@@ -34,24 +34,36 @@ class Device extends Facet {
         super(Device.class.getSimpleName());
     }
 
-    Device setManufacturer(String manufacturer) {
+    public Device setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
         return this;
     }
 
-    Device setModel(String model) {
+    public Device setModel(String model) {
         this.model = model;
         return this;
     }
 
     @Override
-    Device setId(String id) {
+    public Device setId(String id) {
         super.setId("_:" + id);
         return this;
     }
 
-    Device setSerialNumber(String serialNumber) {
+    public Device setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
         return this;
+    }
+
+    public String getManufacturer() {
+        return manufacturer;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public String getSerialNumber() {
+        return serialNumber;
     }
 }

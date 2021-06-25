@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the AccountAuthentication observable described
  * in the UCO ontology.
  */
-class AccountAuthentication extends Facet {
+public class AccountAuthentication extends Facet {
 
     private String password;
 
@@ -30,8 +30,14 @@ class AccountAuthentication extends Facet {
         super(AccountAuthentication.class.getSimpleName());
     }
 
-    AccountAuthentication setPassword(String password) {
+    public AccountAuthentication setPassword(String password) {
         this.password = password;
         return this;
     }
+
+    public String getPassword() {
+        return password;
+    }
+    
+    
 }

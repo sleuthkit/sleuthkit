@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Volume observable described in the UCO
  * ontology.
  */
-class Volume extends Facet {
+public class Volume extends Facet {
 
     private String volumeType;
 
@@ -32,8 +32,16 @@ class Volume extends Facet {
         super(Volume.class.getSimpleName());
     }
 
-    Volume setSectorSize(long sectorSize) {
+    public Volume setSectorSize(long sectorSize) {
         this.sectorSize = sectorSize;
         return this;
+    }
+
+    public String getVolumeType() {
+        return volumeType;
+    }
+
+    public Long getSectorSize() {
+        return sectorSize;
     }
 }

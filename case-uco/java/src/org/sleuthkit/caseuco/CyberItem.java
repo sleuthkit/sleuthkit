@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the core CyberItem object described in the UCO
  * ontology.
  */
-class CyberItem extends UcoObject {
+public class CyberItem extends UcoObject {
 
     CyberItem(String id, String type) {
         super(id, type);

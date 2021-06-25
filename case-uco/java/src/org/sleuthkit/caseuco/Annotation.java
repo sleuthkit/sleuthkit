@@ -26,7 +26,7 @@ import java.util.List;
  * This class definition mirrors the core Annotation object described in the UCO
  * ontology.
  */
-class Annotation extends UcoObject {
+public class Annotation extends UcoObject {
 
     @SerializedName("tag")
     private final List<String> tags;
@@ -47,5 +47,13 @@ class Annotation extends UcoObject {
     Annotation addObject(String object) {
         this.object.add(object);
         return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public List<String> getObject() {
+        return object;
     }
 }

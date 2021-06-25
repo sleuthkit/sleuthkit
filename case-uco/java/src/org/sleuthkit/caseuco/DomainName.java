@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the DomainName observable described in the UCO
  * ontology.
  */
-class DomainName extends Facet {
+public class DomainName extends Facet {
 
     private String value;
 
@@ -30,8 +30,12 @@ class DomainName extends Facet {
         super(DomainName.class.getSimpleName());
     }
 
-    DomainName setValue(String value) {
+    public DomainName setValue(String value) {
         this.value = value;
         return this;
+    }
+
+    public String getValue() {
+        return value;
     }
 }

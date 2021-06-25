@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the core Location object described in the UCO
  * ontology.
  */
-class Location extends UcoObject {
+public class Location extends UcoObject {
 
     Location(String id) {
         super(id, Location.class.getSimpleName());

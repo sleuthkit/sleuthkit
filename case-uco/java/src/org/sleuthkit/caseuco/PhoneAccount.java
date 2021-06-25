@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the PhoneAccount observable described in the
  * UCO ontology.
  */
-class PhoneAccount extends Facet {
+public class PhoneAccount extends Facet {
 
     private String phoneNumber;
 
@@ -30,8 +30,12 @@ class PhoneAccount extends Facet {
         super(PhoneAccount.class.getSimpleName());
     }
 
-    PhoneAccount setPhoneNumber(String phoneNumber) {
+    public PhoneAccount setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
         return this;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 }

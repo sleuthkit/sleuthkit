@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
  * This class definition mirrors the core Action object described in the UCO
  * ontology.
  */
-class Action extends UcoObject {
+public class Action extends UcoObject {
 
     private String startTime;
 
@@ -33,11 +33,15 @@ class Action extends UcoObject {
         super(id, Action.class.getSimpleName());
     }
 
-    Action setStartTime(Long startTime) {
+    public Action setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
 
         return this;
+    }
+
+    public String getStartTime() {
+        return startTime;
     }
 }

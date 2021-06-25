@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the WirelessNetworkConnection observable
  * described in the UCO ontology.
  */
-class WirelessNetworkConnection extends Facet {
+public class WirelessNetworkConnection extends Facet {
 
     private String ssid;
 
@@ -30,8 +30,12 @@ class WirelessNetworkConnection extends Facet {
         super(WirelessNetworkConnection.class.getSimpleName());
     }
 
-    WirelessNetworkConnection setSSID(String ssid) {
+    public WirelessNetworkConnection setSSID(String ssid) {
         this.ssid = ssid;
         return this;
+    }
+
+    public String getSsid() {
+        return ssid;
     }
 }

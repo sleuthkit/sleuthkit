@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * A Trace template from the CASE ontology.
  */
-class Trace extends CyberItem {
+public class Trace extends CyberItem {
 
     private final List<Facet> hasPropertyBundle;
     
@@ -36,5 +36,9 @@ class Trace extends CyberItem {
     final Trace addBundle(Facet bundle) {
         hasPropertyBundle.add(bundle);
         return this;
+    }
+
+    public List<Facet> getHasPropertyBundle() {
+        return hasPropertyBundle;
     }
 }

@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the core Relationship object described in the
  * UCO ontology.
  */
-class Relationship extends UcoObject {
+public class Relationship extends UcoObject {
 
     private String source;
 
@@ -36,17 +36,17 @@ class Relationship extends UcoObject {
         super(id, "Relationship");
     }
 
-    Relationship setSource(String source) {
+    public Relationship setSource(String source) {
         this.source = source;
         return this;
     }
 
-    Relationship setTarget(String target) {
+    public Relationship setTarget(String target) {
         this.target = target;
         return this;
     }
     
-    Relationship setKindOfRelationship(String kindOfRelationship) {
+    public Relationship setKindOfRelationship(String kindOfRelationship) {
         this.kindOfRelationship = kindOfRelationship;
         return this;
     }
@@ -54,5 +54,21 @@ class Relationship extends UcoObject {
     Relationship isDirectional(boolean isDirectional) {
         this.isDirectional = isDirectional;
         return this;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public String getTarget() {
+        return target;
+    }
+
+    public String getKindOfRelationship() {
+        return kindOfRelationship;
+    }
+
+    public Boolean getIsDirectional() {
+        return isDirectional;
     }
 }

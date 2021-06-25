@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Note observable described in the UCO
  * ontology.
  */
-class Note extends Facet {
+public class Note extends Facet {
 
     private String text;
 
@@ -30,9 +30,12 @@ class Note extends Facet {
         super(Note.class.getSimpleName());
     }
 
-    Note setText(String text) {
+    public Note setText(String text) {
         this.text = text;
         return this;
     }
 
+    public String getText() {
+        return text;
+    }
 }

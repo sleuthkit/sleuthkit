@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Application observable described in the UCO
  * ontology.
  */
-class Application extends Facet {
+public class Application extends Facet {
 
     private String applicationIdentifier;
 
@@ -36,23 +36,39 @@ class Application extends Facet {
         super(Application.class.getSimpleName());
     }
 
-    Application setApplicationIdentifier(String applicationIdentifier) {
+    public Application setApplicationIdentifier(String applicationIdentifier) {
         this.applicationIdentifier = applicationIdentifier;
         return this;
     }
 
-    Application setOperatingSystem(CyberItem operatingSystem) {
+    public Application setOperatingSystem(CyberItem operatingSystem) {
         this.operatingSystem = operatingSystem.getId();
         return this;
     }
 
-    Application setNumberOfLaunches(Integer numberOfLaunches) {
+    public Application setNumberOfLaunches(Integer numberOfLaunches) {
         this.numberOfLaunches = numberOfLaunches;
         return this;
     }
 
-    Application setVersion(String version) {
+    public Application setVersion(String version) {
         this.version = version;
         return this;
+    }
+
+    public String getApplicationIdentifier() {
+        return applicationIdentifier;
+    }
+
+    public String getOperatingSystem() {
+        return operatingSystem;
+    }
+
+    public Integer getNumberOfLaunches() {
+        return numberOfLaunches;
+    }
+
+    public String getVersion() {
+        return version;
     }
 }

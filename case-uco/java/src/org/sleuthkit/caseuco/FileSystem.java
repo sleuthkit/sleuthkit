@@ -29,7 +29,7 @@ import static org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS;
  * This class definition mirrors the FileSystem observable described in the UCO
  * ontology.
  */
-class FileSystem extends Facet {
+public class FileSystem extends Facet {
 
     private FileSystemType fileSystemType;
 
@@ -39,12 +39,12 @@ class FileSystem extends Facet {
         super(FileSystem.class.getSimpleName());
     }
 
-    FileSystem setFileSystemType(TskData.TSK_FS_TYPE_ENUM fileSystemType) {
+    public FileSystem setFileSystemType(TskData.TSK_FS_TYPE_ENUM fileSystemType) {
         this.fileSystemType = FileSystemType.from(fileSystemType);
         return this;
     }
 
-    FileSystem setCluserSize(long cluserSize) {
+    public FileSystem setCluserSize(long cluserSize) {
         this.cluserSize = cluserSize;
         return this;
     }
@@ -78,5 +78,13 @@ class FileSystem extends Facet {
 
             return null;
         }
+    }
+
+    public FileSystemType getFileSystemType() {
+        return fileSystemType;
+    }
+
+    public Long getCluserSize() {
+        return cluserSize;
     }
 }
