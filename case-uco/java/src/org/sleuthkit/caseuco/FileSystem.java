@@ -50,7 +50,7 @@ class FileSystem extends Facet {
     }
 
     //Adapter for TSK_FS_TYPE enum
-    private enum FileSystemType {
+    static enum FileSystemType {
         BDE(null),
         CPIO(null),
         EXT4(TSK_FS_TYPE_EXT4),
@@ -69,7 +69,7 @@ class FileSystem extends Facet {
             this.tskType = tskType;
         }
 
-        private static FileSystemType from(TSK_FS_TYPE_ENUM typeToConvert) {
+        static FileSystemType from(TSK_FS_TYPE_ENUM typeToConvert) {
             for (FileSystemType type : FileSystemType.values()) {
                 if (type.tskType == typeToConvert) {
                     return type;
@@ -77,6 +77,10 @@ class FileSystem extends Facet {
             }
 
             return null;
+        }
+        
+        TskData.TSK_FS_TYPE_ENUM getTskType() {
+            return tskType;
         }
     }
 
