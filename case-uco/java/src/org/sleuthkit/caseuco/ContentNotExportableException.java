@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ package org.sleuthkit.caseuco;
 /**
  * Indicates that the content could not be exported, even in part, to CASE.
  */
-public class ContentNotExportableException extends Exception {
+class ContentNotExportableException extends Exception {
     private static final long serialVersionUID = 1L;
     
     ContentNotExportableException(String msg) {

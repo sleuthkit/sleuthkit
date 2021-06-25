@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import org.sleuthkit.caseuco.Hash.HashMethod;
  * This class definition mirrors the ContentData observable described in the UCO
  * ontology.
  */
-public class ContentData extends Facet {
+class ContentData extends Facet {
 
     private Long sizeInBytes;
 

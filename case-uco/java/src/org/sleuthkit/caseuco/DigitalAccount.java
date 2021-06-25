@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
  * This class definition mirrors the DigitalAccount observable described in the
  * UCO ontology.
  */
-public class DigitalAccount extends Facet {
+class DigitalAccount extends Facet {
 
     private String displayName;
 

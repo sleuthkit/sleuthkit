@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,10 +26,10 @@ import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 
 /**
- *
- * @author gregd
+ * A Gson deserializer for facets that dynamically converts to POJO based on @type.
+ * The @type name must exactly match the name of the POJO.
  */
-public class FacetDeserializer implements JsonDeserializer<Facet> {
+class FacetDeserializer implements JsonDeserializer<Facet> {
     private static final String BASE_PACKAGE = "org.sleuthkit.caseuco";
     
     @Override
