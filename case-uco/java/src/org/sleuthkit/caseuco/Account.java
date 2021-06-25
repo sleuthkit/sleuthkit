@@ -34,30 +34,30 @@ public class Account extends Facet {
         super(Account.class.getSimpleName());
     }
 
-    public Account setAccountType(String accountType) {
+    Account setAccountType(String accountType) {
         this.accountType = accountType;
         return this;
     }
 
-    public Account setAccountIdentifier(String accountIdentifier) {
+    Account setAccountIdentifier(String accountIdentifier) {
         this.accountIdentifier = accountIdentifier;
         return this;
     }
 
-    public Account setOwner(Identity owner) {
+    Account setOwner(Identity owner) {
         this.owner = owner.getId();
         return this;
     }
 
-    public String getAccountType() {
+    String getAccountType() {
         return accountType;
     }
 
-    public String getAccountIdentifier() {
+    String getAccountIdentifier() {
         return accountIdentifier;
     }
 
-    public String getOwner() {
+    String getOwner() {
         return owner;
     }
 }

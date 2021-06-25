@@ -30,14 +30,14 @@ public class SMSMessage extends Facet {
         super(SMSMessage.class.getSimpleName());
     }
 
-    public SMSMessage setIsRead(Integer status) {
+    SMSMessage setIsRead(Integer status) {
         if (status != null) {
             this.isRead = status == 1;
         }
         return this;
     }
 
-    public Boolean getIsRead() {
+    Boolean getIsRead() {
         return isRead;
     }
 }

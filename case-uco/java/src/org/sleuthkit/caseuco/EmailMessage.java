@@ -55,115 +55,115 @@ public class EmailMessage extends Facet {
         super(EmailMessage.class.getSimpleName());
     }
 
-    public EmailMessage setBody(String body) {
+    EmailMessage setBody(String body) {
         this.body = body;
         return this;
     }
 
-    public EmailMessage setContentType(String contentType) {
+    EmailMessage setContentType(String contentType) {
         this.contentType = contentType;
         return this;
     }
 
-    public EmailMessage setReceivedTime(Long receivedTime) {
+    EmailMessage setReceivedTime(Long receivedTime) {
         if (receivedTime != null) {
             this.receivedTime = Instant.ofEpochSecond(receivedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public EmailMessage setSentTime(Long sentTime) {
+    EmailMessage setSentTime(Long sentTime) {
         if (sentTime != null) {
             this.sentTime = Instant.ofEpochSecond(sentTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public EmailMessage setBcc(CyberItem bcc) {
+    EmailMessage setBcc(CyberItem bcc) {
         this.bcc = bcc.getId();
         return this;
     }
 
-    public EmailMessage setCc(CyberItem cc) {
+    EmailMessage setCc(CyberItem cc) {
         this.cc = cc.getId();
         return this;
     }
 
-    public EmailMessage setFrom(CyberItem from) {
+    EmailMessage setFrom(CyberItem from) {
         this.from = from.getId();
         return this;
     }
 
-    public EmailMessage setHeaderRaw(CyberItem headerRaw) {
+    EmailMessage setHeaderRaw(CyberItem headerRaw) {
         this.headerRaw = headerRaw.getId();
         return this;
     }
 
-    public EmailMessage setMessageID(String messageID) {
+    EmailMessage setMessageID(String messageID) {
         this.messageID = messageID;
         return this;
     }
 
-    public EmailMessage setSubject(String subject) {
+    EmailMessage setSubject(String subject) {
         this.subject = subject;
         return this;
     }
 
-    public EmailMessage setSender(CyberItem sender) {
+    EmailMessage setSender(CyberItem sender) {
         this.sender = sender.getId();
         return this;
     }
 
-    public EmailMessage setInReplyTo(CyberItem replyTo) {
+    EmailMessage setInReplyTo(CyberItem replyTo) {
         this.inReplyTo = replyTo.getId();
         return this;
     }
 
-    public String getReceivedTime() {
+    String getReceivedTime() {
         return receivedTime;
     }
 
-    public String getSentTime() {
+    String getSentTime() {
         return sentTime;
     }
 
-    public String getBcc() {
+    String getBcc() {
         return bcc;
     }
 
-    public String getCc() {
+    String getCc() {
         return cc;
     }
 
-    public String getFrom() {
+    String getFrom() {
         return from;
     }
 
-    public String getHeaderRaw() {
+    String getHeaderRaw() {
         return headerRaw;
     }
 
-    public String getMessageID() {
+    String getMessageID() {
         return messageID;
     }
 
-    public String getSubject() {
+    String getSubject() {
         return subject;
     }
 
-    public String getSender() {
+    String getSender() {
         return sender;
     }
 
-    public String getInReplyTo() {
+    String getInReplyTo() {
         return inReplyTo;
     }
 
-    public String getBody() {
+    String getBody() {
         return body;
     }
 
-    public String getContentType() {
+    String getContentType() {
         return contentType;
     }
 }

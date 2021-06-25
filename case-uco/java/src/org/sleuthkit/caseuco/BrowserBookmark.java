@@ -32,21 +32,21 @@ public class BrowserBookmark extends Facet {
         super(BrowserBookmark.class.getSimpleName());
     }
 
-    public BrowserBookmark setUrlTargeted(String urlTargeted) {
+    BrowserBookmark setUrlTargeted(String urlTargeted) {
         this.urlTargeted = urlTargeted;
         return this;
     }
 
-    public BrowserBookmark setApplication(CyberItem application) {
+    BrowserBookmark setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
     }
 
-    public String getUrlTargeted() {
+    String getUrlTargeted() {
         return urlTargeted;
     }
 
-    public String getApplication() {
+    String getApplication() {
         return application;
     }
 }

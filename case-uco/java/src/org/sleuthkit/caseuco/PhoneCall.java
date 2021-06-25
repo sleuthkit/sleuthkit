@@ -41,52 +41,52 @@ public class PhoneCall extends Facet {
         super(PhoneCall.class.getSimpleName());
     }
 
-    public PhoneCall setTo(CyberItem to) {
+    PhoneCall setTo(CyberItem to) {
         this.to = to.getId();
         return this;
     }
 
-    public PhoneCall setFrom(CyberItem from) {
+    PhoneCall setFrom(CyberItem from) {
         this.from = from.getId();
         return this;
     }
 
-    public PhoneCall setStartTime(Long startTime) {
+    PhoneCall setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public PhoneCall setEndTime(Long endTime) {
+    PhoneCall setEndTime(Long endTime) {
         if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public PhoneCall setCallType(String callType) {
+    PhoneCall setCallType(String callType) {
         this.callType = callType;
         return this;
     }
 
-    public String getTo() {
+    String getTo() {
         return to;
     }
 
-    public String getFrom() {
+    String getFrom() {
         return from;
     }
 
-    public String getStartTime() {
+    String getStartTime() {
         return startTime;
     }
 
-    public String getEndTime() {
+    String getEndTime() {
         return endTime;
     }
 
-    public String getCallType() {
+    String getCallType() {
         return callType;
     }
 }

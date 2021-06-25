@@ -30,12 +30,12 @@ public class Note extends Facet {
         super(Note.class.getSimpleName());
     }
 
-    public Note setText(String text) {
+    Note setText(String text) {
         this.text = text;
         return this;
     }
 
-    public String getText() {
+    String getText() {
         return text;
     }
 }

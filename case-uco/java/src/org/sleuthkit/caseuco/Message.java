@@ -39,47 +39,47 @@ public class Message extends Facet {
         super(Message.class.getSimpleName());
     }
 
-    public Message setMessageText(String messageText) {
+    Message setMessageText(String messageText) {
         this.messageText = messageText;
         return this;
     }
 
-    public Message setApplication(CyberItem application) {
+    Message setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
     }
 
-    public Message setSentTime(Long sentTime) {
+    Message setSentTime(Long sentTime) {
         if (sentTime != null) {
             this.sentTime = Instant.ofEpochSecond(sentTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public Message setMessageType(String messageType) {
+    Message setMessageType(String messageType) {
         this.messageType = messageType;
         return this;
     }
 
     @Override
-    public Message setId(String id) {
+    Message setId(String id) {
         super.setId("_:" + id);
         return this;
     }
 
-    public String getMessageText() {
+    String getMessageText() {
         return messageText;
     }
 
-    public String getApplication() {
+    String getApplication() {
         return application;
     }
 
-    public String getSentTime() {
+    String getSentTime() {
         return sentTime;
     }
 
-    public String getMessageType() {
+    String getMessageType() {
         return messageType;
     }
 }

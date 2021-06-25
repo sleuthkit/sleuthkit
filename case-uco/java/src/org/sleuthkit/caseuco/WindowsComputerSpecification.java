@@ -34,30 +34,30 @@ public class WindowsComputerSpecification extends Facet {
         super(WindowsComputerSpecification.class.getSimpleName());
     }
 
-    public WindowsComputerSpecification setRegisteredOrganization(Identity registeredOrganization) {
+    WindowsComputerSpecification setRegisteredOrganization(Identity registeredOrganization) {
         this.registeredOrganization = registeredOrganization.getId();
         return this;
     }
 
-    public WindowsComputerSpecification setRegisteredOwner(Identity registeredOwner) {
+    WindowsComputerSpecification setRegisteredOwner(Identity registeredOwner) {
         this.registeredOwner = registeredOwner.getId();
         return this;
     }
 
-    public WindowsComputerSpecification setWindowsTempDirectory(CyberItem windowsTempDirectory) {
+    WindowsComputerSpecification setWindowsTempDirectory(CyberItem windowsTempDirectory) {
         this.windowsTempDirectory = windowsTempDirectory.getId();
         return this;
     }
 
-    public String getRegisteredOrganization() {
+    String getRegisteredOrganization() {
         return registeredOrganization;
     }
 
-    public String getRegisteredOwner() {
+    String getRegisteredOwner() {
         return registeredOwner;
     }
 
-    public String getWindowsTempDirectory() {
+    String getWindowsTempDirectory() {
         return windowsTempDirectory;
     }
 }

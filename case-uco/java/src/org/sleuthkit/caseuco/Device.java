@@ -34,36 +34,36 @@ public class Device extends Facet {
         super(Device.class.getSimpleName());
     }
 
-    public Device setManufacturer(String manufacturer) {
+    Device setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
         return this;
     }
 
-    public Device setModel(String model) {
+    Device setModel(String model) {
         this.model = model;
         return this;
     }
 
     @Override
-    public Device setId(String id) {
+    Device setId(String id) {
         super.setId("_:" + id);
         return this;
     }
 
-    public Device setSerialNumber(String serialNumber) {
+    Device setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
         return this;
     }
 
-    public String getManufacturer() {
+    String getManufacturer() {
         return manufacturer;
     }
 
-    public String getModel() {
+    String getModel() {
         return model;
     }
 
-    public String getSerialNumber() {
+    String getSerialNumber() {
         return serialNumber;
     }
 }

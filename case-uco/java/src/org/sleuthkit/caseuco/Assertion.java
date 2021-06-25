@@ -30,12 +30,12 @@ public class Assertion extends UcoObject {
         super(uuid, "Assertion");
     }
 
-    public Assertion setStatement(String statement) {
+    Assertion setStatement(String statement) {
         this.statement = statement;
         return this;
     }
 
-    public String getStatement() {
+    String getStatement() {
         return statement;
     }
 }

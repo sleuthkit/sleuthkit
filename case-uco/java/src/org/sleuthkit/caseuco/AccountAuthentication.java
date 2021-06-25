@@ -30,12 +30,12 @@ public class AccountAuthentication extends Facet {
         super(AccountAuthentication.class.getSimpleName());
     }
 
-    public AccountAuthentication setPassword(String password) {
+    AccountAuthentication setPassword(String password) {
         this.password = password;
         return this;
     }
 
-    public String getPassword() {
+    String getPassword() {
         return password;
     }
     

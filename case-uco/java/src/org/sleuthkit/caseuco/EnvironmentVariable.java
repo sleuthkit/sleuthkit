@@ -30,12 +30,12 @@ public class EnvironmentVariable extends Facet {
         super(EnvironmentVariable.class.getSimpleName());
     }
 
-    public EnvironmentVariable setValue(String value) {
+    EnvironmentVariable setValue(String value) {
         this.value = value;
         return this;
     }
 
-    public String getValue() {
+    String getValue() {
         return value;
     }
 }

@@ -43,61 +43,61 @@ public class BrowserCookie extends Facet {
         super(BrowserCookie.class.getSimpleName());
     }
 
-    public BrowserCookie setCookieName(String cookieName) {
+    BrowserCookie setCookieName(String cookieName) {
         this.cookieName = cookieName;
         return this;
     }
 
-    public BrowserCookie setAccessedTime(Long accessedTime) {
+    BrowserCookie setAccessedTime(Long accessedTime) {
         if (accessedTime != null) {
             this.accessedTime = Instant.ofEpochSecond(accessedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public BrowserCookie setExpirationTime(Long expirationTime) {
+    BrowserCookie setExpirationTime(Long expirationTime) {
         if (expirationTime != null) {
             this.expirationTime = Instant.ofEpochSecond(expirationTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public BrowserCookie setCookieDomain(CyberItem cookieDomain) {
+    BrowserCookie setCookieDomain(CyberItem cookieDomain) {
         this.cookieDomain = cookieDomain.getId();
         return this;
     }
 
-    public BrowserCookie setApplication(CyberItem application) {
+    BrowserCookie setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
     }
 
-    public BrowserCookie setCookiePath(String cookiePath) {
+    BrowserCookie setCookiePath(String cookiePath) {
         this.cookiePath = cookiePath;
         return this;
     }
 
-    public String getCookieName() {
+    String getCookieName() {
         return cookieName;
     }
 
-    public String getAccessedTime() {
+    String getAccessedTime() {
         return accessedTime;
     }
 
-    public String getExpirationTime() {
+    String getExpirationTime() {
         return expirationTime;
     }
 
-    public String getCookieDomain() {
+    String getCookieDomain() {
         return cookieDomain;
     }
 
-    public String getApplication() {
+    String getApplication() {
         return application;
     }
 
-    public String getCookiePath() {
+    String getCookiePath() {
         return cookiePath;
     }
 }

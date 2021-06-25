@@ -30,12 +30,12 @@ public class MACAddress extends Facet {
         super(MACAddress.class.getSimpleName());
     }
 
-    public MACAddress setValue(String value) {
+    MACAddress setValue(String value) {
         this.value = value;
         return this;
     }
 
-    public String getValue() {
+    String getValue() {
         return value;
     }
 }

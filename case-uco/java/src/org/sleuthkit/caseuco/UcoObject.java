@@ -52,61 +52,61 @@ abstract class UcoObject {
         return this.id;
     }
 
-    public UcoObject setCreatedTime(Long createdTime) {
+    UcoObject setCreatedTime(Long createdTime) {
         if (createdTime != null) {
             this.createdTime = Instant.ofEpochSecond(createdTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public UcoObject setModifiedTime(Long modifiedTime) {
+    UcoObject setModifiedTime(Long modifiedTime) {
         if (modifiedTime != null) {
             this.modifiedTime = Instant.ofEpochSecond(modifiedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public UcoObject setId(String id) {
+    UcoObject setId(String id) {
         this.id = id;
         return this;
     }
 
-    public UcoObject setDescription(String description) {
+    UcoObject setDescription(String description) {
         this.description = description;
         return this;
     }
 
-    public UcoObject setName(String name) {
+    UcoObject setName(String name) {
         this.name = name;
         return this;
     }
 
-    public UcoObject setTag(String tag) {
+    UcoObject setTag(String tag) {
         this.tag = tag;
         return this;
     }
 
-    public String getType() {
+    String getType() {
         return type;
     }
 
-    public String getCreatedTime() {
+    String getCreatedTime() {
         return createdTime;
     }
 
-    public String getModifiedTime() {
+    String getModifiedTime() {
         return modifiedTime;
     }
 
-    public String getDescription() {
+    String getDescription() {
         return description;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
-    public String getTag() {
+    String getTag() {
         return tag;
     }
 }

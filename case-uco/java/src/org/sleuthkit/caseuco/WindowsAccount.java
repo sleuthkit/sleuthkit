@@ -30,12 +30,12 @@ public class WindowsAccount extends Facet {
         super(WindowsAccount.class.getSimpleName());
     }
     
-    public WindowsAccount setGroups(String groups) {
+    WindowsAccount setGroups(String groups) {
         this.groups = groups;
         return this;
     }
 
-    public String getGroups() {
+    String getGroups() {
         return groups;
     }
 }

@@ -38,7 +38,7 @@ public class Trace extends CyberItem {
         return this;
     }
 
-    public List<Facet> getHasPropertyBundle() {
+    List<Facet> getHasPropertyBundle() {
         return hasPropertyBundle;
     }
 }

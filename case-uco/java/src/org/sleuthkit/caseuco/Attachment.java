@@ -30,12 +30,12 @@ public class Attachment extends Facet {
         super(Attachment.class.getSimpleName());
     }
 
-    public Attachment setUrl(String url) {
+    Attachment setUrl(String url) {
         this.url = url;
         return this;
     }
 
-    public String getUrl() {
+    String getUrl() {
         return url;
     }
 }

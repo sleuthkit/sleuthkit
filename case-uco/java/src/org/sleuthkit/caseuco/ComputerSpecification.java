@@ -35,21 +35,21 @@ public class ComputerSpecification extends Facet {
         super(ComputerSpecification.class.getSimpleName());
     }
 
-    public ComputerSpecification setHostName(String hostName) {
+    ComputerSpecification setHostName(String hostName) {
         this.hostName = hostName;
         return this;
     }
 
-    public ComputerSpecification setProcessorArchitecture(String processorArchitecture) {
+    ComputerSpecification setProcessorArchitecture(String processorArchitecture) {
         this.processorArchitecture = processorArchitecture;
         return this;
     }
 
-    public String getHostName() {
+    String getHostName() {
         return hostName;
     }
 
-    public String getProcessorArchitecture() {
+    String getProcessorArchitecture() {
         return processorArchitecture;
     }
 }

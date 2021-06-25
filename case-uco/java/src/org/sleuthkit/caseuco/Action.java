@@ -33,7 +33,7 @@ public class Action extends UcoObject {
         super(id, Action.class.getSimpleName());
     }
 
-    public Action setStartTime(Long startTime) {
+    Action setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
@@ -41,7 +41,7 @@ public class Action extends UcoObject {
         return this;
     }
 
-    public String getStartTime() {
+    String getStartTime() {
         return startTime;
     }
 }

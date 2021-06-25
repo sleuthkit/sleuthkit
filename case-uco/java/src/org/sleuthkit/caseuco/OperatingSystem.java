@@ -35,23 +35,23 @@ public class OperatingSystem extends Facet {
         super(OperatingSystem.class.getSimpleName());
     }
 
-    public OperatingSystem setInstallDate(Long installDate) {
+    OperatingSystem setInstallDate(Long installDate) {
         if (installDate != null) {
             this.installDate = Instant.ofEpochSecond(installDate).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public OperatingSystem setVersion(String version) {
+    OperatingSystem setVersion(String version) {
         this.version = version;
         return this;
     }
 
-    public String getInstallDate() {
+    String getInstallDate() {
         return installDate;
     }
 
-    public String getVersion() {
+    String getVersion() {
         return version;
     }
 }

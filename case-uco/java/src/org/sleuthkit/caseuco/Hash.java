@@ -36,7 +36,7 @@ public class Hash extends UcoObject {
         this.hashValue = hashValue;
     }
 
-    public Hash setHashMethod(HashMethod method) {
+    Hash setHashMethod(HashMethod method) {
         this.hashMethod = method;
         return this;
     }
@@ -49,11 +49,11 @@ public class Hash extends UcoObject {
         MD5;
     }
 
-    public HashMethod getHashMethod() {
+    HashMethod getHashMethod() {
         return hashMethod;
     }
 
-    public String getHashValue() {
+    String getHashValue() {
         return hashValue;
     }
 }

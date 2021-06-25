@@ -48,59 +48,59 @@ public class ContentData extends Facet {
         this.hashes = new ArrayList<>();
     }
 
-    public ContentData setSizeInBytes(long bytes) {
+    ContentData setSizeInBytes(long bytes) {
         this.sizeInBytes = bytes;
         return this;
     }
 
-    public ContentData setMimeType(String mimeType) {
+    ContentData setMimeType(String mimeType) {
         this.mimeType = mimeType;
         return this;
     }
 
-    public ContentData setMd5Hash(String md5Hash) {
+    ContentData setMd5Hash(String md5Hash) {
         Hash md5HashType = new Hash(md5Hash)
                 .setHashMethod(HashMethod.MD5);
         hashes.add(md5HashType);
         return this;
     }
 
-    public ContentData setDataPayload(String dataPayload) {
+    ContentData setDataPayload(String dataPayload) {
         this.dataPayload = dataPayload;
         return this;
     }
 
-    public ContentData setOwner(Identity owner) {
+    ContentData setOwner(Identity owner) {
         this.owner = owner.getId();
         return this;
     }
     
-    public ContentData setDataPayloadReferenceUrl(UcoObject url) {
+    ContentData setDataPayloadReferenceUrl(UcoObject url) {
         this.dataPayloadReferenceUrl = url.getId();
         return this;
     }
 
-    public Long getSizeInBytes() {
+    Long getSizeInBytes() {
         return sizeInBytes;
     }
 
-    public String getMimeType() {
+    String getMimeType() {
         return mimeType;
     }
 
-    public List<Hash> getHashes() {
+    List<Hash> getHashes() {
         return hashes;
     }
 
-    public String getDataPayload() {
+    String getDataPayload() {
         return dataPayload;
     }
 
-    public String getOwner() {
+    String getOwner() {
         return owner;
     }
 
-    public String getDataPayloadReferenceUrl() {
+    String getDataPayloadReferenceUrl() {
         return dataPayloadReferenceUrl;
     }
 }

@@ -30,12 +30,12 @@ public class WirelessNetworkConnection extends Facet {
         super(WirelessNetworkConnection.class.getSimpleName());
     }
 
-    public WirelessNetworkConnection setSSID(String ssid) {
+    WirelessNetworkConnection setSSID(String ssid) {
         this.ssid = ssid;
         return this;
     }
 
-    public String getSsid() {
+    String getSsid() {
         return ssid;
     }
 }

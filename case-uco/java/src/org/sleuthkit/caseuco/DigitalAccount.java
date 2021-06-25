@@ -35,23 +35,23 @@ public class DigitalAccount extends Facet {
         super(DigitalAccount.class.getSimpleName());
     }
 
-    public DigitalAccount setDisplayName(String displayName) {
+    DigitalAccount setDisplayName(String displayName) {
         this.displayName = displayName;
         return this;
     }
 
-    public DigitalAccount setLastLoginTime(Long time) {
+    DigitalAccount setLastLoginTime(Long time) {
         if (time != null) {
             this.lastLoginTime = Instant.ofEpochSecond(time).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public String getDisplayName() {
+    String getDisplayName() {
         return displayName;
     }
 
-    public String getLastLoginTime() {
+    String getLastLoginTime() {
         return lastLoginTime;
     }
 }

@@ -34,30 +34,30 @@ public class LatLongCoordinates extends Facet {
         super(LatLongCoordinates.class.getSimpleName());
     }
 
-    public LatLongCoordinates setAltitude(Double altitude) {
+    LatLongCoordinates setAltitude(Double altitude) {
         this.altitude = altitude;
         return this;
     }
 
-    public LatLongCoordinates setLatitude(Double latitude) {
+    LatLongCoordinates setLatitude(Double latitude) {
         this.latitude = latitude;
         return this;
     }
 
-    public LatLongCoordinates setLongitude(Double longitude) {
+    LatLongCoordinates setLongitude(Double longitude) {
         this.longitude = longitude;
         return this;
     }
 
-    public Double getAltitude() {
+    Double getAltitude() {
         return altitude;
     }
 
-    public Double getLatitude() {
+    Double getLatitude() {
         return latitude;
     }
 
-    public Double getLongitude() {
+    Double getLongitude() {
         return longitude;
     }
 }

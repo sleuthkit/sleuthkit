@@ -36,17 +36,17 @@ public class Relationship extends UcoObject {
         super(id, "Relationship");
     }
 
-    public Relationship setSource(String source) {
+    Relationship setSource(String source) {
         this.source = source;
         return this;
     }
 
-    public Relationship setTarget(String target) {
+    Relationship setTarget(String target) {
         this.target = target;
         return this;
     }
     
-    public Relationship setKindOfRelationship(String kindOfRelationship) {
+    Relationship setKindOfRelationship(String kindOfRelationship) {
         this.kindOfRelationship = kindOfRelationship;
         return this;
     }
@@ -56,19 +56,19 @@ public class Relationship extends UcoObject {
         return this;
     }
 
-    public String getSource() {
+    String getSource() {
         return source;
     }
 
-    public String getTarget() {
+    String getTarget() {
         return target;
     }
 
-    public String getKindOfRelationship() {
+    String getKindOfRelationship() {
         return kindOfRelationship;
     }
 
-    public Boolean getIsDirectional() {
+    Boolean getIsDirectional() {
         return isDirectional;
     }
 }

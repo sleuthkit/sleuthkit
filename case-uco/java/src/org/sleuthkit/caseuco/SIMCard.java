@@ -32,21 +32,21 @@ public class SIMCard extends Facet {
         super(SIMCard.class.getSimpleName());
     }
 
-    public SIMCard setIMSI(String IMSI) {
+    SIMCard setIMSI(String IMSI) {
         this.IMSI = IMSI;
         return this;
     }
 
-    public SIMCard setICCID(String ICCID) {
+    SIMCard setICCID(String ICCID) {
         this.ICCID = ICCID;
         return this;
     }
 
-    public String getIMSI() {
+    String getIMSI() {
         return IMSI;
     }
 
-    public String getICCID() {
+    String getICCID() {
         return ICCID;
     }
 }

@@ -30,12 +30,12 @@ public class ApplicationAccount extends Facet {
         super(ApplicationAccount.class.getSimpleName());
     }
 
-    public ApplicationAccount setApplication(CyberItem application) {
+    ApplicationAccount setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
     }
 
-    public String getApplication() {
+    String getApplication() {
         return application;
     }
 }

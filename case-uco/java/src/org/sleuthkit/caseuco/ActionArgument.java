@@ -30,12 +30,12 @@ public class ActionArgument extends Facet {
         super(ActionArgument.class.getSimpleName());
     }
 
-    public ActionArgument setArgumentName(String argumentName) {
+    ActionArgument setArgumentName(String argumentName) {
         this.argumentName = argumentName;
         return this;
     }
 
-    public String getArgumentName() {
+    String getArgumentName() {
         return argumentName;
     }
 }

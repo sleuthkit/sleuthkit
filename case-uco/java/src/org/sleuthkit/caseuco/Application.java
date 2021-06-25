@@ -36,39 +36,39 @@ public class Application extends Facet {
         super(Application.class.getSimpleName());
     }
 
-    public Application setApplicationIdentifier(String applicationIdentifier) {
+    Application setApplicationIdentifier(String applicationIdentifier) {
         this.applicationIdentifier = applicationIdentifier;
         return this;
     }
 
-    public Application setOperatingSystem(CyberItem operatingSystem) {
+    Application setOperatingSystem(CyberItem operatingSystem) {
         this.operatingSystem = operatingSystem.getId();
         return this;
     }
 
-    public Application setNumberOfLaunches(Integer numberOfLaunches) {
+    Application setNumberOfLaunches(Integer numberOfLaunches) {
         this.numberOfLaunches = numberOfLaunches;
         return this;
     }
 
-    public Application setVersion(String version) {
+    Application setVersion(String version) {
         this.version = version;
         return this;
     }
 
-    public String getApplicationIdentifier() {
+    String getApplicationIdentifier() {
         return applicationIdentifier;
     }
 
-    public String getOperatingSystem() {
+    String getOperatingSystem() {
         return operatingSystem;
     }
 
-    public Integer getNumberOfLaunches() {
+    Integer getNumberOfLaunches() {
         return numberOfLaunches;
     }
 
-    public String getVersion() {
+    String getVersion() {
         return version;
     }
 }

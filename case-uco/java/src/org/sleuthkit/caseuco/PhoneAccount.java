@@ -30,12 +30,12 @@ public class PhoneAccount extends Facet {
         super(PhoneAccount.class.getSimpleName());
     }
 
-    public PhoneAccount setPhoneNumber(String phoneNumber) {
+    PhoneAccount setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
         return this;
     }
 
-    public String getPhoneNumber() {
+    String getPhoneNumber() {
         return phoneNumber;
     }
 }

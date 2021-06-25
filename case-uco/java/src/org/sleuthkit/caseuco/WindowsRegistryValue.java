@@ -30,12 +30,12 @@ public class WindowsRegistryValue extends Facet {
         super(WindowsRegistryValue.class.getSimpleName());
     }
 
-    public WindowsRegistryValue setData(String data) {
+    WindowsRegistryValue setData(String data) {
         this.data = data;
         return this;
     }
 
-    public String getData() {
+    String getData() {
         return data;
     }
 }

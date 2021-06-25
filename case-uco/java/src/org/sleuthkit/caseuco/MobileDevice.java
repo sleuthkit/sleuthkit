@@ -32,21 +32,21 @@ public class MobileDevice extends Facet {
         super(MobileDevice.class.getSimpleName());
     }
 
-    public MobileDevice setBluetoothDeviceName(String bluetoothDeviceName) {
+    MobileDevice setBluetoothDeviceName(String bluetoothDeviceName) {
         this.bluetoothDeviceName = bluetoothDeviceName;
         return this;
     }
 
-    public MobileDevice setIMEI(String IMEI) {
+    MobileDevice setIMEI(String IMEI) {
         this.IMEI = IMEI;
         return this;
     }
 
-    public String getBluetoothDeviceName() {
+    String getBluetoothDeviceName() {
         return bluetoothDeviceName;
     }
 
-    public String getIMEI() {
+    String getIMEI() {
         return IMEI;
     }
 }

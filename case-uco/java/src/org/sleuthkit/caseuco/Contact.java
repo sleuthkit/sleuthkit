@@ -30,12 +30,12 @@ public class Contact extends Facet {
         super(Contact.class.getSimpleName());
     }
 
-    public Contact setContactName(String contactName) {
+    Contact setContactName(String contactName) {
         this.contactName = contactName;
         return this;
     }
 
-    public String getContactName() {
+    String getContactName() {
         return contactName;
     }
 }

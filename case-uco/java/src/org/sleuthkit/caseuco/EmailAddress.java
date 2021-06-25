@@ -30,12 +30,12 @@ public class EmailAddress extends Facet {
         super(EmailAddress.class.getSimpleName());
     }
 
-    public EmailAddress setValue(String value) {
+    EmailAddress setValue(String value) {
         this.value = value;
         return this;
     }
 
-    public String getValue() {
+    String getValue() {
         return value;
     }
 }

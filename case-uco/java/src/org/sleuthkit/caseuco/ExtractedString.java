@@ -30,12 +30,12 @@ public class ExtractedString extends Facet {
         super(ExtractedString.class.getSimpleName());
     }
 
-    public ExtractedString setStringValue(String stringValue) {
+    ExtractedString setStringValue(String stringValue) {
         this.stringValue = stringValue;
         return this;
     }
 
-    public String getStringValue() {
+    String getStringValue() {
         return stringValue;
     }
 }

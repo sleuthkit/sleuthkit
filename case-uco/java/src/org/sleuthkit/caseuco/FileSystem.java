@@ -39,12 +39,12 @@ public class FileSystem extends Facet {
         super(FileSystem.class.getSimpleName());
     }
 
-    public FileSystem setFileSystemType(TskData.TSK_FS_TYPE_ENUM fileSystemType) {
+    FileSystem setFileSystemType(TskData.TSK_FS_TYPE_ENUM fileSystemType) {
         this.fileSystemType = FileSystemType.from(fileSystemType);
         return this;
     }
 
-    public FileSystem setCluserSize(long cluserSize) {
+    FileSystem setCluserSize(long cluserSize) {
         this.cluserSize = cluserSize;
         return this;
     }
@@ -80,11 +80,11 @@ public class FileSystem extends Facet {
         }
     }
 
-    public FileSystemType getFileSystemType() {
+    FileSystemType getFileSystemType() {
         return fileSystemType;
     }
 
-    public Long getCluserSize() {
+    Long getCluserSize() {
         return cluserSize;
     }
 }

@@ -49,11 +49,11 @@ public class Annotation extends UcoObject {
         return this;
     }
 
-    public List<String> getTags() {
+    List<String> getTags() {
         return tags;
     }
 
-    public List<String> getObject() {
+    List<String> getObject() {
         return object;
     }
 }

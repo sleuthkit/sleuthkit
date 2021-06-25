@@ -32,16 +32,16 @@ public class Volume extends Facet {
         super(Volume.class.getSimpleName());
     }
 
-    public Volume setSectorSize(long sectorSize) {
+    Volume setSectorSize(long sectorSize) {
         this.sectorSize = sectorSize;
         return this;
     }
 
-    public String getVolumeType() {
+    String getVolumeType() {
         return volumeType;
     }
 
-    public Long getSectorSize() {
+    Long getSectorSize() {
         return sectorSize;
     }
 }

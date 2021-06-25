@@ -32,21 +32,21 @@ public class URL extends Facet {
         super(URL.class.getSimpleName());
     }
 
-    public URL setFullValue(String fullValue) {
+    URL setFullValue(String fullValue) {
         this.fullValue = fullValue;
         return this;
     }
 
-    public URL setUserName(CyberItem userName) {
+    URL setUserName(CyberItem userName) {
         this.userName = userName.getId();
         return this;
     }
 
-    public String getFullValue() {
+    String getFullValue() {
         return fullValue;
     }
 
-    public String getUserName() {
+    String getUserName() {
         return userName;
     }
 }

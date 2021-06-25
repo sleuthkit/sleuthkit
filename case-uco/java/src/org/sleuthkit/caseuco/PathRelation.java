@@ -30,12 +30,12 @@ public class PathRelation extends Facet {
         super(PathRelation.class.getSimpleName());
     }
 
-    public PathRelation setPath(String path) {
+    PathRelation setPath(String path) {
         this.path = path;
         return this;
     }
 
-    public String getPath() {
+    String getPath() {
         return path;
     }
 }

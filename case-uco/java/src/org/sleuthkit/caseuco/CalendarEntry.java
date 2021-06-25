@@ -39,43 +39,43 @@ public class CalendarEntry extends Facet {
         super(CalendarEntry.class.getSimpleName());
     }
 
-    public CalendarEntry setEventType(String eventType) {
+    CalendarEntry setEventType(String eventType) {
         this.eventType = eventType;
         return this;
     }
 
-    public CalendarEntry setLocation(Location location) {
+    CalendarEntry setLocation(Location location) {
         this.location = location.getId();
         return this;
     }
 
-    public CalendarEntry setEndTime(Long endTime) {
+    CalendarEntry setEndTime(Long endTime) {
         if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public CalendarEntry setStartTime(Long startTime) {
+    CalendarEntry setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    public String getEventType() {
+    String getEventType() {
         return eventType;
     }
 
-    public String getStartTime() {
+    String getStartTime() {
         return startTime;
     }
 
-    public String getEndTime() {
+    String getEndTime() {
         return endTime;
     }
 
-    public String getLocation() {
+    String getLocation() {
         return location;
     }
 }

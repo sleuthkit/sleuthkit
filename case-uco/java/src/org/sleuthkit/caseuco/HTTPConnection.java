@@ -30,12 +30,12 @@ public class HTTPConnection extends Facet {
         super(HTTPConnection.class.getSimpleName());
     }
 
-    public HTTPConnection setHttpRequestHeader(String httpRequestHeader) {
+    HTTPConnection setHttpRequestHeader(String httpRequestHeader) {
         this.httpRequestHeader = httpRequestHeader;
         return this;
     }
 
-    public String getHttpRequestHeader() {
+    String getHttpRequestHeader() {
         return httpRequestHeader;
     }
 }

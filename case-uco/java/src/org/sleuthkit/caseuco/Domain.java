@@ -30,12 +30,12 @@ public class Domain extends Facet {
         super(Domain.class.getSimpleName());
     }
 
-    public Domain setValue(String value) {
+    Domain setValue(String value) {
         this.value = value;
         return this;
     }
 
-    public String getValue() {
+    String getValue() {
         return value;
     }
 }
