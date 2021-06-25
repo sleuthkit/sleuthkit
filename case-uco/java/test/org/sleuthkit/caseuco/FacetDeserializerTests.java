@@ -66,7 +66,7 @@ public class FacetDeserializerTests {
     }
 
     @Test
-    public void testDeserialization() throws JsonParseException {
+    public void testFacetDeserialization() throws JsonParseException {
         long clusterSize = 512;
         long createdTime = 946684800;
         long modifiedTime = 946684801;
@@ -90,6 +90,77 @@ public class FacetDeserializerTests {
         logger.log(Level.INFO, "Json string of: " + gsonStr);
 
         List<Facet> facets = parseFacets(gsonStr);
+        Assert.assertEquals(1, facets.size());
+        Assert.assertTrue(facets.get(0) instanceof FileSystem);
+
+        FileSystem deserialized = (FileSystem) facets.get(0);
+        Assert.assertEquals((Long) clusterSize, deserialized.getCluserSize());
+        Assert.assertEquals(createdTime, OffsetDateTime.parse(deserialized.getCreatedTime()).toEpochSecond());
+        Assert.assertEquals(modifiedTime, OffsetDateTime.parse(deserialized.getModifiedTime()).toEpochSecond());
+
+        Assert.assertEquals(description, deserialized.getDescription());
+        Assert.assertEquals(id, deserialized.getId());
+        Assert.assertEquals(name, deserialized.getName());
+        Assert.assertEquals(tag, deserialized.getTag());
+
+        Assert.assertEquals(deserialized.getFileSystemType().getTskType(), fsType);
+    }
+    
+    @Test
+    public void testTraceDeserialization() throws JsonParseException {
+        long clusterSize = 4096;
+        long createdTime = 946684802;
+        long modifiedTime = 946684803;
+        String description = "A file system 2";
+        String id = "The id 2";
+        String name = "The name 2";
+        String tag = "The tag 2";
+        TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_EXT4;
+
+        FileSystem fileSystem = (FileSystem) new FileSystem()
+                .setCluserSize(clusterSize)
+                .setFileSystemType(fsType)
+                .setCreatedTime(createdTime)
+                .setDescription(description)
+                .setId(id)
+                .setModifiedTime(modifiedTime)
+                .setName(name)
+                .setTag(tag);
+
+        String traceUuid = "uuid";
+        long traceCreateTime = 946684802;
+        long traceModifiedTime = 946684803;
+        String traceDescription = "A file system 2";
+        String traceId = "The id 2";
+        String traceName = "The name 2";
+        String traceTag = "The tag 2";
+        UcoObject trace = new Trace(traceUuid)
+                .addBundle(fileSystem)
+                .setCreatedTime(traceCreateTime)
+                .setDescription(traceDescription)
+                .setId(traceId)
+                .setModifiedTime(traceModifiedTime)
+                .setName(traceName)
+                .setTag(traceTag);
+        
+        String gsonStr = new Gson().toJson(trace);
+        logger.log(Level.INFO, "Json string of: " + gsonStr);
+
+        Trace deserializedTrace = new GsonBuilder()
+                .registerTypeAdapter(Facet.class, new FacetDeserializer())
+                .create()
+                .fromJson(gsonStr, Trace.class);
+        
+        Assert.assertEquals(traceCreateTime, OffsetDateTime.parse(deserializedTrace.getCreatedTime()).toEpochSecond());
+        Assert.assertEquals(traceModifiedTime, OffsetDateTime.parse(deserializedTrace.getModifiedTime()).toEpochSecond());
+
+        Assert.assertEquals(traceDescription, deserializedTrace.getDescription());
+        Assert.assertEquals(traceId, deserializedTrace.getId());
+        Assert.assertEquals(traceName, deserializedTrace.getName());
+        Assert.assertEquals(traceTag, deserializedTrace.getTag());
+
+        List<Facet> facets = deserializedTrace.getHasPropertyBundle();
+        
         Assert.assertEquals(1, facets.size());
         Assert.assertTrue(facets.get(0) instanceof FileSystem);
 
