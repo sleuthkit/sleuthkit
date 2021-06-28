@@ -200,6 +200,27 @@ public interface Content extends SleuthkitVisitableItem {
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
 
 	/**
+	 * Create and add an analysis result associated with this content.
+	 *
+	 *
+	 * @param artifactType	  Type of analysis result artifact to create.
+	 * @param score          Score associated with this analysis.
+	 * @param conclusion     Conclusion from the analysis, may be empty.
+	 * @param configuration  Configuration element associated with this
+	 *                       analysis, may be empty.
+	 * @param justification	 Justification
+	 * @param attributesList Additional attributes to attach to this analysis
+	 *                       result artifact.
+	 * @param dataDourcrId   The data source for the analysis result
+	 *
+	 * @return AnalysisResultAdded The analysis return added and the current
+	 *         aggregate score of content.
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core.
+	 */
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException;
+
+	/**
 	 * Create and add a data artifact associated with this abstract file. This
 	 * method creates the data artifact with the os account id associated with
 	 * this abstract file if one exists.
@@ -229,6 +250,22 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException If a critical error occurred within tsk core.
 	 */
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException;
+
+	/**
+	 * Create and add a data artifact associated with this content.
+	 *
+	 * @param artifactType   Type of analysis result artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 * @param osAccountId    The OS account id associated with the artifact. May
+	 *                       be null.
+	 * @param dataSourceId   The data source id of the artifact
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException;
 
 	/**
 	 * Returns the final score for the content object.
