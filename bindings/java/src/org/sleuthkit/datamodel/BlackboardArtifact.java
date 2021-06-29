@@ -722,7 +722,26 @@ public class BlackboardArtifact implements Content {
 	}
 
 	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException {
+		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return resultAdded;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
+	}
+
+	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
+		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
+	}
+	
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
 	

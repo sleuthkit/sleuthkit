@@ -250,7 +250,8 @@ public final class OsAccount extends AbstractContent {
 	/**
 	 * Get the account Object Id that is unique within the scope of the case.
 	 *
-	 * @return Account id.
+	 * @return Account
+	 * id.
 	 */
 	public long getId() {
 		return osAccountObjId;
