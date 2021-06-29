@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -312,6 +312,34 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 				LOGGER.log(Level.SEVERE, "Error closing Statement", ex); //NON-NLS
 			}
 		}
+	}
+	
+	/**
+	 * Accepts a content visitor (Visitor design pattern).
+	 *
+	 * @param <T>     The type returned by the visitor.
+	 * @param visitor A ContentVisitor supplying an algorithm to run using this
+	 *                virtual directory as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+	
+	/**
+	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
+	 *
+	 * @param <T>     The type returned by the visitor.
+	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
+	 *                this virtual directory as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 	
 	/**
