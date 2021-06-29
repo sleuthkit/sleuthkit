@@ -427,6 +427,9 @@ static uint8_t
         return 1;
     }
 
+    // Ensure the bitmap buffer is initialized.
+    memset(ext2fs->imap_buf, 0, fs->block_size);
+
     cnt = tsk_fs_read(fs, addr * fs->block_size, 
         (char *) ext2fs->imap_buf, ext2fs->fs_info.block_size);
 
@@ -674,7 +677,9 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
         memcpy(resident_data + inode_data_len, ea_inline_data, ea_data_len);
     }
 
-    fs_meta->attr = tsk_fs_attrlist_alloc();
+    if (fs_meta->attr == NULL) {
+        fs_meta->attr = tsk_fs_attrlist_alloc();
+    }
     if ((fs_attr =
         tsk_fs_attrlist_getnew(fs_meta->attr,
             TSK_FS_ATTR_RES)) == NULL) {
@@ -978,7 +983,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
     /*
      * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
      */
-    if ((inum - ibase) > fs->block_size*8) {
+    if ((ibase > inum) || (inum - ibase) >= (fs->block_size * 8)) {
         tsk_release_lock(&ext2fs->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
@@ -1214,7 +1219,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         /*
          * Ensure that inum - ibase refers to a valid bit offset in imap_buf.
          */
-        if ((inum - ibase) > fs->block_size*8) {
+        if ((ibase > inum) || (inum - ibase) >= (fs->block_size * 8)) {
             tsk_release_lock(&ext2fs->lock);
             free(dino_buf);
             tsk_fs_file_close(fs_file);
@@ -1656,9 +1661,16 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
 
     /* process leaf nodes */
     if (tsk_getu16(fs_info->endian, header->eh_depth) == 0) {
+        uint16_t num_entries = tsk_getu16(fs_info->endian, header->eh_entries);
+
+        // Ensure buf is sufficiently large
+        // Otherwise extents[i] below can cause an OOB read
+        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
+            free(buf);
+            return 1;
+        }
         ext2fs_extent *extents = (ext2fs_extent *) (header + 1);
-        for (i = 0; i < tsk_getu16(fs_info->endian, header->eh_entries);
-            i++) {
+        for (i = 0; i < num_entries; i++) {
             ext2fs_extent extent = extents[i];
             if (ext2fs_make_data_run_extent(fs_info, fs_attr, &extent)) {
                 free(buf);
@@ -1668,9 +1680,16 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
     }
     /* recurse on interior nodes */
     else {
+        uint16_t num_entries = tsk_getu16(fs_info->endian, header->eh_entries);
+
+        // Ensure buf is sufficiently large
+        // Otherwise indices[i] below can cause an OOB read
+        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
+            free(buf);
+            return 1;
+        }
         ext2fs_extent_idx *indices = (ext2fs_extent_idx *) (header + 1);
-        for (i = 0; i < tsk_getu16(fs_info->endian, header->eh_entries);
-            i++) {
+        for (i = 0; i < num_entries; i++) {
             ext2fs_extent_idx *index = &indices[i];
             TSK_DADDR_T child_block =
                 (((uint32_t) tsk_getu16(fs_info->endian,
@@ -1880,10 +1899,9 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     }
     
     if (depth == 0) {       /* leaf node */
-        if (num_entries >
-            (fs_info->block_size -
-             sizeof(ext2fs_extent_header)) /
-            sizeof(ext2fs_extent)) {
+        // Ensure fs_meta->content_ptr is sufficiently large
+        // Otherwise extents[i] below can cause an OOB read
+        if ((fs_meta->content_len < sizeof(ext2fs_extent_header)) || (num_entries > (fs_meta->content_len - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
             tsk_error_set_errstr
             ("ext2fs_load_attr: Inode reports too many extents");
@@ -1901,11 +1919,10 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     else {                  /* interior node */
         TSK_FS_ATTR *fs_attr_extent;
         int32_t extent_index_size;
-        
-        if (num_entries >
-            (fs_info->block_size -
-             sizeof(ext2fs_extent_header)) /
-            sizeof(ext2fs_extent_idx)) {
+
+        // Ensure fs_meta->content_ptr is sufficiently large
+        // Otherwise indices[i] below can cause an OOB read
+        if ((fs_meta->content_len < sizeof(ext2fs_extent_header)) || (num_entries > (fs_meta->content_len - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
             tsk_error_set_errstr
             ("ext2fs_load_attr: Inode reports too many extent indices");

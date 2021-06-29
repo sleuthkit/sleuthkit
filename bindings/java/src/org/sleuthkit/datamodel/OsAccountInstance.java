@@ -30,53 +30,46 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private final SleuthkitCase skCase;
-	private final long instanceId = 0; // RJCTODO
+	private final long instanceId;
 	private final long accountId;
 	private final long dataSourceId;
 	private final OsAccountInstanceType instanceType;
 
 	private OsAccount account;
-	private DataSource dataSource = null;
+	private DataSource dataSource;
 
 	/**
-	 * Construct with OsAccount and DataSource instances.
+	 * Constructs a representation of an OS account instance.
 	 *
-	 * @param skCase       The case instance.
-	 * @param account      The instance account.
-	 * @param dataSource   The instance data source
-	 * @param instanceType The instance type.
-	 */
-	OsAccountInstance(SleuthkitCase skCase, OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
-		this(skCase, account.getId(), dataSource.getId(), instanceType);
-		this.dataSource = dataSource;
-		this.account = account;
-	}
-
-	/**
-	 * Construct the OsAccountInstance doing a lazy construction on the data
-	 * source object.
 	 *
-	 * @param skCase       The case instance
-	 * @param account      The OsAccount for this instance
-	 * @param dataSourceId The id of the data source
-	 * @param instanceType The instance type.
-	 */
-	OsAccountInstance(SleuthkitCase skCase, OsAccount account, long dataSourceId, OsAccountInstanceType instanceType) {
-		this(skCase, account.getId(), dataSourceId, instanceType);
-		this.account = account;
-	}
-
-	/**
-	 * Construct with OsAccount and DataSource instances.
-	 *
-	 * @param skCase          The case instance
-	 * @param accountId       The id of the instance account.
-	 * @param dataSourceObjId The instance data source object id.
+	 * @param skCase          The case database.
+	 * @param instanceId      The instance ID.
+	 * @param account         The OS account of which this object is an
+	 *                        instance.
+	 * @param dataSourceObjId The object ID of the data source where the
+	 *                        instance was found.
 	 * @param instanceType    The instance type.
 	 */
-	OsAccountInstance(SleuthkitCase skCase, long accountId, long dataSourceObjId, OsAccountInstanceType instanceType) {
+	OsAccountInstance(SleuthkitCase skCase, long instanceId, OsAccount account, long dataSourceId, OsAccountInstanceType instanceType) {
+		this(skCase, instanceId, account.getId(), dataSourceId, instanceType);
+		this.account = account;
+	}
+
+	/**
+	 * Constructs a representation of an OS account instance.
+	 *
+	 * @param skCase          The case database.
+	 * @param instanceId      The instance ID.
+	 * @param accountObjId    The object ID of the OS account of which this
+	 *                        object is an instance.
+	 * @param dataSourceObjId The object ID of the data source where the
+	 *                        instance was found.
+	 * @param instanceType    The instance type.
+	 */
+	OsAccountInstance(SleuthkitCase skCase, long instanceId, long accountObjId, long dataSourceObjId, OsAccountInstanceType instanceType) {
 		this.skCase = skCase;
-		this.accountId = accountId;
+		this.instanceId = instanceId;
+		this.accountId = accountObjId;
 		this.dataSourceId = dataSourceObjId;
 		this.instanceType = instanceType;
 	}
@@ -94,6 +87,9 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 * Returns the OsAccount object for this instance.
 	 *
 	 * @return The OsAccount object.
+	 *
+	 * @throws TskCoreException Exception thrown if there is an error querying
+	 *                          the case database.
 	 */
 	public OsAccount getOsAccount() throws TskCoreException {
 		if (account == null) {
