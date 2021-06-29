@@ -1437,7 +1437,11 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             myflags |= TSK_FS_BLOCK_FLAG_UNALLOC;
                         }
 
-                        if (fs_attr->size - off > fs->block_size)
+                        // Unclear what the behavior should be here
+                        // assuming POSIX like behavior is likely the required approach
+                        if (off >= fs_attr->size)
+                            read_len = 0;
+                        else if (fs_attr->size - off > fs->block_size)
                             read_len = fs->block_size;
                         else
                             read_len = (size_t) (fs_attr->size - off);
@@ -2181,7 +2185,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
         /* Standard Information (is always resident) */
         if (type == NTFS_ATYPE_SI) {
-            ntfs_attr_si *si;
+            uint32_t attr_len = tsk_getu32(fs->endian, attr->len);
+            uint16_t attr_off = tsk_getu16(fs->endian, attr->c.r.soff);
+
             if (attr->res != NTFS_MFT_RES) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -2189,8 +2195,23 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     ("proc_attrseq: Standard Information Attribute is not resident!");
                 return TSK_COR;
             }
-            si = (ntfs_attr_si *) ((uintptr_t) attr +
-                tsk_getu16(fs->endian, attr->c.r.soff));
+            if ((attr_off < 16) || (attr_off >= attr_len)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("proc_attrseq: resident data offset of Standard Information Attribute is out of bounds!");
+                return TSK_COR;
+            }
+            // A Standard Information Attribute can be 48 or 72 bytes in size (ntfs_attr_si is 72)
+            if ((attr_len < 48) || (attr_off > attr_len - 48)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("proc_attrseq: resident data of Standard Information Attribute is too small!");
+                return TSK_COR;
+            }
+            ntfs_attr_si *si = (ntfs_attr_si *) ((uintptr_t) attr + attr_off);
+
             fs_file->meta->mtime =
                 nt2unixtime(tsk_getu64(fs->endian, si->mtime));
             fs_file->meta->mtime_nano =
@@ -2483,6 +2504,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             (void *) &load_file)) {
         tsk_error_errstr2_concat("- processing attrlist");
         free(mft);
+        free(buf);
         free(map);
         return TSK_ERR;
     }
@@ -3159,6 +3181,10 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr("Error Finding Bitmap Data Attribute");
+        goto on_error;
+    }
+    uint32_t attr_len = tsk_getu32(fs->endian, data_attr->len);
+    if (attr_len > ntfs->mft_rsize_b) {
         goto on_error;
     }
 

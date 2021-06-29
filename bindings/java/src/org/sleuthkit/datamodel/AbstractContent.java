@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
@@ -361,7 +362,9 @@ public abstract class AbstractContent implements Content {
 		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
 
 		if (osAccountId != null) {
-			db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+			try (CaseDbConnection connection = db.getConnection()) {
+				db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+			}
 		}
 		return artifact;
 	}
@@ -410,7 +413,6 @@ public abstract class AbstractContent implements Content {
 	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
 		return getGenInfoArtifact(true);
 	}
-
 
 	@Override
 	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException {
@@ -468,7 +470,7 @@ public abstract class AbstractContent implements Content {
 	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
 		return db.getBlackboard().getDataArtifactsBySource(objId);
 	}
-	
+
 	@Override
 	public Score getAggregateScore() throws TskCoreException {
 		return db.getScoringManager().getAggregateScore(objId);
