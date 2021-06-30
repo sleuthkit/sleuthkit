@@ -183,6 +183,7 @@ public class SleuthkitCase {
 	private static final String CREATION_SCHEMA_MINOR_VERSION_KEY = "CREATION_SCHEMA_MINOR_VERSION";
 
 	private final ConnectionPool connections;
+	private final Object carvedFileDirsLock = new Object();
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<>(); // Cache for file system files.
 	private final List<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<>();
@@ -7451,10 +7452,7 @@ public class SleuthkitCase {
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		long newCacheKey = 0; // Used to roll back cache if transaction is rolled back.
 		try {
-			transaction = beginTransaction();
-			CaseDbConnection connection = transaction.getConnection();
 
 			/*
 			 * Carved files are "re-parented" as children of the $CarvedFiles
@@ -7477,39 +7475,43 @@ public class SleuthkitCase {
 			 * Get or create the $CarvedFiles virtual directory for the root
 			 * ancestor.
 			 */
-			VirtualDirectory carvedFilesDir = rootIdsToCarvedFileDirs.get(root.getId());
-			if (null == carvedFilesDir) {
-				List<Content> rootChildren;
-				if (root instanceof FileSystem) {
-					rootChildren = ((FileSystem) root).getRootDirectory().getChildren();
-				} else {
-					rootChildren = root.getChildren();
-				}
-				for (Content child : rootChildren) {
-					if (child instanceof VirtualDirectory && child.getName().equals(VirtualDirectory.NAME_CARVED)) {
-						carvedFilesDir = (VirtualDirectory) child;
-						break;
-					}
-				}
+			VirtualDirectory carvedFilesDir;
+			synchronized(carvedFileDirsLock) {
+				carvedFilesDir = rootIdsToCarvedFileDirs.get(root.getId());
 				if (null == carvedFilesDir) {
-					long parId = root.getId();
-					// $CarvedFiles should be a child of the root directory, not the file system
+					List<Content> rootChildren;
 					if (root instanceof FileSystem) {
-						Content rootDir = ((FileSystem) root).getRootDirectory();
-						parId = rootDir.getId();
+						rootChildren = ((FileSystem) root).getRootDirectory().getChildren();
+					} else {
+						rootChildren = root.getChildren();
 					}
-					carvedFilesDir = addVirtualDirectory(parId, VirtualDirectory.NAME_CARVED, transaction);
+					for (Content child : rootChildren) {
+						if (child instanceof VirtualDirectory && child.getName().equals(VirtualDirectory.NAME_CARVED)) {
+							carvedFilesDir = (VirtualDirectory) child;
+							break;
+						}
+					}
+					if (null == carvedFilesDir) {
+						long parId = root.getId();
+						// $CarvedFiles should be a child of the root directory, not the file system
+						if (root instanceof FileSystem) {
+							Content rootDir = ((FileSystem) root).getRootDirectory();
+							parId = rootDir.getId();
+						}
+						carvedFilesDir = addVirtualDirectory(parId, VirtualDirectory.NAME_CARVED);
+					}
+					rootIdsToCarvedFileDirs.put(root.getId(), carvedFilesDir);
 				}
-				newCacheKey = root.getId();
-				rootIdsToCarvedFileDirs.put(newCacheKey, carvedFilesDir);
 			}
 
 			/*
 			 * Add the carved files to the database as children of the
 			 * $CarvedFile directory of the root ancestor.
 			 */
+			transaction = beginTransaction();
+			CaseDbConnection connection = transaction.getConnection();
 			String parentPath = getFileParentPath(carvedFilesDir.getId(), connection) + carvedFilesDir.getName() + "/";
-			List<LayoutFile> carvedFiles = new ArrayList<LayoutFile>();
+			List<LayoutFile> carvedFiles = new ArrayList<>();
 			for (CarvingResult.CarvedFile carvedFile : carvingResult.getCarvedFiles()) {
 				/*
 				 * Insert a row for the carved file into the tsk_objects table:
@@ -7611,9 +7613,6 @@ public class SleuthkitCase {
 					transaction.rollback();
 				} catch (TskCoreException ex2) {
 					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
-				}
-				if (0 != newCacheKey) {
-					rootIdsToCarvedFileDirs.remove(newCacheKey);
 				}
 			}
 		}
