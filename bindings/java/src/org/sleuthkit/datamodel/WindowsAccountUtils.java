@@ -134,7 +134,7 @@ final class WindowsAccountUtils {
 			return true;
 		}
 		for (String specialPrefix: SPECIAL_SID_PREFIXES) {
-			if (sid.startsWith(specialPrefix)) {
+			if (tempSID.startsWith(specialPrefix)) {
 				return true;
 			}
 		}
@@ -197,7 +197,7 @@ final class WindowsAccountUtils {
 		String tempSID = stripWindowsBackupPostfix(sid);
 		
 		// When copying realms into portable cases, the SID may already be set to the special windows string.
-		if (isWindowsSpecialSid(tempSID) || sid.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
+		if (isWindowsSpecialSid(tempSID) || tempSID.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
 			realmAddr = SPECIAL_WINDOWS_REALM_ADDR;
 		} else {
 			// regular SIDs should have at least 5 components: S-1-x-y-z
