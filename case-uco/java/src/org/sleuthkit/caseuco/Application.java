@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,5 +54,21 @@ class Application extends Facet {
     Application setVersion(String version) {
         this.version = version;
         return this;
+    }
+
+    String getApplicationIdentifier() {
+        return applicationIdentifier;
+    }
+
+    String getOperatingSystem() {
+        return operatingSystem;
+    }
+
+    Integer getNumberOfLaunches() {
+        return numberOfLaunches;
+    }
+
+    String getVersion() {
+        return version;
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,35 +18,16 @@
  */
 package org.sleuthkit.caseuco;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
 /**
- * This class definition mirrors the SIMCard observable described in the UCO
- * ontology.
+ * Runs all case uco unit tests.
  */
-class SIMCard extends Facet {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    FacetDeserializerTests.class
+})
+public class TestSuite {
 
-    private String IMSI;
-
-    private String ICCID;
-
-    SIMCard() {
-        super(SIMCard.class.getSimpleName());
-    }
-
-    SIMCard setIMSI(String IMSI) {
-        this.IMSI = IMSI;
-        return this;
-    }
-
-    SIMCard setICCID(String ICCID) {
-        this.ICCID = ICCID;
-        return this;
-    }
-
-    String getIMSI() {
-        return IMSI;
-    }
-
-    String getICCID() {
-        return ICCID;
-    }
 }
