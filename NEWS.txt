@@ -1,3 +1,24 @@
+---------------- VERSION 4.11.0 --------------
+C/C++:
+- Added checks at various layers to detect encrypted file systems and disks to give more useful error messages.
+- Added checks to detect file formats that are not supported (such as AD1, ZIP, etc.) to give more useful error message.
+- Added tsk_imageinfo tool that detects of an image is supported by TSK and if it is encrypted
+- Add numerous bound checks from Joachim Metz
+- Clarified licenses as pointed out by Joachim Metz
+
+Java:
+- Updated from Schema 8.6 to 9.1.
+- Added tables and classes for OS Accounts and Realms (Domains)
+- Added tables and classes for Host Addresses (IP, MAC, etc.)
+- Added tables and classes for Analysis Results vs Data Artifacts by adding onto BlackboardArtifacts.
+- Added tables and classes for Host and Person to make it easier to group data sources
+- Added static types for standard artifact types
+- Added File Attribute table to allow custom information to be stored for each file.
+- Made ordering of getting lock and connection consistent
+- Made the findFile methods more efficient by using extension (which is indexed)
+
+
+
 ---------------- VERSION 4.10.2 --------------
 C/C++
 - Added support for Ext4 inline data
