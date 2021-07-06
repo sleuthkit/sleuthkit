@@ -2606,6 +2606,8 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE tsk_analysis_results ADD COLUMN priority INTEGER NOT NULL DEFAULT " + Score.Priority.NORMAL.getId());
 			statement.execute("ALTER TABLE tsk_aggregate_score ADD COLUMN priority INTEGER NOT NULL DEFAULT " + Score.Priority.NORMAL.getId());
 			
+			statement.execute("UPDATE blackboard_artifact_types SET category_type = 1 WHERE artifact_type_id = 16");
+			
 			return new CaseDbSchemaVersionNumber(9, 1);
 		} finally {
 			closeStatement(statement);
