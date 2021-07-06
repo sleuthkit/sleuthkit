@@ -2634,8 +2634,8 @@ public class SleuthkitCase {
 
 						// Copy the data
 						statement.execute("INSERT INTO temp_tsk_analysis_results(artifact_obj_id, "
-								+ "conclusion, significance, configuration, ignore_score) "
-								+ "SELECT artifact_obj_id, conclusion, significance, configuration, ignore_score FROM tsk_analysis_results");
+								+ "conclusion, justification, significance, configuration, ignore_score) "
+								+ "SELECT artifact_obj_id, conclusion, justification, significance, configuration, ignore_score FROM tsk_analysis_results");
 
 						// Drop the old table
 						statement.execute("DROP TABLE tsk_analysis_results");
