@@ -9742,7 +9742,7 @@ public class SleuthkitCase {
 					+ "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
 			statement.execute(accountSql);
 			
-			// Now delete any hoss that was only associated with this data source. This will cascade to delete
+			// Now delete any host that was only associated with this data source. This will cascade to delete
 			// realms, os accounts, and os account attributes that were associated with the host.
 			if (hostToDelete != null) {
 				statement.execute("DELETE FROM tsk_hosts WHERE id = " + hostToDelete.getHostId());
