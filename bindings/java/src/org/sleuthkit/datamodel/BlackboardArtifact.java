@@ -1033,7 +1033,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * EXIF metadata.
 		 */
-		public static final Type TSK_METADATA_EXIF = new BlackboardArtifact.Type(16, "TSK_METADATA_EXIF", bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT);
+		public static final Type TSK_METADATA_EXIF = new BlackboardArtifact.Type(16, "TSK_METADATA_EXIF", bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.ANALYSIS_RESULT);
 
 		// 17 was used for deprecated TSK_TAG_FILE. 
 		// 18 was used for deprecated TSK_TAG_ARTIFACT. 
@@ -1565,7 +1565,7 @@ public class BlackboardArtifact implements Content {
 		 * EXIF metadata.
 		 */
 		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT),
+				bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * A tag applied to a file.
 		 *
