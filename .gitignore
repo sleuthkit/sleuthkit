@@ -140,8 +140,10 @@ tests/fs_attrlist_apis
 tests/fs_fname_apis
 tests/fs_thread_test
 tests/read_apis
+tests/tmp.*
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
+tools/autotools/tsk_imageinfo
 tools/autotools/tsk_loaddb
 tools/autotools/tsk_recover
 tools/fiwalk/plugins/jpeg_extract
