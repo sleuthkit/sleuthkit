@@ -9717,8 +9717,8 @@ public class SleuthkitCase {
 		Host hostToDelete = null;
 		VersionNumber version = getDBSchemaCreationVersion();
 		int major = version.getMajor();
-        int minor = version.getMinor();
-        if(major > 9 || (major == 9 && minor >= 1)) {
+		int minor = version.getMinor();
+		if(major > 9 || (major == 9 && minor >= 1)) {
 			hostToDelete = getHostManager().getHostByDataSource(dataSourceObjectId);
 			if (getHostManager().getDataSourcesForHost(hostToDelete).size() != 1) {
 				hostToDelete = null;
