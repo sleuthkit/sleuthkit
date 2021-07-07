@@ -1345,6 +1345,12 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
     for (i = 0; i < a_fs_dir->names_used; i++) {
         if (tsk_list_find(data.orphan_subdir_list,
                 a_fs_dir->names[i].meta_addr)) {
+
+            // Unclear what should happen in this situation, but it can happen,
+            // So skipping over this situation for now.
+            if (a_fs_dir->names_used == i + 1) {
+                continue;
+            }
             if (a_fs_dir->names_used > 1) {
                 tsk_fs_name_copy(&a_fs_dir->names[i],
                     &a_fs_dir->names[a_fs_dir->names_used - 1]);
