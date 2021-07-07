@@ -1,14 +1,14 @@
 # File that we want to include in the dist
 EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-CHANGES.txt \
-    licenses/GNU-COPYING licenses/IBM-LICENSE \
-    licenses/cpl1.0.txt licenses/bsd.txt licenses/mit.txt \
+    licenses/README.md licenses/GNUv2-COPYING licenses/GNUv3-COPYING licenses/IBM-LICENSE \
+    licenses/Apache-LICENSE-2.0.txt licenses/cpl1.0.txt licenses/bsd.txt licenses/mit.txt \
     m4/*.m4 \
     docs/README.txt \
     packages/sleuthkit.spec \
     win32/BUILDING.txt \
-    win32/NOTES.txt \
     win32/*/*.vcxproj \
     win32/tsk-win.sln \
+    win32/NugetPackages.props \
     win32/docs/* \
     bindings/java/README.txt \
     bindings/java/*.xml \
@@ -22,7 +22,11 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/*.java \
     bindings/java/src/org/sleuthkit/datamodel/blackboardutils/attributes/*.java \
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
-    bindings/java/src/*.html 
+    bindings/java/src/*.html \
+    case-uco/java/*.xml \
+    case-uco/java/nbproject/*.xml \
+    case-uco/java/nbproject/*.properties \
+    case-uco/java/src/org/sleuthkit/caseuco/*.java
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -34,11 +38,13 @@ endif
 # Compile java bindings if all of the dependencies existed
 if X_JNI
   JAVA_BINDINGS=bindings/java
+  JAVA_CASEUCO=case-uco/java
 else   
   JAVA_BINDINGS=
+  JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) 
+SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
@@ -53,7 +59,8 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/auto/tsk_is_image_supported.h tsk/auto/guid.h \
     tsk/pool/tsk_pool.h tsk/pool/tsk_pool.hpp tsk/pool/tsk_apfs.h tsk/pool/tsk_apfs.hpp \
 	tsk/pool/pool_compat.hpp tsk/pool/apfs_pool_compat.hpp \
-    tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp
+    tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp \
+    tsk/util/detect_encryption.h
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \

@@ -288,9 +288,9 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     if (fbuf[strlen(fbuf) - 1] != '/')
-        strncat(fbuf, "/", PATH_MAX - strlen(fbuf));
+        strncat(fbuf, "/", PATH_MAX - strlen(fbuf)-1);
 
-    strncat(fbuf, a_fs_file->name->name, PATH_MAX - strlen(fbuf));
+    strncat(fbuf, a_fs_file->name->name, PATH_MAX - strlen(fbuf)-1);
     
     //do name mangling of the file name that was just added
     for (int i = strlen(fbuf)-1; fbuf[i] != '/'; i--) {
@@ -415,7 +415,7 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
-    TSK_DADDR_T pvol_block = 0;
+    TSK_OFF_T pvol_block = 0;
     int ch;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
@@ -556,7 +556,7 @@ main(int argc, char **argv1)
         exit(1);
     }
     
-    if (tskRecover.openFs(soffset, fstype, pooltype, pvol_block)) {
+    if (tskRecover.openFs(soffset, fstype, pooltype, (TSK_DADDR_T)pvol_block)) {
         // Errors were already logged
         exit(1);
     }

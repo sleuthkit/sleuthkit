@@ -338,8 +338,11 @@ TskDbSqlite::initialize()
         ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
             "Error creating tsk_files_derived_method table: %s\n")
         ||
+		attempt_exec
+		("CREATE TABLE tsk_tag_sets (tag_set_id INTEGER PRIMARY KEY, name TEXT UNIQUE)", "Error creating tsk_tag_sets table: %s\n")
+		||
         attempt_exec
-        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)",
+        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL, tag_set_id INTEGER, FOREIGN KEY(tag_set_id) REFERENCES tsk_tag_sets(tag_set_id) ON DELETE SET NULL)",
             "Error creating tag_names table: %s\n")
         ||
         attempt_exec("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
@@ -812,12 +815,11 @@ TskDbSqlite::addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& 
     if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
         return 1;
 
-    char* desc = "Unallocated Blocks";
     zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
         "VALUES (%lld, %" PRIuPNUM ",%" PRIuDADDR ",%" PRIuDADDR ",'%q',%d)",
         objId, vol_index, 0, 0,
-        desc, 0);
+        "Unallocated Blocks", 0);
 
     ret = attempt_exec(zSQL,
         "Error adding data to tsk_vs_parts table: %s\n");

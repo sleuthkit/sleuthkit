@@ -46,10 +46,12 @@
  *
  * Return 1 if the path represents a Windows device, 0 otherwise
  */
+#ifdef TSK_WIN32
 static int
 is_windows_device_path(const TSK_TCHAR * image_name) {
     return (TSTRNCMP(image_name, _TSK_T("\\\\.\\"), 4) == 0);
 }
+#endif
 
 /** 
  * \internal
@@ -237,7 +239,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // the number of bytes read
         if (sector_aligned_buf != NULL) {
             memcpy(buf, sector_aligned_buf + rel_offset % raw_info->img_info.sector_size, len);
-            cnt = cnt - offset_to_read % raw_info->img_info.sector_size;
+            cnt = cnt - rel_offset % raw_info->img_info.sector_size;
             if (cnt < 0) {
                 cnt = -1;
             }

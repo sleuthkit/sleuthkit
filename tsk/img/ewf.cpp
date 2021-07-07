@@ -78,6 +78,7 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
         else
             errmsg = error_string;
 
+        libewf_error_free(&ewf_error);
         tsk_error_set_errstr("ewf_image_read - offset: %" PRIdOFF
             " - len: %" PRIuSIZE " - %s", offset, len, errmsg);
         tsk_release_lock(&(ewf_info->read_lock));
@@ -141,11 +142,10 @@ ewf_image_close(TSK_IMG_INFO * img_info)
         free(ewf_info->img_info.images);
     }
     else {
-        libewf_error_t *error;
 #ifdef TSK_WIN32
-        libewf_glob_wide_free( ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
+        libewf_glob_wide_free( ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
 #else
-        libewf_glob_free( ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
+        libewf_glob_free( ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
 #endif
     }
 
@@ -533,7 +533,7 @@ ewf_open(int a_num_img,
         uint32_t bytes_per_sector = 512;
         // see if the size is stored in the E01 file
         if (-1 == libewf_handle_get_bytes_per_sector(ewf_info->handle,
-            &bytes_per_sector, &ewf_error)) {
+            &bytes_per_sector, NULL)) {
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ewf_image_read: error getting sector size from E01\n");
@@ -593,11 +593,10 @@ static char* read_libewf_header_value(libewf_handle_t *handle, char* result_buff
     result_buffer[0] = '\0';
     size_t identifier_length = strlen((char *)identifier);
     strcpy(result_buffer, key);
-    libewf_error_t * ewf_error;
     size_t key_len = strlen(key);
 
     //buffer_size - key_len - 1 for the new line at the end
-    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len - 1, &ewf_error);
+    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len - 1, NULL);
     if (result != -1 && !is_blank(result_buffer + key_len)) {
         strcat(result_buffer, "\n");
     }

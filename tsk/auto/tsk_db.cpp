@@ -32,14 +32,6 @@ TskDb::TskDb(const TSK_TCHAR * /*a_dbFilePath*/, bool /*a_blkMapFlag*/)
 }
 #endif
 
-/**
-* Store database connection info. NO-OP for single-user database. Multi-user database class
-* needs to derive and implement this method.
-*/
-TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * /*info*/){
-    return TSK_OK;
-}
-
 /*
 * Utility method to break up path into parent folder and folder/file name. 
 * @param path Path of folder that we want to analyze

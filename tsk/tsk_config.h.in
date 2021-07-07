@@ -66,15 +66,6 @@
 /* Define if using opensll */
 #undef HAVE_LIBOPENSSL
 
-/* Define to 1 if you have the `pq' library (-lpq). */
-#undef HAVE_LIBPQ
-
-/* Define if using libpq. */
-#undef HAVE_LIBPQ_
-
-/* Define to 1 if you have the <libpq-fe.h> header file. */
-#undef HAVE_LIBPQ_FE_H
-
 /* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
 #undef HAVE_LIBSQLITE3
 
@@ -108,9 +99,6 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Define to 1 if you have the <postgresql/libpq-fe.h> header file. */
-#undef HAVE_POSTGRESQL_LIBPQ_FE_H
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD

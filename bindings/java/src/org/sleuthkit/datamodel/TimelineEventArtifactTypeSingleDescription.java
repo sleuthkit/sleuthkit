@@ -33,15 +33,17 @@ class TimelineEventArtifactTypeSingleDescription extends TimelineEventArtifactTy
 	@Override
 	public TimelineEventDescriptionWithTime makeEventDescription(BlackboardArtifact artifact) throws TskCoreException {
 		String description = extractFullDescription(artifact);
+		if (description.length() > MAX_FULL_DESCRIPTION_LENGTH) {
+			description = description.substring(0, MAX_FULL_DESCRIPTION_LENGTH);
+		}
 		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
 
 		if (timeAttribute == null) {
-			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.toString()); // NON-NLS
 			return null;
 		}
 
 		long time = timeAttribute.getValueLong();
-		return new TimelineEventDescriptionWithTime(time, null, null, description);
+		return new TimelineEventDescriptionWithTime(time, timeAttribute.getDisplayString(), null, description);
 	}
 
 	TimelineEventArtifactTypeSingleDescription(int typeID, String displayName,

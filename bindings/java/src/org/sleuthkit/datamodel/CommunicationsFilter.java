@@ -359,7 +359,7 @@ final public class CommunicationsFilter {
 		@Override
 		String getSQL(CommunicationsManager commsManager) {
 			if(limit > 0) {
-				return "ORDER BY relationships.date_time LIMIT " + limit;
+				return "ORDER BY relationships.date_time DESC LIMIT " + limit;
 			} else {
 				return "";
 			}

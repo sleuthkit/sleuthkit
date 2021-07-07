@@ -1762,7 +1762,6 @@ static uint8_t
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "yaffs_make_deleted: Making virtual deleted node\n");
-
     if (yaffs_make_directory(yaffsfs, fs_file, YAFFS_OBJECT_DELETED, YAFFS_OBJECT_DELETED_NAME))
         return 1;
 
@@ -1931,7 +1930,6 @@ static uint8_t
 
     case YAFFS_TYPE_HARDLINK:
     case YAFFS_TYPE_UNKNOWN:
-    default:
         if (tsk_verbose)
             tsk_fprintf(stderr, "yaffs_inode_lookup: is *** UNHANDLED *** (type %d, header at 0x%x)\n", type, version->ycv_header_chunk->ycc_offset);
         // We can still set a few things
@@ -1955,6 +1953,10 @@ static uint8_t
         strncpy(a_fs_file->meta->name2->name, real_name,
             TSK_FS_META_NAME_LIST_NSIZE);
         break;
+    default:
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "yaffs_inode_lookup: type is invalid (type %d, header at 0x%x)\n", type, version->ycv_header_chunk->ycc_offset);
+        return 1;
     }
 
     /* Who owns this? I'm following the way FATFS does it by freeing + NULLing 

@@ -1,3 +1,41 @@
+---------------- VERSION 4.10.2 --------------
+C/C++
+- Added support for Ext4 inline data
+
+Java
+- New Blackboard Artifacts for ALEAPP/ILEAPP, Yara, Geo Area, etc.
+- Upgraded to PostgreSQL JDBC Driver 42.2.18
+- Added SHA256 to files table in DB and added utility calculation methods.
+- Changed TimelineManager to make events for any artifact with a time stamp
+- Added Japanese translations
+- Fixed sychronization bug in getUniquePath
+
+
+---------------- VERSION 4.10.1 --------------
+C/C++:
+- Changed Windows build to use Nuget for libewf, libvmdk, libvhdi.
+- Fixed compiler warnings 
+- Clarrified licenses and added Apache license to distribution
+- Improved error handling for out of memory issues
+- Rejistry++ memory leak fixes
+
+Java:
+- Localized for Japanese
+
+---------------- VERSION 4.10.0 --------------
+C/C++:
+- Removed PostgreSQL code (that was used only by Java code)
+- Added Java callback support so that database inserts are done in Java.
+
+Java: 
+- Added methods and callbacks as required to allow database population to happen in Java instead of C/C++.
+- Added support to allow Autopsy streaming ingest where files are added in batches. 
+- Added TaggingManager class and concept of a TagSet to support ProjectVic categories. 
+- Fixed changes to normalization and validation of emails and phone numbers.
+- Added a CASE/UCO JAR file that creates JSON-LD based on TSK objects.
+
+
+
 ---------------- VERSION 4.9.0 --------------
 C/C++
 - Removed framework project.  Use Autopsy instead if you need an analysis framework. 

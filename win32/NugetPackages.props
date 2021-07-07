@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LibVmdkInclude>$(SolutionDir)\packages\libvmdk.20200810.0.0\lib\native\include</LibVmdkInclude>
+    <LibVmdkLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libvmdk.20200810.0.0\lib\native\lib\Win32</LibVmdkLib>
+    <LibVmdkLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libvmdk.20200810.0.0\lib\native\lib\x64</LibVmdkLib>
+    <LibVhdiInclude>$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\include</LibVhdiInclude>
+    <LibVhdiLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\lib\Win32</LibVhdiLib>
+    <LibVhdiLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\libvhdi.20200810.0.0\lib\native\lib\x64</LibVhdiLib>
+	<LibEwfInclude>$(SolutionDir)\packages\sleuthkit-libewf.20130416.0.0\build\native\include</LibEwfInclude>
+    <LibEwfLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\sleuthkit-libewf.20130416.0.0\build\native\msvscpp\Release</LibEwfLib>
+    <LibEwfLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\sleuthkit-libewf.20130416.0.0\build\native\msvscpp\x64\Release</LibEwfLib>
+	<ZlibInclude>$(SolutionDir)\packages\zlib_native.1.2.11\build\native\include</ZlibInclude>
+	<ZlibLib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\zlib_native.1.2.11\build\native\lib\Win32\Release</ZlibLib>
+	<ZlibLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\zlib_native.1.2.11\build\native\lib\x64\Release</ZlibLib>
+	<ZlibDll Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\zlib_native.redist.1.2.11\build\native\bin\Win32\Release</ZlibDll>
+	<ZlibDll Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\zlib_native.redist.1.2.11\build\native\bin\x64\Release</ZlibDll>
+	<OpenSslInclude Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\include;</OpenSslInclude>
+	<OpenSslLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\lib\vc140\x64;</OpenSslLib>
+	<TskNugetIncludes>$(LibVmdkInclude);$(LibVhdiInclude);$(LibEwfInclude);$(ZlibInclude);$(OpenSslInclude);</TskNugetIncludes>
+	<TskNugetLibs>$(LibVmdkLib);$(LibVhdiLib);$(LibEwfLib);$(ZlibLib);$(OpenSslLib);</TskNugetLibs>
+  </PropertyGroup>
+</Project>

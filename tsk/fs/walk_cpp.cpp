@@ -1,3 +1,11 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2013 Brian Carrier.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #include "tsk_fs_i.h"
 #include "tsk/vs/tsk_vs_i.h"
 

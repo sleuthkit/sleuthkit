@@ -18,12 +18,14 @@
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
@@ -33,13 +35,15 @@ import org.sleuthkit.datamodel.AccountFileInstance;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.CommunicationsUtils;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DataSource;
+import org.sleuthkit.datamodel.InvalidAccountIDException;
+import org.sleuthkit.datamodel.OsAccount;
 import org.sleuthkit.datamodel.Relationship;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskDataException;
+import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments.FileAttachment;
 
@@ -64,6 +68,13 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments.Fil
  *
  */
 public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
+
+	private static final Logger LOGGER = Logger.getLogger(CommunicationArtifactsHelper.class.getName());
+
+	private static final BlackboardArtifact.Type CONTACT_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_CONTACT);
+	private static final BlackboardArtifact.Type MESSAGE_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_MESSAGE);
+	private static final BlackboardArtifact.Type CALLOG_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_CALLLOG);
+	private static final BlackboardArtifact.Type ASSOCIATED_OBJ_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
 
 	/**
 	 * Enum for message read status
@@ -123,10 +134,12 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 	}
 
+	private static final BlackboardAttribute.Type ATTACHMENTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS);
+
 	// 'self' account for the application being processed by the module. 
 	private final Account.Type selfAccountType;
 	private final String selfAccountId;
-			
+
 	private AccountFileInstance selfAccountInstance = null;
 
 	// Type of accounts to be created for the module using this helper.
@@ -160,7 +173,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs a AppDB parser helper for the given DB file.
+	 * Constructs a communications artifacts helper for the given source file.
 	 *
 	 * This constructor is for modules that have the application specific
 	 * account information for the device owner to create a 'self' account.
@@ -270,12 +283,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		BlackboardArtifact contactArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
-		// create TSK_CONTACT artifact
-		contactArtifact = getContent().newArtifact(ARTIFACT_TYPE.TSK_CONTACT);
-
-		// construct attributes
+		// create TSK_CONTACT artifact and construct attributes
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_NAME, contactName, attributes);
-		
+
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, phoneNumber, attributes);
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME, homePhoneNumber, attributes);
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE, mobilePhoneNumber, attributes);
@@ -283,7 +293,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes
 		attributes.addAll(additionalAttributes);
-		contactArtifact.addAttributes(attributes);
+		Content content = getContent();
+
+		contactArtifact = content.newDataArtifact(CONTACT_TYPE, attributes);
 
 		// create an account for each specified contact method, and a relationship with self account
 		createContactMethodAccountAndRelationship(Account.Type.PHONE, phoneNumber, contactArtifact, 0);
@@ -312,7 +324,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 	/**
 	 * Creates a contact's account instance of specified account type, if the
-	 * account id is not null/empty and is a valid account id for the account type.
+	 * account id is not null/empty and is a valid account id for the account
+	 * type.
 	 *
 	 * Also creates a CONTACT relationship between the self account and the new
 	 * contact account.
@@ -323,16 +336,20 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// Find/Create an account instance for each of the contact method
 		// Create a relationship between selfAccount and contactAccount
-		if (CommunicationsUtils.isValidAccountId(accountType, accountUniqueID)) {
-			AccountFileInstance contactAccountInstance = createAccountInstance(accountType, accountUniqueID);
-
-			// Create a relationship between self account and the contact account
+		if (StringUtils.isNotBlank(accountUniqueID)) {
 			try {
-				getSleuthkitCase().getCommunicationsManager().addRelationships(getSelfAccountInstance(),
-						Collections.singletonList(contactAccountInstance), sourceArtifact, Relationship.Type.CONTACT, dateTime);
-			} catch (TskDataException ex) {
-				throw new TskCoreException(String.format("Failed to create relationship between account = %s and account = %s.",
-						getSelfAccountInstance().getAccount(), contactAccountInstance.getAccount()), ex);
+				AccountFileInstance contactAccountInstance = createAccountInstance(accountType, accountUniqueID);
+
+				// Create a relationship between self account and the contact account
+				try {
+					getSleuthkitCase().getCommunicationsManager().addRelationships(getSelfAccountInstance(),
+							Collections.singletonList(contactAccountInstance), sourceArtifact, Relationship.Type.CONTACT, dateTime);
+				} catch (TskDataException ex) {
+					throw new TskCoreException(String.format("Failed to create relationship between account = %s and account = %s.",
+							getSelfAccountInstance().getAccount(), contactAccountInstance.getAccount()), ex);
+				}
+			} catch (InvalidAccountIDException ex) {
+				LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", accountUniqueID));
 			}
 		}
 	}
@@ -349,7 +366,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	private AccountFileInstance createAccountInstance(Account.Type accountType, String accountUniqueID) throws TskCoreException {
+	private AccountFileInstance createAccountInstance(Account.Type accountType, String accountUniqueID) throws TskCoreException, InvalidAccountIDException {
 		return getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(accountType, accountUniqueID, getModuleName(), getContent());
 	}
 
@@ -492,11 +509,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		// Created message artifact.  
-		BlackboardArtifact msgArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// create TSK_MESSAGE artifact
-		msgArtifact = getContent().newArtifact(ARTIFACT_TYPE.TSK_MESSAGE);
 
 		// construct attributes
 		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, getModuleName(), messageType));
@@ -505,19 +518,35 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		addMessageReadStatusIfKnown(readStatus, attributes);
 		addCommDirectionIfKnown(direction, attributes);
 
+		// Get the self account instance
+		AccountFileInstance selfAccountInstanceLocal = null;
+		try {
+			selfAccountInstanceLocal = getSelfAccountInstance();
+		} catch (InvalidAccountIDException ex) {
+			LOGGER.log(Level.WARNING, String.format("Failed to get/create self account with id %s", selfAccountId), ex);
+		}
+
 		// set sender attribute and create sender account
 		AccountFileInstance senderAccountInstance = null;
-		if (CommunicationsUtils.isValidAccountId(moduleAccountsType, senderId)) {
-			senderAccountInstance = createAccountInstance(moduleAccountsType, senderId);
-		} 
+		if (StringUtils.isNotBlank(senderId)) {
+			try {
+				senderAccountInstance = createAccountInstance(moduleAccountsType, senderId);
+			} catch (InvalidAccountIDException ex) {
+				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", senderId));
+			}
+		}
 
 		// set recipient attribute and create recipient accounts
 		List<AccountFileInstance> recipientAccountsList = new ArrayList<>();
 		String recipientsStr = "";
 		if (!isEffectivelyEmpty(recipientIdsList)) {
 			for (String recipient : recipientIdsList) {
-				if (CommunicationsUtils.isValidAccountId(moduleAccountsType, recipient)) {
-					recipientAccountsList.add(createAccountInstance(moduleAccountsType, recipient));
+				if (StringUtils.isNotBlank(recipient)) {
+					try {
+						recipientAccountsList.add(createAccountInstance(moduleAccountsType, recipient));
+					} catch (InvalidAccountIDException ex) {
+						LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", senderId));
+					}
 				}
 			}
 			// Create a comma separated string of recipients
@@ -527,41 +556,40 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		switch (direction) {
 			case OUTGOING:
 				// if no sender, selfAccount substitutes caller.
-				if (StringUtils.isEmpty(senderId)) {
-					senderAccountInstance = getSelfAccountInstance();
-				}	
+				if (StringUtils.isEmpty(senderId) && selfAccountInstanceLocal != null) {
+					senderAccountInstance = selfAccountInstanceLocal;
+				}
 				// sender becomes PHONE_FROM
 				if (senderAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, senderAccountInstance.getAccount().getTypeSpecificID(), attributes);
-				}	
+				}
 				// recipient becomes PHONE_TO
 				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, recipientsStr, attributes);
 				break;
-				
+
 			case INCOMING:
 				// if no recipeint specified, selfAccount substitutes recipient
-				if (isEffectivelyEmpty(recipientIdsList)) {
-					recipientsStr = getSelfAccountInstance().getAccount().getTypeSpecificID();
-					recipientAccountsList.add(getSelfAccountInstance());
-				}	
+				if (isEffectivelyEmpty(recipientIdsList) && selfAccountInstanceLocal != null) {
+					recipientsStr = selfAccountInstanceLocal.getAccount().getTypeSpecificID();
+					recipientAccountsList.add(selfAccountInstanceLocal);
+				}
 				// caller becomes PHONE_FROM
 				if (senderAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, senderAccountInstance.getAccount().getTypeSpecificID(), attributes);
-				}	
+				}
 				// callee becomes PHONE_TO
 				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, recipientsStr, attributes);
 				break;
 			default:  // direction UNKNOWN
-				if (StringUtils.isEmpty(senderId)) {
+				if (StringUtils.isEmpty(senderId) && selfAccountInstanceLocal != null) {
 					// if no sender, selfAccount substitutes caller.
-					senderAccountInstance = getSelfAccountInstance();
-				}
-				else if (isEffectivelyEmpty(recipientIdsList)) {
+					senderAccountInstance = selfAccountInstanceLocal;
+				} else if (isEffectivelyEmpty(recipientIdsList) && selfAccountInstanceLocal != null) {
 					// else if no recipient specified, selfAccount substitutes recipient
-					recipientsStr = getSelfAccountInstance().getAccount().getTypeSpecificID();
-					recipientAccountsList.add(getSelfAccountInstance());
-				}	
-				
+					recipientsStr = selfAccountInstanceLocal.getAccount().getTypeSpecificID();
+					recipientAccountsList.add(selfAccountInstanceLocal);
+				}
+
 				// save phone numbers in direction agnostic attributes
 				if (senderAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, senderAccountInstance.getAccount().getTypeSpecificID(), attributes);
@@ -569,14 +597,17 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, recipientsStr, attributes);
 				break;
 		}
-		
+
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_SUBJECT, subject, attributes);
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_TEXT, messageText, attributes);
 		addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_THREAD_ID, threadId, attributes);
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		msgArtifact.addAttributes(attributes);
+
+		// create TSK_MESSAGE artifact
+		Content content = getContent();
+		BlackboardArtifact msgArtifact = content.newDataArtifact(MESSAGE_TYPE, attributes);
 
 		// create sender/recipient relationships  
 		try {
@@ -730,11 +761,14 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			throw new IllegalArgumentException("Either a caller id, or at least one callee id must be provided for a call log.");
 		}
 
-		BlackboardArtifact callLogArtifact;
-		Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		AccountFileInstance selfAccountInstanceLocal = null;
+		try {
+			selfAccountInstanceLocal = getSelfAccountInstance();
+		} catch (InvalidAccountIDException ex) {
+			LOGGER.log(Level.WARNING, String.format("Failed to get/create self account with id %s", selfAccountId), ex);
+		}
 
-		// Create TSK_CALLLOG artifact
-		callLogArtifact = getContent().newArtifact(ARTIFACT_TYPE.TSK_CALLLOG);
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
 		// Add basic attributes 
 		addAttributeIfNotZero(ATTRIBUTE_TYPE.TSK_DATETIME_START, startDateTime, attributes);
@@ -742,59 +776,67 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		addCommDirectionIfKnown(direction, attributes);
 
 		AccountFileInstance callerAccountInstance = null;
-		if (CommunicationsUtils.isValidAccountId(moduleAccountsType, callerId)) {
-			callerAccountInstance = createAccountInstance(moduleAccountsType, callerId);
+		if (StringUtils.isNotBlank(callerId)) {
+			try {
+				callerAccountInstance = createAccountInstance(moduleAccountsType, callerId);
+			} catch (InvalidAccountIDException ex) {
+				LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callerId));
+			}
 		}
-		
+
 		// Create a comma separated string of callee
 		List<AccountFileInstance> recipientAccountsList = new ArrayList<>();
 		String calleesStr = "";
 		if (!isEffectivelyEmpty(calleeIdsList)) {
 			calleesStr = addressListToString(calleeIdsList);
 			for (String callee : calleeIdsList) {
-				if (CommunicationsUtils.isValidAccountId(moduleAccountsType, callee)) {
-					recipientAccountsList.add(createAccountInstance(moduleAccountsType, callee));
+				if (StringUtils.isNotBlank(callee)) {
+					try {
+						recipientAccountsList.add(createAccountInstance(moduleAccountsType, callee));
+					} catch (InvalidAccountIDException ex) {
+						LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callerId));
+					}
 				}
 			}
 		}
-		
+
 		switch (direction) {
 			case OUTGOING:
 				// if no callee throw IllegalArg
 				if (isEffectivelyEmpty(calleeIdsList)) {
 					throw new IllegalArgumentException("Callee not provided for an outgoing call.");
-				}	
+				}
 				// if no caller, selfAccount substitutes caller.
-				if (StringUtils.isEmpty(callerId)) {
-					callerAccountInstance = getSelfAccountInstance();
-				}	
+				if (StringUtils.isEmpty(callerId) && selfAccountInstanceLocal != null) {
+					callerAccountInstance = selfAccountInstanceLocal;
+				}
 				// caller becomes PHONE_FROM
 				if (callerAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, callerAccountInstance.getAccount().getTypeSpecificID(), attributes);
-				}	
+				}
 				// callee becomes PHONE_TO
 				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, calleesStr, attributes);
 				break;
-				
+
 			case INCOMING:
 				// if no caller throw IllegalArg
 				if (StringUtils.isEmpty(callerId)) {
 					throw new IllegalArgumentException("Caller Id not provided for incoming call.");
-				}	
+				}
 				// if no callee specified, selfAccount substitutes callee
-				if (isEffectivelyEmpty(calleeIdsList)) {
-					calleesStr = getSelfAccountInstance().getAccount().getTypeSpecificID();
-					recipientAccountsList.add(getSelfAccountInstance());
-				}	
+				if (isEffectivelyEmpty(calleeIdsList) && selfAccountInstanceLocal != null) {
+					calleesStr = selfAccountInstanceLocal.getAccount().getTypeSpecificID();
+					recipientAccountsList.add(selfAccountInstanceLocal);
+				}
 				// caller becomes PHONE_FROM
 				if (callerAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, callerAccountInstance.getAccount().getTypeSpecificID(), attributes);
-				}	
+				}
 				// callee becomes PHONE_TO
 				addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, calleesStr, attributes);
 				break;
 			default:  // direction UNKNOWN
-				
+
 				// save phone numbers in direction agnostic attributes
 				if (callerAccountInstance != null) {
 					addAttributeIfNotNull(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, callerAccountInstance.getAccount().getTypeSpecificID(), attributes);
@@ -805,6 +847,10 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
+		// Create TSK_CALLLOG artifact
+		Content content = getContent();
+		BlackboardArtifact callLogArtifact = content.newDataArtifact(CALLOG_TYPE, attributes);
+
 		callLogArtifact.addAttributes(attributes);
 
 		// create relationships between caller/callees
@@ -813,7 +859,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 					recipientAccountsList, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
 		} catch (TskDataException ex) {
 			throw new TskCoreException(String.format("Failed to create Call log relationships between caller account = %s and callees = %s.",
-					callerAccountInstance.getAccount(), calleesStr), ex);
+					(callerAccountInstance != null) ? callerAccountInstance.getAccount() : "", calleesStr), ex);
 		}
 
 		// post artifact 
@@ -832,13 +878,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException If there is an error in adding attachments
 	 */
 	public void addAttachments(BlackboardArtifact message, MessageAttachments attachments) throws TskCoreException {
-
-		// Convert the MessageAttachments object to JSON string
-		Gson gson = new Gson();
-		String attachmentsJson = gson.toJson(attachments);
-
 		// Create attribute 
-		message.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS, getModuleName(), attachmentsJson));
+		BlackboardAttribute blackboardAttribute = BlackboardJsonAttrUtil.toAttribute(ATTACHMENTS_ATTR_TYPE, getModuleName(), attachments);
+		message.addAttribute(blackboardAttribute);
 
 		// Associate each attachment file with the message.
 		Collection<FileAttachment> fileAttachments = attachments.getFileAttachments();
@@ -867,11 +909,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, this.getModuleName(), message.getArtifactID()));
 
-		BlackboardArtifact bba = attachedFile.newArtifact(ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
-		bba.addAttributes(attributes); //write out to bb
-		return bba;
+		return attachedFile.newDataArtifact(ASSOCIATED_OBJ_TYPE, attributes);
 	}
-	
+
 	/**
 	 * Converts a list of ids into a single comma separated string.
 	 */
@@ -935,12 +975,14 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Returns self account instance.  Lazily creates it if one doesn't exist yet.
-	 * 
+	 * Returns self account instance. Lazily creates it if one doesn't exist
+	 * yet.
+	 *
 	 * @return Self account instance.
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
-	private synchronized AccountFileInstance getSelfAccountInstance() throws TskCoreException {
+	private synchronized AccountFileInstance getSelfAccountInstance() throws TskCoreException, InvalidAccountIDException {
 		if (selfAccountInstance == null) {
 			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getContent());
 		}

@@ -46,6 +46,7 @@ public:
 	TskGetTimes(int32_t, bool);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
     virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
@@ -122,6 +123,14 @@ TskGetTimes::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_curVolAddr = vs_part->addr;
     m_curPoolVol = -1;
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM
+TskGetTimes::filterPool(const TSK_POOL_INFO * pool_info)
+{
+    // There's nothing to do, but we need to override this to allow the pool
+    // to be processed.
     return TSK_FILTER_CONT;
 }
 

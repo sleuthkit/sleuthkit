@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #include "../libtsk.h"
 
 #include "decmpfs.h"
@@ -683,6 +692,7 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
     for (int i = 0; i < num_attrs; i++) {
       const auto attr = tsk_fs_file_attr_get_idx(fs_file, i);
       if (attr->type == TSK_FS_ATTR_TYPE_APFS_EXT_ATTR &&
+          attr->name != NULL &&
           strcmp(attr->name, APFS_XATTR_NAME_SYMLINK) == 0) {
         // We've found our symlink attribute
         fs_file->meta->link = (char*)tsk_malloc(attr->size + 1);

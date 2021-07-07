@@ -55,6 +55,7 @@ static const char *tsk_err_mm_str[TSK_ERR_VS_MAX] = {
     "Invalid buffer size",      // 5
     "Invalid sector address",
     "Invalid API argument",
+    "Encryption detected",
 };
 
 static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
@@ -76,6 +77,8 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "General file system error",        // 15
     "File system is corrupt",
     "Attribute not found in file",
+    "Encryption detected",
+    "Possible encryption detected",
 };
 
 static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {

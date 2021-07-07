@@ -156,17 +156,22 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
 
     /* If the source has a full name,  copy it */
     if (a_fs_name_from->name) {
+        size_t name_len = strlen(a_fs_name_from->name);
+
         // make sure there is enough space
-        if (strlen(a_fs_name_from->name) >= a_fs_name_to->name_size) {
-            a_fs_name_to->name_size = strlen(a_fs_name_from->name) + 16;
-            a_fs_name_to->name =
+        if (name_len >= a_fs_name_to->name_size) {
+            char * to_name =
                 (char *) tsk_realloc(a_fs_name_to->name,
-                a_fs_name_to->name_size);
-            if (a_fs_name_to->name == NULL)
+                name_len + 16);
+            if (to_name == NULL)
                 return 1;
+
+            a_fs_name_to->name = to_name;
+            a_fs_name_to->name_size = name_len + 16;
         }
         strncpy(a_fs_name_to->name, a_fs_name_from->name,
-            a_fs_name_to->name_size);
+            name_len);
+        a_fs_name_to->name[name_len] = 0;
     }
     else {
         if (a_fs_name_to->name_size > 0)
@@ -297,13 +302,13 @@ tsk_fs_meta_make_ls(const TSK_FS_META * a_fs_meta, char *a_buf,
 char *
 tsk_fs_time_to_str(time_t time, char buf[128])
 {
+    struct tm *tmTime;
+
     buf[0] = '\0';
-    if (time <= 0) {
+    if (time <= 0 || (tmTime = localtime(&time)) == NULL) {
         strncpy(buf, "0000-00-00 00:00:00 (UTC)", 128);
     }
     else {
-        struct tm *tmTime = localtime(&time);
-
         snprintf(buf, 128, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d (%s)",
             (int) tmTime->tm_year + 1900,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
@@ -326,13 +331,13 @@ char *
 tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs,
     char buf[128])
 {
+    struct tm *tmTime;
+
     buf[0] = '\0';
-    if (time <= 0) {
+    if (time <= 0 || (tmTime = localtime(&time)) == NULL) {
         strncpy(buf, "0000-00-00 00:00:00 (UTC)", 32);
     }
     else {
-        struct tm *tmTime = localtime(&time);
-
         snprintf(buf, 64, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d.%.9d (%s)",
             (int) tmTime->tm_year + 1900,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
@@ -368,12 +373,12 @@ tsk_fs_print_time(FILE * hFile, time_t time)
 static void
 tsk_fs_print_day(FILE * hFile, time_t time)
 {
-    if (time <= 0) {
+    struct tm *tmTime;
+
+    if (time <= 0 || (tmTime = localtime(&time)) == NULL) {
         tsk_fprintf(hFile, "0000-00-00 00:00:00 (UTC)");
     }
     else {
-        struct tm *tmTime = localtime(&time);
-
         tsk_fprintf(hFile, "%.4d-%.2d-%.2d 00:00:00 (%s)",
             (int) tmTime->tm_year + 1900,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,

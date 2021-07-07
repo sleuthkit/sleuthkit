@@ -146,7 +146,7 @@ uint8_t TskAuto::openImageHandle(TSK_IMG_INFO * a_img_info)
 void
  TskAuto::closeImage()
 {
-    for (int i = 0; i < m_poolInfos.size(); i++) {
+    for (size_t i = 0; i < m_poolInfos.size(); i++) {
         tsk_pool_close(m_poolInfos[i]);
     }
     m_poolInfos.clear();
@@ -220,7 +220,7 @@ TSK_FILTER_ENUM
 TskAuto::filterPool(const TSK_POOL_INFO * /*pool_info*/) {
     /* Most of our tools can't handle pool volumes yet */
     if (tsk_verbose)
-        fprintf(stderr, "filterPoolVol: Pool handling is not yet implemented for this tool\n");
+        fprintf(stderr, "filterPool: Pool handling is not yet implemented for this tool\n");
     return TSK_FILTER_SKIP;
 }
 
@@ -322,8 +322,12 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     TSK_VS_INFO *vs_info;
     // Use mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
-        /* we're going to ignore this error to avoid confusion if the
-         * fs_open passes. */
+
+        /* If the error code is for encryption, we will register it. Otherwise,
+         * ignore this error to avoid confusion if the fs_open passes. */
+        if (tsk_error_get_errno() == TSK_ERR_VS_ENCRYPTED) {
+            registerError();
+        }
         tsk_error_reset();
 
         if(tsk_verbose)
@@ -438,7 +442,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
     TSK_FILTER_ENUM retval1 = filterPool(pool);
     if (retval1 == TSK_FILTER_SKIP)
         return TSK_OK;
-    else if ((retval1 == TSK_FILTER_STOP))
+    else if (retval1 == TSK_FILTER_STOP)
         return TSK_STOP;
 
     /* Only APFS pools are currently supported */
@@ -468,11 +472,22 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                         }
                     }
                     else {
+                        if (vol_info->flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
+                            tsk_error_reset();
+                            tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                            tsk_error_set_errstr(
+                                "Encrypted APFS file system");
+                            tsk_error_set_errstr2("Block: %" PRIdOFF, vol_info->block);
+                            registerError();
+                        }
+                        else {
+                            tsk_error_set_errstr2(
+                                "findFilesInPool: Error opening APFS file system");
+                            registerError();
+                        }
+
                         pool_img->close(pool_img);
                         pool->close(pool);
-                        tsk_error_set_errstr2(
-                            "findFilesInPool: Error opening APFS file system");
-                        registerError();
                         return TSK_ERR;
                     }
 

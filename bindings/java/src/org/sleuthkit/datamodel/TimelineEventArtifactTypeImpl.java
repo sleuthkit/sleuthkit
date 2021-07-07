@@ -43,9 +43,9 @@ class TimelineEventArtifactTypeImpl extends TimelineEventTypeImpl {
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, TimelineEventDescriptionWithTime> artifactParsingFunction;
 
-	private static final int MAX_SHORT_DESCRIPTION_LENGTH = 500;
-	private static final int MAX_MED_DESCRIPTION_LENGTH = 500;
-	private static final int MAX_FULL_DESCRIPTION_LENGTH = 1024;
+	protected static final int MAX_SHORT_DESCRIPTION_LENGTH = 500;
+	protected static final int MAX_MED_DESCRIPTION_LENGTH = 500;
+	protected static final int MAX_FULL_DESCRIPTION_LENGTH = 1024;
 
 	TimelineEventArtifactTypeImpl(int typeID, String displayName,
 			TimelineEventType superType,

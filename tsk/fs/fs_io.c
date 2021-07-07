@@ -248,7 +248,8 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
     if ((a_fs->flags & TSK_FS_INFO_FLAG_ENCRYPTED)
         && ret_len > 0
         && a_fs->decrypt_block) {
-        for (TSK_DADDR_T i = 0; i < a_len / a_fs->block_size; i++) {
+	TSK_DADDR_T i;
+        for (i = 0; i < a_len / a_fs->block_size; i++) {
             a_fs->decrypt_block(a_fs, crypto_id + i,
                 a_buf + (a_fs->block_size * i));
         }

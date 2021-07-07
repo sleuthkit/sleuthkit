@@ -219,8 +219,12 @@ public class GeoTrackPoints implements Iterable<GeoTrackPoints.TrackPoint> {
 		public int compareTo(TrackPoint otherTP) {
 			Long otherTimeStamp = otherTP.getTimeStamp();
 
-			if (timestamp == null && otherTimeStamp != null) {
-				return -1;
+			if (timestamp == null) {
+				if (otherTimeStamp != null) {
+					return -1;
+				} else {
+					return 0;
+				}
 			} else if (timestamp != null && otherTimeStamp == null) {
 				return 1;
 			} else {

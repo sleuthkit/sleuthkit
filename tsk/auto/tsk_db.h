@@ -22,15 +22,14 @@
 #include <ostream>
 
 #include "tsk_auto_i.h"
-#include "db_connection_info.h"
 
 using std::ostream;
 using std::vector;
 using std::string;
 
 /**
- * Keep these values in sync with CURRENT_DB_SCHEMA_VERSION in SleuthkitCase.java
- */
+* Do not change these values - the schema is no longer being updated in this code and does not match the current version in SleuthkitCase.java.
+*/
 #define TSK_SCHEMA_VER 8
 #define TSK_SCHEMA_MINOR_VER 4
 
@@ -173,7 +172,6 @@ class TskDb {
     virtual ~TskDb() {};
     virtual int open(bool) = 0;
     virtual int close() = 0;
-    virtual TSK_RETVAL_ENUM setConnectionInfo(CaseDbConnectionInfo * info);
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone) = 0;
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256) = 0;
     virtual int addImageInfo(int type, TSK_OFF_T size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256, const string& deviceId, const string& collectionDetails) = 0;
@@ -228,7 +226,8 @@ class TskDb {
 
 	  @param name A file name
 	  @param extension The file name extension will be extracted to extension.
-	  */void extractExtension(char *name, char *extension ) {
+	  */
+      void extractExtension(char *name, char *extension ) {
 		   char *ext = strrchr(name, '.');
 
 		   //if ext is not null and is not the entire filename...

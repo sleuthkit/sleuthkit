@@ -57,7 +57,7 @@ main(int argc, char **argv1)
     TSK_FS_INFO *fs;
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
-    TSK_DADDR_T pvol_block = 0;
+    TSK_OFF_T pvol_block = 0;
     const char * password = "";
 
     int ch;
@@ -200,7 +200,7 @@ main(int argc, char **argv1)
             exit(1);
         }
 
-        img = pool->get_img_info(pool, pvol_block);
+        img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
         if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)

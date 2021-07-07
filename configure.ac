@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.9.0)
+AC_INIT(sleuthkit, 4.10.2)
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for
 m4_include([m4/cppunit.m4])
@@ -155,17 +155,6 @@ AS_IF([test "x$ax_sqlite3" = "xyes"],
        PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"],
       [AC_MSG_RESULT([bundled])])
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
-
-dnl check for postgresql	
-AC_CHECK_HEADERS([postgresql/libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))      
-AC_CHECK_HEADERS([libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))
-AM_CONDITIONAL([HAVE_POSTGRESQL],[test "x$ac_cv_lib_pq_PQlibVersion" = "xyes"])
-AM_COND_IF([HAVE_POSTGRESQL],
-  [AC_DEFINE([HAVE_LIBPQ_], [1], [Define if using libpq.])
-   PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lpq"
-   ax_libpq=yes],
-  [ax_libpq=no]
-)
 
 dnl Check if we should link with afflib
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
@@ -356,6 +345,7 @@ AC_CONFIG_FILES([
     man/Makefile
     bindings/java/Makefile
     bindings/java/jni/Makefile
+    case-uco/java/Makefile
     unit_tests/Makefile
     unit_tests/base/Makefile])
 
@@ -371,7 +361,6 @@ Building:
 
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
-   postgresql support:                    $ax_libpq
 Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
