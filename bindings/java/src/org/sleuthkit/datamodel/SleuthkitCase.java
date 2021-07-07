@@ -2600,19 +2600,24 @@ public class SleuthkitCase {
 		ResultSet results = null;
 		acquireSingleUserCaseWriteLock();
 		try {
-			// The 9.0 schema contained a method_category column that was renamed to priority.
+			// The 9.0 schema contained method_category columns that were renamed to priority.
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
-					// Check if the misnamed column is present
+					// Check if the misnamed column is present. We'll assume here that the column will exist
+					// in both tables if present in one.
 					results = statement.executeQuery("SELECT column_name FROM information_schema.columns "
 							+ "WHERE table_name='tsk_analysis_results' and column_name='method_category'");
 					if (results.next()) {
 						// In PostgreSQL we can delete the column
 						statement.execute("ALTER TABLE tsk_analysis_results "
 								+ "DROP COLUMN method_category");
+						statement.execute("ALTER TABLE tsk_aggregate_score "
+								+ "DROP COLUMN method_category");
 					}
 					break;
 				case SQLITE:
+					// Check if the misnamed column is present. We'll assume here that the column will exist
+					// in both tables if present in one.
 					boolean hasMisnamedColumn = false;
 					results = statement.executeQuery("pragma table_info('tsk_analysis_results')");
 					while (results.next()) {
@@ -2631,17 +2636,34 @@ public class SleuthkitCase {
 								+ "configuration TEXT, justification TEXT, "
 								+ "ignore_score INTEGER DEFAULT 0 " // boolean	
 								+ ")");
+						statement.execute("CREATE TABLE temp_tsk_aggregate_score( obj_id INTEGER PRIMARY KEY, "
+								+ "data_source_obj_id INTEGER, "
+								+ "significance INTEGER NOT NULL, "
+								+ "UNIQUE (obj_id),"
+								+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+								+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
+								+ ")");
+						
 
 						// Copy the data
 						statement.execute("INSERT INTO temp_tsk_analysis_results(artifact_obj_id, "
 								+ "conclusion, justification, significance, configuration, ignore_score) "
 								+ "SELECT artifact_obj_id, conclusion, justification, significance, configuration, ignore_score FROM tsk_analysis_results");
+						statement.execute("INSERT INTO temp_tsk_aggregate_score(obj_id, "
+								+ "data_source_obj_id, significance) "
+								+ "SELECT obj_id, data_source_obj_id, significance FROM tsk_aggregate_score");
 
-						// Drop the old table
+						
+						
+						// Drop the old tables
 						statement.execute("DROP TABLE tsk_analysis_results");
+						statement.execute("DROP TABLE tsk_aggregate_score");
+						
 
 						// Rename the new tables
 						statement.execute("ALTER TABLE temp_tsk_analysis_results RENAME TO tsk_analysis_results");
+						statement.execute("ALTER TABLE temp_tsk_aggregate_score RENAME TO tsk_aggregate_score");
+						
 					}
 					break;
 				default:
