@@ -393,7 +393,7 @@ TskAuto::hasPool(TSK_OFF_T a_start)
     if (pool == nullptr) {
         return false;
     }
-    pool->close(pool);
+    tsk_pool_close(pool);
     return true;
 }
 
@@ -453,7 +453,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
 
             TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
             if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing)) {
-                pool->close(pool);
+                tsk_pool_close(pool);
                 return TSK_STOP;
             }
 
@@ -466,8 +466,8 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                         tsk_fs_close(fs_info);
 
                         if (retval == TSK_STOP) {
-                            pool_img->close(pool_img);
-                            pool->close(pool);
+                            tsk_img_close(pool_img);
+                            tsk_pool_close(pool);
                             return TSK_STOP;
                         }
                     }
@@ -486,15 +486,15 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                             registerError();
                         }
 
-                        pool_img->close(pool_img);
-                        pool->close(pool);
+                        tsk_img_close(pool_img);
+                        tsk_pool_close(pool);
                         return TSK_ERR;
                     }
 
                     tsk_img_close(pool_img);
                 }
                 else {
-                    pool->close(pool);
+                    tsk_pool_close(pool);
                     tsk_error_set_errstr2(
                         "findFilesInPool: Error opening APFS pool");
                     registerError();
@@ -506,7 +506,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         }
     }
     else {
-        pool->close(pool);
+        tsk_pool_close(pool);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_POOL_UNSUPTYPE);
         tsk_error_set_errstr("%d", pool->ctype);
