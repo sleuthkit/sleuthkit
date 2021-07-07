@@ -435,11 +435,23 @@ public final class HostManager {
 	 * @throws TskCoreException if no host is found or an error occurs.
 	 */
 	public Host getHostByDataSource(DataSource dataSource) throws TskCoreException {
-
+		return getHostByDataSource(dataSource.getId());
+	}	
+	
+	/**
+	 * Get host for the given data source ID.
+	 *
+	 * @param dataSourceId The data source ID to look up the host for.
+	 *
+	 * @return The host for this data source (will not be null).
+	 *
+	 * @throws TskCoreException if no host is found or an error occurs.
+	 */	
+	Host getHostByDataSource(long dataSourceId) throws TskCoreException {
 		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.db_status AS db_status FROM \n"
 				+ "tsk_hosts INNER JOIN data_source_info \n"
 				+ "ON tsk_hosts.id = data_source_info.host_id \n"
-				+ "WHERE data_source_info.obj_id = " + dataSource.getId();
+				+ "WHERE data_source_info.obj_id = " + dataSourceId;
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -447,12 +459,12 @@ public final class HostManager {
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			if (!rs.next()) {
-				throw new TskCoreException(String.format("Host not found for data source with ID = %d", dataSource.getId()));
+				throw new TskCoreException(String.format("Host not found for data source with ID = %d", dataSourceId));
 			} else {
 				return new Host(rs.getLong("hostId"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status")));
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
+			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSourceId), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
