@@ -2597,8 +2597,78 @@ public class SleuthkitCase {
 		}
 
 		Statement statement = connection.createStatement();
+		ResultSet results = null;
 		acquireSingleUserCaseWriteLock();
 		try {
+			// The 9.0 schema contained method_category columns that were renamed to priority.
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					// Check if the misnamed column is present. We'll assume here that the column will exist
+					// in both tables if present in one.
+					results = statement.executeQuery("SELECT column_name FROM information_schema.columns "
+							+ "WHERE table_name='tsk_analysis_results' and column_name='method_category'");
+					if (results.next()) {
+						// In PostgreSQL we can delete the column
+						statement.execute("ALTER TABLE tsk_analysis_results "
+								+ "DROP COLUMN method_category");
+						statement.execute("ALTER TABLE tsk_aggregate_score "
+								+ "DROP COLUMN method_category");
+					}
+					break;
+				case SQLITE:
+					// Check if the misnamed column is present. We'll assume here that the column will exist
+					// in both tables if present in one.
+					boolean hasMisnamedColumn = false;
+					results = statement.executeQuery("pragma table_info('tsk_analysis_results')");
+					while (results.next()) {
+						if (results.getString("name") != null && results.getString("name").equals("method_category")) {
+							hasMisnamedColumn = true;
+							break;
+						}
+					}
+
+					if (hasMisnamedColumn) {
+						// Since we can't rename the column we'll need to make a new table and copy the data.
+						// We'll add the priority column later.
+						statement.execute("CREATE TABLE temp_tsk_analysis_results (artifact_obj_id INTEGER PRIMARY KEY, "
+								+ "conclusion TEXT, "
+								+ "significance INTEGER NOT NULL, "
+								+ "configuration TEXT, justification TEXT, "
+								+ "ignore_score INTEGER DEFAULT 0 " // boolean	
+								+ ")");
+						statement.execute("CREATE TABLE temp_tsk_aggregate_score( obj_id INTEGER PRIMARY KEY, "
+								+ "data_source_obj_id INTEGER, "
+								+ "significance INTEGER NOT NULL, "
+								+ "UNIQUE (obj_id),"
+								+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+								+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE "
+								+ ")");
+						
+
+						// Copy the data
+						statement.execute("INSERT INTO temp_tsk_analysis_results(artifact_obj_id, "
+								+ "conclusion, justification, significance, configuration, ignore_score) "
+								+ "SELECT artifact_obj_id, conclusion, justification, significance, configuration, ignore_score FROM tsk_analysis_results");
+						statement.execute("INSERT INTO temp_tsk_aggregate_score(obj_id, "
+								+ "data_source_obj_id, significance) "
+								+ "SELECT obj_id, data_source_obj_id, significance FROM tsk_aggregate_score");
+
+						
+						
+						// Drop the old tables
+						statement.execute("DROP TABLE tsk_analysis_results");
+						statement.execute("DROP TABLE tsk_aggregate_score");
+						
+
+						// Rename the new tables
+						statement.execute("ALTER TABLE temp_tsk_analysis_results RENAME TO tsk_analysis_results");
+						statement.execute("ALTER TABLE temp_tsk_aggregate_score RENAME TO tsk_aggregate_score");
+						
+					}
+					break;
+				default:
+					throw new TskCoreException("Unsupported database type: " + getDatabaseType().toString());
+			}
 
 			// add an index on tsk_file_attributes table.
 			statement.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
@@ -2606,8 +2676,11 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE tsk_analysis_results ADD COLUMN priority INTEGER NOT NULL DEFAULT " + Score.Priority.NORMAL.getId());
 			statement.execute("ALTER TABLE tsk_aggregate_score ADD COLUMN priority INTEGER NOT NULL DEFAULT " + Score.Priority.NORMAL.getId());
 			
+			statement.execute("UPDATE blackboard_artifact_types SET category_type = 1 WHERE artifact_type_id = 16");
+			
 			return new CaseDbSchemaVersionNumber(9, 1);
 		} finally {
+			closeResultSet(results);
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}
