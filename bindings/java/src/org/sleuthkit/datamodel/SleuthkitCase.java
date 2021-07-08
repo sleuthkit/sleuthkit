@@ -9746,6 +9746,12 @@ public class SleuthkitCase {
 			// realms, os accounts, and os account attributes that were associated with the host.
 			if (hostToDelete != null) {
 				statement.execute("DELETE FROM tsk_hosts WHERE id = " + hostToDelete.getHostId());
+				
+				// Clean up any stray OS Account objects
+				String deleteOsAcctObjectsQuery = "DELETE FROM tsk_objects " +
+					"WHERE type=" + TskData.ObjectType.OS_ACCOUNT.getObjectType() + " " + 
+					"AND obj_id NOT IN (SELECT os_account_obj_id FROM tsk_os_accounts WHERE  os_account_obj_id IS NOT NULL)";
+				statement.execute(deleteOsAcctObjectsQuery);
 			}
 			
 			connection.commitTransaction();
