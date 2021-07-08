@@ -30,6 +30,8 @@ final class WindowsAccountUtils {
 	// Special Windows Accounts with short SIDS are given a special realm "address".
 	final static String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
 	
+	final static String SPECIAL_WINDOWS_BACK_UP_POSTFIX = ".bak";
+	
 	
 	// Windows uses SIDs for groups as well as users. 
 	// We dont want to create "User" account for group SIDs.
@@ -115,7 +117,7 @@ final class WindowsAccountUtils {
 			"S-1-5-83", // Virtual Machine  Virtual Accounts.
 			"S-1-5-90", // Windows Manager Virtual Accounts. 
 			"S-1-5-96" // Font Drive Host Virtual Accounts.
-			);
+	);
 	
 	
 	/**
@@ -126,11 +128,13 @@ final class WindowsAccountUtils {
 	 * @return True if the SID is a Windows special SID, false otherwise 
 	 */
 	static boolean isWindowsSpecialSid(String sid) {
-		if (SPECIAL_SIDS.contains(sid)) {
+		String tempSID = stripWindowsBackupPostfix(sid);
+		
+		if (SPECIAL_SIDS.contains(tempSID)) {
 			return true;
 		}
 		for (String specialPrefix: SPECIAL_SID_PREFIXES) {
-			if (sid.startsWith(specialPrefix)) {
+			if (tempSID.startsWith(specialPrefix)) {
 				return true;
 			}
 		}
@@ -149,20 +153,22 @@ final class WindowsAccountUtils {
 	 */
 	static boolean isWindowsUserSid(String sid) {
 		
-		if (GROUP_SIDS.contains(sid)) {
+		String tempSID = stripWindowsBackupPostfix(sid);
+		
+		if (GROUP_SIDS.contains(tempSID)) {
 			return false;
 		}
 		
 		for (String prefix: GROUP_SID_PREFIX) {
-			if (sid.startsWith(prefix)) {
+			if (tempSID.startsWith(prefix)) {
 				return false;
 			}
 		}
 		
 		// check for domain groups - they have a domains specific identifier but have a fixed prefix and suffix
-		if (sid.startsWith(DOMAIN_SID_PREFIX)) {
+		if (tempSID.startsWith(DOMAIN_SID_PREFIX)) {
 			for (String suffix : DOMAIN_GROUP_SID_SUFFIX) {
-				if (sid.endsWith(suffix)) {
+				if (tempSID.endsWith(suffix)) {
 					return false;
 				}
 			}
@@ -188,20 +194,39 @@ final class WindowsAccountUtils {
 	public static String getWindowsRealmAddress(String sid) throws TskCoreException {
 		
 		String realmAddr;
+		String tempSID = stripWindowsBackupPostfix(sid);
 		
 		// When copying realms into portable cases, the SID may already be set to the special windows string.
-		if (isWindowsSpecialSid(sid) || sid.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
+		if (isWindowsSpecialSid(tempSID) || tempSID.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
 			realmAddr = SPECIAL_WINDOWS_REALM_ADDR;
 		} else {
 			// regular SIDs should have at least 5 components: S-1-x-y-z
-			if (org.apache.commons.lang3.StringUtils.countMatches(sid, "-") < 4) {
-				throw new TskCoreException(String.format("Invalid SID %s for a host/domain", sid));
+			if (org.apache.commons.lang3.StringUtils.countMatches(tempSID, "-") < 4) {
+				throw new TskCoreException(String.format("Invalid SID %s for a host/domain", tempSID));
 			}
 			// get the sub authority SID
-			realmAddr = sid.substring(0, sid.lastIndexOf('-'));
+			realmAddr = sid.substring(0, tempSID.lastIndexOf('-'));
 		}
 
 		return realmAddr;
+	}
+	
+	/**
+	 * Backup windows sid will include the postfix .bak on the end of the sid.
+	 * Remove the postfix for easier processing.
+	 * 
+	 * @param sid 
+	 * 
+	 * @return The sid with the postfix removed.
+	 */
+	private static String stripWindowsBackupPostfix(String sid) {
+		String tempSID = sid;
+		
+		if(tempSID.endsWith(SPECIAL_WINDOWS_BACK_UP_POSTFIX)) {
+			tempSID = tempSID.replace(SPECIAL_WINDOWS_BACK_UP_POSTFIX, "");
+		}
+		
+		return tempSID;
 	}
 	
 }

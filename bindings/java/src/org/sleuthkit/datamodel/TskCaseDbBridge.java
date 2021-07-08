@@ -384,7 +384,9 @@ class TskCaseDbBridge {
 						} else {
 							// account not found in the database,  create the account and add to map
 							// Currently we expect only NTFS systems to provide a windows style SID as owner id.
-							OsAccount newAccount = caseDb.getOsAccountManager().newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+							OsAccountManager accountMgr = caseDb.getOsAccountManager();
+							OsAccount newAccount = accountMgr.newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+							accountMgr.newOsAccountInstance(newAccount.getId(), fileInfo.dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, caseDb.getConnection());
 							ownerIdToAccountMap.put(ownerUid, newAccount);
 						}
 					} catch (NotUserSIDException ex) {
