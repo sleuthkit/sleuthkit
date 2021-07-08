@@ -137,20 +137,20 @@ main(int argc, char **argv)
             tsk_print_types(stderr);
 
         tsk_error_print(stderr);
-        img->close(img);
+        tsk_img_close(img);
         exit(1);
 
     }
 
     if (fs->fscheck(fs, stdout)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+    	tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
 
     exit(0);
 }

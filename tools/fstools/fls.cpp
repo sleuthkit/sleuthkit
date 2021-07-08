@@ -410,7 +410,7 @@ main(int argc, char **argv1)
     if (tsk_fs_fls(fs, (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
             (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre, sec_skew)) {
         tsk_error_print(stderr);
-        fs->close(fs);
+        tsk_fs_close(fs);
         tsk_img_close(img);
         if (pool != NULL) {
           tsk_pool_close(pool);
@@ -421,7 +421,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    fs->close(fs);
+    tsk_fs_close(fs);
     tsk_img_close(img);
 
     if (pool != NULL) {
