@@ -20,6 +20,7 @@
 #include <map>
 
 #include "tsk_db.h"
+#include <unordered_set>
 
 #ifdef HAVE_LIBSQLITE3
   #include <sqlite3.h>
@@ -44,11 +45,15 @@ class TskDbSqlite : public TskDb {
     int open(bool);
     int close();
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
-    int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5);
-    int addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& deviceId);
+    int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256);
+    int addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string &sha1, const string &sha256, const string& deviceId, const string& collectionDetails);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
+    int addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, int64_t& vsObjId);
+    int addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
+        int64_t parObjId, int64_t& objId);
+    int addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId);
     int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
         int64_t & objId);
     int addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId,
@@ -115,7 +120,10 @@ class TskDbSqlite : public TskDb {
     
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
-    uint32_t hash(const unsigned char *str);
+    int addMACTimeEvents(const int64_t data_source_obj_id, const int64_t file_obj_id, std::map<int64_t, time_t> timeMap,
+                         const char* full_description);
+
+	uint32_t hash(const unsigned char *str);
     sqlite3 *m_db;
     TSK_TCHAR m_dbFilePath[1024];
     char m_dbFilePathUtf8[1024];

@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,8 +38,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public abstract class FsContent extends AbstractFile {
 
-	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-	private String uniquePath;
+	private static final Logger logger = Logger.getLogger(FsContent.class.getName());
+	private volatile String uniquePath;
 	private List<String> metaDataText = null;
 	private volatile FileSystem parentFileSystem;
 
@@ -105,6 +106,9 @@ public abstract class FsContent extends AbstractFile {
 	 *                           yet been determined.
 	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param ownerUid			 UID of the file owner as found in the file
+	 *                           system, can be null.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
 	@SuppressWarnings("deprecation")
 	FsContent(SleuthkitCase db,
@@ -120,11 +124,14 @@ public abstract class FsContent extends AbstractFile {
 			long size,
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
-			String md5Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType,
-			String extension) {
-		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, extension);
+			String extension,
+			String ownerUid,
+			Long osAccountObjId,
+			List<Attribute> fileAttributes) {
+		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
 		this.fsObjId = fsObjId;
 	}
 
@@ -176,7 +183,7 @@ public abstract class FsContent extends AbstractFile {
 		if (fileHandle == 0) {
 			synchronized (this) {
 				if (fileHandle == 0) {
-					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId, getSleuthkitCase());
 				}
 			}
 		}
@@ -206,7 +213,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
-	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
+	protected synchronized int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		if (offset == 0 && size == 0) {
 			//special case for 0-size file
 			return 0;
@@ -229,7 +236,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * Gets the parent directory of this file or directory.
 	 *
-	 * @return The parent directory
+	 * @return The parent directory or null if there isn't one
 	 *
 	 * @throws TskCoreException if there was an error querying the case
 	 *                          database.
@@ -259,7 +266,9 @@ public abstract class FsContent extends AbstractFile {
 	 * @throws TskCoreException if there is an error querying the case database.
 	 */
 	@Override
-	public synchronized String getUniquePath() throws TskCoreException {
+	public String getUniquePath() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (uniquePath == null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(getFileSystem().getUniquePath());
@@ -301,15 +310,10 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
-	public void close() {
+	public synchronized void close() {
 		if (fileHandle != 0) {
-			synchronized (this) {
-				//need to recheck the handle after unlock
-				if (fileHandle != 0) {
-					SleuthkitJNI.closeFile(fileHandle);
-					fileHandle = 0;
-				}
-			}
+			SleuthkitJNI.closeFile(fileHandle);
+			fileHandle = 0;
 		}
 	}
 
@@ -388,7 +392,7 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList() );
 	}
 
 	/**
@@ -447,6 +451,6 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, null);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, mimeType, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 }

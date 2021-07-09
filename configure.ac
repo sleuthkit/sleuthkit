@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.6.1)
+AC_INIT(sleuthkit, 4.11.0)
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for
 m4_include([m4/cppunit.m4])
@@ -13,11 +13,12 @@ m4_include([m4/ac_prog_javac_works.m4])
 m4_include([m4/ac_prog_javac.m4])
 m4_include([m4/ac_prog_java_works.m4])
 m4_include([m4/ac_prog_java.m4])
+m4_include([m4/ax_cxx_compile_stdcxx.m4])
 
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign tar-ustar])
 AM_PATH_CPPUNIT(1.12.1)
 AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
 AM_PROG_LIBTOOL
@@ -26,6 +27,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.
 AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX([14], [noext], [mandatory])
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
@@ -132,12 +134,6 @@ AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"],
       [AC_MSG_RESULT([bundled])])
 AM_CONDITIONAL([HAVE_LIBSQLITE3],
                [test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"])
-dnl check for postgresql	
-AC_CHECK_HEADERS([postgresql/libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))      
-AC_CHECK_HEADERS([libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))
-AM_CONDITIONAL([HAVE_POSTGRESQL],[test "x$ac_cv_lib_pq_PQlibVersion" = "xyes"])
-AM_COND_IF([HAVE_POSTGRESQL],[ax_libpq=yes],[ax_libpq=no])
-AM_COND_IF([HAVE_POSTGRESQL], [AC_DEFINE([HAVE_LIBPQ_], [1], [Define if using libpq.])])
 
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],
@@ -385,6 +381,19 @@ dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
+
+dnl OpenSSL support for encryption - currently disabled due to automatic test failures
+dnl AX_CHECK_OPENSSL(
+dnl  [ax_openssl=yes]
+dnl  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS",
+dnl  AC_SUBST([LIBTSK_LDFLAGS])
+[ax_openssl=no]
+dnl  [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])]
+dnl )
+dnl For the moment, disable the openssl library so the Travis test will pass
+dnl AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
+
+
 dnl Enable compliation warnings
 WARNINGS='-Wall -Wextra -Wno-unused-parameter'
 
@@ -400,6 +409,8 @@ AC_CONFIG_FILES([
     tsk/fs/Makefile
     tsk/hashdb/Makefile
     tsk/auto/Makefile
+    tsk/pool/Makefile
+    tsk/util/Makefile
     tools/Makefile
     tools/imgtools/Makefile
     tools/vstools/Makefile
@@ -407,6 +418,7 @@ AC_CONFIG_FILES([
     tools/hashtools/Makefile
     tools/srchtools/Makefile
     tools/autotools/Makefile
+    tools/pooltools/Makefile
     tools/sorter/Makefile
     tools/timeline/Makefile
     tools/fiwalk/Makefile
@@ -417,20 +429,22 @@ AC_CONFIG_FILES([
     man/Makefile
     bindings/java/Makefile
     bindings/java/jni/Makefile
+    case-uco/java/Makefile
     unit_tests/Makefile
     unit_tests/base/Makefile])
 
 AC_OUTPUT
 
 dnl Print a summary
+dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
    zlib support:                          $ax_zlib
+
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
-   postgresql support:                    $ax_libpq
 Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread

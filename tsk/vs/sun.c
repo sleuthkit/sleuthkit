@@ -150,7 +150,7 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
 
     /* The value to convert cylinders to sectors */
-    cyl_conv = tsk_getu16(vs->endian, dlabel_sp->sec_per_tr) *
+    cyl_conv = (uint32_t) tsk_getu16(vs->endian, dlabel_sp->sec_per_tr) *
         tsk_getu16(vs->endian, dlabel_sp->num_head);
 
     if (tsk_verbose)

@@ -74,11 +74,11 @@ public class VirtualDirectory extends SpecialDirectory {
 			String name,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			String md5Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name,
 				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
+				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, null);
 	}
 
 	/**

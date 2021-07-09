@@ -1,5 +1,205 @@
-Numbers refer to SourceForge.net tracker IDs:
-    http://sourceforge.net/tracker/?group_id=55685
+---------------- VERSION 4.11.0 --------------
+C/C++:
+- Added checks at various layers to detect encrypted file systems and disks to give more useful error messages.
+- Added checks to detect file formats that are not supported (such as AD1, ZIP, etc.) to give more useful error messages.
+- Added tsk_imageinfo tool that detects if an image is supported by TSK and if it is encrypted.
+- Add numerous bound checks from Joachim Metz.
+- Clarified licenses as pointed out by Joachim Metz.
+
+Java:
+- Updated from Schema 8.6 to 9.1.
+- Added tables and classes for OS Accounts and Realms (Domains).
+- Added tables and classes for Host Addresses (IP, MAC, etc.).
+- Added tables and classes for Analysis Results vs Data Artifacts by adding onto BlackboardArtifacts.
+- Added tables and classes for Host and Person to make it easier to group data sources.
+- Added static types for standard artifact types.
+- Added File Attribute table to allow custom information to be stored for each file.
+- Made ordering of getting lock and connection consistent.
+- Made the findFile methods more efficient by using extension (which is indexed).
+
+
+
+---------------- VERSION 4.10.2 --------------
+C/C++
+- Added support for Ext4 inline data
+
+Java
+- New Blackboard Artifacts for ALEAPP/ILEAPP, Yara, Geo Area, etc.
+- Upgraded to PostgreSQL JDBC Driver 42.2.18
+- Added SHA256 to files table in DB and added utility calculation methods.
+- Changed TimelineManager to make events for any artifact with a time stamp
+- Added Japanese translations
+- Fixed sychronization bug in getUniquePath
+
+
+---------------- VERSION 4.10.1 --------------
+C/C++:
+- Changed Windows build to use Nuget for libewf, libvmdk, libvhdi.
+- Fixed compiler warnings 
+- Clarrified licenses and added Apache license to distribution
+- Improved error handling for out of memory issues
+- Rejistry++ memory leak fixes
+
+Java:
+- Localized for Japanese
+
+---------------- VERSION 4.10.0 --------------
+C/C++:
+- Removed PostgreSQL code (that was used only by Java code)
+- Added Java callback support so that database inserts are done in Java.
+
+Java: 
+- Added methods and callbacks as required to allow database population to happen in Java instead of C/C++.
+- Added support to allow Autopsy streaming ingest where files are added in batches. 
+- Added TaggingManager class and concept of a TagSet to support ProjectVic categories. 
+- Fixed changes to normalization and validation of emails and phone numbers.
+- Added a CASE/UCO JAR file that creates JSON-LD based on TSK objects.
+
+
+
+---------------- VERSION 4.9.0 --------------
+C/C++
+- Removed framework project.  Use Autopsy instead if you need an analysis framework. 
+- Various fixes from Google-based fuzzing.
+- Ensure all reads (even big ones) are sector aligned when reading from Windows device.
+- Ensure all command line tools support new pool command line arguments. 
+- Create virtual files for APFS unallocated space
+- HFS fix to display type
+
+Java:
+- More artifact helper methods
+- More artifacts and attributes for drones and GPS coordinates
+- Updated TimelineManager to insert GPS artifacts into events table
+
+
+---------------- VERSION 4.8.0 --------------
+C/C++
+- Pool layer was added to support APFS. NOTE: API is likely to change. 
+- Limited APFS support added in libtsk and some of the command line tools. 
+-- Encryption support is not complete. 
+-- Blackbag Technologies submitted the initial PR. Basis Technology
+  did some minor refactoring.
+- Refactoring and minor fixes to logical imager
+- Various bug fixes from Google fuzzing efforts and Jonathan B from Afarsec
+- Fixed infinite NTFS loop from cyclical attribute lists.  Reported by X.  
+- File system bug fixes from uckelman-sf on github
+
+Database: 
+- DB schema was updated to support pools 
+- Added concept of JSON in Blackboard Attributes
+- Schema supports cascading deletes to enable data source deletion
+
+Java:
+- Added Pool class and associated infrastructure
+- Added methods to support deleting data sources from database
+- Removed JavaFX as a dependency by refactoring the recently
+  introduced timeline filtering classes.
+
+- Added attachment support to the blackboard helper package. 
+
+
+
+
+---------------- VERSION 4.7.0 --------------
+C/C++:
+- DB schema was expanded to store tsk_events and related tables.
+Time-based data is automatically added when files and artifacts are
+created.  Used by Autopsy timeline.
+- Logical Imager can save files as individual files instead of in
+VHD (saves space).
+- Logical imager produces log of results
+- Logical Imager refactor
+- Removed PRIuOFF and other macros that caused problems with
+signed/unsigned printing. For example, TSK_OFF_T is a signed value
+and PRIuOFF would cause problems as it printed a negative number
+as a big positive number.
+
+
+Java
+- Travis and Debian package use OpenJDK instead of OracleJDK
+- New Blackboard Helper packages (blackboardutils) to make it easier
+to make artifacts.
+- Blackboard scope was expanded, including the new postArtifact() method
+that adds event data to database and broadcasts an event to listeners.
+- SleuthkitCase now has an EventBus for database-related events.
+- New TimelineManager and associated filter classes to support new events 
+table
+
+
+
+---------------- VERSION 4.6.7 --------------
+C/C++ Code:
+- First release of new logical imager tool
+- VHD image writer fixes for out of space scenarios
+
+Java:
+- Expand Communications Manager API
+- Performance improvement for SleuthkitCase.addLocalFile()
+
+
+
+---------------- VERSION 4.6.6 --------------
+
+C/C++ Code:
+- Acquisition deteails are set in DB for E01 files
+- Fix NTFS decompression issue (from Joe Sylve)
+- Image reading fix when cache fails (Joe Sylve)
+- Fix HFS+ issue with large catalog files (Joe Sylve) 
+- Fix free memory issue in srch_strings (Derrick Karpo)
+
+Java:
+- Fix so that local files can be relative
+- More Blackboard artifacts and attributes for web data
+- Added methods to CaseDbManager to enable checking for and modifying tables.
+- APIs to get and set acquisition details
+- Added methods to add volume and file systems to database
+- Added method to add LayoutFile for allocated files
+- Changed handling of JNI handles to better support multiple cases
+
+
+---------------- VERSION 4.6.5 --------------
+C/C++ Code:
+- HFS boundary check fix
+- New fields for hash values and acquisition details in case database
+- Store "created schema version" in case database
+
+Java Code:
+- New artifacts and attributes defined
+- Fixed bug in SleuthkitCase.getContentById() for data sources
+- Fixed bug in LayoutFile.read() that could allow reading past end offile
+
+
+---------------- VERSION 4.6.4 --------------
+Java Code:
+- Increase max statements in database to prevent errors under load
+- Have a max timeout for SQLite retries
+
+---------------- VERSION 4.6.3 --------------
+C/C++ Code:
+- Hashdb bug fixes for corrupt indexes and 0 hashes
+- New code for testing power of number in ExtX code
+
+Java Code: 
+- New class that allows generic database access
+- New methods that check for duplicate artifacts
+- Added caches for frequently used content 
+
+Database Schema: 
+- Added Examiner table 
+- Tags are now associated with Examiners
+- Changed parent_path for logical files to be consistent with FS files.
+
+
+---------------- VERSION 4.6.2 --------------
+C/C++ Code:
+- Various compiler warning fixes
+- Added small delay into image writer to not starve other threads
+
+Java: 
+- Added more locking to ensure that handles were not closed while other threads were using them. 
+- Added APIs to support more queries by data source
+- Added memory-based caching when detecting if an object has children or not.
+
 
 ---------------- VERSION 4.6.1 --------------
 C/C++ Code:

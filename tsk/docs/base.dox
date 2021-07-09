@@ -1,6 +1,6 @@
 /*! \page basepage Base Functions
    
-This section describes some base API functions and concepts that are general to all of the other layers, such as error and Unicode handling.  In addition to this documentation, there are sample programs in the <tt>samples</tt> directory in TSK that show these functions being used while processing a disk image. 
+This section describes some base API functions and concepts that are general to all of the other layers, such as error and Unicode handling.  In addition to this documentation, there are sample programs in the <a href="https://github.com/sleuthkit/sleuthkit/tree/develop/samples">samples</a> directory in TSK that show these functions being used while processing a disk image. 
 
 
 \section basic_encodings Encodings

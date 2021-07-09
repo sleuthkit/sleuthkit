@@ -177,7 +177,7 @@ main(int argc, char **argv1)
                 tsk_fs_type_print(stderr);
             }
 
-            img->close(img);
+	    tsk_img_close(img);
             exit(1);
         }
 
@@ -214,8 +214,7 @@ main(int argc, char **argv1)
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                 tsk_fs_type_print(stderr);
             }
-
-            img->close(img);
+	    tsk_img_close(img);
             exit(1);
         }
     }
@@ -224,8 +223,8 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
                     "Inode value is too large for image (%" PRIuINUM ")\n",
                     fs->last_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -233,19 +232,19 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
                     "Inode value is too small for image (%" PRIuINUM ")\n",
                     fs->first_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
     if (tsk_fs_usnjls(fs, inum, flag)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
     exit(0);
 }

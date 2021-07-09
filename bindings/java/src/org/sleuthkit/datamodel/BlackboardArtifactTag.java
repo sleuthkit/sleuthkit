@@ -28,8 +28,8 @@ public class BlackboardArtifactTag extends Tag {
 	private final Content content;
 	
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment) {
-		super(id, name, comment);
+	BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment, String userName) {
+		super(id, name, comment, userName);
 		this.artifact = artifact;
 		this.content = content;
 	}

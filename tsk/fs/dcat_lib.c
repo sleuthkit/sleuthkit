@@ -88,7 +88,7 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
     if (lclflags & TSK_FS_BLKCAT_HTML) {
         tsk_printf("<html>\n");
         tsk_printf("<head>\n");
-        tsk_printf("<title>Unit: %" PRIuDADDR "   Size: %" PRIuOFF
+        tsk_printf("<title>Unit: %" PRIuDADDR "   Size: %" PRIuDADDR
             " bytes</title>\n", addr, read_num_units * fs->block_size);
         tsk_printf("</head>\n");
         tsk_printf("<body>\n");
@@ -124,10 +124,10 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
 
                 /* Print the offset */
                 if (lclflags & TSK_FS_BLKCAT_HTML)
-                    tsk_printf("<tr><td>%" PRIuOFF "</td>",
+                    tsk_printf("<tr><td>%" PRIdOFF "</td>",
                         i * fs->block_size + idx1);
                 else
-                    tsk_printf("%" PRIuOFF "\t",
+                    tsk_printf("%" PRIdOFF "\t",
                         i * fs->block_size + idx1);
 
 

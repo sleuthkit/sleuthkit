@@ -1,6 +1,6 @@
 /*! \page basicpage Library Basics
 
-This page describes some of the basic concepts of the TSK library.  It is assumed that you have built and installed the TSK library based on either the instructions in the <tt>INSTALL.txt</tt> file or via a package.   Refer to the files in the <tt>samples</tt> directory for examples on the topics in this and later sections.  
+This page describes some of the basic concepts of the TSK library.  It is assumed that you have built and installed the TSK library based on either the instructions in the <tt>INSTALL.txt</tt> file or via a package.   Refer to the files in the <a href="https://github.com/sleuthkit/sleuthkit/tree/develop/samples">samples</a> directory for examples on the topics in this and later sections.  
 
 \section basic_layers Layers
 

@@ -25,6 +25,15 @@
 !/bindings/java/nbproject/project.xml
 !/bindings/java/nbproject/project.properties
 
+# Nuget packages
+/win32/packages/
+
+# CASE-UCO build and release folder
+/case-uco/java/build/
+/case-uco/java/dist/
+/case-uco/java/nbproject/private/
+/case-uco/java/nbproject/genfiles.properties
+
 # Windows build folders
 /win32/Debug_NoLibs/
 /win32/*/Debug_NoLibs/
@@ -156,6 +165,7 @@ tools/fstools/usnjls
 tools/hashtools/hfind
 tools/imgtools/img_cat
 tools/imgtools/img_stat
+tools/pooltools/pstat
 tools/sorter/sorter
 tools/srchtools/sigfind
 tools/srchtools/srch_strings

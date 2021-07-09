@@ -511,7 +511,7 @@ uint8_t
 
     if (tsk_verbose)
         fprintf(stderr,
-        "nsrl_getentry: Lookup up hash %s at offset %" PRIuOFF
+        "nsrl_getentry: Lookup up hash %s at offset %" PRIdOFF
         "\n", hash, offset);
 
     if ((hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_MD5_ID)

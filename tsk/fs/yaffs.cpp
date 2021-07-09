@@ -83,10 +83,18 @@ static uint8_t
 static TSK_RETVAL_ENUM
     yaffscache_obj_id_and_version_to_inode(uint32_t obj_id, uint32_t version_num, TSK_INUM_T *inode) {
         if ((obj_id & ~YAFFS_OBJECT_ID_MASK) != 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                "yaffsfs_parse_image_load_cache: Max object ID %" PRIu32 " is invalid", obj_id);
             return TSK_ERR;
         }
 
         if ((version_num & ~YAFFS_VERSION_NUM_MASK) != 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                "yaffsfs_parse_image_load_cache: Max version number %" PRIu32 " is invalid", version_num);
             return TSK_ERR;
         }
 
@@ -1579,8 +1587,19 @@ static uint8_t
 
     // Use the max object id and version number to construct an upper bound on the inode
     TSK_INUM_T max_inum = 0;
-    yaffscache_obj_id_and_version_to_inode(yfs->max_obj_id, yfs->max_version, &max_inum);
+    if (TSK_OK != yaffscache_obj_id_and_version_to_inode(yfs->max_obj_id, yfs->max_version, &max_inum)) {
+        return TSK_ERR;
+    }
     yfs->fs_info.last_inum = max_inum + 1; // One more for the orphan dir
+
+    // Make sure the orphan dir is greater than the root dir
+    if (yfs->fs_info.last_inum <= yfs->fs_info.root_inum) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS);
+        tsk_error_set_errstr(
+            "yaffsfs_parse_image_load_cache: Maximum inum %" PRIuINUM " is not greater than the root inum", yfs->fs_info.last_inum);
+        return TSK_ERR;
+    }
 
     return TSK_OK;
 }
@@ -1743,7 +1762,6 @@ static uint8_t
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "yaffs_make_deleted: Making virtual deleted node\n");
-
     if (yaffs_make_directory(yaffsfs, fs_file, YAFFS_OBJECT_DELETED, YAFFS_OBJECT_DELETED_NAME))
         return 1;
 
@@ -1912,7 +1930,6 @@ static uint8_t
 
     case YAFFS_TYPE_HARDLINK:
     case YAFFS_TYPE_UNKNOWN:
-    default:
         if (tsk_verbose)
             tsk_fprintf(stderr, "yaffs_inode_lookup: is *** UNHANDLED *** (type %d, header at 0x%x)\n", type, version->ycv_header_chunk->ycc_offset);
         // We can still set a few things
@@ -1936,6 +1953,10 @@ static uint8_t
         strncpy(a_fs_file->meta->name2->name, real_name,
             TSK_FS_META_NAME_LIST_NSIZE);
         break;
+    default:
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "yaffs_inode_lookup: type is invalid (type %d, header at 0x%x)\n", type, version->ycv_header_chunk->ycc_offset);
+        return 1;
     }
 
     /* Who owns this? I'm following the way FATFS does it by freeing + NULLing 
@@ -2420,7 +2441,7 @@ static uint8_t
     YAFFSFS_INFO *yfs = (YAFFSFS_INFO *)fs;
     char ls[12];
     YAFFSFS_PRINT_ADDR print;
-    char timeBuf[32];
+    char timeBuf[128];
     YaffsCacheObject * obj = NULL;
     YaffsCacheVersion * version = NULL;
     YaffsHeader * header = NULL;
@@ -2445,7 +2466,7 @@ static uint8_t
     tsk_fs_meta_make_ls(fs_meta, ls, sizeof(ls));
     tsk_fprintf(hFile, "mode: %s\n", ls);
 
-    tsk_fprintf(hFile, "size: %" PRIuOFF "\n", fs_meta->size);
+    tsk_fprintf(hFile, "size: %" PRIdOFF "\n", fs_meta->size);
     tsk_fprintf(hFile, "num of links: %d\n", fs_meta->nlink);
 
     if(version != NULL){
@@ -3036,11 +3057,13 @@ TSK_FS_INFO *
 
     // Read config file (if it exists)
     config_file_status = yaffs_load_config_file(img_info, configParams);
-    if(config_file_status == YAFFS_CONFIG_ERROR){
+    // BL-6929(JTS): When using external readers, this call will fail.
+    // Not having a config should not be a fatal error.
+  /*if(config_file_status == YAFFS_CONFIG_ERROR){
         // tsk_error was set by yaffs_load_config
         goto on_error;
     }
-    else if(config_file_status == YAFFS_CONFIG_OK){
+    else*/ if(config_file_status == YAFFS_CONFIG_OK){
         // Validate the input
         // If it fails validation, return (tsk_error will be set up already)
         if(1 == yaffs_validate_config_file(configParams)){
@@ -3197,7 +3220,9 @@ TSK_FS_INFO *
     */
     //tsk_init_lock(&yaffsfs->lock);
     yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
-    yaffsfs_parse_image_load_cache(yaffsfs);
+    if (TSK_OK != yaffsfs_parse_image_load_cache(yaffsfs)) {
+        goto on_error;
+    }
 
     if (tsk_verbose) {
         fprintf(stderr, "yaffsfs_open: done building cache!\n");

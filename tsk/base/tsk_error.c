@@ -55,6 +55,7 @@ static const char *tsk_err_mm_str[TSK_ERR_VS_MAX] = {
     "Invalid buffer size",      // 5
     "Invalid sector address",
     "Invalid API argument",
+    "Encryption detected",
 };
 
 static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
@@ -76,6 +77,8 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "General file system error",        // 15
     "File system is corrupt",
     "Attribute not found in file",
+    "Encryption detected",
+    "Possible encryption detected",
 };
 
 static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {
@@ -98,6 +101,13 @@ static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
     "Corrupt file data",
     "Error converting Unicode",
     "Image not opened yet"
+};
+
+static const char *tsk_err_pool_str[TSK_ERR_POOL_MAX] = {
+    "Cannot determine pool container type",
+    "Unsupported pool container type",
+    "Invalid API argument",
+    "General pool error"
 };
 
 
@@ -242,6 +252,16 @@ tsk_error_get()
         else
             snprintf(&errstr_print[pidx],
                 TSK_ERROR_STRING_MAX_LENGTH - pidx, "auto error: %" PRIu32,
+                TSK_ERR_MASK & t_errno);
+    }
+    else if (t_errno & TSK_ERR_POOL) {
+        if ((TSK_ERR_MASK & t_errno) < TSK_ERR_POOL_MAX)
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "%s",
+                tsk_err_pool_str[t_errno & TSK_ERR_MASK]);
+        else
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "pool error: %" PRIu32,
                 TSK_ERR_MASK & t_errno);
     }
     else {

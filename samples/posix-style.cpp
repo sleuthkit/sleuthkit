@@ -216,7 +216,7 @@ proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
             tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT)) == NULL)
     {
         fprintf(stderr,
-            "Error opening file system in partition at offset %" PRIuOFF
+            "Error opening file system in partition at offset %" PRIdOFF
             "\n", start);
         tsk_error_print(stderr);
 
@@ -231,7 +231,7 @@ proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     // Process the directories
     if (proc_dir(fs_info, stack, fs_info->root_inum, "")) {
         fprintf(stderr,
-            "Error processing file system in partition at offset %" PRIuOFF
+            "Error processing file system in partition at offset %" PRIdOFF
             "\n", start);
         tsk_fs_close(fs_info);
         return 1;

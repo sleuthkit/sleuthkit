@@ -664,7 +664,16 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
-            ("fix_idxrec: More Update Sequence Entries than idx record size");
+            ("ntfs_fix_idxrec: More Update Sequence Entries than idx record size");
+        return 1;
+    }
+
+    uint16_t upd_off = tsk_getu16(fs->endian, idxrec->upd_off);
+    if (upd_off > len || sizeof(ntfs_upd) > (len - upd_off)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+            ("ntfs_fix_idxrec: Corrupt idx record");
         return 1;
     }
 
@@ -1056,6 +1065,16 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         /* Loop by cluster size */
         for (off = 0; off < idxalloc_len; off += ntfs->csize_b) {
             uint32_t list_len, rec_len;
+
+            // Ensure that there is enough data for an idxrec
+            if (sizeof(ntfs_idxrec) > idxalloc_len - off) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("ntfs_dir_open_meta: Not enough data in idxalloc buffer for an idxrec.");
+                free(idxalloc);
+                return TSK_COR;
+            }
 
             idxrec = (ntfs_idxrec *) & idxalloc[off];
 

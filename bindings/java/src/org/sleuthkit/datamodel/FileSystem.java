@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  * 
  * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -91,11 +91,26 @@ public class FileSystem extends AbstractContent {
 			synchronized (this) {
 				if (filesystemHandle == 0) {
 					Content dataSource = getDataSource();
-					if ((dataSource != null) && (dataSource instanceof Image)) {
-						Image image = (Image) dataSource;
-						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset);
-					} else {
+					if ((dataSource == null) || ( !(dataSource instanceof Image))) {
 						throw new TskCoreException("Data Source of File System is not an image");
+					}
+
+					Image image = (Image) dataSource;
+
+					// Check if this file system is in a pool
+					if (isPoolContent()) {
+						Pool pool = getPool();
+						if (pool == null) {
+							throw new TskCoreException("Error finding pool for file system");
+						}
+
+						Volume poolVolume = getPoolVolume();
+						if (poolVolume == null) {
+							throw new TskCoreException("File system is in a pool but has no volume");
+						}
+						filesystemHandle = SleuthkitJNI.openFsPool(image.getImageHandle(), imgOffset, pool.getPoolHandle(), poolVolume.getStart(), getSleuthkitCase());
+					} else {
+						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, getSleuthkitCase());
 					}
 				}
 			}
@@ -184,7 +199,7 @@ public class FileSystem extends AbstractContent {
 	public void finalize() throws Throwable {
 		try {
 			if (filesystemHandle != 0) {
-				SleuthkitJNI.closeFs(filesystemHandle);
+				// SleuthkitJNI.closeFs(filesystemHandle); // closeFs is currently a no-op
 				filesystemHandle = 0;
 			}
 		} finally {

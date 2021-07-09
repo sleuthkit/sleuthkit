@@ -25,46 +25,6 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLog
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    newCaseDbNat
- * Signature: (Ljava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat
-  (JNIEnv *, jclass, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    newCaseDbMultiNat
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat
-  (JNIEnv *, jclass, jstring, jstring, jstring, jstring, jint, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    openCaseDbMultiNat
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat
-  (JNIEnv *, jclass, jstring, jstring, jstring, jstring, jint, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    openCaseDbNat
- * Signature: (Ljava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat
-  (JNIEnv *, jclass, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    closeCaseDbNat
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    hashDbOpenNat
  * Signature: (Ljava/lang/String;)I
  */
@@ -210,18 +170,18 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initAddImgNat
- * Signature: (JLjava/lang/String;ZZ)J
+ * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
-  (JNIEnv *, jclass, jlong, jstring, jboolean, jboolean);
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initializeAddImgNat
- * Signature: (JLjava/lang/String;ZZZ)J
+ * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZZ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat
-  (JNIEnv *, jclass, jlong, jstring, jboolean, jboolean, jboolean);
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jboolean);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -234,10 +194,10 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runOpenAndAddIm
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    runAddImgNat
- * Signature: (JLjava/lang/String;JLjava/lang/String;Ljava/lang/String;)V
+ * Signature: (JLjava/lang/String;JJLjava/lang/String;Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
-  (JNIEnv *, jclass, jlong, jstring, jlong, jstring, jstring);
+  (JNIEnv *, jclass, jlong, jstring, jlong, jlong, jstring, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -249,18 +209,10 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    revertAddImgNat
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    commitAddImgNat
+ * Method:    finishAddImgNat
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNat
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishAddImgNat
   (JNIEnv *, jclass, jlong);
 
 /*
@@ -285,6 +237,22 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVsNat
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    openPoolNat
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getImgInfoForPoolNat
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForPoolNat
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
@@ -321,6 +289,14 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    readPoolNat
+ * Signature: (J[BJJ)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readPoolNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readVolNat
  * Signature: (J[BJJ)I
  */
@@ -353,10 +329,74 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getPathsForImageNat
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getPathsForImageNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getSizeForImageNat
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getSizeForImageNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getTypeForImageNat
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getTypeForImageNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getSectorSizeForImageNat
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getSectorSizeForImageNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getMD5HashForImageNat
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getMD5HashForImageNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getSha1HashForImageNat
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getSha1HashForImageNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getCollectionDetailsForImageNat
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCollectionDetailsForImageNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    closeImgNat
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    closePoolNat
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closePoolNat
   (JNIEnv *, jclass, jlong);
 
 /*
@@ -406,6 +446,14 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
   (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getSleuthkitVersionNat
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getSleuthkitVersionNat
+  (JNIEnv *, jclass);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -472,6 +520,17 @@ extern "C" {
 
 #ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
 #define _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseHandles
 #ifdef __cplusplus
 extern "C" {
 #endif

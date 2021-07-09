@@ -180,12 +180,15 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
             }
             tsk_error_set_errstr2("unix_make_data_run_indir: Block %"
                 PRIuDADDR, addr);
+            free(data_run);
             return -1;
         }
     }
 
     // save the run
     tsk_fs_attr_append_run(fs, fs_attr_indir, data_run);
+
+    data_run = NULL;
 
     // convert the raw addresses to the correct endian ordering
     if ((fs->ftype == TSK_FS_TYPE_FFS1)
@@ -232,10 +235,10 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
         }
     }
 
-    if (retval == -1)
+    if (retval == -1) {
         return -1;
-    else
-        return length - length_remain;
+    }
+    return length - length_remain;
 }
 
 

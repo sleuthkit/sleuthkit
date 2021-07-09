@@ -317,7 +317,13 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_ERR;
     }
 
-    size = roundup(fs_dir->fs_file->meta->size, a_fs->block_size);
+    if (fs_dir->fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_INLINE) {
+        // For inline dirs, don't try to read past the end of the data
+        size = fs_dir->fs_file->meta->size;
+    }
+    else {
+        size = roundup(fs_dir->fs_file->meta->size, a_fs->block_size);
+    }
     TSK_OFF_T offset = 0;
 
     while (size > 0) {

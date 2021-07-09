@@ -310,7 +310,7 @@ uint8_t
 
     if (tsk_verbose)
         fprintf(stderr,
-        "md5sum_getentry: Lookup up hash %s at offset %" PRIuOFF
+        "md5sum_getentry: Lookup up hash %s at offset %" PRIdOFF
         "\n", hash, offset);
 
     if (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN) {

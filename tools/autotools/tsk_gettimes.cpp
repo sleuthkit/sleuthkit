@@ -46,11 +46,14 @@ public:
 	TskGetTimes(int32_t, bool);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
     
 private:
     int m_curVolAddr;
+    int m_curPoolVol;
     int32_t m_secSkew;
 	bool m_compute_hash;
 };
@@ -59,6 +62,7 @@ private:
 TskGetTimes::TskGetTimes(int32_t a_secSkew)
 {
     m_curVolAddr = -1;
+    m_curPoolVol = -1;
     m_secSkew = a_secSkew;
 	m_compute_hash = false;
 }
@@ -66,6 +70,7 @@ TskGetTimes::TskGetTimes(int32_t a_secSkew)
 TskGetTimes::TskGetTimes(int32_t a_secSkew, bool a_compute_hash)
 {
     m_curVolAddr = -1;
+    m_curPoolVol = -1;
     m_secSkew = a_secSkew;
 	m_compute_hash = a_compute_hash;
 }
@@ -87,12 +92,18 @@ TSK_RETVAL_ENUM TskGetTimes::processFile(TSK_FS_FILE * /*fs_file*/, const char *
 TSK_FILTER_ENUM
 TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
 {
-    TSK_TCHAR volName[32];
+    TSK_TCHAR volName[65];
     if (m_curVolAddr > -1) {
-        TSNPRINTF(volName, 32, _TSK_T("vol%d/"),m_curVolAddr);
+        TSNPRINTF(volName, 32, _TSK_T("vol%d/"), m_curVolAddr);
     }
     else {
         volName[0] = '\0';
+    }
+
+    TSK_TCHAR poolVolName[33];
+    if (m_curPoolVol > -1) {
+        TSNPRINTF(poolVolName, 32, _TSK_T("poolVol%d/"), m_curPoolVol);
+        TSTRNCAT(volName, poolVolName, 32);
     }
 
     TSK_FS_FLS_FLAG_ENUM fls_flags = (TSK_FS_FLS_FLAG_ENUM)(TSK_FS_FLS_MAC | TSK_FS_FLS_DIR | TSK_FS_FLS_FILE | TSK_FS_FLS_FULL);
@@ -111,6 +122,23 @@ TSK_FILTER_ENUM
 TskGetTimes::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_curVolAddr = vs_part->addr;
+    m_curPoolVol = -1;
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM
+TskGetTimes::filterPool(const TSK_POOL_INFO * pool_info)
+{
+    // There's nothing to do, but we need to override this to allow the pool
+    // to be processed.
+    return TSK_FILTER_CONT;
+}
+
+
+TSK_FILTER_ENUM
+TskGetTimes::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
+{
+    m_curPoolVol = pool_vol->index;
     return TSK_FILTER_CONT;
 }
 

@@ -106,7 +106,9 @@ typedef int32_t ssize_t;
 #endif
 
 // remap some of the POSIX functions
-#define snprintf   _snprintf
+#if defined(_MSC_VER) && _MSC_VER < 1500 // VC++ 8.0 and below
+#define snprintf _snprintf
+#endif
 #define strcasecmp(string1, string2)	_stricmp(string1, string2)
 #define putenv _putenv
 

@@ -104,7 +104,7 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
 
         /* Print the layout */
         tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
-            "   %.4" PRIuOFF "%c   %s\n", part->start,
+            "   %.4" PRIdOFF "%c   %s\n", part->start,
             (TSK_DADDR_T) (part->start + part->len - 1), part->len, size,
             unit, part->desc);
     }

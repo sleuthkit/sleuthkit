@@ -97,5 +97,5 @@ swapfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset)
     fs->jopen = tsk_fs_nofs_jopen;
     fs->journ_inum = 0;
 
-    return (fs);
+    return fs;
 }

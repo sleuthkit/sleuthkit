@@ -69,7 +69,6 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
         return 1;
     }
 #endif
-
     fs_file = tsk_fs_file_open_meta(fs, NULL, inum);
     if (!fs_file) {
         return 1;

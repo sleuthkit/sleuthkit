@@ -26,6 +26,10 @@
 #include <afflib/afflib_i.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern TSK_IMG_INFO *aff_open(const TSK_TCHAR * const images[],
     unsigned int a_ssize);
 
@@ -39,5 +43,10 @@ typedef struct {
     uint16_t type;              /* TYPE - uses AF_IDENTIFY_x values */
 } IMG_AFF_INFO;
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif
+
 #endif

@@ -149,7 +149,7 @@ namespace Rejistry {
         static const uint16_t DB_DATA_SIZE = 0x3FD8;
         static const uint32_t LARGE_DATA_SIZE = 0x80000000;
 
-        static const uint16_t MAX_NAME_LENGTH = 32767;
+        static const uint16_t MAX_NAME_LENGTH = 16383; //# of characters
 
         VKRecord();
         VKRecord& operator=(const VKRecord &);

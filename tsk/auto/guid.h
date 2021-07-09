@@ -54,15 +54,24 @@ class Guid
     // create empty guid
     Guid();
 
+    Guid(Guid &&) = default;
+
     // copy constructor
     Guid(const Guid &other);
 
     // overload assignment operator
     Guid &operator=(const Guid &other);
+    Guid &operator=(Guid &&) = default;
 
     // overload equality and inequality operator
     bool operator==(const Guid &other) const;
     bool operator!=(const Guid &other) const;
+
+    std::string str() const;
+
+    inline const std::vector<unsigned char> & bytes() const noexcept {
+        return _bytes;
+    }
 
   private:
 

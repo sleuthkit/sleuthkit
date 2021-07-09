@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# NOTE: This script is not currently being used anywhere. 
+# it curently runs fs_thread_test on a set of images that
+# are not public
+#
+# This could probably be renamed to something with threadtest in the name
+
+
 EXIT_SUCCESS=0;
 EXIT_FAILURE=1;
 EXIT_IGNORE=77;

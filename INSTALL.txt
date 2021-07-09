@@ -17,7 +17,7 @@ Tested Platform:
 - Windows
 
 Build System (to compile from a source distribution):
-- C/C++ compiler
+- C/C++ compiler (C++ 14 required)
 - GNU Make
 - Java compiler / JDK (if you want the java bindings)
 

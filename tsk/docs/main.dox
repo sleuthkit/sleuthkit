@@ -3,7 +3,7 @@
   \author Brian Carrier
 
 <h3>Overview</h3>
-    This document was designed to help integrate the <a href="http://www.sleuthkit.org/sleuthkit/">Sleuth Kit</a> (TSK) library into an application that needs to analyze data from a disk image. Note that this document does not contain information about using the command line tools in TSK.  The command line tools use the functionality of this library, but this document is for programmers who want to use the library.
+    This document was designed to help integrate the <a href="http://www.sleuthkit.org/sleuthkit/">Sleuth Kit</a> (TSK) C/C++ library into an application that needs to analyze data from a disk image. Note that this document does not contain information about using the command line tools in TSK.  The command line tools use the functionality of this library, but this document is for programmers who want to use the C/C++ library.  If you want to integrate into Java, then refer to the <a href="http://sleuthkit.org/sleuthkit/docs/jni-docs/latest/">Java Bindings</a> document. 
 
     There are two main sections to this document.  One is the User's Guide that describes the organization of TSK, the APIs, and how to use them together.  The other is a list of the API functions and a description of their arguments and return values.  
 
@@ -27,6 +27,10 @@ The API Reference lists the public C and C++ API functions with their arguments 
   - \ref fslib and \ref fslib_cpp
   - \ref hashdblib and \ref hashdblib_cpp
   - \ref autolib
+
+
+<h3>Support</h3>
+If you have questions, refer to the addresses and sites on the <a href="http://sleuthkit.org/support.php">support</a> page.
 
 */
 
