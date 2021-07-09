@@ -9782,6 +9782,22 @@ public class SleuthkitCase {
 	 *                          within tsk core and the update fails
 	 */
 	void deleteDataSource(long dataSourceObjectId) throws TskCoreException {
+		
+		// Check if this data source is the only one associated with its host. If so,
+		// we will delete the host and other associated data.
+		// Note that the cascading deletes were only added in schema 9.1, so we
+		// would get an error trying to delete a host from older cases.
+		Host hostToDelete = null;
+		VersionNumber version = getDBSchemaCreationVersion();
+		int major = version.getMajor();
+		int minor = version.getMinor();
+		if(major > 9 || (major == 9 && minor >= 1)) {
+			hostToDelete = getHostManager().getHostByDataSource(dataSourceObjectId);
+			if (getHostManager().getDataSourcesForHost(hostToDelete).size() != 1) {
+				hostToDelete = null;
+			}
+		}
+		
 		CaseDbConnection connection = null;
 		Statement statement;
 		acquireSingleUserCaseWriteLock();
@@ -9798,6 +9814,19 @@ public class SleuthkitCase {
 					+ "WHERE account_id NOT IN (SELECT account1_id FROM account_relationships) "
 					+ "AND account_id NOT IN (SELECT account2_id FROM account_relationships))";
 			statement.execute(accountSql);
+			
+			// Now delete any host that was only associated with this data source. This will cascade to delete
+			// realms, os accounts, and os account attributes that were associated with the host.
+			if (hostToDelete != null) {
+				statement.execute("DELETE FROM tsk_hosts WHERE id = " + hostToDelete.getHostId());
+				
+				// Clean up any stray OS Account objects
+				String deleteOsAcctObjectsQuery = "DELETE FROM tsk_objects " +
+					"WHERE type=" + TskData.ObjectType.OS_ACCOUNT.getObjectType() + " " + 
+					"AND obj_id NOT IN (SELECT os_account_obj_id FROM tsk_os_accounts WHERE  os_account_obj_id IS NOT NULL)";
+				statement.execute(deleteOsAcctObjectsQuery);
+			}
+			
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			rollbackTransaction(connection);
