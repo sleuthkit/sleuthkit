@@ -10,7 +10,8 @@ libtsk_la_LIBADD = base/libtskbase.la img/libtskimg.la \
 # current:revision:age
 libtsk_la_LDFLAGS = -version-info 20:6:1 $(LIBTSK_LDFLAGS)
 
-EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/*.dox docs/*.html
+EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/*.dox docs/*.html \
+   tsk.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = tsk.pc
