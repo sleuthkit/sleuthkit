@@ -5,25 +5,13 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
 
 AC_INIT(sleuthkit, 4.11.0)
-m4_include([m4/ax_pthread.m4])
-dnl include the version from 1.12.1. This will work for
-m4_include([m4/cppunit.m4])
-m4_include([m4/ax_jni_include_dir.m4])
-m4_include([m4/ac_prog_javac_works.m4])
-m4_include([m4/ac_prog_javac.m4])
-m4_include([m4/ac_prog_java_works.m4])
-m4_include([m4/ac_prog_java.m4])
-m4_include([m4/ax_cxx_compile_stdcxx.m4])
-
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
-AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE([foreign tar-ustar])
-AM_PATH_CPPUNIT(1.12.1)
-AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
+AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
-AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.
 AC_PROG_CXX
@@ -220,6 +208,16 @@ AC_ARG_ENABLE([offline],
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
 
+AC_CHECK_PROG([PKGCONFIG], [pkg-config], [yes], [no])
+if test "x$PKGCONFIG" = "xyes"; then
+  AX_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit >= 1.12.1], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
+else
+  AM_PATH_CPPUNIT(1.12.1)
+  AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
+fi
+
+AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$ac_cv_cppunit" = xyes])
+
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
     dnl javac is needed to compile the JAR file
@@ -347,7 +345,8 @@ AC_CONFIG_FILES([
     bindings/java/jni/Makefile
     case-uco/java/Makefile
     unit_tests/Makefile
-    unit_tests/base/Makefile])
+    unit_tests/base/Makefile
+    unit_tests/img/Makefile])
 
 AC_OUTPUT
 
@@ -362,6 +361,7 @@ Building:
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
 Features:
+   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ]);
