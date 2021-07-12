@@ -17,13 +17,11 @@ m4_include([m4/ax_cxx_compile_stdcxx.m4])
 
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
-AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE([foreign tar-ustar])
-AM_PATH_CPPUNIT(1.12.1)
-AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
+AC_CONFIG_AUX_DIR([config])
+AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
+AC_CONFIG_MACRO_DIR([m4])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
-AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.
 AC_PROG_CXX
