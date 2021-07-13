@@ -1715,7 +1715,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
  */
 static int32_t
 ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
-    TSK_FS_META * fs_meta, ext2fs_extent_header * header)
+    TSK_FS_META * fs_meta, ext2fs_extent_header * header, int recursion_depth)
 {
     int fs_blocksize = fs_info->block_size;
     ext2fs_extent_idx *indices;
@@ -1723,6 +1723,13 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
     uint8_t *buf;
     int i;
 
+    // 32 is an arbitrary chosen value.
+    if (recursion_depth > 32) {
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+            ("ext2fs_load_attrs: exceeded maximum recursion depth!");
+        return -1;
+    }
     if (tsk_getu16(fs_info->endian, header->eh_magic) != 0xF30A) {
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
@@ -1761,7 +1768,7 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
 
         if ((ret =
                 ext2fs_extent_tree_index_count(fs_info, fs_meta,
-                    (ext2fs_extent_header *) buf)) < 0) {
+                    (ext2fs_extent_header *) buf, recursion_depth + 1)) < 0) {
             return -1;
         }
         count += ret;
@@ -1936,7 +1943,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
          }
         
         extent_index_size =
-        ext2fs_extent_tree_index_count(fs_info, fs_meta, header);
+        ext2fs_extent_tree_index_count(fs_info, fs_meta, header, 0);
         if (extent_index_size < 0) {
             return 1;
         }
