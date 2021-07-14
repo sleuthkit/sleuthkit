@@ -1438,11 +1438,6 @@ public final class OsAccountManager {
 				throw new TskCoreException(String.format("Account (%d) already has an address (%s), address cannot be updated.", osAccount.getId(), osAccount.getAddr().orElse("NULL")));
 			}
 
-			// if a new login name is provided and the account already has a loginname and they are not the same, throw an exception
-			if (!StringUtils.isBlank(loginName) && !StringUtils.isBlank(osAccount.getLoginName().orElse(null)) && !loginName.equalsIgnoreCase(osAccount.getLoginName().orElse(""))) {
-				throw new TskCoreException(String.format("Account (%d) already has a login name (%s), login name cannot be updated.", osAccount.getId(), osAccount.getLoginName().orElse("NULL")));
-			}
-
 			if (StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address)) {
 				updateAccountColumn(osAccount.getId(), "addr", address, connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
