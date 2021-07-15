@@ -149,9 +149,11 @@
     </ClCompile>
     <PreBuildEvent>
       <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
-copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
-copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
-copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
+               copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+               copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+               copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
+               copy "$(LibAff4Lib)\libaff4.dll" "$(OutDir)"
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -169,9 +171,10 @@ copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
     </ClCompile>
     <PreBuildEvent>
       <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
-copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
-copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
-copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
+               copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+               copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+               copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
+               copy "$(LibAff4Lib)\libaff4.dll" "$(OutDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -190,11 +193,12 @@ copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
     </ClCompile>
     <PreBuildEvent>
       <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
-copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
-copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
-copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
-xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
-xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
+               copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+               copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+               copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
+               copy "$(LibAff4Lib)\libaff4.dll" "$(OutDir)"
+               xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
+               xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">
@@ -229,11 +233,12 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     </ClCompile>
     <PreBuildEvent>
       <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
-copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
-copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
-copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
-xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
-xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
+               copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+               copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+               copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
+               copy "$(LibAff4Lib)\libaff4.dll" "$(OutDir)"
+               xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
+               xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">

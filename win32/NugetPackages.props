@@ -17,7 +17,10 @@
 	<ZlibDll Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\zlib_native.redist.1.2.11\build\native\bin\x64\Release</ZlibDll>
 	<OpenSslInclude Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\include;</OpenSslInclude>
 	<OpenSslLib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\lib\vc140\x64;</OpenSslLib>
-	<TskNugetIncludes>$(LibVmdkInclude);$(LibVhdiInclude);$(LibEwfInclude);$(ZlibInclude);$(OpenSslInclude);</TskNugetIncludes>
-	<TskNugetLibs>$(LibVmdkLib);$(LibVhdiLib);$(LibEwfLib);$(ZlibLib);$(OpenSslLib);</TskNugetLibs>
+	<LibAff4Include>$(SolutionDir)\packages\sleuthkit-aff4cpplite.2.0.1\build\native\include</LibAff4Include>
+	<LibAff4Lib Condition="'$(Platform)' == 'Win32'">$(SolutionDir)\packages\sleuthkit-aff4cpplite.2.0.1\build\native\msvscpp\Release</LibAff4Lib>
+	<LibAff4Lib Condition="'$(Platform)' == 'x64'">$(SolutionDir)\packages\sleuthkit-aff4cpplite.2.0.1\build\native\msvscpp\x64\Release</LibAff4Lib>
+	<TskNugetIncludes>$(LibVmdkInclude);$(LibVhdiInclude);$(LibEwfInclude);$(ZlibInclude);$(OpenSslInclude);$(LibAff4Include);</TskNugetIncludes>
+	<TskNugetLibs>$(LibVmdkLib);$(LibVhdiLib);$(LibEwfLib);$(ZlibLib);$(OpenSslLib);$(LibAff4Lib);</TskNugetLibs>
   </PropertyGroup>
 </Project>
