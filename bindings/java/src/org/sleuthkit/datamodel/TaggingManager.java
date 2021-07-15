@@ -216,10 +216,10 @@ public class TaggingManager {
 		if (artifact == null || tagName == null) {
 			throw new IllegalArgumentException("NULL argument passed to addArtifactTag");
 		}
-
+		
 		List<BlackboardArtifactTag> removedTags = new ArrayList<>();
 		List<String> removedTagIds = new ArrayList<>();
-		CaseDbTransaction trans = skCase.beginTransaction();
+		CaseDbTransaction trans = null;
 		try {
 			// If a TagName is part of a TagSet remove any existing tags from the
 			// set that are currenctly on the artifact
@@ -228,10 +228,10 @@ public class TaggingManager {
 				// Get the list of all of the blackboardArtifactTags that use
 				// TagName for the given artifact.
 				String selectQuery = String.format("SELECT * from blackboard_artifact_tags JOIN tag_names ON tag_names.tag_name_id = blackboard_artifact_tags.tag_name_id JOIN tsk_examiners on tsk_examiners.examiner_id = blackboard_artifact_tags.examiner_id WHERE artifact_id = %d AND tag_names.tag_set_id = %d", artifact.getArtifactID(), tagSetId);
-
-				try (Statement stmt = trans.getConnection().createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
+				TagName removedTag;
+				try (Statement stmt = skCase.getConnection().createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
-						TagName removedTag = new TagName(
+						removedTag = new TagName(
 								resultSet.getLong("tag_name_id"),
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
@@ -254,19 +254,27 @@ public class TaggingManager {
 					}
 				}
 
-				if (!removedTags.isEmpty()) {
-					// Remove the tags.
-					String removeQuery = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (%s)", String.join(",", removedTagIds));
-					try (Statement stmt = trans.getConnection().createStatement()) {
-						stmt.executeUpdate(removeQuery);
-					}
+				
+			}
+			
+			Content content = skCase.getContentById(artifact.getObjectID());
+			Examiner currentExaminer = skCase.getCurrentExaminer();
+			
+			trans = skCase.beginTransaction();
+			CaseDbConnection connection = trans.getConnection();
+			
+			if (!removedTags.isEmpty()) {
+				// Remove the tags.
+				String removeQuery = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (%s)", String.join(",", removedTagIds));
+				try (Statement stmt = connection.createStatement()) {
+					stmt.executeUpdate(removeQuery);
 				}
 			}
 
 			// Add the new Tag.
 			BlackboardArtifactTag artifactTag;
-			try (Statement stmt = trans.getConnection().createStatement()) {
-				Examiner currentExaminer = skCase.getCurrentExaminer();
+			try (Statement stmt = connection.createStatement()) {
+				
 				String query = String.format(
 						"INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, examiner_id) VALUES (%d, %d, '%s', %d)",
 						artifact.getArtifactID(),
@@ -283,7 +291,7 @@ public class TaggingManager {
 				try (ResultSet resultSet = stmt.getGeneratedKeys()) {
 					resultSet.next();
 					artifactTag = new BlackboardArtifactTag(resultSet.getLong(1), //last_insert_rowid()
-							artifact, skCase.getContentById(artifact.getObjectID()), tagName, comment, currentExaminer.getLoginName());
+							artifact, content, tagName, comment, currentExaminer.getLoginName());
 				}
 			}
 			
@@ -294,7 +302,9 @@ public class TaggingManager {
 
 			return new BlackboardArtifactTagChange(artifactTag, removedTags);
 		} catch (SQLException ex) {
-			trans.rollback();
+			if(trans != null) {
+				trans.rollback();
+			}
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		}
 	}
@@ -372,14 +382,17 @@ public class TaggingManager {
 	public ContentTagChange addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
 		List<ContentTag> removedTags = new ArrayList<>();
 		List<String> removedTagIds = new ArrayList<>();
+		Examiner currentExaminer = skCase.getCurrentExaminer();
 		CaseDbTransaction trans = skCase.beginTransaction();
+		CaseDbConnection connection = trans.getConnection();
+		
 		try {
 			long tagSetId = tagName.getTagSetId();
 
 			if (tagSetId > 0) {
 				String selectQuery = String.format("SELECT * from content_tags JOIN tag_names ON tag_names.tag_name_id = content_tags.tag_name_id JOIN tsk_examiners on tsk_examiners.examiner_id = content_tags.examiner_id WHERE obj_id = %d AND tag_names.tag_set_id = %d", content.getId(), tagSetId);
 
-				try (Statement stmt = trans.getConnection().createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
+				try (Statement stmt = connection.createStatement(); ResultSet resultSet = stmt.executeQuery(selectQuery)) {
 					while (resultSet.next()) {
 						TagName removedTag = new TagName(
 								resultSet.getLong("tag_name_id"),
@@ -407,7 +420,7 @@ public class TaggingManager {
 
 				if (!removedTags.isEmpty()) {
 					String removeQuery = String.format("DELETE FROM content_tags WHERE tag_id IN (%s)", String.join(",", removedTagIds));
-					try (Statement stmt = trans.getConnection().createStatement()) {
+					try (Statement stmt = connection.createStatement()) {
 						stmt.executeUpdate(removeQuery);
 					}
 				}
@@ -415,8 +428,8 @@ public class TaggingManager {
 
 			String queryTemplate = "INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset, examiner_id) VALUES (%d, %d, '%s', %d, %d, %d)";
 			ContentTag contentTag = null;
-			try (Statement stmt = trans.getConnection().createStatement()) {
-				Examiner currentExaminer = skCase.getCurrentExaminer();
+			try (Statement stmt = connection.createStatement()) {
+				
 				String query = String.format(queryTemplate,
 						content.getId(),
 						tagName.getId(),
