@@ -115,7 +115,6 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     if (ewf_info->md5hash_isset == 1) {
         tsk_fprintf(hFile, "MD5 hash of data:\t%s\n", ewf_info->md5hash);
     }
-    return;
 }
 
 static void
