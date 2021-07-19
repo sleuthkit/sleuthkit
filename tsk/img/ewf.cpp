@@ -302,7 +302,7 @@ ewf_open(int a_num_img,
         tsk_error_set_errstr("ewf_open: Not an EWF file (%s)",
             error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Not an EWF file\n");
         }
         goto on_error;
@@ -316,7 +316,7 @@ ewf_open(int a_num_img,
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create EWF handle\n");
         }
         goto on_error;
@@ -339,7 +339,7 @@ ewf_open(int a_num_img,
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
         }
         goto on_error;
@@ -356,7 +356,7 @@ ewf_open(int a_num_img,
 
         libewf_handle_close(ewf_info->handle, NULL);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
         }
         goto on_error;
@@ -375,7 +375,7 @@ ewf_open(int a_num_img,
 
         libewf_handle_close(ewf_info->handle, NULL);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting MD5 of EWF file\n");
         }
         goto on_error;
@@ -397,7 +397,7 @@ ewf_open(int a_num_img,
 
         tsk_img_free(ewf_info);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting SHA1 of EWF file\n");
         }
         return NULL;
@@ -439,7 +439,7 @@ ewf_open(int a_num_img,
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error opening", ewf_info->img_info.images[0]);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
         }
         goto on_error;

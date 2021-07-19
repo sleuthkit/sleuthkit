@@ -139,7 +139,7 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": expected one image filename, was given %d", a_images[0], a_num_img);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "vmdk requires exactly 1 image filename for opening\n");
         }
         return NULL;
@@ -177,7 +177,7 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create vmdk handle\n");
         }
         goto on_error;
@@ -199,7 +199,7 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vmdk file\n");
         }
         goto on_error;
@@ -214,7 +214,7 @@ vmdk_open(int a_num_img,
             ": Error opening extent data files for image (%s)", a_images[0],
             error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vmdk extent data files\n");
         }
         goto on_error;
@@ -229,7 +229,7 @@ vmdk_open(int a_num_img,
             ": Error getting size of image (%s)", a_images[0],
             error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of vmdk file\n");
         }
         goto on_error;

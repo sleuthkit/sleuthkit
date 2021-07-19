@@ -228,7 +228,7 @@ aff_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize)
         tsk_error_set_errstr("aff_open file: %" PRIttocTSK
             ": expected one image filename, was given %d", a_images[0], a_num_img);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "aff requires exactly 1 image filename for opening\n");
         }
         return NULL;
