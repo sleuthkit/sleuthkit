@@ -137,7 +137,7 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": expected one image filename, was given %d", a_images[0], a_num_img);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "vhd requires exactly 1 image filename for opening\n");
         }
         return NULL;
@@ -175,7 +175,7 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create vhdi handle\n");
         }
         goto on_error;
@@ -195,7 +195,7 @@ vhdi_open(int a_num_img,
             ": Error checking file signature for image (%s)", a_images[0],
             error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error checking file signature for vhd file\n");
         }
         goto on_error;
@@ -217,7 +217,7 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vhdi file\n");
         }
         goto on_error;
@@ -232,7 +232,7 @@ vhdi_open(int a_num_img,
             ": Error getting size of image (%s)", a_images[0],
             error_string);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of vhdi file\n");
         }
         goto on_error;
