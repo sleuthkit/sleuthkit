@@ -106,8 +106,7 @@ static void
     char *errmsg = NULL;
     IMG_VHDI_INFO *vhdi_info = (IMG_VHDI_INFO *) img_info;
 
-    if( libvhdi_file_close(vhdi_info->handle, &vhdi_error ) != 0 )
-    {
+    if (libvhdi_file_close(vhdi_info->handle, &vhdi_error ) != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vhdi_error, error_string))
@@ -119,8 +118,7 @@ static void
     }
 
     libvhdi_file_free(&(vhdi_info->handle), NULL);
-    if( libvhdi_file_free(&(vhdi_info->handle), &vhdi_error ) != 1 )
-    {
+    if (libvhdi_file_free(&(vhdi_info->handle), &vhdi_error ) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vhdi_error, error_string))
