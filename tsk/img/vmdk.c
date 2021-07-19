@@ -106,8 +106,7 @@ static void
     char *errmsg = NULL;
     IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
 
-    if( libvmdk_handle_close(vmdk_info->handle, &vmdk_error ) != 0 )
-    {
+    if (libvmdk_handle_close(vmdk_info->handle, &vmdk_error ) != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vmdk_error, error_string))
@@ -119,8 +118,7 @@ static void
     }
 
     libvmdk_handle_free(&(vmdk_info->handle), NULL);
-    if( libvmdk_handle_free(&(vmdk_info->handle), &vmdk_error ) != 1 )
-    {
+    if (libvmdk_handle_free(&(vmdk_info->handle), &vmdk_error ) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vmdk_error, error_string))
@@ -223,8 +221,8 @@ vmdk_open(int a_num_img,
         }
         return NULL;
     }
-    if( libvmdk_handle_open_extent_data_files(vmdk_info->handle, &vmdk_error ) != 1 )
-	{
+
+    if (libvmdk_handle_open_extent_data_files(vmdk_info->handle, &vmdk_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
