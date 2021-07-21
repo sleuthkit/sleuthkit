@@ -963,7 +963,10 @@ public final class OsAccountManager {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 			}
 
-			return this.getOsAccountByAddr(sid, realm.get());
+			Optional<OsAccount> account = this.getOsAccountByAddr(sid, realm.get());
+			if (account.isPresent()) {
+				return account;
+			}
 		}
 
 		// search by login name
