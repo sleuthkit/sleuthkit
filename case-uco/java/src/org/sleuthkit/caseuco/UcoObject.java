@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -84,5 +84,29 @@ abstract class UcoObject {
     UcoObject setTag(String tag) {
         this.tag = tag;
         return this;
+    }
+
+    String getType() {
+        return type;
+    }
+
+    String getCreatedTime() {
+        return createdTime;
+    }
+
+    String getModifiedTime() {
+        return modifiedTime;
+    }
+
+    String getDescription() {
+        return description;
+    }
+
+    String getName() {
+        return name;
+    }
+
+    String getTag() {
+        return tag;
     }
 }

@@ -722,7 +722,26 @@ public class BlackboardArtifact implements Content {
 	}
 
 	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException {
+		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return resultAdded;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
+	}
+
+	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
+		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
+	}
+	
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
 	
@@ -1014,7 +1033,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * EXIF metadata.
 		 */
-		public static final Type TSK_METADATA_EXIF = new BlackboardArtifact.Type(16, "TSK_METADATA_EXIF", bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT);
+		public static final Type TSK_METADATA_EXIF = new BlackboardArtifact.Type(16, "TSK_METADATA_EXIF", bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.ANALYSIS_RESULT);
 
 		// 17 was used for deprecated TSK_TAG_FILE. 
 		// 18 was used for deprecated TSK_TAG_ARTIFACT. 
@@ -1546,7 +1565,7 @@ public class BlackboardArtifact implements Content {
 		 * EXIF metadata.
 		 */
 		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.DATA_ARTIFACT),
+				bundle.getString("BlackboardArtifact.tskMetadataExif.text"), Category.ANALYSIS_RESULT),
 		/**
 		 * A tag applied to a file.
 		 *

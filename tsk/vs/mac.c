@@ -144,6 +144,7 @@ mac_load_table(TSK_VS_INFO * vs)
         }
 
         strncpy(str, (char *) part->type, sizeof(part->name));
+        str[sizeof(part->name) - 1] = 0;
 
         if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                 (TSK_DADDR_T) part_size, (TSK_VS_PART_FLAG_ENUM)flag, str, -1,

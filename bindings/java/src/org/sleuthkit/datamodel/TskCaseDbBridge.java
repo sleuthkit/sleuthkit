@@ -384,7 +384,9 @@ class TskCaseDbBridge {
 						} else {
 							// account not found in the database,  create the account and add to map
 							// Currently we expect only NTFS systems to provide a windows style SID as owner id.
-							OsAccount newAccount = caseDb.getOsAccountManager().newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+							OsAccountManager accountMgr = caseDb.getOsAccountManager();
+							OsAccount newAccount = accountMgr.newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+							accountMgr.newOsAccountInstance(newAccount.getId(), fileInfo.dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, caseDb.getConnection());
 							ownerIdToAccountMap.put(ownerUid, newAccount);
 						}
 					} catch (NotUserSIDException ex) {
@@ -419,6 +421,14 @@ class TskCaseDbBridge {
 						}
 					}
 					
+					// We've seen a case where the root folder comes in with an undefined meta type.
+					// We've also seen a case where it comes in as a regular file. The root folder should always be
+					// a directory so it will be cached properly and will not cause errors later for
+					// being an unexpected type.
+					if ((fileInfo.parentObjId == fileInfo.fsObjId)
+							&& (fileInfo.metaType != TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue())) {
+						fileInfo.metaType = TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue();
+					}
 					
                     long objId = addFileToDb(computedParentObjId, 
                         fileInfo.fsObjId, fileInfo.dataSourceObjId,
@@ -442,7 +452,7 @@ class TskCaseDbBridge {
                         fsIdToRootDir.put(fileInfo.fsObjId, objId);
                     }
 
-                    // If the file is a directory, cache the object ID
+                    // If the file is a directory, cache the object ID.
                     if ((fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
                             || (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
                             && (fileInfo.name != null)
