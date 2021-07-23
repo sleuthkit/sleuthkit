@@ -12562,7 +12562,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
 		Statement statement = null;
-		String uniqueName = factoryClassName + "-" + displayName + "-" + type.toString() + "-" + version;
+		String uniqueName = factoryClassName + "-" + displayName + "-" + version;
 		acquireSingleUserCaseWriteLock();
 		try {
 			connection = connections.getConnection();
