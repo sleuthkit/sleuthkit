@@ -710,7 +710,7 @@ public class BlackboardArtifact implements Content {
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
@@ -724,7 +724,7 @@ public class BlackboardArtifact implements Content {
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException {
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
