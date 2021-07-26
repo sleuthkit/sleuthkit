@@ -4725,6 +4725,7 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		Statement s = null;
 		ResultSet rs = null;
+		BlackboardAttribute.Type type = null;
 		try {
 			connection = connections.getConnection();
 			connection.beginTransaction();
@@ -4743,17 +4744,11 @@ public class SleuthkitCase {
 					}
 				}
 				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES ('" + maxID + "', '" + attrTypeString + "', '" + displayName + "', '" + valueType.getType() + "')"); //NON-NLS
-				BlackboardAttribute.Type type = new BlackboardAttribute.Type(maxID, attrTypeString, displayName, valueType);
-				synchronized (attributeCacheLock) {
-					this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
-					this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
-				}
+				type = new BlackboardAttribute.Type(maxID, attrTypeString, displayName, valueType);
 				connection.commitTransaction();
-				return type;
 			} else {
 				throw new TskDataException("The attribute type that was added was already within the system.");
 			}
-
 		} catch (SQLException ex) {
 			rollbackTransaction(connection);
 			throw new TskCoreException("Error adding attribute type", ex);
@@ -4763,6 +4758,13 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseWriteLock();
 		}
+		synchronized (attributeCacheLock) {
+			if (type != null) {
+				this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
+				this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
+			}
+		}
+		return type;
 	}
 
 	/**
@@ -4784,21 +4786,17 @@ public class SleuthkitCase {
 		CaseDbConnection connection = null;
 		Statement s = null;
 		ResultSet rs = null;
+		BlackboardAttribute.Type type = null;
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'"); //NON-NLS
-			BlackboardAttribute.Type type = null;
+
 			if (rs.next()) {
 				type = new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
 						rs.getString("display_name"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type")));
-				synchronized (attributeCacheLock) {
-					this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
-					this.typeNameToAttributeTypeMap.put(attrTypeName, type);
-				}
 			}
-			return type;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute type id", ex);
 		} finally {
@@ -4807,6 +4805,13 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
+		synchronized (attributeCacheLock) {
+			if (type != null) {
+				this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
+				this.typeNameToAttributeTypeMap.put(attrTypeName, type);
+			}
+		}
+		return type;
 	}
 
 	/**
@@ -4880,7 +4885,6 @@ public class SleuthkitCase {
 			connection = connections.getConnection();
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE type_name = '" + artTypeName + "'"); //NON-NLS
-
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
 						rs.getString("type_name"), rs.getString("display_name"),
@@ -4923,21 +4927,18 @@ public class SleuthkitCase {
 		CaseDbConnection connection = null;
 		Statement s = null;
 		ResultSet rs = null;
+		BlackboardArtifact.Type type = null;
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE artifact_type_id = " + artTypeId + ""); //NON-NLS
-			BlackboardArtifact.Type type = null;
+
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
 						rs.getString("type_name"), rs.getString("display_name"),
 						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
-				synchronized (artifactCacheLock) {
-					this.typeIdToArtifactTypeMap.put(artTypeId, type);
-					this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
-				}
-				return type;
+
 			} else {
 				throw new TskCoreException("No artifact type found matching id: " + artTypeId);
 			}
@@ -4949,6 +4950,13 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
+		synchronized (artifactCacheLock) {
+			if (type != null) {
+				this.typeIdToArtifactTypeMap.put(artTypeId, type);
+				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+			}
+		}
+		return type;
 	}
 
 	/**
@@ -4997,6 +5005,7 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		Statement s = null;
 		ResultSet rs = null;
+		BlackboardArtifact.Type type = null;
 		try {
 			connection = connections.getConnection();
 			connection.beginTransaction();
@@ -5015,13 +5024,8 @@ public class SleuthkitCase {
 					}
 				}
 				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES ('" + maxID + "', '" + artifactTypeName + "', '" + displayName + "', " + category.getID() + " )"); //NON-NLS
-				BlackboardArtifact.Type type = new BlackboardArtifact.Type(maxID, artifactTypeName, displayName, category);
-				synchronized (artifactCacheLock) {
-					this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
-					this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
-				}
+				type = new BlackboardArtifact.Type(maxID, artifactTypeName, displayName, category);
 				connection.commitTransaction();
-				return type;
 			} else {
 				throw new TskDataException("The attribute type that was added was already within the system.");
 			}
@@ -5034,6 +5038,13 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseWriteLock();
 		}
+		synchronized (artifactCacheLock) {
+			if (type != null) {
+				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+			}
+		}
+		return type;
 	}
 
 	public ArrayList<BlackboardAttribute> getBlackboardAttributes(final BlackboardArtifact artifact) throws TskCoreException {
