@@ -388,7 +388,20 @@ public class SleuthkitCase {
 		typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
 		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
-
+		List<BlackboardArtifact.Type> artifactTypesInUse = getArtifactTypesInUse();
+		synchronized (artifactCacheLock) {
+			for (BlackboardArtifact.Type type : artifactTypesInUse) {
+				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+			}
+		}
+		List<BlackboardAttribute.Type> attributeTypesInUse = getAttributeTypes();
+		synchronized (attributeCacheLock) {
+			for (BlackboardAttribute.Type type : attributeTypesInUse) {
+				this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
+				this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
+			}
+		}
 		/*
 		 * The database schema must be updated before loading blackboard
 		 * artifact/attribute types
@@ -618,6 +631,9 @@ public class SleuthkitCase {
 		try (CaseDbConnection connection = connections.getConnection();
 				Statement statement = connection.createStatement();) {
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
+				if (this.typeIdToArtifactTypeMap.containsKey(type.getTypeID())) {
+					continue;
+				}
 				try {
 					statement.execute("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ")"); //NON-NLS
 				} catch (SQLException ex) {
@@ -654,6 +670,9 @@ public class SleuthkitCase {
 		try (CaseDbConnection connection = connections.getConnection();
 				Statement statement = connection.createStatement();) {
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
+				if (this.typeIdToAttributeTypeMap.containsKey(type.getTypeID())) {
+					continue;
+				}
 				try {
 					statement.execute("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
 				} catch (SQLException ex) {
