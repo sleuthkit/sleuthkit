@@ -23,7 +23,6 @@ import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -711,7 +710,7 @@ public class BlackboardArtifact implements Content {
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
@@ -725,7 +724,7 @@ public class BlackboardArtifact implements Content {
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException {
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getObjectID(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
@@ -1288,6 +1287,11 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
+		/**
+		 * Indicates that the file or artifacts was previously seen in another Autopsy case.
+		 */
+		public static final Type TSK_PREVIOUSLY_SEEN = new BlackboardArtifact.Type(69, "TSK_PREVIOUSLY_SEEN", bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT);
+		
 		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
 		/**
 		 * All standard artifact types with ids mapped to the type.
@@ -1353,7 +1357,8 @@ public class BlackboardArtifact implements Content {
 				TSK_USER_DEVICE_EVENT,
 				TSK_YARA_HIT,
 				TSK_GPS_AREA,
-				TSK_WEB_CATEGORIZATION
+				TSK_WEB_CATEGORIZATION,
+				TSK_PREVIOUSLY_SEEN
 		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
@@ -1849,7 +1854,12 @@ public class BlackboardArtifact implements Content {
 		TSK_GPS_AREA(67, "TSK_GPS_AREA",
 				bundle.getString("BlackboardArtifact.tskGPSArea.text"), Category.DATA_ARTIFACT),
 		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
-				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),;
+				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),
+		/**
+		 * Indicates that the file or artifacts was previously seen in another Autopsy case.
+		 */
+		TSK_PREVIOUSLY_SEEN(69, "TSK_PREVIOUSLY_SEEN",
+				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),;
 
 		/*
 		 * To developers: For each new artifact, ensure that: - The enum value
