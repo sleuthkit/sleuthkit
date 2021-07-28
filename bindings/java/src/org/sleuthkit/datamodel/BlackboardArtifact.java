@@ -1292,6 +1292,11 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_PREVIOUSLY_SEEN = new BlackboardArtifact.Type(69, "TSK_PREVIOUSLY_SEEN", bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT);
 		
+		/**
+		 * Indicates that the file or artifacts was previously unseen in another Autopsy case.
+		 */
+		public static final Type TSK_PREVIOUSLY_UNSEEN = new BlackboardArtifact.Type(70, "TSK_PREVIOUSLY_UNSEEN", bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT);
+		
 		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
 		/**
 		 * All standard artifact types with ids mapped to the type.
@@ -1358,7 +1363,8 @@ public class BlackboardArtifact implements Content {
 				TSK_YARA_HIT,
 				TSK_GPS_AREA,
 				TSK_WEB_CATEGORIZATION,
-				TSK_PREVIOUSLY_SEEN
+				TSK_PREVIOUSLY_SEEN,
+				TSK_PREVIOUSLY_UNSEEN
 		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
@@ -1859,7 +1865,13 @@ public class BlackboardArtifact implements Content {
 		 * Indicates that the file or artifacts was previously seen in another Autopsy case.
 		 */
 		TSK_PREVIOUSLY_SEEN(69, "TSK_PREVIOUSLY_SEEN",
-				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),;
+				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),
+		
+		/**
+		 * Indicates that the file or artifacts was previously unseen in another Autopsy case.
+		 */
+		TSK_PREVIOUSLY_UNSEEN(70, "TSK_PREVIOUSLY_UNSEEN",
+				bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT);
 
 		/*
 		 * To developers: For each new artifact, ensure that: - The enum value
