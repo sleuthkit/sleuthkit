@@ -1288,14 +1288,19 @@ public class BlackboardArtifact implements Content {
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
 		/**
-		 * Indicates that the file or artifacts was previously seen in another Autopsy case.
+		 * Indicates that the file or artifact was previously seen in another Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_SEEN = new BlackboardArtifact.Type(69, "TSK_PREVIOUSLY_SEEN", bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT);
 		
 		/**
-		 * Indicates that the file or artifacts was previously unseen in another Autopsy case.
+		 * Indicates that the file or artifact was previously unseen in another Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_UNSEEN = new BlackboardArtifact.Type(70, "TSK_PREVIOUSLY_UNSEEN", bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT);
+		
+		/**
+		 * Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
+		 */
+		public static final Type TSK_PREVIOUSLY_NOTABLE = new BlackboardArtifact.Type(71, "TSK_PREVIOUSLY_NOTABLE", bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
 		
 		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
 		/**
@@ -1364,7 +1369,8 @@ public class BlackboardArtifact implements Content {
 				TSK_GPS_AREA,
 				TSK_WEB_CATEGORIZATION,
 				TSK_PREVIOUSLY_SEEN,
-				TSK_PREVIOUSLY_UNSEEN
+				TSK_PREVIOUSLY_UNSEEN,
+				TSK_PREVIOUSLY_NOTABLE
 		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
@@ -1862,17 +1868,21 @@ public class BlackboardArtifact implements Content {
 		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
 				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * Indicates that the file or artifacts was previously seen in another Autopsy case.
+		 * Indicates that the file or artifact was previously seen in another Autopsy case.
 		 */
 		TSK_PREVIOUSLY_SEEN(69, "TSK_PREVIOUSLY_SEEN",
-				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),
-		
+				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),		
 		/**
-		 * Indicates that the file or artifacts was previously unseen in another Autopsy case.
+		 * Indicates that the file or artifact was previously unseen in another Autopsy case.
 		 */
 		TSK_PREVIOUSLY_UNSEEN(70, "TSK_PREVIOUSLY_UNSEEN",
-				bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT);
-
+				bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT),
+		/**
+		 * Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
+		 */
+		TSK_PREVIOUSLY_NOTABLE(71, "TSK_PREVIOUSLY_NOTABLE",
+				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
+		
 		/*
 		 * To developers: For each new artifact, ensure that: - The enum value
 		 * has 1-line JavaDoc description - The artifact catalog
