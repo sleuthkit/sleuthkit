@@ -19,14 +19,18 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
@@ -35,6 +39,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
  */
 public abstract class AbstractContent implements Content {
 
+	private final static BlackboardArtifact.Type GEN_INFO_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_GEN_INFO);
 	public final static long UNKNOWN_ID = -1;
 	private final SleuthkitCase db;
 	private final long objId;
@@ -82,7 +87,7 @@ public abstract class AbstractContent implements Content {
 			if (myParent != null) {
 				tempUniquePath = myParent.getUniquePath() + tempUniquePath;
 			}
-			
+
 			// Don't update uniquePath until it is complete.
 			uniquePath = tempUniquePath;
 		}
@@ -200,73 +205,74 @@ public abstract class AbstractContent implements Content {
 
 		return myParent.getDataSource();
 	}
-	
+
 	/**
 	 * Return whether this content has a Pool above it
-	 * 
+	 *
 	 * @return true if there is a Pool object in the parent structure
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	boolean isPoolContent() throws TskCoreException {
 		return getPool() != null;
 	}
-	
+
 	/**
-	 * Get the pool volume 
-	 * 
-	 * @return the volume above this content and below a Pool object or null if not found
-	 * 
-	 * @throws TskCoreException 
+	 * Get the pool volume
+	 *
+	 * @return the volume above this content and below a Pool object or null if
+	 *         not found
+	 *
+	 * @throws TskCoreException
 	 */
 	Volume getPoolVolume() throws TskCoreException {
 		Content myParent = getParent();
 		if (myParent == null) {
 			return null;
 		}
-		
-		if (! (myParent instanceof AbstractContent)) {
+
+		if (!(myParent instanceof AbstractContent)) {
 			return null;
 		}
-		
+
 		if (myParent instanceof Volume) {
 			// This is potentially it, but need to check that this is a volume under a pool
 			if (((Volume) myParent).isPoolContent()) {
-				return (Volume)myParent;
+				return (Volume) myParent;
 			} else {
 				// There are no pools in the hierarchy, so we're done
 				return null;
 			}
 		}
-		
+
 		// Try one level higher
-		return ((AbstractContent)myParent).getPoolVolume();
-	}	
-	
+		return ((AbstractContent) myParent).getPoolVolume();
+	}
+
 	/**
-	 * Get the pool  
-	 * 
+	 * Get the pool
+	 *
 	 * @return the pool above this content or null if not found
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	Pool getPool() throws TskCoreException {
 		Content myParent = getParent();
 		if (myParent == null) {
 			return null;
 		}
-		
-		if (! (myParent instanceof AbstractContent)) {
+
+		if (!(myParent instanceof AbstractContent)) {
 			return null;
 		}
-		
+
 		if (myParent instanceof Pool) {
-			return (Pool)myParent;
+			return (Pool) myParent;
 		}
-		
+
 		// Try one level higher
-		return ((AbstractContent)myParent).getPool();
-	}		
+		return ((AbstractContent) myParent).getPool();
+	}
 
 	/**
 	 * Gets handle of SleuthkitCase to which this content belongs
@@ -314,15 +320,90 @@ public abstract class AbstractContent implements Content {
 		return hash;
 	}
 
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		// don't let them make more than 1 GEN_INFO
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
 			return getGenInfoArtifact(true);
 		}
-		return db.newBlackboardArtifact(artifactTypeID, objId);
+		BlackboardArtifact.Type artifactType = db.getArtifactType(artifactTypeID);
+		switch (artifactType.getCategory()) {
+			case DATA_ARTIFACT:
+				return this.newDataArtifact(artifactType, Collections.emptyList());
+			case ANALYSIS_RESULT: {
+				AnalysisResultAdded addedResult = this.newAnalysisResult(artifactType, Score.SCORE_UNKNOWN, null, null, null, Collections.emptyList());
+				return addedResult.getAnalysisResult();
+			}
+			default:
+				throw new TskCoreException(String.format("Unknown category: %s for artifact type id: %d",
+						artifactType.getCategory().getName(), artifactTypeID));
+		}
 	}
 
+	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+
+		long dataSourceObjectId = this.getDataSource().getId();
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objId, dataSourceObjectId, score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return resultAdded;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException(String.format("Error adding analysis result to content with objId = %d.", objId), ex);
+		}
+	}
+
+	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException {
+
+		long dataSourceObjectId = dataSourceId;
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objId, dataSourceObjectId, score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return resultAdded;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException(String.format("Error adding analysis result to content with objId = %d.", objId), ex);
+		}
+	}
+
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
+		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
+
+		if (osAccountId != null) {
+			try (CaseDbConnection connection = db.getConnection()) {
+				db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+			}
+		}
+		return artifact;
+	}
+
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
+		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, dataSourceId, attributesList, osAccountId);
+
+		if (osAccountId != null) {
+			try (CaseDbConnection connection = db.getConnection()) {
+				db.getOsAccountManager().newOsAccountInstance(osAccountId, dataSourceId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+			}
+		}
+		return artifact;
+	}
+
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return newDataArtifact(artifactType, attributesList, null);
+	}
+
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());
@@ -372,7 +453,7 @@ public abstract class AbstractContent implements Content {
 		BlackboardArtifact retArt;
 		if (arts.isEmpty()) {
 			if (create) {
-				retArt = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
+				retArt = this.newDataArtifact(GEN_INFO_TYPE, Collections.emptyList());
 			} else {
 				return null;
 			}
@@ -406,6 +487,26 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
 		return db.getMatchingArtifacts("WHERE obj_id = " + objId); //NON-NLS
+	}
+
+	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objId);
+	}
+
+	@Override
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
+		return db.getBlackboard().getDataArtifactsBySource(objId);
+	}
+
+	@Override
+	public Score getAggregateScore() throws TskCoreException {
+		return db.getScoringManager().getAggregateScore(objId);
+	}
+
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objId, artifactType.getTypeID()); //NON-NLS
 	}
 
 	@Override

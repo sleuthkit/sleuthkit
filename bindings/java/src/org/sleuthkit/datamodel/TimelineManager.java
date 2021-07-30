@@ -115,20 +115,25 @@ public final class TimelineManager {
 	TimelineManager(SleuthkitCase caseDB) throws TskCoreException {
 		this.caseDB = caseDB;
 
-		//initialize root and base event types, these are added to the DB in c++ land
-		ROOT_CATEGORY_AND_FILESYSTEM_TYPES.forEach(eventType -> eventTypeIDMap.put(eventType.getTypeID(), eventType));
+		List<TimelineEventType> fullList = new ArrayList<>();
+		fullList.addAll(ROOT_CATEGORY_AND_FILESYSTEM_TYPES);
+		fullList.addAll(PREDEFINED_EVENT_TYPES);
 
-		//initialize the other event types that aren't added in c++
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (final CaseDbConnection con = caseDB.getConnection();
-				final Statement statement = con.createStatement()) {
-			for (TimelineEventType type : PREDEFINED_EVENT_TYPES) {
-				con.executeUpdate(statement,
-						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) "
-								+ "VALUES( " + type.getTypeID() + ", '"
-								+ escapeSingleQuotes(type.getDisplayName()) + "',"
-								+ type.getParent().getTypeID()
-								+ ")")); //NON-NLS
+				final PreparedStatement pStatement = con.prepareStatement(
+						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES (?, ?, ?)"),
+						Statement.NO_GENERATED_KEYS)) {
+			for (TimelineEventType type : fullList) {
+				pStatement.setLong(1, type.getTypeID());
+				pStatement.setString(2, escapeSingleQuotes(type.getDisplayName()));
+				if (type != type.getParent()) {
+					pStatement.setLong(3, type.getParent().getTypeID());
+				} else {
+					pStatement.setNull(3, java.sql.Types.INTEGER);
+				}
+
+				con.executeUpdate(pStatement);
 				eventTypeIDMap.put(type.getTypeID(), type);
 			}
 		} catch (SQLException ex) {
@@ -461,7 +466,7 @@ public final class TimelineManager {
 	 * @throws TskCoreException
 	 * @throws DuplicateException
 	 */
-	private long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
+	private Long addEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
 			String fullDescription, String medDescription, String shortDescription,
 			boolean hasHashHits, boolean tagged, CaseDbConnection connection) throws TskCoreException, DuplicateException {
 		String tableValuesClause
@@ -475,7 +480,8 @@ public final class TimelineManager {
 		String insertDescriptionSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (PreparedStatement insertDescriptionStmt = connection.prepareStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+		try {
+			PreparedStatement insertDescriptionStmt = connection.getPreparedStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS);
 			insertDescriptionStmt.clearParameters();
 			insertDescriptionStmt.setLong(1, dataSourceObjId);
 			insertDescriptionStmt.setLong(2, fileObjId);
@@ -495,22 +501,14 @@ public final class TimelineManager {
 			// if no inserted rows, there is a conflict due to a duplicate event 
 			// description.  If that happens, return null as no id was inserted.
 			if (row < 1) {
-				throw new DuplicateException(String.format(
-						"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
-						fullDescription == null ? "<null>" : fullDescription,
-						fileObjId,
-						artifactID == null ? "<null>" : Long.toString(artifactID)));
+				return null;
 			}
 
 			try (ResultSet generatedKeys = insertDescriptionStmt.getGeneratedKeys()) {
 				if (generatedKeys.next()) {
 					return generatedKeys.getLong(1);
 				} else {
-					throw new DuplicateException(String.format(
-							"An event description already exists for [fullDescription: %s, contentId: %d, artifactId: %s]",
-							fullDescription == null ? "<null>" : fullDescription,
-							fileObjId,
-							artifactID == null ? "<null>" : Long.toString(artifactID)));
+					return null;
 				}
 			}
 		} catch (SQLException ex) {
@@ -518,6 +516,45 @@ public final class TimelineManager {
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
 		}
+	}
+	
+	/**
+	 * Returns an event description id for an existing event.
+	 * 
+	 * @param dataSourceObjId	Existing data source object id
+	 * @param fileObjId			Existing content object id
+	 * @param artifactID		Existing artifact id
+	 * @param fullDescription	Full event description
+	 * @param connection		Database connection
+	 * 
+	 * @return The id of an existing description or null if none what found.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	private Long getEventDescription(long dataSourceObjId, long fileObjId, Long artifactID,
+			String fullDescription, CaseDbConnection connection) throws TskCoreException {
+
+		String query = "SELECT event_description_id FROM tsk_event_descriptions "
+				+ "WHERE data_source_obj_id = " + dataSourceObjId
+				+ " AND content_obj_id = " + fileObjId
+				+ " AND artifact_id " + (artifactID != null ? " = " + artifactID : "IS null")
+				+ " AND full_description " + (fullDescription != null ? "= '"
+					+ SleuthkitCase.escapeSingleQuotes(fullDescription) + "'" : "IS null");
+
+		caseDB.acquireSingleUserCaseReadLock();
+		try (ResultSet resultSet = connection.createStatement().executeQuery(query)) {
+
+			if (resultSet.next()) {
+				long id = resultSet.getLong(1);
+				return id;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Failed to get description, dataSource=%d, fileObjId=%d, artifactId=%d", dataSourceObjId, fileObjId, artifactID), ex);
+		} finally {
+			caseDB.releaseSingleUserCaseReadLock();
+		}
+
+		return null;
 	}
 
 	Collection<TimelineEvent> addEventsForNewFile(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
@@ -563,27 +600,34 @@ public final class TimelineManager {
 		Set<TimelineEvent> events = new HashSet<>();
 		caseDB.acquireSingleUserCaseWriteLock();
 		try {
-			long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
+			Long descriptionID = addEventDescription(file.getDataSourceObjectId(), fileObjId, null,
 					description, null, null, false, false, connection);
+			
+			if(descriptionID == null) {
+				descriptionID = getEventDescription(file.getDataSourceObjectId(), fileObjId, null, description, connection);
+			}
+			if(descriptionID != null) {
+				for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
+					Long time = timeEntry.getValue();
+					if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
+						TimelineEventType type = timeEntry.getKey();
+						long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
-			for (Map.Entry<TimelineEventType, Long> timeEntry : timeMap.entrySet()) {
-				Long time = timeEntry.getValue();
-				if (time > 0 && time < MAX_TIMESTAMP_TO_ADD) {// if the time is legitimate ( greater than zero and less then 12 years from current date) insert it
-					TimelineEventType type = timeEntry.getKey();
-					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
-
-					/*
-					 * Last two flags indicating hasTags and hasHashHits are
-					 * both set to false with the assumption that this is not
-					 * possible for a new file. See JIRA-5407
-					 */
-					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
-							description, null, null, false, false));
-				} else {
-					if (time >= MAX_TIMESTAMP_TO_ADD) {
-						logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
+						/*
+						 * Last two flags indicating hasTags and hasHashHits are
+						 * both set to false with the assumption that this is not
+						 * possible for a new file. See JIRA-5407
+						 */
+						events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
+								description, null, null, false, false));
+					} else {
+						if (time >= MAX_TIMESTAMP_TO_ADD) {
+							logger.log(Level.WARNING, String.format("Date/Time discarded from Timeline for %s for file %s with Id %d", timeEntry.getKey().getDisplayName(), file.getParentPath() + file.getName(), file.getId()));
+						}
 					}
-				}
+				} 
+			} else {
+				throw new TskCoreException(String.format("Failed to get event description for file id = %d", fileObjId));
 			}
 		} catch (DuplicateException dupEx) {
 			logger.log(Level.SEVERE, "Attempt to make file event duplicate.", dupEx);
@@ -774,7 +818,12 @@ public final class TimelineManager {
 		String shortDescription = eventPayload.getDescription(TimelineLevelOfDetail.LOW);
 		long artifactID = artifact.getArtifactID();
 		long fileObjId = artifact.getObjectID();
-		long dataSourceObjectID = artifact.getDataSourceObjectID();
+		Long dataSourceObjectID = artifact.getDataSourceObjectID();
+		
+		if(dataSourceObjectID == null) {
+			logger.log(Level.SEVERE, String.format("Failed to create timeline event for artifact (%d), artifact data source was null"), artifact.getId());
+			return Optional.empty();
+		}
 
 		AbstractFile file = caseDB.getAbstractFileById(fileObjId);
 		boolean hasHashHits = false;
@@ -788,15 +837,24 @@ public final class TimelineManager {
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = caseDB.getConnection();) {
 
-			long descriptionID = addEventDescription(dataSourceObjectID, fileObjId, artifactID,
-					fullDescription, medDescription, shortDescription,
-					hasHashHits, tagged, connection);
+			Long descriptionID = addEventDescription(dataSourceObjectID, fileObjId, artifactID,
+				fullDescription, medDescription, shortDescription,
+				hasHashHits, tagged, connection);
+			
+			if(descriptionID == null) {
+				descriptionID = getEventDescription(dataSourceObjectID, fileObjId, artifactID,
+					fullDescription, connection);
+			} 
 
-			long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
+			if(descriptionID != null) {
+				long eventID = addEventWithExistingDescription(time, eventType, descriptionID, connection);
 
-			event = new TimelineEvent(eventID, dataSourceObjectID, fileObjId, artifactID,
-					time, eventType, fullDescription, medDescription, shortDescription,
-					hasHashHits, tagged);
+				event = new TimelineEvent(eventID, dataSourceObjectID, fileObjId, artifactID,
+						time, eventType, fullDescription, medDescription, shortDescription,
+						hasHashHits, tagged);
+			} else {
+				throw new TskCoreException(String.format("Failed to get event description for file id = %d, artifactId %d", fileObjId, artifactID));
+			}
 
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
@@ -811,7 +869,8 @@ public final class TimelineManager {
 		String insertEventSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (PreparedStatement insertRowStmt = connection.prepareStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);) {
+		try {
+			PreparedStatement insertRowStmt = connection.getPreparedStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);
 			insertRowStmt.clearParameters();
 			insertRowStmt.setLong(1, type.getTypeID());
 			insertRowStmt.setLong(2, descriptionID);

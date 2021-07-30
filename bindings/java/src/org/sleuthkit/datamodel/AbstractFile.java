@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2020 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,13 +25,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -47,8 +52,8 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final TskData.TSK_DB_FILES_TYPE_ENUM fileType;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_META_TYPE_ENUM metaType;
-	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
-	protected final Set<TSK_FS_META_FLAG_ENUM> metaFlags;
+	protected TSK_FS_NAME_FLAG_ENUM dirFlag;
+	protected Set<TSK_FS_META_FLAG_ENUM> metaFlags;
 	protected long size;
 	protected final long metaAddr, ctime, crtime, atime, mtime;
 	protected final int metaSeq;
@@ -90,6 +95,15 @@ public abstract class AbstractFile extends AbstractContent {
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
 	private final String extension;
+	private final List<Attribute> fileAttributesCache = new ArrayList<Attribute>();
+	private boolean loadedAttributesCacheFromDb = false;
+
+	private final String ownerUid;	// string owner uid, for example a Windows SID.
+	// different from the numeric uid which is more commonly found 
+	// on Unix based file systems.
+	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
+	
+	private volatile String uniquePath;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -125,8 +139,11 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           unknown (default)
 	 * @param parentPath
 	 * @param mimeType           The MIME type of the file, can be null.
-	 * @param extension		        The extension part of the file name (not
+	 * @param extension          The extension part of the file name (not
 	 *                           including the '.'), can be null.
+	 * @param ownerUid           Owner uid/SID, can be null if not available.
+	 * @param osAccountObjectId	 Object Id of the owner OsAccount, may be null.
+	 *
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
@@ -144,7 +161,10 @@ public abstract class AbstractFile extends AbstractContent {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType,
-			String extension) {
+			String extension,
+			String ownerUid,
+			Long osAccountObjectId,
+			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
@@ -176,6 +196,12 @@ public abstract class AbstractFile extends AbstractContent {
 		this.mimeType = mimeType;
 		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
+		this.ownerUid = ownerUid;
+		this.osAccountObjId = osAccountObjectId;
+		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
+			this.fileAttributesCache.addAll(fileAttributes);
+			loadedAttributesCacheFromDb = true;
+		}
 	}
 
 	/**
@@ -502,6 +528,76 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Gets the attributes of this File
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 */
+	public List<Attribute> getAttributes() throws TskCoreException {
+		synchronized (this) {
+			if (!loadedAttributesCacheFromDb) {
+				ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
+				fileAttributesCache.clear();
+				fileAttributesCache.addAll(attributes);
+				loadedAttributesCacheFromDb = true;
+			}
+			return Collections.unmodifiableList(fileAttributesCache);
+		}
+	}
+
+	/**
+	 * Adds a collection of attributes to this file in a single operation within
+	 * a transaction supplied by the caller.
+	 *
+	 * @param attributes        The collection of attributes.
+	 * @param caseDbTransaction The transaction in the scope of which the
+	 *                          operation is to be performed, managed by the
+	 *                          caller. if Null is passed in a local transaction
+	 *                          will be created and used.
+	 *
+	 * @throws TskCoreException If an error occurs and the attributes were not
+	 *                          added to the artifact.
+	 */
+	public void addAttributes(Collection<Attribute> attributes, final SleuthkitCase.CaseDbTransaction caseDbTransaction) throws TskCoreException {
+
+		if (Objects.isNull(attributes) || attributes.isEmpty()) {
+			throw new TskCoreException("Illegal Argument passed to addAttributes: null or empty attributes passed to addAttributes");
+		}
+		boolean isLocalTransaction = Objects.isNull(caseDbTransaction);
+		SleuthkitCase.CaseDbTransaction localTransaction = isLocalTransaction ? getSleuthkitCase().beginTransaction() : null;
+		SleuthkitCase.CaseDbConnection connection = isLocalTransaction ? localTransaction.getConnection() : caseDbTransaction.getConnection();
+
+		try {
+			for (final Attribute attribute : attributes) {
+				attribute.setAttributeParentId(getId());
+				attribute.setCaseDatabase(getSleuthkitCase());
+				getSleuthkitCase().addFileAttribute(attribute, connection);
+			}
+
+			if (isLocalTransaction) {
+				localTransaction.commit();
+				localTransaction = null;
+			}
+			// append the new attributes if cache is already loaded.
+			synchronized (this) {
+				if (loadedAttributesCacheFromDb) {
+					fileAttributesCache.addAll(attributes);
+				}
+			}
+		} catch (SQLException ex) {
+			if (isLocalTransaction && null != localTransaction) {
+				try {
+					localTransaction.rollback();
+				} catch (TskCoreException ex2) {
+					LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+			}
+			throw new TskCoreException("Error adding file attributes", ex);
+		}
+	}
+
+	/**
 	 * Sets the known state for this file. Passed in value will be ignored if it
 	 * is "less" than the current state. A NOTABLE file cannot be downgraded to
 	 * KNOWN.
@@ -638,7 +734,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Converts a file offset and length into a series of TskFileRange objects
-	 * whose offsets are relative to the image.  This method will only work on
+	 * whose offsets are relative to the image. This method will only work on
 	 * files with layout ranges.
 	 *
 	 * @param fileOffset The byte offset in this file to map.
@@ -686,7 +782,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 				// how much this current range exceeds the length requested (or 0 if within the length requested)
 				long rangeOvershoot = Math.max(0, curRangeEnd - requestedEnd);
-				
+
 				long newRangeLen = curRangeLen - rangeOffset - rangeOvershoot;
 				toRet.add(new TskFileRange(newRangeStart, newRangeLen, toRet.size()));
 			}
@@ -840,6 +936,15 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Set the directory name flag.
+	 *
+	 * @param flag Flag to set to.
+	 */
+	void setDirFlag(TSK_FS_NAME_FLAG_ENUM flag) {
+		dirFlag = flag;
+	}
+
+	/**
 	 * @return a string representation of the meta flags
 	 */
 	public String getMetaFlagsAsString() {
@@ -859,6 +964,33 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
 		return metaFlags.contains(metaFlag);
+	}
+
+	/**
+	 * Set the specified meta flag.
+	 *
+	 * @param metaFlag Meta flag to set
+	 */
+	void setMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
+		metaFlags.add(metaFlag);
+	}
+
+	/**
+	 * Remove the specified meta flag.
+	 *
+	 * @param metaFlag Meta flag to remove.
+	 */
+	void removeMetaFlag(TSK_FS_META_FLAG_ENUM metaFlag) {
+		metaFlags.remove(metaFlag);
+	}
+
+	/**
+	 * Get meta flags as an integer.
+	 *
+	 * @return Integer representation of the meta flags.
+	 */
+	short getMetaFlagsAsInt() {
+		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
 
 	@Override
@@ -915,14 +1047,6 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		loadLocalFile();
-		if (!localFile.exists()) {
-			throw new TskCoreException(
-					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
-		}
-		if (!localFile.canRead()) {
-			throw new TskCoreException(
-					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
-		}
 
 		int bytesRead = 0;
 
@@ -1181,67 +1305,140 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Saves the editable file properties of this file to the case database,
-	 * e.g., the MIME type, MD5 hash, and known state.
+	 * Saves the editable properties of this file to the case database, e.g.,
+	 * the MIME type, MD5 hash, and known state.
 	 *
 	 * @throws TskCoreException if there is an error saving the editable file
 	 *                          properties to the case database.
 	 */
 	public void save() throws TskCoreException {
+		CaseDbTransaction transaction = null;
+		try {
+			transaction = getSleuthkitCase().beginTransaction();
+			save(transaction);
+			transaction.commit();
+		} catch (TskCoreException ex) {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+			throw ex;
+		}
+	}
 
-		// No fields have been updated
+	/**
+	 * Saves the editable properties of this file to the case database, e.g.,
+	 * the MIME type, MD5 hash, and known state, in the context of a given case
+	 * database transaction.
+	 *
+	 * @param transaction The transaction.
+	 *
+	 * @throws TskCoreException if there is an error saving the editable file
+	 *                          properties to the case database.
+	 */
+	public void save(CaseDbTransaction transaction) throws TskCoreException {
 		if (!(md5HashDirty || sha256HashDirty || mimeTypeDirty || knownStateDirty)) {
 			return;
 		}
 
-		String queryStr = "";
+		String updateSql = "";
 		if (mimeTypeDirty) {
-			queryStr = "mime_type = '" + this.getMIMEType() + "'";
+			updateSql = "mime_type = '" + this.getMIMEType() + "'";
 		}
 		if (md5HashDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "md5 = '" + this.getMd5Hash() + "'";
+			updateSql += "md5 = '" + this.getMd5Hash() + "'";
 		}
 		if (sha256HashDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "sha256 = '" + this.getSha256Hash() + "'";
+			updateSql += "sha256 = '" + this.getSha256Hash() + "'";
 		}
 		if (knownStateDirty) {
-			if (!queryStr.isEmpty()) {
-				queryStr += ", ";
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
 			}
-			queryStr += "known = '" + this.getKnown().getFileKnownValue() + "'";
+			updateSql += "known = '" + this.getKnown().getFileKnownValue() + "'";
 		}
+		updateSql = "UPDATE tsk_files SET " + updateSql + " WHERE obj_id = " + this.getId();
 
-		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
-
-		getSleuthkitCase().acquireSingleUserCaseWriteLock();
-		try (SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
-				Statement statement = connection.createStatement();) {
-
-			connection.executeUpdate(statement, queryStr);
+		SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
+		try (Statement statement = connection.createStatement()) {
+			connection.executeUpdate(statement, updateSql);
 			md5HashDirty = false;
 			sha256HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
-		} finally {
-			getSleuthkitCase().releaseSingleUserCaseWriteLock();
+			throw new TskCoreException(String.format("Error updating properties of file %s (obj_id = %s)", getName(), getId()), ex);
 		}
 	}
 
+	/**
+	 * Get the owner uid.
+	 *
+	 * Note this is a string uid, typically a Windows SID. This is different
+	 * from the numeric uid commonly found on Unix based file systems.
+	 *
+	 * @return Optional with owner uid.
+	 */
+	public Optional<String> getOwnerUid() {
+		return Optional.ofNullable(ownerUid);
+	}
+
+	/**
+	 * Get the Object Id of the owner account.
+	 *
+	 * @return Optional with Object Id of the OsAccount, or Optional.empty.
+	 */
+	public Optional<Long> getOsAccountObjectId() {
+		return Optional.ofNullable(osAccountObjId);
+	}
+	
+	@Override
+	public String getUniquePath() throws TskCoreException {
+
+		if (uniquePath == null) {
+			Content dataSource = getDataSource();
+			if (dataSource instanceof LocalFilesDataSource) {
+				if(dataSource != this) {
+					uniquePath = dataSource.getUniquePath() + parentPath + getName();
+				} else {
+					uniquePath =  "/" + getName();
+				}
+			} else {
+				uniquePath = super.getUniquePath();
+			}
+		}
+
+		return uniquePath;
+	}
+
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
-		// don't let them make more than 1 GEN_INFO
-		if (artifactTypeID == BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
-			return getGenInfoArtifact(true);
-		}
-		return getSleuthkitCase().newBlackboardArtifact(artifactTypeID, getId(), dataSourceObjectId);
+		return super.newArtifact(artifactTypeID);
+	}
+
+	/**
+	 * Create and add a data artifact associated with this abstract file. This
+	 * method creates the data artifact with the os account id associated with
+	 * this abstract file if one exists.
+	 *
+	 * @param artifactType   Type of data artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return super.newDataArtifact(artifactType, attributesList, getOsAccountObjectId().orElse(null));
 	}
 
 	/**
@@ -1282,7 +1479,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**
@@ -1327,7 +1524,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**

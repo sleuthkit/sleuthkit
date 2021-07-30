@@ -114,14 +114,14 @@
         <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/4">
             <compilation-unit>
                 <package-root>src</package-root>
-                <classpath mode="compile">lib;lib/diffutils-1.2.1.jar;lib/junit-4.8.2.jar;lib/postgresql-42.2.18.jar;lib/c3p0-0.9.5.jar;lib/mchange-commons-java-0.2.9.jar;lib/c3p0-0.9.5-sources.jar;lib/c3p0-0.9.5-javadoc.jar;lib/joda-time-2.4.jar;lib/commons-lang3-3.0.jar;lib/guava-19.0.jar;lib/SparseBitSet-1.1.jar;lib/gson-2.8.5.jar;lib/commons-validator-1.6.jar</classpath>
+                <classpath mode="compile">lib;lib/diffutils-1.2.1.jar;lib/junit-4.12.jar;lib/postgresql-42.2.18.jar;lib/c3p0-0.9.5.jar;lib/mchange-commons-java-0.2.9.jar;lib/c3p0-0.9.5-sources.jar;lib/c3p0-0.9.5-javadoc.jar;lib/joda-time-2.4.jar;lib/commons-lang3-3.0.jar;lib/guava-19.0.jar;lib/SparseBitSet-1.1.jar;lib/gson-2.8.5.jar;lib/commons-validator-1.6.jar</classpath>
                 <built-to>build</built-to>
                 <source-level>1.8</source-level>
             </compilation-unit>
             <compilation-unit>
                 <package-root>test</package-root>
                 <unit-tests/>
-                <classpath mode="compile">build;lib/diffutils-1.2.1.jar;lib/diffutils-1.2.1-javadoc.jar;lib/diffutils-1.2.1-sources.jar;lib/junit-4.8.2.jar</classpath>
+                <classpath mode="compile">build;lib/diffutils-1.2.1.jar;lib/diffutils-1.2.1-javadoc.jar;lib/diffutils-1.2.1-sources.jar;lib/junit-4.12.jar</classpath>
                 <built-to>build</built-to>
                 <built-to>test</built-to>
                 <source-level>1.8</source-level>

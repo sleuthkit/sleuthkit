@@ -37,9 +37,18 @@ You can also access the data in its tree form by starting with org.sleuthkit.dat
 
 \section main_other Other Topics
 
+- \subpage mod_dspage describes data source organization 
+- \subpage mod_os_accounts_page
 - \subpage mod_bbpage is where analysis modules (such as those in Autopsy) can post and save their results. 
 - The \subpage artifact_catalog_page gives a list of the current artifacts and attributes used on \ref mod_bbpage.
 - \subpage mod_compage is where analysis modules can store and retrieve communications-related data. 
+
+\section main_db Database Topics
+The Sleuth Kit has its own database schema that is shared with Autopsy and other tools. The primary way it gets populated is via the Java code. 
+
+- Database Schema Documentation:
+ - \subpage db_schema_9_1_page 
+ - \subpage db_schema_page "Older schemas"
 - Refer to \subpage query_database_page if you are going to use one of the SleuthkitCase methods that requires you to specify a query. 
 - Refer to \subpage insert_and_update_database_page if you are a Sleuth Kit developer and want to avoid database issues.
 

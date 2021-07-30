@@ -300,6 +300,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
+    <ClCompile Include="..\..\tsk\img\unsupported_types.c" />
     <ClCompile Include="..\..\tsk\img\vhd.c" />
     <ClCompile Include="..\..\tsk\img\vmdk.c" />
     <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp" />
@@ -308,6 +309,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\pool\pool_read.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
     <ClCompile Include="..\..\tsk\util\crypto.cpp" />
+    <ClCompile Include="..\..\tsk\util\detect_encryption.c" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -410,6 +412,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\img\img_writer.h" />
     <ClInclude Include="..\..\tsk\img\pool.hpp" />
+    <ClInclude Include="..\..\tsk\img\unsupported_types.h" />
     <ClInclude Include="..\..\tsk\img\vhd.h" />
     <ClInclude Include="..\..\tsk\img\vmdk.h" />
     <ClInclude Include="..\..\tsk\libtsk.h" />
@@ -420,6 +423,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\pool\tsk_pool.h" />
     <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
     <ClInclude Include="..\..\tsk\util\crypto.hpp" />
+    <ClInclude Include="..\..\tsk\util\detect_encryption.h" />
     <ClInclude Include="..\..\tsk\util\lw_shared_ptr.hpp" />
     <ClInclude Include="..\..\tsk\util\span.hpp" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
@@ -463,7 +467,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <Import Project="..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets" Condition="Exists('..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets')" />
     <Import Project="..\packages\zlib_native.1.2.11\build\native\zlib_native.targets" Condition="Exists('..\packages\zlib_native.1.2.11\build\native\zlib_native.targets')" />
   </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild" Condition="!$(Configuration.EndsWith('_NoLibs'))">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>

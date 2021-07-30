@@ -15,6 +15,7 @@
  */
 
 #include "tsk_vs_i.h"
+#include "tsk/util/detect_encryption.h"
 
 
 /**
@@ -175,7 +176,22 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
 
         if (vs_set == NULL) {
             tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+
+            // Check whether the volume system appears to be encrypted.
+            // Note that detectDiskEncryption does not do an entropy calculation - high entropy 
+            // files will be reported by tsk_fs_open_img().
+            encryption_detected_result* result = detectDiskEncryption(img_info, offset);
+            if (result != NULL) {
+                if (result->encryptionType == ENCRYPTION_DETECTED_SIGNATURE) {
+                    tsk_error_set_errno(TSK_ERR_VS_ENCRYPTED);
+                    tsk_error_set_errstr(result->desc);
+                }
+                free(result);
+                result = NULL;
+            }
+            else {
+                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+            }
             return NULL;
         }
 
