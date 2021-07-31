@@ -276,7 +276,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 * @returns NULL on error
 */
 TSK_FS_DIR *
-tsk_fs_dir_internal_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int recursion_depth)
+tsk_fs_dir_open_meta_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int recursion_depth)
 {
     TSK_FS_DIR *fs_dir = NULL;
     TSK_RETVAL_ENUM retval;
@@ -285,7 +285,7 @@ tsk_fs_dir_internal_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int recursi
         || (a_fs->dir_open_meta == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
-            ("tsk_fs_dir_internal_open_meta: called with NULL or unallocated structures");
+            ("tsk_fs_dir_open_meta_internal: called with NULL or unallocated structures");
         return NULL;
     }
 
@@ -302,6 +302,7 @@ tsk_fs_dir_internal_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int recursi
 
 /** \ingroup fslib
 * Open a directory (using its metadata addr) so that each of the files in it can be accessed.
+*
 * @param a_fs File system to analyze
 * @param a_addr Metadata address of the directory to open
 * @returns NULL on error
@@ -309,7 +310,7 @@ tsk_fs_dir_internal_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int recursi
 TSK_FS_DIR *
 tsk_fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr)
 {
-    return tsk_fs_dir_internal_open_meta(a_fs, a_addr, 0);
+    return tsk_fs_dir_open_meta_internal(a_fs, a_addr, 0);
 }
 
 
@@ -503,7 +504,7 @@ tsk_fs_dir_get_name(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
 #define DIR_STRSZ   4096
 
 /** \internal
- * used to keep state between calls to dir_walk_lcl
+ * used to keep state between calls to dir_walk_internal
  */
 typedef struct {
     /* Recursive path stuff */
@@ -629,7 +630,7 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
 /* dir_walk local function that is used for recursive calls.  Callers
  * should initially call the non-local version. */
 static TSK_WALK_RET_ENUM
-tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
+tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_INUM_T a_addr, TSK_FS_DIR_WALK_FLAG_ENUM a_flags,
     TSK_FS_DIR_WALK_CB a_action, void *a_ptr, int recursion_depth)
 {
@@ -639,7 +640,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     int* indexToOrderedIndex = NULL;
 
     // get the list of entries in the directory
-    if ((fs_dir = tsk_fs_dir_internal_open_meta(a_fs, a_addr, recursion_depth + 1)) == NULL) {
+    if ((fs_dir = tsk_fs_dir_open_meta_internal(a_fs, a_addr, recursion_depth + 1)) == NULL) {
         return TSK_WALK_ERROR;
     }
 
@@ -803,7 +804,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                         strlen(fs_file->name->name))) {   
                     if (tsk_verbose) {
                         tsk_fprintf(stdout,
-                            "tsk_fs_dir_walk_lcl: directory : %"
+                            "tsk_fs_dir_walk_internal: directory : %"
                             PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
                     }
 
@@ -834,7 +835,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     save_bak = a_dinfo->save_inum_named;
                     a_dinfo->save_inum_named = 0;
                 }
-                retval = tsk_fs_dir_walk_lcl(a_fs,
+                retval = tsk_fs_dir_walk_internal(a_fs,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
                     a_action, a_ptr, recursion_depth + 1);
                 if (retval == TSK_WALK_ERROR) {
@@ -842,7 +843,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                      * loaded, then we still continue */
                     if (tsk_verbose) {
                         tsk_fprintf(stderr,
-                            "tsk_fs_dir_walk_lcl: error reading directory: %"
+                            "tsk_fs_dir_walk_internal: error reading directory: %"
                             PRIuINUM "\n", fs_file->name->meta_addr);
                         tsk_error_print(stderr);
                     }
@@ -874,7 +875,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
             else {
                 if (tsk_verbose)
                     fprintf(stderr,
-                        "tsk_fs_dir_walk_lcl: Loop detected with address %"
+                        "tsk_fs_dir_walk_internal: Loop detected with address %"
                         PRIuINUM, fs_file->name->meta_addr);
             }
         }
@@ -926,11 +927,11 @@ tsk_fs_dir_internal_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
         return 1;
     }
 
-    // 32 is an arbitrary chosen value.
-    if (recursion_depth > 32) {
+    // 256 is an arbitrary chosen value.
+    if (recursion_depth > 256) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
-            ("tsk_fs_dir_internal_walk: recursion depth exceeds maximum");
+            ("tsk_fs_dir_internal_walk: recursion depth exceeds maximum (%d)", recursion_depth);
         return NULL;
     }
 
@@ -956,7 +957,7 @@ tsk_fs_dir_internal_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     }
     tsk_release_lock(&a_fs->list_inum_named_lock);
 
-    retval = tsk_fs_dir_walk_lcl(a_fs, &dinfo, a_addr, a_flags,
+    retval = tsk_fs_dir_walk_internal(a_fs, &dinfo, a_addr, a_flags,
         a_action, a_ptr, recursion_depth);
 
     // if we were saving the list of named files in the temp list,
