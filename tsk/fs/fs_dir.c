@@ -267,16 +267,16 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 
 
 /** \internal
-* Internal version of the tsk_fs_dir_open_meta function with recursion depth
+* Internal version of the tsk_fs_dir_open_meta function with macro recursion depth.  
 *
 * Open a directory (using its metadata addr) so that each of the files in it can be accessed.
 * @param a_fs File system to analyze
 * @param a_addr Metadata address of the directory to open
-* @param recursion_depth Recursion depth to limit the number of self-calls
+* @param macro_recursion_depth Recursion depth to limit the number of calls if the underlying file system needs to call methods to resolve. 
 * @returns NULL on error
 */
-TSK_FS_DIR *
-tsk_fs_dir_open_meta_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int recursion_depth)
+static TSK_FS_DIR *
+tsk_fs_dir_open_meta_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int macro_recursion_depth)
 {
     TSK_FS_DIR *fs_dir = NULL;
     TSK_RETVAL_ENUM retval;
@@ -289,7 +289,7 @@ tsk_fs_dir_open_meta_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int recursi
         return NULL;
     }
 
-    retval = a_fs->dir_open_meta(a_fs, &fs_dir, a_addr, recursion_depth);
+    retval = a_fs->dir_open_meta(a_fs, &fs_dir, a_addr, macro_recursion_depth);
     if (retval != TSK_OK) {
         tsk_fs_dir_close(fs_dir);
         return NULL;
@@ -504,7 +504,7 @@ tsk_fs_dir_get_name(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
 #define DIR_STRSZ   4096
 
 /** \internal
- * used to keep state between calls to dir_walk_internal
+ * used to keep state between calls to dir_walk_recurse
  */
 typedef struct {
     /* Recursive path stuff */
@@ -628,11 +628,11 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
 }
 
 /* dir_walk local function that is used for recursive calls.  Callers
- * should initially call the non-local version. */
+ * should initially call the non-recursive version. */
 static TSK_WALK_RET_ENUM
-tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
+tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_INUM_T a_addr, TSK_FS_DIR_WALK_FLAG_ENUM a_flags,
-    TSK_FS_DIR_WALK_CB a_action, void *a_ptr, int recursion_depth)
+    TSK_FS_DIR_WALK_CB a_action, void *a_ptr, int macro_recursion_depth)
 {
     TSK_FS_DIR *fs_dir;
     TSK_FS_FILE *fs_file;
@@ -640,7 +640,7 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     int* indexToOrderedIndex = NULL;
 
     // get the list of entries in the directory
-    if ((fs_dir = tsk_fs_dir_open_meta_internal(a_fs, a_addr, recursion_depth + 1)) == NULL) {
+    if ((fs_dir = tsk_fs_dir_open_meta_internal(a_fs, a_addr, macro_recursion_depth + 1)) == NULL) {
         return TSK_WALK_ERROR;
     }
 
@@ -797,14 +797,21 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 }
 
                 /* If we've exceeded the max depth or max length, don't
-                 * recurse any further into this directory */
+                 * recurse any further into this directory 
+                 * NOTE: We have two concepts of recursion detection in
+                 * here.  This one is based on within a top-level call
+                 * to dir_walk.  The macro_recursion_depth value allows
+                 * us to detect when file systems need to call dir_walk
+                 * to resolve things and they get into an infinite loop.
+                 * Perhaps they can be unified some day. 
+                 */
                 if ((a_dinfo->depth >= MAX_DEPTH) ||
                     (DIR_STRSZ <=
                         strlen(a_dinfo->dirs) +
                         strlen(fs_file->name->name))) {   
                     if (tsk_verbose) {
                         tsk_fprintf(stdout,
-                            "tsk_fs_dir_walk_internal: directory : %"
+                            "tsk_fs_dir_walk_recursive: directory : %"
                             PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
                     }
 
@@ -835,15 +842,15 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     save_bak = a_dinfo->save_inum_named;
                     a_dinfo->save_inum_named = 0;
                 }
-                retval = tsk_fs_dir_walk_internal(a_fs,
+                retval = tsk_fs_dir_walk_recursive(a_fs,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
-                    a_action, a_ptr, recursion_depth + 1);
+                    a_action, a_ptr, macro_recursion_depth + 1);
                 if (retval == TSK_WALK_ERROR) {
                     /* If this fails because the directory could not be
                      * loaded, then we still continue */
                     if (tsk_verbose) {
                         tsk_fprintf(stderr,
-                            "tsk_fs_dir_walk_internal: error reading directory: %"
+                            "tsk_fs_dir_walk_recursive: error reading directory: %"
                             PRIuINUM "\n", fs_file->name->meta_addr);
                         tsk_error_print(stderr);
                     }
@@ -875,7 +882,7 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
             else {
                 if (tsk_verbose)
                     fprintf(stderr,
-                        "tsk_fs_dir_walk_internal: Loop detected with address %"
+                        "tsk_fs_dir_walk_recursive: Loop detected with address %"
                         PRIuINUM, fs_file->name->meta_addr);
             }
         }
@@ -902,20 +909,22 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
 
 /** \internal
-* Internal version of the tsk_fs_dir_walk function with recursion depth
+* Internal version of the tsk_fs_dir_walk function with recursion depth.
+* This should be called by file systems when they need to start a new dir_walk
+* to resolve something and they may already be inside of a walk. 
 *
 * @param a_fs File system to analyze
 * @param a_addr Metadata address of the directory to analyze
 * @param a_flags Flags used during analysis
 * @param a_action Callback function that is called for each file name
 * @param a_ptr Pointer to data that is passed to the callback function each time
-* @param recursion_depth Recursion depth to limit the number of self-calls
+* @param macro_recursion_depth Recursion depth to limit the number of self-calls in case the underlying file system also needs to make calls into dir_walk
 * @returns 1 on error and 0 on success
 */
 uint8_t
-tsk_fs_dir_internal_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
+tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     TSK_FS_DIR_WALK_FLAG_ENUM a_flags, TSK_FS_DIR_WALK_CB a_action,
-    void *a_ptr, int recursion_depth)
+    void *a_ptr, int macro_recursion_depth)
 {
     DENT_DINFO dinfo;
     TSK_WALK_RET_ENUM retval;
@@ -923,17 +932,17 @@ tsk_fs_dir_internal_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
-            ("tsk_fs_dir_internal_walk: called with NULL or unallocated structures");
+            ("tsk_fs_dir_walk_internal: called with NULL or unallocated structures");
         return 1;
     }
 
     // 128 is a somewhat arbitrary value.
     // https://github.com/sleuthkit/sleuthkit/issues/1859 identified
-    // an overflow with 240 levels of recursion
-    if (recursion_depth > 128) {
+    // an overflow with 240 levels of recursion with FAT
+    if (macro_recursion_depth > 128) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
-            ("tsk_fs_dir_internal_walk: recursion depth exceeds maximum (%d)", recursion_depth);
+            ("tsk_fs_dir_walk_internal: recursion depth exceeds maximum (%d)", macro_recursion_depth);
         return 1;
     }
 
@@ -959,8 +968,8 @@ tsk_fs_dir_internal_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     }
     tsk_release_lock(&a_fs->list_inum_named_lock);
 
-    retval = tsk_fs_dir_walk_internal(a_fs, &dinfo, a_addr, a_flags,
-        a_action, a_ptr, recursion_depth);
+    retval = tsk_fs_dir_walk_recursive(a_fs, &dinfo, a_addr, a_flags,
+        a_action, a_ptr, macro_recursion_depth);
 
     // if we were saving the list of named files in the temp list,
     // then now save them to FS_INFO
@@ -1001,7 +1010,7 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     TSK_FS_DIR_WALK_FLAG_ENUM a_flags, TSK_FS_DIR_WALK_CB a_action,
     void *a_ptr)
 {
-	return tsk_fs_dir_internal_walk(a_fs, a_addr, a_flags, a_action, a_ptr, 0);
+	return tsk_fs_dir_walk_internal(a_fs, a_addr, a_flags, a_action, a_ptr, 0);
 }
 
 /** \internal
@@ -1126,7 +1135,7 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
      * specify UNALLOC only as a flag on the assumption that there will
      * be fewer callbacks for UNALLOC than ALLOC.
      */
-    if (tsk_fs_dir_internal_walk(a_fs, a_fs->root_inum,
+    if (tsk_fs_dir_walk_internal(a_fs, a_fs->root_inum,
             TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
             TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_named_dir_walk_cb, NULL, 0)) {
         tsk_error_errstr2_concat
@@ -1268,7 +1277,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
                 "find_orphan_meta_walk_cb: Going into directory %" PRIuINUM
                 " to mark contents as seen\n", a_fs_file->meta->addr);
 
-        if (tsk_fs_dir_internal_walk(fs, a_fs_file->meta->addr,
+        if (tsk_fs_dir_walk_internal(fs, a_fs_file->meta->addr,
                 TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE
                 | TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_orphan_dir_walk_cb,
                 data, 0)) {

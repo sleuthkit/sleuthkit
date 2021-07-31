@@ -371,7 +371,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                         /* The parent directory is not in the list.  We are going to walk
                         * the directory until we hit this directory. This process will
                         * populate the buffer table and we will then rescan it */
-                        if (tsk_fs_dir_internal_walk(fs, fs->root_inum,
+                        if (tsk_fs_dir_walk_internal(fs, fs->root_inum,
                             (TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC |
                             TSK_FS_DIR_WALK_FLAG_UNALLOC |
                             TSK_FS_DIR_WALK_FLAG_RECURSE),
