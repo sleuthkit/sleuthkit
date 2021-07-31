@@ -635,7 +635,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
 
                 // This is the right attribute. Check that the length and offset are valid.
                 // The offset is from the beginning of the entries, i.e., four bytes into the buffer.
-                uint32_t offset = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_off);
+                uint16_t offset = tsk_getu16(fs_file->fs_info->endian, ea_entry->val_off);
                 uint32_t size = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_size);
                 if (4 + offset + size <= ea_buf_len) {
                     ea_inline_data = &(ea_buf[4 + offset]);
@@ -1665,7 +1665,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
 
         // Ensure buf is sufficiently large
         // Otherwise extents[i] below can cause an OOB read
-        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
+        if (((unsigned long)fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
             free(buf);
             return 1;
         }
@@ -1684,7 +1684,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
 
         // Ensure buf is sufficiently large
         // Otherwise indices[i] below can cause an OOB read
-        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
+        if (((unsigned long)fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
             free(buf);
             return 1;
         }
