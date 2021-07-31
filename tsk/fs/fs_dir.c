@@ -927,8 +927,10 @@ tsk_fs_dir_internal_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
         return 1;
     }
 
-    // 256 is an arbitrary chosen value.
-    if (recursion_depth > 256) {
+    // 128 is a somewhat arbitrary value.
+    // https://github.com/sleuthkit/sleuthkit/issues/1859 identified
+    // an overflow with 240 levels of recursion
+    if (recursion_depth > 128) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
             ("tsk_fs_dir_internal_walk: recursion depth exceeds maximum (%d)", recursion_depth);
