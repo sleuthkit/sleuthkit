@@ -379,7 +379,7 @@ public abstract class AbstractContent implements Content {
 
 		if (osAccountId != null) {
 			try (CaseDbConnection connection = db.getConnection()) {
-				db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
 			}
 		}
 		return artifact;
@@ -391,7 +391,7 @@ public abstract class AbstractContent implements Content {
 
 		if (osAccountId != null) {
 			try (CaseDbConnection connection = db.getConnection()) {
-				db.getOsAccountManager().newOsAccountInstance(osAccountId, dataSourceId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				db.getOsAccountManager().newOsAccountInstance(osAccountId, dataSourceId, OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
 			}
 		}
 		return artifact;
