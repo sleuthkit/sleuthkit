@@ -379,6 +379,9 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     uint16_t upd_off = tsk_getu16(fs->endian, mft->upd_off);
 
     // Make sure upd_cnt > 0 to prevent an integer wrap around.
+    // NOTE: There is a bug here because upd_cnt can be for unused entries.
+    // They are now skipped (as of July 2021). We shoudl refactor this code
+    // to allow upd_cnt = 0. 
     if ((upd_cnt == 0) || (upd_cnt > (((a_ntfs->mft_rsize_b) / 2) + 1))) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -851,7 +854,16 @@ static int
 ntfs_uncompress_setup(TSK_FS_INFO * fs, NTFS_COMP_INFO * comp,
     uint32_t compunit_size_c)
 {
+    if (fs->block_size == 0 || compunit_size_c == 0) {
+        return 1;
+    }
     comp->buf_size_b = fs->block_size * compunit_size_c;
+
+    // Detect an integer overflow e.g. 65536 * 65536
+    if (comp->buf_size_b < fs->block_size) {
+        return 1;
+    }
+
     if ((comp->uncomp_buf = tsk_malloc(comp->buf_size_b)) == NULL) {
         comp->buf_size_b = 0;
         return 1;
@@ -1213,6 +1225,14 @@ ntfs_proc_compunit(NTFS_INFO * ntfs, NTFS_COMP_INFO * comp,
         comp->uncomp_idx = 0;
         for (a = 0; a < comp_unit_size; a++) {
             ssize_t cnt;
+
+            // Prevent an OOB write of comp->uncomp_buf
+            if ((comp->uncomp_idx >= comp->buf_size_b) || (fs->block_size > comp->buf_size_b - comp->uncomp_idx)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+                tsk_error_set_errstr("ntfs_proc_compunit: Buffer not big enough for uncompressed data (Index: %"PRIuSIZE ")", comp->uncomp_idx);
+                return 1;
+            }
 
             cnt =
                 tsk_fs_read_block(fs, comp_unit[a],
