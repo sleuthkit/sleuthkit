@@ -1224,9 +1224,9 @@ ntfs_proc_compunit(NTFS_INFO * ntfs, NTFS_COMP_INFO * comp,
 
             // Prevent an OOB write of comp->uncomp_buf
             if ((comp->uncomp_idx >= comp->buf_size_b) || (fs->block_size > comp->buf_size_b - comp->uncomp_idx)) {
-		tsk_error_reset();
+                tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
-		tsk_error_set_errstr("ntfs_proc_compunit: Buffer not big enough for uncompressed data (Index: %"PRIuSIZE ")", comp->uncomp_idx);
+                tsk_error_set_errstr("ntfs_proc_compunit: Buffer not big enough for uncompressed data (Index: %"PRIuSIZE ")", comp->uncomp_idx);
                 return 1;
             }
 
