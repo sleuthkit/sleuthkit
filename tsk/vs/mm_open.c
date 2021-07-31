@@ -184,7 +184,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             if (result != NULL) {
                 if (result->encryptionType == ENCRYPTION_DETECTED_SIGNATURE) {
                     tsk_error_set_errno(TSK_ERR_VS_ENCRYPTED);
-                    tsk_error_set_errstr(result->desc);
+                    tsk_error_set_errstr("%s", result->desc);
                 }
                 free(result);
                 result = NULL;
