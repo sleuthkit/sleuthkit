@@ -798,7 +798,7 @@ void TskHelper::enumerateFileAndVolumeSystems(TSK_IMG_INFO *img) {
 
 /*
 * Add all FS found in the given image to TskHelp::getInstance()
-* Returns TSK_IMG_INFO *, caller should call img->close(img) when done.
+* Returns TSK_IMG_INFO *, caller should call tsk_img_close(img) when done.
 * The FS can be obtained by calling TskHelper::getInstance().getFSInfoList()
 * Caller must call TskHelper::getInstance().reset() when done with the FS.
 * May exit the program if image failed to open.

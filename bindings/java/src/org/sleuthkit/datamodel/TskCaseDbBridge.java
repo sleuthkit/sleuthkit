@@ -388,7 +388,7 @@ class TskCaseDbBridge {
 							OsAccount newAccount = accountMgr.newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
 							Content ds = caseDb.getContentById(fileInfo.dataSourceObjId); // Data sources are cached so this will only access the database once
 							if (ds instanceof DataSource) {
-								accountMgr.newOsAccountInstance(newAccount, (DataSource)ds, OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+								accountMgr.newOsAccountInstance(newAccount, (DataSource)ds, OsAccountInstance.OsAccountInstanceType.ACCESSED);
 							}
 							ownerIdToAccountMap.put(ownerUid, newAccount);
 						}
@@ -425,10 +425,11 @@ class TskCaseDbBridge {
 					}
 					
 					// We've seen a case where the root folder comes in with an undefined meta type.
-					// In that case, we alter the type to TSK_FS_META_TYPE_DIR so it will be cached
-					// properly and will not cause errors later for being an unexpected type.
+					// We've also seen a case where it comes in as a regular file. The root folder should always be
+					// a directory so it will be cached properly and will not cause errors later for
+					// being an unexpected type.
 					if ((fileInfo.parentObjId == fileInfo.fsObjId)
-							&& (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.getValue())) {
+							&& (fileInfo.metaType != TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue())) {
 						fileInfo.metaType = TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue();
 					}
 					

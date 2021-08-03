@@ -7311,7 +7311,7 @@ public class SleuthkitCase {
 			}
 
 			if (osAccount != null) {
-				osAccountManager.newOsAccountInstance(osAccount.getId(), dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
+				osAccountManager.newOsAccountInstance(osAccount.getId(), dataSourceObjId, OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
 			}
 
 			return new org.sleuthkit.datamodel.File(this, objectId, dataSourceObjId, fsObjId,
@@ -12562,7 +12562,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
 		Statement statement = null;
-		String uniqueName = factoryClassName + "-" + displayName + "-" + type.toString() + "-" + version;
+		String uniqueName = factoryClassName + "-" + displayName + "-" + version;
 		acquireSingleUserCaseWriteLock();
 		try {
 			connection = connections.getConnection();

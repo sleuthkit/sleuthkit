@@ -75,7 +75,7 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
             break;
         }
     }
-    img->close(img);
+    tsk_img_close(img);
     TskHelper::getInstance().reset();
     return result;
 }

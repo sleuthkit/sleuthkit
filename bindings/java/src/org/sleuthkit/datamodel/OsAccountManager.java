@@ -963,7 +963,10 @@ public final class OsAccountManager {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 			}
 
-			return this.getOsAccountByAddr(sid, realm.get());
+			Optional<OsAccount> account = this.getOsAccountByAddr(sid, realm.get());
+			if (account.isPresent()) {
+				return account;
+			}
 		}
 
 		// search by login name
@@ -1436,11 +1439,6 @@ public final class OsAccountManager {
 			// if a new addr is provided and the account already has an address, and they are not the same, throw an exception
 			if (!StringUtils.isBlank(address) && !StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !address.equalsIgnoreCase(osAccount.getAddr().orElse(""))) {
 				throw new TskCoreException(String.format("Account (%d) already has an address (%s), address cannot be updated.", osAccount.getId(), osAccount.getAddr().orElse("NULL")));
-			}
-
-			// if a new login name is provided and the account already has a loginname and they are not the same, throw an exception
-			if (!StringUtils.isBlank(loginName) && !StringUtils.isBlank(osAccount.getLoginName().orElse(null)) && !loginName.equalsIgnoreCase(osAccount.getLoginName().orElse(""))) {
-				throw new TskCoreException(String.format("Account (%d) already has a login name (%s), login name cannot be updated.", osAccount.getId(), osAccount.getLoginName().orElse("NULL")));
 			}
 
 			if (StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address)) {

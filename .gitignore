@@ -82,6 +82,7 @@ rejistry++/msvcpp/rejistry++/ipch
 
 # Release files
 release/sleuthkit-*
+release/clone
 
 # IntelliSense data
 /win32/*.ncb
@@ -116,6 +117,7 @@ Makefile
 stamp-h1
 tsk/tsk_config.h
 tsk/tsk_incs.h
+tsk/tsk.pc
 aclocal.m4
 autom4te.cache
 config.log
@@ -190,6 +192,7 @@ unit_tests/base/test_base
 *.E01
 *.vmdk
 
+sleuthkit-*.tar.gz
 
 #Test data folder
 

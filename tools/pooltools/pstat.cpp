@@ -140,7 +140,7 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
             tsk_pool_type_print(stderr);
-        img->close(img);
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -150,13 +150,13 @@ main(int argc, char **argv1)
     else {
         if (pool->poolstat(pool, stdout)) {
             tsk_error_print(stderr);
-            pool->close(pool);
-            img->close(img);
+            tsk_pool_close(pool);
+            tsk_img_close(img);
             exit(1);
         }
     }
 
-    pool->close(pool);
-    img->close(img);
+    tsk_pool_close(pool);
+    tsk_img_close(img);
     exit(0);
 }
