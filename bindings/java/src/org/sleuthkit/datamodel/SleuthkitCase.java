@@ -11351,10 +11351,11 @@ public class SleuthkitCase {
 	 * @return A TagName data transfer object (DTO) for the new row.
 	 *
 	 * @throws TskCoreException
-	 * @deprecated addOrUpdateTagName should be used this method calls
-	 * addOrUpdateTagName with a default knownStatus value
+	 * @deprecated TaggingManager.addOrUpdateTagName should be used instead
+	 *	with the default knowStatus of TskData.FileKnown.UNKNOWN
 	 */
 	@Deprecated
+	@SuppressWarnings("deprecation")
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
 		return addOrUpdateTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
 	}
@@ -11372,35 +11373,11 @@ public class SleuthkitCase {
 	 * @return A TagName data transfer object (DTO) for the new row.
 	 *
 	 * @throws TskCoreException
+	 * @deprecated This method has been replaced by TaggingManager.addOrUpdateTagName.
 	 */
+	@Deprecated
 	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection();) {
-			PreparedStatement statement;
-			// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?
-			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME, Statement.RETURN_GENERATED_KEYS);
-			statement.clearParameters();
-			statement.setString(5, description);
-			statement.setString(6, color.getName());
-			statement.setByte(7, knownStatus.getFileKnownValue());
-			statement.setString(1, displayName);
-			statement.setString(2, description);
-			statement.setString(3, color.getName());
-			statement.setByte(4, knownStatus.getFileKnownValue());
-			connection.executeUpdate(statement);
-
-			statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_TAG_NAME_BY_NAME);
-			statement.clearParameters();
-			statement.setString(1, displayName);
-			try (ResultSet resultSet = connection.executeQuery(statement)) {
-				resultSet.next();
-				return new TagName(resultSet.getLong("tag_name_id"), displayName, description, color, knownStatus, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
-		}
+		return getTaggingManager().addOrUpdateTagName(displayName, description, color, knownStatus);
 	}
 
 	/**
@@ -12922,7 +12899,6 @@ public class SleuthkitCase {
 				+ "FROM tsk_objects INNER JOIN blackboard_artifacts " //NON-NLS
 				+ "ON tsk_objects.obj_id=blackboard_artifacts.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ?)"),
-		INSERT_OR_UPDATE_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
 		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?"),
 		INSERT_EXAMINER_POSTGRESQL("INSERT INTO tsk_examiners (login_name) VALUES (?) ON CONFLICT DO NOTHING"),
@@ -12941,8 +12917,7 @@ public class SleuthkitCase {
 		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?"),
-		SELECT_TAG_NAME_BY_NAME("SELECT * FROM tag_names where display_name = ?");
+		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?");
 
 		private final String sql;
 
