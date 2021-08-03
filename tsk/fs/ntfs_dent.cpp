@@ -743,11 +743,12 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
 * structure or a new structure.
 * @param a_addr Address of directory to process.
+* @param recursion_depth Recursion depth to limit the number of self-calls
 * @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
 ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) a_fs;
     TSK_FS_DIR *fs_dir;

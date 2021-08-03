@@ -379,6 +379,9 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     uint16_t upd_off = tsk_getu16(fs->endian, mft->upd_off);
 
     // Make sure upd_cnt > 0 to prevent an integer wrap around.
+    // NOTE: There is a bug here because upd_cnt can be for unused entries.
+    // They are now skipped (as of July 2021). We shoudl refactor this code
+    // to allow upd_cnt = 0. 
     if ((upd_cnt == 0) || (upd_cnt > (((a_ntfs->mft_rsize_b) / 2) + 1))) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -860,6 +863,7 @@ ntfs_uncompress_setup(TSK_FS_INFO * fs, NTFS_COMP_INFO * comp,
     if (comp->buf_size_b < fs->block_size) {
         return 1;
     }
+
     if ((comp->uncomp_buf = tsk_malloc(comp->buf_size_b)) == NULL) {
         comp->buf_size_b = 0;
         return 1;
