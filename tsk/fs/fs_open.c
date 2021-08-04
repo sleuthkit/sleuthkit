@@ -206,7 +206,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                     unsupportedSignatureFound = 1;
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
-                    tsk_error_set_errstr(imageType);
+                    tsk_error_set_errstr("%s", imageType);
                     free(imageType);
                 }
             }
@@ -217,11 +217,11 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 if (result != NULL) {
                     if (result->encryptionType == ENCRYPTION_DETECTED_SIGNATURE) {
                         tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
-                        tsk_error_set_errstr(result->desc);
+                        tsk_error_set_errstr("%s", result->desc);
                     }
                     else if (result->encryptionType == ENCRYPTION_DETECTED_ENTROPY) {
                         tsk_error_set_errno(TSK_ERR_FS_POSSIBLY_ENCRYPTED);
-                        tsk_error_set_errstr(result->desc);
+                        tsk_error_set_errstr("%s", result->desc);
                     }
                     else {
                         tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);

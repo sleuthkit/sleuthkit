@@ -226,8 +226,8 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   };
 
   _fsinfo.dir_open_meta = [](TSK_FS_INFO* fs, TSK_FS_DIR** a_fs_dir,
-                             TSK_INUM_T inode) {
-    return to_fs(fs).dir_open_meta(a_fs_dir, inode);
+                             TSK_INUM_T inode, int recursion_depth) {
+    return to_fs(fs).dir_open_meta(a_fs_dir, inode, recursion_depth);
   };
 
   _fsinfo.fscheck = [](TSK_FS_INFO*, FILE*) {
@@ -478,7 +478,8 @@ uint8_t tsk_apfs_fsstat(TSK_FS_INFO* fs_info, apfs_fsstat_info* info) try {
 }
 
 TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(TSK_FS_DIR** a_fs_dir,
-                                            TSK_INUM_T inode_num) const
+                                            TSK_INUM_T inode_num,
+                                            int recursion_depth) const
     noexcept try {
   // Sanity checks
   if (a_fs_dir == NULL) {
@@ -568,7 +569,7 @@ uint8_t APFSFSCompat::inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INU
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("inode_walk: end object id must be >= start object id: "
-            "%" PRIx32 " must be >= %" PRIx32 "",
+            "%" PRIuINUM " must be >= %" PRIuINUM "",
             end_inum, start_inum);
         return 1;
     }
@@ -1430,9 +1431,6 @@ uint8_t tsk_apfs_istat(TSK_FS_FILE* fs_file, apfs_istat_info* info) try {
  */
 TSK_FS_BLOCK_FLAG_ENUM APFSFSCompat::block_getflags(TSK_FS_INFO* fs, TSK_DADDR_T addr) {
 
-    TSK_FS_FILE *fs_file;
-    int result;
-
     if (fs->img_info->itype != TSK_IMG_TYPE_POOL) {
         // No way to return an error
         return TSK_FS_BLOCK_FLAG_UNALLOC;
@@ -1641,7 +1639,7 @@ uint8_t tsk_apfs_free_snapshot_list(apfs_snapshot_list* list) try {
     return 1;
   }
 
-  for (auto i = 0; i < list->num_snapshots; i++) {
+  for (size_t i = 0; i < list->num_snapshots; i++) {
     auto& snapshot = list->snapshots[i];
     delete[] snapshot.name;
   }

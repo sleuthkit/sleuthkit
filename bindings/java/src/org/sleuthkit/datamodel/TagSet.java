@@ -72,7 +72,7 @@ public class TagSet {
 	 *
 	 * @return TagSet id value.
 	 */
-	long getId() {
+	public long getId() {
 		return id;
 	}
 

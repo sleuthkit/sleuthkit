@@ -1016,7 +1016,7 @@ extern "C" {
          uint8_t(*istat) (TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
             TSK_DADDR_T numblock, int32_t sec_skew);
 
-         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead.
+         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode, int recursion_depth);  ///< \internal Call tsk_fs_dir_open_meta() instead.
 
          uint8_t(*jopen) (TSK_FS_INFO *, TSK_INUM_T);   ///< \internal
 

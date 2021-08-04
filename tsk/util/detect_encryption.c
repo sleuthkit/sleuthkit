@@ -121,11 +121,11 @@ calculateEntropy(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
             break;
         }
 
-        if (tsk_img_read(img_info, offset + i * bufLen, buf, bufLen) != bufLen) {
+        if (tsk_img_read(img_info, offset + i * bufLen, buf, bufLen) != (ssize_t) bufLen) {
             break;
         }
 
-        for (int j = 0; j < bufLen; j++) {
+        for (size_t j = 0; j < bufLen; j++) {
             unsigned char b = buf[j] & 0xff;
             byteCounts[b]++;
         }
@@ -176,7 +176,7 @@ detectVolumeEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     if (buf == NULL) {
         return result;
     }
-    if (tsk_img_read(img_info, offset, buf, len) != len) {
+    if (tsk_img_read(img_info, offset, buf, len) != (ssize_t)len) {
         free(buf);
         return result;
     }
@@ -250,7 +250,7 @@ detectDiskEncryption(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
     if (buf == NULL) {
         return result;
     }
-    if (tsk_img_read(img_info, offset, buf, len) != len) {
+    if (tsk_img_read(img_info, offset, buf, len) != (ssize_t)len) {
         free(buf);
         return result;
     }
