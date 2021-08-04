@@ -1,3 +1,7 @@
+---------------- VERSION 4.X --------------
+Java:
+- Fixed connection leak when making OS Accounts in bridge
+
 ---------------- VERSION 4.11.0 --------------
 C/C++:
 - Added checks at various layers to detect encrypted file systems and disks to give more useful error messages.
