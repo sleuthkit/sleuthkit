@@ -34,9 +34,7 @@ tsk_malloc(size_t len)
         tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
         tsk_error_set_errstr("tsk_malloc: %s (%" PRIuSIZE" requested)", strerror(errno), len);
     }
-    /*else {
-        memset(ptr, 0, len);
-    }*/
+
     return ptr;
 }
 
