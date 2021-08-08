@@ -258,7 +258,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             TSK_FS_FILE *fs_file;
             uint8_t found_name = 0;
 
-            if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
+            if ((fs_file = tsk_fs_dir_get2(fs_dir, i, cur_attr != NULL)) == NULL) {
                 tsk_fs_dir_close(fs_dir);
                 free(cpath);
                 return -1;

@@ -411,8 +411,21 @@ tsk_fs_dir_getsize(const TSK_FS_DIR * a_fs_dir)
  * @param a_idx Index of file in directory to open (0-based)
  * @returns NULL on error
  */
+TSK_FS_FILE*
+tsk_fs_dir_get(const TSK_FS_DIR* a_fs_dir, size_t a_idx)
+{
+    return tsk_fs_dir_get2(a_fs_dir, a_idx, TRUE);
+}
+
+/** \ingroup fslib
+* Return a specific file or subdirectory from an open directory.
+ * @param a_fs_dir Directory to analyze
+ * @param a_idx Index of file in directory to open (0-based)
+ * @param load_attributes Boolean indicating if the file attributes should be loaded
+ * @returns NULL on error
+ */
 TSK_FS_FILE *
-tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
+tsk_fs_dir_get2(const TSK_FS_DIR * a_fs_dir, size_t a_idx, BOOL load_attributes)
 {
     TSK_FS_NAME *fs_name;
     TSK_FS_FILE *fs_file;
@@ -450,8 +463,8 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
 
     /* load the fs_meta structure if possible.
      * Must have non-zero inode addr or have allocated name (if inode is 0) */
-    if (((fs_name->meta_addr)
-            || (fs_name->flags & TSK_FS_NAME_FLAG_ALLOC))) {
+    if (load_attributes && (((fs_name->meta_addr)
+            || (fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)))) {
         if (a_fs_dir->fs_info->file_add_meta(a_fs_dir->fs_info, fs_file,
                 fs_name->meta_addr)) {
             if (tsk_verbose)
