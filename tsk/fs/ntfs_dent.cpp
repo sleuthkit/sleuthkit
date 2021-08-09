@@ -25,7 +25,7 @@
  * NTFS file name processing internal functions.
  */
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 /** 
@@ -33,26 +33,27 @@
  */
 class NTFS_META_ADDR {
 private:
-    uint64_t addr; ///< MFT entry
-    uint32_t seq; ///< Sequence 
-    uint32_t hash; ///< Hash of the path
+    const uint64_t addr; ///< MFT entry
+    const uint32_t seq; ///< Sequence 
+    const uint32_t hash; ///< Hash of the path
 
 public:
-    NTFS_META_ADDR(uint64_t a_addr, uint32_t a_seq, uint32_t a_hash) {
-        addr = a_addr;
-        seq = a_seq;
-        hash = a_hash;
+    NTFS_META_ADDR(uint64_t a_addr, uint32_t a_seq, uint32_t a_hash) :
+        addr(a_addr),
+        seq(a_seq),
+        hash(a_hash)
+    {
     }
 
-    uint64_t getAddr() {
+    uint64_t getAddr() const {
         return addr;
     }
 
-    uint32_t getSeq() {
+    uint32_t getSeq() const {
         return seq;
     }
 
-    uint32_t getHash(){
+    uint32_t getHash() const {
         return hash;
     }
 };
@@ -68,7 +69,7 @@ public:
 class NTFS_PAR_MAP  {
 private:
         // maps sequence number to list of inums for the folder at that seq.
-        std::map <uint32_t, std::vector <NTFS_META_ADDR> > seq2addrs;
+        std::unordered_map <uint32_t, std::vector <NTFS_META_ADDR> > seq2addrs;
 public:
         /**
          * Add a child to this parent.
@@ -77,8 +78,7 @@ public:
          * @param seq Sequence of child in the folder
          */
         void add (uint32_t parSeq, TSK_INUM_T inum, uint32_t seq, uint32_t hash) {
-            NTFS_META_ADDR addr(inum, seq, hash);
-            seq2addrs[parSeq].push_back(addr);
+            seq2addrs[parSeq].emplace_back(inum, seq, hash);
         }
 
         /**
@@ -98,8 +98,8 @@ public:
          * @param seq Sequence number to retrieve children for.
          * @returns list of INUMS for children.
          */
-        std::vector <NTFS_META_ADDR> &get (uint32_t seq) {
-            return seq2addrs[seq];
+        const std::vector <NTFS_META_ADDR> &get (uint32_t seq) const {
+            return seq2addrs.at(seq);
         }
  };
 
@@ -111,12 +111,13 @@ public:
 *
 * Assumes that you already have the lock
 */
-static std::map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
+static std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
     // allocate it if it hasn't already been 
     if (ntfs->orphan_map == NULL) {
-        ntfs->orphan_map = new std::map<TSK_INUM_T, NTFS_PAR_MAP>;
+        auto inum_hash = [](const TSK_INUM_T& x) { return x; };
+        ntfs->orphan_map = new std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP,decltype(inum_hash)>(0, inum_hash);
     }
-    return (std::map<TSK_INUM_T, NTFS_PAR_MAP> *)ntfs->orphan_map;
+    return (std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *)ntfs->orphan_map;
 }
 
 
@@ -134,7 +135,7 @@ static std::map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
 static uint8_t
 ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_FS_META *child_meta) 
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[name_list->par_inode];
     tmpParMap.add(name_list->par_seq, child_meta->addr, child_meta->seq, tsk_fs_dir_hash(name_list->name));
     return 0;
@@ -153,7 +154,7 @@ ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_FS_M
 static bool 
 ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq) 
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     if (tmpParentMap->count(par) > 0) {
         NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
         if (tmpParMap.exists(seq))
@@ -173,10 +174,10 @@ ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq)
  * @param seq Sequence of parent inode 
  * @returns address of children files in the parent directory
  */
-static std::vector <NTFS_META_ADDR> &
+static const std::vector <NTFS_META_ADDR> &
 ntfs_parent_map_get(NTFS_INFO * ntfs, TSK_INUM_T par, uint32_t seq)
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
     return tmpParMap.get(seq);
 }
@@ -200,7 +201,7 @@ ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
         tsk_release_lock(&a_ntfs->orphan_map_lock);
         return;
     }
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(a_ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(a_ntfs);
 
     delete tmpParentMap;
     a_ntfs->orphan_map = NULL;
@@ -1276,7 +1277,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (ntfs_parent_map_exists(ntfs, a_addr, seqToSrch)) {
         TSK_FS_NAME *fs_name;
         
-        std::vector <NTFS_META_ADDR> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
+        const std::vector <NTFS_META_ADDR> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
 
         if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL)
             return TSK_ERR;
@@ -1285,7 +1286,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         fs_name->par_addr = a_addr;
         fs_name->par_seq = fs_dir->fs_file->meta->seq;
 
-        for (size_t a = 0; a < childFiles.size(); a++) {
+        for(const NTFS_META_ADDR& childFile: childFiles) {
             TSK_FS_FILE *fs_file_orp = NULL;
 
             /* Check if fs_dir already has an allocated entry for this
@@ -1294,14 +1295,14 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
              * We have only unalloc for this same entry (from idx entries),
              * then try to add it.   If we got an allocated entry from
              * the idx entries, then assume we have everything. */
-            if (tsk_fs_dir_contains(fs_dir, childFiles[a].getAddr(), childFiles[a].getHash()) == TSK_FS_NAME_FLAG_ALLOC) {
+            if (tsk_fs_dir_contains(fs_dir, childFile.getAddr(), childFile.getHash()) == TSK_FS_NAME_FLAG_ALLOC) {
                 continue;
             }
 
             /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
-            fs_name->meta_addr = childFiles[a].getAddr();
-            fs_name->meta_seq = childFiles[a].getSeq();
+            fs_name->meta_addr = childFile.getAddr();
+            fs_name->meta_seq = childFile.getSeq();
 
             // lookup the file to get more info (we did not cache that)
             fs_file_orp =
