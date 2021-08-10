@@ -466,16 +466,8 @@ public class BlackboardArtifact implements Content {
 
 	@Override
 	public Content getParent() throws TskCoreException {
-		// It is possible that multiple threads could be doing this calculation
-		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
-			ObjectInfo parentInfo;
-			parentInfo = getSleuthkitCase().getParentInfo(this);
-			if (parentInfo == null) {
-				parent = null;
-			} else {
-				parent = getSleuthkitCase().getContentById(parentInfo.getId());
-			}
+			parent = getSleuthkitCase().getContentById(sourceObjId);
 		}
 		return parent;
 	}
