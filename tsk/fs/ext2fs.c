@@ -673,7 +673,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
     // If we need more data and found an extended attribute, append that data
     if ((fs_meta->size > EXT2_INLINE_MAX_DATA_LEN) && (ea_inline_data_len > 0)) {
         // Don't go beyond the size of the file
-        size_t ea_data_len = (inode_data_len + ea_inline_data_len < (uint64_t)fs_meta->size) ? inode_data_len + ea_inline_data_len : fs_meta->size - inode_data_len;
+        size_t ea_data_len = (ea_inline_data_len < (uint64_t)fs_meta->size - inode_data_len) ? ea_inline_data_len : fs_meta->size - inode_data_len;
         memcpy(resident_data + inode_data_len, ea_inline_data, ea_data_len);
     }
 
