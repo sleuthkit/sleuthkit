@@ -820,7 +820,11 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                             "Loop found while processing file\n");
-                    tsk_fs_attr_run_free(data_run_head);
+                    if (data_run_head != NULL ) {
+                      tsk_fs_attr_run_free(data_run_head);
+                      // Make sure to set data_run_head to NULL to prevent a use-after-free
+                      data_run_head = NULL;
+                    }
                     if (list_seen != NULL) {
                         tsk_list_free(list_seen);
                         list_seen = NULL;
