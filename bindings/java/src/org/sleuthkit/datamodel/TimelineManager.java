@@ -79,10 +79,8 @@ public final class TimelineManager {
 	 */
 	private static final ImmutableList<TimelineEventType> PREDEFINED_EVENT_TYPES
 			= new ImmutableList.Builder<TimelineEventType>()
-					.add(TimelineEventType.CUSTOM_TYPES)
 					.addAll(TimelineEventType.WEB_ACTIVITY.getChildren())
 					.addAll(TimelineEventType.MISC_TYPES.getChildren())
-					.addAll(TimelineEventType.CUSTOM_TYPES.getChildren())
 					.build();
 
 	// all known artifact type ids (used for determining if an artifact is standard or custom event)
@@ -663,15 +661,15 @@ public final class TimelineManager {
 			TimelineEventType eventType;//the type of the event to add.
 			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_TL_EVENT_TYPE));
 			if (attribute == null) {
-				eventType = TimelineEventType.OTHER;
+				eventType = TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL;
 			} else {
 				long eventTypeID = attribute.getValueLong();
-				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
+				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL);
 			}
 
 			try {
 				// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
-				addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER).makeEventDescription(artifact), eventType, artifact)
+				addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL).makeEventDescription(artifact), eventType, artifact)
 						.ifPresent(newEvents::add);
 			} catch (DuplicateException ex) {
 				logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make a timeline event artifact duplicate"), ex);
@@ -780,8 +778,8 @@ public final class TimelineManager {
 		TimelineEventDescriptionWithTime evtWDesc = new TimelineEventDescriptionWithTime(timeVal, description, description, description);
 
 		TimelineEventType evtType = (ARTIFACT_TYPE_IDS.contains(artifact.getArtifactTypeID()))
-				? TimelineEventType.OTHER
-				: TimelineEventType.USER_CREATED;
+				? TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL
+				: TimelineEventType.CUSTOM_ARTIFACT_CATCH_ALL;
 
 		return addArtifactEvent(evtWDesc, evtType, artifact);
 	}
