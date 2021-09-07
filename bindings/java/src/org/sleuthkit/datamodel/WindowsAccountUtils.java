@@ -23,6 +23,10 @@ import java.util.Set;
 
 /**
  * A utility class for handling Windows specific accounts and SIDs.
+ *
+ * Implementation notes:
+ * - SIDs for standard "Service Accounts" are added to a host-scoped special realm. 
+ * - SIDs for standard groups are not added as OS Accounts
  * 
  */
 final class WindowsAccountUtils {
