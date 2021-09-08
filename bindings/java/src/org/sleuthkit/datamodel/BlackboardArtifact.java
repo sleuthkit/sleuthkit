@@ -1368,8 +1368,7 @@ public class BlackboardArtifact implements Content {
 				TSK_WEB_CATEGORIZATION,
 				TSK_PREVIOUSLY_SEEN,
 				TSK_PREVIOUSLY_UNSEEN,
-				TSK_PREVIOUSLY_NOTABLE,
-				TSK_MATCHING_PERSONA
+				TSK_PREVIOUSLY_NOTABLE
 		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
@@ -1880,13 +1879,7 @@ public class BlackboardArtifact implements Content {
 		 * Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
 		 */
 		TSK_PREVIOUSLY_NOTABLE(71, "TSK_PREVIOUSLY_NOTABLE",
-				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT),
-		
-		/**
-		 * *TEMPORARY* Indicates that the artifact is associated with a persona.
-		 */
-		TSK_MATCHING_PERSONA(72, "TSK_MATCHING_PERSONA",
-				bundle.getString("BlackboardArtifact.tskMatchingPersona.text"), Category.ANALYSIS_RESULT);
+				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
 
 		
 		/*
