@@ -432,6 +432,11 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
+	
+	// TimelineEventType with id 22 has been deprecated. Trying to reuse 22
+	// may cause backwards combatibility issues and is not recommened. If 22
+	// is reused create upgrade code to reassign event 22 to MISC_TYPE id = 3.
+	int DEPRECATED_OTHER_EVENT_ID = 22;
 
 	// Event for any artifact event with an artifact type for which we don't have
 	// a hard-corded event type. In other words, we recognize the artifact type
