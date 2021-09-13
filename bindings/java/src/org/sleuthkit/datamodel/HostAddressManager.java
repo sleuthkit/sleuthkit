@@ -785,6 +785,9 @@ public class HostAddressManager {
 	
 	/**
 	 * Normalizes an address.
+	 * 
+	 * It intentionally does NOT convert to lowercase so that the case may be
+	 * preserved, and only converted where needed.
 	 *
 	 * @param address
 	 *
