@@ -97,7 +97,7 @@ void APFSJObject::add_entry(const jit::value_type& e) {
 
             switch (ext.type) {
               case APFS_XFIELD_TYPE_NAME:
-                if((ext.len < 1) || (ext.len > e_size) || (e_offset >= e_size - ext.len)) {
+                if((ext.len < 1) || (ext.len > e_size) || (e_offset > e_size - ext.len)) {
                   break;
                 }
                 _name = std::string(xfield_data, ext.len - 1);
