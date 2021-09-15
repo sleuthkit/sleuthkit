@@ -3488,7 +3488,9 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifacts.artifact_type_id = " + artifactTypeID);
+		ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+		artifacts.addAll(blackboard.getArtifacts(getArtifactType(artifactTypeID)));
+		return artifacts;
 	}
 
 	/**
@@ -4093,57 +4095,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets unrejected blackboard artifacts that match a given WHERE clause.
-	 * Uses a SELECT	* statement that does a join of the blackboard_artifacts
-	 * and blackboard_artifact_types tables to get all of the required data.
-	 *
-	 * @param whereClause The WHERE clause to append to the SELECT statement.
-	 *
-	 * @return A list of BlackboardArtifact objects.
-	 *
-	 * @throws TskCoreException If there is a problem querying the case
-	 *                          database.
-	 */
-	ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement statement = null;
-		ResultSet rs = null;
-		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			statement = connection.createStatement();
-			String query = "SELECT blackboard_artifacts.artifact_id AS artifact_id, "
-					+ "blackboard_artifacts.obj_id AS obj_id, "
-					+ "blackboard_artifacts.artifact_obj_id AS artifact_obj_id, "
-					+ "blackboard_artifacts.data_source_obj_id AS data_source_obj_id, "
-					+ "blackboard_artifact_types.artifact_type_id AS artifact_type_id, "
-					+ "blackboard_artifact_types.type_name AS type_name, "
-					+ "blackboard_artifact_types.display_name AS display_name, "
-					+ "blackboard_artifacts.review_status_id AS review_status_id "
-					+ "FROM blackboard_artifacts, blackboard_artifact_types "
-					+ "WHERE blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id "
-					+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID()
-					+ " AND " + whereClause;
-			rs = connection.executeQuery(statement, query);
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-			}
-			return artifacts;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(statement);
-			closeConnection(connection);
-			releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
 	 * Helper method to get count of all artifacts matching the type id and
 	 * object id. Does not included rejected artifacts.
 	 *
@@ -4183,7 +4134,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get all blackboard artifacts of a given type for the given object id.
+	 * Get all blackboard artifacts of a given type for the given source (object id).
 	 * Does	not included rejected artifacts.
 	 *
 	 * @param artifactTypeName artifact type name
@@ -4195,7 +4146,9 @@ public class SleuthkitCase {
 	 *                          within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.type_name = '" + artifactTypeName + "';");
+		ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+		artifacts.addAll(blackboard.getArtifacts(getArtifactType(artifactTypeName), obj_id));
+		return artifacts;
 	}
 
 	/**
@@ -4211,7 +4164,9 @@ public class SleuthkitCase {
 	 *                          within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
+		ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+		artifacts.addAll(blackboard.getArtifacts(getArtifactType(artifactTypeID), obj_id));
+		return artifacts;
 	}
 
 	/**
@@ -4294,7 +4249,9 @@ public class SleuthkitCase {
 	 *                          within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifact_types.type_name = '" + artifactTypeName + "';");
+		ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+		artifacts.addAll(blackboard.getArtifacts(getArtifactType(artifactTypeName)));
+		return artifacts;
 	}
 
 	/**
@@ -4309,7 +4266,9 @@ public class SleuthkitCase {
 	 *                          within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
+		ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+		artifacts.addAll(blackboard.getArtifacts(getArtifactType(artifactType.getTypeID())));
+		return artifacts;
 	}
 
 	/**
@@ -4374,40 +4333,52 @@ public class SleuthkitCase {
 	 *                          within TSK core
 	 */
 	public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
-		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();	
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT arts.artifact_id AS artifact_id, "
-					+ "arts.obj_id AS obj_id, arts.artifact_obj_id as artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-					+ "types.type_name AS type_name, types.display_name AS display_name,"
-					+ "arts.review_status_id AS review_status_id "//NON-NLS
-					+ "FROM blackboard_artifacts AS arts, blackboard_artifact_types AS types "
-					+ "WHERE arts.artifact_id = " + artifactID
-					+ " AND arts.artifact_type_id = types.artifact_type_id");
-			if (rs.next()) {
-				return new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
-			} else {
-				/*
-				 * I think this should actually return null (or Optional) when
-				 * there is no artifact with the given id, but it looks like
-				 * existing code is not expecting that. -jm
-				 */
-				throw new TskCoreException("No blackboard artifact with id " + artifactID);
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
-		} finally {
-			closeResultSet(rs);
-			closeConnection(connection);
-			releaseSingleUserCaseReadLock();
+		List<DataArtifact> dataArtifacts = blackboard.getDataArtifactsWhere("artifacts.artifact_id = " + artifactID);
+		if(!dataArtifacts.isEmpty()) {
+			return dataArtifacts.get(0);
 		}
+		
+		List<AnalysisResult> analysisResults = blackboard.getAnalysisResultsWhere("artifacts.artifact_id = " + artifactID);
+		if(!analysisResults.isEmpty()) {
+			return analysisResults.get(0);
+		}
+		
+		throw new TskCoreException("No blackboard artifact with id " + artifactID);
+		
+//		CaseDbConnection connection = null;
+//		Statement s = null;
+//		ResultSet rs = null;
+//		acquireSingleUserCaseReadLock();
+//		try {
+//			connection = connections.getConnection();	
+//			s = connection.createStatement();
+//			rs = connection.executeQuery(s, "SELECT arts.artifact_id AS artifact_id, "
+//					+ "arts.obj_id AS obj_id, arts.artifact_obj_id as artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+//					+ "types.type_name AS type_name, types.display_name AS display_name,"
+//					+ "arts.review_status_id AS review_status_id "//NON-NLS
+//					+ "FROM blackboard_artifacts AS arts, blackboard_artifact_types AS types "
+//					+ "WHERE arts.artifact_id = " + artifactID
+//					+ " AND arts.artifact_type_id = types.artifact_type_id");
+//			if (rs.next()) {
+//				return new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+//						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
+//						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
+//						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
+//			} else {
+//				/*
+//				 * I think this should actually return null (or Optional) when
+//				 * there is no artifact with the given id, but it looks like
+//				 * existing code is not expecting that. -jm
+//				 */
+//				throw new TskCoreException("No blackboard artifact with id " + artifactID);
+//			}
+//		} catch (SQLException ex) {
+//			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
+//		} finally {
+//			closeResultSet(rs);
+//			closeConnection(connection);
+//			releaseSingleUserCaseReadLock();
+//		}
 	}
 
 	/**
@@ -5674,12 +5645,10 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	List<Content> getBlackboardArtifactChildren(Content parent) throws TskCoreException {
-
 		long parentId = parent.getId();
-		ArrayList<BlackboardArtifact> artsArray = getArtifactsHelper("blackboard_artifacts.obj_id = " + parentId + ";");
-
-		List<Content> lc = new ArrayList<Content>();
-		lc.addAll(artsArray);
+		List<Content> lc = new ArrayList<>();
+		lc.addAll(blackboard.getAnalysisResults(parentId));
+		lc.addAll(blackboard.getDataArtifactsBySource(parentId));
 		return lc;
 	}
 
