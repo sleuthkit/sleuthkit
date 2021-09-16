@@ -440,10 +440,39 @@ public class OsAccountTest {
 		assertEquals(hostAddr.getAddress().equalsIgnoreCase(hostnameStr), true);
 		assertEquals(HostAddress.HostAddressType.HOSTNAME.equals(hostAddr.getAddressType()), true);
 		
+		// Test some IPV6 addresses with zone/interface specifiers
+		String ipv6WithZoneStr1 = "fe80::1ff:fe23:4567:890a%eth2";
+		String ipv6WithZoneStr2 = "fe80::1ff:fe23:4567:890a%3";
+		String ipv6WithZoneStr3 = "fe80::1ff:fe23:4567:890a%12345";
+		String ipv6WithoutZoneStr = "fe80::1ff:fe23:4567:890a";
+		
+		HostAddress addr3 = caseDB.getHostAddressManager().newHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr1);
+		assertEquals(addr3.getAddress().equalsIgnoreCase(ipv6WithoutZoneStr), true);
+		assertEquals(HostAddress.HostAddressType.IPV6.equals(addr3.getAddressType()), true);
+		
+		HostAddress addr4 = caseDB.getHostAddressManager().newHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr2);
+		assertEquals(addr4.getAddress().equalsIgnoreCase(ipv6WithoutZoneStr), true);
+		assertEquals(HostAddress.HostAddressType.IPV6.equals(addr4.getAddressType()), true);
+		
+		
 		// Test get
 		Optional<HostAddress> addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.IPV4, ipv4Str);
 		assertEquals(addr4opt.isPresent(), true);
 		
+		
+		// Test get on IPv6 Address with zone specifiers - they should all resolve to same address  - the one without the zone.
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr1);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr2);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr3);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithoutZoneStr);
+		assertEquals(addr4opt.isPresent(), true);
+				
 		// Test host map
 		Host host = caseDB.getHostManager().newHost("TestHostAddress");
 		

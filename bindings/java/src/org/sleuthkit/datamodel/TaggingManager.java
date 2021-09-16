@@ -358,19 +358,30 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Returns the score based on this TagName object.
+	 * Translates the known status of a tag defnition into an item score. This
+	 * supports scoring of tagged items.
 	 *
-	 * @param knownStatus The known status of the tag.
+	 * @param knownStatus The known status of a tag definition.
 	 *
-	 * @return The relevant score.
+	 * @return The corresponding item score.
 	 */
 	static Score getTagScore(TskData.FileKnown knownStatus) {
 		switch (knownStatus) {
 			case BAD:
+				/*
+				 * The "bad" known status is used to define tags that are
+				 * "notable." An item tagged with a "notable" tag is scored as
+				 * notable.
+				 */
 				return Score.SCORE_NOTABLE;
 			case UNKNOWN:
 			case KNOWN:
-			default:
+			default: // N/A
+				/*
+				 * All other known status values have no special significance in
+				 * a tag definition. However, if an item has been tagged at all
+				 * by a user, the item is scored as likely notable.
+				 */
 				return Score.SCORE_LIKELY_NOTABLE;
 		}
 	}

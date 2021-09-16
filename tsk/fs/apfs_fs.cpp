@@ -74,33 +74,49 @@ void APFSJObject::add_entry(const jit::value_type& e) {
       _is_clone = (_inode.private_id != key->oid());
 
       // If there's more data than the size of the inode then we have xdata
-      if ((size_t)e.value.count() > sizeof(apfs_inode)) {
+      size_t e_offset = sizeof(apfs_inode);
+      size_t e_size = e.value.count();
+      // Need at least 4 bytes for start of extended fields (xf_blob_t)
+      if (e_size > sizeof(apfs_inode) + 4) {
         // The xfield headers are right after the inode
         const auto xfield = reinterpret_cast<const apfs_xfield*>(value + 1);
 
-        // The xfield data is after all of the xfield headers
-        auto xfield_data =
-            reinterpret_cast<const char*>(&xfield->entries[xfield->num_exts]);
+        e_offset += 4;
 
-        for (auto i = 0U; i < xfield->num_exts; i++) {
-          const auto& ext = xfield->entries[i];
+        // Need at least 4 bytes for each x_field_t
+        if (xfield->num_exts < (e_size - e_offset) / 4) {
+          // sizeof(xf_blob_t) + number of extenteded fields * sizeof(x_field_t)
+          e_offset += xfield->num_exts * 4;
 
-          switch (ext.type) {
-            case APFS_XFIELD_TYPE_NAME:
-              _name = std::string(xfield_data);
-              break;
-            case APFS_XFIELD_TYPE_DSTREAM: {
-              const auto ds =
-                  reinterpret_cast<const apfs_dstream*>(xfield_data);
+          // The xfield data is after all of the xfield headers
+          auto xfield_data =
+              reinterpret_cast<const char*>(&xfield->entries[xfield->num_exts]);
 
-              _size = ds->size;
-              _size_on_disk = ds->alloced_size;
-              break;
+          for (auto i = 0U; i < xfield->num_exts; i++) {
+            const auto& ext = xfield->entries[i];
+
+            switch (ext.type) {
+              case APFS_XFIELD_TYPE_NAME:
+                if((ext.len < 1) || (ext.len > e_size) || (e_offset > e_size - ext.len)) {
+                  break;
+                }
+                _name = std::string(xfield_data, ext.len - 1);
+                break;
+
+              case APFS_XFIELD_TYPE_DSTREAM: {
+                const auto ds =
+                    reinterpret_cast<const apfs_dstream*>(xfield_data);
+
+                _size = ds->size;
+                _size_on_disk = ds->alloced_size;
+                break;
+              }
             }
-          }
 
-          // The next data needs to be aligned properly
-          xfield_data += (ext.len + 7) & 0xFFF8;
+            // The next data needs to be aligned properly
+            xfield_data += (ext.len + 7) & 0xFFF8;
+            e_offset += (ext.len + 7) & 0xFFF8;
+          }
         }
       }
       break;

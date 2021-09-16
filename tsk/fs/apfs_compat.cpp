@@ -699,7 +699,9 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
         fs_file->meta->link = (char*)tsk_malloc(attr->size + 1);
         tsk_fs_attr_read(attr, (TSK_OFF_T)0, fs_file->meta->link, attr->size,
                          TSK_FS_FILE_READ_FLAG_NONE);
-        fs_file->meta->link[attr->size] = 0;
+        if (fs_file->meta->link != NULL) {
+            fs_file->meta->link[attr->size] = 0;
+        }
         break;
       }
     }
