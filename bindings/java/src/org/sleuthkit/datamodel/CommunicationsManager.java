@@ -532,8 +532,10 @@ public final class CommunicationsManager {
 			+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 			+ " artifacts.data_source_obj_id AS data_source_obj_id,"
 			+ " artifacts.artifact_type_id AS artifact_type_id,"
-			+ " artifacts.review_status_id AS review_status_id"
+			+ " artifacts.review_status_id AS review_status_id,"
+			+ " tsk_data_artifacts.os_account_obj_id AS os_account_obj_id"
 			+ " FROM blackboard_artifacts AS artifacts"
+			+ " LEFT JOIN tsk_data_artifacts ON tsk_data_artifacts.artifact_obj_id = artifacts.artifact_obj_id"
 			+ "	JOIN blackboard_attributes AS attr_account_type"
 			+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
 			+ " JOIN blackboard_attributes AS attr_account_id"
@@ -552,10 +554,10 @@ public final class CommunicationsManager {
 			if (rs.next()) {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 
-				accountArtifact = new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+				accountArtifact = new DataArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
 						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")), rs.getLong("os_account_obj_id"), false);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account", ex);
@@ -959,17 +961,8 @@ public final class CommunicationsManager {
 		try (CaseDbConnection connection = db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryStr);) { //NON-NLS
-			Set<Content> relationshipSources = new HashSet<Content>();
-			while (rs.next()) {
-				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				relationshipSources.add(new BlackboardArtifact(db, rs.getLong("artifact_id"),
-						rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						bbartType.getTypeID(),
-						bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-			}
-
+			Set<Content> relationshipSources = new HashSet<>();
+			relationshipSources.addAll(getArtifactsFromResult(connection, rs));
 			return relationshipSources;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships for account. " + ex.getMessage(), ex);
@@ -1134,15 +1127,8 @@ public final class CommunicationsManager {
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString);) {
 
-			ArrayList<Content> artifacts = new ArrayList<Content>();
-			while (rs.next()) {
-				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-			}
-
+			ArrayList<Content> artifacts = new ArrayList<>();
+			artifacts.addAll(getArtifactsFromResult(connection, rs));		
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships between accounts. " + ex.getMessage(), ex);
@@ -1384,5 +1370,45 @@ public final class CommunicationsManager {
 		}
 
 		return limitStr;
+	}
+	
+	/**
+	 * A helper method that will return a set of BlackboardArtifact objects for
+	 * the given ResultSet.
+	 *
+	 * The result set results must include the artifact_type_id column and the
+	 * artifact_obj_id column.
+	 *
+	 * @param connection A connection to the db.
+	 * @param resultSet	 The results of executing a query.
+	 *
+	 * @return A list of BlackboardArtifact objects.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private List<BlackboardArtifact> getArtifactsFromResult(CaseDbConnection connection, ResultSet resultSet) throws SQLException, TskCoreException {
+		List<Long> analysisArtifactIds = new ArrayList<>();
+		List<Long> dataArtifactIds = new ArrayList<>();
+		while (resultSet.next()) {
+			BlackboardArtifact.Type bbartType = db.getArtifactType(resultSet.getInt("artifact_type_id"));
+
+			if (bbartType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+				analysisArtifactIds.add(resultSet.getLong("artifact_obj_id"));
+			} else {
+				dataArtifactIds.add(resultSet.getLong("artifact_obj_id"));
+			}
+		}
+
+		List<BlackboardArtifact> artifacts = new ArrayList<>();
+		if (!analysisArtifactIds.isEmpty()) {
+			artifacts.addAll(db.getBlackboard().getArtifactsWhereAll(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactIds, connection));
+		}
+
+		if (!dataArtifactIds.isEmpty()) {
+			artifacts.addAll(db.getBlackboard().getArtifactsWhereAll(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactIds, connection));
+		}
+
+		return artifacts;
 	}
 }

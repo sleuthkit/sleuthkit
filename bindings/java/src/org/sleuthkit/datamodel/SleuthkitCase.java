@@ -72,6 +72,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.postgresql.util.PSQLState;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardArtifact.Category;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
@@ -3617,6 +3618,7 @@ public class SleuthkitCase {
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
 	 */
+	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
 		CaseDbConnection connection = null;
 		Statement s = null;
@@ -3670,6 +3672,7 @@ public class SleuthkitCase {
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
 	 */
+	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String subString, boolean startsWith) throws TskCoreException {
 		String valSubStr = "%" + subString; //NON-NLS
 		if (startsWith == false) {
@@ -3724,6 +3727,7 @@ public class SleuthkitCase {
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
 	 */
+	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, int value) throws TskCoreException {
 		CaseDbConnection connection = null;
 		Statement s = null;
@@ -3774,6 +3778,7 @@ public class SleuthkitCase {
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
 	 */
+	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, long value) throws TskCoreException {
 		CaseDbConnection connection = null;
 		Statement s = null;
@@ -3824,6 +3829,7 @@ public class SleuthkitCase {
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
 	 */
+	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, double value) throws TskCoreException {
 		CaseDbConnection connection = null;
 		Statement s = null;
@@ -3874,6 +3880,7 @@ public class SleuthkitCase {
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
 	 */
+	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, byte value) throws TskCoreException {
 		CaseDbConnection connection = null;
 		Statement s = null;
@@ -5125,35 +5132,37 @@ public class SleuthkitCase {
 	 *                          within tsk core \ref query_database_page
 	 */
 	public ArrayList<BlackboardArtifact> getMatchingArtifacts(String whereClause) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
+		String query = "SELECT blackboard_artifacts.artifact_id AS artifact_id, "
+				+ "blackboard_artifacts.obj_id AS obj_id, blackboard_artifacts.artifact_obj_id AS artifact_obj_id, blackboard_artifacts.data_source_obj_id AS data_source_obj_id, blackboard_artifacts.artifact_type_id AS artifact_type_id, "
+				+ "blackboard_artifacts.review_status_id AS review_status_id  "
+				+ "FROM blackboard_artifacts " + whereClause;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT blackboard_artifacts.artifact_id AS artifact_id, "
-					+ "blackboard_artifacts.obj_id AS obj_id, blackboard_artifacts.artifact_obj_id AS artifact_obj_id, blackboard_artifacts.data_source_obj_id AS data_source_obj_id, blackboard_artifacts.artifact_type_id AS artifact_type_id, "
-					+ "blackboard_artifacts.review_status_id AS review_status_id  "
-					+ "FROM blackboard_artifacts " + whereClause); //NON-NLS
-			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				BlackboardArtifact.Type type;
-				// artifact type is cached, so this does not necessarily call to the db
-				type = this.getArtifactType(rs.getInt("artifact_type_id"));
-				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						type.getTypeID(), type.getTypeName(), type.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
-				matches.add(artifact);
+		try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(query)) {
+
+			List<Long> analysisArtifactObjIds = new ArrayList<>();
+			List<Long> dataArtifactObjIds = new ArrayList<>();
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+					analysisArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				} else {
+					dataArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				}
 			}
+
+			ArrayList<BlackboardArtifact> matches = new ArrayList<>();
+			if (!analysisArtifactObjIds.isEmpty()) {
+				matches.addAll(blackboard.getArtifactsWhereAll(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+			}
+
+			if (!dataArtifactObjIds.isEmpty()) {
+				matches.addAll(blackboard.getArtifactsWhereAll(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+			}
+
 			return matches;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attributes using this where clause: " + whereClause, ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -5278,21 +5287,15 @@ public class SleuthkitCase {
 
 	@Deprecated
 	BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
-		try {
-			long artifact_obj_id = addObject(obj_id, TskData.ObjectType.ARTIFACT.getObjectType(), connection);
-			PreparedStatement statement = createInsertArtifactStatement(artifact_type_id, obj_id, artifact_obj_id, data_source_obj_id, connection);
-
-			connection.executeUpdate(statement);
-			try (ResultSet resultSet = statement.getGeneratedKeys()) {
-				resultSet.next();
-				return new BlackboardArtifact(this, resultSet.getLong(1), //last_insert_rowid()
-						obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, artifactTypeName, artifactDisplayName, BlackboardArtifact.ReviewStatus.UNDECIDED, true);
+		BlackboardArtifact.Type type = getArtifactType(artifact_type_id);
+		try{
+			if(type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+				return blackboard.newAnalysisResult(type, obj_id, data_source_obj_id, Score.SCORE_UNKNOWN, null, null, null, Collections.emptyList()).getAnalysisResult();
+			} else {
+				return blackboard.newDataArtifact(type, obj_id, data_source_obj_id, Collections.emptyList(), null);
 			}
-		} catch (SQLException ex) {
+		} catch (BlackboardException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
-		} finally {
-			releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -6138,27 +6141,26 @@ public class SleuthkitCase {
 	 *                          core and file could not be queried
 	 */
 	public BlackboardArtifact getArtifactByArtifactId(long id) throws TskCoreException {
-		CaseDbConnection connection = null;
-		ResultSet rs = null;
+		String query = "SELECT artifact_type_id, artifact_obj_id WHERE artifact_id = " + id;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ARTIFACT_ID);
-			statement.clearParameters();
-			statement.setLong(1, id);
-			rs = connection.executeQuery(statement);
-			List<BlackboardArtifact> artifacts = resultSetToArtifacts(rs);
-			if (artifacts.size() > 0) {
-				return artifacts.get(0);
-			} else {
-				return null;
+
+		try (CaseDbConnection connection = connections.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery(query);) {
+			if (resultSet != null && resultSet.next()) {
+				BlackboardArtifact.Type artifactType = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				long artifactObjId = resultSet.getLong("artifact_obj_id");
+				switch (artifactType.getCategory()) {
+					case ANALYSIS_RESULT:
+						return blackboard.getAnalysisResultById(artifactObjId);
+					case DATA_ARTIFACT:
+						return blackboard.getDataArtifactById(artifactObjId);
+				}
 			}
+			return null;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifacts by artifact id, artifact id = " + id, ex);
 		} finally {
-			closeResultSet(rs);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -10287,41 +10289,6 @@ public class SleuthkitCase {
 			}
 		}
 		return children;
-	}
-
-	/**
-	 * Creates BlackboardArtifact objects for the result set of a
-	 * blackboard_artifacts table query of the form "SELECT * FROM
-	 * blackboard_artifacts WHERE XYZ".
-	 *
-	 * @param rs A result set from a query of the blackboard_artifacts table of
-	 *           the form "SELECT * FROM blackboard_artifacts WHERE XYZ".
-	 *
-	 * @return A list of BlackboardArtifact objects.
-	 *
-	 * @throws SQLException     Thrown if there is a problem iterating through
-	 *                          the result set.
-	 * @throws TskCoreException Thrown if there is an error looking up the
-	 *                          artifact type id
-	 */
-	private List<BlackboardArtifact> resultSetToArtifacts(ResultSet rs) throws SQLException, TskCoreException {
-		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-		try {
-			while (rs.next()) {
-				BlackboardArtifact.Type artifactType = getArtifactType(rs.getInt("artifact_type_id"));
-				if (artifactType != null) {
-					artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
-							rs.getInt("artifact_type_id"), artifactType.getTypeName(), artifactType.getDisplayName(),
-							BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-				} else {
-					throw new TskCoreException("Error looking up artifact type ID " + rs.getInt("artifact_type_id") + " from artifact " + rs.getLong("artifact_id"));
-				}
-			} //end for each resultSet
-		} catch (SQLException e) {
-			logger.log(Level.SEVERE, "Error getting artifacts from result set", e); //NON-NLS
-		}
-
-		return artifacts;
 	}
 
 	/**

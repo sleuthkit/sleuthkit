@@ -746,6 +746,40 @@ public final class Blackboard {
 	}
 
 	/**
+	 * Returns a list of DataArtifacts that have the given values for the given
+	 * the given column.
+	 *
+	 * For example getDataArtifactsWhereAll("artifacts.artifact_obj_id",
+	 * artifactObjIdList) will return a list of artifacts for the artifactObjID
+	 * values in the given list.
+	 *
+	 * When using this method make sure to use the tables as nicknamed in
+	 * DATA_ARTIFACT_QUERY_STRING and ANALYSIS_RESULT_QUERY_STRING;
+	 *
+	 * @param dbColumn
+	 * @param ids
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 */
+	List<? extends BlackboardArtifact> getArtifactsWhereAll(BlackboardArtifact.Category category, String dbColumn, List<? extends Number> values, CaseDbConnection connection) throws TskCoreException {
+		String where = "";
+		for (Number value : values) {
+			if (!where.isEmpty()) {
+				where += " OR ";
+			}
+			where += dbColumn + " = " + value;
+		}
+
+		if (category == BlackboardArtifact.Category.DATA_ARTIFACT) {
+			return getDataArtifactsWhere(where, connection);
+		} else {
+			return getAnalysisResultsWhere(where, connection);
+		}
+	}
+
+	/**
 	 * Get all data artifacts matching the given where sub-clause.
 	 *
 	 * @param whereClause SQL Where sub-clause, specifies conditions to match.
@@ -776,7 +810,7 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	private List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
+	List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
 
 		final String queryString = DATA_ARTIFACT_QUERY_STRING
 				+ " AND ( " + whereClause + " )";
@@ -941,7 +975,7 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<BlackboardArtifact> getArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
-		String whereClause = String.format("artifacts.data_source_obj_id = %d", dataSourceObjId, artifactTypeID);
+		String whereClause = String.format("artifacts.data_source_obj_id = %d", dataSourceObjId);
 		return getArtifactsWhere(caseDb.getArtifactType(artifactTypeID), whereClause);
 	}
 
@@ -964,20 +998,20 @@ public final class Blackboard {
 			return new ArrayList<>();
 		}
 
-		String analysisTypeQuery = "";
-		String dataTypeQuery = "";
+		String analysisResultQuery = "";
+		String dataArtifactQuery = "";
 
 		for (BlackboardArtifact.Type type : artifactTypes) {
 			if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
-				if (!analysisTypeQuery.isEmpty()) {
-					analysisTypeQuery += " OR ";
+				if (!analysisResultQuery.isEmpty()) {
+					analysisResultQuery += " OR ";
 				}
-				analysisTypeQuery += "types.artifact_type_id = " + type.getTypeID();
+				analysisResultQuery += "types.artifact_type_id = " + type.getTypeID();
 			} else {
-				if (!dataTypeQuery.isEmpty()) {
-					dataTypeQuery += " OR ";
+				if (!dataArtifactQuery.isEmpty()) {
+					dataArtifactQuery += " OR ";
 				}
-				dataTypeQuery += "types.artifact_type_id = " + type.getTypeID();
+				dataArtifactQuery += "types.artifact_type_id = " + type.getTypeID();
 			}
 		}
 
@@ -991,13 +1025,13 @@ public final class Blackboard {
 
 		List<BlackboardArtifact> artifacts = new ArrayList<>();
 
-		if (!analysisTypeQuery.isEmpty()) {
-			String fullQuery = "( " + analysisTypeQuery + " ) AND (" + dsQuery + ") ";
+		if (!analysisResultQuery.isEmpty()) {
+			String fullQuery = "( " + analysisResultQuery + " ) AND (" + dsQuery + ") ";
 			artifacts.addAll(this.getAnalysisResultsWhere(fullQuery));
 		}
 
-		if (!dataTypeQuery.isEmpty()) {
-			String fullQuery = "( " + dataTypeQuery + " ) AND (" + dsQuery + ") ";
+		if (!dataArtifactQuery.isEmpty()) {
+			String fullQuery = "( " + dataArtifactQuery + " ) AND (" + dsQuery + ") ";
 			artifacts.addAll(this.getDataArtifactsWhere(fullQuery));
 		}
 
