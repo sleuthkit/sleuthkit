@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -76,7 +77,8 @@ final class WindowsAccountUtils {
 	
 	// Any SIDs with the following prefixes are group SID and should be excluded.
 	private static final Set<String> GROUP_SID_PREFIX = ImmutableSet.of(
-			"S-1-5-32"		// Builtin
+			"S-1-5-32",		// Builtin
+			"S-1-5-87"		// Task ID prefix
 			
 	);
 	
@@ -121,10 +123,11 @@ final class WindowsAccountUtils {
 			.build();
 		
 	private static final Map<String, String> SPECIAL_SID_PREFIXES_MAP = ImmutableMap.<String, String>builder() 
-			.put("S-1-5-80", "All Services")
-			.put("S-1-5-82", "IIS AppPool")
+			.put("S-1-5-80", "Service Virtual Account")
+			.put("S-1-5-82", "IIS AppPool Virtual Account")
 			.put("S-1-5-83", "Virtual Machine Virtual Account")
 			.put("S-1-5-90", "Window Manager Virtual Account")
+			.put("S-1-5-94", "WinRM Virtual accountt")
 			.put("S-1-5-96", "Font Driver Host Virtual Account")
 			.build();
 				
@@ -146,6 +149,16 @@ final class WindowsAccountUtils {
 				return true;
 			}
 		}
+		
+		// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
+		tempSID = tempSID.replaceFirst(DOMAIN_SID_PREFIX + "-", "");
+		String subAuthStr = tempSID.substring(0, tempSID.indexOf('-'));
+		Integer subAuth = Optional.ofNullable(subAuthStr).map(Integer::valueOf).orElse(0);
+		if (subAuth >= 80 && subAuth <= 111) {
+			return true;
+		}
+		
+		
 		return false;
 	}
 	
