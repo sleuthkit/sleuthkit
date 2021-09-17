@@ -535,13 +535,13 @@ public final class CommunicationsManager {
 			+ " artifacts.review_status_id AS review_status_id,"
 			+ " tsk_data_artifacts.os_account_obj_id AS os_account_obj_id"
 			+ " FROM blackboard_artifacts AS artifacts"
-			+ " LEFT JOIN tsk_data_artifacts ON tsk_data_artifacts.artifact_obj_id = artifacts.artifact_obj_id"
 			+ "	JOIN blackboard_attributes AS attr_account_type"
 			+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
 			+ " JOIN blackboard_attributes AS attr_account_id"
 			+ "		ON artifacts.artifact_id = attr_account_id.artifact_id"
 			+ "		AND attr_account_id.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID()
 			+ "	    AND attr_account_id.value_text = '" + accountUniqueID + "'"
+			+ " LEFT JOIN tsk_data_artifacts ON tsk_data_artifacts.artifact_obj_id = artifacts.artifact_obj_id"
 			+ " WHERE artifacts.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()
 			+ " AND attr_account_type.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
 			+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"
@@ -950,14 +950,13 @@ public final class CommunicationsManager {
 			+ " artifacts.review_status_id AS review_status_id,"
 			+ " tsk_data_artifacts.os_account_obj_id as os_account_obj_id"
 			+ " FROM blackboard_artifacts as artifacts"
-			+ " LEFT JOIN tsk_data_artifacts ON artifacts.artifact_obj_id = tsk_data_artifacts.artifact_obj_id"
 			+ " JOIN " + limitQuery
 			+ "	ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+			+ " LEFT JOIN tsk_data_artifacts ON artifacts.artifact_obj_id = tsk_data_artifacts.artifact_obj_id"
 			// append sql to restrict search to specified account device instances 
 			+ " WHERE (" + adiSQLClause + " )"
 			// plus other filters
 			+ (filterSQL.isEmpty() ? "" : " AND (" + filterSQL + " )");
-
 		
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
@@ -1114,12 +1113,12 @@ public final class CommunicationsManager {
 				+ "		artifacts.artifact_obj_id AS artifact_obj_id,"
 				+ "		artifacts.data_source_obj_id AS data_source_obj_id,"
 				+ "		artifacts.artifact_type_id AS artifact_type_id,"
-				+ "		artifacts.review_status_id AS review_status_id"
+				+ "		artifacts.review_status_id AS review_status_id,"
 				+ "     tsk_data_artifact.os_account_obj_id AS os_account_obj_id"
 				+ " FROM blackboard_artifacts AS artifacts"
-				+ " LEFT JOIN tsk_data_artifact ON artifact.artifact_obj_id = tsk_data_artifact"
 				+ "	JOIN " + limitQuery
 				+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+				+ " LEFT JOIN tsk_data_artifact ON artifact.artifact_obj_id = tsk_data_artifact"
 				+ " WHERE (( relationships.account1_id = " + account1.getAccount().getAccountID()
 				+ " AND relationships.account2_id  = " + account2.getAccount().getAccountID()
 				+ " ) OR (	  relationships.account2_id = " + account1.getAccount().getAccountID()
