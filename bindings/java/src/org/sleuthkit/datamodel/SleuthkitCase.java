@@ -3620,37 +3620,42 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-					+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-					+ "types.type_name AS type_name, types.display_name AS display_name, "//NON-NLS
-					+ " arts.review_status_id AS review_status_id " //NON-NLS
-					+ "FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
-					+ "WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
-					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND attrs.value_text = '" + value + "'"
-					+ " AND types.artifact_type_id=arts.artifact_type_id"
-					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());	 //NON-NLS
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+		try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+						+ "arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+						+ "types.type_name AS type_name, types.display_name AS display_name, "//NON-NLS
+						+ " arts.review_status_id AS review_status_id " //NON-NLS
+						+ "FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
+						+ "WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
+						+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+						+ " AND attrs.value_text = '" + value + "'"
+						+ " AND types.artifact_type_id=arts.artifact_type_id"
+						+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());) {	 //NON-NLS
+
+			List<Long> analysisArtifactObjIds = new ArrayList<>();
+			List<Long> dataArtifactObjIds = new ArrayList<>();
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+					analysisArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				} else {
+					dataArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				}
+			}
+
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+			if (!analysisArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+			}
+
+			if (!dataArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -3678,37 +3683,42 @@ public class SleuthkitCase {
 		if (startsWith == false) {
 			valSubStr += "%"; //NON-NLS
 		}
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
+
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-					+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, " //NON-NLS
-					+ " types.type_name AS type_name, types.display_name AS display_name, " //NON-NLS
-					+ " arts.review_status_id AS review_status_id " //NON-NLS
-					+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
-					+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
-					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND LOWER(attrs.value_text) LIKE LOWER('" + valSubStr + "')"
-					+ " AND types.artifact_type_id=arts.artifact_type_id "
-					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+		try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+						+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, " //NON-NLS
+						+ " types.type_name AS type_name, types.display_name AS display_name, " //NON-NLS
+						+ " arts.review_status_id AS review_status_id " //NON-NLS
+						+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
+						+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
+						+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+						+ " AND LOWER(attrs.value_text) LIKE LOWER('" + valSubStr + "')"
+						+ " AND types.artifact_type_id=arts.artifact_type_id "
+						+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());) {
+			List<Long> analysisArtifactObjIds = new ArrayList<>();
+			List<Long> dataArtifactObjIds = new ArrayList<>();
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+					analysisArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				} else {
+					dataArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				}
+			}
+
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+			if (!analysisArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+			}
+
+			if (!dataArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -3729,37 +3739,41 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, int value) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-					+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-					+ " types.type_name AS type_name, types.display_name AS display_name, "
-					+ " arts.review_status_id AS review_status_id  "//NON-NLS
-					+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
-					+ "WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
-					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND attrs.value_int32 = " + value //NON-NLS
-					+ " AND types.artifact_type_id=arts.artifact_type_id "
-					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+		try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+						+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+						+ " types.type_name AS type_name, types.display_name AS display_name, "
+						+ " arts.review_status_id AS review_status_id  "//NON-NLS
+						+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
+						+ "WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
+						+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+						+ " AND attrs.value_int32 = " + value //NON-NLS
+						+ " AND types.artifact_type_id=arts.artifact_type_id "
+						+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());) {
+			List<Long> analysisArtifactObjIds = new ArrayList<>();
+			List<Long> dataArtifactObjIds = new ArrayList<>();
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+					analysisArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				} else {
+					dataArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				}
+			}
+
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+			if (!analysisArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+			}
+
+			if (!dataArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -3780,37 +3794,41 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, long value) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-					+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-					+ " types.type_name AS type_name, types.display_name AS display_name, "
-					+ " arts.review_status_id AS review_status_id "//NON-NLS
-					+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
-					+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
-					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND attrs.value_int64 = " + value //NON-NLS
-					+ " AND types.artifact_type_id=arts.artifact_type_id "
-					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+		try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+						+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+						+ " types.type_name AS type_name, types.display_name AS display_name, "
+						+ " arts.review_status_id AS review_status_id "//NON-NLS
+						+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
+						+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
+						+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+						+ " AND attrs.value_int64 = " + value //NON-NLS
+						+ " AND types.artifact_type_id=arts.artifact_type_id "
+						+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());) {
+			List<Long> analysisArtifactObjIds = new ArrayList<>();
+			List<Long> dataArtifactObjIds = new ArrayList<>();
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+					analysisArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				} else {
+					dataArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				}
+			}
+
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+			if (!analysisArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+			}
+
+			if (!dataArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -3831,37 +3849,41 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, double value) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-					+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-					+ " types.type_name AS type_name, types.display_name AS display_name, "
-					+ " arts.review_status_id AS review_status_id "//NON-NLS
-					+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
-					+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
-					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND attrs.value_double = " + value //NON-NLS
-					+ " AND types.artifact_type_id=arts.artifact_type_id "
-					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+		try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+						+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+						+ " types.type_name AS type_name, types.display_name AS display_name, "
+						+ " arts.review_status_id AS review_status_id "//NON-NLS
+						+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
+						+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
+						+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+						+ " AND attrs.value_double = " + value //NON-NLS
+						+ " AND types.artifact_type_id=arts.artifact_type_id "
+						+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());) {
+			List<Long> analysisArtifactObjIds = new ArrayList<>();
+			List<Long> dataArtifactObjIds = new ArrayList<>();
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+					analysisArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				} else {
+					dataArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				}
+			}
+
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+			if (!analysisArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+			}
+
+			if (!dataArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -3882,37 +3904,42 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, byte value) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
+
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-					+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
-					+ " types.type_name AS type_name, types.display_name AS display_name, "
-					+ " arts.review_status_id AS review_status_id "//NON-NLS
-					+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
-					+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
-					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND attrs.value_byte = " + value //NON-NLS
-					+ " AND types.artifact_type_id=arts.artifact_type_id "
-					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+		try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
+						+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+						+ " types.type_name AS type_name, types.display_name AS display_name, "
+						+ " arts.review_status_id AS review_status_id "//NON-NLS
+						+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
+						+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
+						+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+						+ " AND attrs.value_byte = " + value //NON-NLS
+						+ " AND types.artifact_type_id=arts.artifact_type_id "
+						+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());) {
+			List<Long> analysisArtifactObjIds = new ArrayList<>();
+			List<Long> dataArtifactObjIds = new ArrayList<>();
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = this.getArtifactType(resultSet.getInt("artifact_type_id"));
+				if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+					analysisArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				} else {
+					dataArtifactObjIds.add(resultSet.getLong("artifact_obj_id"));
+				}
+			}
+
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
+			if (!analysisArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+			}
+
+			if (!dataArtifactObjIds.isEmpty()) {
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -5152,11 +5179,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> matches = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				matches.addAll(blackboard.getArtifactsWhereAll(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				matches.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				matches.addAll(blackboard.getArtifactsWhereAll(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				matches.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 
 			return matches;
@@ -12603,6 +12630,46 @@ public class SleuthkitCase {
 				return " INSERT OR IGNORE " + sql; //NON-NLS
 			default:
 				throw new UnsupportedOperationException("Unsupported DB type: " + getDatabaseType().name());
+		}
+	}
+	
+	/**
+	 * This helper method that returns a list of Blackboard artifact. The method
+	 * will generate an SQL OR statement that can be used as part of a where
+	 * clause to retrieve artifacts for a set of values.
+	 *
+	 * For example getArtifactsForValues("artifacts.artifact_obj_id",
+	 * artifactObjIdList) will return a list of artifacts for the artifactObjID
+	 * values in the given list. 
+	 *
+	 * When using this method be sure to use the tables as nicknamed in
+	 * DATA_ARTIFACT_QUERY_STRING and ANALYSIS_RESULT_QUERY_STRING;
+	 *
+	 * @param category The type of artifacts to return.
+	 * @param dbColumn The database column. 
+	 * @param value List of values.
+	 *
+	 * @return A list of BlackboardArtifacts
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<? extends BlackboardArtifact> getArtifactsForValues(BlackboardArtifact.Category category, String dbColumn, List<? extends Number> values, CaseDbConnection connection) throws TskCoreException {
+		String where = "";
+		// This look creates the OR statment with the following format:
+		// <dbColumn> = <value> OR <dbColumn> = <value2> OR ...  
+		for (Number value : values) {
+			if (!where.isEmpty()) {
+				where += " OR ";
+			}
+			where += dbColumn + " = " + value;
+		}
+
+		// Base on the category pass the OR statement to the approprate method
+		// that will retrieve the artifacts.
+		if (category == BlackboardArtifact.Category.DATA_ARTIFACT) {
+			return blackboard.getDataArtifactsWhere(where, connection);
+		} else {
+			return blackboard.getAnalysisResultsWhere(where, connection);
 		}
 	}
 

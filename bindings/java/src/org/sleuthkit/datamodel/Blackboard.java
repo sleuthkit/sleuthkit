@@ -746,40 +746,6 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Returns a list of DataArtifacts that have the given values for the given
-	 * the given column.
-	 *
-	 * For example getDataArtifactsWhereAll("artifacts.artifact_obj_id",
-	 * artifactObjIdList) will return a list of artifacts for the artifactObjID
-	 * values in the given list.
-	 *
-	 * When using this method make sure to use the tables as nicknamed in
-	 * DATA_ARTIFACT_QUERY_STRING and ANALYSIS_RESULT_QUERY_STRING;
-	 *
-	 * @param dbColumn
-	 * @param ids
-	 *
-	 * @return
-	 *
-	 * @throws TskCoreException
-	 */
-	List<? extends BlackboardArtifact> getArtifactsWhereAll(BlackboardArtifact.Category category, String dbColumn, List<? extends Number> values, CaseDbConnection connection) throws TskCoreException {
-		String where = "";
-		for (Number value : values) {
-			if (!where.isEmpty()) {
-				where += " OR ";
-			}
-			where += dbColumn + " = " + value;
-		}
-
-		if (category == BlackboardArtifact.Category.DATA_ARTIFACT) {
-			return getDataArtifactsWhere(where, connection);
-		} else {
-			return getAnalysisResultsWhere(where, connection);
-		}
-	}
-
-	/**
 	 * Get all data artifacts matching the given where sub-clause.
 	 *
 	 * @param whereClause SQL Where sub-clause, specifies conditions to match.
