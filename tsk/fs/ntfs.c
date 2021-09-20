@@ -1428,8 +1428,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         tsk_fprintf(stderr,
                             "ntfs_proc_compunit: Decompressing at file offset %"PRIdOFF"\n", off);
 
-                    // decompress the unit
-                    uint8_t reset_uncompress_for_init_size = 0;
+                    // decompress the unit if we have not passed initsize yet.
                     if (!init_size_reached) {
                         if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
                             comp_unit_idx)) {
@@ -1445,15 +1444,21 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             return 1;
                         }
 
-                        // if we've passed the initialized size while reading this block, zero out the buffer beyond the initialized size
+                        /* if we've passed the initialized size while reading this block, 
+                         * zero out the buffer beyond the initialized size and reset so that
+                         * only 0s get returned. */
                         if (has_init_size) {
-                            const int64_t remanining_init_size = fs_attr->nrd.initsize - off;
-                            if (remanining_init_size < comp.buf_size_b) {
-                                memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
+                            const int64_t prev_remanining_init_size = fs_attr->nrd.initsize - off;
+                            if (prev_remanining_init_size < (int64_t)comp.buf_size_b) {
+                                memset(&comp.uncomp_buf[prev_remanining_init_size], 0, comp.buf_size_b - prev_remanining_init_size);
                                 init_size_reached = 1;
-                                reset_uncompress_for_init_size = 1;
                             }
                         }
+                    }
+                    // set the buffers to 0s if we are past initsize
+                    else {
+                        ntfs_uncompress_reset(&comp);
+                        comp.uncomp_idx = comp.buf_size_b;
                     }
 
                     // now call the callback with the uncompressed data
@@ -1525,11 +1530,6 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         }
                     }
                     comp_unit_idx = 0;
-
-                    if (reset_uncompress_for_init_size) { // clear out stale data in the buffers for further callbacks and set up for reading 0's
-                        ntfs_uncompress_reset(&comp);
-                        comp.uncomp_idx = comp.buf_size_b;
-                    }
                 }
 
                 if (stop_loop)
@@ -1695,8 +1695,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                         && (data_run_cur->next == NULL))) {
                     size_t cpylen;
 
-                    // decompress the unit
-                    uint8_t reset_uncompress_for_init_size = 0;
+                    // decompress the unit if we are still in initsize
                     if (!init_size_reached) {
                         if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
                             comp_unit_idx)) {
@@ -1712,15 +1711,20 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                             return -1;
                         }
 
-                        // if we've passed the initialized size while reading this block, zero out the buffer beyond the initialized size
+                        /* if we've passed the initialized size while reading this block, 
+                         * zero out the buffer beyond the initialized size
+                         */
                         if (has_init_size) {
                             const int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx - a_offset;
-                            if (remanining_init_size < comp.buf_size_b) {
+                            if (remanining_init_size < (int64_t)comp.buf_size_b) {
                                 memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
                                 init_size_reached = 1;
-                                reset_uncompress_for_init_size = 1;
                             }
                         }
+                    }
+                    else {
+                        ntfs_uncompress_reset(&comp);
+                        comp.uncomp_idx = comp.buf_size_b;
                     }
 
                     // copy uncompressed data to the output buffer
@@ -1752,10 +1756,6 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                     buf_idx += cpylen;
                     comp_unit_idx = 0;
 
-                    if (reset_uncompress_for_init_size) { // clear out stale data in the buffers for further callbacks and set up for reading 0's
-                        ntfs_uncompress_reset(&comp);
-                        comp.uncomp_idx = comp.buf_size_b;
-                    }
                 }
                 /* If it is a sparse run, don't increment the addr so that
                  * it remains 0 */
