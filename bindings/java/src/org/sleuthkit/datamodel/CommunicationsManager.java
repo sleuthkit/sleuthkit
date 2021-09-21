@@ -1118,7 +1118,7 @@ public final class CommunicationsManager {
 				+ " FROM blackboard_artifacts AS artifacts"
 				+ "	JOIN " + limitQuery
 				+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
-				+ " LEFT JOIN tsk_data_artifacts ON artifact.artifact_obj_id = tsk_data_artifacts.artifact_obj_id"
+				+ " LEFT JOIN tsk_data_artifacts ON artifacts.artifact_obj_id = tsk_data_artifacts.artifact_obj_id"
 				+ " WHERE (( relationships.account1_id = " + account1.getAccount().getAccountID()
 				+ " AND relationships.account2_id  = " + account2.getAccount().getAccountID()
 				+ " ) OR (	  relationships.account2_id = " + account1.getAccount().getAccountID()

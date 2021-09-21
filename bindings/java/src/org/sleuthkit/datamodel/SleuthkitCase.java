@@ -3646,11 +3646,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -3709,11 +3709,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -3764,11 +3764,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -3819,11 +3819,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -3874,11 +3874,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -3930,11 +3930,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				artifacts.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -5179,11 +5179,11 @@ public class SleuthkitCase {
 
 			ArrayList<BlackboardArtifact> matches = new ArrayList<>();
 			if (!analysisArtifactObjIds.isEmpty()) {
-				matches.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifact.artifact_obj_id", analysisArtifactObjIds, connection));
+				matches.addAll(getArtifactsForValues(BlackboardArtifact.Category.ANALYSIS_RESULT, "artifacts.artifact_obj_id", analysisArtifactObjIds, connection));
 			}
 
 			if (!dataArtifactObjIds.isEmpty()) {
-				matches.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifact.artifact_obj_id", dataArtifactObjIds, connection));
+				matches.addAll(getArtifactsForValues(BlackboardArtifact.Category.DATA_ARTIFACT, "artifacts.artifact_obj_id", dataArtifactObjIds, connection));
 			}
 
 			return matches;
