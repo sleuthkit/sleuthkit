@@ -493,7 +493,7 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	List<AnalysisResult> getAnalysisResults(long sourceObjId, CaseDbConnection connection) throws TskCoreException {
-		return getAnalysisResultsWhere(" arts.obj_id = " + sourceObjId, connection);
+		return getAnalysisResultsWhere(" artifacts.obj_id = " + sourceObjId, connection);
 	}
 
 	/**
@@ -515,7 +515,7 @@ public final class Blackboard {
 		}
 
 		String whereClause = " types.artifact_type_id = " + artifactTypeId
-				+ " AND arts.obj_id = " + sourceObjId;
+				+ " AND artifacts.obj_id = " + sourceObjId;
 		return getAnalysisResultsWhere(whereClause);
 	}
 
