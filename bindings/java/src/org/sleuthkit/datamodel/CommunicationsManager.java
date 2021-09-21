@@ -1150,11 +1150,12 @@ public final class CommunicationsManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
+	
 	public List<AccountFileInstance> getAccountFileInstances(Account account) throws TskCoreException {
 		List<AccountFileInstance> accountFileInstanceList = new ArrayList<>();
-
+		@SuppressWarnings("deprecation")
 		List<BlackboardArtifact> artifactList = getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, account.getTypeSpecificID());
-
+		
 		if (artifactList != null && !artifactList.isEmpty()) {
 			for (BlackboardArtifact artifact : artifactList) {
 				accountFileInstanceList.add(new AccountFileInstance(artifact, account));
