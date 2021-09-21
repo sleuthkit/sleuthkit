@@ -577,7 +577,7 @@ public final class Blackboard {
 	 */
 	public AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
 
-		String whereClause = " arts.artifact_obj_id = " + artifactObjId;
+		String whereClause = " artifacts.artifact_obj_id = " + artifactObjId;
 		List<AnalysisResult> results = getAnalysisResultsWhere(whereClause);
 
 		if (results.isEmpty()) { // throw an error if no analysis result found by id.
