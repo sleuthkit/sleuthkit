@@ -3619,6 +3619,8 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
+	 * 
+	 * @deprecated Do not use.
 	 */
 	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
@@ -5325,8 +5327,24 @@ public class SleuthkitCase {
 		return statement;
 	}
 
+	/**
+	 * Add a new blackboard artifact with the given type.
+	 *
+	 * @param artifact_type_id    The type the given artifact should have.
+	 * @param obj_id              The parent content id.
+	 * @param artifactTypeName    The artifact type name.
+	 * @param artifactDisplayName The artifact type display name.
+	 * @param data_source_obj_id  The id of the artifact data source.
+	 * @param connection          The CaseDBConnection.
+	 *
+	 * @return A new blackboard artifact.
+	 *
+	 * @throws TskCoreException
+	 *
+	 * @deprecated Use type specific methods in Blackboard.
+	 */
 	@Deprecated
-	BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
+	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName, long data_source_obj_id, CaseDbConnection connection) throws TskCoreException {
 		BlackboardArtifact.Type type = getArtifactType(artifact_type_id);
 		try {
 			if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
@@ -8529,7 +8547,7 @@ public class SleuthkitCase {
 	 * @param connection A case database connection.
 	 * @param content    The content to look up the data source object ID.
 	 *
-	 * @return
+	 * @return A data source object id.
 	 */
 	private long getDataSourceObjectId(CaseDbConnection connection, Content content) throws TskCoreException {
 		if (content == null) {
