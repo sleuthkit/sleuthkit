@@ -534,19 +534,11 @@ public final class OsAccountManager {
 			throw new TskCoreException("Cannot create account instance with null data source.");
 		}
 
-		/*
-		 * Check the cache of OS account instances for an existing instance for
-		 * this OS account and data source. Note that the account instance
-		 * created here has a bogus instance ID. This is possible since the
-		 * instance ID is not considered in the equals() and hashCode() methods
-		 * of this class.
-		 */
-		synchronized (osAcctInstancesCacheLock) {
-			if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccount.getId(), dataSource.getId(), instanceType))) {
-				return;
-			}
+		// check the cache first 
+		if (accountInstanceExistsInCache(osAccount.getId(), dataSource.getId(), instanceType)) {
+			return;
 		}
-
+		
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			newOsAccountInstance(osAccount.getId(), dataSource.getId(), instanceType, connection);
 		}
@@ -566,17 +558,9 @@ public final class OsAccountManager {
 	 *                          instance.
 	 */
 	void newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
-		/*
-		 * Check the cache of OS account instances for an existing instance for
-		 * this OS account and data source. Note that the account instance
-		 * created here has a bogus instance ID. This is possible since the
-		 * instance ID is not considered in the equals() and hashCode() methods
-		 * of this class.
-		 */
-		synchronized (osAcctInstancesCacheLock) {
-			if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType))) {
-				return;
-			}
+		
+		if (accountInstanceExistsInCache(osAccountId, dataSourceObjId, instanceType)) {
+			return;
 		}
 
 		/*
@@ -596,6 +580,14 @@ public final class OsAccountManager {
 				if (resultSet.next()) {
 					OsAccountInstance accountInstance = new OsAccountInstance(db, resultSet.getLong(1), osAccountId, dataSourceObjId, instanceType);
 					synchronized (osAcctInstancesCacheLock) {
+						
+						// remove from cache any instances less significant (higher ordinal) than this instance
+						for (OsAccountInstance.OsAccountInstanceType type : OsAccountInstance.OsAccountInstanceType.values() ) {
+							if (accountInstance.getInstanceType().compareTo(type) < 0) {
+								osAccountInstanceCache.remove(new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, type));
+							}
+						}
+						// add the new most significant instance to the cache
 						osAccountInstanceCache.add(accountInstance);
 					}
 					/*
@@ -620,6 +612,45 @@ public final class OsAccountManager {
 			throw new TskCoreException(String.format("Error adding OS account instance for OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Check if an account instance for exists in the cache for given account
+	 * id, data source and instance type.
+	 *
+	 * Instance type does not need to be an exact match - an existing instance
+	 * with an instance type more significant than the specified type is
+	 * considered a match.
+	 *
+	 * @param osAccountId     Account id.
+	 * @param dataSourceObjId Data source object id.
+	 * @param instanceType    Account instance type.
+	 *
+	 * @return True if an instance already exists in the cache.
+	 *
+	 */
+	private boolean accountInstanceExistsInCache(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType) {
+		
+		/*
+		 * Check the cache of OS account instances for an existing instance for
+		 * this OS account and data source. Note that the account instance
+		 * created here has a bogus instance ID. This is possible since the
+		 * instance ID is not considered in the equals() and hashCode() methods
+		 * of this class.
+		 */
+		synchronized (osAcctInstancesCacheLock) {
+			OsAccountInstance bogus = new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType);
+			if (osAccountInstanceCache.contains(bogus)) {
+				// since we checked for contains(bogus), floor(bogus) should return the exact match and not a less than match.
+				OsAccountInstance existingInstance = osAccountInstanceCache.floor(bogus);
+
+				// if the new instance type same or less significant than the existing instance (i.e. same or higher ordinal value) it's a match. 
+				if (instanceType.compareTo(existingInstance.getInstanceType()) >= 0) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 
@@ -1149,8 +1180,25 @@ public final class OsAccountManager {
 	 */
 	public List<OsAccountInstance> getOsAccountInstances(List<Long> instanceIDs) throws TskCoreException {
 		String instanceIds = instanceIDs.stream().map(id -> id.toString()).collect(Collectors.joining(","));
-		String whereClause = "tsk_os_account_instances.id IN (" + instanceIds + ")";
-		return getOsAccountInstances(whereClause);
+
+		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
+
+		String querySQL = "SELECT * FROM tsk_os_account_instances "
+				+ "	WHERE tsk_os_account_instances.id IN (" + instanceIds + ")";
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = db.getConnection();
+				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
+				ResultSet results = connection.executeQuery(preparedStatement)) {
+
+			osAcctInstances = getOsAccountInstancesFromResultSet(results);
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to get OsAccountInstances (SQL = " + querySQL + ")", ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+		return osAcctInstances;
 	}
 
 	/**
@@ -1165,18 +1213,26 @@ public final class OsAccountManager {
 	 */
 	private List<OsAccountInstance> getOsAccountInstances(String whereClause) throws TskCoreException {
 		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
-		String querySQL = "SELECT * FROM tsk_os_account_instances WHERE " + whereClause;
+		
+		// this query returns only the most significant instance type (least ordinal) for each instance,
+		// that matches the specified WHERE clause.
+		String querySQL = 
+					"SELECT tsk_os_account_instances.* "
+					+ " FROM tsk_os_account_instances "
+					+ " INNER JOIN ( SELECT os_account_obj_id,  data_source_obj_id, MIN(instance_type) AS min_instance_type "
+					+ "					FROM tsk_os_account_instances"
+					+ "					GROUP BY os_account_obj_id, data_source_obj_id ) grouped_instances "
+					+ " ON tsk_os_account_instances.os_account_obj_id = grouped_instances.os_account_obj_id "	
+					+ " AND tsk_os_account_instances.instance_type = grouped_instances.min_instance_type "
+					+ " WHERE " + whereClause;
+		
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
 				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
 				ResultSet results = connection.executeQuery(preparedStatement)) {
-			while (results.next()) {
-				long instanceId = results.getLong("id");
-				long osAccountObjID = results.getLong("os_account_obj_id");
-				long dataSourceObjId = results.getLong("data_source_obj_id");
-				int instanceType = results.getInt("instance_type");
-				osAcctInstances.add(new OsAccountInstance(db, instanceId, osAccountObjID, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
-			}
+			
+			osAcctInstances = getOsAccountInstancesFromResultSet(results);
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to get OsAccountInstances (SQL = " + querySQL + ")", ex);
 		} finally {
@@ -1185,6 +1241,28 @@ public final class OsAccountManager {
 		return osAcctInstances;
 	}
 
+	/**
+	 * Returns list of OS account instances from the given result set.
+	 * 
+	 * @param results Result set from a SELECT tsk_os_account_instances.* query.
+	 * 
+	 * @return List of OS account instances. 
+	 * @throws SQLException 
+	 */
+	private List<OsAccountInstance> getOsAccountInstancesFromResultSet(ResultSet results) throws SQLException {
+		
+		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
+		while (results.next()) {
+				long instanceId = results.getLong("id");
+				long osAccountObjID = results.getLong("os_account_obj_id");
+				long dataSourceObjId = results.getLong("data_source_obj_id");
+				int instanceType = results.getInt("instance_type");
+				osAcctInstances.add(new OsAccountInstance(db, instanceId, osAccountObjID, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
+			}
+		
+		return osAcctInstances;
+	}
+	
 	/**
 	 * Updates the properties of the specified account in the database.
 	 *
