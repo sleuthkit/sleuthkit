@@ -637,7 +637,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
                 // The offset is from the beginning of the entries, i.e., four bytes into the buffer.
                 uint16_t offset = tsk_getu16(fs_file->fs_info->endian, ea_entry->val_off);
                 uint32_t size = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_size);
-                if (4 + offset + size <= ea_buf_len) {
+                if ((ea_buf_len >= 4) && (offset < ea_buf_len - 4) && (size <= ea_buf_len - 4 - offset)) {
                     ea_inline_data = &(ea_buf[4 + offset]);
                     ea_inline_data_len = size;
                     break;
@@ -673,7 +673,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
     // If we need more data and found an extended attribute, append that data
     if ((fs_meta->size > EXT2_INLINE_MAX_DATA_LEN) && (ea_inline_data_len > 0)) {
         // Don't go beyond the size of the file
-        size_t ea_data_len = (inode_data_len + ea_inline_data_len < (uint64_t)fs_meta->size) ? inode_data_len + ea_inline_data_len : fs_meta->size - inode_data_len;
+        size_t ea_data_len = (ea_inline_data_len < (uint64_t)fs_meta->size - inode_data_len) ? ea_inline_data_len : fs_meta->size - inode_data_len;
         memcpy(resident_data + inode_data_len, ea_inline_data, ea_data_len);
     }
 

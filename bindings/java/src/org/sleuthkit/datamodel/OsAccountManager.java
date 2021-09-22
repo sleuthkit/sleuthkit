@@ -41,6 +41,8 @@ import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskEvent.OsAccountsUpdatedTskEvent;
+import static org.sleuthkit.datamodel.WindowsAccountUtils.getWindowsSpecialSidName;
+import static org.sleuthkit.datamodel.WindowsAccountUtils.isWindowsSpecialSid;
 
 /**
  * Responsible for creating/updating/retrieving the OS accounts for files and
@@ -213,6 +215,17 @@ public final class OsAccountManager {
 			// try to create account
 			try {
 				OsAccount account = newOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				
+				// If the SID indicates a special windows account, then set its full name. 
+				if (!StringUtils.isBlank(sid) && isWindowsSpecialSid(sid)) {
+					String fullName = getWindowsSpecialSidName(sid);
+					if (StringUtils.isNotBlank(fullName)) {
+						OsAccountUpdateResult updateResult = updateStandardOsAccountAttributes(account, fullName, null, null, null, trans);
+						if (updateResult.getUpdatedAccount().isPresent()) {
+							account = updateResult.getUpdatedAccount().get();
+						}
+					}
+				}
 				trans.commit();
 				trans = null;
 				return account;
