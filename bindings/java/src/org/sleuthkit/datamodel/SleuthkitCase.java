@@ -2737,9 +2737,9 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE ) ");
 
-			// Copy the data from old table
-			updateSchemaStatement.execute("INSERT INTO tsk_os_account_instances(id, os_account_obj_id, "
-					+ "data_source_obj_id, instance_type) SELECT * FROM old_tsk_os_account_instances");
+			// Copy the data from old table, order by id preserves the primary key. 
+			updateSchemaStatement.execute("INSERT INTO tsk_os_account_instances(os_account_obj_id, "
+					+ "data_source_obj_id, instance_type) SELECT os_account_obj_id, data_source_obj_id, instance_type FROM old_tsk_os_account_instances ORDER BY id ASC");
 
 			// delete old table
 			updateSchemaStatement.execute("DROP TABLE old_tsk_os_account_instances");
