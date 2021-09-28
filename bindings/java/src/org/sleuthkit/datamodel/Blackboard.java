@@ -296,7 +296,7 @@ public final class Blackboard {
 	 */
 	public Score deleteAnalysisResult(long artifactObjId, CaseDbTransaction transaction) throws TskCoreException {
 
-		List<AnalysisResult> analysisResults = getAnalysisResultsWhere(" arts.artifact_obj_id = " + artifactObjId, transaction.getConnection());
+		List<AnalysisResult> analysisResults = getAnalysisResultsWhere(" artifacts.artifact_obj_id = " + artifactObjId, transaction.getConnection());
 
 		if (analysisResults.isEmpty()) {
 			throw new TskCoreException(String.format("Analysis Result not found for artifact obj id %d", artifactObjId));
@@ -342,18 +342,18 @@ public final class Blackboard {
 		}
 	}
 
-	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
-			+ " arts.obj_id AS obj_id, arts.artifact_obj_id AS artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
+	private final static String ANALYSIS_RESULT_QUERY_STRING = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
+			+ " artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, "
 			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
-			+ " arts.review_status_id AS review_status_id, " //NON-NLS
+			+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
 			+ " results.conclusion AS conclusion,  results.significance AS significance,  results.priority AS priority,  "
 			+ " results.configuration AS configuration,  results.justification AS justification "
-			+ " FROM blackboard_artifacts AS arts "
+			+ " FROM blackboard_artifacts AS artifacts "
 			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
-			+ "		ON arts.artifact_type_id = types.artifact_type_id" //NON-NLS
+			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
 			+ " LEFT JOIN tsk_analysis_results AS results "
-			+ "		ON arts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
-			+ " WHERE arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
+			+ "		ON artifacts.artifact_obj_id = results.artifact_obj_id " //NON-NLS
+			+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
 			+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
 	/**
@@ -367,7 +367,7 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<AnalysisResult> getAnalysisResultsByType(int artifactTypeId) throws TskCoreException {
-		return getAnalysisResultsWhere(" arts.artifact_type_id = " + artifactTypeId);
+		return getAnalysisResultsWhere(" artifacts.artifact_type_id = " + artifactTypeId);
 	}
 
 	/**
@@ -382,7 +382,7 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<AnalysisResult> getAnalysisResultsByType(int artifactTypeId, long dataSourceObjId) throws TskCoreException {
-		return getAnalysisResultsWhere(" arts.artifact_type_id = " + artifactTypeId + " AND arts.data_source_obj_id = " + dataSourceObjId);
+		return getAnalysisResultsWhere(" artifacts.artifact_type_id = " + artifactTypeId + " AND artifacts.data_source_obj_id = " + dataSourceObjId);
 	}
 
 	/**
@@ -396,7 +396,7 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	public List<AnalysisResult> getAnalysisResults(long sourceObjId) throws TskCoreException {
-		return getAnalysisResultsWhere(" arts.obj_id = " + sourceObjId);
+		return getAnalysisResultsWhere(" artifacts.obj_id = " + sourceObjId);
 	}
 
 	/**
@@ -412,7 +412,7 @@ public final class Blackboard {
 	List<DataArtifact> getDataArtifactsBySource(long sourceObjId) throws TskCoreException {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
-			return getDataArtifactsWhere(String.format(" artifacts.obj_id = " + sourceObjId), connection);
+			return getDataArtifactsWhere(String.format(" artifacts.obj_id = %d", sourceObjId), connection);
 		} finally {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
@@ -493,7 +493,7 @@ public final class Blackboard {
 	 *                          within TSK core.
 	 */
 	List<AnalysisResult> getAnalysisResults(long sourceObjId, CaseDbConnection connection) throws TskCoreException {
-		return getAnalysisResultsWhere(" arts.obj_id = " + sourceObjId, connection);
+		return getAnalysisResultsWhere(" artifacts.obj_id = " + sourceObjId, connection);
 	}
 
 	/**
@@ -515,7 +515,7 @@ public final class Blackboard {
 		}
 
 		String whereClause = " types.artifact_type_id = " + artifactTypeId
-				+ " AND arts.obj_id = " + sourceObjId;
+				+ " AND artifacts.obj_id = " + sourceObjId;
 		return getAnalysisResultsWhere(whereClause);
 	}
 
@@ -577,7 +577,7 @@ public final class Blackboard {
 	 */
 	public AnalysisResult getAnalysisResultById(long artifactObjId) throws TskCoreException {
 
-		String whereClause = " arts.artifact_obj_id = " + artifactObjId;
+		String whereClause = " artifacts.artifact_obj_id = " + artifactObjId;
 		List<AnalysisResult> results = getAnalysisResultsWhere(whereClause);
 
 		if (results.isEmpty()) { // throw an error if no analysis result found by id.
@@ -746,6 +746,25 @@ public final class Blackboard {
 	}
 
 	/**
+	 * Get all data artifacts matching the given where sub-clause.
+	 *
+	 * @param whereClause SQL Where sub-clause, specifies conditions to match.
+	 *
+	 * @return List of data artifacts. May be an empty list.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core.
+	 */
+	List<DataArtifact> getDataArtifactsWhere(String whereClause) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			return getDataArtifactsWhere(whereClause, connection);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
 	 * Get all data artifacts matching the given where sub-clause. Uses the
 	 * given database connection to execute the query.
 	 *
@@ -757,7 +776,7 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	private List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
+	List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
 
 		final String queryString = DATA_ARTIFACT_QUERY_STRING
 				+ " AND ( " + whereClause + " )";
@@ -922,8 +941,8 @@ public final class Blackboard {
 	 *                          within TSK core
 	 */
 	public List<BlackboardArtifact> getArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
-		return caseDb.getArtifactsHelper("blackboard_artifacts.data_source_obj_id = " + dataSourceObjId
-				+ " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
+		String whereClause = String.format("artifacts.data_source_obj_id = %d", dataSourceObjId);
+		return getArtifactsWhere(caseDb.getArtifactType(artifactTypeID), whereClause);
 	}
 
 	/**
@@ -945,12 +964,21 @@ public final class Blackboard {
 			return new ArrayList<>();
 		}
 
-		String typeQuery = "";
+		String analysisResultQuery = "";
+		String dataArtifactQuery = "";
+
 		for (BlackboardArtifact.Type type : artifactTypes) {
-			if (!typeQuery.isEmpty()) {
-				typeQuery += " OR ";
+			if (type.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+				if (!analysisResultQuery.isEmpty()) {
+					analysisResultQuery += " OR ";
+				}
+				analysisResultQuery += "types.artifact_type_id = " + type.getTypeID();
+			} else {
+				if (!dataArtifactQuery.isEmpty()) {
+					dataArtifactQuery += " OR ";
+				}
+				dataArtifactQuery += "types.artifact_type_id = " + type.getTypeID();
 			}
-			typeQuery += "blackboard_artifact_types.artifact_type_id = " + type.getTypeID();
 		}
 
 		String dsQuery = "";
@@ -958,12 +986,22 @@ public final class Blackboard {
 			if (!dsQuery.isEmpty()) {
 				dsQuery += " OR ";
 			}
-			dsQuery += "blackboard_artifacts.data_source_obj_id = " + dsId;
+			dsQuery += "artifacts.data_source_obj_id = " + dsId;
 		}
 
-		String fullQuery = "( " + typeQuery + " ) AND ( " + dsQuery + " );";
+		List<BlackboardArtifact> artifacts = new ArrayList<>();
 
-		return caseDb.getArtifactsHelper(fullQuery);
+		if (!analysisResultQuery.isEmpty()) {
+			String fullQuery = "( " + analysisResultQuery + " ) AND (" + dsQuery + ") ";
+			artifacts.addAll(this.getAnalysisResultsWhere(fullQuery));
+		}
+
+		if (!dataArtifactQuery.isEmpty()) {
+			String fullQuery = "( " + dataArtifactQuery + " ) AND (" + dsQuery + ") ";
+			artifacts.addAll(this.getDataArtifactsWhere(fullQuery));
+		}
+
+		return artifacts;
 	}
 
 	/**
@@ -1257,6 +1295,71 @@ public final class Blackboard {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating a data artifact with type id = %d, objId = %d, and data source oj id = %d ", artifactType.getTypeID(), sourceObjId, dataSourceObjId), ex);
 		}
+	}
+
+	/**
+	 * Returns a list of BlackboardArtifacts of the given artifact type and
+	 * source object id.
+	 *
+	 * @param artifactType The artifact type.
+	 * @param sourceObjId  The artifact parent source id (obj_id)
+	 *
+	 * @return A list of BlackboardArtifacts for the given parameters.
+	 *
+	 * @throws TskCoreException
+	 */
+	List<BlackboardArtifact> getArtifactsBySourceId(BlackboardArtifact.Type artifactType, long sourceObjId) throws TskCoreException {
+		String whereClause = String.format("artifacts.obj_id = %d", sourceObjId);
+		return getArtifactsWhere(artifactType, whereClause);
+	}
+
+	/**
+	 * Returns a list of artifacts of the given type.
+	 *
+	 * @param artifactType The type of artifacts to retrieve.
+	 *
+	 * @return A list of artifacts of the given type.
+	 *
+	 * @throws TskCoreException
+	 */
+	List<BlackboardArtifact> getArtifactsByType(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		List<BlackboardArtifact> artifacts = new ArrayList<>();
+		if (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			artifacts.addAll(getAnalysisResultsByType(artifactType.getTypeID()));
+		} else {
+			artifacts.addAll(getDataArtifacts(artifactType.getTypeID()));
+		}
+		return artifacts;
+	}
+
+	/**
+	 * Returns a list of artifacts for the given artifact type with the given
+	 * where clause.
+	 *
+	 * The Where clause will be added to the basic query for retrieving
+	 * DataArtifacts or AnalysisResults from the DB. The where clause should not
+	 * include the artifact type. This method will add the artifact type to the
+	 * where clause.
+	 *
+	 * @param artifactType The artifact type.
+	 * @param whereClause  Additional where clause.
+	 *
+	 * @return A list of BlackboardArtifacts of the given type with the given
+	 *         conditional.
+	 *
+	 * @throws TskCoreException
+	 */
+	private List<BlackboardArtifact> getArtifactsWhere(BlackboardArtifact.Type artifactType, String whereClause) throws TskCoreException {
+		List<BlackboardArtifact> artifacts = new ArrayList<>();
+		String whereWithType = whereClause + " AND artifacts.artifact_type_id = " + artifactType.getTypeID();
+
+		if (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+			artifacts.addAll(getAnalysisResultsWhere(whereWithType));
+		} else {
+			artifacts.addAll(getDataArtifactsWhere(whereWithType));
+		}
+
+		return artifacts;
 	}
 
 	/**

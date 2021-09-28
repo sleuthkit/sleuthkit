@@ -38,7 +38,6 @@ import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
  * An artifact that has been posted to the blackboard. Artifacts store analysis
@@ -51,7 +50,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
  * IMPORTANT NOTE: No more than one attribute of a given type should be added to
  * an artifact. It is undefined about which will be used.
  */
-public class BlackboardArtifact implements Content {
+public abstract class BlackboardArtifact implements Content {
 
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final long artifactId;
