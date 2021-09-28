@@ -168,8 +168,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 		if (this.accountId != other.accountId) {
 			return false;
 		}
-
-		return this.dataSourceId != other.dataSourceId;
+		return this.dataSourceId == other.getDataSourceId();
 	}
 
 	@Override
