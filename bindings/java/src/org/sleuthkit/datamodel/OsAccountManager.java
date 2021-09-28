@@ -537,8 +537,9 @@ public final class OsAccountManager {
 		}
 
 		// check the cache first 
-		if (accountInstanceExistsInCache(osAccount.getId(), dataSource.getId(), instanceType)) {
-			return;
+		Optional<OsAccountInstance> existingInstance = cachedAccountInstance(osAccount.getId(), dataSource.getId(), instanceType);
+		if (existingInstance.isPresent()) {
+			return existingInstance.get();
 		}
 		
 		try (CaseDbConnection connection = this.db.getConnection()) {
@@ -563,8 +564,9 @@ public final class OsAccountManager {
 	 */
 	OsAccountInstance newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 		
-		if (accountInstanceExistsInCache(osAccountId, dataSourceObjId, instanceType)) {
-			return;
+		Optional<OsAccountInstance> existingInstance = cachedAccountInstance(osAccountId, dataSourceObjId, instanceType);
+		if (existingInstance.isPresent()) {
+			return existingInstance.get();
 		}
 
 		/*
@@ -635,10 +637,11 @@ public final class OsAccountManager {
 	 * @param dataSourceObjId Data source object id.
 	 * @param instanceType    Account instance type.
 	 *
-	 * @return True if an instance already exists in the cache.
+	 * @return Optional with OsAccountInstance, Optional.empty if there is no
+	 *         matching instance in cache.
 	 *
 	 */
-	private boolean accountInstanceExistsInCache(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType) {
+	private Optional<OsAccountInstance> cachedAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType) {
 		
 		/*
 		 * Check the cache of OS account instances for an existing instance for
@@ -655,10 +658,10 @@ public final class OsAccountManager {
 
 				// if the new instance type same or less significant than the existing instance (i.e. same or higher ordinal value) it's a match. 
 				if (instanceType.compareTo(existingInstance.getInstanceType()) >= 0) {
-					return true;
+					return Optional.of(existingInstance);
 				}
 			}
-			return false;
+			return Optional.empty();
 		}
 	}
 
