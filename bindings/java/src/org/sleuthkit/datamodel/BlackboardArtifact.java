@@ -232,44 +232,108 @@ public abstract class BlackboardArtifact implements Content {
 	public String getShortDescription() throws TskCoreException {
 		BlackboardAttribute attr = null;
 		StringBuilder shortDescription = new StringBuilder("");
-		switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
-			case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
-			case TSK_WEB_COOKIE:
-			case TSK_WEB_DOWNLOAD:
-			case TSK_WEB_HISTORY:
-				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
-				break;
-			case TSK_KEYWORD_HIT:
-				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
-				break;
-			case TSK_DEVICE_ATTACHED:
-				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
-				break;
-			case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
-			case TSK_MESSAGE:
-			case TSK_CALLLOG:
-				//get the first of these attributes which exists and is non null
-				final ATTRIBUTE_TYPE[] typesThatCanHaveName = {ATTRIBUTE_TYPE.TSK_NAME,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE,
-					ATTRIBUTE_TYPE.TSK_EMAIL,
-					ATTRIBUTE_TYPE.TSK_EMAIL_FROM,
-					ATTRIBUTE_TYPE.TSK_EMAIL_TO,
-					ATTRIBUTE_TYPE.TSK_EMAIL_HOME,
-					ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE}; //in the order we want to use them
-				for (ATTRIBUTE_TYPE t : typesThatCanHaveName) {
-					attr = getAttribute(new BlackboardAttribute.Type(t));
-					if (attr != null && !attr.getDisplayString().isEmpty()) {
-						break;
+		if(BlackboardArtifact.Type.STANDARD_TYPES.get(artifactTypeId) != null) {
+			switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
+				case TSK_WIFI_NETWORK_ADAPTER:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_MAC_ADDRESS));
+					break;
+				case TSK_WIFI_NETWORK:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SSID));
+					break;
+				case TSK_REMOTE_DRIVE:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_REMOTE_PATH));
+					break;
+				case TSK_SERVICE_ACCOUNT:
+				case TSK_SCREEN_SHOTS:
+				case TSK_DELETED_PROG:
+				case TSK_METADATA:
+				case TSK_OS_INFO:
+				case TSK_PROG_NOTIFICATIONS:
+				case TSK_PROG_RUN:
+				case TSK_RECENT_OBJECT:
+				case TSK_USER_DEVICE_EVENT:
+				case TSK_WEB_SEARCH_QUERY:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PROG_NAME));
+					break;
+				case TSK_BLUETOOTH_PAIRING:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_NAME));
+					break;
+				case TSK_ACCOUNT:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE));
+					break;
+				case TSK_WEB_CATEGORIZATION:
+				case TSK_BLUETOOTH_ADAPTER:
+				case TSK_GPS_AREA:
+				case TSK_GPS_BOOKMARK:
+				case TSK_GPS_LAST_KNOWN_LOCATION:
+				case TSK_GPS_ROUTE:
+				case TSK_GPS_SEARCH:
+				case TSK_GPS_TRACK:
+				case TSK_WEB_FORM_AUTOFILL:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME));
+					break;
+				case TSK_WEB_ACCOUNT_TYPE:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_TEXT));
+					break;
+				case TSK_HASHSET_HIT:
+				case TSK_INTERESTING_ARTIFACT_HIT:
+				case TSK_INTERESTING_FILE_HIT:
+				case TSK_YARA_HIT:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SET_NAME));
+					break;
+				case TSK_ENCRYPTION_DETECTED:
+				case TSK_ENCRYPTION_SUSPECTED:
+				case TSK_OBJECT_DETECTED:
+				case TSK_USER_CONTENT_SUSPECTED:
+				case TSK_VERIFICATION_FAILED:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_COMMENT));
+					break;
+				case TSK_DATA_SOURCE_USAGE:
+				case TSK_CALENDAR_ENTRY:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DESCRIPTION));
+					break;
+				case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
+				case TSK_WEB_COOKIE:
+				case TSK_WEB_DOWNLOAD:
+				case TSK_WEB_HISTORY:
+				case TSK_WEB_CACHE:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
+					break;
+				case TSK_KEYWORD_HIT:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
+					break;
+				case TSK_DEVICE_ATTACHED:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
+					break;
+				case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
+				case TSK_MESSAGE:
+				case TSK_CALLLOG:
+				case TSK_SPEED_DIAL_ENTRY:
+				case TSK_WEB_FORM_ADDRESS:
+					//get the first of these attributes which exists and is non null
+					final ATTRIBUTE_TYPE[] typesThatCanHaveName = {ATTRIBUTE_TYPE.TSK_NAME,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE,
+						ATTRIBUTE_TYPE.TSK_EMAIL,
+						ATTRIBUTE_TYPE.TSK_EMAIL_FROM,
+						ATTRIBUTE_TYPE.TSK_EMAIL_TO,
+						ATTRIBUTE_TYPE.TSK_EMAIL_HOME,
+						ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE, 
+						ATTRIBUTE_TYPE.TSK_LOCATION}; //in the order we want to use them
+					for (ATTRIBUTE_TYPE t : typesThatCanHaveName) {
+						attr = getAttribute(new BlackboardAttribute.Type(t));
+						if (attr != null && !attr.getDisplayString().isEmpty()) {
+							break;
+						}
 					}
-				}
-				break;
-			default:
-				break;
+					break;
+				default:
+					break;
+			}
 		}
 		if (attr != null) {
 			shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
