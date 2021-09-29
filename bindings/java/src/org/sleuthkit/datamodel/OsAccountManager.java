@@ -215,7 +215,7 @@ public final class OsAccountManager {
 			// try to create account
 			try {
 				OsAccount account = newOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
-				
+
 				// If the SID indicates a special windows account, then set its full name. 
 				if (!StringUtils.isBlank(sid) && isWindowsSpecialSid(sid)) {
 					String fullName = getWindowsSpecialSidName(sid);
@@ -634,13 +634,12 @@ public final class OsAccountManager {
 	 */
 	public List<OsAccount> getOsAccounts(Host host) throws TskCoreException {
 
-		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
-				+ " JOIN tsk_os_account_instances as instances "
-				+ "		ON instances.os_account_obj_id = accounts.os_account_obj_id "
-				+ " JOIN data_source_info as datasources "
-				+ "		ON datasources.obj_id = instances.data_source_obj_id "
-				+ " WHERE datasources.host_id = " + host.getHostId()
-				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
+		String queryString = "SELECT * FROM tsk_os_accounts acc\n"
+				+ "WHERE acc.realm_id IN\n"
+				+ "	(SELECT realm.id \n"
+				+ "		FROM tsk_os_account_realms realm\n"
+				+ "		WHERE realm.scope_host_id = " + host.getHostId() + " \n"
+				+ "     AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + ")";
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -654,6 +653,41 @@ public final class OsAccountManager {
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS accounts for host id = %d", host.getHostId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get all accounts that had an instance on the specified data source.
+	 *
+	 * @param dataSource Data source for which to look accounts for.
+	 *
+	 * @return Set of OsAccounts, may be empty.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public List<OsAccount> getOsAccounts(DataSource dataSource) throws TskCoreException {
+
+		String queryString = "SELECT * FROM tsk_os_accounts acc\n"
+				+ "WHERE acc.os_account_obj_id IN\n"
+				+ "	(SELECT instance.os_account_obj_id\n"
+				+ "		FROM tsk_os_account_instances instance\n"
+				+ "		WHERE instance.data_source_obj_id = " + dataSource.getId() + " \n"
+				+ "     AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + ")";
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			List<OsAccount> accounts = new ArrayList<>();
+			while (rs.next()) {
+				accounts.add(osAccountFromResultSet(rs));
+			}
+			return accounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS accounts for data source id = %d", dataSource.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
