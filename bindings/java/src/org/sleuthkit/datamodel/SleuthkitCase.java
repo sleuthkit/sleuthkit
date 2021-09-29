@@ -6203,7 +6203,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public BlackboardArtifact getArtifactByArtifactId(long id) throws TskCoreException {
-		String query = "SELECT artifact_type_id, artifact_obj_id WHERE artifact_id = " + id;
+		String query = "SELECT artifact_type_id, artifact_obj_id FROM blackboard_artifacts WHERE artifact_id = " + id;
 		acquireSingleUserCaseReadLock();
 
 		try (CaseDbConnection connection = connections.getConnection();
