@@ -1220,6 +1220,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
              * info out of order and we did not get all of the run info.  We
              * return 0s if data is read from this type of run. */
             else if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
+                if (a_buf == NULL) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
+                    tsk_error_set_errstr("tsk_fs_attr_read - missing a_buf");
+                    return -1;
+                }
                 memset(&a_buf[len_toread - len_remain], 0, len_inrun);
                 if (tsk_verbose)
                     fprintf(stderr,

@@ -609,6 +609,10 @@ public class BlackboardAttribute extends AbstractAttribute {
 		public static final Type TSK_HOST = new Type(154, "TSK_HOST", bundle.getString("BlackboardAttribute.tskHost.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_HOME_DIR = new Type(155, "TSK_HOME_DIR", bundle.getString("BlackboardAttribute.tskHomeDir.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_IS_ADMIN = new Type(156, "TSK_IS_ADMIN", bundle.getString("BlackboardAttribute.tskIsAdmin.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+		public static final Type TSK_CORRELATION_TYPE = new Type(157, "TSK_CORRELATION_TYPE", bundle.getString("BlackboardAttribute.tskCorrelationType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_CORRELATION_VALUE = new Type(158, "TSK_CORRELATION_VALUE", bundle.getString("BlackboardAttribute.tskCorrelationValue.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		public static final Type TSK_OTHER_CASES = new Type(159, "TSK_OTHER_CASES", bundle.getString("BlackboardAttribute.tskOtherCases.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		
 		// NOTE: When adding a new standard BlackboardAttribute.Type, add the instance and then add to the STANDARD_TYPES list.
 		/**
 		 * A list of all the standard attribute types.
@@ -761,7 +765,10 @@ public class BlackboardAttribute extends AbstractAttribute {
 				TSK_REALM,
 				TSK_HOST,
 				TSK_HOME_DIR,
-				TSK_IS_ADMIN
+				TSK_IS_ADMIN,
+				TSK_CORRELATION_TYPE,
+				TSK_CORRELATION_VALUE,
+				TSK_OTHER_CASES
 		));
 
 		private static final long serialVersionUID = 1L;
@@ -1529,7 +1536,16 @@ public class BlackboardAttribute extends AbstractAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_IS_ADMIN(156, "TSK_IS_ADMIN",
 				bundle.getString("BlackboardAttribute.tskIsAdmin.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),;
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
+		TSK_CORRELATION_TYPE(157, "TSK_CORRELATION_TYPE",
+				bundle.getString("BlackboardAttribute.tskCorrelationType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_CORRELATION_VALUE(158, "TSK_CORRELATION_VALUE",
+				bundle.getString("BlackboardAttribute.tskCorrelationValue.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_OTHER_CASES(159, "TSK_OTHER_CASES",
+				bundle.getString("BlackboardAttribute.tskOtherCases.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),;
 
 		private final int typeID;
 		private final String typeName;

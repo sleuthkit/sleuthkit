@@ -38,34 +38,34 @@ THE SOFTWARE.
 // 16 byte value that can be passed around by value. It also supports
 // conversion to string (via the stream operator <<) and conversion from a
 // string via constructor.
-class Guid
+class TSKGuid
 {
   public:
 
     // create a guid from vector of bytes
-    Guid(const std::vector<unsigned char> &bytes);
+    TSKGuid(const std::vector<unsigned char> &bytes);
 
     // create a guid from array of bytes
-    Guid(const unsigned char *bytes);
+    TSKGuid(const unsigned char *bytes);
 
     // create a guid from string
-    Guid(const std::string &fromString);
+    TSKGuid(const std::string &fromString);
 
     // create empty guid
-    Guid();
+    TSKGuid();
 
-    Guid(Guid &&) = default;
+    TSKGuid(TSKGuid &&) = default;
 
     // copy constructor
-    Guid(const Guid &other);
+    TSKGuid(const TSKGuid &other);
 
     // overload assignment operator
-    Guid &operator=(const Guid &other);
-    Guid &operator=(Guid &&) = default;
+    TSKGuid &operator=(const TSKGuid &other);
+    TSKGuid &operator=(TSKGuid &&) = default;
 
     // overload equality and inequality operator
-    bool operator==(const Guid &other) const;
-    bool operator!=(const Guid &other) const;
+    bool operator==(const TSKGuid &other) const;
+    bool operator!=(const TSKGuid &other) const;
 
     std::string str() const;
 
@@ -79,7 +79,7 @@ class Guid
     std::vector<unsigned char> _bytes;
 
     // make the << operator a friend so it can access _bytes
-    friend std::ostream &operator<<(std::ostream &s, const Guid &guid);
+    friend std::ostream &operator<<(std::ostream &s, const TSKGuid &guid);
 };
 
 // Class that can create new guids. The only reason this exists instead of
@@ -98,7 +98,7 @@ class GuidGenerator
     GuidGenerator() { }
 #endif
 
-    Guid newGuid();
+    TSKGuid newGuid();
 
 #ifdef GUID_ANDROID
   private:

@@ -386,7 +386,10 @@ class TskCaseDbBridge {
 							// Currently we expect only NTFS systems to provide a windows style SID as owner id.
 							OsAccountManager accountMgr = caseDb.getOsAccountManager();
 							OsAccount newAccount = accountMgr.newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
-							accountMgr.newOsAccountInstance(newAccount.getId(), fileInfo.dataSourceObjId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, caseDb.getConnection());
+							Content ds = caseDb.getContentById(fileInfo.dataSourceObjId); // Data sources are cached so this will only access the database once
+							if (ds instanceof DataSource) {
+								accountMgr.newOsAccountInstance(newAccount, (DataSource)ds, OsAccountInstance.OsAccountInstanceType.ACCESSED);
+							}
 							ownerIdToAccountMap.put(ownerUid, newAccount);
 						}
 					} catch (NotUserSIDException ex) {

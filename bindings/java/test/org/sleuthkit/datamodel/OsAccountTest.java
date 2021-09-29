@@ -440,10 +440,39 @@ public class OsAccountTest {
 		assertEquals(hostAddr.getAddress().equalsIgnoreCase(hostnameStr), true);
 		assertEquals(HostAddress.HostAddressType.HOSTNAME.equals(hostAddr.getAddressType()), true);
 		
+		// Test some IPV6 addresses with zone/interface specifiers
+		String ipv6WithZoneStr1 = "fe80::1ff:fe23:4567:890a%eth2";
+		String ipv6WithZoneStr2 = "fe80::1ff:fe23:4567:890a%3";
+		String ipv6WithZoneStr3 = "fe80::1ff:fe23:4567:890a%12345";
+		String ipv6WithoutZoneStr = "fe80::1ff:fe23:4567:890a";
+		
+		HostAddress addr3 = caseDB.getHostAddressManager().newHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr1);
+		assertEquals(addr3.getAddress().equalsIgnoreCase(ipv6WithoutZoneStr), true);
+		assertEquals(HostAddress.HostAddressType.IPV6.equals(addr3.getAddressType()), true);
+		
+		HostAddress addr4 = caseDB.getHostAddressManager().newHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr2);
+		assertEquals(addr4.getAddress().equalsIgnoreCase(ipv6WithoutZoneStr), true);
+		assertEquals(HostAddress.HostAddressType.IPV6.equals(addr4.getAddressType()), true);
+		
+		
 		// Test get
 		Optional<HostAddress> addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.IPV4, ipv4Str);
 		assertEquals(addr4opt.isPresent(), true);
 		
+		
+		// Test get on IPv6 Address with zone specifiers - they should all resolve to same address  - the one without the zone.
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr1);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr2);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithZoneStr3);
+		assertEquals(addr4opt.isPresent(), true);
+		
+		addr4opt = caseDB.getHostAddressManager().getHostAddress(HostAddress.HostAddressType.DNS_AUTO, ipv6WithoutZoneStr);
+		assertEquals(addr4opt.isPresent(), true);
+				
 		// Test host map
 		Host host = caseDB.getHostManager().newHost("TestHostAddress");
 		
@@ -713,7 +742,13 @@ public class OsAccountTest {
 				String specialSid3 = "S-1-5-90-0-2";
 				String specialSid4 = "S-1-5-96-0-3";
 				
-
+				// All accounts in the range S-1-5-80 to S-1-5-111 are special and should be created with SPECIAL_WINDOWS_REALM_ADDR
+				String specialSid5 = "S-1-5-99-0-3";
+				String specialSid6 = "S-1-5-100-0-3";
+				String specialSid7 = "S-1-5-111-0-3";
+				String specialSid8 = "S-1-5-112-0-3"; // NOT SPECIAL SID
+				String specialSid9 = "S-1-5-79-0-3"; // NOT SPECIAL SID
+				
 				OsAccount specialAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid2, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount3 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid3, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
@@ -726,7 +761,18 @@ public class OsAccountTest {
 				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
 				
 				
-			}
+				OsAccount specialAccount5 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid5, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount6 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid6, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount7 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid7, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount8 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid8, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount9 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid9, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount5.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount6.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount7.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount8.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), false);  // specialSid8 is NOT special.
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount9.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), false);  // specialSid9 is NOT special.
+		}
 			
 			// TEST: create accounts with a invalid user SIDs - these should generate an exception
 			{

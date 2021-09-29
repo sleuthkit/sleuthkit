@@ -635,9 +635,9 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
 
                 // This is the right attribute. Check that the length and offset are valid.
                 // The offset is from the beginning of the entries, i.e., four bytes into the buffer.
-                uint32_t offset = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_off);
+                uint16_t offset = tsk_getu16(fs_file->fs_info->endian, ea_entry->val_off);
                 uint32_t size = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_size);
-                if (4 + offset + size <= ea_buf_len) {
+                if ((ea_buf_len >= 4) && (offset < ea_buf_len - 4) && (size <= ea_buf_len - 4 - offset)) {
                     ea_inline_data = &(ea_buf[4 + offset]);
                     ea_inline_data_len = size;
                     break;
@@ -673,7 +673,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
     // If we need more data and found an extended attribute, append that data
     if ((fs_meta->size > EXT2_INLINE_MAX_DATA_LEN) && (ea_inline_data_len > 0)) {
         // Don't go beyond the size of the file
-        size_t ea_data_len = (inode_data_len + ea_inline_data_len < (uint64_t)fs_meta->size) ? inode_data_len + ea_inline_data_len : fs_meta->size - inode_data_len;
+        size_t ea_data_len = (ea_inline_data_len < (uint64_t)fs_meta->size - inode_data_len) ? ea_inline_data_len : fs_meta->size - inode_data_len;
         memcpy(resident_data + inode_data_len, ea_inline_data, ea_data_len);
     }
 
@@ -1665,7 +1665,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
 
         // Ensure buf is sufficiently large
         // Otherwise extents[i] below can cause an OOB read
-        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
+        if (((unsigned long)fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent))) {
             free(buf);
             return 1;
         }
@@ -1684,7 +1684,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
 
         // Ensure buf is sufficiently large
         // Otherwise indices[i] below can cause an OOB read
-        if ((fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
+        if (((unsigned long)fs_blocksize < sizeof(ext2fs_extent_header)) || (num_entries > (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx))) {
             free(buf);
             return 1;
         }
@@ -1715,7 +1715,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
  */
 static int32_t
 ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
-    TSK_FS_META * fs_meta, ext2fs_extent_header * header)
+    TSK_FS_META * fs_meta, ext2fs_extent_header * header, int recursion_depth)
 {
     int fs_blocksize = fs_info->block_size;
     ext2fs_extent_idx *indices;
@@ -1723,6 +1723,13 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
     uint8_t *buf;
     int i;
 
+    // 32 is an arbitrary chosen value.
+    if (recursion_depth > 32) {
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+            ("ext2fs_load_attrs: exceeded maximum recursion depth!");
+        return -1;
+    }
     if (tsk_getu16(fs_info->endian, header->eh_magic) != 0xF30A) {
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
@@ -1761,7 +1768,7 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
 
         if ((ret =
                 ext2fs_extent_tree_index_count(fs_info, fs_meta,
-                    (ext2fs_extent_header *) buf)) < 0) {
+                    (ext2fs_extent_header *) buf, recursion_depth + 1)) < 0) {
             return -1;
         }
         count += ret;
@@ -1936,7 +1943,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
          }
         
         extent_index_size =
-        ext2fs_extent_tree_index_count(fs_info, fs_meta, header);
+        ext2fs_extent_tree_index_count(fs_info, fs_meta, header, 0);
         if (extent_index_size < 0) {
             return 1;
         }

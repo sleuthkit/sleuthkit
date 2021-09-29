@@ -268,6 +268,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This is a folder in the folder */
         else if (rec_type == HFS_FOLDER_RECORD) {
+            if ((nodesize < sizeof(hfs_folder)) || (rec_off2 > nodesize - sizeof(hfs_folder))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
             hfs_folder *folder = (hfs_folder *) & rec_buf[rec_off2];
 
             info->fs_name->meta_addr =
@@ -295,7 +300,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This is a normal file in the folder */
         else if (rec_type == HFS_FILE_RECORD) {
-            if ((nodesize < sizeof(hfs_file)) || (rec_off2 >= nodesize - sizeof(hfs_file))) {
+            if ((nodesize < sizeof(hfs_file)) || (rec_off2 > nodesize - sizeof(hfs_file))) {
                 tsk_error_set_errno(TSK_ERR_FS_GENFS);
                 tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
                 return HFS_BTREE_CB_ERR;
@@ -384,11 +389,12 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
 * structure or a new structure.
 * @param a_addr Address of directory to process.
+* @param recursion_depth Recursion depth to limit the number of self-calls
 * @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
 hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
     uint32_t cnid;              /* catalog node ID of the entry (= inum) */

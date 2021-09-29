@@ -191,7 +191,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				}
 			});
 
-			builder.add(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
+			builder.add(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
 			return builder.build();
 		}
 	};
@@ -236,7 +236,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 					PROGRAM_DELETED,
 					OS_INFO, WIFI_NETWORK, USER_DEVICE_EVENT_START, USER_DEVICE_EVENT_END,
 					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION,
-					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER);
+					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER, CUSTOM_ARTIFACT_CATCH_ALL, STANDARD_ARTIFACT_CATCH_ALL, USER_CREATED);
 
 		}
 	};
@@ -432,21 +432,19 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
+	
+	// TimelineEventType with id 22 has been deprecated. Trying to reuse 22
+	// may cause backwards combatibility issues and is not recommened. If 22
+	// is reused create upgrade code to reassign event 22 to MISC_TYPE id = 3.
+	int DEPRECATED_OTHER_EVENT_ID = 22;
 
-	//custom event type base type
-	TimelineEventType CUSTOM_TYPES = new TimelineEventTypeImpl(22,
-			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
-			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
-		@Override
-		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(OTHER, USER_CREATED);
-		}
-	};
-
-	//generic catch all other event
-	TimelineEventType OTHER = new TimelineEventArtifactTypeSingleDescription(23,
+	// Event for any artifact event with an artifact type for which we don't have
+	// a hard-corded event type. In other words, we recognize the artifact type
+	// as a standard artifact type, but we have not updated the Timeline code
+	// to have a corresponding inner TimelineEventType
+	TimelineEventType STANDARD_ARTIFACT_CATCH_ALL = new TimelineEventArtifactTypeSingleDescription(23,
 			getBundle().getString("CustomTypes.other.name"), //NON-NLS
-			CUSTOM_TYPES,
+			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
@@ -466,10 +464,12 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
-	//generic catch all other event
-	TimelineEventType USER_CREATED = new TimelineEventArtifactTypeSingleDescription(26,
-			getBundle().getString("CustomTypes.userCreated.name"),//NON-NLS
-			CUSTOM_TYPES,
+	// Event for any artifact event with a custom artifact type (e.g. shell bag
+	// artifact)
+	
+	TimelineEventType CUSTOM_ARTIFACT_CATCH_ALL = new TimelineEventArtifactTypeSingleDescription(26,
+			getBundle().getString("CustomTypes.customArtifact.name"),//NON-NLS
+			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
@@ -810,6 +810,15 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_BLUETOOTH_PAIRING),
 			new BlackboardAttribute.Type(TSK_DATETIME_ACCESSED),
 			new BlackboardAttribute.Type(TSK_DEVICE_NAME));
+	
+	//User manually created events, created with the "Add Event" button in the 
+	// timeline UI.
+	TimelineEventType USER_CREATED = new TimelineEventArtifactTypeSingleDescription(60,
+			getBundle().getString("CustomTypes.userCreated.name"),//NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_TL_EVENT),
+			new BlackboardAttribute.Type(TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();

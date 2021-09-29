@@ -701,7 +701,7 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
     {
         // Use a GUID as the default.
         GuidGenerator generator;
-        Guid guid = generator.newGuid();
+        TSKGuid guid = generator.newGuid();
         deviceIdStr << guid;
     }
     else
