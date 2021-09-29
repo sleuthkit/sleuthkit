@@ -523,10 +523,12 @@ public final class OsAccountManager {
 	 * @param dataSource   Data source where the instance is found.
 	 * @param instanceType Instance type.
 	 *
+	 * @return OsAccountInstance Existing or newly created account instance. 
+	 * 
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	public void newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
+	public OsAccountInstance newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");
 		}
@@ -541,14 +543,16 @@ public final class OsAccountManager {
 		 * instance ID is not considered in the equals() and hashCode() methods
 		 * of this class.
 		 */
+		OsAccountInstance bogus = new OsAccountInstance(db, 0, osAccount.getId(), dataSource.getId(), instanceType);
 		synchronized (osAcctInstancesCacheLock) {
-			if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccount.getId(), dataSource.getId(), instanceType))) {
-				return;
+			if (osAccountInstanceCache.contains(bogus)) {
+				// since we checked for contains(bogus), floor(bogus) should return the exact match and not a less than match.
+				return osAccountInstanceCache.floor(bogus);
 			}
 		}
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			newOsAccountInstance(osAccount.getId(), dataSource.getId(), instanceType, connection);
+			return newOsAccountInstance(osAccount.getId(), dataSource.getId(), instanceType, connection);
 		}
 	}
 
@@ -562,10 +566,12 @@ public final class OsAccountManager {
 	 * @param instanceType    Instance type.
 	 * @param connection      The current database connection.
 	 *
+	 * @return OsAccountInstance Existing or newly created account instance. 
+	 * 
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	void newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	OsAccountInstance newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 		/*
 		 * Check the cache of OS account instances for an existing instance for
 		 * this OS account and data source. Note that the account instance
@@ -573,9 +579,11 @@ public final class OsAccountManager {
 		 * instance ID is not considered in the equals() and hashCode() methods
 		 * of this class.
 		 */
+		OsAccountInstance bogus = new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType);
 		synchronized (osAcctInstancesCacheLock) {
-			if (osAccountInstanceCache.contains(new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType))) {
-				return;
+			if (osAccountInstanceCache.contains(bogus)) {
+				// since we checked for contains(bogus), floor(bogus) should return the exact match and not a less than match.
+				return osAccountInstanceCache.floor(bogus);
 			}
 		}
 
@@ -614,6 +622,10 @@ public final class OsAccountManager {
 					 * from time to time.
 					 */
 					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
+					
+					return accountInstance;
+				} else {
+					throw new TskCoreException(String.format("Could not get autogen key after row insert for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
 				}
 			}
 		} catch (SQLException ex) {

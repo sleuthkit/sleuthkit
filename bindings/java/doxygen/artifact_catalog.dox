@@ -177,16 +177,6 @@ EXIF metadata found in an image or audio file.
 - TSK_DEVICE_MODEL (Device model, generally the product, e.g., iPhone)
 - TSK_GEO_ALTITUDE (The camera's altitude when the image/audio was taken)
 - TSK_GEO_LATITUDE (The camera's latitude when the image/audio was taken)
-- TSK_GEO_LONGITUDE (The camera's longitude when the image/audio was taken)## TSK_METADATA_EXIF
-EXIF metadata found in an image or audio file.
-
-### REQUIRED ATTRIBUTES
-- At least one of:
-- TSK_DATETIME_CREATED (Creation date of the file, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DEVICE_MAKE (Device make, generally the manufacturer, e.g., Apple)
-- TSK_DEVICE_MODEL (Device model, generally the product, e.g., iPhone)
-- TSK_GEO_ALTITUDE (The camera's altitude when the image/audio was taken)
-- TSK_GEO_LATITUDE (The camera's latitude when the image/audio was taken)
 - TSK_GEO_LONGITUDE (The camera's longitude when the image/audio was taken)
 
 <br><br>
