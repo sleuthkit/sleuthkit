@@ -523,8 +523,8 @@ public final class OsAccountManager {
 	 * @param dataSource   Data source where the instance is found.
 	 * @param instanceType Instance type.
 	 *
-	 * @return OsAccountInstance Existing or newly created account instance. 
-	 * 
+	 * @return OsAccountInstance Existing or newly created account instance.
+	 *
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
@@ -566,8 +566,8 @@ public final class OsAccountManager {
 	 * @param instanceType    Instance type.
 	 * @param connection      The current database connection.
 	 *
-	 * @return OsAccountInstance Existing or newly created account instance. 
-	 * 
+	 * @return OsAccountInstance Existing or newly created account instance.
+	 *
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
@@ -622,7 +622,7 @@ public final class OsAccountManager {
 					 * from time to time.
 					 */
 					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
-					
+
 					return accountInstance;
 				} else {
 					throw new TskCoreException(String.format("Could not get autogen key after row insert for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
@@ -645,12 +645,12 @@ public final class OsAccountManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<OsAccount> getOsAccounts(Host host) throws TskCoreException {
-		String queryString = "SELECT * FROM tsk_os_accounts accounts\n"
-				+ "WHERE accounts.os_account_obj_id IN\n"
-				+ "(SELECT instances.os_account_obj_id \n"
-				+ "FROM tsk_os_account_instances instances\n"
-				+ "INNER JOIN data_source_info datasources ON datasources.obj_id = instances.data_source_obj_id\n"
-				+ "WHERE datasources.host_id = " + host.getHostId() + ")\n"
+		String queryString = "SELECT * FROM tsk_os_accounts accounts "
+				+ "WHERE accounts.os_account_obj_id IN "
+				+ "(SELECT instances.os_account_obj_id "
+				+ "FROM tsk_os_account_instances instances "
+				+ "INNER JOIN data_source_info datasources ON datasources.obj_id = instances.data_source_obj_id "
+				+ "WHERE datasources.host_id = " + host.getHostId() + ") "
 				+ "AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
@@ -680,11 +680,11 @@ public final class OsAccountManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<OsAccount> getOsAccountsByDataSourceObjId(long dataSourceId) throws TskCoreException {
-		String queryString = "SELECT * FROM tsk_os_accounts acc\n"
-				+ "WHERE acc.os_account_obj_id IN\n"
-				+ "	(SELECT instance.os_account_obj_id\n"
-				+ "		FROM tsk_os_account_instances instance\n"
-				+ "		WHERE instance.data_source_obj_id = " + dataSourceId + ")\n"
+		String queryString = "SELECT * FROM tsk_os_accounts acc "
+				+ "WHERE acc.os_account_obj_id IN "
+				+ "(SELECT instance.os_account_obj_id "
+				+ "FROM tsk_os_account_instances instance "
+				+ "WHERE instance.data_source_obj_id = " + dataSourceId + ") "
 				+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
