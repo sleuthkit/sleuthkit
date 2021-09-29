@@ -4336,9 +4336,9 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
 
 		String dataArtifactJoin = "tsk_data_artifacts ON tsk_data_artifacts.artifact_obj_id = arts.artifact_obj_id";
-		String analysisResultJoin = "tsk_analysis_result ON tsk_analysis_result.artifact_obj_id = arts.artifact_obj_id";
+		String analysisResultJoin = "tsk_analysis_results ON tsk_analysis_results.artifact_obj_id = arts.artifact_obj_id";
 		String dataArtifactColumns = ", tsk_data_artifacts.os_account_obj_id AS os_account_obj_id";
-		String analysResultColumns = ", tsk_analysis_result.conclusion AS conclusion,  tsk_analysis_result.significance AS significance,  tsk_analysis_result.priority AS priority, tsk_analysis_result.conclusion AS conclusion, tsk_analysis_result.significance AS significance,  tsk_analysis_result.priority AS priority,";
+		String analysResultColumns = ", tsk_analysis_results.conclusion AS conclusion, tsk_analysis_results.significance AS significance, tsk_analysis_results.priority AS priority, tsk_analysis_results.conclusion AS conclusion, tsk_analysis_results.significance AS significance,  tsk_analysis_results.priority AS priority,";
 
 		String formatQuery = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
 				+ "arts.obj_id AS obj_id, arts.artifact_obj_id as artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
