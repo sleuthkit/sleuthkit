@@ -633,13 +633,13 @@ public final class OsAccountManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<OsAccount> getOsAccounts(Host host) throws TskCoreException {
-
-		String queryString = "SELECT * FROM tsk_os_accounts acc\n"
-				+ "WHERE acc.realm_id IN\n"
-				+ "	(SELECT realm.id \n"
-				+ "		FROM tsk_os_account_realms realm\n"
-				+ "		WHERE realm.scope_host_id = " + host.getHostId() + ")\n"
-				+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
+		String queryString = "SELECT * FROM tsk_os_accounts accounts\n"
+				+ "WHERE accounts.os_account_obj_id IN\n"
+				+ "(SELECT instances.os_account_obj_id \n"
+				+ "FROM tsk_os_account_instances instances\n"
+				+ "INNER JOIN data_source_info datasources ON datasources.obj_id = instances.data_source_obj_id\n"
+				+ "WHERE datasources.host_id = " + host.getHostId() + ")\n"
+				+ "AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -667,8 +667,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<OsAccount> getOsAccountsByDataSourceId(long dataSourceId) throws TskCoreException {
-
+	public List<OsAccount> getOsAccountsByDataSourceObjId(long dataSourceId) throws TskCoreException {
 		String queryString = "SELECT * FROM tsk_os_accounts acc\n"
 				+ "WHERE acc.os_account_obj_id IN\n"
 				+ "	(SELECT instance.os_account_obj_id\n"
