@@ -638,8 +638,8 @@ public final class OsAccountManager {
 				+ "WHERE acc.realm_id IN\n"
 				+ "	(SELECT realm.id \n"
 				+ "		FROM tsk_os_account_realms realm\n"
-				+ "		WHERE realm.scope_host_id = " + host.getHostId() + " \n"
-				+ "     AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + ")";
+				+ "		WHERE realm.scope_host_id = " + host.getHostId() + ")\n"
+				+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -661,20 +661,20 @@ public final class OsAccountManager {
 	/**
 	 * Get all accounts that had an instance on the specified data source.
 	 *
-	 * @param dataSource Data source for which to look accounts for.
+	 * @param dataSourceId Data source id for which to look accounts for.
 	 *
 	 * @return Set of OsAccounts, may be empty.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<OsAccount> getOsAccounts(DataSource dataSource) throws TskCoreException {
+	public List<OsAccount> getOsAccountsByDataSourceId(long dataSourceId) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts acc\n"
 				+ "WHERE acc.os_account_obj_id IN\n"
 				+ "	(SELECT instance.os_account_obj_id\n"
 				+ "		FROM tsk_os_account_instances instance\n"
-				+ "		WHERE instance.data_source_obj_id = " + dataSource.getId() + " \n"
-				+ "     AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + ")";
+				+ "		WHERE instance.data_source_obj_id = " + dataSourceId + ")\n"
+				+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -687,7 +687,7 @@ public final class OsAccountManager {
 			}
 			return accounts;
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting OS accounts for data source id = %d", dataSource.getId()), ex);
+			throw new TskCoreException(String.format("Error getting OS accounts for data source id = %d", dataSourceId), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
