@@ -6260,7 +6260,7 @@ public class SleuthkitCase {
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
-
+			
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ARTIFACT_ID);
 			statement.clearParameters();
 			statement.setLong(1, id);
