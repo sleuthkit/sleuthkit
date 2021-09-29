@@ -4405,7 +4405,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
 		try {
-			connection = connections.getConnection();
+			connection = connections.getConnection();	
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT arts.artifact_id AS artifact_id, "
 					+ "arts.obj_id AS obj_id, arts.artifact_obj_id as artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
