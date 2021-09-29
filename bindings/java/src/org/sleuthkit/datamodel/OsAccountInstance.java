@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
@@ -246,6 +247,19 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 				}
 			}
 			return null;
+		}
+		
+		/**
+		 * Gets account instance type enum from name.
+		 *
+		 * @param name Name to look for.
+		 *
+		 * @return Account instance type enum, null if no match is found.
+		 */
+		public static OsAccountInstanceType fromString(String name) {
+			return Arrays.stream(values())
+					.filter(val -> val.getName().equals(name))
+					.findFirst().orElse(null);
 		}
 	}
 }

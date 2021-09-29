@@ -676,7 +676,7 @@ public final class OsAccountManager {
 	 */
 	public List<OsAccount> getOsAccounts(Host host) throws TskCoreException {
 
-		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
+		String queryString = "SELECT DISTINCT (accounts.os_account_obj_id) as os_account_obj_id, login_name, full_name, realm_id, addr, signature, status, type, created_date, db_status FROM tsk_os_accounts as accounts "
 				+ " JOIN tsk_os_account_instances as instances "
 				+ "		ON instances.os_account_obj_id = accounts.os_account_obj_id "
 				+ " JOIN data_source_info as datasources "
@@ -1174,7 +1174,7 @@ public final class OsAccountManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
+	public List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
 		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + account.getId();
 		return getOsAccountInstances(whereClause);
 	}
