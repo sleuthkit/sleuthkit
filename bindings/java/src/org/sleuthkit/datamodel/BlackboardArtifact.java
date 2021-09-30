@@ -259,7 +259,10 @@ public abstract class BlackboardArtifact implements Content {
 					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_NAME));
 					break;
 				case TSK_ACCOUNT:
-					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE));
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID));
+					if(attr == null) {
+						attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_CARD_NUMBER));
+					}
 					break;
 				case TSK_WEB_CATEGORIZATION:
 				case TSK_BLUETOOTH_ADAPTER:
