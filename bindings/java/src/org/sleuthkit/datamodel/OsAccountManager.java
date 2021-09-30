@@ -215,7 +215,7 @@ public final class OsAccountManager {
 			// try to create account
 			try {
 				OsAccount account = newOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
-				
+
 				// If the SID indicates a special windows account, then set its full name. 
 				if (!StringUtils.isBlank(sid) && isWindowsSpecialSid(sid)) {
 					String fullName = getWindowsSpecialSidName(sid);
@@ -523,8 +523,8 @@ public final class OsAccountManager {
 	 * @param dataSource   Data source where the instance is found.
 	 * @param instanceType Instance type.
 	 *
-	 * @return OsAccountInstance Existing or newly created account instance. 
-	 * 
+	 * @return OsAccountInstance Existing or newly created account instance.
+	 *
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
@@ -557,8 +557,8 @@ public final class OsAccountManager {
 	 * @param instanceType    Instance type.
 	 * @param connection      The current database connection.
 	 *
-	 * @return OsAccountInstance Existing or newly created account instance. 
-	 * 
+	 * @return OsAccountInstance Existing or newly created account instance.
+	 *
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
@@ -612,7 +612,7 @@ public final class OsAccountManager {
 					 * from time to time.
 					 */
 					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
-					
+
 					return accountInstance;
 				} else {
 					throw new TskCoreException(String.format("Could not get autogen key after row insert for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
@@ -675,14 +675,13 @@ public final class OsAccountManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<OsAccount> getOsAccounts(Host host) throws TskCoreException {
-
-		String queryString = "SELECT DISTINCT (accounts.os_account_obj_id) as os_account_obj_id, login_name, full_name, realm_id, addr, signature, status, type, created_date, db_status FROM tsk_os_accounts as accounts "
-				+ " JOIN tsk_os_account_instances as instances "
-				+ "		ON instances.os_account_obj_id = accounts.os_account_obj_id "
-				+ " JOIN data_source_info as datasources "
-				+ "		ON datasources.obj_id = instances.data_source_obj_id "
-				+ " WHERE datasources.host_id = " + host.getHostId()
-				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
+		String queryString = "SELECT * FROM tsk_os_accounts accounts "
+				+ "WHERE accounts.os_account_obj_id IN "
+				+ "(SELECT instances.os_account_obj_id "
+				+ "FROM tsk_os_account_instances instances "
+				+ "INNER JOIN data_source_info datasources ON datasources.obj_id = instances.data_source_obj_id "
+				+ "WHERE datasources.host_id = " + host.getHostId() + ") "
+				+ "AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -696,6 +695,40 @@ public final class OsAccountManager {
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS accounts for host id = %d", host.getHostId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get all accounts that had an instance on the specified data source.
+	 *
+	 * @param dataSourceId Data source id for which to look accounts for.
+	 *
+	 * @return Set of OsAccounts, may be empty.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public List<OsAccount> getOsAccountsByDataSourceObjId(long dataSourceId) throws TskCoreException {
+		String queryString = "SELECT * FROM tsk_os_accounts acc "
+				+ "WHERE acc.os_account_obj_id IN "
+				+ "(SELECT instance.os_account_obj_id "
+				+ "FROM tsk_os_account_instances instance "
+				+ "WHERE instance.data_source_obj_id = " + dataSourceId + ") "
+				+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			List<OsAccount> accounts = new ArrayList<>();
+			while (rs.next()) {
+				accounts.add(osAccountFromResultSet(rs));
+			}
+			return accounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS accounts for data source id = %d", dataSourceId), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
