@@ -4335,18 +4335,18 @@ public class SleuthkitCase {
 	@Deprecated
 	public List<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
 
-		String dataArtifactJoin = "tsk_data_artifacts ON tsk_data_artifacts.artifact_obj_id = arts.artifact_obj_id";
-		String analysisResultJoin = "tsk_analysis_result ON tsk_analysis_result.artifact_obj_id = arts.artifact_obj_id";
-		String dataArtifactColumns = ", tsk_data_artifacts.os_account_obj_id AS os_account_obj_id";
-		String analysResultColumns = ", tsk_analysis_result.conclusion AS conclusion,  tsk_analysis_result.significance AS significance,  tsk_analysis_result.priority AS priority, tsk_analysis_result.conclusion AS conclusion, tsk_analysis_result.significance AS significance,  tsk_analysis_result.priority AS priority,";
+		String dataArtifactJoin = "tsk_data_artifacts AS datarts ON datarts.artifact_obj_id = arts.artifact_obj_id";
+		String analysisResultJoin = "tsk_analysis_results AS anresult ON anresult.artifact_obj_id = arts.artifact_obj_id";
+		String dataArtifactColumns = ", datarts.os_account_obj_id AS os_account_obj_id";
+		String analysResultColumns = ", anresult.conclusion AS conclusion, anresult.significance AS significance, anresult.priority AS priority, anresult.configuration AS configuration, anresult.justification AS justification ";
 
 		String formatQuery = "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
 				+ "arts.obj_id AS obj_id, arts.artifact_obj_id as artifact_obj_id, arts.data_source_obj_id AS data_source_obj_id, arts.artifact_type_id AS artifact_type_id, "
 				+ "types.type_name AS type_name, types.display_name AS display_name,"
 				+ "arts.review_status_id AS review_status_id %s "//NON-NLS
 				+ "FROM blackboard_artifacts AS arts "
-				+ "JOIN blackboard_attributes AS attrs "
-				+ "JOIN blackboard_artifact_types AS types " //NON-NLS
+				+ "JOIN blackboard_attributes AS attrs ON arts.artifact_id = attrs.artifact_id "
+				+ "JOIN blackboard_artifact_types AS types ON types.artifact_type_id = arts.artifact_type_id " //NON-NLS
 				+ "LEFT JOIN %s "
 				+ "WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
 				+ "AND attrs.attribute_type_id = %d "
