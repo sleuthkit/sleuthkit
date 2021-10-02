@@ -255,11 +255,20 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
     name16 = (UTF16 *) & fname->name;
     name8 = (UTF8 *) fs_name->name;
 
-    retVal = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
-        (UTF16 *) ((uintptr_t) name16 +
-            fname->nlen * 2), &name8,
-        (UTF8 *) ((uintptr_t) name8 +
-            fs_name->name_size), TSKlenientConversion);
+    uint16_t fname_len = tsk_getu16(fs->endian, idxe->strlen);
+
+    // Note that the following check assumes fname_len does not exceed
+    // the buffer holding idxe.
+    if (fname->nlen > fname_len / 2) {
+        // TODO: need a better way to signal a bounds error
+        retVal = TSKsourceExhausted;
+    }
+    else {
+      retVal = tsk_UTF16toUTF8(fs->endian,
+          (const UTF16 **) &name16, (UTF16 *) ((uintptr_t) name16 + fname->nlen * 2),
+          &name8, (UTF8 *) ((uintptr_t) name8 + fs_name->name_size),
+          TSKlenientConversion);
+    }
 
     if (retVal != TSKconversionOK) {
         *name8 = '\0';
