@@ -317,8 +317,6 @@ public final class OsAccountRealmManager {
 
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			List<String> realmNames = realm.getRealmNames();
-			String currRealmName = realmNames.isEmpty() ? null : realmNames.get(0);	// currently there is only one name.
 			String currRealmAddr = realm.getRealmAddr().orElse(null);
 
 			// set name and address to new values only if the current value is blank and the new value isn't.		
@@ -327,7 +325,8 @@ public final class OsAccountRealmManager {
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
 
-			if (StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)) {
+			// If the passed in realmName is blank, don't update.
+			if (!realmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR) && StringUtils.isNotBlank(realmName)) {
 				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
