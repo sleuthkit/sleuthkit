@@ -836,11 +836,34 @@ public class OsAccountTest {
 		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// Test: add an instance
-		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.ACCESSED);
+		
+		// Verify 
+		List<OsAccountInstance> account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.ACCESSED.getId());
 
-		// Test: add an existing instance - should be a no-op.
-		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.LAUNCHED);
-
+		// Test: add an instance that already exists - with less significant instance type - this should be a no op.
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.REFERENCED); // since ACCESSED > REFERENCED - this should do nothing
+		account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.ACCESSED.getId());
+		
+		
+		// Test: add an instance that already exists - with more significant instance type - this update the existing instance.
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.LAUNCHED); // since LAUNCHED > ACCESSED - this should update the existing instance
+		account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED.getId());
+		
+	
+		// Test: add an instance that already exists - with less significant instance type - should do nothing
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.REFERENCED); 
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.ACCESSED); 
+		account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED.getId());
+		
 		// Test: create account instance on a new host
 		String hostname2 = "host2222";
 		Host host2 = caseDB.getHostManager().newHost(hostname2);

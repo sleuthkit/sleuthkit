@@ -106,7 +106,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 1);
+			= new CaseDbSchemaVersionNumber(9, 2);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1007,6 +1007,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema8dot5toSchema8dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot6toSchema9dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot0toSchema9dot1(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot1toSchema9dot2(dbSchemaVersion, connection);
 
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
@@ -2686,6 +2687,71 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Upgrade the database schema from 9.1 to 9.2
+	 * This upgrade includes:
+	 *  - modify the UNIQUE constraint on tsk_os_account_instances to include the instance_type column.
+	 * 
+	 * @param schemaVersion Current schema version - must be 9.1
+	 * @param connection Database connection to use.
+	 * @return New schema version
+	 * 
+	 * @throws SQLException
+	 * @throws TskCoreException 
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema9dot1toSchema9dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 1) {
+			return schemaVersion;
+		}
+
+		Statement updateSchemaStatement = connection.createStatement();
+		ResultSet results = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			
+			
+			String bigIntDataType = "BIGINT";
+			String primaryKeyType = "BIGSERIAL";
+
+			if (this.dbType.equals(DbType.SQLITE)) {
+				bigIntDataType = "INTEGER";
+				primaryKeyType = "INTEGER";
+			}
+			
+			// In 9.2 we modified the UNIQUE constraint on tsk_os_account_instances to include instance_type column.
+			// Since SQLite does not allow to drop or alter constraints, we will create a new table, copy the data and delete the old table.
+
+			// Rename existing table
+			updateSchemaStatement.execute("ALTER TABLE tsk_os_account_instances RENAME TO old_tsk_os_account_instances");
+
+			// New table
+			updateSchemaStatement.execute("CREATE TABLE tsk_os_account_instances (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "data_source_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "instance_type INTEGER NOT NULL, " // PerformedActionOn/ReferencedOn
+					+ "UNIQUE(os_account_obj_id, data_source_obj_id, instance_type), "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE ) ");
+
+			// Copy the data from old table, order by id preserves the primary key. 
+			updateSchemaStatement.execute("INSERT INTO tsk_os_account_instances(os_account_obj_id, "
+					+ "data_source_obj_id, instance_type) SELECT os_account_obj_id, data_source_obj_id, instance_type FROM old_tsk_os_account_instances ORDER BY id ASC");
+
+			// delete old table
+			updateSchemaStatement.execute("DROP TABLE old_tsk_os_account_instances");
+
+			return new CaseDbSchemaVersionNumber(9, 2);
+		} finally {
+			closeResultSet(results);
+			closeStatement(updateSchemaStatement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
@@ -13164,7 +13230,7 @@ public class SleuthkitCase {
 
 			}
 		}
-
+		
 		private class ExecuteQuery implements DbCommand {
 
 			private final Statement statement;
