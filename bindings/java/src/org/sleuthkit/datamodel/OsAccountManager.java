@@ -836,7 +836,7 @@ public final class OsAccountManager {
 			query = makeOsAccountUpdateQuery("tsk_os_account_attributes", sourceAccount, destAccount);
 			s.executeUpdate(query);
 
-			// tsk_os_account_instances has a unique constraint on os_account_obj_id, data_source_obj_id, host_id,
+			// tsk_os_account_instances has a unique constraint on os_account_obj_id, data_source_obj_id, and instance_type,
 			// so delete any rows that would be duplicates.
 			query = "DELETE FROM tsk_os_account_instances "
 					+ "WHERE id IN ( "
@@ -846,7 +846,9 @@ public final class OsAccountManager {
 					+ "  tsk_os_account_instances destAccountInstance "
 					+ "INNER JOIN tsk_os_account_instances sourceAccountInstance ON destAccountInstance.data_source_obj_id = sourceAccountInstance.data_source_obj_id "
 					+ "WHERE destAccountInstance.os_account_obj_id = " + destAccount.getId()
-					+ " AND sourceAccountInstance.os_account_obj_id = " + sourceAccount.getId() + " )";
+					+ " AND sourceAccountInstance.os_account_obj_id = " + sourceAccount.getId() 
+					+ " AND sourceAccountInstance.instance_type = destAccountInstance.instance_type" + ")";
+			
 			s.executeUpdate(query);
 
 			query = makeOsAccountUpdateQuery("tsk_os_account_instances", sourceAccount, destAccount);
@@ -1248,6 +1250,9 @@ public final class OsAccountManager {
 	/**
 	 * Gets the OS account instances that satisfy the given SQL WHERE clause.
 	 *
+	 * Note: this query returns only the most significant instance type (least
+	 * ordinal) for each instance, that matches the specified WHERE clause.
+	 *
 	 * @param whereClause The SQL WHERE clause.
 	 *
 	 * @return The OS account instances.
@@ -1258,8 +1263,7 @@ public final class OsAccountManager {
 	private List<OsAccountInstance> getOsAccountInstances(String whereClause) throws TskCoreException {
 		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
 		
-		// this query returns only the most significant instance type (least ordinal) for each instance,
-		// that matches the specified WHERE clause.
+		
 		String querySQL = 
 					"SELECT tsk_os_account_instances.* "
 					+ " FROM tsk_os_account_instances "
