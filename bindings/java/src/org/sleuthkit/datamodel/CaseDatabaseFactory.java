@@ -536,7 +536,7 @@ class CaseDatabaseFactory {
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
 				+ "instance_type INTEGER NOT NULL, "	// PerformedActionOn/ReferencedOn
-				+ "UNIQUE(os_account_obj_id, data_source_obj_id), "
+				+ "UNIQUE(os_account_obj_id, data_source_obj_id, instance_type), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, " 
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE ) ");
 		
