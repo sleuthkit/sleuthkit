@@ -652,7 +652,7 @@ public final class OsAccountManager {
 		 */
 		synchronized (osAcctInstancesCacheLock) {
 			OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
-			OsAccountInstance instance = osAccountInstanceCache.get(key);//new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType);
+			OsAccountInstance instance = osAccountInstanceCache.get(key);
 			if (instance != null) {
 				// if the new instance type same or less significant than the existing instance (i.e. same or higher ordinal value) it's a match. 
 				if (instanceType.compareTo(instance.getInstanceType()) >= 0) {
