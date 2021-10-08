@@ -1228,8 +1228,6 @@ TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         /* Create the unallocated space files */
         TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
         TSK_FS_ATTR_RUN * current_run = unalloc_runs;
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
-        //fprintf(stderr, "Adding pool unallocated runs\n");
         while (current_run != NULL) {
 
             if (addUnallocBlockFileInChunks(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, unallocVolObjId, m_curImgId) == TSK_ERR) {
@@ -1238,18 +1236,7 @@ TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
                 return TSK_ERR;
             }
 
-            //TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
-
-            //ranges.push_back(tempRange);
-            //int64_t fileObjId = 0;
-            //if (TSK_ERR == addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
-            //    registerError();
-            //    tsk_fs_attr_run_free(unalloc_runs);
-            //    return TSK_ERR;
-            //}
-
             current_run = current_run->next;
-            ranges.clear();
         }
         tsk_fs_attr_run_free(unalloc_runs);
     }

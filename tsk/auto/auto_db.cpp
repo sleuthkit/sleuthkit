@@ -1319,21 +1319,13 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
             return TSK_ERR;
         }
 
-        //create an unalloc file with unalloc part, with vs part as parent
-        //vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        //create an unalloc file (or files) with unalloc part, with vs part as parent
         const uint64_t byteStart = vsInfo.offset + vsInfo.block_size * vsPart.start;
         const uint64_t byteLen = vsInfo.block_size * vsPart.len; 
         if (addUnallocBlockFileInChunks(byteStart, byteLen, vsPart.objId, m_curImgId) == TSK_ERR) {
             registerError();
             return TSK_ERR;
         }
-        //TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
-        //ranges.push_back(tempRange);
-        //int64_t fileObjId = 0;
-        //if (m_db->addUnallocBlockFile(vsPart.objId, 0, tempRange.byteLen, ranges, fileObjId, m_curImgId) == TSK_ERR) {
-        //    registerError();
-        //    return TSK_ERR;
-        //}
     }
 
     return TSK_OK;
