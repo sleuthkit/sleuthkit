@@ -186,6 +186,7 @@ public class SleuthkitCase {
 
 	private final ConnectionPool connections;
 	private final Object carvedFileDirsLock = new Object();
+	private final static int MAX_CARVED_FILES_PER_FOLDER = 1000;
 	private final Map<Long, CarvedFileDirInfo> rootIdsToCarvedFileDirs = new HashMap<>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<>(); // Cache for file system files.
 	private final List<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<>();
@@ -7590,6 +7591,11 @@ public class SleuthkitCase {
 		}
 	}
 	
+	/**
+	 * Utility class to hold the current subfolder being used for carved files
+	 * and a count of how many files are in the folder. Note that this count will not
+	 * be accurate if multiple nodes are writing carved files to the same folder at once.
+	 */
 	private class CarvedFileDirInfo {
 		final VirtualDirectory currentFolder;
 		AtomicInteger count;
@@ -7604,15 +7610,32 @@ public class SleuthkitCase {
 			this.count = new AtomicInteger(count);
 		}
 		
+		/**
+		 * Check if the folder is "full" and we should start a new subfolder.
+		 * 
+		 * @return True if the maximum number of files have been written to the folder, false otherwise.
+		 */
 		boolean isFull() {
-			return count.get() >= 5;
+			return count.get() >= MAX_CARVED_FILES_PER_FOLDER;
 		}
 		
+		/**
+		 * Increment the file counter.
+		 */
 		void incrementFileCounter() {
 			count.incrementAndGet();
 		}
 	}
 	
+	/**
+	 * Find the newest subfolder of $CarvedFiles and load its data.
+	 * 
+	 * @param carvedFilesBaseDir The $CarvedFiles directory
+	 * 
+	 * @return The subfolder of $CarvedFiles with the highest object ID.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	private CarvedFileDirInfo getMostRecentCarvedDirInfo(VirtualDirectory carvedFilesBaseDir) throws TskCoreException {
 		VirtualDirectory mostRecentDir = null;
 		for (Content child : carvedFilesBaseDir.getChildren()) {
@@ -7646,12 +7669,13 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * Create the next carved files subfolder. If the current subfolder is given, the
+	 * new subfolder will be one higher than the name of the current subfolder.
 	 * 
-	 * 
-	 * @param carvedFilesBaseDir
+	 * @param carvedFilesBaseDir   The base $CarvedFiles folder.
 	 * @param currentSubfolderInfo Optional name of the current subfolder in use (can be null).
 	 * 
-	 * @return
+	 * @return The new subfolder for carved files.
 	 * 
 	 * @throws TskCoreException 
 	 */
@@ -7720,7 +7744,6 @@ public class SleuthkitCase {
 			 * Get or create the $CarvedFiles virtual directory for the root
 			 * ancestor.
 			 */
-			//VirtualDirectory carvedFilesDir = null;
 			CarvedFileDirInfo carvedFilesDirInfo = null;
 			synchronized (carvedFileDirsLock) {
 				// Get the subfolder currently in use (if there is one)
