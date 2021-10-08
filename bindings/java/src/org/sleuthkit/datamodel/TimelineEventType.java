@@ -212,8 +212,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE,
-					WEB_COOKIE_ACCESSED,
-					WEB_COOKIE_END, WEB_BOOKMARK,
+					WEB_COOKIE_ACCESSED, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL,
 					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED,
 					WEB_FORM_AUTOFILL_ACCESSED, WEB_CACHE, WEB_HISTORY_CREATED);
@@ -657,12 +656,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
 
-	TimelineEventType WEB_COOKIE_END = new URLArtifactEventType(42,
-			getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
-			WEB_ACTIVITY,
-			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
-			new Type(TSK_DATETIME_END),
-			new Type(TSK_URL));
+//	WEB_COOKIE_END was id 42, but has been removed.	
 	
 	TimelineEventType BACKUP_EVENT_START = new TimelineEventArtifactTypeImpl(43,
 			getBundle().getString("TimelineEventType.BackupEventStart.txt"),// NON-NLS

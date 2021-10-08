@@ -362,7 +362,6 @@ WebTypes.webDownloads.name=Web Downloads
 WebTypes.webCookies.name=Web Cookies Create
 WebTypes.webCookiesAccessed.name=Web Cookies Accessed
 WebTypes.webCookiesStart.name=Web Cookies Start
-WebTypes.webCookiesEnd.name=Web Cookies End
 WebTypes.webBookmarks.name=Web Bookmarks
 WebTypes.webHistory.name=Web History Accessed
 WebTypes.webHistoryCreated.name=Web History Created
