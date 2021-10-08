@@ -166,15 +166,26 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 			return false;
 		}
 		final OsAccountInstance other = (OsAccountInstance) obj;
+		
+		if(this.instanceId != other.instanceId) {
+			return false;
+		}
+		
 		if (this.accountId != other.accountId) {
 			return false;
 		}
+		
+		if(this.instanceType != other.instanceType) {
+			return false;
+		}
+		
 		return this.dataSourceId == other.getDataSourceId();
 	}
 
 	@Override
 	public int hashCode() {
 		int hash = 7;
+		hash = 67 * hash + Objects.hashCode(this.instanceId);
 		hash = 67 * hash + Objects.hashCode(this.dataSourceId);
 		hash = 67 * hash + Objects.hashCode(this.accountId);
 		hash = 67 * hash + Objects.hashCode(this.instanceType);
