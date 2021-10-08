@@ -380,27 +380,27 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         /* Create the unallocated space files */
         TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
         TSK_FS_ATTR_RUN * current_run = unalloc_runs;
-        //vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         while (current_run != NULL) {
 
-            if (addUnallocBlockFileInChunks(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, unallocVolObjId, m_curImgId) == TSK_ERR) {
-                registerError();
-                tsk_fs_attr_run_free(unalloc_runs);
-                return TSK_ERR;
-            }
-
-            //TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
-
-            //ranges.push_back(tempRange);
-            //int64_t fileObjId = 0;
-            //if (m_db->addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+            //if (addUnallocBlockFileInChunks(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, unallocVolObjId, m_curImgId) == TSK_ERR) {
             //    registerError();
             //    tsk_fs_attr_run_free(unalloc_runs);
             //    return TSK_ERR;
             //}
 
+            TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
+
+            ranges.push_back(tempRange);
+            int64_t fileObjId = 0;
+            if (m_db->addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+                registerError();
+                tsk_fs_attr_run_free(unalloc_runs);
+                return TSK_ERR;
+            }
+
             current_run = current_run->next;
-            //ranges.clear();
+            ranges.clear();
         }
         tsk_fs_attr_run_free(unalloc_runs);
     }
@@ -1335,7 +1335,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
         }
 
         //create an unalloc file with unalloc part, with vs part as parent
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        //vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         const uint64_t byteStart = vsInfo.offset + vsInfo.block_size * vsPart.start;
         const uint64_t byteLen = vsInfo.block_size * vsPart.len; 
         if (addUnallocBlockFileInChunks(byteStart, byteLen, vsPart.objId, m_curImgId) == TSK_ERR) {
