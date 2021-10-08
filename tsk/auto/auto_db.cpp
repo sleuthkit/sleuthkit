@@ -112,23 +112,20 @@ void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
 void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace)
 {
     setAddUnallocSpace(addUnallocSpace, -1);
-    m_maxChunkSize = (int64_t)512 * 1024 * 1024;
 }
 
 void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize)
 {
     m_addUnallocSpace = addUnallocSpace;
     m_minChunkSize = minChunkSize;
-    //m_maxChunkSize = -1;
-    m_maxChunkSize = (int64_t)512 * 1024 * 1024;
+    m_maxChunkSize = -1;
 }
 
 void TskAutoDb::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize)
 {
     m_addUnallocSpace = true;
     m_minChunkSize = minChunkSize;
-    //m_maxChunkSize = maxChunkSize;
-    m_maxChunkSize = (int64_t)512 * 1024 * 1024;
+    m_maxChunkSize = maxChunkSize;
 }
 
 /**
@@ -380,27 +377,15 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         /* Create the unallocated space files */
         TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
         TSK_FS_ATTR_RUN * current_run = unalloc_runs;
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         while (current_run != NULL) {
 
-            //if (addUnallocBlockFileInChunks(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, unallocVolObjId, m_curImgId) == TSK_ERR) {
-            //    registerError();
-            //    tsk_fs_attr_run_free(unalloc_runs);
-            //    return TSK_ERR;
-            //}
-
-            TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
-
-            ranges.push_back(tempRange);
-            int64_t fileObjId = 0;
-            if (m_db->addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+            if (addUnallocBlockFileInChunks(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, unallocVolObjId, m_curImgId) == TSK_ERR) {
                 registerError();
                 tsk_fs_attr_run_free(unalloc_runs);
                 return TSK_ERR;
             }
 
             current_run = current_run->next;
-            ranges.clear();
         }
         tsk_fs_attr_run_free(unalloc_runs);
     }
@@ -1381,10 +1366,12 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocImageSpaceToDb() {
     return retImgFile;
 }
 
+/**
+* Adds unallocated block files to the database, chunking if enabled.
+* 
+* @returns TSK_OK on success, TSK_ERR on error
+*/
 TSK_RETVAL_ENUM TskAutoDb::addUnallocBlockFileInChunks(uint64_t byteStart, TSK_OFF_T totalSize, int64_t parentObjId, int64_t dataSourceObjId) {
-
-    printf("\n###\nAdding unalloc file: parent: %lld, image: %lld, original start: 0x%llx, total size: 0x%llx \n",
-        parentObjId, dataSourceObjId, byteStart, totalSize);
 
     if (m_maxChunkSize <= 0) {
         // No chunking - write the entire file
@@ -1416,11 +1403,8 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocBlockFileInChunks(uint64_t byteStart, TSK_O
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
 
-        printf("Adding range starting at 0x%llx with size 0x%llx\n", startingOffset, chunkSize);
         TSK_RETVAL_ENUM retval = m_db->addUnallocBlockFile(parentObjId, 0, chunkSize, ranges, fileObjId, dataSourceObjId);
         if (retval != TSK_OK) {
-            printf("Error adding unalloc file: parent: %lld, image: %lld, original start: 0x%llx, total size: 0x%llx, range start: 0x%llx, range size: 0x%llx\n", 
-                parentObjId, dataSourceObjId, byteStart, totalSize, startingOffset, chunkSize);
             return retval;
         }
         ranges.clear();
