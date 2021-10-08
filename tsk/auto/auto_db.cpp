@@ -1347,12 +1347,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocImageSpaceToDb() {
         retImgFile = TSK_ERR;
     }
     else {
-        //TSK_DB_FILE_LAYOUT_RANGE tempRange(0, imgSize, 0);
-        //add unalloc block file for the entire image
-        //vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
-        //ranges.push_back(tempRange);
-        //int64_t fileObjId = 0;
-        //retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId);
         retImgFile = addUnallocBlockFileInChunks(0, imgSize, m_curImgId, m_curImgId);
     }
     return retImgFile;
