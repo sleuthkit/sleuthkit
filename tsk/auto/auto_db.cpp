@@ -377,21 +377,15 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         /* Create the unallocated space files */
         TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
         TSK_FS_ATTR_RUN * current_run = unalloc_runs;
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         while (current_run != NULL) {
 
-            TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
-
-            ranges.push_back(tempRange);
-            int64_t fileObjId = 0;
-            if (m_db->addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+            if (addUnallocBlockFileInChunks(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, unallocVolObjId, m_curImgId) == TSK_ERR) {
                 registerError();
                 tsk_fs_attr_run_free(unalloc_runs);
                 return TSK_ERR;
             }
 
             current_run = current_run->next;
-            ranges.clear();
         }
         tsk_fs_attr_run_free(unalloc_runs);
     }
@@ -1325,14 +1319,10 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
             return TSK_ERR;
         }
 
-        //create an unalloc file with unalloc part, with vs part as parent
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        //create an unalloc file (or files) with unalloc part, with vs part as parent
         const uint64_t byteStart = vsInfo.offset + vsInfo.block_size * vsPart.start;
         const uint64_t byteLen = vsInfo.block_size * vsPart.len; 
-        TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
-        ranges.push_back(tempRange);
-        int64_t fileObjId = 0;
-        if (m_db->addUnallocBlockFile(vsPart.objId, 0, tempRange.byteLen, ranges, fileObjId, m_curImgId) == TSK_ERR) {
+        if (addUnallocBlockFileInChunks(byteStart, byteLen, vsPart.objId, m_curImgId) == TSK_ERR) {
             registerError();
             return TSK_ERR;
         }
@@ -1357,14 +1347,56 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocImageSpaceToDb() {
         retImgFile = TSK_ERR;
     }
     else {
-        TSK_DB_FILE_LAYOUT_RANGE tempRange(0, imgSize, 0);
-        //add unalloc block file for the entire image
+        retImgFile = addUnallocBlockFileInChunks(0, imgSize, m_curImgId, m_curImgId);
+    }
+    return retImgFile;
+}
+
+/**
+* Adds unallocated block files to the database, chunking if enabled.
+* 
+* @returns TSK_OK on success, TSK_ERR on error
+*/
+TSK_RETVAL_ENUM TskAutoDb::addUnallocBlockFileInChunks(uint64_t byteStart, TSK_OFF_T totalSize, int64_t parentObjId, int64_t dataSourceObjId) {
+
+    if (m_maxChunkSize <= 0) {
+        // No chunking - write the entire file
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, totalSize, 0);
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
-        retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId);
+        return m_db->addUnallocBlockFile(parentObjId, 0, totalSize, ranges, fileObjId, dataSourceObjId);
     }
-    return retImgFile;
+
+    // We will chunk into separate files with max size m_maxChunkSize
+    uint64_t maxChunkSize = (uint64_t)m_maxChunkSize;
+    uint64_t bytesLeft = (uint64_t)totalSize;
+    uint64_t startingOffset = byteStart;
+    uint64_t chunkSize;
+    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+    while (bytesLeft > 0) {
+
+        if (maxChunkSize > bytesLeft) {
+            chunkSize = bytesLeft;
+            bytesLeft = 0;
+        }
+        else {
+            chunkSize = maxChunkSize;
+            bytesLeft -= maxChunkSize;
+        }
+
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(startingOffset, chunkSize, 0);     
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+
+        TSK_RETVAL_ENUM retval = m_db->addUnallocBlockFile(parentObjId, 0, chunkSize, ranges, fileObjId, dataSourceObjId);
+        if (retval != TSK_OK) {
+            return retval;
+        }
+        ranges.clear();
+        startingOffset += chunkSize;
+    }
+    return TSK_OK;
 }
 
 /**
