@@ -186,7 +186,7 @@ public class SleuthkitCase {
 
 	private final ConnectionPool connections;
 	private final Object carvedFileDirsLock = new Object();
-	private final static int MAX_CARVED_FILES_PER_FOLDER = 1000;
+	private final static int MAX_CARVED_FILES_PER_FOLDER = 2000;
 	private final Map<Long, CarvedFileDirInfo> rootIdsToCarvedFileDirs = new HashMap<>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<>(); // Cache for file system files.
 	private final List<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<>();
@@ -7819,7 +7819,8 @@ public class SleuthkitCase {
 				 */
 				VirtualDirectory carvedFilesDir = carvedFilesDirInfo.currentFolder;
 				if (carvedFilesDirInfo.isFull()) {
-					// To prevent possible deadlocks, commit the current transaction and then start a new one
+					// To prevent deadlocks involving the case write lock and the carvedFileDirsLock, 
+					// commit the current transaction and then start a new one
 					// after switching to the new folder.
 					transaction.commit();
 					
