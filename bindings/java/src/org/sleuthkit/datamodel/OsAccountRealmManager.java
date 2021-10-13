@@ -322,12 +322,14 @@ public final class OsAccountRealmManager {
 			// set name and address to new values only if the current value is blank and the new value isn't.		
 			if ((StringUtils.isBlank(currRealmAddr) && StringUtils.isNotBlank(realmAddr))) {
 				updateRealmColumn(realm.getRealmId(), "realm_addr", realmAddr, connection);
+				currRealmAddr = realmAddr;
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
 
 			// If the passed in realmName is blank or the realm address is the 
 			// special windows address , don't update.
-			if (StringUtils.isNotBlank(realmName) && (realmAddr == null || !realmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR))) {
+			if (StringUtils.isNotBlank(realmName) && 
+					((currRealmAddr == null || !currRealmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR)))) {
 				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
