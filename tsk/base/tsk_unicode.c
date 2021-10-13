@@ -150,12 +150,15 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
     TSKConversionResult result = TSKconversionOK;
     const UTF16 *source = *sourceStart;
     UTF8 *target = *targetStart;
+
     while (source < sourceEnd) {
         UTF32 ch;
         unsigned short bytesToWrite = 0;
         const UTF32 byteMask = 0xBF;
         const UTF32 byteMark = 0x80;
         const UTF16 *oldSource = source;        /* In case we have to back up because of target overflow. */
+
+        // Need at least 2 bytes
         ch = tsk_getu16(endian, (uint8_t *) source);
         source++;
 
@@ -163,6 +166,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
             if (source < sourceEnd) {
+                // Need at least 2 bytes
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) source);
                 ++source;
 

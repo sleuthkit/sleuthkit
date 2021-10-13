@@ -28,11 +28,11 @@ import java.sql.Types;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NavigableSet;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.OsAccount.OsAccountStatus;
@@ -52,7 +52,7 @@ public final class OsAccountManager {
 
 	private final SleuthkitCase db;
 	private final Object osAcctInstancesCacheLock;
-	private final NavigableSet<OsAccountInstance> osAccountInstanceCache;
+	private final NavigableMap<OsAccountInstanceKey, OsAccountInstance> osAccountInstanceCache;
 
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
@@ -63,7 +63,7 @@ public final class OsAccountManager {
 	OsAccountManager(SleuthkitCase skCase) {
 		db = skCase;
 		osAcctInstancesCacheLock = new Object();
-		osAccountInstanceCache = new ConcurrentSkipListSet<>();
+		osAccountInstanceCache = new ConcurrentSkipListMap<>();
 	}
 
 	/**
@@ -541,7 +541,7 @@ public final class OsAccountManager {
 		if (existingInstance.isPresent()) {
 			return existingInstance.get();
 		}
-		
+
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return newOsAccountInstance(osAccount.getId(), dataSource.getId(), instanceType, connection);
 		}
@@ -563,7 +563,7 @@ public final class OsAccountManager {
 	 *                          instance.
 	 */
 	OsAccountInstance newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
-		
+
 		Optional<OsAccountInstance> existingInstance = cachedAccountInstance(osAccountId, dataSourceObjId, instanceType);
 		if (existingInstance.isPresent()) {
 			return existingInstance.get();
@@ -586,15 +586,15 @@ public final class OsAccountManager {
 				if (resultSet.next()) {
 					OsAccountInstance accountInstance = new OsAccountInstance(db, resultSet.getLong(1), osAccountId, dataSourceObjId, instanceType);
 					synchronized (osAcctInstancesCacheLock) {
-						
+						OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
 						// remove from cache any instances less significant (higher ordinal) than this instance
-						for (OsAccountInstance.OsAccountInstanceType type : OsAccountInstance.OsAccountInstanceType.values() ) {
+						for (OsAccountInstance.OsAccountInstanceType type : OsAccountInstance.OsAccountInstanceType.values()) {
 							if (accountInstance.getInstanceType().compareTo(type) < 0) {
-								osAccountInstanceCache.remove(new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, type));
+								osAccountInstanceCache.remove(key);
 							}
 						}
 						// add the new most significant instance to the cache
-						osAccountInstanceCache.add(accountInstance);
+						osAccountInstanceCache.put(key, accountInstance);
 					}
 					/*
 					 * There is a potential issue here. The cache of OS account
@@ -642,7 +642,7 @@ public final class OsAccountManager {
 	 *
 	 */
 	private Optional<OsAccountInstance> cachedAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType) {
-		
+
 		/*
 		 * Check the cache of OS account instances for an existing instance for
 		 * this OS account and data source. Note that the account instance
@@ -651,14 +651,12 @@ public final class OsAccountManager {
 		 * of this class.
 		 */
 		synchronized (osAcctInstancesCacheLock) {
-			OsAccountInstance bogus = new OsAccountInstance(db, 0, osAccountId, dataSourceObjId, instanceType);
-			if (osAccountInstanceCache.contains(bogus)) {
-				// since we checked for contains(bogus), floor(bogus) should return the exact match and not a less than match.
-				OsAccountInstance existingInstance = osAccountInstanceCache.floor(bogus);
-
+			OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
+			OsAccountInstance instance = osAccountInstanceCache.get(key);
+			if (instance != null) {
 				// if the new instance type same or less significant than the existing instance (i.e. same or higher ordinal value) it's a match. 
-				if (instanceType.compareTo(existingInstance.getInstanceType()) >= 0) {
-					return Optional.of(existingInstance);
+				if (instanceType.compareTo(instance.getInstanceType()) >= 0) {
+					return Optional.of(instance);
 				}
 			}
 			return Optional.empty();
@@ -846,9 +844,9 @@ public final class OsAccountManager {
 					+ "  tsk_os_account_instances destAccountInstance "
 					+ "INNER JOIN tsk_os_account_instances sourceAccountInstance ON destAccountInstance.data_source_obj_id = sourceAccountInstance.data_source_obj_id "
 					+ "WHERE destAccountInstance.os_account_obj_id = " + destAccount.getId()
-					+ " AND sourceAccountInstance.os_account_obj_id = " + sourceAccount.getId() 
+					+ " AND sourceAccountInstance.os_account_obj_id = " + sourceAccount.getId()
 					+ " AND sourceAccountInstance.instance_type = destAccountInstance.instance_type" + ")";
-			
+
 			s.executeUpdate(query);
 
 			query = makeOsAccountUpdateQuery("tsk_os_account_instances", sourceAccount, destAccount);
@@ -1262,25 +1260,24 @@ public final class OsAccountManager {
 	 */
 	private List<OsAccountInstance> getOsAccountInstances(String whereClause) throws TskCoreException {
 		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
-		
-		
-		String querySQL = 
-					"SELECT tsk_os_account_instances.* "
-					+ " FROM tsk_os_account_instances "
-					+ " INNER JOIN ( SELECT os_account_obj_id,  data_source_obj_id, MIN(instance_type) AS min_instance_type "
-					+ "					FROM tsk_os_account_instances"
-					+ "					GROUP BY os_account_obj_id, data_source_obj_id ) grouped_instances "
-					+ " ON tsk_os_account_instances.os_account_obj_id = grouped_instances.os_account_obj_id "	
-					+ " AND tsk_os_account_instances.instance_type = grouped_instances.min_instance_type "
-					+ " WHERE " + whereClause;
-		
+
+		String querySQL
+				= "SELECT tsk_os_account_instances.* "
+				+ " FROM tsk_os_account_instances "
+				+ " INNER JOIN ( SELECT os_account_obj_id,  data_source_obj_id, MIN(instance_type) AS min_instance_type "
+				+ "					FROM tsk_os_account_instances"
+				+ "					GROUP BY os_account_obj_id, data_source_obj_id ) grouped_instances "
+				+ " ON tsk_os_account_instances.os_account_obj_id = grouped_instances.os_account_obj_id "
+				+ " AND tsk_os_account_instances.instance_type = grouped_instances.min_instance_type "
+				+ " WHERE " + whereClause;
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
 				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
 				ResultSet results = connection.executeQuery(preparedStatement)) {
-			
+
 			osAcctInstances = getOsAccountInstancesFromResultSet(results);
-			
+
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to get OsAccountInstances (SQL = " + querySQL + ")", ex);
 		} finally {
@@ -1291,26 +1288,27 @@ public final class OsAccountManager {
 
 	/**
 	 * Returns list of OS account instances from the given result set.
-	 * 
+	 *
 	 * @param results Result set from a SELECT tsk_os_account_instances.* query.
-	 * 
-	 * @return List of OS account instances. 
-	 * @throws SQLException 
+	 *
+	 * @return List of OS account instances.
+	 *
+	 * @throws SQLException
 	 */
 	private List<OsAccountInstance> getOsAccountInstancesFromResultSet(ResultSet results) throws SQLException {
-		
+
 		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
 		while (results.next()) {
-				long instanceId = results.getLong("id");
-				long osAccountObjID = results.getLong("os_account_obj_id");
-				long dataSourceObjId = results.getLong("data_source_obj_id");
-				int instanceType = results.getInt("instance_type");
-				osAcctInstances.add(new OsAccountInstance(db, instanceId, osAccountObjID, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
-			}
-		
+			long instanceId = results.getLong("id");
+			long osAccountObjID = results.getLong("os_account_obj_id");
+			long dataSourceObjId = results.getLong("data_source_obj_id");
+			int instanceType = results.getInt("instance_type");
+			osAcctInstances.add(new OsAccountInstance(db, instanceId, osAccountObjID, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
+		}
+
 		return osAcctInstances;
 	}
-	
+
 	/**
 	 * Updates the properties of the specified account in the database.
 	 *
@@ -1782,6 +1780,63 @@ public final class OsAccountManager {
 
 		public Optional<OsAccount> getUpdatedAccount() {
 			return Optional.ofNullable(updatedAccount);
+		}
+	}
+
+	/**
+	 * Represents the osAccountId\dataSourceId pair for use with the cache of
+	 * OsAccountInstances.
+	 */
+	private class OsAccountInstanceKey implements Comparable<OsAccountInstanceKey>{
+
+		private final long osAccountId;
+		private final long dataSourceId;
+
+		OsAccountInstanceKey(long osAccountId, long dataSourceId) {
+			this.osAccountId = osAccountId;
+			this.dataSourceId = dataSourceId;
+		}
+
+		@Override
+		public boolean equals(Object other) {
+			if (this == other) {
+				return true;
+			}
+			if (other == null) {
+				return false;
+			}
+			if (getClass() != other.getClass()) {
+				return false;
+			}
+
+			final OsAccountInstanceKey otherKey = (OsAccountInstanceKey) other;
+
+			if (osAccountId != otherKey.osAccountId) {
+				return false;
+			}
+
+			return dataSourceId == otherKey.dataSourceId;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 5;
+			hash = 53 * hash + (int) (this.osAccountId ^ (this.osAccountId >>> 32));
+			hash = 53 * hash + (int) (this.dataSourceId ^ (this.dataSourceId >>> 32));
+			return hash;
+		}
+
+		@Override
+		public int compareTo(OsAccountInstanceKey other) {
+			if(this.equals(other)) {
+				return 0;
+			}
+			
+			if (dataSourceId != other.dataSourceId) {
+				return Long.compare(dataSourceId, other.dataSourceId);
+			}
+
+			return Long.compare(osAccountId, other.osAccountId);
 		}
 	}
 }
