@@ -327,7 +327,7 @@ public final class OsAccountRealmManager {
 
 			// If the passed in realmName is blank or the realm address is the 
 			// special windows address , don't update.
-			if (StringUtils.isNotBlank(realmName) && (realmAddr != null && !realmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR))) {
+			if (StringUtils.isNotBlank(realmName) && (realmAddr == null || !realmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR))) {
 				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
