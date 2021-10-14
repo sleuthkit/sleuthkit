@@ -292,6 +292,10 @@ public final class OsAccountRealmManager {
 	/**
 	 * Updates the realm address and/or name, if a non blank address/name is
 	 * specified and the current address/name is blank.
+	 * 
+	 * The realm name will not be updated regardless of the value in realmName
+	 * if the passed in realm has a current address or is updated to 
+	 * equal to SPECIAL_WINDOWS_REALM_ADDR.
 	 *
 	 * @param realm      Realm to update.
 	 * @param realmAddr  Realm address, may be null if the address doesn't need
