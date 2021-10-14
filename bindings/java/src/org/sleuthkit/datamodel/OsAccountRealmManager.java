@@ -292,6 +292,10 @@ public final class OsAccountRealmManager {
 	/**
 	 * Updates the realm address and/or name, if a non blank address/name is
 	 * specified and the current address/name is blank.
+	 * 
+	 * The realm name will not be updated regardless of the value in realmName
+	 * if the passed in realm has an address or is updated to have an address
+	 * equal to SPECIAL_WINDOWS_REALM_ADDR.
 	 *
 	 * @param realm      Realm to update.
 	 * @param realmAddr  Realm address, may be null if the address doesn't need
@@ -325,10 +329,15 @@ public final class OsAccountRealmManager {
 				currRealmAddr = realmAddr;
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
+			
+			List<String> realmNames = realm.getRealmNames();
+			String currRealmName = realmNames.isEmpty() ? null : realmNames.get(0);	// currently there is only one name.
 
-			// If the passed in realmName is blank or the realm address is the 
-			// special windows address , don't update.
-			if (StringUtils.isNotBlank(realmName) && 
+			// Update realm name if:
+			//	 Current realm name is empty
+			//	 The passed in realm name is not empty
+			//	 The address is not a special windows address
+			if (StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName) && 
 					((currRealmAddr == null || !currRealmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR)))) {
 				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
