@@ -199,10 +199,11 @@ public class SleuthkitCase {
 	private String dbBackupPath;
 
 	/*
-	 * ConcurrentHashMap semantics are fine for these caches and there is no
-	 * need to keep each pair of related caches strictly consistent with each
-	 * other since cache misses will be extremely rare (standard types are
-	 * loaded when the case is opened) and the cost of a cache miss is low.
+	 * ConcurrentHashMap semantics are fine for these caches to which entries
+	 * are added, but never removed. There is also no need to keep each pair of
+	 * related caches strictly consistent with each other, because cache misses
+	 * will be extremely rare (standard types are loaded when the case is
+	 * opened), and the cost of a cache miss is low.
 	 */
 	private final Map<Integer, BlackboardArtifact.Type> typeIdToArtifactTypeMap = new ConcurrentHashMap<>();
 	private final Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
