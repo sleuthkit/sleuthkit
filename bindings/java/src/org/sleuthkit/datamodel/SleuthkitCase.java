@@ -2690,16 +2690,17 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Upgrade the database schema from 9.1 to 9.2
-	 * This upgrade includes:
-	 *  - modify the UNIQUE constraint on tsk_os_account_instances to include the instance_type column.
-	 * 
+	 * Upgrade the database schema from 9.1 to 9.2 This upgrade includes: -
+	 * modify the UNIQUE constraint on tsk_os_account_instances to include the
+	 * instance_type column.
+	 *
 	 * @param schemaVersion Current schema version - must be 9.1
-	 * @param connection Database connection to use.
+	 * @param connection    Database connection to use.
+	 *
 	 * @return New schema version
-	 * 
+	 *
 	 * @throws SQLException
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	private CaseDbSchemaVersionNumber updateFromSchema9dot1toSchema9dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 9) {
@@ -2714,8 +2715,7 @@ public class SleuthkitCase {
 		ResultSet results = null;
 		acquireSingleUserCaseWriteLock();
 		try {
-			
-			
+
 			String bigIntDataType = "BIGINT";
 			String primaryKeyType = "BIGSERIAL";
 
@@ -2723,10 +2723,9 @@ public class SleuthkitCase {
 				bigIntDataType = "INTEGER";
 				primaryKeyType = "INTEGER";
 			}
-			
+
 			// In 9.2 we modified the UNIQUE constraint on tsk_os_account_instances to include instance_type column.
 			// Since SQLite does not allow to drop or alter constraints, we will create a new table, copy the data and delete the old table.
-
 			// Rename existing table
 			updateSchemaStatement.execute("ALTER TABLE tsk_os_account_instances RENAME TO old_tsk_os_account_instances");
 
@@ -2753,7 +2752,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
@@ -3687,7 +3686,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 *                          within tsk core and artifacts could not be
 	 *                          queried
-	 * 
+	 *
 	 * @deprecated Do not use.
 	 */
 	@Deprecated
@@ -6267,7 +6266,7 @@ public class SleuthkitCase {
 	 *                          core and file could not be queried
 	 *
 	 * @deprecated	Use the type specific methods in Blackboard
-	 *				getAnalysisResultsById and getDataArtifactById
+	 * getAnalysisResultsById and getDataArtifactById
 	 */
 	@Deprecated
 	public BlackboardArtifact getArtifactByArtifactId(long id) throws TskCoreException {
@@ -7590,35 +7589,38 @@ public class SleuthkitCase {
 			}
 		}
 	}
-	
+
 	/**
 	 * Utility class to hold the current subfolder being used for carved files
-	 * and a count of how many files are in the folder. Note that this count will not
-	 * be accurate if multiple nodes are writing carved files to the same folder at once.
+	 * and a count of how many files are in the folder. Note that this count
+	 * will not be accurate if multiple nodes are writing carved files to the
+	 * same folder at once.
 	 */
 	private class CarvedFileDirInfo {
+
 		final VirtualDirectory currentFolder;
 		AtomicInteger count;
-		
+
 		CarvedFileDirInfo(VirtualDirectory currentFolder) {
 			this.currentFolder = currentFolder;
 			count = new AtomicInteger(0);
 		}
-		
+
 		CarvedFileDirInfo(VirtualDirectory currentFolder, int count) {
 			this.currentFolder = currentFolder;
 			this.count = new AtomicInteger(count);
 		}
-		
+
 		/**
 		 * Check if the folder is "full" and we should start a new subfolder.
-		 * 
-		 * @return True if the maximum number of files have been written to the folder, false otherwise.
+		 *
+		 * @return True if the maximum number of files have been written to the
+		 *         folder, false otherwise.
 		 */
 		boolean isFull() {
 			return count.get() >= MAX_CARVED_FILES_PER_FOLDER;
 		}
-		
+
 		/**
 		 * Increment the file counter.
 		 */
@@ -7626,15 +7628,15 @@ public class SleuthkitCase {
 			count.incrementAndGet();
 		}
 	}
-	
+
 	/**
 	 * Find the newest subfolder of $CarvedFiles and load its data.
-	 * 
+	 *
 	 * @param carvedFilesBaseDir The $CarvedFiles directory
-	 * 
+	 *
 	 * @return The subfolder of $CarvedFiles with the highest object ID.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private CarvedFileDirInfo getMostRecentCarvedDirInfo(VirtualDirectory carvedFilesBaseDir) throws TskCoreException {
 		VirtualDirectory mostRecentDir = null;
@@ -7642,42 +7644,44 @@ public class SleuthkitCase {
 			if (isValidCarvedFileSubfolder(child)) {
 				if (mostRecentDir == null
 						|| (mostRecentDir.getId() < child.getId())) {
-					mostRecentDir = (VirtualDirectory)child;
+					mostRecentDir = (VirtualDirectory) child;
 				}
 			}
 		}
-		
+
 		if (mostRecentDir != null) {
 			return new CarvedFileDirInfo(mostRecentDir, mostRecentDir.getChildrenCount());
 		}
 		return null;
 	}
-	
+
 	/**
-	 * Check if the name of the folder matches the expected pattern for a subfolder
-	 * and is a virtual directory.
-	 * 
+	 * Check if the name of the folder matches the expected pattern for a
+	 * subfolder and is a virtual directory.
+	 *
 	 * @param subfolder The subfolder to test.
-	 * 
+	 *
 	 * @return true if the format appears valid, false otherwise.
 	 */
 	private boolean isValidCarvedFileSubfolder(Content subfolder) {
-			if (!(subfolder instanceof VirtualDirectory)) {
-				return false;
-			}
-			return subfolder.getName().matches("^[0-9]+$");
+		if (!(subfolder instanceof VirtualDirectory)) {
+			return false;
+		}
+		return subfolder.getName().matches("^[0-9]+$");
 	}
-	
+
 	/**
-	 * Create the next carved files subfolder. If the current subfolder is given, the
-	 * new subfolder will be one higher than the name of the current subfolder.
-	 * 
+	 * Create the next carved files subfolder. If the current subfolder is
+	 * given, the new subfolder will be one higher than the name of the current
+	 * subfolder.
+	 *
 	 * @param carvedFilesBaseDir   The base $CarvedFiles folder.
-	 * @param currentSubfolderInfo Optional name of the current subfolder in use (can be null).
-	 * 
+	 * @param currentSubfolderInfo Optional name of the current subfolder in use
+	 *                             (can be null).
+	 *
 	 * @return The new subfolder for carved files.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private CarvedFileDirInfo createCarvedFilesSubfolder(Content carvedFilesBaseDir, CarvedFileDirInfo currentSubfolderInfo) throws TskCoreException {
 		int nextIndex = 1;
@@ -7689,7 +7693,7 @@ public class SleuthkitCase {
 				throw new TskCoreException("Unexpected name format for carved files subdirectory with ID: " + currentSubfolderInfo.currentFolder.getId() + " (" + currentSubfolderInfo.currentFolder.getName() + ")", ex);
 			}
 		}
-		
+
 		VirtualDirectory carvedFilesSubdir = addVirtualDirectory(carvedFilesBaseDir.getId(), Integer.toString(nextIndex));
 		return new CarvedFileDirInfo(carvedFilesSubdir);
 	}
@@ -7750,13 +7754,13 @@ public class SleuthkitCase {
 				carvedFilesDirInfo = rootIdsToCarvedFileDirs.get(root.getId());
 				if (carvedFilesDirInfo != null) {
 					carvedFilesDirInfo.incrementFileCounter();
-					
+
 					// If the current folder is full, create a new one.
 					if (carvedFilesDirInfo.isFull()) {
 						carvedFilesDirInfo = createCarvedFilesSubfolder(carvedFilesDirInfo.currentFolder.getParent(), carvedFilesDirInfo);
 					}
 				}
-				
+
 				if (null == carvedFilesDirInfo) {
 					List<Content> rootChildren;
 					if (root instanceof FileSystem) {
@@ -7766,9 +7770,9 @@ public class SleuthkitCase {
 					}
 					for (Content child : rootChildren) {
 						if (child instanceof VirtualDirectory && child.getName().equals(VirtualDirectory.NAME_CARVED)) {
-							
-							VirtualDirectory baseDir = (VirtualDirectory)child;
-							
+
+							VirtualDirectory baseDir = (VirtualDirectory) child;
+
 							// Get the most recent subfolder in the carved files folder.
 							carvedFilesDirInfo = getMostRecentCarvedDirInfo(baseDir);
 
@@ -7776,12 +7780,12 @@ public class SleuthkitCase {
 							if (carvedFilesDirInfo == null) {
 								carvedFilesDirInfo = createCarvedFilesSubfolder(baseDir, null);
 							}
-							
+
 							// If there are already too many files in the subfolder, create a new one.
 							if (carvedFilesDirInfo.isFull()) {
 								carvedFilesDirInfo = createCarvedFilesSubfolder(baseDir, carvedFilesDirInfo);
 							}
-							
+
 							rootIdsToCarvedFileDirs.put(root.getId(), carvedFilesDirInfo);
 							break;
 						}
@@ -7789,7 +7793,7 @@ public class SleuthkitCase {
 					if (carvedFilesDirInfo == null) {
 						// If we get here, we didn't have a carved files base folder in the case, so we need to make that and 
 						// the first subfolder.
-						
+
 						long parId = root.getId();
 						// $CarvedFiles should be a child of the root directory, not the file system
 						if (root instanceof FileSystem) {
@@ -7807,14 +7811,14 @@ public class SleuthkitCase {
 			 * Add the carved files to the database as children of the
 			 * $CarvedFile directory of the root ancestor.
 			 */
-			VirtualDirectory carvedFilesBaseDir = (VirtualDirectory)carvedFilesDirInfo.currentFolder.getParent();
+			VirtualDirectory carvedFilesBaseDir = (VirtualDirectory) carvedFilesDirInfo.currentFolder.getParent();
 			transaction = beginTransaction();
 			CaseDbConnection connection = transaction.getConnection();
 			String parentPath = getFileParentPath(carvedFilesDirInfo.currentFolder.getId(), connection) + carvedFilesDirInfo.currentFolder.getName() + "/";
 			List<LayoutFile> carvedFiles = new ArrayList<>();
 			for (CarvingResult.CarvedFile carvedFile : carvingResult.getCarvedFiles()) {
 
-				/* 
+				/*
 				 * Check if we need to change to a new subfolder.
 				 */
 				VirtualDirectory carvedFilesDir = carvedFilesDirInfo.currentFolder;
@@ -7823,7 +7827,7 @@ public class SleuthkitCase {
 					// commit the current transaction and then start a new one
 					// after switching to the new folder.
 					transaction.commit();
-					
+
 					synchronized (carvedFileDirsLock) {
 						// Get the current copy from the map - another thread may have just created a new folder.
 						carvedFilesDirInfo = rootIdsToCarvedFileDirs.get(root.getId());
@@ -7832,22 +7836,22 @@ public class SleuthkitCase {
 							rootIdsToCarvedFileDirs.put(root.getId(), carvedFilesDirInfo);
 							carvedFilesDir = carvedFilesDirInfo.currentFolder;
 						}
-					}	
-					
+					}
+
 					// Start a new transaction.
 					transaction = beginTransaction();
 					connection = transaction.getConnection();
 					parentPath = getFileParentPath(carvedFilesDir.getId(), connection) + carvedFilesDir.getName() + "/";
-					
+
 				}
-				carvedFilesDirInfo.incrementFileCounter();				
-				
+				carvedFilesDirInfo.incrementFileCounter();
+
 				/*
 				 * Insert a row for the carved file into the tsk_objects table:
 				 * INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 				 */
 				long carvedFileId = addObject(carvedFilesDir.getId(), TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
-				
+
 
 				/*
 				 * Insert a row for the carved file into the tsk_files table:
@@ -13396,7 +13400,7 @@ public class SleuthkitCase {
 
 			}
 		}
-		
+
 		private class ExecuteQuery implements DbCommand {
 
 			private final Statement statement;
