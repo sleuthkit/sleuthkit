@@ -381,13 +381,13 @@ public class SleuthkitCase {
 	 * @throws Exception
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
-		dbPath = "";
-		databaseName = dbName;
+		this.dbPath = "";
+		this.databaseName = dbName;
 		this.dbType = dbType;
 		this.caseDirPath = caseDirPath;
-		connections = new PostgreSQLConnections(host, port, dbName, userName, password);
+		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		this.caseHandle = caseHandle;
-		caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
 		init();
 	}
 
