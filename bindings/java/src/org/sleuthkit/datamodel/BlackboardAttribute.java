@@ -612,12 +612,11 @@ public class BlackboardAttribute extends AbstractAttribute {
 		public static final Type TSK_CORRELATION_TYPE = new Type(157, "TSK_CORRELATION_TYPE", bundle.getString("BlackboardAttribute.tskCorrelationType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_CORRELATION_VALUE = new Type(158, "TSK_CORRELATION_VALUE", bundle.getString("BlackboardAttribute.tskCorrelationValue.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_OTHER_CASES = new Type(159, "TSK_OTHER_CASES", bundle.getString("BlackboardAttribute.tskOtherCases.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
-		
+
 		// NOTE: When adding a new standard BlackboardAttribute.Type, add the instance and then add to the STANDARD_TYPES list.
 		/**
 		 * A list of all the standard attribute types.
 		 */
-		
 		static final List<Type> STANDARD_TYPES = Collections.unmodifiableList(Arrays.asList(
 				TSK_URL,
 				TSK_DATETIME,
