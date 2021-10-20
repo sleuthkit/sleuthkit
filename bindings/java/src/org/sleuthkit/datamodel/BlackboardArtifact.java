@@ -421,9 +421,15 @@ public abstract class BlackboardArtifact implements Content {
 			attrsCache.addAll(attributes);
 			loadedCacheFromDb = true;
 		} else {
-			attributes = new ArrayList<BlackboardAttribute>(attrsCache);
+			attributes = new ArrayList<>(attrsCache);
 		}
 		return attributes;
+	}
+	
+	void setAttributes(List<BlackboardAttribute> attributes) {
+		attrsCache.clear();
+		attrsCache.addAll(attributes);
+		loadedCacheFromDb = true;
 	}
 
 	/**

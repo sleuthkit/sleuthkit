@@ -5121,32 +5121,9 @@ public class SleuthkitCase {
 					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id = " + artifact.getArtifactID()
 					+ " AND attrs.attribute_type_id = types.attribute_type_id");
-			ArrayList<BlackboardAttribute> attributes = new ArrayList<BlackboardAttribute>();
+			ArrayList<BlackboardAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
-				int attributeTypeId = rs.getInt("attribute_type_id");
-				String attributeTypeName = rs.getString("type_name");
-				BlackboardAttribute.Type attributeType;
-				if (this.typeIdToAttributeTypeMap.containsKey(attributeTypeId)) {
-					attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
-				} else {
-					attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
-							rs.getString("display_name"),
-							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
-					this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
-					this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
-				}
-
-				final BlackboardAttribute attr = new BlackboardAttribute(
-						rs.getLong("artifact_id"),
-						attributeType,
-						rs.getString("source"),
-						rs.getString("context"),
-						rs.getInt("value_int32"),
-						rs.getLong("value_int64"),
-						rs.getDouble("value_double"),
-						rs.getString("value_text"),
-						rs.getBytes("value_byte"), this
-				);
+				final BlackboardAttribute attr = createAttributeFromResultSet(rs);
 				attr.setParentDataSourceID(artifact.getDataSourceObjectID());
 				attributes.add(attr);
 			}
@@ -5159,6 +5136,108 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
+	}
+	
+	/**
+	 * Populate the attributes for all artifact in the list. 
+	 * This is done using one database call as an efficient way to
+	 * load many artifacts/attributes at once.
+	 * 
+	 * @param arts The list of artifacts. When complete, each will have its attributes loaded.
+	 */	
+	public void loadBlackboardAttributes(List<BlackboardArtifact> arts) throws TskCoreException {
+		
+		if (arts.isEmpty()) {
+			return;
+		}
+		
+		// Make a map of artifact ID to artifact
+		Map<Long, BlackboardArtifact> artifactMap = new HashMap<>();
+		for (BlackboardArtifact art : arts) {
+			artifactMap.put(art.getArtifactID(), art);
+		}
+		
+		// Make a map of artifact ID to attribute list
+		Map<Long, List<BlackboardAttribute>> attributeMap = new HashMap<>();
+
+		// Get all artifact IDs as a comma-separated string
+		String idString = arts.stream().map(p -> Long.toString(p.getArtifactID())).collect(Collectors.joining(", "));
+		
+		// Get the attributes
+		CaseDbConnection connection = null;
+		Statement statement = null;
+		ResultSet rs = null;
+		acquireSingleUserCaseReadLock();
+		try {
+			connection = connections.getConnection();
+			statement = connection.createStatement();
+			rs = connection.executeQuery(statement, "SELECT attrs.artifact_id AS artifact_id, "
+					+ "attrs.source AS source, attrs.context AS context, attrs.attribute_type_id AS attribute_type_id, "
+					+ "attrs.value_type AS value_type, attrs.value_byte AS value_byte, "
+					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
+					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
+					+ "types.type_name AS type_name, types.display_name AS display_name "
+					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id IN (" + idString + ") "
+					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+			while (rs.next()) {
+				final BlackboardAttribute attr = createAttributeFromResultSet(rs);
+				attr.setParentDataSourceID(artifactMap.get(attr.getArtifactID()).getDataSourceObjectID());
+				
+				// Collect the list of attributes for each artifact
+				if (!attributeMap.containsKey(attr.getArtifactID())) {
+					attributeMap.put(attr.getArtifactID(), new ArrayList<>());
+				}
+				attributeMap.get(attr.getArtifactID()).add(attr);
+			}
+			
+			// Save the attributes to the artifacts
+			for (Long artifactID : attributeMap.keySet()) {
+				artifactMap.get(artifactID).setAttributes(attributeMap.get(artifactID));
+			}
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error loading attributes", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(statement);
+			closeConnection(connection);
+			releaseSingleUserCaseReadLock();
+		}
+	}	
+	
+	/**
+	 * Create a BlackboardAttribute artifact from the result set.
+	 * Does not set the data source ID.
+	 * 
+	 * @param rs The result set.
+	 * 
+	 * @return The corresponding BlackboardAttribute object.
+	 */
+	private BlackboardAttribute createAttributeFromResultSet(ResultSet rs) throws SQLException {
+		int attributeTypeId = rs.getInt("attribute_type_id");
+		String attributeTypeName = rs.getString("type_name");
+		BlackboardAttribute.Type attributeType;
+		if (this.typeIdToAttributeTypeMap.containsKey(attributeTypeId)) {
+			attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
+		} else {
+			attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
+					rs.getString("display_name"),
+					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
+			this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
+			this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
+		}
+
+		return new BlackboardAttribute(
+				rs.getLong("artifact_id"),
+				attributeType,
+				rs.getString("source"),
+				rs.getString("context"),
+				rs.getInt("value_int32"),
+				rs.getLong("value_int64"),
+				rs.getDouble("value_double"),
+				rs.getString("value_text"),
+				rs.getBytes("value_byte"), this
+		);
 	}
 
 	/**
