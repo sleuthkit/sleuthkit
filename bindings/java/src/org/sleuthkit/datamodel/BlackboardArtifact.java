@@ -1367,8 +1367,19 @@ public abstract class BlackboardArtifact implements Content {
 		 * "Notable" in another Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_NOTABLE = new BlackboardArtifact.Type(71, "TSK_PREVIOUSLY_NOTABLE", bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
+		/*
+		 * IMPORTANT!
+		 *
+		 * Until BlackboardArtifact.ARTIFACT_TYPE is deprecated and/or removed,
+		 * new standard artifact types need to be added to both
+		 * BlackboardArtifact.ARTIFACT_TYPE and
+		 * BlackboardArtifact.Type.STANDARD_TYPES.
+		 *
+		 * Also, ensure that new types have a one line JavaDoc description and
+		 * are added to the standard artifacts catalog (artifact_catalog.dox).
+		 *
+		 */
 
-		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
 		/**
 		 * All standard artifact types with ids mapped to the type.
 		 */
@@ -1951,12 +1962,18 @@ public abstract class BlackboardArtifact implements Content {
 		 */
 		TSK_PREVIOUSLY_NOTABLE(71, "TSK_PREVIOUSLY_NOTABLE",
 				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
-
 		/*
-		 * To developers: For each new artifact, ensure that: - The enum value
-		 * has 1-line JavaDoc description - The artifact catalog
-		 * (artifact_catalog.dox) is updated to reflect the attributes it uses
+		 * IMPORTANT!
+		 *
+		 * Until BlackboardArtifact.ARTIFACT_TYPE is deprecated and/or removed,
+		 * new standard artifact types need to be added to both
+		 * BlackboardArtifact.ARTIFACT_TYPE and
+		 * BlackboardArtifact.Type.STANDARD_TYPES.
+		 *
+		 * Also, ensure that new types have a one line JavaDoc description and
+		 * are added to the standard artifacts catalog (artifact_catalog.dox).
 		 */
+
 		private final String label;
 		private final int typeId;
 		private final String displayName;
