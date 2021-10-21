@@ -66,28 +66,33 @@ public final class Blackboard {
 	 *
 	 * @param artifact    The artifact (data artifact or analysis result).
 	 * @param moduleName  The display name of the module posting the artifact.
-	 * @param ingestJobId The numeric identifier of the analysis process /
-	 *                    ingest job that led to the posting of the artifact.
-	 *                    See the ingest_jobs table in the case database.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifact was posted. May be null.
 	 *
-	 * @throws BlackboardException
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
 	}
 
 	/**
-	 * RJCTODO
-	 * @param artifacts
-	 * @param moduleName
-	 * @param ingestJobId
-	 * @throws org.sleuthkit.datamodel.Blackboard.BlackboardException 
+	 * Posts a collection of artifacts (data artifacts and/or analysis results)
+	 * to the blackboard. The artifacts should be complete (all attributes have
+	 * been added) before they are posted. Posting the artifact triggers the
+	 * creation of appropriate timeline events, if any, and broadcast of a
+	 * notification that the artifact is ready for further analysis.
+	 *
+	 * @param artifacts   The artifacts (data artifacts and/or analysis
+	 *                    results).
+	 * @param moduleName  The display name of the module posting the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifact was posted. May be null.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact
 	 */
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
-		/*
-		 * For now this just processes them one by one, but in the future it
-		 * could be smarter and use transactions, etc.
-		 */
 		for (BlackboardArtifact artifact : artifacts) {
 			try {
 				caseDb.getTimelineManager().addArtifactEvents(artifact);
@@ -95,38 +100,38 @@ public final class Blackboard {
 				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
 			}
 		}
-
 		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
 	}
 
 	/**
-	 * Posts the artifact. The artifact should be complete (all attributes have
-	 * been added) before being posted. Posting the artifact includes making any
-	 * timeline events that may be derived from it, and broadcasting a
-	 * notification that the artifact is ready for further analysis.
+	 * Posts an artifact (data artifact or analysis result) to the blackboard.
+	 * The artifact should be complete (all attributes have been added) before
+	 * it is posted. Posting the artifact triggers the creation of appropriate
+	 * timeline events, if any, and broadcast of a notification that the
+	 * artifact is ready for further analysis.
 	 *
-	 * @param artifact   The artifact to be posted.
-	 * @param moduleName The name of the module that is posting the artifacts.
+	 * @param artifact   The artifact (data artifact or analysis result).
+	 * @param moduleName The display name of the module posting the artifact.
 	 *
-	 * @throws BlackboardException If there is a problem posting the artifact.
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}
 
 	/**
-	 * Posts a Collection of artifacts. The artifacts should be complete (all
-	 * attributes have been added) before being posted. Posting the artifacts
-	 * includes making any events that may be derived from them, and
-	 * broadcasting notifications that the artifacts are ready for further
-	 * analysis.
+	 * Posts a collection of artifacts (data artifacts and/or analysis results)
+	 * to the blackboard. The artifacts should be complete (all attributes have
+	 * been added) before they are posted. Posting the artifact triggers the
+	 * creation of appropriate timeline events, if any, and broadcast of a
+	 * notification that the artifact is ready for further analysis.
 	 *
+	 * @param artifacts  The artifacts (data artifacts and/or analysis results).
+	 * @param moduleName The display name of the module posting the artifacts.
 	 *
-	 * @param artifacts  The artifacts to be posted .
-	 * @param moduleName The name of the module that is posting the artifacts.
-	 *
-	 *
-	 * @throws BlackboardException If there is a problem posting the artifacts.
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact
 	 */
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
 		postArtifacts(artifacts, moduleName, null);
@@ -163,7 +168,7 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem getting or adding the
 	 *                             artifact type.
 	 */
-    @SuppressWarnings("deprecation")	
+	@SuppressWarnings("deprecation")
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName, BlackboardArtifact.Category category) throws BlackboardException {
 		if (category == null) {
 			throw new BlackboardException("Category provided must be non-null");
@@ -884,7 +889,7 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem getting or adding the
 	 *                             attribute type.
 	 */
-    @SuppressWarnings("deprecation")	
+	@SuppressWarnings("deprecation")
 	public BlackboardAttribute.Type getOrAddAttributeType(String typeName, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws BlackboardException {
 
 		try {
