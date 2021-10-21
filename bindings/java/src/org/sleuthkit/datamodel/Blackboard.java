@@ -87,7 +87,7 @@ public final class Blackboard {
 	 *                    results).
 	 * @param moduleName  The display name of the module posting the artifacts.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifact was posted. May be null.
+	 *                    the artifact was posted.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact
@@ -110,11 +110,15 @@ public final class Blackboard {
 	 * timeline events, if any, and broadcast of a notification that the
 	 * artifact is ready for further analysis.
 	 *
+	 * IMPORTANT: This method is only intended to be used when no ingest job ID
+	 * is available. Otherwise, call postArtifact(BlackboardArtifact artifact,
+	 * String moduleName, Long ingestJobId) instead.
+	 *
 	 * @param artifact   The artifact (data artifact or analysis result).
 	 * @param moduleName The display name of the module posting the artifact.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact
+	 *                             posting the artifact.
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, null);
@@ -127,11 +131,16 @@ public final class Blackboard {
 	 * creation of appropriate timeline events, if any, and broadcast of a
 	 * notification that the artifact is ready for further analysis.
 	 *
+	 * IMPORTANT: This method is only intended to be used when no ingest job ID
+	 * is available. Otherwise, call
+	 * postArtifacts(Collection\<BlackboardArtifact\> artifacts, String
+	 * moduleName, Long ingestJobId) instead.
+	 *
 	 * @param artifacts  The artifacts (data artifacts and/or analysis results).
 	 * @param moduleName The display name of the module posting the artifacts.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact
+	 *                             posting the artifact.
 	 */
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
 		postArtifacts(artifacts, moduleName, null);
