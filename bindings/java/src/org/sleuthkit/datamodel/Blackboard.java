@@ -96,12 +96,12 @@ public final class Blackboard {
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
-	}	
-	
+	}
+
 	/**
 	 * Posts a collection of artifacts (data artifacts and/or analysis results)
 	 * to the blackboard. The artifacts should be complete (all attributes have
-	 * been added) before they are posted. Posting the artifact triggers the
+	 * been added) before they are posted. Posting the artifacts triggers the
 	 * creation of appropriate timeline events, if any, and broadcast of a
 	 * notification that the artifacts are ready for further analysis.
 	 *
@@ -123,7 +123,7 @@ public final class Blackboard {
 	/**
 	 * Posts a collection of artifacts (data artifacts and/or analysis results)
 	 * to the blackboard. The artifacts should be complete (all attributes have
-	 * been added) before they are posted. Posting the artifact triggers the
+	 * been added) before they are posted. Posting the artifacts triggers the
 	 * creation of appropriate timeline events, if any, and broadcast of a
 	 * notification that the artifacts are ready for further analysis.
 	 *
@@ -145,8 +145,8 @@ public final class Blackboard {
 			}
 		}
 		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
-	}	
-	
+	}
+
 	/**
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.
@@ -1409,9 +1409,8 @@ public final class Blackboard {
 
 	/**
 	 * An event published by SleuthkitCase when one or more artifacts (data
-	 * artifacts and/or analysis results) are posted. A posted artifact should
-	 * be complete (all attributes have been added) and ready for further
-	 * analysis.
+	 * artifacts and/or analysis results) are posted. Posted artifacts should be
+	 * complete (all attributes have been added) and ready for further analysis.
 	 */
 	final public class ArtifactsPostedEvent {
 
@@ -1422,9 +1421,9 @@ public final class Blackboard {
 
 		/**
 		 * Constructs an Event published by SleuthkitCase when one or more
-		 * artifacts (data artifacts and/or analysis results) are posted. A
-		 * posted artifact should be complete (all attributes have been added)
-		 * and ready for further analysis.
+		 * artifacts (data artifacts and/or analysis results) are posted. Posted
+		 * artifacts should be complete (all attributes have been added) and
+		 * ready for further analysis.
 		 *
 		 * @param artifacts   The artifacts (data artifacts and/or analysis
 		 *                    results).
