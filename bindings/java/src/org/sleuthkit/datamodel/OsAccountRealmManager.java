@@ -82,7 +82,8 @@ public final class OsAccountRealmManager {
 		if (referringHost == null) {
 			throw new TskCoreException("A referring host is required to create a realm.");
 		}
-		if (StringUtils.isBlank(accountSid) && StringUtils.isBlank(realmName)) {
+		if ((StringUtils.isBlank(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+			&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Either an address or a name is required to create a realm.");
 		}
 		
@@ -116,7 +117,7 @@ public final class OsAccountRealmManager {
 		
 		// get windows realm address from sid
 		String realmAddr = null;
-		if (!Strings.isNullOrEmpty(accountSid)) {
+		if (!Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 			
 			if (!WindowsAccountUtils.isWindowsUserSid(accountSid)) {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", accountSid ));
@@ -161,7 +162,8 @@ public final class OsAccountRealmManager {
 		}
 		
 		// need at least one of the two, the addr or name to look up
-		if (Strings.isNullOrEmpty(accountSid) && Strings.isNullOrEmpty(realmName)) {
+		if ((Strings.isNullOrEmpty(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) )
+				&& Strings.isNullOrEmpty(realmName)) {
 			throw new TskCoreException("Realm address or name is required get a realm.");
 		}
 		
@@ -192,12 +194,13 @@ public final class OsAccountRealmManager {
 		}
 		
 		// need at least one of the two, the addr or name to look up
-		if (StringUtils.isBlank(accountSid) && StringUtils.isBlank(realmName)) {
+		if ((StringUtils.isBlank(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Realm address or name is required get a realm.");
 		}
 		
-		// If an accountSID is provided search for realm by addr.
-		if (!Strings.isNullOrEmpty(accountSid)) {
+		// If a non null accountSID is provided search for realm by addr.
+		if (!Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 			
 			if (!WindowsAccountUtils.isWindowsUserSid(accountSid)) {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", accountSid ));
@@ -212,8 +215,8 @@ public final class OsAccountRealmManager {
 
 		// No realm addr so search by name.
 		Optional<OsAccountRealm> realm = getRealmByName(realmName, referringHost, connection);
-		if (realm.isPresent() && !Strings.isNullOrEmpty(accountSid)) {
-			// If we were given an accountSID, make sure there isn't one set on the matching realm.
+		if (realm.isPresent() && !Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
+			// If we were given a non-null accountSID, make sure there isn't one set on the matching realm.
 			// We know it won't match because the previous search by SID failed.
 			if (realm.get().getRealmAddr().isPresent()) {
 				return Optional.empty();
@@ -249,7 +252,7 @@ public final class OsAccountRealmManager {
 		
 		// if found, update it if needed
 		if (realmOptional.isPresent()) {
-			String realmAddr = StringUtils.isNotBlank(accountSid) ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
+			String realmAddr = (StringUtils.isNotBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))  ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
 			OsRealmUpdateResult realmUpdateResult = updateRealm(realmOptional.get(), realmAddr, realmName, connection);
 			
 			// if realm was updated, return the updated realm
@@ -311,7 +314,8 @@ public final class OsAccountRealmManager {
 	private OsRealmUpdateResult updateRealm(OsAccountRealm realm, String realmAddr, String realmName, CaseDbConnection connection) throws TskCoreException {
 
 		// need at least one of the two
-		if (StringUtils.isBlank(realmAddr) && StringUtils.isBlank(realmName)) {
+		if ( (StringUtils.isBlank(realmAddr) || realmAddr.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))  
+				&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Realm address or name is required to update realm.");
 		}
 
@@ -323,7 +327,7 @@ public final class OsAccountRealmManager {
 			String currRealmAddr = realm.getRealmAddr().orElse(null);
 
 			// set name and address to new values only if the current value is blank and the new value isn't.		
-			if ((StringUtils.isBlank(currRealmAddr) && StringUtils.isNotBlank(realmAddr))) {
+			if ((StringUtils.isBlank(currRealmAddr) && StringUtils.isNotBlank(realmAddr) && !realmAddr.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))) {
 				updateRealmColumn(realm.getRealmId(), "realm_addr", realmAddr, connection);
 				currRealmAddr = realmAddr;
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
