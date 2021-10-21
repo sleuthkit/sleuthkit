@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,7 +71,7 @@ public final class Blackboard {
 	 *                    the artifact was posted.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact
+	 *                             posting the artifact.
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
@@ -81,16 +82,16 @@ public final class Blackboard {
 	 * to the blackboard. The artifacts should be complete (all attributes have
 	 * been added) before they are posted. Posting the artifact triggers the
 	 * creation of appropriate timeline events, if any, and broadcast of a
-	 * notification that the artifact is ready for further analysis.
+	 * notification that the artifacts are ready for further analysis.
 	 *
 	 * @param artifacts   The artifacts (data artifacts and/or analysis
 	 *                    results).
 	 * @param moduleName  The display name of the module posting the artifacts.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifact was posted.
+	 *                    the artifacts were posted.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact
+	 *                             posting the artifact.
 	 */
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 		for (BlackboardArtifact artifact : artifacts) {
@@ -129,7 +130,7 @@ public final class Blackboard {
 	 * to the blackboard. The artifacts should be complete (all attributes have
 	 * been added) before they are posted. Posting the artifact triggers the
 	 * creation of appropriate timeline events, if any, and broadcast of a
-	 * notification that the artifact is ready for further analysis.
+	 * notification that the artifacts are ready for further analysis.
 	 *
 	 * IMPORTANT: This method is only intended to be used when no ingest job ID
 	 * is available. Otherwise, call
@@ -1407,9 +1408,9 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Event published by SleuthkitCase when one or more artifacts are posted. A
-	 * posted artifact is complete (all attributes have been added) and ready
-	 * for further processing.
+	 * Event published by SleuthkitCase when one or more artifacts (data
+	 * artifacts or analysis results) are posted. A posted artifact should be
+	 * complete (all attributes have been added) and ready for further analysis.
 	 */
 	final public class ArtifactsPostedEvent {
 
@@ -1418,6 +1419,19 @@ public final class Blackboard {
 		private final ImmutableSet<BlackboardArtifact> artifacts;
 		private final Long ingestJobId;
 
+		/**
+		 * Constructs an Event published by SleuthkitCase when one or more
+		 * artifacts (data artifacts or analysis results) are posted. A posted
+		 * artifact should be complete (all attributes have been added) and
+		 * ready for further analysis.
+		 *
+		 * @param artifacts   The artifacts (data artifacts and/or analysis
+		 *                    results).
+		 * @param moduleName  The display name of the module posting the
+		 *                    artifacts.
+		 * @param ingestJobId The numeric identifier of the ingest job within
+		 *                    which the artifacts were posted.
+		 */
 		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
 					.map(BlackboardArtifact::getArtifactTypeID)
@@ -1436,10 +1450,22 @@ public final class Blackboard {
 			this.ingestJobId = ingestJobId;
 		}
 
+		/**
+		 * Gets the posted artifacts.
+		 *
+		 * @return The artifacts.
+		 */
 		public Collection<BlackboardArtifact> getArtifacts() {
 			return ImmutableSet.copyOf(artifacts);
 		}
 
+		/**
+		 * Gets the posted artifacts of a given type.
+		 *
+		 * @param artifactType The artifact type.
+		 *
+		 * @return The artifacts, if any.
+		 */
 		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
 			Set<BlackboardArtifact> tempSet = artifacts.stream()
 					.filter(artifact -> artifact.getArtifactTypeID() == artifactType.getTypeID())
@@ -1447,16 +1473,32 @@ public final class Blackboard {
 			return ImmutableSet.copyOf(tempSet);
 		}
 
+		/**
+		 * Gets the display name of the module that posted the artifacts.
+		 *
+		 * @return The display name.
+		 */
 		public String getModuleName() {
 			return moduleName;
 		}
 
+		/**
+		 * Gets the types of artifacts that were posted.
+		 *
+		 * @return The types.
+		 */
 		public Collection<BlackboardArtifact.Type> getArtifactTypes() {
 			return ImmutableSet.copyOf(artifactTypes);
 		}
 
-		public Long getIngestJobId() {
-			return ingestJobId;
+		/**
+		 * Gets the numeric identifier of the ingest job within which the
+		 * artifacts were posted.
+		 *
+		 * @return The ingest job ID, may be null.
+		 */
+		public Optional<Long> getIngestJobId() {
+			return Optional.of(ingestJobId);
 		}
 
 	}
