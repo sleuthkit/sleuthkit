@@ -197,10 +197,19 @@ public class SleuthkitCase {
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private final String caseHandleIdentifier; // Used to identify this case in the JNI cache.
 	private String dbBackupPath;
-	private Map<Integer, BlackboardArtifact.Type> typeIdToArtifactTypeMap;
-	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
-	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
-	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
+
+	/*
+	 * ConcurrentHashMap semantics are fine for these caches to which entries
+	 * are added, but never removed. There is also no need to keep each pair of
+	 * related caches strictly consistent with each other, because cache misses
+	 * will be extremely rare (standard types are loaded when the case is
+	 * opened), and the cost of a cache miss is low.
+	 */
+	private final Map<Integer, BlackboardArtifact.Type> typeIdToArtifactTypeMap = new ConcurrentHashMap<>();
+	private final Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
+	private final Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
+	private final Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
+
 	private CaseDbSchemaVersionNumber caseDBSchemaCreationVersion;
 
 	// Objects for caching the result of isRootDirectory(). Lock is for visibility only.
@@ -383,21 +392,11 @@ public class SleuthkitCase {
 	}
 
 	private void init() throws Exception {
-		typeIdToArtifactTypeMap = new ConcurrentHashMap<>();
-		typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
-		typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
-		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
-
-		/*
-		 * The database schema must be updated before loading blackboard
-		 * artifact/attribute types
-		 */
 		updateDatabaseSchema(null);
-		initBlackboardArtifactTypes();
-		initBlackboardAttributeTypes();
-		initNextArtifactId();
-
 		try (CaseDbConnection connection = connections.getConnection()) {
+			initBlackboardArtifactTypes(connection);
+			initBlackboardAttributeTypes(connection);
+			initNextArtifactId(connection);
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
 			initReviewStatuses(connection);
@@ -427,7 +426,7 @@ public class SleuthkitCase {
 	 * @return set of core table names
 	 */
 	static Set<String> getCoreTableNames() {
-		return CORE_TABLE_NAMES;
+		return Collections.unmodifiableSet(CORE_TABLE_NAMES);
 	}
 
 	/**
@@ -436,7 +435,7 @@ public class SleuthkitCase {
 	 * @return set of core index names
 	 */
 	static Set<String> getCoreIndexNames() {
-		return CORE_INDEX_NAMES;
+		return Collections.unmodifiableSet(CORE_INDEX_NAMES);
 	}
 
 	/**
@@ -607,28 +606,54 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Make sure the predefined artifact types are in the artifact types table.
+	 * Adds the standard artifact types to the blackboard_artifact_types table
+	 * and the artifact type caches.
 	 *
-	 * @throws SQLException
-	 * @throws TskCoreException
+	 * @param connection A connection to the case database.
+	 *
+	 * @throws SQLException Thrown if there is an error adding a type to the
+	 *                      table.
 	 */
-	private void initBlackboardArtifactTypes() throws SQLException, TskCoreException {
+	private void initBlackboardArtifactTypes(CaseDbConnection connection) throws SQLException {
 		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection();
-				Statement statement = connection.createStatement();) {
+		try (Statement statement = connection.createStatement()) {
+			/*
+			 * Determine which types, if any, have already been added to the
+			 * case database, and load them into the type caches. For a case
+			 * that is being reopened, this should reduce the number of separate
+			 * INSERT staements that will be executed below.
+			 */
+			ResultSet resultSet = connection.executeQuery(statement, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
+			while (resultSet.next()) {
+				BlackboardArtifact.Type type = new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
+						resultSet.getString("type_name"), resultSet.getString("display_name"),
+						BlackboardArtifact.Category.fromID(resultSet.getInt("category_type")));
+				typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+				typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+			}
+
+			/*
+			 * INSERT any missing standard types. A conflict clause is used to
+			 * avoid a potential race condition. It also eliminates the need to
+			 * add schema update code when new types are added.
+			 *
+			 * The use here of the soon to be deprecated
+			 * BlackboardArtifact.ARTIFACT_TYPE enum instead of the
+			 * BlackboardArtifact.Type.STANDARD_TYPES collection currently
+			 * ensures that the deprecated types in the former, and not in the
+			 * latter, are added to the case database.
+			 */
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
-				try {
-					statement.execute("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ")"); //NON-NLS
-				} catch (SQLException ex) {
-					try (ResultSet resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'")) { //NON-NLS
-						resultSet.next();
-						if (resultSet.getLong("count") == 0) {
-							throw ex;
-						}
-					}
+				if (typeIdToArtifactTypeMap.containsKey(type.getTypeID())) {
+					continue;
 				}
-				this.typeIdToArtifactTypeMap.put(type.getTypeID(), new BlackboardArtifact.Type(type));
-				this.typeNameToArtifactTypeMap.put(type.getLabel(), new BlackboardArtifact.Type(type));
+				if (dbType == DbType.POSTGRESQL) {
+					statement.execute("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ") ON CONFLICT DO NOTHING"); //NON-NLS
+				} else {
+					statement.execute("INSERT OR IGNORE INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ")"); //NON-NLS
+				}
+				typeIdToArtifactTypeMap.put(type.getTypeID(), new BlackboardArtifact.Type(type));
+				typeNameToArtifactTypeMap.put(type.getLabel(), new BlackboardArtifact.Type(type));
 			}
 			if (dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ARTIFACT_TYPE.values())).getTypeID() + 1;
@@ -640,31 +665,56 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Make sure the predefined artifact attribute types are in the artifact
-	 * attribute types table.
+	 * Adds the standard attribute types to the blackboard_attribute_types table
+	 * and the attribute type caches.
 	 *
-	 * @throws SQLException
-	 * @throws TskCoreException
+	 * @param connection A connection to the case database.
+	 *
+	 * @throws SQLException Thrown if there is an error adding a type to the
+	 *                      table.
 	 */
-	private void initBlackboardAttributeTypes() throws SQLException, TskCoreException {
+	private void initBlackboardAttributeTypes(CaseDbConnection connection) throws SQLException {
 		acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection connection = connections.getConnection();
-				Statement statement = connection.createStatement();) {
-			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
-				try {
-					statement.execute("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
-				} catch (SQLException ex) {
-					try (ResultSet resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'")) { //NON-NLS
-						resultSet.next();
-						if (resultSet.getLong("count") == 0) {
-							throw ex;
-						}
-					}
-				}
-				this.typeIdToAttributeTypeMap.put(type.getTypeID(), new BlackboardAttribute.Type(type));
-				this.typeNameToAttributeTypeMap.put(type.getLabel(), new BlackboardAttribute.Type(type));
+		try (Statement statement = connection.createStatement()) {
+			/*
+			 * Determine which types, if any, have already been added to the
+			 * case database, and load them into the type caches. For a case
+			 * that is being reopened, this should reduce the number of separate
+			 * INSERT staements that will be executed below.
+			 */
+			ResultSet resultSet = connection.executeQuery(statement, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types"); //NON-NLS
+			while (resultSet.next()) {
+				BlackboardAttribute.Type type = new BlackboardAttribute.Type(resultSet.getInt("attribute_type_id"),
+						resultSet.getString("type_name"), resultSet.getString("display_name"),
+						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(resultSet.getLong("value_type")));
+				typeIdToAttributeTypeMap.put(type.getTypeID(), type);
+				typeNameToAttributeTypeMap.put(type.getTypeName(), type);
 			}
-			if (this.dbType == DbType.POSTGRESQL) {
+
+			/*
+			 * INSERT any missing standard types. A conflict clause is used to
+			 * avoid a potential race condition. It also eliminates the need to
+			 * add schema update code when new types are added.
+			 *
+			 * The use here of the soon to be deprecated
+			 * BlackboardAttribute.ATTRIBUTE_TYPE enum instead of the
+			 * BlackboardAttribute.Type.STANDARD_TYPES collection currently
+			 * ensures that the deprecated types in the former, and not in the
+			 * latter, are added to the case database.
+			 */
+			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
+				if (typeIdToAttributeTypeMap.containsKey(type.getTypeID())) {
+					continue;
+				}
+				if (dbType == DbType.POSTGRESQL) {
+					statement.execute("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "') ON CONFLICT DO NOTHING"); //NON-NLS
+				} else {
+					statement.execute("INSERT OR IGNORE INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
+				}
+				typeIdToAttributeTypeMap.put(type.getTypeID(), new BlackboardAttribute.Type(type));
+				typeNameToAttributeTypeMap.put(type.getLabel(), new BlackboardAttribute.Type(type));
+			}
+			if (dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ATTRIBUTE_TYPE.values())).getTypeID() + 1;
 				statement.execute("ALTER SEQUENCE blackboard_attribute_types_attribute_type_id_seq RESTART WITH " + newPrimaryKeyIndex); //NON-NLS
 			}
@@ -674,32 +724,24 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Initialize the next artifact id. If there are entries in the
+	 * Initializes the next artifact id. If there are entries in the
 	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
 	 * will initialize the value to 0x8000000000000000 (the maximum negative
 	 * signed long).
 	 *
-	 * @throws SQLException
-	 * @throws TskCoreException
+	 * @throws SQLException Thrown if there is an error querying the
+	 *                      blackboard_artifacts table.
 	 */
-	private void initNextArtifactId() throws SQLException, TskCoreException {
-		CaseDbConnection connection = null;
-		Statement statement = null;
-		ResultSet resultSet = null;
+	private void initNextArtifactId(CaseDbConnection connection) throws SQLException {
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			statement = connection.createStatement();
-			resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) AS max_artifact_id FROM blackboard_artifacts"); //NON-NLS
+		try (Statement statement = connection.createStatement()) {
+			ResultSet resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) AS max_artifact_id FROM blackboard_artifacts"); //NON-NLS
 			resultSet.next();
-			this.nextArtifactId = resultSet.getLong("max_artifact_id") + 1;
-			if (this.nextArtifactId == 1) {
-				this.nextArtifactId = BASE_ARTIFACT_ID;
+			nextArtifactId = resultSet.getLong("max_artifact_id") + 1;
+			if (nextArtifactId == 1) {
+				nextArtifactId = BASE_ARTIFACT_ID;
 			}
 		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -4765,8 +4807,14 @@ public class SleuthkitCase {
 	 *                          within tsk core
 	 * @throws TskDataException exception thrown if attribute type was already
 	 *                          in the system
+	 *
+	 * @deprecated Use Blackboard.getOrAddAttributeType() instead.
 	 */
+	@Deprecated
 	public BlackboardAttribute.Type addArtifactAttributeType(String attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws TskCoreException, TskDataException {
+		if (typeNameToAttributeTypeMap.containsKey(attrTypeString)) {
+			return typeNameToAttributeTypeMap.get(attrTypeString);
+		}
 		CaseDbConnection connection = null;
 		acquireSingleUserCaseWriteLock();
 		Statement s = null;
@@ -4988,9 +5036,10 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * @throws TskDataException exception thrown if given data is already in db
 	 *                          within tsk core
+	 * @deprecated Use Blackboard.getOrAddArtifactType() instead.
 	 */
+	@Deprecated
 	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName) throws TskCoreException, TskDataException {
-
 		return addBlackboardArtifactType(artifactTypeName, displayName, BlackboardArtifact.Category.DATA_ARTIFACT);
 	}
 
@@ -5008,8 +5057,13 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * @throws TskDataException exception thrown if given data is already in db
 	 *                          within tsk core
+	 * @deprecated Use Blackboard.getOrAddArtifactType() instead.
 	 */
+	@Deprecated
 	BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName, BlackboardArtifact.Category category) throws TskCoreException, TskDataException {
+		if (typeNameToArtifactTypeMap.containsKey(artifactTypeName)) {
+			return typeNameToArtifactTypeMap.get(artifactTypeName);
+		}
 		CaseDbConnection connection = null;
 		acquireSingleUserCaseWriteLock();
 		Statement s = null;
@@ -14342,7 +14396,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException If there is an error adding the type to the case
 	 *                          database.
-	 * @deprecated Use SleuthkitCase.addBlackboardArtifactType instead.
+	 * @deprecated Use SleuthkitCase.addBlackboardArtifactType() instead.
 	 */
 	@Deprecated
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
@@ -14364,7 +14418,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException If there is an error adding the type to the case
 	 *                          database.
-	 * @deprecated Use SleuthkitCase.addArtifactAttributeType instead.
+	 * @deprecated Use SleuthkitCase.addArtifactAttributeType() instead.
 	 */
 	@Deprecated
 	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
@@ -14383,7 +14437,7 @@ public class SleuthkitCase {
 	 * @return An attribute id or -1 if the attribute type does not exist.
 	 *
 	 * @throws TskCoreException If an error occurs accessing the case database.
-	 * @deprecated Use SleuthkitCase.getAttributeType instead.
+	 * @deprecated Use SleuthkitCase.getAttributeType() instead.
 	 */
 	@Deprecated
 	public int getAttrTypeID(String attrTypeName) throws TskCoreException {

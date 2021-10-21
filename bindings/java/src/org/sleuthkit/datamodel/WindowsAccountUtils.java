@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -41,12 +40,14 @@ final class WindowsAccountUtils {
 	
 	final static String SPECIAL_WINDOWS_BACK_UP_POSTFIX = ".bak";
 	
+	// Windows sometimes uses a special NULL sid, when a users actual SID is unknown.
+	// Our SID comparisons should ignore it, and treat it as a null/blank. 
+	final static String WINDOWS_NULL_SID = "S-1-0-0";
 	
 	// Windows uses SIDs for groups as well as users. 
 	// We dont want to create "User" account for group SIDs.
 	// The lists here help us identify and weed out group SIDs when creating accounts.
 	private static final Set<String> GROUP_SIDS = ImmutableSet.of(
-			"S-1-0-0",	// Null SID
 			"S-1-1-0",	// Everyone
 			"S-1-2-0",	// Local - anyone who has logged on locally
 			"S-1-2-1",	// Console Logon

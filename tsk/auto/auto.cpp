@@ -323,10 +323,16 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     // Use mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
 
-        /* If the error code is for encryption, we will register it. Otherwise,
+        /* If the error code is for encryption, we will register it.
+         * If the error code is for multiple volume systems found, register the error
+         * and return without trying to load a file system. Otherwise,
          * ignore this error to avoid confusion if the fs_open passes. */
         if (tsk_error_get_errno() == TSK_ERR_VS_ENCRYPTED) {
             registerError();
+        }
+        else if (tsk_error_get_errno() == TSK_ERR_VS_MULTTYPE) {
+            registerError();
+            return 1;
         }
         tsk_error_reset();
 

@@ -147,7 +147,6 @@ public final class Blackboard {
 	 *                             artifact type.
 	 */
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
-
 		return getOrAddArtifactType(typeName, displayName, BlackboardArtifact.Category.DATA_ARTIFACT);
 	}
 
@@ -164,6 +163,7 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem getting or adding the
 	 *                             artifact type.
 	 */
+    @SuppressWarnings("deprecation")	
 	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName, BlackboardArtifact.Category category) throws BlackboardException {
 		if (category == null) {
 			throw new BlackboardException("Category provided must be non-null");
@@ -884,6 +884,7 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem getting or adding the
 	 *                             attribute type.
 	 */
+    @SuppressWarnings("deprecation")	
 	public BlackboardAttribute.Type getOrAddAttributeType(String typeName, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws BlackboardException {
 
 		try {

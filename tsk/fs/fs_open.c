@@ -182,7 +182,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                     fs_first->close(fs_first);
                     fs_info->close(fs_info);
                     tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                    tsk_error_set_errno(TSK_ERR_FS_MULTTYPE);
                     tsk_error_set_errstr(
                         "%s or %s", FS_OPENERS[i].name, name_first);
                     return NULL;
