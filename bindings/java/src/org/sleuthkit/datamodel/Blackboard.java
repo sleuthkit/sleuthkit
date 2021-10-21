@@ -67,7 +67,7 @@ public final class Blackboard {
 	 * @param artifact    The artifact (data artifact or analysis result).
 	 * @param moduleName  The display name of the module posting the artifact.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifact was posted. May be null.
+	 *                    the artifact was posted.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact
