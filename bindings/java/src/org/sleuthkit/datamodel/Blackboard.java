@@ -58,6 +58,48 @@ public final class Blackboard {
 	}
 
 	/**
+	 * Posts an artifact (data artifact or analysis result) to the blackboard.
+	 * The artifact should be complete (all attributes have been added) before
+	 * it is posted. Posting the artifact triggers the creation of appropriate
+	 * timeline events, if any, and broadcast of a notification that the
+	 * artifact is ready for further analysis.
+	 *
+	 * @param artifact    The artifact (data artifact or analysis result).
+	 * @param moduleName  The display name of the module posting the artifact.
+	 * @param ingestJobId The numeric identifier of the analysis process /
+	 *                    ingest job that led to the posting of the artifact.
+	 *                    See the ingest_jobs table in the case database.
+	 *
+	 * @throws BlackboardException
+	 */
+	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
+		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
+	}
+
+	/**
+	 * RJCTODO
+	 * @param artifacts
+	 * @param moduleName
+	 * @param ingestJobId
+	 * @throws org.sleuthkit.datamodel.Blackboard.BlackboardException 
+	 */
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
+		/*
+		 * For now this just processes them one by one, but in the future it
+		 * could be smarter and use transactions, etc.
+		 */
+		for (BlackboardArtifact artifact : artifacts) {
+			try {
+				caseDb.getTimelineManager().addArtifactEvents(artifact);
+			} catch (TskCoreException ex) {
+				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
+			}
+		}
+
+		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
+	}
+
+	/**
 	 * Posts the artifact. The artifact should be complete (all attributes have
 	 * been added) before being posted. Posting the artifact includes making any
 	 * timeline events that may be derived from it, and broadcasting a
@@ -69,7 +111,7 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
-		postArtifacts(Collections.singleton(artifact), moduleName);
+		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}
 
 	/**
@@ -85,22 +127,9 @@ public final class Blackboard {
 	 *
 	 *
 	 * @throws BlackboardException If there is a problem posting the artifacts.
-	 *
 	 */
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
-		/*
-		 * For now this just processes them one by one, but in the future it
-		 * could be smarter and use transactions, etc.
-		 */
-		for (BlackboardArtifact artifact : artifacts) {
-			try {
-				caseDb.getTimelineManager().addArtifactEvents(artifact);
-			} catch (TskCoreException ex) {
-				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
-			}
-		}
-
-		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName));
+		postArtifacts(artifacts, moduleName, null);
 	}
 
 	/**
@@ -1372,8 +1401,9 @@ public final class Blackboard {
 		private final String moduleName;
 		private final ImmutableSet<BlackboardArtifact.Type> artifactTypes;
 		private final ImmutableSet<BlackboardArtifact> artifacts;
+		private final Long ingestJobId;
 
-		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
 					.map(BlackboardArtifact::getArtifactTypeID)
 					.collect(Collectors.toSet());
@@ -1388,7 +1418,7 @@ public final class Blackboard {
 			artifactTypes = ImmutableSet.copyOf(types);
 			this.artifacts = ImmutableSet.copyOf(artifacts);
 			this.moduleName = moduleName;
-
+			this.ingestJobId = ingestJobId;
 		}
 
 		public Collection<BlackboardArtifact> getArtifacts() {
@@ -1409,5 +1439,10 @@ public final class Blackboard {
 		public Collection<BlackboardArtifact.Type> getArtifactTypes() {
 			return ImmutableSet.copyOf(artifactTypes);
 		}
+
+		public Long getIngestJobId() {
+			return ingestJobId;
+		}
+
 	}
 }
