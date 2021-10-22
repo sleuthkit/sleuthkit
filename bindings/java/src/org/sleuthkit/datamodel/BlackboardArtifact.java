@@ -194,13 +194,15 @@ public abstract class BlackboardArtifact implements Content {
 	 * Gets the artifact type for this artifact.
 	 *
 	 * @return The artifact type.
+	 * 
+	 * @throws TskCoreException
 	 */
 	public BlackboardArtifact.Type getType() throws TskCoreException {
 		BlackboardArtifact.Type standardTypesValue = BlackboardArtifact.Type.STANDARD_TYPES.get(getArtifactTypeID());
 		if (standardTypesValue != null) {
 			return standardTypesValue;
 		} else {
-			return getSleuthkitCase().getArtifactType(getArtifactTypeID());
+			return getSleuthkitCase().getBlackboard().getArtifactType(getArtifactTypeID());
 		}
 	}
 
@@ -416,12 +418,12 @@ public abstract class BlackboardArtifact implements Content {
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		ArrayList<BlackboardAttribute> attributes;
 		if (false == loadedCacheFromDb) {
-			attributes = getSleuthkitCase().getBlackboardAttributes(this);
+			attributes = getSleuthkitCase().getBlackboard().getBlackboardAttributes(this);
 			attrsCache.clear();
 			attrsCache.addAll(attributes);
 			loadedCacheFromDb = true;
 		} else {
-			attributes = new ArrayList<BlackboardAttribute>(attrsCache);
+			attributes = new ArrayList<>(attrsCache);
 		}
 		return attributes;
 	}

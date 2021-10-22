@@ -1278,9 +1278,11 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         
         std::vector <NTFS_META_ADDR> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
 
-        if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL)
+        if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL){
+            tsk_release_lock(&ntfs->orphan_map_lock);
             return TSK_ERR;
-
+        }
+        
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
         fs_name->par_addr = a_addr;
         fs_name->par_seq = fs_dir->fs_file->meta->seq;
