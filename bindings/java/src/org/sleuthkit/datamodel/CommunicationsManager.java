@@ -552,7 +552,7 @@ public final class CommunicationsManager {
 			Statement s = connection.createStatement();
 			ResultSet rs = connection.executeQuery(s, queryStr);) { //NON-NLS
 			if (rs.next()) {
-				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
+				BlackboardArtifact.Type bbartType = db.getBlackboard().getArtifactType(rs.getInt("artifact_type_id"));
 
 				accountArtifact = new DataArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
 						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
@@ -1390,7 +1390,7 @@ public final class CommunicationsManager {
 	private List<BlackboardArtifact> getDataArtifactsFromResult(ResultSet resultSet) throws SQLException, TskCoreException {
 		List<BlackboardArtifact> artifacts = new ArrayList<>();
 		while (resultSet.next()) {
-			BlackboardArtifact.Type bbartType = db.getArtifactType(resultSet.getInt("artifact_type_id"));
+			BlackboardArtifact.Type bbartType = db.getBlackboard().getArtifactType(resultSet.getInt("artifact_type_id"));
 			artifacts.add(new DataArtifact(db, resultSet.getLong("artifact_id"),
 					resultSet.getLong("obj_id"), resultSet.getLong("artifact_obj_id"),
 					resultSet.getObject("data_source_obj_id") != null ? resultSet.getLong("data_source_obj_id") : null,

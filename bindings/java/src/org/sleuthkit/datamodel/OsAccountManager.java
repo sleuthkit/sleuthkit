@@ -1187,7 +1187,7 @@ public final class OsAccountManager {
 				if (!rs.wasNull()) {
 					sourceContent = this.db.getContentById(sourceObjId);
 				}
-				BlackboardAttribute.Type attributeType = db.getAttributeType(rs.getInt("attribute_type_id"));
+				BlackboardAttribute.Type attributeType = db.getBlackboard().getAttributeType(rs.getInt("attribute_type_id"));
 				OsAccountAttribute attribute = account.new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"),
 						rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
 						db, account, host, sourceContent);
