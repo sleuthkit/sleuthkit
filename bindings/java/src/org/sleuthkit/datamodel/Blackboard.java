@@ -87,8 +87,9 @@ public final class Blackboard {
 	 * @param moduleName The display name of the module posting the artifact.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact. RJCTODO: Deprecate
+	 *                             posting the artifact.
 	 */
+	// RJCTODO: Deprecate
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}
@@ -104,8 +105,9 @@ public final class Blackboard {
 	 * @param moduleName The display name of the module posting the artifacts.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact. RJCTODO: Deprecate
+	 *                             posting the artifact.
 	 */
+	// RJCTODO: Deprecate
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
 		postArtifacts(artifacts, moduleName, null);
 	}
