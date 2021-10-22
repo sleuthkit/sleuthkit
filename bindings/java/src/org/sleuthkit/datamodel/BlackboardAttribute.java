@@ -455,7 +455,7 @@ public class BlackboardAttribute extends AbstractAttribute {
 		public static final Type TSK_ENTROPY = new Type(29, "TSK_ENTROPY", bundle.getString("BlackboardAttribute.tskEntropy.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);
 
 		// TSK_HASHSET_NAME (id: 30) has been deprecated.  Please use TSK_SET_NAME instead.
-		// TSK_INTERESTING_FILE (id: 31) has been deprecated.  Please use TSK_INTERESTING_FILE_HIT instead.
+		// TSK_INTERESTING_FILE (id: 31) has been deprecated.  Please use TSK_INTERESTING_ITEM instead.
 		public static final Type TSK_REFERRER = new Type(32, "TSK_REFERRER", bundle.getString("BlackboardAttribute.tskReferrer.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_DATETIME_ACCESSED = new Type(33, "TSK_DATETIME_ACCESSED", bundle.getString("BlackboardAttribute.tskDateTimeAccessed.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME);
 		public static final Type TSK_IP_ADDRESS = new Type(34, "TSK_IP_ADDRESS", bundle.getString("BlackboardAttribute.tskIpAddress.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
@@ -1112,7 +1112,7 @@ public class BlackboardAttribute extends AbstractAttribute {
 				bundle.getString("BlackboardAttribute.tskHashsetName.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		/**
-		 * @deprecated Use a TSK_INTERESTING_FILE_HIT artifact instead.
+		 * @deprecated Use a TSK_INTERESTING_ITEM artifact instead.
 		 */
 		@Deprecated
 		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", //NON-NLS

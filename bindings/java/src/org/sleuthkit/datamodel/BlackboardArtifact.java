@@ -283,6 +283,7 @@ public abstract class BlackboardArtifact implements Content {
 				case TSK_HASHSET_HIT:
 				case TSK_INTERESTING_ARTIFACT_HIT:
 				case TSK_INTERESTING_FILE_HIT:
+				case TSK_INTERESTING_ITEM:
 				case TSK_YARA_HIT:
 					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SET_NAME));
 					break;
@@ -771,7 +772,7 @@ public abstract class BlackboardArtifact implements Content {
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		// Get the ID before starting the transaction
 		long dataSourceId = this.getDataSource().getId();
-		
+
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
 			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
@@ -1076,7 +1077,10 @@ public abstract class BlackboardArtifact implements Content {
 		/**
 		 * An meta-artifact to call attention to a file deemed to be
 		 * interesting.
+		 *
+		 * @deprecated Use TSK_INTERESTING_ITEM instead.
 		 */
+		@Deprecated
 		public static final Type TSK_INTERESTING_FILE_HIT = new BlackboardArtifact.Type(12, "TSK_INTERESTING_FILE_HIT", bundle.getString("BlackboardArtifact.tskInterestingFileHit.text"), Category.ANALYSIS_RESULT);
 
 		/**
@@ -1185,7 +1189,10 @@ public abstract class BlackboardArtifact implements Content {
 		/**
 		 * An meta-artifact to call attention to an artifact deemed to be
 		 * interesting.
+		 *
+		 * @deprecated Use TSK_INTERESTING_ITEM instead.
 		 */
+		@Deprecated
 		public static final Type TSK_INTERESTING_ARTIFACT_HIT = new BlackboardArtifact.Type(35, "TSK_INTERESTING_ARTIFACT_HIT", bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text"), Category.ANALYSIS_RESULT);
 
 		/**
@@ -1369,6 +1376,12 @@ public abstract class BlackboardArtifact implements Content {
 		 * "Notable" in another Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_NOTABLE = new BlackboardArtifact.Type(71, "TSK_PREVIOUSLY_NOTABLE", bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
+
+		/**
+		 * An meta-artifact to call attention to an item deemed to be
+		 * interesting.
+		 */
+		public static final Type TSK_INTERESTING_ITEM = new BlackboardArtifact.Type(72, "TSK_INTERESTING_ITEM", bundle.getString("BlackboardArtifact.tskInterestingItem.text"), Category.ANALYSIS_RESULT);
 		/*
 		 * IMPORTANT!
 		 *
@@ -1396,7 +1409,6 @@ public abstract class BlackboardArtifact implements Content {
 				TSK_KEYWORD_HIT,
 				TSK_HASHSET_HIT,
 				TSK_DEVICE_ATTACHED,
-				TSK_INTERESTING_FILE_HIT,
 				TSK_EMAIL_MSG,
 				TSK_EXTRACTED_TEXT,
 				TSK_WEB_SEARCH_QUERY,
@@ -1415,7 +1427,6 @@ public abstract class BlackboardArtifact implements Content {
 				TSK_PROG_RUN,
 				TSK_ENCRYPTION_DETECTED,
 				TSK_EXT_MISMATCH_DETECTED,
-				TSK_INTERESTING_ARTIFACT_HIT,
 				TSK_GPS_ROUTE,
 				TSK_REMOTE_DRIVE,
 				TSK_FACE_DETECTED,
@@ -1449,7 +1460,8 @@ public abstract class BlackboardArtifact implements Content {
 				TSK_WEB_CATEGORIZATION,
 				TSK_PREVIOUSLY_SEEN,
 				TSK_PREVIOUSLY_UNSEEN,
-				TSK_PREVIOUSLY_NOTABLE
+				TSK_PREVIOUSLY_NOTABLE,
+				TSK_INTERESTING_ITEM
 		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
@@ -1639,7 +1651,10 @@ public abstract class BlackboardArtifact implements Content {
 		/**
 		 * An meta-artifact to call attention to a file deemed to be
 		 * interesting.
+		 *
+		 * @deprecated Use TSK_INTERESTING_ITEM instead.
 		 */
+		@Deprecated
 		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskInterestingFileHit.text"), Category.ANALYSIS_RESULT), ///< an interesting/notable file hit
 		/**
@@ -1774,7 +1789,10 @@ public abstract class BlackboardArtifact implements Content {
 		/**
 		 * An meta-artifact to call attention to an artifact deemed to be
 		 * interesting.
+		 *
+		 * @deprecated Use TSK_INTERESTING_ITEM instead.
 		 */
+		@Deprecated
 		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text"), Category.ANALYSIS_RESULT),
 		/**
@@ -1963,7 +1981,13 @@ public abstract class BlackboardArtifact implements Content {
 		 * "Notable" in another Autopsy case.
 		 */
 		TSK_PREVIOUSLY_NOTABLE(71, "TSK_PREVIOUSLY_NOTABLE",
-				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
+				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT),
+		/**
+		 * An meta-artifact to call attention to an item deemed to be
+		 * interesting.
+		 */
+		TSK_INTERESTING_ITEM(72, "TSK_INTERESTING_ITEM", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskInterestingItem.text"), Category.ANALYSIS_RESULT);
 		/*
 		 * IMPORTANT!
 		 *
