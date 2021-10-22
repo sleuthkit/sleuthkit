@@ -62,8 +62,8 @@ public final class Blackboard {
 	private final Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
 	private final Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
 
-	static final int MIN_USER_DEFINED_TYPE_ID = 10000;	
-	
+	static final int MIN_USER_DEFINED_TYPE_ID = 10000;
+
 	private final SleuthkitCase caseDb;
 
 	/**
@@ -161,7 +161,7 @@ public final class Blackboard {
 		if (typeNameToArtifactTypeMap.containsKey(typeName)) {
 			return typeNameToArtifactTypeMap.get(typeName);
 		}
-		
+
 		Statement s = null;
 		ResultSet rs = null;
 		CaseDbTransaction trans = null;
@@ -221,7 +221,7 @@ public final class Blackboard {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get the attribute type associated with an attribute type name.
 	 *
@@ -260,8 +260,8 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the attribute type associated with an attribute type ID.
 	 *
@@ -300,8 +300,8 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the artifact type associated with an artifact type name.
 	 *
@@ -341,8 +341,8 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the artifact type associated with an artifact type id.
 	 *
@@ -385,16 +385,16 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the list of attributes for the given artifact.
-	 * 
+	 *
 	 * @param artifact The artifact to load attributes for.
-	 * 
+	 *
 	 * @return The list of attributes.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public ArrayList<BlackboardAttribute> getBlackboardAttributes(final BlackboardArtifact artifact) throws TskCoreException {
 		CaseDbConnection connection = null;
@@ -450,7 +450,7 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
+	}
 
 	/**
 	 * Get the attributes associated with the given file.
@@ -517,7 +517,7 @@ public final class Blackboard {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Adds the standard artifact types to the blackboard_artifact_types table
 	 * and the artifact type caches.
@@ -575,8 +575,8 @@ public final class Blackboard {
 		} finally {
 			caseDb.releaseSingleUserCaseWriteLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Adds the standard attribute types to the blackboard_attribute_types table
 	 * and the attribute type caches.
@@ -634,8 +634,8 @@ public final class Blackboard {
 		} finally {
 			caseDb.releaseSingleUserCaseWriteLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Adds new analysis result artifact.
 	 *
@@ -1328,7 +1328,7 @@ public final class Blackboard {
 		if (typeNameToAttributeTypeMap.containsKey(typeName)) {
 			return typeNameToAttributeTypeMap.get(typeName);
 		}
-		
+
 		CaseDbTransaction trans = null;
 		Statement s = null;
 		ResultSet rs = null;
@@ -1386,7 +1386,7 @@ public final class Blackboard {
 					throw new BlackboardException("Error rolling back transaction", ex);
 				}
 			}
-		}		
+		}
 	}
 
 	/**

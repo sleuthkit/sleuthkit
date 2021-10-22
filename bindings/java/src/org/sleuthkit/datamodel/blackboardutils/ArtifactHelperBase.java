@@ -75,8 +75,8 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds a string attribute of specified type to the given list, if the
-	 * attribute value is not empty or null.
+	 * Creates and adds a string attribute of specified type to the given list,
+	 * if the attribute value is not empty or null.
 	 *
 	 * @param attributeType Attribute type.
 	 * @param attrValue     String attribute value.
@@ -90,8 +90,8 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds a long attribute of specified type to the given list, if the
-	 * attribute value is not 0.
+	 * Creates and adds a long attribute of specified type to the given list, if
+	 * the attribute value is not 0.
 	 *
 	 * @param attributeType Attribute type.
 	 * @param attrValue     Long attribute value.
@@ -102,10 +102,10 @@ class ArtifactHelperBase {
 			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
 		}
 	}
-	
+
 	/**
-	 * Creates and adds an integer attribute of specified type to the given list, if the
-	 * attribute value is not 0.
+	 * Creates and adds an integer attribute of specified type to the given
+	 * list, if the attribute value is not 0.
 	 *
 	 * @param attributeType Attribute type.
 	 * @param attrValue     Integer attribute value.
