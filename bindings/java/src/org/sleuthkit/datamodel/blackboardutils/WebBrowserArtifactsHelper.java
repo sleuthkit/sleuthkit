@@ -43,6 +43,10 @@ import org.sleuthkit.datamodel.TskCoreException;
  *
  * These include bookmarks, cookies, downloads, history, and web form autofill
  * data.
+<<<<<<< HEAD
+=======
+ *
+>>>>>>> 7673-reformat-files
  */
 public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
@@ -54,6 +58,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardArtifact.Type WEB_FORM_AUTOFILL_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL);
 	private static final BlackboardArtifact.Type WEB_HISTORY_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
 
+<<<<<<< HEAD
 	/**
 	 * Creates a WebBrowserArtifactsHelper.
 	 *
@@ -66,6 +71,8 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 		super(caseDb, moduleName, srcContent, ingestJobId);
 	}
 
+=======
+>>>>>>> 7673-reformat-files
 	/**
 	 * Creates a WebBrowserArtifactsHelper.
 	 *
@@ -322,10 +329,16 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		CommunicationsManager commManager = this.getSleuthkitCase().getCommunicationsManager();
 
+<<<<<<< HEAD
 		Optional<Long> ingestJobId = getIngestJobId();
 		if (StringUtils.isNotEmpty(email)) {
 			try {
 				commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent(), ingestJobId.orElse(null));
+=======
+		if (StringUtils.isNotEmpty(email)) {
+			try {
+				commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent());
+>>>>>>> 7673-reformat-files
 			} catch (InvalidAccountIDException ex) {
 				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", email), ex);
 			}
@@ -333,7 +346,11 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		if (StringUtils.isNotEmpty(phoneNumber)) {
 			try {
+<<<<<<< HEAD
 				commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent(), ingestJobId.orElse(null));
+=======
+				commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent());
+>>>>>>> 7673-reformat-files
 			} catch (InvalidAccountIDException ex) {
 				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", phoneNumber), ex);
 			}

@@ -198,8 +198,12 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		Content content = getContent();
 		BlackboardArtifact artifact = content.newDataArtifact(GPS_ROUTE_TYPE, attributes);
 
+<<<<<<< HEAD
 		Optional<Long> ingestJobId = getIngestJobId();
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName(), ingestJobId.orElse(null));
+=======
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
+>>>>>>> 7673-reformat-files
 
 		return artifact;
 	}
@@ -247,8 +251,12 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		Content content = getContent();
 		BlackboardArtifact artifact = content.newDataArtifact(GPS_AREA_TYPE, attributes);
 
+<<<<<<< HEAD
 		Optional<Long> ingestJobId = getIngestJobId();
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName(), ingestJobId.orElse(null));
+=======
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
+>>>>>>> 7673-reformat-files
 
 		return artifact;
 	}
