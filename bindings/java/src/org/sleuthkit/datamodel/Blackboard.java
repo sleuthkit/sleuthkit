@@ -62,8 +62,8 @@ public final class Blackboard {
 	private final Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
 	private final Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
 
-	static final int MIN_USER_DEFINED_TYPE_ID = 10000;	
-	
+	static final int MIN_USER_DEFINED_TYPE_ID = 10000;
+
 	private final SleuthkitCase caseDb;
 
 	/**
@@ -77,49 +77,47 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Posts an artifact (data artifact or analysis result) to the blackboard.
-	 * The artifact should be complete (all attributes have been added) before
-	 * it is posted. Posting the artifact triggers the creation of appropriate
-	 * timeline events, if any, and broadcast of a notification that the
-	 * artifact is ready for further analysis.
+	 * Posts an artifact to the blackboard. The artifact should be complete (all
+	 * attributes have been added) before it is posted. Posting the artifact
+	 * triggers the creation of appropriate timeline events, if any, and
+	 * broadcast of a notification that the artifact is ready for further
+	 * analysis.
 	 *
-	 * @param artifact   The artifact (data artifact or analysis result).
+	 * @param artifact   The artifact.
 	 * @param moduleName The display name of the module posting the artifact.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact.
-	 * RJCTODO: Deprecate
+	 *                             posting the artifact. RJCTODO: Deprecate
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, null);
-	}	
-	
+	}
+
 	/**
-	 * Posts a collection of artifacts (data artifacts and/or analysis results)
-	 * to the blackboard. The artifacts should be complete (all attributes have
-	 * been added) before they are posted. Posting the artifacts triggers the
-	 * creation of appropriate timeline events, if any, and broadcast of a
-	 * notification that the artifacts are ready for further analysis.
+	 * Posts a collection of artifacts to the blackboard. The artifacts should
+	 * be complete (all attributes have been added) before they are posted.
+	 * Posting the artifacts triggers the creation of appropriate timeline
+	 * events, if any, and broadcast of a notification that the artifacts are
+	 * ready for further analysis.
 	 *
-	 * @param artifacts  The artifacts (data artifacts and/or analysis results).
+	 * @param artifacts  The artifacts.
 	 * @param moduleName The display name of the module posting the artifacts.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact.
-	 * RJCTODO: Deprecate
+	 *                             posting the artifact. RJCTODO: Deprecate
 	 */
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
 		postArtifacts(artifacts, moduleName, null);
 	}
 
 	/**
-	 * Posts an artifact (data artifact or analysis result) to the blackboard.
-	 * The artifact should be complete (all attributes have been added) before
-	 * it is posted. Posting the artifact triggers the creation of appropriate
-	 * timeline events, if any, and broadcast of a notification that the
-	 * artifact is ready for further analysis.
+	 * Posts an artifact to the blackboard. The artifact should be complete (all
+	 * attributes have been added) before it is posted. Posting the artifact
+	 * triggers the creation of appropriate timeline events, if any, and
+	 * broadcast of a notification that the artifact is ready for further
+	 * analysis.
 	 *
-	 * @param artifact    The artifact (data artifact or analysis result).
+	 * @param artifact    The artifact.
 	 * @param moduleName  The display name of the module posting the artifact.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
 	 *                    the artifact was posted.
@@ -129,17 +127,16 @@ public final class Blackboard {
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
-	}	
-	
+	}
+
 	/**
-	 * Posts a collection of artifacts (data artifacts and/or analysis results)
-	 * to the blackboard. The artifacts should be complete (all attributes have
-	 * been added) before they are posted. Posting the artifacts triggers the
-	 * creation of appropriate timeline events, if any, and broadcast of a
-	 * notification that the artifacts are ready for further analysis.
+	 * Posts a collection of artifacts to the blackboard. The artifacts should
+	 * be complete (all attributes have been added) before they are posted.
+	 * Posting the artifacts triggers the creation of appropriate timeline
+	 * events, if any, and broadcast of a notification that the artifacts are
+	 * ready for further analysis.
 	 *
-	 * @param artifacts   The artifacts (data artifacts and/or analysis
-	 *                    results).
+	 * @param artifacts   The artifacts.
 	 * @param moduleName  The display name of the module posting the artifacts.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
 	 *                    the artifacts were posted.
@@ -156,8 +153,8 @@ public final class Blackboard {
 			}
 		}
 		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
-	}	
-	
+	}
+
 	/**
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.
@@ -197,7 +194,7 @@ public final class Blackboard {
 		if (typeNameToArtifactTypeMap.containsKey(typeName)) {
 			return typeNameToArtifactTypeMap.get(typeName);
 		}
-		
+
 		Statement s = null;
 		ResultSet rs = null;
 		CaseDbTransaction trans = null;
@@ -257,7 +254,7 @@ public final class Blackboard {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get the attribute type associated with an attribute type name.
 	 *
@@ -296,8 +293,8 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the attribute type associated with an attribute type ID.
 	 *
@@ -336,8 +333,8 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the artifact type associated with an artifact type name.
 	 *
@@ -377,8 +374,8 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the artifact type associated with an artifact type id.
 	 *
@@ -421,16 +418,16 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Get the list of attributes for the given artifact.
-	 * 
+	 *
 	 * @param artifact The artifact to load attributes for.
-	 * 
+	 *
 	 * @return The list of attributes.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public ArrayList<BlackboardAttribute> getBlackboardAttributes(final BlackboardArtifact artifact) throws TskCoreException {
 		CaseDbConnection connection = null;
@@ -486,7 +483,7 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
+	}
 
 	/**
 	 * Get the attributes associated with the given file.
@@ -553,7 +550,7 @@ public final class Blackboard {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Adds the standard artifact types to the blackboard_artifact_types table
 	 * and the artifact type caches.
@@ -611,8 +608,8 @@ public final class Blackboard {
 		} finally {
 			caseDb.releaseSingleUserCaseWriteLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Adds the standard attribute types to the blackboard_attribute_types table
 	 * and the attribute type caches.
@@ -670,8 +667,8 @@ public final class Blackboard {
 		} finally {
 			caseDb.releaseSingleUserCaseWriteLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Adds new analysis result artifact.
 	 *
@@ -1364,7 +1361,7 @@ public final class Blackboard {
 		if (typeNameToAttributeTypeMap.containsKey(typeName)) {
 			return typeNameToAttributeTypeMap.get(typeName);
 		}
-		
+
 		CaseDbTransaction trans = null;
 		Statement s = null;
 		ResultSet rs = null;
@@ -1422,7 +1419,7 @@ public final class Blackboard {
 					throw new BlackboardException("Error rolling back transaction", ex);
 				}
 			}
-		}		
+		}
 	}
 
 	/**
@@ -1918,9 +1915,9 @@ public final class Blackboard {
 	}
 
 	/**
-	 * An event published by SleuthkitCase when one or more artifacts (data
-	 * artifacts and/or analysis results) are posted. Posted artifacts should be
-	 * complete (all attributes have been added) and ready for further analysis.
+	 * An event published by SleuthkitCase when one or more artifacts are
+	 * posted. Posted artifacts should be complete (all attributes have been
+	 * added) and ready for further analysis.
 	 */
 	final public class ArtifactsPostedEvent {
 
@@ -1931,12 +1928,10 @@ public final class Blackboard {
 
 		/**
 		 * Constructs an Event published by SleuthkitCase when one or more
-		 * artifacts (data artifacts and/or analysis results) are posted. Posted
-		 * artifacts should be complete (all attributes have been added) and
-		 * ready for further analysis.
+		 * artifacts are posted. Posted artifacts should be complete (all
+		 * attributes have been added) and ready for further analysis.
 		 *
-		 * @param artifacts   The artifacts (data artifacts and/or analysis
-		 *                    results).
+		 * @param artifacts   The artifacts.
 		 * @param moduleName  The display name of the module posting the
 		 *                    artifacts.
 		 * @param ingestJobId The numeric identifier of the ingest job within
@@ -1961,7 +1956,7 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the posted artifacts (data artifacts and/or analysis results).
+		 * Gets the posted artifacts.
 		 *
 		 * @return The artifacts (data artifacts and/or analysis results).
 		 */
@@ -1970,12 +1965,11 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the posted artifacts (data artifacts or analysis results) of a
-		 * given type.
+		 * Gets the posted artifacts of a given type.
 		 *
 		 * @param artifactType The artifact type.
 		 *
-		 * @return The artifacts (data artifacts or analysis results), if any.
+		 * @return The artifacts, if any.
 		 */
 		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
 			Set<BlackboardArtifact> tempSet = artifacts.stream()
@@ -1985,8 +1979,7 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the display name of the module that posted the artifacts (data
-		 * artifacts and/or analysis results).
+		 * Gets the display name of the module that posted the artifacts.
 		 *
 		 * @return The display name.
 		 */
@@ -1995,8 +1988,7 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the types of artifacts (data artifacts and/or analysis results)
-		 * that were posted.
+		 * Gets the types of artifacts that were posted.
 		 *
 		 * @return The types.
 		 */
@@ -2006,7 +1998,7 @@ public final class Blackboard {
 
 		/**
 		 * Gets the numeric identifier of the ingest job within which the
-		 * artifacts (data artifacts and/or analysis results) were posted.
+		 * artifacts were posted.
 		 *
 		 * @return The ingest job ID, may be null.
 		 */
