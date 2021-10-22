@@ -83,6 +83,42 @@ public final class Blackboard {
 	 * timeline events, if any, and broadcast of a notification that the
 	 * artifact is ready for further analysis.
 	 *
+	 * @param artifact   The artifact (data artifact or analysis result).
+	 * @param moduleName The display name of the module posting the artifact.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 * RJCTODO: Deprecate
+	 */
+	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
+		postArtifacts(Collections.singleton(artifact), moduleName, null);
+	}	
+	
+	/**
+	 * Posts a collection of artifacts (data artifacts and/or analysis results)
+	 * to the blackboard. The artifacts should be complete (all attributes have
+	 * been added) before they are posted. Posting the artifacts triggers the
+	 * creation of appropriate timeline events, if any, and broadcast of a
+	 * notification that the artifacts are ready for further analysis.
+	 *
+	 * @param artifacts  The artifacts (data artifacts and/or analysis results).
+	 * @param moduleName The display name of the module posting the artifacts.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 * RJCTODO: Deprecate
+	 */
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		postArtifacts(artifacts, moduleName, null);
+	}
+
+	/**
+	 * Posts an artifact (data artifact or analysis result) to the blackboard.
+	 * The artifact should be complete (all attributes have been added) before
+	 * it is posted. Posting the artifact triggers the creation of appropriate
+	 * timeline events, if any, and broadcast of a notification that the
+	 * artifact is ready for further analysis.
+	 *
 	 * @param artifact    The artifact (data artifact or analysis result).
 	 * @param moduleName  The display name of the module posting the artifact.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
@@ -120,44 +156,8 @@ public final class Blackboard {
 			}
 		}
 		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
-	}
-
-	/**
-	 * Posts an artifact (data artifact or analysis result) to the blackboard.
-	 * The artifact should be complete (all attributes have been added) before
-	 * it is posted. Posting the artifact triggers the creation of appropriate
-	 * timeline events, if any, and broadcast of a notification that the
-	 * artifact is ready for further analysis.
-	 *
-	 * @param artifact   The artifact (data artifact or analysis result).
-	 * @param moduleName The display name of the module posting the artifact.
-	 *
-	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact.
-	 * RJCTODO: Deprecate
-	 */
-	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
-		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}	
 	
-	/**
-	 * Posts a collection of artifacts (data artifacts and/or analysis results)
-	 * to the blackboard. The artifacts should be complete (all attributes have
-	 * been added) before they are posted. Posting the artifacts triggers the
-	 * creation of appropriate timeline events, if any, and broadcast of a
-	 * notification that the artifacts are ready for further analysis.
-	 *
-	 * @param artifacts  The artifacts (data artifacts and/or analysis results).
-	 * @param moduleName The display name of the module posting the artifacts.
-	 *
-	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact.
-	 * RJCTODO: Deprecate
-	 */
-	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
-		postArtifacts(artifacts, moduleName, null);
-	}
-
 	/**
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.
