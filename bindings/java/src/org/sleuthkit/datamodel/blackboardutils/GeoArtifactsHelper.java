@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@ package org.sleuthkit.datamodel.blackboardutils;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.sleuthkit.datamodel.AbstractFile;
+import java.util.Optional;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
@@ -41,11 +41,11 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardAttribute.Type WAYPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS);
 	private static final BlackboardAttribute.Type TRACKPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS);
 	private static final BlackboardAttribute.Type AREAPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_AREAPOINTS);
-	
+
 	private static final BlackboardArtifact.Type GPS_TRACK_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 	private static final BlackboardArtifact.Type GPS_ROUTE_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
 	private static final BlackboardArtifact.Type GPS_AREA_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA);
-	
+
 	private final String programName;
 
 	/**
@@ -61,9 +61,30 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *                    attribute.
 	 * @param srcContent  The source content for the artifacts, i.e., either a
 	 *                    file within a data source or a data source.
+	 * @param ingestJobId RJCTODO
 	 */
+	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcContent, Long ingestJobId) {
+		super(caseDb, moduleName, srcContent, ingestJobId);
+		this.programName = programName;
+	}
+
+	/**
+	 * Constructs an artifact creation helper that adds geolocation artifacts to
+	 * the case database.
+	 *
+	 * @param caseDb      The case database.
+	 * @param moduleName  The name of the module creating the artifacts.
+	 * @param programName The name of the user application associated with the
+	 *                    geolocation data to be recorded as artifacts, may be
+	 *                    null. If a program name is supplied, it will be added
+	 *                    to each artifact that is created as a TSK_PROG_NAME
+	 *                    attribute.
+	 * @param srcContent  The source content for the artifacts, i.e., either a
+	 *                    file within a data source or a data source.
+	 */
+	// RJCTODO: Deprecate
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcContent) {
-		super(caseDb, moduleName, srcContent);
+		super(caseDb, moduleName, srcContent, null);
 		this.programName = programName;
 	}
 
@@ -114,7 +135,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 		Content content = getContent();
 		BlackboardArtifact artifact = content.newDataArtifact(GPS_TRACK_TYPE, attributes);
 
-		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName(), ingestJobId.orElse(null));
 
 		return artifact;
 	}
@@ -171,8 +193,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 		Content content = getContent();
 		BlackboardArtifact artifact = content.newDataArtifact(GPS_ROUTE_TYPE, attributes);
-		
-		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
+
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName(), ingestJobId.orElse(null));
 
 		return artifact;
 	}
@@ -219,8 +242,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 		Content content = getContent();
 		BlackboardArtifact artifact = content.newDataArtifact(GPS_AREA_TYPE, attributes);
-		
-		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
+
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName(), ingestJobId.orElse(null));
 
 		return artifact;
 	}

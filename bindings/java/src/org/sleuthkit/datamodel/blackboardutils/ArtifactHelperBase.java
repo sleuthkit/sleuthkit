@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2019-2020 Basis Technology Corp.
+ * Copyright 2019-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.blackboardutils;
 
 import java.util.Collection;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
@@ -33,6 +34,7 @@ class ArtifactHelperBase {
 	private final SleuthkitCase caseDb;
 	private final Content srcContent;		// artifact source
 	private final String moduleName;		// module creating the artifacts
+	private final Long ingestJobId; 
 
 	/**
 	 * Creates an artifact helper.
@@ -40,11 +42,13 @@ class ArtifactHelperBase {
 	 * @param caseDb     Sleuthkit case db
 	 * @param moduleName name module using the helper
 	 * @param srcContent source content
+	 * @param ingestJobId RJCTODO
 	 */
-	ArtifactHelperBase(SleuthkitCase caseDb, String moduleName, Content srcContent) {
+	ArtifactHelperBase(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
 		this.moduleName = moduleName;
 		this.srcContent = srcContent;
 		this.caseDb = caseDb;
+		this.ingestJobId = ingestJobId;
 	}
 
 	/**
@@ -74,6 +78,14 @@ class ArtifactHelperBase {
 		return this.moduleName;
 	}
 
+	/**
+	 * RJCTODO
+	 * @return 
+	 */
+	Optional<Long> getIngestJobId() {
+		return Optional.of(ingestJobId);
+	}
+	
 	/**
 	 * Creates and adds a string attribute of specified type to the given list, if the
 	 * attribute value is not empty or null.

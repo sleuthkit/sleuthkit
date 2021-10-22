@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2019 Basis Technology Corp.
+ * Copyright 2019-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,12 +45,24 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 * @param caseDb     Sleuthkit case database.
 	 * @param moduleName Name of module using the helper.
 	 * @param srcContent Source content for the artifacts.
-	 *
+	 * @param ingestJobId RJCTODO
 	 */
-	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
-		super(caseDb, moduleName, srcContent);
+	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
+		super(caseDb, moduleName, srcContent, ingestJobId);
 	}
 
+	/**
+	 * Creates an artifact helper for modules to create artifacts.
+	 *
+	 * @param caseDb     Sleuthkit case database.
+	 * @param moduleName Name of module using the helper.
+	 * @param srcContent Source content for the artifacts.
+	 */
+	// RJCTODO Deprecate
+	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
+		super(caseDb, moduleName, srcContent, null);
+	}	
+	
 	/**
 	 * Adds a TSK_INSTALLED_PROGRAM artifact.
 	 *
@@ -98,7 +110,8 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 		BlackboardArtifact installedProgramArtifact = content.newDataArtifact(INSTALLED_PROG_TYPE, attributes);
 		
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return installedProgramArtifact;

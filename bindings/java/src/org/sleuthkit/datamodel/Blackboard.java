@@ -88,8 +88,10 @@ public final class Blackboard {
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
+	 * @deprecated Use postArtifact(BlackboardArtifact artifact, String
+	 * moduleName, Long ingestJobId) instead.
 	 */
-	// RJCTODO: Deprecate
+	@Deprecated
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}
@@ -106,8 +108,10 @@ public final class Blackboard {
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
+	 * @deprecated postArtifacts(Collection\<BlackboardArtifact\> artifacts,
+	 * String moduleName, Long ingestJobId)
 	 */
-	// RJCTODO: Deprecate
+	@Deprecated
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
 		postArtifacts(artifacts, moduleName, null);
 	}

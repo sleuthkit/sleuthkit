@@ -38,7 +38,6 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.InvalidAccountIDException;
-import org.sleuthkit.datamodel.OsAccount;
 import org.sleuthkit.datamodel.Relationship;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -158,14 +157,15 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param srcContent   Source content being processed by the module.
 	 * @param accountsType Account type {@link Account.Type} created by this
 	 *                     module.
+	 * @param ingestJobId  RJCTODO
 	 *
 	 * @throws TskCoreException If there is an error creating the device
 	 *                          account.
 	 */
 	public CommunicationArtifactsHelper(SleuthkitCase caseDb,
-			String moduleName, Content srcContent, Account.Type accountsType) throws TskCoreException {
+			String moduleName, Content srcContent, Account.Type accountsType, Long ingestJobId) throws TskCoreException {
 
-		super(caseDb, moduleName, srcContent);
+		super(caseDb, moduleName, srcContent, ingestJobId);
 
 		this.moduleAccountsType = accountsType;
 		this.selfAccountType = Account.Type.DEVICE;
@@ -188,12 +188,13 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *                        module.
 	 * @param selfAccountType Self account type to be created for this module.
 	 * @param selfAccountId	  Account unique id for the self account.
+	 * @param ingestJobId     RJCTODO
 	 *
 	 * @throws TskCoreException	If there is an error creating the self account
 	 */
-	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId) throws TskCoreException {
+	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId, Long ingestJobId) throws TskCoreException {
 
-		super(caseDb, moduleName, srcContent);
+		super(caseDb, moduleName, srcContent, ingestJobId);
 
 		this.moduleAccountsType = accountsType;
 		this.selfAccountType = selfAccountType;
@@ -317,7 +318,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(contactArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(contactArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		return contactArtifact;
 	}
@@ -367,7 +369,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *                          instance.
 	 */
 	private AccountFileInstance createAccountInstance(Account.Type accountType, String accountUniqueID) throws TskCoreException, InvalidAccountIDException {
-		return getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(accountType, accountUniqueID, getModuleName(), getContent());
+		Optional<Long> ingestJobId = getIngestJobId();
+		return getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(accountType, accountUniqueID, getModuleName(), getContent(), ingestJobId.orElse(null));
 	}
 
 	/**
@@ -619,7 +622,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(msgArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(msgArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return msgArtifact;
@@ -863,7 +867,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(callLogArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(callLogArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return callLogArtifact;
@@ -984,7 +989,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 */
 	private synchronized AccountFileInstance getSelfAccountInstance() throws TskCoreException, InvalidAccountIDException {
 		if (selfAccountInstance == null) {
-			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getContent());
+			Optional<Long> ingestJobId = getIngestJobId();
+			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getContent(), ingestJobId.orElse(null));
 		}
 		return selfAccountInstance;
 	}
