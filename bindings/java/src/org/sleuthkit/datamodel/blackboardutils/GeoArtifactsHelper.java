@@ -81,8 +81,12 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *                    attribute.
 	 * @param srcContent  The source content for the artifacts, i.e., either a
 	 *                    file within a data source or a data source.
+	 *
+	 * @deprecated Use GeoArtifactsHelper(SleuthkitCase caseDb, String
+	 * moduleName, String programName, Content srcContent, Long ingestJobId)
+	 * instead.
 	 */
-	// RJCTODO: Deprecate
+	@Deprecated
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcContent) {
 		super(caseDb, moduleName, srcContent, null);
 		this.programName = programName;

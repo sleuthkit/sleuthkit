@@ -37,14 +37,15 @@ import org.sleuthkit.datamodel.TskCoreException;
  *
  */
 public final class ArtifactsHelper extends ArtifactHelperBase {
+
 	private static final BlackboardArtifact.Type INSTALLED_PROG_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_INSTALLED_PROG);
-	
+
 	/**
 	 * Creates an artifact helper for modules to create artifacts.
 	 *
-	 * @param caseDb     Sleuthkit case database.
-	 * @param moduleName Name of module using the helper.
-	 * @param srcContent Source content for the artifacts.
+	 * @param caseDb      Sleuthkit case database.
+	 * @param moduleName  Name of module using the helper.
+	 * @param srcContent  Source content for the artifacts.
 	 * @param ingestJobId RJCTODO
 	 */
 	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
@@ -57,12 +58,15 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 * @param caseDb     Sleuthkit case database.
 	 * @param moduleName Name of module using the helper.
 	 * @param srcContent Source content for the artifacts.
+	 *
+	 * @deprecated Use ArtifactsHelper(SleuthkitCase caseDb, String moduleName,
+	 * Content srcContent, Long ingestJobId) instead.
 	 */
-	// RJCTODO Deprecate
+	@Deprecated
 	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
 		super(caseDb, moduleName, srcContent, null);
-	}	
-	
+	}
+
 	/**
 	 * Adds a TSK_INSTALLED_PROGRAM artifact.
 	 *
@@ -71,7 +75,7 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @return Installed program artifact added.
 	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws TskCoreException		  If there is an error creating the artifact.
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled) throws TskCoreException, BlackboardException {
@@ -90,14 +94,14 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @return Installed program artifact added.
 	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws TskCoreException		  If there is an error creating the artifact.
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-		
+
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
 		addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, dateInstalled, attributes);
@@ -108,7 +112,7 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 		// create artifact
 		Content content = getContent();
 		BlackboardArtifact installedProgramArtifact = content.newDataArtifact(INSTALLED_PROG_TYPE, attributes);
-		
+
 		// post artifact 
 		Optional<Long> ingestJobId = getIngestJobId();
 		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName(), ingestJobId.orElse(null));

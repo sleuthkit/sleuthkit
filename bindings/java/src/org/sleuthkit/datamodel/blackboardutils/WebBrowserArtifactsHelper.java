@@ -72,8 +72,11 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 * @param caseDb     Sleuthkit case db.
 	 * @param moduleName Name of module using the helper.
 	 * @param srcContent Source content being processed by the module.
+	 *
+	 * @deprecated Use WebBrowserArtifactsHelper(SleuthkitCase caseDb, String
+	 * moduleName, Content srcContent, Long ingestJobId) instead.
 	 */
-	// RJCTODO Deprecate
+	@Deprecated
 	public WebBrowserArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
 		super(caseDb, moduleName, srcContent, null);
 	}
@@ -418,7 +421,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 		// post artifact 
 		Optional<Long> ingestJobId = getIngestJobId();
 		getSleuthkitCase().getBlackboard().postArtifact(webFormAutofillArtifact, getModuleName(), ingestJobId.orElse(null));
-		
+
 		// return the artifact
 		return webFormAutofillArtifact;
 	}
