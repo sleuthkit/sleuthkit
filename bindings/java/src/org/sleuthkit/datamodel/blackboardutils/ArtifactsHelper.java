@@ -40,7 +40,6 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 
 	private static final BlackboardArtifact.Type INSTALLED_PROG_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_INSTALLED_PROG);
 
-<<<<<<< HEAD
 	/**
 	 * Creates an artifact helper for modules to create artifacts.
 	 *
@@ -53,8 +52,6 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 		super(caseDb, moduleName, srcContent, ingestJobId);
 	}
 
-=======
->>>>>>> 7673-reformat-files
 	/**
 	 * Creates an artifact helper for modules to create artifacts.
 	 *

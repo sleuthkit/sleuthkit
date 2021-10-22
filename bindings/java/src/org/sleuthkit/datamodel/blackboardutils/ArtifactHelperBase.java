@@ -79,7 +79,6 @@ class ArtifactHelperBase {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * RJCTODO
 	 * @return 
 	 */
@@ -90,10 +89,6 @@ class ArtifactHelperBase {
 	/**
 	 * Creates and adds a string attribute of specified type to the given list, if the
 	 * attribute value is not empty or null.
-=======
-	 * Creates and adds a string attribute of specified type to the given list,
-	 * if the attribute value is not empty or null.
->>>>>>> 7673-reformat-files
 	 *
 	 * @param attributeType Attribute type.
 	 * @param attrValue     String attribute value.
