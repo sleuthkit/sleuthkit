@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -84,27 +83,6 @@ public final class Blackboard {
 	 * timeline events, if any, and broadcast of a notification that the
 	 * artifact is ready for further analysis.
 	 *
-	 * IMPORTANT: This method is only intended to be used when no ingest job ID
-	 * is available. Otherwise, call postArtifact(BlackboardArtifact artifact,
-	 * String moduleName, Long ingestJobId) instead.
-	 *
-	 * @param artifact   The artifact (data artifact or analysis result).
-	 * @param moduleName The display name of the module posting the artifact.
-	 *
-	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact.
-	 */
-	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
-		postArtifacts(Collections.singleton(artifact), moduleName, null);
-	}
-
-	/**
-	 * Posts an artifact (data artifact or analysis result) to the blackboard.
-	 * The artifact should be complete (all attributes have been added) before
-	 * it is posted. Posting the artifact triggers the creation of appropriate
-	 * timeline events, if any, and broadcast of a notification that the
-	 * artifact is ready for further analysis.
-	 *
 	 * @param artifact    The artifact (data artifact or analysis result).
 	 * @param moduleName  The display name of the module posting the artifact.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
@@ -115,30 +93,8 @@ public final class Blackboard {
 	 */
 	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
-	}
-
-	/**
-	 * Posts a collection of artifacts (data artifacts and/or analysis results)
-	 * to the blackboard. The artifacts should be complete (all attributes have
-	 * been added) before they are posted. Posting the artifacts triggers the
-	 * creation of appropriate timeline events, if any, and broadcast of a
-	 * notification that the artifacts are ready for further analysis.
-	 *
-	 * IMPORTANT: This method is only intended to be used when no ingest job ID
-	 * is available. Otherwise, call
-	 * postArtifacts(Collection\<BlackboardArtifact\> artifacts, String
-	 * moduleName, Long ingestJobId) instead.
-	 *
-	 * @param artifacts  The artifacts (data artifacts and/or analysis results).
-	 * @param moduleName The display name of the module posting the artifacts.
-	 *
-	 * @throws BlackboardException The exception is thrown if there is an issue
-	 *                             posting the artifact.
-	 */
-	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
-		postArtifacts(artifacts, moduleName, null);
-	}
-
+	}	
+	
 	/**
 	 * Posts a collection of artifacts (data artifacts and/or analysis results)
 	 * to the blackboard. The artifacts should be complete (all attributes have
@@ -164,6 +120,42 @@ public final class Blackboard {
 			}
 		}
 		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
+	}
+
+	/**
+	 * Posts an artifact (data artifact or analysis result) to the blackboard.
+	 * The artifact should be complete (all attributes have been added) before
+	 * it is posted. Posting the artifact triggers the creation of appropriate
+	 * timeline events, if any, and broadcast of a notification that the
+	 * artifact is ready for further analysis.
+	 *
+	 * @param artifact   The artifact (data artifact or analysis result).
+	 * @param moduleName The display name of the module posting the artifact.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 * RJCTODO: Deprecate
+	 */
+	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
+		postArtifacts(Collections.singleton(artifact), moduleName, null);
+	}	
+	
+	/**
+	 * Posts a collection of artifacts (data artifacts and/or analysis results)
+	 * to the blackboard. The artifacts should be complete (all attributes have
+	 * been added) before they are posted. Posting the artifacts triggers the
+	 * creation of appropriate timeline events, if any, and broadcast of a
+	 * notification that the artifacts are ready for further analysis.
+	 *
+	 * @param artifacts  The artifacts (data artifacts and/or analysis results).
+	 * @param moduleName The display name of the module posting the artifacts.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 * RJCTODO: Deprecate
+	 */
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		postArtifacts(artifacts, moduleName, null);
 	}
 
 	/**
@@ -2018,8 +2010,8 @@ public final class Blackboard {
 		 *
 		 * @return The ingest job ID, may be null.
 		 */
-		public Optional<Long> getIngestJobId() {
-			return Optional.of(ingestJobId);
+		public Long getIngestJobId() {
+			return ingestJobId;
 		}
 
 	}
