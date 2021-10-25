@@ -33,8 +33,7 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoAreaPoints;
 
 /**
- * An artifact creation helper that adds geolocation artifacts to the case
- * database.
+ * A class that helps modules to create geolocation artifacts.
  */
 public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
@@ -49,8 +48,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	private final String programName;
 
 	/**
-	 * Constructs an artifact creation helper that adds geolocation artifacts to
-	 * the case database.
+	 * Constructs an instance of a class that helps modules to create
+	 * geolocation artifacts.
 	 *
 	 * @param caseDb      The case database.
 	 * @param moduleName  The name of the module creating the artifacts.
@@ -59,9 +58,9 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *                    null. If a program name is supplied, it will be added
 	 *                    to each artifact that is created as a TSK_PROG_NAME
 	 *                    attribute.
-	 * @param srcContent  The source content for the artifacts, i.e., either a
-	 *                    file within a data source or a data source.
-	 * @param ingestJobId RJCTODO
+	 * @param srcContent  The source/parent content of the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts are being created, may be null.
 	 */
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcContent, Long ingestJobId) {
 		super(caseDb, moduleName, srcContent, ingestJobId);
@@ -69,8 +68,8 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs an artifact creation helper that adds geolocation artifacts to
-	 * the case database.
+	 * Constructs an instance of a class that helps modules to create
+	 * geolocation artifacts.
 	 *
 	 * @param caseDb      The case database.
 	 * @param moduleName  The name of the module creating the artifacts.
@@ -79,8 +78,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 *                    null. If a program name is supplied, it will be added
 	 *                    to each artifact that is created as a TSK_PROG_NAME
 	 *                    attribute.
-	 * @param srcContent  The source content for the artifacts, i.e., either a
-	 *                    file within a data source or a data source.
+	 * @param srcContent  The source/parent content of the artifacts.
 	 *
 	 * @deprecated Use GeoArtifactsHelper(SleuthkitCase caseDb, String
 	 * moduleName, String programName, Content srcContent, Long ingestJobId)

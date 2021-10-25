@@ -39,10 +39,8 @@ import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- * Class to help ingest modules create Web Browser artifacts.
- *
- * These include bookmarks, cookies, downloads, history, and web form autofill
- * data.
+ * A class that helps modules to create web browser artifacts: bookmarks,
+ * cookies, downloads, history, and web form address and autofill data.
  */
 public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
@@ -55,23 +53,28 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardArtifact.Type WEB_HISTORY_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
 
 	/**
-	 * Creates a WebBrowserArtifactsHelper.
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
 	 *
-	 * @param caseDb      Sleuthkit case db.
-	 * @param moduleName  Name of module using the helper.
-	 * @param srcContent  Source content being processed by the module.
-	 * @param ingestJobId RJCTODO
+	 * @param caseDb      The case database.
+	 * @param moduleName  The name of the module creating the artifacts.
+	 * @param srcContent  The source/parent content of the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts are being created, may be null.
 	 */
 	public WebBrowserArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
 		super(caseDb, moduleName, srcContent, ingestJobId);
 	}
 
 	/**
-	 * Creates a WebBrowserArtifactsHelper.
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
 	 *
-	 * @param caseDb     Sleuthkit case db.
-	 * @param moduleName Name of module using the helper.
-	 * @param srcContent Source content being processed by the module.
+	 * @param caseDb     The case database.
+	 * @param moduleName The name of the module creating the artifacts.
+	 * @param srcContent The source/parent content of the artifacts.
 	 *
 	 * @deprecated Use WebBrowserArtifactsHelper(SleuthkitCase caseDb, String
 	 * moduleName, Content srcContent, Long ingestJobId) instead.

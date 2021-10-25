@@ -22,42 +22,42 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
-import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
-import org.sleuthkit.datamodel.OsAccount;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- * This class helps ingest modules create miscellaneous artifacts.
- *
+ * A class that helps modules to create various types of artifacts.
  */
 public final class ArtifactsHelper extends ArtifactHelperBase {
 
 	private static final BlackboardArtifact.Type INSTALLED_PROG_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_INSTALLED_PROG);
 
 	/**
-	 * Creates an artifact helper for modules to create artifacts.
+	 * Constructs an instance of a class that helps modules to create various
+	 * types of artifacts.
 	 *
-	 * @param caseDb      Sleuthkit case database.
-	 * @param moduleName  Name of module using the helper.
-	 * @param srcContent  Source content for the artifacts.
-	 * @param ingestJobId RJCTODO
+	 * @param caseDb      The case database.
+	 * @param moduleName  The name of the module creating the artifacts.
+	 * @param srcContent  The source/parent content of the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts are being created, may be null.
 	 */
 	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
 		super(caseDb, moduleName, srcContent, ingestJobId);
 	}
 
 	/**
-	 * Creates an artifact helper for modules to create artifacts.
+	 * Constructs an instance of a class that helps modules to create various
+	 * types of artifacts.
 	 *
-	 * @param caseDb     Sleuthkit case database.
-	 * @param moduleName Name of module using the helper.
-	 * @param srcContent Source content for the artifacts.
+	 * @param caseDb     The case database.
+	 * @param moduleName The name of the module creating the artifacts.
+	 * @param srcContent The source/parent content of the artifacts.
 	 *
 	 * @deprecated Use ArtifactsHelper(SleuthkitCase caseDb, String moduleName,
 	 * Content srcContent, Long ingestJobId) instead.

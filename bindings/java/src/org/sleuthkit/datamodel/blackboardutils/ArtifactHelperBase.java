@@ -26,23 +26,23 @@ import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
- * A base class for classes that help ingest modules create artifacts.
- *
+ * A super class for classes that help modules create artifacts.
  */
 class ArtifactHelperBase {
 
 	private final SleuthkitCase caseDb;
-	private final Content srcContent;		// artifact source
-	private final String moduleName;		// module creating the artifacts
-	private final Long ingestJobId; 
+	private final Content srcContent;
+	private final String moduleName;
+	private final Long ingestJobId;
 
 	/**
-	 * Creates an artifact helper.
+	 * Constructs the super class part of an artifact helper.
 	 *
-	 * @param caseDb     Sleuthkit case db
-	 * @param moduleName name module using the helper
-	 * @param srcContent source content
-	 * @param ingestJobId RJCTODO
+	 * @param caseDb      The case database.
+	 * @param moduleName  The name of the module creating the artifacts.
+	 * @param srcContent  The source/parent content of the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts are being created, may be null.
 	 */
 	ArtifactHelperBase(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
 		this.moduleName = moduleName;
@@ -52,48 +52,51 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Returns the source content.
+	 * Get the source/parent content of the artifacts.
 	 *
-	 * @return Source content.
+	 * @return The content.
 	 */
 	Content getContent() {
-		return this.srcContent;
+		return srcContent;
 	}
 
 	/**
-	 * Returns the sleuthkit case.
+	 * Gets the case database.
 	 *
-	 * @return Sleuthkit case database.
+	 * @return The case database.
 	 */
 	SleuthkitCase getSleuthkitCase() {
-		return this.caseDb;
+		return caseDb;
 	}
 
 	/**
-	 * Returns module name.
+	 * Gets the name of the module creating the artifacts.
 	 *
-	 * @return Module name.
+	 * @return The module name.
 	 */
 	String getModuleName() {
-		return this.moduleName;
+		return moduleName;
 	}
 
 	/**
-	 * RJCTODO
-	 * @return 
+	 * Gets the numeric identifier of the ingest job within which the artifacts
+	 * are being created.
+	 *
+	 * @return The ingest job ID, may be null
 	 */
 	Optional<Long> getIngestJobId() {
-		return Optional.of(ingestJobId);
+		return Optional.ofNullable(ingestJobId);
 	}
-	
+
 	/**
-	 * Creates and adds a string attribute of specified type to the given list, if the
-	 * attribute value is not empty or null.
+	 * Creates and adds a string-valued attribute of a specified type to the
+	 * given list, if the attribute value is not empty or null.
 	 *
-	 * @param attributeType Attribute type.
-	 * @param attrValue     String attribute value.
-	 * @param attributes    List of attributes to add to.
-	 *
+	 * @param attributeType The attribute type.
+	 * @param attrValue     The attribute value, may not be the empty string or
+	 *                      null.
+	 * @param attributes    The list of attributes to which the new attribute
+	 *                      will be added.
 	 */
 	void addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, String attrValue, Collection<BlackboardAttribute> attributes) {
 		if (!StringUtils.isEmpty(attrValue)) {
@@ -102,12 +105,13 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds a long attribute of specified type to the given list, if
-	 * the attribute value is not 0.
+	 * Creates and adds a long-valued attribute of a specified type to the given
+	 * list, if the attribute value is greater than zero.
 	 *
-	 * @param attributeType Attribute type.
-	 * @param attrValue     Long attribute value.
-	 * @param attributes    List of attributes to add to.
+	 * @param attributeType The attribute type.
+	 * @param attrValue     The attribute value, must be greater than zero.
+	 * @param attributes    The list of attributes to which the new attribute
+	 *                      will be added.
 	 */
 	void addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, long attrValue, Collection<BlackboardAttribute> attributes) {
 		if (attrValue > 0) {
@@ -116,12 +120,13 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds an integer attribute of specified type to the given
-	 * list, if the attribute value is not 0.
+	 * Creates and adds an integer-valued attribute of a specified type to the
+	 * given list, if the attribute value is greater than zero.
 	 *
-	 * @param attributeType Attribute type.
-	 * @param attrValue     Integer attribute value.
-	 * @param attributes    List of attributes to add to.
+	 * @param attributeType The attribute type.
+	 * @param attrValue     The attribute value, must be greater than zero.
+	 * @param attributes    The list of attributes to which the new attribute
+	 *                      will be added.
 	 */
 	void addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, int attrValue, Collection<BlackboardAttribute> attributes) {
 		if (attrValue > 0) {

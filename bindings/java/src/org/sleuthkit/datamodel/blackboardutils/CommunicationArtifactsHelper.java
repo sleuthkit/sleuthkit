@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2019-2020 Basis Technology Corp.
+ * Copyright 2019-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,24 +47,23 @@ import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments.FileAttachment;
 
 /**
- * Class to help ingest modules create communication artifacts. Communication
- * artifacts includes contacts, messages, call logs.
+ * A class that helps modules to create communication artifacts: contacts,
+ * messages, and call logs.
  *
  * It creates a 'self' account {@link Account} - an account for the owner/user
  * of the application being processed by the module. As an example, for a module
- * analyzing Facebook application, this would be account associated with the
- * unique Facebook user id of the device owner.
+ * analyzing Facebook application, this would be the account associated with the
+ * unique Facebook user ID of the device owner.
  *
- * In the absence of a 'self' account, a 'device' account may be used in it's
+ * In the absence of a 'self' account, a 'device' account may be used in its
  * place. A 'device' account is an account meant to represent the owner of the
- * device and uses the unique device id as the unique account identifier.
+ * device, and uses the unique device ID as the unique account identifier.
  *
  * It also creates accounts for contacts, and sender/receivers of the messages,
  * and calls.
  *
- * And it also creates relationships between the self account - and the contacts
- * and sender/receiver accounts.
- *
+ * And it creates relationships between the self account and the contacts and
+ * sender/receiver accounts.
  */
 public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
@@ -145,22 +144,23 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	private final Account.Type moduleAccountsType;
 
 	/**
-	 * Constructs a communications artifacts helper for the given source file.
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
 	 *
-	 * This is a constructor for modules that do not have a 'self' account, and
-	 * will use a 'Device' account in lieu.
+	 * This constructor is intended to be used when there is no known
+	 * application account and a device account should be used instead.
 	 *
-	 * It creates a DeviceAccount instance to use as a self account.
-	 *
-	 * @param caseDb       Sleuthkit case db.
-	 * @param moduleName   Name of module using the helper.
-	 * @param srcContent   Source content being processed by the module.
+	 * @param caseDb       The case database.
+	 * @param moduleName   The name of the module creating the artifacts.
+	 * @param srcContent   The source/parent content of the artifacts.
 	 * @param accountsType Account type {@link Account.Type} created by this
 	 *                     module.
-	 * @param ingestJobId  RJCTODO
+	 * @param ingestJobId  The numeric identifier of the ingest job within which
+	 *                     the artifacts are being created, may be null.
 	 *
-	 * @throws TskCoreException If there is an error creating the device
-	 *                          account.
+	 * @throws TskCoreException The exception is thrown if there is an error
+	 *                          querying the case database.
 	 */
 	public CommunicationArtifactsHelper(SleuthkitCase caseDb,
 			String moduleName, Content srcContent, Account.Type accountsType, Long ingestJobId) throws TskCoreException {
@@ -173,24 +173,27 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs a communications artifacts helper for the given source file.
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
 	 *
-	 * This constructor is for modules that have the application specific
-	 * account information for the device owner to create a 'self' account.
+	 * This constructor is intended to be used when there is sufficent
+	 * application specific account information for the device owner to create a
+	 * 'self' account.
 	 *
-	 * It creates an account instance with specified type & id, and uses it as
-	 * the self account.
-	 *
-	 * @param caseDb          Sleuthkit case db.
-	 * @param moduleName      Name of module using the helper.
-	 * @param srcContent      Source content being processed by the module.
+	 * @param caseDb          The case database.
+	 * @param moduleName      The name of the module creating the artifacts.
+	 * @param srcContent      The source/parent content of the artifacts.
 	 * @param accountsType    Account type {@link Account.Type} created by this
 	 *                        module.
 	 * @param selfAccountType Self account type to be created for this module.
 	 * @param selfAccountId	  Account unique id for the self account.
-	 * @param ingestJobId     RJCTODO
+	 * @param ingestJobId     The numeric identifier of the ingest job within
+	 *                        which the artifacts are being created, may be
+	 *                        null.
 	 *
-	 * @throws TskCoreException	If there is an error creating the self account
+	 * @throws TskCoreException The exception is thrown if there is an error
+	 *                          querying the case database.
 	 */
 	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId, Long ingestJobId) throws TskCoreException {
 
@@ -202,21 +205,21 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs a communications artifacts helper for the given source file.
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
 	 *
-	 * This is a constructor for modules that do not have a 'self' account, and
-	 * will use a 'Device' account in lieu.
+	 * This constructor is intended to be used when there is no known
+	 * application account and a device account should be used instead.
 	 *
-	 * It creates a DeviceAccount instance to use as a self account.
-	 *
-	 * @param caseDb       Sleuthkit case db.
-	 * @param moduleName   Name of module using the helper.
-	 * @param srcContent   Source content being processed by the module.
+	 * @param caseDb       The case database.
+	 * @param moduleName   The name of the module creating the artifacts.
+	 * @param srcContent   The source/parent content of the artifacts.
 	 * @param accountsType Account type {@link Account.Type} created by this
 	 *                     module.
 	 *
-	 * @throws TskCoreException If there is an error creating the device
-	 *                          account.
+	 * @throws TskCoreException The exception is thrown if there is an error
+	 *                          updating the case database.
 	 * @deprecated Use CommunicationArtifactsHelper(SleuthkitCase caseDb, String
 	 * moduleName, Content srcContent, Account.Type accountsType, Long
 	 * ingestJobId) instead.
@@ -233,23 +236,24 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs a communications artifacts helper for the given source file.
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
 	 *
-	 * This constructor is for modules that have the application specific
-	 * account information for the device owner to create a 'self' account.
+	 * This constructor is intended to be used when there is sufficent
+	 * application specific account information for the device owner to create a
+	 * 'self' account.
 	 *
-	 * It creates an account instance with specified type & id, and uses it as
-	 * the self account.
-	 *
-	 * @param caseDb          Sleuthkit case db.
-	 * @param moduleName      Name of module using the helper.
-	 * @param srcContent      Source content being processed by the module.
+	 * @param caseDb          The case database.
+	 * @param moduleName      The name of the module creating the artifacts.
+	 * @param srcContent      The source/parent content of the artifacts.
 	 * @param accountsType    Account type {@link Account.Type} created by this
 	 *                        module.
 	 * @param selfAccountType Self account type to be created for this module.
 	 * @param selfAccountId	  Account unique id for the self account.
 	 *
-	 * @throws TskCoreException	If there is an error creating the self account
+	 * @throws TskCoreException The exception is thrown if there is an error
+	 *                          updating the case database.
 	 * @deprecated Use CommunicationArtifactsHelper(SleuthkitCase caseDb, String
 	 * moduleName, Content srcContent, Account.Type accountsType, Account.Type
 	 * selfAccountType, String selfAccountId, Long ingestJobId) instead.

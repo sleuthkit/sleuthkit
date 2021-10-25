@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -126,7 +127,7 @@ public final class Blackboard {
 	 * @param artifact    The artifact.
 	 * @param moduleName  The display name of the module posting the artifact.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifact was posted.
+	 *                    the artifact was posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -145,7 +146,7 @@ public final class Blackboard {
 	 * @param artifacts   The artifacts.
 	 * @param moduleName  The display name of the module posting the artifacts.
 	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifacts were posted.
+	 *                    the artifacts were posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -1941,7 +1942,7 @@ public final class Blackboard {
 		 * @param moduleName  The display name of the module posting the
 		 *                    artifacts.
 		 * @param ingestJobId The numeric identifier of the ingest job within
-		 *                    which the artifacts were posted.
+		 *                    which the artifacts were posted, may be null.
 		 */
 		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
@@ -2008,8 +2009,8 @@ public final class Blackboard {
 		 *
 		 * @return The ingest job ID, may be null.
 		 */
-		public Long getIngestJobId() {
-			return ingestJobId;
+		public Optional<Long> getIngestJobId() {
+			return Optional.fromNullable(ingestJobId);
 		}
 
 	}
