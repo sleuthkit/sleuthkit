@@ -202,6 +202,69 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
+	 * Constructs a communications artifacts helper for the given source file.
+	 *
+	 * This is a constructor for modules that do not have a 'self' account, and
+	 * will use a 'Device' account in lieu.
+	 *
+	 * It creates a DeviceAccount instance to use as a self account.
+	 *
+	 * @param caseDb       Sleuthkit case db.
+	 * @param moduleName   Name of module using the helper.
+	 * @param srcContent   Source content being processed by the module.
+	 * @param accountsType Account type {@link Account.Type} created by this
+	 *                     module.
+	 *
+	 * @throws TskCoreException If there is an error creating the device
+	 *                          account.
+	 * @deprecated Use CommunicationArtifactsHelper(SleuthkitCase caseDb, String
+	 * moduleName, Content srcContent, Account.Type accountsType, Long
+	 * ingestJobId) instead.
+	 */
+	@Deprecated
+	public CommunicationArtifactsHelper(SleuthkitCase caseDb,
+			String moduleName, Content srcContent, Account.Type accountsType) throws TskCoreException {
+
+		super(caseDb, moduleName, srcContent, null);
+
+		this.moduleAccountsType = accountsType;
+		this.selfAccountType = Account.Type.DEVICE;
+		this.selfAccountId = ((DataSource) getContent().getDataSource()).getDeviceId();
+	}
+
+	/**
+	 * Constructs a communications artifacts helper for the given source file.
+	 *
+	 * This constructor is for modules that have the application specific
+	 * account information for the device owner to create a 'self' account.
+	 *
+	 * It creates an account instance with specified type & id, and uses it as
+	 * the self account.
+	 *
+	 * @param caseDb          Sleuthkit case db.
+	 * @param moduleName      Name of module using the helper.
+	 * @param srcContent      Source content being processed by the module.
+	 * @param accountsType    Account type {@link Account.Type} created by this
+	 *                        module.
+	 * @param selfAccountType Self account type to be created for this module.
+	 * @param selfAccountId	  Account unique id for the self account.
+	 *
+	 * @throws TskCoreException	If there is an error creating the self account
+	 * @deprecated Use CommunicationArtifactsHelper(SleuthkitCase caseDb, String
+	 * moduleName, Content srcContent, Account.Type accountsType, Account.Type
+	 * selfAccountType, String selfAccountId, Long ingestJobId) instead.
+	 */
+	@Deprecated
+	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId) throws TskCoreException {
+
+		super(caseDb, moduleName, srcContent, null);
+
+		this.moduleAccountsType = accountsType;
+		this.selfAccountType = selfAccountType;
+		this.selfAccountId = selfAccountId;
+	}
+
+	/**
 	 * Creates and adds a TSK_CONTACT artifact to the case, with specified
 	 * attributes. Also creates an account instance of specified type for the
 	 * contact with the specified ID.
