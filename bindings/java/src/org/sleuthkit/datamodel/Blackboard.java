@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -2010,7 +2010,7 @@ public final class Blackboard {
 		 * @return The ingest job ID, may be null.
 		 */
 		public Optional<Long> getIngestJobId() {
-			return Optional.fromNullable(ingestJobId);
+			return Optional.ofNullable(ingestJobId);
 		}
 
 	}
