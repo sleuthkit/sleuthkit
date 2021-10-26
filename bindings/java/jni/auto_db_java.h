@@ -205,6 +205,7 @@ class TskAutoDbJava :public TskAuto {
     TSK_RETVAL_ENUM addUnallocVsSpaceToDb(size_t & numVsP);
     TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
     TSK_RETVAL_ENUM addUnallocSpaceToDb();
+    TSK_RETVAL_ENUM addUnallocBlockFileInChunks(uint64_t byteStart, TSK_OFF_T totalSize, int64_t parentObjId, int64_t dataSourceObjId);
 
     // JNI methods
     TSK_RETVAL_ENUM addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,

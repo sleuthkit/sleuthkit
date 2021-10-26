@@ -86,7 +86,7 @@ public final class CommunicationsManager {
 	private void initAccountTypes() throws TskCoreException {
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection();
-			Statement statement = connection.createStatement();) {
+				Statement statement = connection.createStatement();) {
 			// Read the table
 			int count = readAccountTypes();
 			if (0 == count) {
@@ -133,7 +133,7 @@ public final class CommunicationsManager {
 		Statement statement = null;
 		ResultSet resultSet = null;
 		int count = 0;
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try {
 			connection = db.getConnection();
@@ -296,9 +296,9 @@ public final class CommunicationsManager {
 		Account account = null;
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
-			Statement s = connection.createStatement();
-			ResultSet rs = connection.executeQuery(s, "SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
-					+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'");) { //NON-NLS
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, "SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
+						+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'");) { //NON-NLS
 
 			if (rs.next()) {
 				account = new Account(rs.getInt("account_id"), accountType,
@@ -501,7 +501,7 @@ public final class CommunicationsManager {
 			);
 
 			accountArtifact = sourceFile.newDataArtifact(ACCOUNT_TYPE, attributes);
-			
+
 			try {
 				db.getBlackboard().postArtifact(accountArtifact, moduleName);
 			} catch (BlackboardException ex) {
@@ -526,36 +526,38 @@ public final class CommunicationsManager {
 	 */
 	private BlackboardArtifact getAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, Content sourceFile) throws TskCoreException {
 		BlackboardArtifact accountArtifact = null;
-		
+
 		String queryStr = "SELECT artifacts.artifact_id AS artifact_id,"
-			+ " artifacts.obj_id AS obj_id,"
-			+ " artifacts.artifact_obj_id AS artifact_obj_id,"
-			+ " artifacts.data_source_obj_id AS data_source_obj_id,"
-			+ " artifacts.artifact_type_id AS artifact_type_id,"
-			+ " artifacts.review_status_id AS review_status_id"
-			+ " FROM blackboard_artifacts AS artifacts"
-			+ "	JOIN blackboard_attributes AS attr_account_type"
-			+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
-			+ " JOIN blackboard_attributes AS attr_account_id"
-			+ "		ON artifacts.artifact_id = attr_account_id.artifact_id"
-			+ "		AND attr_account_id.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID()
-			+ "	    AND attr_account_id.value_text = '" + accountUniqueID + "'"
-			+ " WHERE artifacts.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()
-			+ " AND attr_account_type.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
-			+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"
-			+ " AND artifacts.obj_id = " + sourceFile.getId(); //NON-NLS
-		
+				+ " artifacts.obj_id AS obj_id,"
+				+ " artifacts.artifact_obj_id AS artifact_obj_id,"
+				+ " artifacts.data_source_obj_id AS data_source_obj_id,"
+				+ " artifacts.artifact_type_id AS artifact_type_id,"
+				+ " artifacts.review_status_id AS review_status_id,"
+				+ " tsk_data_artifacts.os_account_obj_id AS os_account_obj_id"
+				+ " FROM blackboard_artifacts AS artifacts"
+				+ "	JOIN blackboard_attributes AS attr_account_type"
+				+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
+				+ " JOIN blackboard_attributes AS attr_account_id"
+				+ "		ON artifacts.artifact_id = attr_account_id.artifact_id"
+				+ "		AND attr_account_id.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID()
+				+ "	    AND attr_account_id.value_text = '" + accountUniqueID + "'"
+				+ " LEFT JOIN tsk_data_artifacts ON tsk_data_artifacts.artifact_obj_id = artifacts.artifact_obj_id"
+				+ " WHERE artifacts.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()
+				+ " AND attr_account_type.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
+				+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"
+				+ " AND artifacts.obj_id = " + sourceFile.getId(); //NON-NLS
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
-			Statement s = connection.createStatement();
-			ResultSet rs = connection.executeQuery(s, queryStr);) { //NON-NLS
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryStr);) { //NON-NLS
 			if (rs.next()) {
-				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
+				BlackboardArtifact.Type bbartType = db.getBlackboard().getArtifactType(rs.getInt("artifact_type_id"));
 
-				accountArtifact = new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+				accountArtifact = new DataArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
 						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")), rs.getLong("os_account_obj_id"), false);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account", ex);
@@ -583,8 +585,8 @@ public final class CommunicationsManager {
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
-			Statement s = connection.createStatement();
-			ResultSet rs = connection.executeQuery(s, "SELECT account_type_id, type_name, display_name FROM account_types WHERE type_name = '" + accountTypeName + "'");) { //NON-NLS
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, "SELECT account_type_id, type_name, display_name FROM account_types WHERE type_name = '" + accountTypeName + "'");) { //NON-NLS
 			Account.Type accountType = null;
 			if (rs.next()) {
 				accountType = new Account.Type(accountTypeName, rs.getString("display_name"));
@@ -779,13 +781,13 @@ public final class CommunicationsManager {
 				+ "		accounts2.account_id, "
 				+ "		account_types2.type_name, "
 				+ "		account_types2.display_name";
-		
+
 		Map<AccountPair, Long> results = new HashMap<AccountPair, Long>();
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
-			Statement s = connection.createStatement();
-			ResultSet rs = connection.executeQuery(s, queryString);) { //NON-NLS
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString);) { //NON-NLS
 
 			while (rs.next()) {
 				//make account 1
@@ -856,13 +858,13 @@ public final class CommunicationsManager {
 		}
 
 		String queryStr
-			= "SELECT count(DISTINCT relationships.relationship_source_obj_id) as count "
-			+ "	FROM" + innerQuery
-			+ " WHERE relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " )"
-			+ " AND ( relationships.account1_id = " + account_id
-			+ "      OR  relationships.account2_id = " + account_id + " )"
-			+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL);
-		
+				= "SELECT count(DISTINCT relationships.relationship_source_obj_id) as count "
+				+ "	FROM" + innerQuery
+				+ " WHERE relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " )"
+				+ " AND ( relationships.account1_id = " + account_id
+				+ "      OR  relationships.account2_id = " + account_id + " )"
+				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL);
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
 				Statement s = connection.createStatement();
@@ -899,7 +901,7 @@ public final class CommunicationsManager {
 			return Collections.emptySet();
 		}
 
-		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
+		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<>();
 		for (AccountDeviceInstance accountDeviceInstance : accountDeviceInstanceList) {
 			long accountID = accountDeviceInstance.getAccount().getAccountID();
 			List<Long> dataSourceObjIds = db.getDataSourceObjIds(accountDeviceInstance.getDeviceId());
@@ -907,11 +909,11 @@ public final class CommunicationsManager {
 			if (accountIdToDatasourceObjIdMap.containsKey(accountID)) {
 				accountIdToDatasourceObjIdMap.get(accountID).addAll(dataSourceObjIds);
 			} else {
-				accountIdToDatasourceObjIdMap.put(accountID, new HashSet<Long>(dataSourceObjIds));
+				accountIdToDatasourceObjIdMap.put(accountID, new HashSet<>(dataSourceObjIds));
 			}
 		}
 
-		List<String> adiSQLClauses = new ArrayList<String>();
+		List<String> adiSQLClauses = new ArrayList<>();
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
 			final Long accountID = entry.getKey();
 			String datasourceObjIdsCSV = StringUtils.buildCSVString(entry.getValue());
@@ -938,38 +940,30 @@ public final class CommunicationsManager {
 		if (!limitStr.isEmpty()) {
 			limitQuery = "(SELECT * FROM account_relationships as relationships " + limitStr + ") as relationships";
 		}
-		
-		String queryStr
-			= "SELECT DISTINCT artifacts.artifact_id AS artifact_id,"
-			+ " artifacts.obj_id AS obj_id,"
-			+ " artifacts.artifact_obj_id AS artifact_obj_id,"
-			+ " artifacts.data_source_obj_id AS data_source_obj_id, "
-			+ " artifacts.artifact_type_id AS artifact_type_id, "
-			+ " artifacts.review_status_id AS review_status_id  "
-			+ " FROM blackboard_artifacts as artifacts"
-			+ " JOIN " + limitQuery
-			+ "	ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
-			// append sql to restrict search to specified account device instances 
-			+ " WHERE (" + adiSQLClause + " )"
-			// plus other filters
-			+ (filterSQL.isEmpty() ? "" : " AND (" + filterSQL + " )");
 
-		
+		String queryStr
+				= "SELECT DISTINCT artifacts.artifact_id AS artifact_id,"
+				+ " artifacts.obj_id AS obj_id,"
+				+ " artifacts.artifact_obj_id AS artifact_obj_id,"
+				+ " artifacts.data_source_obj_id AS data_source_obj_id, "
+				+ " artifacts.artifact_type_id AS artifact_type_id, "
+				+ " artifacts.review_status_id AS review_status_id,"
+				+ " tsk_data_artifacts.os_account_obj_id as os_account_obj_id"
+				+ " FROM blackboard_artifacts as artifacts"
+				+ " JOIN " + limitQuery
+				+ "	ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+				+ " LEFT JOIN tsk_data_artifacts ON artifacts.artifact_obj_id = tsk_data_artifacts.artifact_obj_id"
+				// append sql to restrict search to specified account device instances 
+				+ " WHERE (" + adiSQLClause + " )"
+				// plus other filters
+				+ (filterSQL.isEmpty() ? "" : " AND (" + filterSQL + " )");
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryStr);) { //NON-NLS
-			Set<Content> relationshipSources = new HashSet<Content>();
-			while (rs.next()) {
-				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				relationshipSources.add(new BlackboardArtifact(db, rs.getLong("artifact_id"),
-						rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						bbartType.getTypeID(),
-						bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-			}
-
+			Set<Content> relationshipSources = new HashSet<>();
+			relationshipSources.addAll(getDataArtifactsFromResult(rs));
 			return relationshipSources;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships for account. " + ex.getMessage(), ex);
@@ -1101,7 +1095,7 @@ public final class CommunicationsManager {
 	public List<Content> getRelationshipSources(AccountDeviceInstance account1, AccountDeviceInstance account2, CommunicationsFilter filter) throws TskCoreException {
 
 		//set up applicable filters 
-		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+		Set<String> applicableFilters = new HashSet<>(Arrays.asList(
 				CommunicationsFilter.DateRangeFilter.class.getName(),
 				CommunicationsFilter.DeviceFilter.class.getName(),
 				CommunicationsFilter.RelationshipTypeFilter.class.getName()
@@ -1119,10 +1113,12 @@ public final class CommunicationsManager {
 				+ "		artifacts.artifact_obj_id AS artifact_obj_id,"
 				+ "		artifacts.data_source_obj_id AS data_source_obj_id,"
 				+ "		artifacts.artifact_type_id AS artifact_type_id,"
-				+ "		artifacts.review_status_id AS review_status_id"
+				+ "		artifacts.review_status_id AS review_status_id,"
+				+ "     tsk_data_artifacts.os_account_obj_id AS os_account_obj_id"
 				+ " FROM blackboard_artifacts AS artifacts"
 				+ "	JOIN " + limitQuery
 				+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+				+ " LEFT JOIN tsk_data_artifacts ON artifacts.artifact_obj_id = tsk_data_artifacts.artifact_obj_id"
 				+ " WHERE (( relationships.account1_id = " + account1.getAccount().getAccountID()
 				+ " AND relationships.account2_id  = " + account2.getAccount().getAccountID()
 				+ " ) OR (	  relationships.account2_id = " + account1.getAccount().getAccountID()
@@ -1134,15 +1130,8 @@ public final class CommunicationsManager {
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString);) {
 
-			ArrayList<Content> artifacts = new ArrayList<Content>();
-			while (rs.next()) {
-				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-			}
-
+			ArrayList<Content> artifacts = new ArrayList<>();
+			artifacts.addAll(getDataArtifactsFromResult(rs));
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships between accounts. " + ex.getMessage(), ex);
@@ -1163,7 +1152,7 @@ public final class CommunicationsManager {
 	 */
 	public List<AccountFileInstance> getAccountFileInstances(Account account) throws TskCoreException {
 		List<AccountFileInstance> accountFileInstanceList = new ArrayList<>();
-
+		@SuppressWarnings("deprecation")
 		List<BlackboardArtifact> artifactList = getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, account.getTypeSpecificID());
 
 		if (artifactList != null && !artifactList.isEmpty()) {
@@ -1188,10 +1177,10 @@ public final class CommunicationsManager {
 	 * @throws TskCoreException
 	 */
 	public List<Account.Type> getAccountTypesInUse() throws TskCoreException {
-		
+
 		String query = "SELECT DISTINCT accounts.account_type_id, type_name, display_name FROM accounts JOIN account_types ON accounts.account_type_id = account_types.account_type_id";
 		List<Account.Type> inUseAccounts = new ArrayList<>();
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
 				Statement s = connection.createStatement();
@@ -1384,5 +1373,32 @@ public final class CommunicationsManager {
 		}
 
 		return limitStr;
+	}
+
+	/**
+	 * A helper method that will return a set of BlackboardArtifact objects for
+	 * the given ResultSet.
+	 *
+	 * @param resultSet	The results of executing a query.
+	 *
+	 * @return A list of BlackboardArtifact objects.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private List<BlackboardArtifact> getDataArtifactsFromResult(ResultSet resultSet) throws SQLException, TskCoreException {
+		List<BlackboardArtifact> artifacts = new ArrayList<>();
+		while (resultSet.next()) {
+			BlackboardArtifact.Type bbartType = db.getBlackboard().getArtifactType(resultSet.getInt("artifact_type_id"));
+			artifacts.add(new DataArtifact(db, resultSet.getLong("artifact_id"),
+					resultSet.getLong("obj_id"), resultSet.getLong("artifact_obj_id"),
+					resultSet.getObject("data_source_obj_id") != null ? resultSet.getLong("data_source_obj_id") : null,
+					bbartType.getTypeID(),
+					bbartType.getTypeName(), bbartType.getDisplayName(),
+					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")),
+					resultSet.getLong("os_account_obj_id"), false));
+		}
+
+		return artifacts;
 	}
 }

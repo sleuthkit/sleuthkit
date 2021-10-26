@@ -314,7 +314,7 @@ public class Report implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifacts(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifacts(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
@@ -380,7 +380,7 @@ public class Report implements Content {
 
 	@Override
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
-		return getArtifactsCount(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifactsCount(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override

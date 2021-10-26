@@ -29,7 +29,7 @@ import java.util.Set;
  */
 public class TskData {
 
-	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private final static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * The type of the file system file, as reported in the name structure of
@@ -625,22 +625,24 @@ public class TskData {
 	 */
 	public enum ObjectType {
 
-		IMG(0), ///< Disk Image - see tsk_image_info for more details
-		VS(1), ///< Volume System - see tsk_vs_info for more details
-		VOL(2), ///< Volume - see tsk_vs_parts for more details
-		FS(3), ///< File System - see tsk_fs_info for more details
-		ABSTRACTFILE(4), ///< File - see tsk_files for more details
-		ARTIFACT(5),	/// Artifact - see blackboard_artifacts for more details
-		REPORT(6),	///< Report - see reports for more details
-		POOL(7),	///< Pool
-		OS_ACCOUNT(8), ///< OS Account - see tsk_os_accounts for more details
-		HOST_ADDRESS(9), ///< Host Address - see tsk_host_addresses for more details
-		UNSUPPORTED(-1) ///< Unsupported type
+		IMG(0, bundle.getString("TskData.ObjectType.IMG.name")), ///< Disk Image - see tsk_image_info for more details
+		VS(1, bundle.getString("TskData.ObjectType.VS.name")), ///< Volume System - see tsk_vs_info for more details
+		VOL(2, bundle.getString("TskData.ObjectType.VOL.name")), ///< Volume - see tsk_vs_parts for more details
+		FS(3, bundle.getString("TskData.ObjectType.FS.name")), ///< File System - see tsk_fs_info for more details
+		ABSTRACTFILE(4, bundle.getString("TskData.ObjectType.AbstractFile.name")), ///< File - see tsk_files for more details
+		ARTIFACT(5, bundle.getString("TskData.ObjectType.Artifact.name")),	/// Artifact - see blackboard_artifacts for more details
+		REPORT(6, bundle.getString("TskData.ObjectType.Report.name")),	///< Report - see reports for more details
+		POOL(7, bundle.getString("TskData.ObjectType.Pool.name")),	///< Pool
+		OS_ACCOUNT(8, bundle.getString("TskData.ObjectType.OsAccount.name")), ///< OS Account - see tsk_os_accounts for more details
+		HOST_ADDRESS(9, bundle.getString("TskData.ObjectType.HostAddress.name")), ///< Host Address - see tsk_host_addresses for more details
+		UNSUPPORTED(-1, bundle.getString("TskData.ObjectType.Unsupported.name")) ///< Unsupported type
 		; 
 		private final short objectType;
+		private final String displayName;
 
-		private ObjectType(int objectType) {
+		private ObjectType(int objectType, String displayName) {
 			this.objectType = (short) objectType;
+			this.displayName = displayName;
 		}
 
 		/**
@@ -650,6 +652,11 @@ public class TskData {
 		 */
 		public short getObjectType() {
 			return objectType;
+		}
+		
+		@Override
+		public String toString() {
+			return displayName;
 		}
 
 		/**

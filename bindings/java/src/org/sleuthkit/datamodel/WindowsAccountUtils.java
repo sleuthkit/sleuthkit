@@ -18,7 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -36,12 +40,14 @@ final class WindowsAccountUtils {
 	
 	final static String SPECIAL_WINDOWS_BACK_UP_POSTFIX = ".bak";
 	
+	// Windows sometimes uses a special NULL sid, when a users actual SID is unknown.
+	// Our SID comparisons should ignore it, and treat it as a null/blank. 
+	final static String WINDOWS_NULL_SID = "S-1-0-0";
 	
 	// Windows uses SIDs for groups as well as users. 
 	// We dont want to create "User" account for group SIDs.
 	// The lists here help us identify and weed out group SIDs when creating accounts.
 	private static final Set<String> GROUP_SIDS = ImmutableSet.of(
-			"S-1-0-0",	// Null SID
 			"S-1-1-0",	// Everyone
 			"S-1-2-0",	// Local - anyone who has logged on locally
 			"S-1-2-1",	// Console Logon
@@ -72,7 +78,8 @@ final class WindowsAccountUtils {
 	
 	// Any SIDs with the following prefixes are group SID and should be excluded.
 	private static final Set<String> GROUP_SID_PREFIX = ImmutableSet.of(
-			"S-1-5-32"		// Builtin
+			"S-1-5-32",		// Builtin
+			"S-1-5-87"		// Task ID prefix
 			
 	);
 	
@@ -110,20 +117,21 @@ final class WindowsAccountUtils {
 	
 	// Some windows SID indicate special account.
 	// These should be handled differently from regular user accounts.
-	private static final Set<String> SPECIAL_SIDS = ImmutableSet.of(
-			"S-1-5-18",	// LOCAL_SYSTEM_ACCOUNT
-			"S-1-5-19", // LOCAL_SERVICE_ACCOUNT
-			"S-1-5-20" // NETWORK_SERVICE_ACCOUNT
-	);
-	private static final Set<String> SPECIAL_SID_PREFIXES = ImmutableSet.of(
-			"S-1-5-80",	// Virtual Service accounts
-			"S-1-5-82", // AppPoolIdentity Virtual accounts. 
-			"S-1-5-83", // Virtual Machine  Virtual Accounts.
-			"S-1-5-90", // Windows Manager Virtual Accounts. 
-			"S-1-5-96" // Font Drive Host Virtual Accounts.
-	);
-	
-	
+	private static final Map<String, String> SPECIAL_SIDS_MAP =  ImmutableMap.<String, String>builder() 
+			.put("S-1-5-18", "Local System Account")
+			.put("S-1-5-19", "Local Service Account")
+			.put("S-1-5-20", "Network Service Account")
+			.build();
+		
+	private static final Map<String, String> SPECIAL_SID_PREFIXES_MAP = ImmutableMap.<String, String>builder() 
+			.put("S-1-5-80", "Service Virtual Account")
+			.put("S-1-5-82", "IIS AppPool Virtual Account")
+			.put("S-1-5-83", "Virtual Machine Virtual Account")
+			.put("S-1-5-90", "Window Manager Virtual Account")
+			.put("S-1-5-94", "WinRM Virtual accountt")
+			.put("S-1-5-96", "Font Driver Host Virtual Account")
+			.build();
+				
 	/**
 	 * Checks if the given SID is a special Windows SID.
 	 * 
@@ -134,17 +142,47 @@ final class WindowsAccountUtils {
 	static boolean isWindowsSpecialSid(String sid) {
 		String tempSID = stripWindowsBackupPostfix(sid);
 		
-		if (SPECIAL_SIDS.contains(tempSID)) {
+		if (SPECIAL_SIDS_MAP.containsKey(tempSID)) {
 			return true;
 		}
-		for (String specialPrefix: SPECIAL_SID_PREFIXES) {
+		for (String specialPrefix: SPECIAL_SID_PREFIXES_MAP.keySet()) {
 			if (tempSID.startsWith(specialPrefix)) {
 				return true;
 			}
 		}
+		
+		// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
+		tempSID = tempSID.replaceFirst(DOMAIN_SID_PREFIX + "-", "");
+		String subAuthStr = tempSID.substring(0, tempSID.indexOf('-'));
+		Integer subAuth = Optional.ofNullable(subAuthStr).map(Integer::valueOf).orElse(0);
+		if (subAuth >= 80 && subAuth <= 111) {
+			return true;
+		}
+		
+		
 		return false;
 	}
 	
+	/**
+	 * Get the name for the given special Windows SID.
+	 * 
+	 * @param sid SID to check.
+	 * 
+	 * @return Name for Windows special SID, an empty string if the SID is not a known special SID. 
+	 */
+	static String getWindowsSpecialSidName(String sid) {
+		String tempSID = stripWindowsBackupPostfix(sid);
+		
+		if (SPECIAL_SIDS_MAP.containsKey(tempSID)) {
+			return SPECIAL_SIDS_MAP.get(tempSID);
+		}
+		for (Entry<String, String> specialPrefixEntry: SPECIAL_SID_PREFIXES_MAP.entrySet()) {
+			if (tempSID.startsWith(specialPrefixEntry.getKey())) {
+				return specialPrefixEntry.getValue();
+			}
+		}
+		return "";
+	}
 	
 	/**
 	 * Checks if the given SID is a user SID.

@@ -41,11 +41,11 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardAttribute.Type WAYPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS);
 	private static final BlackboardAttribute.Type TRACKPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS);
 	private static final BlackboardAttribute.Type AREAPOINTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_AREAPOINTS);
-	
+
 	private static final BlackboardArtifact.Type GPS_TRACK_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
 	private static final BlackboardArtifact.Type GPS_ROUTE_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
 	private static final BlackboardArtifact.Type GPS_AREA_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA);
-	
+
 	private final String programName;
 
 	/**
@@ -171,7 +171,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 		Content content = getContent();
 		BlackboardArtifact artifact = content.newDataArtifact(GPS_ROUTE_TYPE, attributes);
-		
+
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
 		return artifact;
@@ -219,7 +219,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 
 		Content content = getContent();
 		BlackboardArtifact artifact = content.newDataArtifact(GPS_AREA_TYPE, attributes);
-		
+
 		getSleuthkitCase().getBlackboard().postArtifact(artifact, getModuleName());
 
 		return artifact;
