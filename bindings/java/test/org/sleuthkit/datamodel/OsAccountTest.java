@@ -613,6 +613,15 @@ public class OsAccountTest {
 			assertEquals(osAccount11.getLoginName().orElse("").equalsIgnoreCase(loginName1), true);	
 			
 			
+			// try and get the account with null sid & login name.  It should use the login name to find the account
+			Optional<OsAccount> osAccount21 =  caseDB.getOsAccountManager().getWindowsOsAccount("S-1-0-0", loginName1, realmName1, host1);
+			
+			assertTrue(osAccount21.isPresent());
+			assertEquals(osAccount21.get().getAddr().orElse("").equalsIgnoreCase(ownerUid1), true);	
+			assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount21.get().getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName1), true);
+			assertEquals(osAccount21.get().getLoginName().orElse("").equalsIgnoreCase(loginName1), true);	
+			
+			
 			// Let's update osAccount1
 			String fullName1 = "Johnny Depp";
 			Long creationTime1 = 1611858618L;
@@ -742,7 +751,13 @@ public class OsAccountTest {
 				String specialSid3 = "S-1-5-90-0-2";
 				String specialSid4 = "S-1-5-96-0-3";
 				
-
+				// All accounts in the range S-1-5-80 to S-1-5-111 are special and should be created with SPECIAL_WINDOWS_REALM_ADDR
+				String specialSid5 = "S-1-5-99-0-3";
+				String specialSid6 = "S-1-5-100-0-3";
+				String specialSid7 = "S-1-5-111-0-3";
+				String specialSid8 = "S-1-5-112-0-3"; // NOT SPECIAL SID
+				String specialSid9 = "S-1-5-79-0-3"; // NOT SPECIAL SID
+				
 				OsAccount specialAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid2, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount3 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid3, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
@@ -755,7 +770,18 @@ public class OsAccountTest {
 				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
 				
 				
-			}
+				OsAccount specialAccount5 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid5, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount6 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid6, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount7 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid7, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount8 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid8, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				OsAccount specialAccount9 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid9, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
+				
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount5.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount6.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount7.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount8.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), false);  // specialSid8 is NOT special.
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount9.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), false);  // specialSid9 is NOT special.
+		}
 			
 			// TEST: create accounts with a invalid user SIDs - these should generate an exception
 			{
@@ -796,6 +822,34 @@ public class OsAccountTest {
 					// continue
 				}
 
+				try {
+					// try to create account with NULL SID and null name - should fail. 
+					String sid4 = "S-1-0-0"; //  NULL SID
+					OsAccount osAccount4 = caseDB.getOsAccountManager().newWindowsOsAccount(sid4, null, realmName5, host5, OsAccountRealm.RealmScope.UNKNOWN);
+					
+					// above should raise an exception
+					assertEquals(true, false);
+				}
+				catch (TskCoreException ex) {
+					// continue
+				}
+				
+				try {
+					// try to create an account with "NULL SID" and valid login name. Should throw away the NULL SID And create account with login name.
+					String sid5 = "S-1-0-0"; //  NULL SID
+					String loginName5 = "login5";
+					OsAccount osAccount5 = caseDB.getOsAccountManager().newWindowsOsAccount(sid5, loginName5, realmName5, host5, OsAccountRealm.RealmScope.UNKNOWN);
+					
+					assertFalse(osAccount5.getAddr().isPresent());	// should NOT have a SID
+					assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount5.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName5), true);
+					assertEquals(osAccount5.getLoginName().orElse("").equalsIgnoreCase(loginName5), true);	
+			
+				}
+				catch (OsAccountManager.NotUserSIDException ex) {
+					// DO NOT EXPECT this exception to be thrown here. 
+					assertEquals(true, false);
+				}
+				
 			}
 		}
 		
@@ -819,11 +873,34 @@ public class OsAccountTest {
 		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, null, realmName1, host1, OsAccountRealm.RealmScope.LOCAL);
 
 		// Test: add an instance
-		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.LAUNCHED);
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.ACCESSED);
+		
+		// Verify 
+		List<OsAccountInstance> account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.ACCESSED.getId());
 
-		// Test: add an existing instance - should be a no-op.
-		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.LAUNCHED);
-
+		// Test: add an instance that already exists - with less significant instance type - this should be a no op.
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.REFERENCED); // since ACCESSED > REFERENCED - this should do nothing
+		account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.ACCESSED.getId());
+		
+		
+		// Test: add an instance that already exists - with more significant instance type - this update the existing instance.
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.LAUNCHED); // since LAUNCHED > ACCESSED - this should update the existing instance
+		account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED.getId());
+		
+	
+		// Test: add an instance that already exists - with less significant instance type - should do nothing
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.REFERENCED); 
+		caseDB.getOsAccountManager().newOsAccountInstance(osAccount1, image, OsAccountInstance.OsAccountInstanceType.ACCESSED); 
+		account1Instances = caseDB.getOsAccountManager().getOsAccountInstances(osAccount1);
+		assertEquals(account1Instances.size(), 1);
+		assertEquals(account1Instances.get(0).getInstanceType().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED.getId());
+		
 		// Test: create account instance on a new host
 		String hostname2 = "host2222";
 		Host host2 = caseDB.getHostManager().newHost(hostname2);
@@ -835,11 +912,11 @@ public class OsAccountTest {
 		
 		// TBD: perhaps add some files to the case and then use one of the files as the source of attributes.
 		
-		OsAccountAttribute attrib1 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
+		OsAccountAttribute attrib1 = osAccount1.new OsAccountAttribute(caseDB.getBlackboard().getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
 		accountAttributes.add(attrib1);
 		
 		String hint = "HINT";
-		OsAccountAttribute attrib2 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
+		OsAccountAttribute attrib2 = osAccount1.new OsAccountAttribute(caseDB.getBlackboard().getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
 		accountAttributes.add(attrib2);
 		
 		// add attributes to account.

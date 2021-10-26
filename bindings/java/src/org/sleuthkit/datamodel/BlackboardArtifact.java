@@ -38,7 +38,6 @@ import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
  * An artifact that has been posted to the blackboard. Artifacts store analysis
@@ -51,7 +50,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
  * IMPORTANT NOTE: No more than one attribute of a given type should be added to
  * an artifact. It is undefined about which will be used.
  */
-public class BlackboardArtifact implements Content {
+public abstract class BlackboardArtifact implements Content {
 
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final long artifactId;
@@ -190,18 +189,20 @@ public class BlackboardArtifact implements Content {
 	public int getArtifactTypeID() {
 		return this.artifactTypeId;
 	}
-	
+
 	/**
 	 * Gets the artifact type for this artifact.
-	 * 
+	 *
 	 * @return The artifact type.
+	 * 
+	 * @throws TskCoreException
 	 */
 	public BlackboardArtifact.Type getType() throws TskCoreException {
 		BlackboardArtifact.Type standardTypesValue = BlackboardArtifact.Type.STANDARD_TYPES.get(getArtifactTypeID());
 		if (standardTypesValue != null) {
 			return standardTypesValue;
 		} else {
-			return getSleuthkitCase().getArtifactType(getArtifactTypeID());
+			return getSleuthkitCase().getBlackboard().getArtifactType(getArtifactTypeID());
 		}
 	}
 
@@ -233,44 +234,111 @@ public class BlackboardArtifact implements Content {
 	public String getShortDescription() throws TskCoreException {
 		BlackboardAttribute attr = null;
 		StringBuilder shortDescription = new StringBuilder("");
-		switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
-			case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
-			case TSK_WEB_COOKIE:
-			case TSK_WEB_DOWNLOAD:
-			case TSK_WEB_HISTORY:
-				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
-				break;
-			case TSK_KEYWORD_HIT:
-				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
-				break;
-			case TSK_DEVICE_ATTACHED:
-				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
-				break;
-			case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
-			case TSK_MESSAGE:
-			case TSK_CALLLOG:
-				//get the first of these attributes which exists and is non null
-				final ATTRIBUTE_TYPE[] typesThatCanHaveName = {ATTRIBUTE_TYPE.TSK_NAME,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE,
-					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE,
-					ATTRIBUTE_TYPE.TSK_EMAIL,
-					ATTRIBUTE_TYPE.TSK_EMAIL_FROM,
-					ATTRIBUTE_TYPE.TSK_EMAIL_TO,
-					ATTRIBUTE_TYPE.TSK_EMAIL_HOME,
-					ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE}; //in the order we want to use them
-				for (ATTRIBUTE_TYPE t : typesThatCanHaveName) {
-					attr = getAttribute(new BlackboardAttribute.Type(t));
-					if (attr != null && !attr.getDisplayString().isEmpty()) {
-						break;
+		if (BlackboardArtifact.Type.STANDARD_TYPES.get(artifactTypeId) != null) {
+			switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
+				case TSK_WIFI_NETWORK_ADAPTER:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_MAC_ADDRESS));
+					break;
+				case TSK_WIFI_NETWORK:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SSID));
+					break;
+				case TSK_REMOTE_DRIVE:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_REMOTE_PATH));
+					break;
+				case TSK_SERVICE_ACCOUNT:
+				case TSK_SCREEN_SHOTS:
+				case TSK_DELETED_PROG:
+				case TSK_METADATA:
+				case TSK_OS_INFO:
+				case TSK_PROG_NOTIFICATIONS:
+				case TSK_PROG_RUN:
+				case TSK_RECENT_OBJECT:
+				case TSK_USER_DEVICE_EVENT:
+				case TSK_WEB_SEARCH_QUERY:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PROG_NAME));
+					break;
+				case TSK_BLUETOOTH_PAIRING:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_NAME));
+					break;
+				case TSK_ACCOUNT:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID));
+					if (attr == null) {
+						attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_CARD_NUMBER));
 					}
-				}
-				break;
-			default:
-				break;
+					break;
+				case TSK_WEB_CATEGORIZATION:
+				case TSK_BLUETOOTH_ADAPTER:
+				case TSK_GPS_AREA:
+				case TSK_GPS_BOOKMARK:
+				case TSK_GPS_LAST_KNOWN_LOCATION:
+				case TSK_GPS_ROUTE:
+				case TSK_GPS_SEARCH:
+				case TSK_GPS_TRACK:
+				case TSK_WEB_FORM_AUTOFILL:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME));
+					break;
+				case TSK_WEB_ACCOUNT_TYPE:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_TEXT));
+					break;
+				case TSK_HASHSET_HIT:
+				case TSK_INTERESTING_ARTIFACT_HIT:
+				case TSK_INTERESTING_FILE_HIT:
+				case TSK_YARA_HIT:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SET_NAME));
+					break;
+				case TSK_ENCRYPTION_DETECTED:
+				case TSK_ENCRYPTION_SUSPECTED:
+				case TSK_OBJECT_DETECTED:
+				case TSK_USER_CONTENT_SUSPECTED:
+				case TSK_VERIFICATION_FAILED:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_COMMENT));
+					break;
+				case TSK_DATA_SOURCE_USAGE:
+				case TSK_CALENDAR_ENTRY:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DESCRIPTION));
+					break;
+				case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
+				case TSK_WEB_COOKIE:
+				case TSK_WEB_DOWNLOAD:
+				case TSK_WEB_HISTORY:
+				case TSK_WEB_CACHE:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
+					break;
+				case TSK_KEYWORD_HIT:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
+					break;
+				case TSK_DEVICE_ATTACHED:
+					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
+					break;
+				case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
+				case TSK_MESSAGE:
+				case TSK_CALLLOG:
+				case TSK_SPEED_DIAL_ENTRY:
+				case TSK_WEB_FORM_ADDRESS:
+					//get the first of these attributes which exists and is non null
+					final ATTRIBUTE_TYPE[] typesThatCanHaveName = {ATTRIBUTE_TYPE.TSK_NAME,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE,
+						ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE,
+						ATTRIBUTE_TYPE.TSK_EMAIL,
+						ATTRIBUTE_TYPE.TSK_EMAIL_FROM,
+						ATTRIBUTE_TYPE.TSK_EMAIL_TO,
+						ATTRIBUTE_TYPE.TSK_EMAIL_HOME,
+						ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE,
+						ATTRIBUTE_TYPE.TSK_LOCATION}; //in the order we want to use them
+					for (ATTRIBUTE_TYPE t : typesThatCanHaveName) {
+						attr = getAttribute(new BlackboardAttribute.Type(t));
+						if (attr != null && !attr.getDisplayString().isEmpty()) {
+							break;
+						}
+					}
+					break;
+				default:
+					break;
+			}
 		}
 		if (attr != null) {
 			shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
@@ -350,12 +418,12 @@ public class BlackboardArtifact implements Content {
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		ArrayList<BlackboardAttribute> attributes;
 		if (false == loadedCacheFromDb) {
-			attributes = getSleuthkitCase().getBlackboardAttributes(this);
+			attributes = getSleuthkitCase().getBlackboard().getBlackboardAttributes(this);
 			attrsCache.clear();
 			attrsCache.addAll(attributes);
 			loadedCacheFromDb = true;
 		} else {
-			attributes = new ArrayList<BlackboardAttribute>(attrsCache);
+			attributes = new ArrayList<>(attrsCache);
 		}
 		return attributes;
 	}
@@ -494,7 +562,7 @@ public class BlackboardArtifact implements Content {
 	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
 		return sleuthkitCase.getBlackboard().getDataArtifactsBySource(artifactObjId);
 	}
-	
+
 	@Override
 	public Score getAggregateScore() throws TskCoreException {
 		return sleuthkitCase.getScoringManager().getAggregateScore(artifactObjId);
@@ -690,7 +758,8 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
-	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis
+	 * Results.
 	 */
 	@Deprecated
 	@Override
@@ -700,9 +769,12 @@ public class BlackboardArtifact implements Content {
 
 	@Override
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		// Get the ID before starting the transaction
+		long dataSourceId = this.getDataSource().getId();
+		
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
@@ -730,12 +802,12 @@ public class BlackboardArtifact implements Content {
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
-	
+
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
-	
+
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		return newDataArtifact(artifactType, attributesList, null);
@@ -750,7 +822,8 @@ public class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
-	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis
+	 * Results.
 	 */
 	@Deprecated
 	@Override
@@ -1280,17 +1353,20 @@ public class BlackboardArtifact implements Content {
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
 		/**
-		 * Indicates that the file or artifact was previously seen in another Autopsy case.
+		 * Indicates that the file or artifact was previously seen in another
+		 * Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_SEEN = new BlackboardArtifact.Type(69, "TSK_PREVIOUSLY_SEEN", bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT);
-		
+
 		/**
-		 * Indicates that the file or artifact was previously unseen in another Autopsy case.
+		 * Indicates that the file or artifact was previously unseen in another
+		 * Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_UNSEEN = new BlackboardArtifact.Type(70, "TSK_PREVIOUSLY_UNSEEN", bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT);
-		
+
 		/**
-		 * Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
+		 * Indicates that the file or artifact was previously tagged as
+		 * "Notable" in another Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_NOTABLE = new BlackboardArtifact.Type(71, "TSK_PREVIOUSLY_NOTABLE", bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
 		
@@ -1299,8 +1375,19 @@ public class BlackboardArtifact implements Content {
 		 */
 		public static final Type TSK_MATCHING_PERSONA = new BlackboardArtifact.Type(72, "TSK_MATCHING_PERSONA", bundle.getString("BlackboardArtifact.tskMatchingPersona.text"), Category.ANALYSIS_RESULT);
 
-		
-		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
+		/*
+		 * IMPORTANT!
+		 *
+		 * Until BlackboardArtifact.ARTIFACT_TYPE is deprecated and/or removed,
+		 * new standard artifact types need to be added to both
+		 * BlackboardArtifact.ARTIFACT_TYPE and
+		 * BlackboardArtifact.Type.STANDARD_TYPES.
+		 *
+		 * Also, ensure that new types have a one line JavaDoc description and
+		 * are added to the standard artifacts catalog (artifact_catalog.dox).
+		 *
+		 */
+
 		/**
 		 * All standard artifact types with ids mapped to the type.
 		 */
@@ -1376,7 +1463,7 @@ public class BlackboardArtifact implements Content {
 		private final int typeID;
 		private final String displayName;
 		private final Category category;
-		
+
 		/**
 		 * Constructs a custom artifact type.
 		 *
@@ -1867,17 +1954,20 @@ public class BlackboardArtifact implements Content {
 		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
 				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * Indicates that the file or artifact was previously seen in another Autopsy case.
+		 * Indicates that the file or artifact was previously seen in another
+		 * Autopsy case.
 		 */
 		TSK_PREVIOUSLY_SEEN(69, "TSK_PREVIOUSLY_SEEN",
-				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),		
+				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * Indicates that the file or artifact was previously unseen in another Autopsy case.
+		 * Indicates that the file or artifact was previously unseen in another
+		 * Autopsy case.
 		 */
 		TSK_PREVIOUSLY_UNSEEN(70, "TSK_PREVIOUSLY_UNSEEN",
 				bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
+		 * Indicates that the file or artifact was previously tagged as
+		 * "Notable" in another Autopsy case.
 		 */
 		TSK_PREVIOUSLY_NOTABLE(71, "TSK_PREVIOUSLY_NOTABLE",
 				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT),
@@ -1888,12 +1978,18 @@ public class BlackboardArtifact implements Content {
 		TSK_MATCHING_PERSONA(72, "TSK_MATCHING_PERSONA",
 				bundle.getString("BlackboardArtifact.tskMatchingPersona.text"), Category.ANALYSIS_RESULT);
 
-		
 		/*
-		 * To developers: For each new artifact, ensure that: - The enum value
-		 * has 1-line JavaDoc description - The artifact catalog
-		 * (artifact_catalog.dox) is updated to reflect the attributes it uses
+		 * IMPORTANT!
+		 *
+		 * Until BlackboardArtifact.ARTIFACT_TYPE is deprecated and/or removed,
+		 * new standard artifact types need to be added to both
+		 * BlackboardArtifact.ARTIFACT_TYPE and
+		 * BlackboardArtifact.Type.STANDARD_TYPES.
+		 *
+		 * Also, ensure that new types have a one line JavaDoc description and
+		 * are added to the standard artifacts catalog (artifact_catalog.dox).
 		 */
+
 		private final String label;
 		private final int typeId;
 		private final String displayName;

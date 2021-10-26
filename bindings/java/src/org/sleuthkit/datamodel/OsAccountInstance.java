@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
@@ -165,16 +166,26 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 			return false;
 		}
 		final OsAccountInstance other = (OsAccountInstance) obj;
+		
+		if(this.instanceId != other.instanceId) {
+			return false;
+		}
+		
 		if (this.accountId != other.accountId) {
 			return false;
 		}
-
-		return this.dataSourceId != other.dataSourceId;
+		
+		if(this.instanceType != other.instanceType) {
+			return false;
+		}
+		
+		return this.dataSourceId == other.getDataSourceId();
 	}
 
 	@Override
 	public int hashCode() {
 		int hash = 7;
+		hash = 67 * hash + Objects.hashCode(this.instanceId);
 		hash = 67 * hash + Objects.hashCode(this.dataSourceId);
 		hash = 67 * hash + Objects.hashCode(this.accountId);
 		hash = 67 * hash + Objects.hashCode(this.instanceType);
@@ -186,12 +197,15 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	 * where the instance was found.
 	 *
 	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host (such as in a log file)
+	 * just a reference to it was found on the host (such as in a log file).
+	 * 
+	 * Note: lower ordinal value is more significant than higher ordinal value. 
+	 * Order of significance: LAUNCHED > ACCESSED > REFERENCED.
 	 */
 	public enum OsAccountInstanceType {
-		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user launched a program on the host
-		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")), // user accesed a resource for read/write
-		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text"));	// user was referenced, e.g. in a event log.
+		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user has interactive access or launched a program on the host
+		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")), // user accesed a resource for read/write via some service 
+		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text"));	// user was referenced in a log file, e.g. in a event log.
 
 		private final int id;
 		private final String name;
@@ -244,6 +258,19 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 				}
 			}
 			return null;
+		}
+		
+		/**
+		 * Gets account instance type enum from name.
+		 *
+		 * @param name Name to look for.
+		 *
+		 * @return Account instance type enum, null if no match is found.
+		 */
+		public static OsAccountInstanceType fromString(String name) {
+			return Arrays.stream(values())
+					.filter(val -> val.getName().equals(name))
+					.findFirst().orElse(null);
 		}
 	}
 }

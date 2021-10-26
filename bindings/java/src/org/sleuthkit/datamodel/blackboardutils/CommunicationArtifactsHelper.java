@@ -545,7 +545,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 					try {
 						recipientAccountsList.add(createAccountInstance(moduleAccountsType, recipient));
 					} catch (InvalidAccountIDException ex) {
-						LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", senderId));
+						LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", recipient));
 					}
 				}
 			}

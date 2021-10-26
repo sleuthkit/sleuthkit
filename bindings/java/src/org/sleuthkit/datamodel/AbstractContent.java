@@ -327,7 +327,7 @@ public abstract class AbstractContent implements Content {
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
 			return getGenInfoArtifact(true);
 		}
-		BlackboardArtifact.Type artifactType = db.getArtifactType(artifactTypeID);
+		BlackboardArtifact.Type artifactType = db.getBlackboard().getArtifactType(artifactTypeID);
 		switch (artifactType.getCategory()) {
 			case DATA_ARTIFACT:
 				return this.newDataArtifact(artifactType, Collections.emptyList());
@@ -411,7 +411,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifacts(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifacts(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
