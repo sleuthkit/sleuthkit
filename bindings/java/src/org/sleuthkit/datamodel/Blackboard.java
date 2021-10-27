@@ -126,8 +126,8 @@ public final class Blackboard {
 	 *
 	 * @param artifact    The artifact.
 	 * @param moduleName  The display name of the module posting the artifact.
-	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifact was posted, may be null.
+	 * @param ingestJobId The numeric identifier of the ingest job for which the
+	 *                    artifact was posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -145,8 +145,8 @@ public final class Blackboard {
 	 *
 	 * @param artifacts   The artifacts.
 	 * @param moduleName  The display name of the module posting the artifacts.
-	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifacts were posted, may be null.
+	 * @param ingestJobId The numeric identifier of the ingest job for which the
+	 *                    artifacts were posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
