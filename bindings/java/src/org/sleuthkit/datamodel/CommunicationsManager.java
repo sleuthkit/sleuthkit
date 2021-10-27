@@ -248,8 +248,8 @@ public final class CommunicationsManager {
 	 *                        address).
 	 * @param moduleName      The module creating the account.
 	 * @param sourceFile      The source file the account was found in.
-	 * @param ingestJobId     The ingest job in which the analysis was
-	 *                        performed, may be null.
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
 	 *
 	 * @return	An AccountFileInstance object.
 	 *
