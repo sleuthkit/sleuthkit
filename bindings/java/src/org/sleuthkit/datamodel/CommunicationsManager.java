@@ -514,8 +514,8 @@ public final class CommunicationsManager {
 	 * @param moduleName      The name of the module that found the account
 	 *                        instance.
 	 * @param sourceFile      The file in which the account instance was found.
-	 * @param ingestJobId     The ingest job in which the analysis was
-	 *                        performed, may be null.
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
 	 *
 	 * @return The account artifact.
 	 *
