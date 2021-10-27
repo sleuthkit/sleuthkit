@@ -77,40 +77,76 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Posts the artifact. The artifact should be complete (all attributes have
-	 * been added) before being posted. Posting the artifact includes making any
-	 * timeline events that may be derived from it, and broadcasting a
-	 * notification that the artifact is ready for further analysis.
+	 * Posts an artifact to the blackboard. The artifact should be complete (all
+	 * attributes have been added) before it is posted. Posting the artifact
+	 * triggers the creation of appropriate timeline events, if any, and
+	 * broadcast of a notification that the artifact is ready for further
+	 * analysis.
 	 *
-	 * @param artifact   The artifact to be posted.
-	 * @param moduleName The name of the module that is posting the artifacts.
+	 * @param artifact   The artifact.
+	 * @param moduleName The display name of the module posting the artifact.
 	 *
-	 * @throws BlackboardException If there is a problem posting the artifact.
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
 	 */
+	// RJCTODO: Deprecate
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
-		postArtifacts(Collections.singleton(artifact), moduleName);
+		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}
 
 	/**
-	 * Posts a Collection of artifacts. The artifacts should be complete (all
-	 * attributes have been added) before being posted. Posting the artifacts
-	 * includes making any events that may be derived from them, and
-	 * broadcasting notifications that the artifacts are ready for further
+	 * Posts a collection of artifacts to the blackboard. The artifacts should
+	 * be complete (all attributes have been added) before they are posted.
+	 * Posting the artifacts triggers the creation of appropriate timeline
+	 * events, if any, and broadcast of a notification that the artifacts are
+	 * ready for further analysis.
+	 *
+	 * @param artifacts  The artifacts.
+	 * @param moduleName The display name of the module posting the artifacts.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 */
+	// RJCTODO: Deprecate
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		postArtifacts(artifacts, moduleName, null);
+	}
+
+	/**
+	 * Posts an artifact to the blackboard. The artifact should be complete (all
+	 * attributes have been added) before it is posted. Posting the artifact
+	 * triggers the creation of appropriate timeline events, if any, and
+	 * broadcast of a notification that the artifact is ready for further
 	 * analysis.
 	 *
+	 * @param artifact    The artifact.
+	 * @param moduleName  The display name of the module posting the artifact.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifact was posted.
 	 *
-	 * @param artifacts  The artifacts to be posted .
-	 * @param moduleName The name of the module that is posting the artifacts.
-	 *
-	 *
-	 * @throws BlackboardException If there is a problem posting the artifacts.
-	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
 	 */
-	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
-		/*
-		 * For now this just processes them one by one, but in the future it
-		 * could be smarter and use transactions, etc.
-		 */
+	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
+		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
+	}
+
+	/**
+	 * Posts a collection of artifacts to the blackboard. The artifacts should
+	 * be complete (all attributes have been added) before they are posted.
+	 * Posting the artifacts triggers the creation of appropriate timeline
+	 * events, if any, and broadcast of a notification that the artifacts are
+	 * ready for further analysis.
+	 *
+	 * @param artifacts   The artifacts.
+	 * @param moduleName  The display name of the module posting the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts were posted.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 */
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 		for (BlackboardArtifact artifact : artifacts) {
 			try {
 				caseDb.getTimelineManager().addArtifactEvents(artifact);
@@ -118,8 +154,7 @@ public final class Blackboard {
 				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
 			}
 		}
-
-		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName));
+		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
 	}
 
 	/**
@@ -1882,17 +1917,29 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Event published by SleuthkitCase when one or more artifacts are posted. A
-	 * posted artifact is complete (all attributes have been added) and ready
-	 * for further processing.
+	 * An event published by SleuthkitCase when one or more artifacts are
+	 * posted. Posted artifacts should be complete (all attributes have been
+	 * added) and ready for further analysis.
 	 */
 	final public class ArtifactsPostedEvent {
 
 		private final String moduleName;
 		private final ImmutableSet<BlackboardArtifact.Type> artifactTypes;
 		private final ImmutableSet<BlackboardArtifact> artifacts;
+		private final Long ingestJobId;
 
-		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		/**
+		 * Constructs an Event published by SleuthkitCase when one or more
+		 * artifacts are posted. Posted artifacts should be complete (all
+		 * attributes have been added) and ready for further analysis.
+		 *
+		 * @param artifacts   The artifacts.
+		 * @param moduleName  The display name of the module posting the
+		 *                    artifacts.
+		 * @param ingestJobId The numeric identifier of the ingest job within
+		 *                    which the artifacts were posted.
+		 */
+		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
 					.map(BlackboardArtifact::getArtifactTypeID)
 					.collect(Collectors.toSet());
@@ -1907,13 +1954,25 @@ public final class Blackboard {
 			artifactTypes = ImmutableSet.copyOf(types);
 			this.artifacts = ImmutableSet.copyOf(artifacts);
 			this.moduleName = moduleName;
-
+			this.ingestJobId = ingestJobId;
 		}
 
+		/**
+		 * Gets the posted artifacts.
+		 *
+		 * @return The artifacts (data artifacts and/or analysis results).
+		 */
 		public Collection<BlackboardArtifact> getArtifacts() {
 			return ImmutableSet.copyOf(artifacts);
 		}
 
+		/**
+		 * Gets the posted artifacts of a given type.
+		 *
+		 * @param artifactType The artifact type.
+		 *
+		 * @return The artifacts, if any.
+		 */
 		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
 			Set<BlackboardArtifact> tempSet = artifacts.stream()
 					.filter(artifact -> artifact.getArtifactTypeID() == artifactType.getTypeID())
@@ -1921,12 +1980,33 @@ public final class Blackboard {
 			return ImmutableSet.copyOf(tempSet);
 		}
 
+		/**
+		 * Gets the display name of the module that posted the artifacts.
+		 *
+		 * @return The display name.
+		 */
 		public String getModuleName() {
 			return moduleName;
 		}
 
+		/**
+		 * Gets the types of artifacts that were posted.
+		 *
+		 * @return The types.
+		 */
 		public Collection<BlackboardArtifact.Type> getArtifactTypes() {
 			return ImmutableSet.copyOf(artifactTypes);
 		}
+
+		/**
+		 * Gets the numeric identifier of the ingest job within which the
+		 * artifacts were posted.
+		 *
+		 * @return The ingest job ID, may be null.
+		 */
+		public Long getIngestJobId() {
+			return ingestJobId;
+		}
+
 	}
 }
