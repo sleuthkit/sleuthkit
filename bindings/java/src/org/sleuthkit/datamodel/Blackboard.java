@@ -2004,8 +2004,8 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the numeric identifier of the ingest job within which the
-		 * artifacts were posted.
+		 * Gets the numeric identifier of the ingest job for which the artifacts
+		 * were posted.
 		 *
 		 * @return The ingest job ID, may be null.
 		 */
