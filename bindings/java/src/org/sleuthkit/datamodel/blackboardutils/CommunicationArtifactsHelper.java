@@ -174,8 +174,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * communication artifacts: contacts, messages, and call logs.
 	 *
 	 * This constructor is intended to be used when there is sufficent
-	 * application specific account information for the device owner to create a
-	 * 'self' account.
+	 * application-specific account information about the device owner to create
+	 * a 'self' account.
 	 *
 	 * @param caseDb          The case database.
 	 * @param moduleName      The name of the module creating the artifacts.
@@ -227,8 +227,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * communication artifacts: contacts, messages, and call logs.
 	 *
 	 * This constructor is intended to be used when there is sufficent
-	 * application specific account information for the device owner to create a
-	 * 'self' account.
+	 * application-specific account information about the device owner to create
+	 * a 'self' account.
 	 *
 	 * @param caseDb          The case database.
 	 * @param moduleName      The name of the module creating the artifacts.
@@ -946,8 +946,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 				assocObjectArtifacts.add(artifact);
 			}
 		}
-		Optional<Long> ingestJobId = getIngestJobId();
+		
 		try {
+			Optional<Long> ingestJobId = getIngestJobId();
 			getSleuthkitCase().getBlackboard().postArtifacts(assocObjectArtifacts, getModuleName(), ingestJobId.orElse(null));
 		} catch (BlackboardException ex) {
 			throw new TskCoreException("Error posting TSK_ASSOCIATED_ARTIFACT artifacts for attachments", ex);
