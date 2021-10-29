@@ -1320,7 +1320,7 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	List<DataArtifact> getDataArtifactsWhere(String whereClause) throws TskCoreException {
+	public List<DataArtifact> getDataArtifactsWhere(String whereClause) throws TskCoreException {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			return getDataArtifactsWhere(whereClause, connection);
@@ -1344,7 +1344,7 @@ public final class Blackboard {
 	List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
 
 		final String queryString = DATA_ARTIFACT_QUERY_STRING
-				+ " AND ( " + whereClause + " )";
+				+ " AND " + whereClause + " ";
 
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
