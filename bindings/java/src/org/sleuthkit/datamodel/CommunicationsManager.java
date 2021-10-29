@@ -241,15 +241,15 @@ public final class CommunicationsManager {
 	 * Records that an account was used in a specific file. Behind the scenes,
 	 * it will create a case-specific Account object if it does not already
 	 * exist, and it will create the needed database entries (which currently
-	 * includes making a BlackboardArtifact).
+	 * includes making a TSK_ACCOUNT data artifact).
 	 *
 	 * @param accountType     The account type.
 	 * @param accountUniqueID The unique account identifier (such as an email
 	 *                        address).
 	 * @param moduleName      The module creating the account.
 	 * @param sourceFile      The source file the account was found in.
-	 * @param ingestJobId     The ingest job in which the analysis was
-	 *                        performed, may be null.
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
 	 *
 	 * @return	An AccountFileInstance object.
 	 *
@@ -285,7 +285,7 @@ public final class CommunicationsManager {
 	 * Records that an account was used in a specific file. Behind the scenes,
 	 * it will create a case-specific Account object if it does not already
 	 * exist, and it will create the needed database entries (which currently
-	 * includes making a BlackboardArtifact).
+	 * includes making a TSK_ACCOUNT data artifact).
 	 *
 	 * @param accountType     The account type.
 	 * @param accountUniqueID The unique account identifier (such as an email
@@ -307,25 +307,7 @@ public final class CommunicationsManager {
 	@Deprecated
 	// NOTE: Full name given for Type for doxygen linking
 	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException, InvalidAccountIDException {
-
-		// make or get the Account (unique at the case-level)
-		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
-
-		/*
-		 * make or get the artifact. Will not create one if it already exists
-		 * for the sourceFile. Such as an email PST that has the same email
-		 * address multiple times. Only one artifact is created for each email
-		 * message in that PST.
-		 */
-		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, null);
-
-		// The account instance map was unused so we have removed it from the database, 
-		// but we expect we may need it so I am preserving this method comment and usage here.
-		// add a row to Accounts to Instances mapping table
-		// @@@ BC: Seems like we should only do this if we had to create the artifact. 
-		// But, it will probably fail to create a new one based on unique constraints. 
-		// addAccountFileInstanceMapping(account.getAccountID(), accountArtifact.getArtifactID());
-		return new AccountFileInstance(accountArtifact, account);
+		return createAccountFileInstance(accountType, accountUniqueID, moduleName, sourceFile, null);
 	}
 
 	/**
@@ -532,8 +514,8 @@ public final class CommunicationsManager {
 	 * @param moduleName      The name of the module that found the account
 	 *                        instance.
 	 * @param sourceFile      The file in which the account instance was found.
-	 * @param ingestJobId     The ingest job in which the analysis was
-	 *                        performed, may be null.
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
 	 *
 	 * @return The account artifact.
 	 *
