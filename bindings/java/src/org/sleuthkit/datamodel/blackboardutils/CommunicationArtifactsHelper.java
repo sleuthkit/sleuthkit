@@ -36,6 +36,7 @@ import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
+import org.sleuthkit.datamodel.DataArtifact;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.InvalidAccountIDException;
 import org.sleuthkit.datamodel.Relationship;
@@ -955,13 +956,21 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		message.addAttribute(blackboardAttribute);
 
 		// Associate each attachment file with the message.
+		List<BlackboardArtifact> assocObjectArtifacts = new ArrayList<>();
 		Collection<FileAttachment> fileAttachments = attachments.getFileAttachments();
 		for (FileAttachment fileAttachment : fileAttachments) {
 			long attachedFileObjId = fileAttachment.getObjectId();
 			if (attachedFileObjId >= 0) {
 				AbstractFile attachedFile = message.getSleuthkitCase().getAbstractFileById(attachedFileObjId);
-				associateAttachmentWithMessage(message, attachedFile);
+				DataArtifact artifact = associateAttachmentWithMessage(message, attachedFile);
+				assocObjectArtifacts.add(artifact);
 			}
+		}
+		Optional<Long> ingestJobId = getIngestJobId();
+		try {
+		getSleuthkitCase().getBlackboard().postArtifacts(assocObjectArtifacts, getModuleName(), ingestJobId.orElse(null));
+		} catch (BlackboardException ex) {
+			throw new TskCoreException("Error posting TSK_ASSOCIATED_ARTIFACT artifacts", ex);
 		}
 	}
 
@@ -977,10 +986,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException If there is an error creating the
 	 *                          TSK_ASSOCIATED_OBJECT artifact.
 	 */
-	private BlackboardArtifact associateAttachmentWithMessage(BlackboardArtifact message, AbstractFile attachedFile) throws TskCoreException {
+	private DataArtifact associateAttachmentWithMessage(BlackboardArtifact message, AbstractFile attachedFile) throws TskCoreException {
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, this.getModuleName(), message.getArtifactID()));
-
 		return attachedFile.newDataArtifact(ASSOCIATED_OBJ_TYPE, attributes);
 	}
 
