@@ -89,14 +89,13 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds a string-valued attribute of a specified type to the
-	 * given list, if the attribute value is not empty or null.
+	 * Creates an attribute of a specified type with a string value and adds it
+	 * to a given list of attributes.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param attrValue     The attribute value, may not be the empty string or
 	 *                      null.
-	 * @param attributes    The list of attributes to which the new attribute
-	 *                      will be added.
+	 * @param attributes    The list of attributes.
 	 */
 	void addAttributeIfNotNull(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, String attrValue, Collection<BlackboardAttribute> attributes) {
 		if (!StringUtils.isEmpty(attrValue)) {
@@ -105,13 +104,12 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds a long-valued attribute of a specified type to the given
-	 * list, if the attribute value is greater than zero.
+	 * Creates an attribute of a specified type with a long value and adds it to
+	 * a given list of attributes.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param attrValue     The attribute value, must be greater than zero.
-	 * @param attributes    The list of attributes to which the new attribute
-	 *                      will be added.
+	 * @param attributes    The list of attributes.
 	 */
 	void addAttributeIfNotZero(BlackboardAttribute.ATTRIBUTE_TYPE attributeType, long attrValue, Collection<BlackboardAttribute> attributes) {
 		if (attrValue > 0) {
@@ -120,8 +118,8 @@ class ArtifactHelperBase {
 	}
 
 	/**
-	 * Creates and adds an integer-valued attribute of a specified type to the
-	 * given list, if the attribute value is greater than zero.
+	 * Creates an attribute of a specified type with an integer value and adds
+	 * it to a given list of attributes.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param attrValue     The attribute value, must be greater than zero.
@@ -133,4 +131,5 @@ class ArtifactHelperBase {
 			attributes.add(new BlackboardAttribute(attributeType, getModuleName(), attrValue));
 		}
 	}
+
 }
