@@ -431,7 +431,7 @@ public final class Blackboard {
 		}
 	}
 	
-		/**
+	/**
 	 * Populate the attributes for all artifact in the list. 
 	 * This is done using one database call as an efficient way to
 	 * load many artifacts/attributes at once.
@@ -1529,7 +1529,7 @@ public final class Blackboard {
 				"blackboard_artifacts.data_source_obj_id = '" + dataSourceObjId + "';");
 	}
 	
-		/**
+	/**
 	 * Get count of all blackboard artifacts of a given type.
 	 * Does not include rejected artifacts.
 	 *
