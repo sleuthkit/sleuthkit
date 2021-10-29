@@ -64,7 +64,7 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 */
 	@Deprecated
 	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
-		super(caseDb, moduleName, srcContent, null);
+		this(caseDb, moduleName, srcContent, null);
 	}
 
 	/**

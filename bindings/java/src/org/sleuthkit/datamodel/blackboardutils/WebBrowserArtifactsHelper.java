@@ -81,7 +81,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 */
 	@Deprecated
 	public WebBrowserArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
-		super(caseDb, moduleName, srcContent, null);
+		this(caseDb, moduleName, srcContent, null);
 	}
 
 	/**

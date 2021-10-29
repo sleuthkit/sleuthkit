@@ -163,11 +163,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @throws TskCoreException The exception is thrown if there is an error
 	 *                          querying the case database.
 	 */
-	public CommunicationArtifactsHelper(SleuthkitCase caseDb,
-			String moduleName, Content srcContent, Account.Type accountsType, Long ingestJobId) throws TskCoreException {
-
+	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Long ingestJobId) throws TskCoreException {
 		super(caseDb, moduleName, srcContent, ingestJobId);
-
 		this.moduleAccountsType = accountsType;
 		this.selfAccountType = Account.Type.DEVICE;
 		this.selfAccountId = ((DataSource) getContent().getDataSource()).getDeviceId();
@@ -197,9 +194,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 *                          querying the case database.
 	 */
 	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId, Long ingestJobId) throws TskCoreException {
-
 		super(caseDb, moduleName, srcContent, ingestJobId);
-
 		this.moduleAccountsType = accountsType;
 		this.selfAccountType = selfAccountType;
 		this.selfAccountId = selfAccountId;
@@ -226,14 +221,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * ingestJobId) instead.
 	 */
 	@Deprecated
-	public CommunicationArtifactsHelper(SleuthkitCase caseDb,
-			String moduleName, Content srcContent, Account.Type accountsType) throws TskCoreException {
-
-		super(caseDb, moduleName, srcContent, null);
-
-		this.moduleAccountsType = accountsType;
-		this.selfAccountType = Account.Type.DEVICE;
-		this.selfAccountId = ((DataSource) getContent().getDataSource()).getDeviceId();
+	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType) throws TskCoreException {
+		this(caseDb, moduleName, srcContent, accountsType, null);
 	}
 
 	/**
@@ -261,12 +250,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 */
 	@Deprecated
 	public CommunicationArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Account.Type accountsType, Account.Type selfAccountType, String selfAccountId) throws TskCoreException {
-
-		super(caseDb, moduleName, srcContent, null);
-
-		this.moduleAccountsType = accountsType;
-		this.selfAccountType = selfAccountType;
-		this.selfAccountId = selfAccountId;
+		this(caseDb, moduleName, srcContent, accountsType, selfAccountType, selfAccountId, null);
 	}
 
 	/**
@@ -968,9 +952,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 		Optional<Long> ingestJobId = getIngestJobId();
 		try {
-		getSleuthkitCase().getBlackboard().postArtifacts(assocObjectArtifacts, getModuleName(), ingestJobId.orElse(null));
+			getSleuthkitCase().getBlackboard().postArtifacts(assocObjectArtifacts, getModuleName(), ingestJobId.orElse(null));
 		} catch (BlackboardException ex) {
-			throw new TskCoreException("Error posting TSK_ASSOCIATED_ARTIFACT artifacts", ex);
+			throw new TskCoreException("Error posting TSK_ASSOCIATED_ARTIFACT artifacts for attachments", ex);
 		}
 	}
 
