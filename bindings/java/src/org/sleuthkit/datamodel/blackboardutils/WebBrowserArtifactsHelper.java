@@ -81,7 +81,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	 */
 	@Deprecated
 	public WebBrowserArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
-		super(caseDb, moduleName, srcContent, null);
+		this(caseDb, moduleName, srcContent, null);
 	}
 
 	/**
@@ -276,7 +276,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Adds a TSK_WEB_FORM_AUTOFILL artifact.
+	 * Adds a TSK_WEB_FORM_ADDRESS artifact.
 	 *
 	 * @param personName     Person name, required.
 	 * @param email          Email address, may be empty or null.

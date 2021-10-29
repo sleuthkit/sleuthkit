@@ -86,8 +86,7 @@ public final class GeoArtifactsHelper extends ArtifactHelperBase {
 	 */
 	@Deprecated
 	public GeoArtifactsHelper(SleuthkitCase caseDb, String moduleName, String programName, Content srcContent) {
-		super(caseDb, moduleName, srcContent, null);
-		this.programName = programName;
+		this(caseDb, moduleName, programName, srcContent, null);
 	}
 
 	/**
