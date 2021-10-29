@@ -145,9 +145,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	private final Account.Type moduleAccountsType;
 
 	/**
-	 * Constructs an instance of a class that helps modules to create web
-	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
-	 * address and autofill data.
+	 * Constructs an instance of a class that helps modules to create
+	 * communication artifacts: contacts, messages, and call logs.
 	 *
 	 * This constructor is intended to be used when there is no known
 	 * application account and a device account should be used instead.
@@ -171,9 +170,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs an instance of a class that helps modules to create web
-	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
-	 * address and autofill data.
+	 * Constructs an instance of a class that helps modules to create
+	 * communication artifacts: contacts, messages, and call logs.
 	 *
 	 * This constructor is intended to be used when there is sufficent
 	 * application specific account information for the device owner to create a
@@ -201,9 +199,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs an instance of a class that helps modules to create web
-	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
-	 * address and autofill data.
+	 * Constructs an instance of a class that helps modules to create
+	 * communication artifacts: contacts, messages, and call logs.
 	 *
 	 * This constructor is intended to be used when there is no known
 	 * application account and a device account should be used instead.
@@ -226,9 +223,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	}
 
 	/**
-	 * Constructs an instance of a class that helps modules to create web
-	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
-	 * address and autofill data.
+	 * Constructs an instance of a class that helps modules to create
+	 * communication artifacts: contacts, messages, and call logs.
 	 *
 	 * This constructor is intended to be used when there is sufficent
 	 * application specific account information for the device owner to create a
