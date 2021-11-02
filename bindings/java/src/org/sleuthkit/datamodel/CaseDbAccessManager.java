@@ -607,6 +607,7 @@ public final class CaseDbAccessManager {
 		}
 	}
 	
+
 	/**
 	 * Creates a prepared statement object for the purposes of running a select
 	 * statement.
@@ -621,8 +622,9 @@ public final class CaseDbAccessManager {
 	public CasePreparedStatement prepareSelect(String sql) throws TskCoreException {
 		String selectSQL = "SELECT " + sql; // NON-NLS
 		try {
-			java.sql.PreparedStatement statement = tskDB.getConnection().getPreparedStatement(selectSQL, Statement.NO_GENERATED_KEYS);
-			return new CasePreparedStatement(statement);
+			CaseDbConnection connection = tskDB.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(selectSQL, Statement.NO_GENERATED_KEYS);
+			return new CasePreparedStatement(connection, statement);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating select prepared statement.", ex);
 		}
@@ -647,7 +649,7 @@ public final class CaseDbAccessManager {
 			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Deletes a row in the specified table.
 	 * 
@@ -729,14 +731,17 @@ public final class CaseDbAccessManager {
 	@Beta
 	public static class CasePreparedStatement implements AutoCloseable {
 
+		private final CaseDbConnection connection;
 		private final PreparedStatement preparedStatement;
 
 		/**
 		 * Main constructor.
 		 *
+		 * @param connection        The db connection.
 		 * @param preparedStatement The delegate prepared statement.
 		 */
-		CasePreparedStatement(PreparedStatement preparedStatement) {
+		CasePreparedStatement(CaseDbConnection connection, PreparedStatement preparedStatement) {
+			this.connection = connection;
 			this.preparedStatement = preparedStatement;
 		}
 
@@ -747,6 +752,15 @@ public final class CaseDbAccessManager {
 		 */
 		PreparedStatement getStatement() {
 			return preparedStatement;
+		}
+
+		/**
+		 * Returns the connection to use the prepared statement with.
+		 *
+		 * @return The connection to use the prepared statement with.
+		 */
+		CaseDbConnection getConnection() {
+			return connection;
 		}
 
 		/**
@@ -926,6 +940,7 @@ public final class CaseDbAccessManager {
 
 		@Override
 		public void close() throws SQLException {
+			connection.close();
 			preparedStatement.close();
 		}
 	}
