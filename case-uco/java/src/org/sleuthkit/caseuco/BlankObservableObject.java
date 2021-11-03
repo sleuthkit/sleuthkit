@@ -23,9 +23,9 @@ import java.util.UUID;
 /**
  * Represents a blank node version of a ObservableObject.
  */
-class BlankTraceNode extends ObservableObject {
+class BlankObservableObject extends ObservableObject {
     
-    BlankTraceNode() {
+    BlankObservableObject() {
         super("_:" + UUID.randomUUID().toString());
     }
 }

@@ -224,7 +224,7 @@ public class CaseUcoExporter {
                 .setMd5Hash(file.getMd5Hash());
 
         if (localPath != null) {
-            ObservableObject localPathTrace = new BlankTraceNode()
+            ObservableObject localPathTrace = new BlankObservableObject()
                     .addBundle(new URL()
                             .setFullValue(localPath));
             contentData.setDataPayloadReferenceUrl(localPathTrace);
@@ -541,11 +541,11 @@ public class CaseUcoExporter {
                 .addBundle(new ContentData()
                         .setDataPayload(getValueIfPresent(artifact, StandardAttributeTypes.TSK_VALUE)));
 
-        ObservableObject cookieDomainNode = new BlankTraceNode()
+        ObservableObject cookieDomainNode = new BlankObservableObject()
                 .addBundle(new DomainName()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DOMAIN)));
 
-        ObservableObject applicationNode = new BlankTraceNode()
+        ObservableObject applicationNode = new BlankObservableObject()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
 
@@ -565,7 +565,7 @@ public class CaseUcoExporter {
     }
 
     private void assembleWebBookmark(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        ObservableObject applicationNode = new BlankTraceNode()
+        ObservableObject applicationNode = new BlankObservableObject()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
 
@@ -590,7 +590,7 @@ public class CaseUcoExporter {
     }
 
     private void assembleWebHistory(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        ObservableObject userNameNode = new BlankTraceNode();
+        ObservableObject userNameNode = new BlankObservableObject();
 
         IdentityFacet identityFacet = new IdentityFacet();
         identityFacet.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_USER_NAME));
@@ -703,19 +703,19 @@ public class CaseUcoExporter {
     }
 
     private void assembleEmailMessage(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        ObservableObject bccNode = new BlankTraceNode()
+        ObservableObject bccNode = new BlankObservableObject()
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_BCC)));
 
-        ObservableObject ccNode = new BlankTraceNode()
+        ObservableObject ccNode = new BlankObservableObject()
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_CC)));
 
-        ObservableObject fromNode = new BlankTraceNode()
+        ObservableObject fromNode = new BlankObservableObject()
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_FROM)));
 
-        ObservableObject headerRawNode = new BlankTraceNode()
+        ObservableObject headerRawNode = new BlankObservableObject()
                 .addBundle(new ExtractedString()
                         .setStringValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_HEADERS)));
 
@@ -756,7 +756,7 @@ public class CaseUcoExporter {
     }
 
     private void assembleWebSearchQuery(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        ObservableObject applicationNode = new BlankTraceNode()
+        ObservableObject applicationNode = new BlankObservableObject()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
 
@@ -785,7 +785,7 @@ public class CaseUcoExporter {
         EnvironmentVariable envVar = new EnvironmentVariable()
                 .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_TEMP_DIR));
         envVar.setName("TEMP");
-        ObservableObject tempDirectoryNode = new BlankTraceNode()
+        ObservableObject tempDirectoryNode = new BlankObservableObject()
                 .addBundle(envVar);
 
         ObservableObject export = new ObservableObject(uuid)
@@ -842,7 +842,7 @@ public class CaseUcoExporter {
     }
 
     private void assembleServiceAccount(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        ObservableObject inReplyToNode = new BlankTraceNode()
+        ObservableObject inReplyToNode = new BlankObservableObject()
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_REPLYTO)));
 
@@ -866,7 +866,7 @@ public class CaseUcoExporter {
 
         export.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DESCRIPTION));
 
-        ObservableObject applicationNode = new BlankTraceNode()
+        ObservableObject applicationNode = new BlankObservableObject()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
 
@@ -920,19 +920,19 @@ public class CaseUcoExporter {
     }
 
     private void assembleMessage(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException, BlackboardJsonAttrUtil.InvalidJsonException {
-        ObservableObject applicationNode = new BlankTraceNode()
+        ObservableObject applicationNode = new BlankObservableObject()
                 .addBundle(new Application()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MESSAGE_TYPE)));
 
-        ObservableObject senderNode = new BlankTraceNode()
+        ObservableObject senderNode = new BlankObservableObject()
                 .addBundle(new EmailAddress()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_FROM)));
 
-        ObservableObject fromNode = new BlankTraceNode()
+        ObservableObject fromNode = new BlankObservableObject()
                 .addBundle(new PhoneAccount()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER_FROM)));
 
-        ObservableObject toNode = new BlankTraceNode()
+        ObservableObject toNode = new BlankObservableObject()
                 .addBundle(new PhoneAccount()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER_TO)));
 
@@ -989,11 +989,11 @@ public class CaseUcoExporter {
     }
 
     private void assembleCallog(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        ObservableObject fromNode = new BlankTraceNode()
+        ObservableObject fromNode = new BlankObservableObject()
                 .addBundle(new PhoneAccount()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER_FROM)));
 
-        ObservableObject toNode = new BlankTraceNode()
+        ObservableObject toNode = new BlankObservableObject()
                 .addBundle(new PhoneAccount()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER_TO)));
 
@@ -1329,7 +1329,7 @@ public class CaseUcoExporter {
                     .getTimelineManager()
                     .getEventType(eventType);
             if (timelineEventType.isPresent()) {
-                ObservableObject actionArg = new BlankTraceNode()
+                ObservableObject actionArg = new BlankObservableObject()
                         .addBundle(new ActionArgument()
                                 .setArgumentName(timelineEventType.get().getDisplayName()));
 

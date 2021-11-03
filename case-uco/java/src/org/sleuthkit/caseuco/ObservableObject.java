@@ -27,11 +27,11 @@ import java.util.List;
  */
 class ObservableObject extends CyberItem {
 
-    @SerializedName("@uco-core:hasFacet")
+    @SerializedName("uco-core:hasFacet")
     private final List<Facet> facets;
     
     ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBJECT + ObservableObject.class.getSimpleName());
+        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
         this.facets = new ArrayList<>();
     }
     
