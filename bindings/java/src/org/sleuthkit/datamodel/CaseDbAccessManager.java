@@ -619,14 +619,12 @@ public final class CaseDbAccessManager {
 	 * @throws TskCoreException
 	 */
 	@Beta
-	public CasePreparedStatement prepareSelect(String sql) throws TskCoreException {
+	public CaseDbPreparedStatement prepareSelect(String sql) throws TskCoreException {
 		String selectSQL = "SELECT " + sql; // NON-NLS
 		try {
-			CaseDbConnection connection = tskDB.getConnection();
-			PreparedStatement statement = connection.getPreparedStatement(selectSQL, Statement.NO_GENERATED_KEYS);
-			return new CasePreparedStatement(connection, statement);
+			return new CaseDbPreparedStatement(selectSQL);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error creating select prepared statement.", ex);
+			throw new TskCoreException("Error creating select prepared statement", ex);
 		}
 	}
 
@@ -639,12 +637,12 @@ public final class CaseDbAccessManager {
 	 * @throws TskCoreException
 	 */
 	@Beta
-	public void select(CasePreparedStatement preparedStatement, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
+	public void select(CaseDbPreparedStatement preparedStatement, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
 		tskDB.acquireSingleUserCaseReadLock();
 		try (ResultSet resultSet = preparedStatement.getStatement().executeQuery()) {
 			queryCallback.process(resultSet);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error running SELECT query.", ex);
+			throw new TskCoreException(MessageFormat.format("Error running SELECT query:\n{0}", preparedStatement.getOriginalSql()), ex);
 		} finally {
 			tskDB.releaseSingleUserCaseReadLock();
 		}
@@ -729,20 +727,23 @@ public final class CaseDbAccessManager {
 	 * database.
 	 */
 	@Beta
-	public static class CasePreparedStatement implements AutoCloseable {
+	public class CaseDbPreparedStatement implements AutoCloseable {
 
 		private final CaseDbConnection connection;
 		private final PreparedStatement preparedStatement;
+		private final String originalSql;
 
 		/**
 		 * Main constructor.
 		 *
-		 * @param connection        The db connection.
-		 * @param preparedStatement The delegate prepared statement.
+		 * @param query The query string.
+		 * @throws SQLException
+		 * @throws TskCoreException
 		 */
-		CasePreparedStatement(CaseDbConnection connection, PreparedStatement preparedStatement) {
-			this.connection = connection;
-			this.preparedStatement = preparedStatement;
+		private CaseDbPreparedStatement(String query) throws SQLException, TskCoreException {
+			this.connection = tskDB.getConnection();
+			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			this.originalSql = query;
 		}
 
 		/**
@@ -750,19 +751,19 @@ public final class CaseDbAccessManager {
 		 *
 		 * @return The delegate prepared statement.
 		 */
-		PreparedStatement getStatement() {
+		private PreparedStatement getStatement() {
 			return preparedStatement;
 		}
 
 		/**
-		 * Returns the connection to use the prepared statement with.
+		 * Returns the original sql query.
 		 *
-		 * @return The connection to use the prepared statement with.
+		 * @return The original sql query.
 		 */
-		CaseDbConnection getConnection() {
-			return connection;
+		private String getOriginalSql() {
+			return originalSql;
 		}
-
+		
 		/**
 		 * Resets the parameters in the prepared statement.
 		 *
@@ -940,8 +941,8 @@ public final class CaseDbAccessManager {
 
 		@Override
 		public void close() throws SQLException {
-			connection.close();
 			preparedStatement.close();
+			connection.close();
 		}
 	}
 
