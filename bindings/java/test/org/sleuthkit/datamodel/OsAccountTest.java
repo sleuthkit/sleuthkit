@@ -912,11 +912,11 @@ public class OsAccountTest {
 		
 		// TBD: perhaps add some files to the case and then use one of the files as the source of attributes.
 		
-		OsAccountAttribute attrib1 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
+		OsAccountAttribute attrib1 = osAccount1.new OsAccountAttribute(caseDB.getBlackboard().getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
 		accountAttributes.add(attrib1);
 		
 		String hint = "HINT";
-		OsAccountAttribute attrib2 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
+		OsAccountAttribute attrib2 = osAccount1.new OsAccountAttribute(caseDB.getBlackboard().getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
 		accountAttributes.add(attrib2);
 		
 		// add attributes to account.

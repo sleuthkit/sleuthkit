@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableSet;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -77,40 +79,76 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Posts the artifact. The artifact should be complete (all attributes have
-	 * been added) before being posted. Posting the artifact includes making any
-	 * timeline events that may be derived from it, and broadcasting a
-	 * notification that the artifact is ready for further analysis.
+	 * Posts an artifact to the blackboard. The artifact should be complete (all
+	 * attributes have been added) before it is posted. Posting the artifact
+	 * triggers the creation of appropriate timeline events, if any, and
+	 * broadcast of a notification that the artifact is ready for further
+	 * analysis.
 	 *
-	 * @param artifact   The artifact to be posted.
-	 * @param moduleName The name of the module that is posting the artifacts.
+	 * @param artifact   The artifact.
+	 * @param moduleName The display name of the module posting the artifact.
 	 *
-	 * @throws BlackboardException If there is a problem posting the artifact.
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
 	 */
+	// RJCTODO: Deprecate
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
-		postArtifacts(Collections.singleton(artifact), moduleName);
+		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}
 
 	/**
-	 * Posts a Collection of artifacts. The artifacts should be complete (all
-	 * attributes have been added) before being posted. Posting the artifacts
-	 * includes making any events that may be derived from them, and
-	 * broadcasting notifications that the artifacts are ready for further
+	 * Posts a collection of artifacts to the blackboard. The artifacts should
+	 * be complete (all attributes have been added) before they are posted.
+	 * Posting the artifacts triggers the creation of appropriate timeline
+	 * events, if any, and broadcast of a notification that the artifacts are
+	 * ready for further analysis.
+	 *
+	 * @param artifacts  The artifacts.
+	 * @param moduleName The display name of the module posting the artifacts.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 */
+	// RJCTODO: Deprecate
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		postArtifacts(artifacts, moduleName, null);
+	}
+
+	/**
+	 * Posts an artifact to the blackboard. The artifact should be complete (all
+	 * attributes have been added) before it is posted. Posting the artifact
+	 * triggers the creation of appropriate timeline events, if any, and
+	 * broadcast of a notification that the artifact is ready for further
 	 * analysis.
 	 *
+	 * @param artifact    The artifact.
+	 * @param moduleName  The display name of the module posting the artifact.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifact was posted.
 	 *
-	 * @param artifacts  The artifacts to be posted .
-	 * @param moduleName The name of the module that is posting the artifacts.
-	 *
-	 *
-	 * @throws BlackboardException If there is a problem posting the artifacts.
-	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
 	 */
-	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
-		/*
-		 * For now this just processes them one by one, but in the future it
-		 * could be smarter and use transactions, etc.
-		 */
+	public void postArtifact(BlackboardArtifact artifact, String moduleName, Long ingestJobId) throws BlackboardException {
+		postArtifacts(Collections.singleton(artifact), moduleName, ingestJobId);
+	}
+
+	/**
+	 * Posts a collection of artifacts to the blackboard. The artifacts should
+	 * be complete (all attributes have been added) before they are posted.
+	 * Posting the artifacts triggers the creation of appropriate timeline
+	 * events, if any, and broadcast of a notification that the artifacts are
+	 * ready for further analysis.
+	 *
+	 * @param artifacts   The artifacts.
+	 * @param moduleName  The display name of the module posting the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts were posted.
+	 *
+	 * @throws BlackboardException The exception is thrown if there is an issue
+	 *                             posting the artifact.
+	 */
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 		for (BlackboardArtifact artifact : artifacts) {
 			try {
 				caseDb.getTimelineManager().addArtifactEvents(artifact);
@@ -118,8 +156,7 @@ public final class Blackboard {
 				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
 			}
 		}
-
-		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName));
+		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
 	}
 
 	/**
@@ -414,30 +451,7 @@ public final class Blackboard {
 					+ " AND attrs.attribute_type_id = types.attribute_type_id");
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
-				int attributeTypeId = rs.getInt("attribute_type_id");
-				String attributeTypeName = rs.getString("type_name");
-				BlackboardAttribute.Type attributeType;
-				if (this.typeIdToAttributeTypeMap.containsKey(attributeTypeId)) {
-					attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
-				} else {
-					attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
-							rs.getString("display_name"),
-							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
-					this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
-					this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
-				}
-
-				final BlackboardAttribute attr = new BlackboardAttribute(
-						rs.getLong("artifact_id"),
-						attributeType,
-						rs.getString("source"),
-						rs.getString("context"),
-						rs.getInt("value_int32"),
-						rs.getLong("value_int64"),
-						rs.getDouble("value_double"),
-						rs.getString("value_text"),
-						rs.getBytes("value_byte"), caseDb
-				);
+				final BlackboardAttribute attr = createAttributeFromResultSet(rs);
 				attr.setParentDataSourceID(artifact.getDataSourceObjectID());
 				attributes.add(attr);
 			}
@@ -451,7 +465,110 @@ public final class Blackboard {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Populate the attributes for all artifact in the list. 
+	 * This is done using one database call as an efficient way to
+	 * load many artifacts/attributes at once.
+	 * 
+	 * @param arts The list of artifacts. When complete, each will have its attributes loaded.
+	 */	
+	@Beta
+	public void loadBlackboardAttributes(List<BlackboardArtifact> arts) throws TskCoreException {
 
+		if (arts.isEmpty()) {
+			return;
+		}
+
+		// Make a map of artifact ID to artifact
+		Map<Long, BlackboardArtifact> artifactMap = new HashMap<>();
+		for (BlackboardArtifact art : arts) {
+			artifactMap.put(art.getArtifactID(), art);
+		}
+
+		// Make a map of artifact ID to attribute list
+		Map<Long, List<BlackboardAttribute>> attributeMap = new HashMap<>();
+
+		// Get all artifact IDs as a comma-separated string
+		String idString = arts.stream().map(p -> Long.toString(p.getArtifactID())).collect(Collectors.joining(", "));
+
+		// Get the attributes
+		CaseDbConnection connection = null;
+		Statement statement = null;
+		ResultSet rs = null;
+		caseDb.acquireSingleUserCaseReadLock();
+		try {
+			connection = caseDb.getConnection();
+			statement = connection.createStatement();
+			rs = connection.executeQuery(statement, "SELECT attrs.artifact_id AS artifact_id, "
+					+ "attrs.source AS source, attrs.context AS context, attrs.attribute_type_id AS attribute_type_id, "
+					+ "attrs.value_type AS value_type, attrs.value_byte AS value_byte, "
+					+ "attrs.value_text AS value_text, attrs.value_int32 AS value_int32, "
+					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
+					+ "types.type_name AS type_name, types.display_name AS display_name "
+					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id IN (" + idString + ") "
+					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+			while (rs.next()) {
+				final BlackboardAttribute attr = createAttributeFromResultSet(rs);
+				attr.setParentDataSourceID(artifactMap.get(attr.getArtifactID()).getDataSourceObjectID());
+
+				// Collect the list of attributes for each artifact
+				if (!attributeMap.containsKey(attr.getArtifactID())) {
+					attributeMap.put(attr.getArtifactID(), new ArrayList<>());
+				}
+				attributeMap.get(attr.getArtifactID()).add(attr);
+			}
+
+			// Save the attributes to the artifacts
+			for (Long artifactID : attributeMap.keySet()) {
+				artifactMap.get(artifactID).setAttributes(attributeMap.get(artifactID));
+			}
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error loading attributes", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(statement);
+			closeConnection(connection);
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}	
+
+	/**
+	 * Create a BlackboardAttribute artifact from the result set.
+	 * Does not set the data source ID.
+	 * 
+	 * @param rs The result set.
+	 * 
+	 * @return The corresponding BlackboardAttribute object.
+	 */
+	private BlackboardAttribute createAttributeFromResultSet(ResultSet rs) throws SQLException {
+		int attributeTypeId = rs.getInt("attribute_type_id");
+		String attributeTypeName = rs.getString("type_name");
+		BlackboardAttribute.Type attributeType;
+		if (this.typeIdToAttributeTypeMap.containsKey(attributeTypeId)) {
+			attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
+		} else {
+			attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
+					rs.getString("display_name"),
+					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
+			this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
+			this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
+		}
+
+		return new BlackboardAttribute(
+				rs.getLong("artifact_id"),
+				attributeType,
+				rs.getString("source"),
+				rs.getString("context"),
+				rs.getInt("value_int32"),
+				rs.getLong("value_int64"),
+				rs.getDouble("value_double"),
+				rs.getString("value_text"),
+				rs.getBytes("value_byte"), caseDb
+		);
+	}	
+	
 	/**
 	 * Get the attributes associated with the given file.
 	 *
@@ -1238,7 +1355,7 @@ public final class Blackboard {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
 	 */
-	List<DataArtifact> getDataArtifactsWhere(String whereClause) throws TskCoreException {
+	public List<DataArtifact> getDataArtifactsWhere(String whereClause) throws TskCoreException {
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			return getDataArtifactsWhere(whereClause, connection);
@@ -1262,7 +1379,7 @@ public final class Blackboard {
 	List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
 
 		final String queryString = DATA_ARTIFACT_QUERY_STRING
-				+ " AND ( " + whereClause + " )";
+				+ " AND " + whereClause + " ";
 
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
@@ -1446,6 +1563,21 @@ public final class Blackboard {
 		return getArtifactsCountHelper(artifactTypeID,
 				"blackboard_artifacts.data_source_obj_id = '" + dataSourceObjId + "';");
 	}
+	
+	/**
+	 * Get count of all blackboard artifacts of a given type.
+	 * Does not include rejected artifacts.
+	 *
+	 * @param artifactTypeID  artifact type id (must exist in database)
+	 *
+	 * @return count of blackboard artifacts
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public long getArtifactsCount(int artifactTypeID) throws TskCoreException {
+		return getArtifactsCountHelper(artifactTypeID, null);
+	}
 
 	/**
 	 * Get all blackboard artifacts of a given type. Does not included rejected
@@ -1528,7 +1660,7 @@ public final class Blackboard {
 	 * clause. Uses a SELECT COUNT(*) FROM blackboard_artifacts statement
 	 *
 	 * @param artifactTypeID artifact type to count
-	 * @param whereClause    The WHERE clause to append to the SELECT statement.
+	 * @param whereClause    The WHERE clause to append to the SELECT statement (may be null).
 	 *
 	 * @return A count of matching BlackboardArtifact .
 	 *
@@ -1538,14 +1670,16 @@ public final class Blackboard {
 	private long getArtifactsCountHelper(int artifactTypeID, String whereClause) throws TskCoreException {
 		String queryString = "SELECT COUNT(*) AS count FROM blackboard_artifacts "
 				+ "WHERE blackboard_artifacts.artifact_type_id = " + artifactTypeID
-				+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID()
-				+ " AND " + whereClause;
+				+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
+		
+		if (whereClause != null) {
+			queryString += " AND " + whereClause;
+		}
 
 		caseDb.acquireSingleUserCaseReadLock();
 		try (SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
-			//NON-NLS	
 			long count = 0;
 			if (resultSet.next()) {
 				count = resultSet.getLong("count");
@@ -1882,17 +2016,29 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Event published by SleuthkitCase when one or more artifacts are posted. A
-	 * posted artifact is complete (all attributes have been added) and ready
-	 * for further processing.
+	 * An event published by SleuthkitCase when one or more artifacts are
+	 * posted. Posted artifacts should be complete (all attributes have been
+	 * added) and ready for further analysis.
 	 */
 	final public class ArtifactsPostedEvent {
 
 		private final String moduleName;
 		private final ImmutableSet<BlackboardArtifact.Type> artifactTypes;
 		private final ImmutableSet<BlackboardArtifact> artifacts;
+		private final Long ingestJobId;
 
-		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		/**
+		 * Constructs an Event published by SleuthkitCase when one or more
+		 * artifacts are posted. Posted artifacts should be complete (all
+		 * attributes have been added) and ready for further analysis.
+		 *
+		 * @param artifacts   The artifacts.
+		 * @param moduleName  The display name of the module posting the
+		 *                    artifacts.
+		 * @param ingestJobId The numeric identifier of the ingest job within
+		 *                    which the artifacts were posted.
+		 */
+		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
 					.map(BlackboardArtifact::getArtifactTypeID)
 					.collect(Collectors.toSet());
@@ -1907,13 +2053,25 @@ public final class Blackboard {
 			artifactTypes = ImmutableSet.copyOf(types);
 			this.artifacts = ImmutableSet.copyOf(artifacts);
 			this.moduleName = moduleName;
-
+			this.ingestJobId = ingestJobId;
 		}
 
+		/**
+		 * Gets the posted artifacts.
+		 *
+		 * @return The artifacts (data artifacts and/or analysis results).
+		 */
 		public Collection<BlackboardArtifact> getArtifacts() {
 			return ImmutableSet.copyOf(artifacts);
 		}
 
+		/**
+		 * Gets the posted artifacts of a given type.
+		 *
+		 * @param artifactType The artifact type.
+		 *
+		 * @return The artifacts, if any.
+		 */
 		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
 			Set<BlackboardArtifact> tempSet = artifacts.stream()
 					.filter(artifact -> artifact.getArtifactTypeID() == artifactType.getTypeID())
@@ -1921,12 +2079,33 @@ public final class Blackboard {
 			return ImmutableSet.copyOf(tempSet);
 		}
 
+		/**
+		 * Gets the display name of the module that posted the artifacts.
+		 *
+		 * @return The display name.
+		 */
 		public String getModuleName() {
 			return moduleName;
 		}
 
+		/**
+		 * Gets the types of artifacts that were posted.
+		 *
+		 * @return The types.
+		 */
 		public Collection<BlackboardArtifact.Type> getArtifactTypes() {
 			return ImmutableSet.copyOf(artifactTypes);
 		}
+
+		/**
+		 * Gets the numeric identifier of the ingest job within which the
+		 * artifacts were posted.
+		 *
+		 * @return The ingest job ID, may be null.
+		 */
+		public Long getIngestJobId() {
+			return ingestJobId;
+		}
+
 	}
 }
