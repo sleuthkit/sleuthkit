@@ -21,9 +21,9 @@ package org.sleuthkit.caseuco;
 import java.util.UUID;
 
 /**
- * Represents a blank node version of a Trace.
+ * Represents a blank node version of a ObservableObject.
  */
-class BlankTraceNode extends Trace {
+class BlankTraceNode extends ObservableObject {
     
     BlankTraceNode() {
         super("_:" + UUID.randomUUID().toString());

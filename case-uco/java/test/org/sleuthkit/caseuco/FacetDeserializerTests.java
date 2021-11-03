@@ -147,7 +147,7 @@ public class FacetDeserializerTests {
         String traceId = "The id 2";
         String traceName = "The name 2";
         String traceTag = "The tag 2";
-        UcoObject trace = new Trace(traceUuid)
+        UcoObject trace = new ObservableObject(traceUuid)
                 .addBundle(fileSystem)
                 .setCreatedTime(traceCreateTime)
                 .setDescription(traceDescription)
@@ -159,10 +159,10 @@ public class FacetDeserializerTests {
         String gsonStr = new Gson().toJson(trace);
         logger.log(Level.INFO, "Json string of: " + gsonStr);
 
-        Trace deserializedTrace = new GsonBuilder()
+        ObservableObject deserializedTrace = new GsonBuilder()
                 .registerTypeAdapter(Facet.class, new FacetDeserializer())
                 .create()
-                .fromJson(gsonStr, Trace.class);
+                .fromJson(gsonStr, ObservableObject.class);
         
         Assert.assertEquals(traceCreateTime, OffsetDateTime.parse(deserializedTrace.getCreatedTime()).toEpochSecond());
         Assert.assertEquals(traceModifiedTime, OffsetDateTime.parse(deserializedTrace.getModifiedTime()).toEpochSecond());

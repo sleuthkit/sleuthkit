@@ -27,6 +27,8 @@ import java.time.ZoneOffset;
  */
 abstract class UcoObject {
 
+    static final String UCO_OBJECT = "uco-observable:";
+    
     @SerializedName("@id")
     private String id;
 

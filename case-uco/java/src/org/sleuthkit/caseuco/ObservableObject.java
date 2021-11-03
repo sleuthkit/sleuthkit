@@ -18,27 +18,29 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A Trace template from the CASE ontology.
+ * A ObservableObject template from the CASE ontology.
  */
-class Trace extends CyberItem {
+class ObservableObject extends CyberItem {
 
-    private final List<Facet> hasPropertyBundle;
+    @SerializedName("@uco-core:hasFacet")
+    private final List<Facet> facets;
     
-    Trace(String uuid) {
-        super(uuid, Trace.class.getSimpleName());
-        this.hasPropertyBundle = new ArrayList<>();
+    ObservableObject(String uuid) {
+        super(uuid, UcoObject.UCO_OBJECT + ObservableObject.class.getSimpleName());
+        this.facets = new ArrayList<>();
     }
     
-    final Trace addBundle(Facet bundle) {
-        hasPropertyBundle.add(bundle);
+    final ObservableObject addBundle(Facet bundle) {
+        facets.add(bundle);
         return this;
     }
 
     List<Facet> getHasPropertyBundle() {
-        return hasPropertyBundle;
+        return facets;
     }
 }
