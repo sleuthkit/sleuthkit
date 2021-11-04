@@ -612,6 +612,11 @@ public final class CaseDbAccessManager {
 	 * Creates a prepared statement object for the purposes of running a select
 	 * statement.
 	 *
+	 * NOTE: The CaseDbPreparedStatement should probably used in a try with
+	 * resources block or disposed of as soon as possible because the
+	 * CaseDbPreparedStatement acquires a case lock in the constructor and
+	 * releases that lock on close.
+	 *
 	 * @param sql The select statement without the starting select keyword.
 	 *
 	 * @return The prepared statement object.
@@ -638,13 +643,10 @@ public final class CaseDbAccessManager {
 	 */
 	@Beta
 	public void select(CaseDbPreparedStatement preparedStatement, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
-		tskDB.acquireSingleUserCaseReadLock();
 		try (ResultSet resultSet = preparedStatement.getStatement().executeQuery()) {
 			queryCallback.process(resultSet);
 		} catch (SQLException ex) {
 			throw new TskCoreException(MessageFormat.format("Error running SELECT query:\n{0}", preparedStatement.getOriginalSql()), ex);
-		} finally {
-			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -736,11 +738,18 @@ public final class CaseDbAccessManager {
 		/**
 		 * Main constructor.
 		 *
+		 * NOTE: The CaseDbPreparedStatement should probably used in a try with
+		 * resources block or disposed of as soon as possible because the
+		 * CaseDbPreparedStatement acquires a case lock in the constructor and
+		 * releases that lock on close.
+		 *
 		 * @param query The query string.
+		 *
 		 * @throws SQLException
 		 * @throws TskCoreException
 		 */
 		private CaseDbPreparedStatement(String query) throws SQLException, TskCoreException {
+			CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();
 			this.connection = tskDB.getConnection();
 			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
 			this.originalSql = query;
@@ -943,6 +952,7 @@ public final class CaseDbAccessManager {
 		public void close() throws SQLException {
 			preparedStatement.close();
 			connection.close();
+			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
 
