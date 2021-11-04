@@ -1737,8 +1737,7 @@ public final class Blackboard {
 	 */
 	@Deprecated
 	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType, Collection<BlackboardAttribute> attributes) throws TskCoreException {		
-		BlackboardArtifact.Type type = getArtifactType(artifactType.getTypeID());
-		return artifactExists(content, type, attributes);
+		return artifactExists(content, getArtifactType(artifactType.getTypeID()), attributes);
 	}
 
 	/**
