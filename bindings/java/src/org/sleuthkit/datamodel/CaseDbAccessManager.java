@@ -627,7 +627,7 @@ public final class CaseDbAccessManager {
 	public CaseDbPreparedStatement prepareSelect(String sql) throws TskCoreException {
 		String selectSQL = "SELECT " + sql; // NON-NLS
 		try {
-			return new CaseDbPreparedStatement(selectSQL);
+			return new CaseDbPreparedStatement(selectSQL, false);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating select prepared statement", ex);
 		}
@@ -724,6 +724,7 @@ public final class CaseDbAccessManager {
 		 */
 	}
 	
+	
 	/**
 	 * A wrapper around a PreparedStatement to execute queries against the
 	 * database.
@@ -734,6 +735,7 @@ public final class CaseDbAccessManager {
 		private final CaseDbConnection connection;
 		private final PreparedStatement preparedStatement;
 		private final String originalSql;
+		private final boolean isWriteLockRequired;
 
 		/**
 		 * Main constructor.
@@ -743,16 +745,27 @@ public final class CaseDbAccessManager {
 		 * CaseDbPreparedStatement acquires a case lock in the constructor and
 		 * releases that lock on close.
 		 *
-		 * @param query The query string.
+		 * @param query       The query string.
+		 * @param isWriteLockRequired Whether or not a write lock is required. If a
+		 *                    write lock is not required, just a read lock is
+		 *                    acquired.
 		 *
 		 * @throws SQLException
 		 * @throws TskCoreException
 		 */
-		private CaseDbPreparedStatement(String query) throws SQLException, TskCoreException {
-			CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();
+		private CaseDbPreparedStatement(String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {
+			this.isWriteLockRequired = isWriteLockRequired;
+			
+			if (isWriteLockRequired) {
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();	
+			} else {
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();	
+			}
+			
 			this.connection = tskDB.getConnection();
 			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
 			this.originalSql = query;
+			
 		}
 
 		/**
@@ -950,9 +963,15 @@ public final class CaseDbAccessManager {
 
 		@Override
 		public void close() throws SQLException {
+
 			preparedStatement.close();
 			connection.close();
-			tskDB.releaseSingleUserCaseReadLock();
+
+			if (isWriteLockRequired) {
+				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseWriteLock();
+			} else {
+				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseReadLock();
+			}
 		}
 	}
 
