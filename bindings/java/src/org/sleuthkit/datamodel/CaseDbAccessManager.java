@@ -607,15 +607,17 @@ public final class CaseDbAccessManager {
 		}
 	}
 	
-
 	/**
 	 * Creates a prepared statement object for the purposes of running a select
 	 * statement.
 	 *
-	 * NOTE: The CaseDbPreparedStatement should probably used in a try with
-	 * resources block or disposed of as soon as possible because the
-	 * CaseDbPreparedStatement acquires a case lock in the constructor and
-	 * releases that lock on close.
+	 * NOTE: Creating the CaseDbPreparedStatement opens a connection and
+	 * acquires a read lock on the case database. For this reason, it is
+	 * recommended to close the prepared statement as soon as it is no longer
+	 * needed, through either a try-with-resources block or calling close().
+	 * Additionally, calling other methods that access or update the database
+	 * should be avoided while the prepared statement is open to prevent
+	 * possible deadlocks.
 	 *
 	 * @param sql The select statement without the starting select keyword.
 	 *
@@ -735,33 +737,35 @@ public final class CaseDbAccessManager {
 		private final CaseDbConnection connection;
 		private final PreparedStatement preparedStatement;
 		private final String originalSql;
-		private final boolean isWriteLockRequired;
+		private final boolean hasWriteLock;
 
 		/**
 		 * Main constructor.
 		 *
-		 * NOTE: The CaseDbPreparedStatement should probably used in a try with
-		 * resources block or disposed of as soon as possible because the
-		 * CaseDbPreparedStatement acquires a case lock in the constructor and
-		 * releases that lock on close.
+		 * NOTE: Creating the CaseDbPreparedStatement opens a connection and
+		 * acquires a read lock on the case database. For this reason, it is
+		 * recommended to close the prepared statement as soon as it is no
+		 * longer needed, through either a try-with-resources block or calling
+		 * close(). Additionally, calling other methods that access or update
+		 * the database should be avoided while the prepared statement is open
+		 * to prevent possible deadlocks.
 		 *
-		 * @param query       The query string.
-		 * @param isWriteLockRequired Whether or not a write lock is required. If a
-		 *                    write lock is not required, just a read lock is
-		 *                    acquired.
+		 * @param query               The query string.
+		 * @param isWriteLockRequired Whether or not a write lock is required.
+		 *                            If a write lock is not required, just a
+		 *                            read lock is acquired.
 		 *
 		 * @throws SQLException
 		 * @throws TskCoreException
 		 */
-		private CaseDbPreparedStatement(String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {
-			this.isWriteLockRequired = isWriteLockRequired;
-			
+		private CaseDbPreparedStatement(String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {		
 			if (isWriteLockRequired) {
 				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();	
 			} else {
 				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();	
 			}
 			
+			this.hasWriteLock = isWriteLockRequired;
 			this.connection = tskDB.getConnection();
 			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
 			this.originalSql = query;
@@ -967,7 +971,7 @@ public final class CaseDbAccessManager {
 			preparedStatement.close();
 			connection.close();
 
-			if (isWriteLockRequired) {
+			if (hasWriteLock) {
 				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseWriteLock();
 			} else {
 				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseReadLock();
