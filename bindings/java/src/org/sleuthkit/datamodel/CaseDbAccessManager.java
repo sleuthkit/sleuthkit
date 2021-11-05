@@ -631,7 +631,7 @@ public final class CaseDbAccessManager {
 		try {
 			return new CaseDbPreparedStatement(selectSQL, false);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error creating select prepared statement", ex);
+			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
 		}
 	}
 
