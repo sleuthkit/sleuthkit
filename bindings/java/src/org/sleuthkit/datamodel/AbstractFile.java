@@ -54,6 +54,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final TSK_FS_META_TYPE_ENUM metaType;
 	protected TSK_FS_NAME_FLAG_ENUM dirFlag;
 	protected Set<TSK_FS_META_FLAG_ENUM> metaFlags;
+	protected final Long fileSystemObjectId;  // File system object ID; may be null
 	protected long size;
 	protected final long metaAddr, ctime, crtime, atime, mtime;
 	protected final int metaSeq;
@@ -104,6 +105,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
 	
 	private volatile String uniquePath;
+	private volatile FileSystem parentFileSystem;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -113,6 +115,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param objId              object id in tsk_objects table
 	 * @param dataSourceObjectId The object id of the root data source of this
 	 *                           file.
+	 * @param fileSystemObjectId The object id of the file system. Can be null (or 0 representing null)
 	 * @param attrType
 	 * @param attrId
 	 * @param name               name field of the file
@@ -148,6 +151,7 @@ public abstract class AbstractFile extends AbstractContent {
 	AbstractFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId,
 			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			String name,
 			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
@@ -167,6 +171,17 @@ public abstract class AbstractFile extends AbstractContent {
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
+		if (fileSystemObjectId != null) {
+			// When reading from the result set, nulls are converted to zeros.
+			// Switch it to null.
+			if (fileSystemObjectId > 0) {
+				this.fileSystemObjectId = fileSystemObjectId;
+			} else {
+				this.fileSystemObjectId = null;
+			}
+		} else {
+			this.fileSystemObjectId = null;
+		}
 		this.attrType = attrType;
 		this.attrId = attrId;
 		this.fileType = fileType;
@@ -1397,22 +1412,86 @@ public abstract class AbstractFile extends AbstractContent {
 		return Optional.ofNullable(osAccountObjId);
 	}
 	
+	/**
+	 * Sets the parent file system of this file or directory.
+	 *
+	 * @param parent The parent file system object.
+	 */
+	void setFileSystem(FileSystem parent) {
+		parentFileSystem = parent;
+	}
+	
+	/**
+	 * Get the object id of the parent file system of this file or directory if it exists.
+	 *
+	 * @return The parent file system id.
+	 */
+	public Optional<Long> getFileSystemObjectId() {
+		return Optional.ofNullable(fileSystemObjectId);
+	}
+	
+	/**
+	 * Check if this AbstractFile belongs to a file system.
+	 * 
+	 * @return True if the file belongs to a file system, false otherwise.
+	 */
+	public boolean hasFileSystem() {
+		return fileSystemObjectId != null;
+	}
+	
+	/**
+	 * Gets the parent file system of this file or directory.
+	 * If the AbstractFile object is not FsContent, hasFileSystem() should
+	 * be called before this method to ensure the file belongs to a file
+	 * system.
+	 *
+	 * @return The file system object of the parent.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException If the file does not belong to a file system or
+	 *     another error occurs.
+	 */
+	@SuppressWarnings("deprecation")
+	public FileSystem getFileSystem() throws TskCoreException {
+		if (fileSystemObjectId == null) {
+			throw new TskCoreException("File with ID: " + this.getId() + " does not belong to a file system");
+		}
+		if (parentFileSystem == null) {
+			synchronized (this) {
+				if (parentFileSystem == null) {
+					parentFileSystem = getSleuthkitCase().getFileSystemById(fileSystemObjectId, AbstractContent.UNKNOWN_ID);
+				}
+			}
+		}
+		return parentFileSystem;
+	}
+	
+	/**
+	 * Get the full path to this file or directory, starting with a "/" and the
+	 * image name and then all the other segments in the path.
+	 *
+	 * @return A unique path for this object.
+	 *
+	 * @throws TskCoreException if there is an error querying the case database.
+	 */
 	@Override
 	public String getUniquePath() throws TskCoreException {
 
 		if (uniquePath == null) {
-			Content dataSource = getDataSource();
-			if (dataSource instanceof LocalFilesDataSource) {
-				if(dataSource != this) {
-					uniquePath = dataSource.getUniquePath() + parentPath + getName();
-				} else {
-					uniquePath =  "/" + getName();
-				}
+			if (getFileSystemObjectId().isPresent()) {
+				StringBuilder sb = new StringBuilder();
+				sb.append(getFileSystem().getUniquePath());
+				sb.append(getParentPath());
+				sb.append(getName());
+				uniquePath = sb.toString();
 			} else {
-				uniquePath = super.getUniquePath();
+				String dataSourceName = "";
+				Content dataSource = getDataSource();
+				if (dataSource != null) {
+				  dataSourceName = dataSource.getUniquePath(); 
+				}
+				uniquePath = dataSourceName + parentPath + getName();
 			}
 		}
-
 		return uniquePath;
 	}
 
@@ -1479,7 +1558,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
+		this(db, objId, db.getDataSourceObjectId(objId), null, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**
@@ -1524,7 +1603,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
+		this(db, objId, dataSourceObjectId, null, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**

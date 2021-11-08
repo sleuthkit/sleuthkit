@@ -51,6 +51,7 @@ public class DerivedFile extends AbstractFile {
 	 *                           added.
 	 * @param objId              The object id of the file in the case database.
 	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param fileSystemObjectId The object id of the file system. May be null.
 	 * @param name               The name of the file.
 	 * @param dirType            The type of the file, usually as reported in
 	 *                           the name structure of the file system. May be
@@ -90,6 +91,7 @@ public class DerivedFile extends AbstractFile {
 	DerivedFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId, 
 			String name,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
@@ -106,7 +108,7 @@ public class DerivedFile extends AbstractFile {
 			Long osAccountObjId) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
-		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
+		super(db, objId, dataSourceObjectId, fileSystemObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 		setLocalFilePath(localPath);
@@ -309,7 +311,7 @@ public class DerivedFile extends AbstractFile {
 			String parentPath,
 			String localPath,
 			long parentId) {
-		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
+		this(db, objId, db.getDataSourceObjectId(objId), null, name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
 				md5Hash, null, knownState,
 				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);

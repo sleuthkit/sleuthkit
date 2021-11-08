@@ -33,6 +33,7 @@ public abstract class SpecialDirectory extends AbstractFile {
 	SpecialDirectory(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId,
 			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			String name,
 			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
@@ -46,7 +47,7 @@ public abstract class SpecialDirectory extends AbstractFile {
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType) {
-		super(db, objId, dataSourceObjectId, attrType, attrId, name,
+		super(db, objId, dataSourceObjectId, fileSystemObjectId, attrType, attrId, name,
 				fileType, metaAddr, metaSeq, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}

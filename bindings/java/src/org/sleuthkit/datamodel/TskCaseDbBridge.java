@@ -970,7 +970,7 @@ class TskCaseDbBridge {
 					&& TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType() != fsType
 					&& (!name.equals(".")) && (!name.equals(".."))) {
 				TimelineManager timelineManager = caseDb.getTimelineManager();
-				DerivedFile derivedFile = new DerivedFile(caseDb, objectId, dataSourceObjId, name,
+				DerivedFile derivedFile = new DerivedFile(caseDb, objectId, dataSourceObjId, fsObjId, name,
 						TskData.TSK_FS_NAME_TYPE_ENUM.valueOf((short) dirType),
 						TskData.TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
 						TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),

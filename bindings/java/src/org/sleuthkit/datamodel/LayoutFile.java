@@ -55,6 +55,7 @@ public class LayoutFile extends AbstractFile {
 	 *                           added.
 	 * @param objId              The object id of the file in the case database.
 	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param fileSystemObjectId The object id of the file system. May be null.
 	 * @param name               The name of the file.
 	 * @param fileType           The type of the file.
 	 * @param dirType            The type of the file, usually as reported in
@@ -89,6 +90,7 @@ public class LayoutFile extends AbstractFile {
 	LayoutFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId,
 			String name,
 			TSK_DB_FILES_TYPE_ENUM fileType,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
@@ -100,7 +102,7 @@ public class LayoutFile extends AbstractFile {
 			String ownerUid,
 			Long osAccountObjId) {
 			
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), ownerUid, osAccountObjId, Collections.emptyList());
+		super(db, objId, dataSourceObjectId, fileSystemObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), ownerUid, osAccountObjId, Collections.emptyList());
 	}
 
 	/**
@@ -287,6 +289,6 @@ public class LayoutFile extends AbstractFile {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), name, fileType, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, md5Hash, null, knownState, parentPath, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
+		this(db, objId, db.getDataSourceObjectId(objId), null, name, fileType, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, md5Hash, null, knownState, parentPath, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 	}
 }
