@@ -18,19 +18,22 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the AccountAuthentication observable described
- * in the UCO ontology.
- */
-class AccountAuthentication extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the AccountAuthenticationFacet observable described
+ in the UCO ontology.
+ */
+class AccountAuthenticationFacet extends Facet {
+
+    @SerializedName("observable:password")
     private String password;
 
-    AccountAuthentication() {
-        super(AccountAuthentication.class.getSimpleName());
+    AccountAuthenticationFacet() {
+        super(AccountAuthenticationFacet.class.getSimpleName());
     }
 
-    AccountAuthentication setPassword(String password) {
+    AccountAuthenticationFacet setPassword(String password) {
         this.password = password;
         return this;
     }

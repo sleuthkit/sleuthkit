@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the ActionArgument observable described in the
- * UCO ontology.
+ * This class definition mirrors the ApplicationAccountFacet observable described in
+ the UCO ontology.
  */
-class ActionArgument extends Facet {
+class ApplicationAccountFacet extends Facet {
 
-    private String argumentName;
+    @SerializedName("observable:sourceApplication")
+    private String application;
 
-    ActionArgument() {
-        super(ActionArgument.class.getSimpleName());
+    ApplicationAccountFacet() {
+        super(ApplicationAccountFacet.class.getSimpleName());
     }
 
-    ActionArgument setArgumentName(String argumentName) {
-        this.argumentName = argumentName;
+    ApplicationAccountFacet setApplication(CyberItem application) {
+        this.application = application.getId();
         return this;
     }
 
-    String getArgumentName() {
-        return argumentName;
+    String getApplication() {
+        return application;
     }
 }

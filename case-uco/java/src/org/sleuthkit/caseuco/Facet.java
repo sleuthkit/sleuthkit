@@ -24,6 +24,8 @@ package org.sleuthkit.caseuco;
  */
 abstract class Facet extends UcoObject {
 
+    final static String OBSERVABLE = "observable:";
+    
     Facet(String type) {
         super(null, type);
     }

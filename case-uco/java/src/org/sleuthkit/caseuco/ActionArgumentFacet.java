@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the Attachment observable described in the UCO
- * ontology.
+ * This class definition mirrors the ActionArgumentFacet observable described in the
+ UCO ontology.
  */
-class Attachment extends Facet {
+class ActionArgumentFacet extends Facet {
 
-    private String url;
+    @SerializedName("action:argumentName")
+    private String argumentName;
 
-    Attachment() {
-        super(Attachment.class.getSimpleName());
+    ActionArgumentFacet() {
+        super(ActionArgumentFacet.class.getSimpleName());
     }
 
-    Attachment setUrl(String url) {
-        this.url = url;
+    ActionArgumentFacet setArgumentName(String argumentName) {
+        this.argumentName = argumentName;
         return this;
     }
 
-    String getUrl() {
-        return url;
+    String getArgumentName() {
+        return argumentName;
     }
 }

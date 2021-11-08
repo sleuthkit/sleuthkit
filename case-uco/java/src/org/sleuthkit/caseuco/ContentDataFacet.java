@@ -25,57 +25,62 @@ import java.util.List;
 import org.sleuthkit.caseuco.Hash.HashMethod;
 
 /**
- * This class definition mirrors the ContentData observable described in the UCO
- * ontology.
+ * This class definition mirrors the ContentDataFacet observable described in the UCO
+ ontology.
  */
-class ContentData extends Facet {
+class ContentDataFacet extends Facet {
 
+    @SerializedName("observable:sizeInBytes")
     private Long sizeInBytes;
 
+    @SerializedName("observable:mimeType")   
     private String mimeType;
 
-    @SerializedName("hash")
+    @SerializedName("observable:hashs")
     private final List<Hash> hashes;
 
+    @SerializedName("observable:dataPayload")
     private String dataPayload;
 
+    @SerializedName("observable:owner")
     private String owner;
     
+    @SerializedName("observable:dataPayloadReferenceUrl")
     private String dataPayloadReferenceUrl;
 
-    ContentData() {
-        super(ContentData.class.getSimpleName());
+    ContentDataFacet() {
+        super(OBSERVABLE + ContentDataFacet.class.getSimpleName());
         this.hashes = new ArrayList<>();
     }
 
-    ContentData setSizeInBytes(long bytes) {
+    ContentDataFacet setSizeInBytes(long bytes) {
         this.sizeInBytes = bytes;
         return this;
     }
 
-    ContentData setMimeType(String mimeType) {
+    ContentDataFacet setMimeType(String mimeType) {
         this.mimeType = mimeType;
         return this;
     }
 
-    ContentData setMd5Hash(String md5Hash) {
+    ContentDataFacet setMd5Hash(String md5Hash) {
         Hash md5HashType = new Hash(md5Hash)
                 .setHashMethod(HashMethod.MD5);
         hashes.add(md5HashType);
         return this;
     }
 
-    ContentData setDataPayload(String dataPayload) {
+    ContentDataFacet setDataPayload(String dataPayload) {
         this.dataPayload = dataPayload;
         return this;
     }
 
-    ContentData setOwner(Identity owner) {
+    ContentDataFacet setOwner(Identity owner) {
         this.owner = owner.getId();
         return this;
     }
     
-    ContentData setDataPayloadReferenceUrl(UcoObject url) {
+    ContentDataFacet setDataPayloadReferenceUrl(UcoObject url) {
         this.dataPayloadReferenceUrl = url.getId();
         return this;
     }

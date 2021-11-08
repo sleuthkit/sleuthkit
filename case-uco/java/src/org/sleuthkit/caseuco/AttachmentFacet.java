@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the ApplicationAccount observable described in
- * the UCO ontology.
+ * This class definition mirrors the AttachmentFacet observable described in the UCO
+ ontology.
  */
-class ApplicationAccount extends Facet {
+class AttachmentFacet extends Facet {
 
-    private String application;
+    @SerializedName("observable:url")
+    private String url;
 
-    ApplicationAccount() {
-        super(ApplicationAccount.class.getSimpleName());
+    AttachmentFacet() {
+        super(AttachmentFacet.class.getSimpleName());
     }
 
-    ApplicationAccount setApplication(CyberItem application) {
-        this.application = application.getId();
+    AttachmentFacet setUrl(String url) {
+        this.url = url;
         return this;
     }
 
-    String getApplication() {
-        return application;
+    String getUrl() {
+        return url;
     }
 }

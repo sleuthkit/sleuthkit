@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
@@ -27,10 +28,11 @@ import java.time.ZoneOffset;
  */
 class Action extends UcoObject {
 
+    @SerializedName("action:startTime")
     private String startTime;
 
     Action(String id) {
-        super(id, Action.class.getSimpleName());
+        super(id, Action.class.getSimpleName() + UcoObject.UCO_ACTION);
     }
 
     Action setStartTime(Long startTime) {

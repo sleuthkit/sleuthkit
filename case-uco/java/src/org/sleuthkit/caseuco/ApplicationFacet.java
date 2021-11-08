@@ -18,40 +18,46 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the Application observable described in the UCO
- * ontology.
- */
-class Application extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the ApplicationFacet observable described in the UCO
+ ontology.
+ */
+class ApplicationFacet extends Facet {
+
+    @SerializedName("observable:applicationIdentifier")    
     private String applicationIdentifier;
 
+    @SerializedName("observable:operatingSystem")
     private String operatingSystem;
 
+    @SerializedName("observable:numberOfLaunches")
     private Integer numberOfLaunches;
 
+    @SerializedName("observable:version")
     private String version;
 
-    Application() {
-        super(Application.class.getSimpleName());
+    ApplicationFacet() {
+        super(ApplicationFacet.class.getSimpleName());
     }
 
-    Application setApplicationIdentifier(String applicationIdentifier) {
+    ApplicationFacet setApplicationIdentifier(String applicationIdentifier) {
         this.applicationIdentifier = applicationIdentifier;
         return this;
     }
 
-    Application setOperatingSystem(CyberItem operatingSystem) {
+    ApplicationFacet setOperatingSystem(CyberItem operatingSystem) {
         this.operatingSystem = operatingSystem.getId();
         return this;
     }
 
-    Application setNumberOfLaunches(Integer numberOfLaunches) {
+    ApplicationFacet setNumberOfLaunches(Integer numberOfLaunches) {
         this.numberOfLaunches = numberOfLaunches;
         return this;
     }
 
-    Application setVersion(String version) {
+    ApplicationFacet setVersion(String version) {
         this.version = version;
         return this;
     }

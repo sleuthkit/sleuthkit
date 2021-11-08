@@ -18,33 +18,38 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the Account observable described in the UCO
- * ontology.
- */
-class Account extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the AccountFacet observable described in the UCO
+ ontology.
+ */
+class AccountFacet extends Facet {
+
+    @SerializedName("observable:accountType")
     private String accountType;
 
+    @SerializedName("observable:accountIdentifier")
     private String accountIdentifier;
 
+    @SerializedName("observable:owner")
     private String owner;
 
-    Account() {
-        super(Account.class.getSimpleName());
+    AccountFacet() {
+        super(AccountFacet.class.getSimpleName());
     }
 
-    Account setAccountType(String accountType) {
+    AccountFacet setAccountType(String accountType) {
         this.accountType = accountType;
         return this;
     }
 
-    Account setAccountIdentifier(String accountIdentifier) {
+    AccountFacet setAccountIdentifier(String accountIdentifier) {
         this.accountIdentifier = accountIdentifier;
         return this;
     }
 
-    Account setOwner(Identity owner) {
+    AccountFacet setOwner(Identity owner) {
         this.owner = owner.getId();
         return this;
     }
