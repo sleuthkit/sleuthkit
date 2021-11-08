@@ -704,22 +704,22 @@ public class CaseUcoExporter {
 
     private void assembleEmailMessage(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject bccNode = new BlankObservableObject()
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_BCC)));
 
         ObservableObject ccNode = new BlankObservableObject()
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_CC)));
 
         ObservableObject fromNode = new BlankObservableObject()
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_FROM)));
 
         ObservableObject headerRawNode = new BlankObservableObject()
                 .addBundle(new ExtractedString()
                         .setStringValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_HEADERS)));
 
-        EmailMessage emailMessage = new EmailMessage();
+        EmailMessageFacet emailMessage = new EmailMessageFacet();
         String html = getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_CONTENT_HTML);
         String plain = getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_CONTENT_PLAIN);
         String rtf = getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_CONTENT_RTF);
@@ -810,7 +810,7 @@ public class CaseUcoExporter {
 
     private void assembleOsAccount(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid)
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL)))
                 .addBundle(new PathRelation()
                         .setPath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)))
@@ -843,7 +843,7 @@ public class CaseUcoExporter {
 
     private void assembleServiceAccount(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject inReplyToNode = new BlankObservableObject()
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_REPLYTO)));
 
         ObservableObject export = new ObservableObject(uuid)
@@ -851,7 +851,7 @@ public class CaseUcoExporter {
                         .setAccountType(getValueIfPresent(artifact, StandardAttributeTypes.TSK_CATEGORY)))
                 .addBundle(new DomainNameFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DOMAIN)))
-                .addBundle(new EmailMessage()
+                .addBundle(new EmailMessageFacet()
                         .setInReplyTo(inReplyToNode))
                 .addBundle(new DigitalAccountFacet()
                         .setDisplayName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME)))
@@ -882,11 +882,11 @@ public class CaseUcoExporter {
     }
 
     private void assembleContact(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        EmailAddress homeAddress = new EmailAddress()
+        EmailAddressFacet homeAddress = new EmailAddressFacet()
                 .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_HOME));
         homeAddress.setTag("Home");
 
-        EmailAddress workAddress = new EmailAddress()
+        EmailAddressFacet workAddress = new EmailAddressFacet()
                 .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_OFFICE));
         workAddress.setTag("Work");
 
@@ -905,7 +905,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new URL()
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL)))
                 .addBundle(homeAddress)
                 .addBundle(workAddress)
@@ -925,7 +925,7 @@ public class CaseUcoExporter {
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MESSAGE_TYPE)));
 
         ObservableObject senderNode = new BlankObservableObject()
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_FROM)));
 
         ObservableObject fromNode = new BlankObservableObject()
@@ -943,7 +943,7 @@ public class CaseUcoExporter {
                         .setSentTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME))
                         .setMessageType(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DIRECTION))
                         .setId(getValueIfPresent(artifact, StandardAttributeTypes.TSK_THREAD_ID)))
-                .addBundle(new EmailMessage()
+                .addBundle(new EmailMessageFacet()
                         .setSender(senderNode))
                 .addBundle(new PhoneAccount()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER)))
@@ -1284,7 +1284,7 @@ public class CaseUcoExporter {
 
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(simpleAddress)
-                .addBundle(new EmailAddress()
+                .addBundle(new EmailAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL)))
                 .addBundle(new PhoneAccount()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER)));

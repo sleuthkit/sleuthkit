@@ -18,19 +18,22 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the EmailAddress observable described in the
- * UCO ontology.
- */
-class EmailAddress extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the EmailAddressFacet observable described in the
+ UCO ontology.
+ */
+class EmailAddressFacet extends Facet {
+
+    @SerializedName("observable:value")
     private String value;
 
-    EmailAddress() {
-        super(EmailAddress.class.getSimpleName());
+    EmailAddressFacet() {
+        super(EmailAddressFacet.class.getSimpleName());
     }
 
-    EmailAddress setValue(String value) {
+    EmailAddressFacet setValue(String value) {
         this.value = value;
         return this;
     }
