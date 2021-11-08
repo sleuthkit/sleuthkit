@@ -240,23 +240,26 @@ public final class CommunicationsManager {
 	/**
 	 * Records that an account was used in a specific file. Behind the scenes,
 	 * it will create a case-specific Account object if it does not already
-	 * exist and create the needed database entries (which currently include
-	 * making a BlackboardArtifact).
+	 * exist, and it will create the needed database entries (which currently
+	 * includes making a TSK_ACCOUNT data artifact).
 	 *
-	 * @param accountType     account type
-	 * @param accountUniqueID unique account identifier (such as email address)
-	 * @param moduleName      module creating the account
-	 * @param sourceFile      source file the account was found in (for the
-	 *                        blackboard)
+	 * @param accountType     The account type.
+	 * @param accountUniqueID The unique account identifier (such as an email
+	 *                        address).
+	 * @param moduleName      The module creating the account.
+	 * @param sourceFile      The source file the account was found in.
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
 	 *
-	 * @return AccountFileInstance
+	 * @return	An AccountFileInstance object.
 	 *
-	 * @throws TskCoreException          If a critical error occurs within TSK
-	 *                                   core
-	 * @throws InvalidAccountIDException If the account identifier is not valid.
+	 * @throws TskCoreException          The exception is thrown if there is an
+	 *                                   issue updating the case database.
+	 * @throws InvalidAccountIDException The exception is thrown if the account
+	 *                                   ID is not valid for the account type.
 	 */
 	// NOTE: Full name given for Type for doxygen linking
-	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException, InvalidAccountIDException {
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile, Long ingestJobId) throws TskCoreException, InvalidAccountIDException {
 
 		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
@@ -267,7 +270,7 @@ public final class CommunicationsManager {
 		 * address multiple times. Only one artifact is created for each email
 		 * message in that PST.
 		 */
-		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile);
+		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, ingestJobId);
 
 		// The account instance map was unused so we have removed it from the database, 
 		// but we expect we may need it so I am preserving this method comment and usage here.
@@ -276,6 +279,35 @@ public final class CommunicationsManager {
 		// But, it will probably fail to create a new one based on unique constraints. 
 		// addAccountFileInstanceMapping(account.getAccountID(), accountArtifact.getArtifactID());
 		return new AccountFileInstance(accountArtifact, account);
+	}
+
+	/**
+	 * Records that an account was used in a specific file. Behind the scenes,
+	 * it will create a case-specific Account object if it does not already
+	 * exist, and it will create the needed database entries (which currently
+	 * includes making a TSK_ACCOUNT data artifact).
+	 *
+	 * @param accountType     The account type.
+	 * @param accountUniqueID The unique account identifier (such as an email
+	 *                        address).
+	 * @param moduleName      The module creating the account.
+	 * @param sourceFile      The source file the account was found in.
+	 *
+	 * @return	An AccountFileInstance object.
+	 *
+	 * @throws TskCoreException          The exception is thrown if there is an
+	 *                                   issue updating the case database.
+	 * @throws InvalidAccountIDException The exception is thrown if the account
+	 *                                   ID is not valid for the account type.
+	 * @deprecated Use
+	 * createAccountFileInstance(org.sleuthkit.datamodel.Account.Type
+	 * accountType, String accountUniqueID, String moduleName, Content
+	 * sourceFile, Long ingestJobId) instead.
+	 */
+	@Deprecated
+	// NOTE: Full name given for Type for doxygen linking
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException, InvalidAccountIDException {
+		return createAccountFileInstance(accountType, accountUniqueID, moduleName, sourceFile, null);
 	}
 
 	/**
@@ -482,13 +514,15 @@ public final class CommunicationsManager {
 	 * @param moduleName      The name of the module that found the account
 	 *                        instance.
 	 * @param sourceFile      The file in which the account instance was found.
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
 	 *
 	 * @return The account artifact.
 	 *
 	 * @throws TskCoreException If there is an error querying or updating the
 	 *                          case database.
 	 */
-	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
+	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile, Long ingestJobId) throws TskCoreException {
 		if (sourceFile == null) {
 			throw new TskCoreException("Source file not provided.");
 		}
@@ -503,7 +537,7 @@ public final class CommunicationsManager {
 			accountArtifact = sourceFile.newDataArtifact(ACCOUNT_TYPE, attributes);
 
 			try {
-				db.getBlackboard().postArtifact(accountArtifact, moduleName);
+				db.getBlackboard().postArtifact(accountArtifact, moduleName, ingestJobId);
 			} catch (BlackboardException ex) {
 				LOGGER.log(Level.SEVERE, String.format("Error posting new account artifact to the blackboard (object ID = %d)", accountArtifact.getId()), ex);
 			}

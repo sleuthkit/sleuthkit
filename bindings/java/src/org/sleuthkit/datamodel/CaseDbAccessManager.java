@@ -18,10 +18,15 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.MessageFormat;
+import java.sql.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -603,6 +608,51 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
+	 * Creates a prepared statement object for the purposes of running a select
+	 * statement.
+	 *
+	 * NOTE: Creating the CaseDbPreparedStatement opens a connection and
+	 * acquires a read lock on the case database. For this reason, it is
+	 * recommended to close the prepared statement as soon as it is no longer
+	 * needed, through either a try-with-resources block or calling close().
+	 * Additionally, calling other methods that access or update the database
+	 * should be avoided while the prepared statement is open to prevent
+	 * possible deadlocks.
+	 *
+	 * @param sql The select statement without the starting select keyword.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareSelect(String sql) throws TskCoreException {
+		String selectSQL = "SELECT " + sql; // NON-NLS
+		try {
+			return new CaseDbPreparedStatement(selectSQL, false);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
+		}
+	}
+
+	/**
+	 * Performs a select statement query with the given case prepared statement.
+	 *
+	 * @param preparedStatement The case prepared statement.
+	 * @param queryCallback     The callback to handle the result set.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void select(CaseDbPreparedStatement preparedStatement, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
+		try (ResultSet resultSet = preparedStatement.getStatement().executeQuery()) {
+			queryCallback.process(resultSet);
+		} catch (SQLException ex) {
+			throw new TskCoreException(MessageFormat.format("Error running SELECT query:\n{0}", preparedStatement.getOriginalSql()), ex);
+		}
+	}
+
+	/**
 	 * Deletes a row in the specified table.
 	 * 
 	 * @param tableName table from which to delete the row
@@ -674,6 +724,259 @@ public final class CaseDbAccessManager {
 		/*
 		 * TODO (JIRA-5950): Need SQL injection defense in CaseDbAccessManager 
 		 */
+	}
+	
+	
+	/**
+	 * A wrapper around a PreparedStatement to execute queries against the
+	 * database.
+	 */
+	@Beta
+	public class CaseDbPreparedStatement implements AutoCloseable {
+
+		private final CaseDbConnection connection;
+		private final PreparedStatement preparedStatement;
+		private final String originalSql;
+		private final boolean hasWriteLock;
+
+		/**
+		 * Main constructor.
+		 *
+		 * NOTE: Creating the CaseDbPreparedStatement opens a connection and
+		 * acquires a read lock on the case database. For this reason, it is
+		 * recommended to close the prepared statement as soon as it is no
+		 * longer needed, through either a try-with-resources block or calling
+		 * close(). Additionally, calling other methods that access or update
+		 * the database should be avoided while the prepared statement is open
+		 * to prevent possible deadlocks.
+		 *
+		 * @param query               The query string.
+		 * @param isWriteLockRequired Whether or not a write lock is required.
+		 *                            If a write lock is not required, just a
+		 *                            read lock is acquired.
+		 *
+		 * @throws SQLException
+		 * @throws TskCoreException
+		 */
+		private CaseDbPreparedStatement(String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {		
+			if (isWriteLockRequired) {
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();	
+			} else {
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();	
+			}
+			
+			this.hasWriteLock = isWriteLockRequired;
+			this.connection = tskDB.getConnection();
+			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			this.originalSql = query;
+			
+		}
+
+		/**
+		 * Returns the delegate prepared statement.
+		 *
+		 * @return The delegate prepared statement.
+		 */
+		private PreparedStatement getStatement() {
+			return preparedStatement;
+		}
+
+		/**
+		 * Returns the original sql query.
+		 *
+		 * @return The original sql query.
+		 */
+		private String getOriginalSql() {
+			return originalSql;
+		}
+		
+		/**
+		 * Resets the parameters in the prepared statement.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void reset() throws TskCoreException {
+			try {
+				preparedStatement.clearParameters();
+			} catch (SQLException ex) {
+				throw new TskCoreException("An error occurred while clearing parameters.", ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setBoolean(int parameterIndex, boolean x) throws TskCoreException {
+			try {
+				preparedStatement.setBoolean(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setByte(int parameterIndex, byte x) throws TskCoreException {
+			try {
+				preparedStatement.setByte(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setInt(int parameterIndex, int x) throws TskCoreException {
+			try {
+				preparedStatement.setInt(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setLong(int parameterIndex, long x) throws TskCoreException {
+			try {
+				preparedStatement.setLong(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setDouble(int parameterIndex, double x) throws TskCoreException {
+			try {
+				preparedStatement.setDouble(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setString(int parameterIndex, String x) throws TskCoreException {
+			try {
+				preparedStatement.setString(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setDate(int parameterIndex, Date x) throws TskCoreException {
+			try {
+				preparedStatement.setDate(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setTime(int parameterIndex, Time x) throws TskCoreException {
+			try {
+				preparedStatement.setTime(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setTimestamp(int parameterIndex, Timestamp x) throws TskCoreException {
+			try {
+				preparedStatement.setTimestamp(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value. The
+		 * sql type is determined in the same manner as
+		 * java.sql.PreparedStatement.setObject.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setObject(int parameterIndex, Object x) throws TskCoreException {
+			try {
+				preparedStatement.setObject(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		@Override
+		public void close() throws SQLException {
+
+			preparedStatement.close();
+			connection.close();
+
+			if (hasWriteLock) {
+				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseWriteLock();
+			} else {
+				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseReadLock();
+			}
+		}
 	}
 
 }

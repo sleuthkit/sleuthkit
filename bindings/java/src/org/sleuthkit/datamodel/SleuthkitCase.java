@@ -3465,7 +3465,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 *
-	 * @deprecated Use Blackboard.getArtifactsByType instead.
+	 * @deprecated Use Blackboard.getArtifacts with the desired type(s) and data source(s) as arguments instead.
 	 */
 	@Deprecated
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID) throws TskCoreException {
