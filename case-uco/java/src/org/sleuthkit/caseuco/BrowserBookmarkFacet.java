@@ -18,40 +18,39 @@
  */
 package org.sleuthkit.caseuco;
 
-import java.time.Instant;
-import java.time.ZoneOffset;
+import com.google.gson.annotations.SerializedName;
 
 /**
- * This class definition mirrors the DigitalAccount observable described in the
- * UCO ontology.
+ * This class definition mirrors the BrowserBookmarkFacet observable described in the
+ UCO ontology.
  */
-class DigitalAccount extends Facet {
+class BrowserBookmarkFacet extends Facet {
 
-    private String displayName;
+    @SerializedName("observable:urlTargeted")
+    private String urlTargeted;
 
-    private String lastLoginTime;
+    @SerializedName("observable:sourceApplication")
+    private String application;
 
-    DigitalAccount() {
-        super(DigitalAccount.class.getSimpleName());
+    BrowserBookmarkFacet() {
+        super(BrowserBookmarkFacet.class.getSimpleName());
     }
 
-    DigitalAccount setDisplayName(String displayName) {
-        this.displayName = displayName;
+    BrowserBookmarkFacet setUrlTargeted(String urlTargeted) {
+        this.urlTargeted = urlTargeted;
         return this;
     }
 
-    DigitalAccount setLastLoginTime(Long time) {
-        if (time != null) {
-            this.lastLoginTime = Instant.ofEpochSecond(time).atOffset(ZoneOffset.UTC).toString();
-        }
+    BrowserBookmarkFacet setApplication(CyberItem application) {
+        this.application = application.getId();
         return this;
     }
 
-    String getDisplayName() {
-        return displayName;
+    String getUrlTargeted() {
+        return urlTargeted;
     }
 
-    String getLastLoginTime() {
-        return lastLoginTime;
+    String getApplication() {
+        return application;
     }
 }

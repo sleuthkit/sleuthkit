@@ -18,61 +18,68 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the BrowserCookie observable described in the
- * UCO ontology.
+ * This class definition mirrors the BrowserCookieFacet observable described in the
+ UCO ontology.
  */
-class BrowserCookie extends Facet {
+class BrowserCookieFacet extends Facet {
 
-    private String cookieName;
+   @SerializedName("observable:cookieName")
+   private String cookieName;
 
-    private String accessedTime;
+   @SerializedName("observable:accessedTime")
+   private String accessedTime;
 
-    private String expirationTime;
+   @SerializedName("observable:expirationTime")
+   private String expirationTime;
 
-    private String cookieDomain;
+   @SerializedName("observable:cookieDomain")
+   private String cookieDomain;
 
-    private String application;
+   @SerializedName("observable:sourceApplication")
+   private String application;
 
-    private String cookiePath;
+   @SerializedName("observable:cookiePath")
+   private String cookiePath;
 
-    BrowserCookie() {
-        super(BrowserCookie.class.getSimpleName());
+    BrowserCookieFacet() {
+        super(BrowserCookieFacet.class.getSimpleName());
     }
 
-    BrowserCookie setCookieName(String cookieName) {
+    BrowserCookieFacet setCookieName(String cookieName) {
         this.cookieName = cookieName;
         return this;
     }
 
-    BrowserCookie setAccessedTime(Long accessedTime) {
+    BrowserCookieFacet setAccessedTime(Long accessedTime) {
         if (accessedTime != null) {
             this.accessedTime = Instant.ofEpochSecond(accessedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    BrowserCookie setExpirationTime(Long expirationTime) {
+    BrowserCookieFacet setExpirationTime(Long expirationTime) {
         if (expirationTime != null) {
             this.expirationTime = Instant.ofEpochSecond(expirationTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    BrowserCookie setCookieDomain(CyberItem cookieDomain) {
+    BrowserCookieFacet setCookieDomain(CyberItem cookieDomain) {
         this.cookieDomain = cookieDomain.getId();
         return this;
     }
 
-    BrowserCookie setApplication(CyberItem application) {
+    BrowserCookieFacet setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
     }
 
-    BrowserCookie setCookiePath(String cookiePath) {
+    BrowserCookieFacet setCookiePath(String cookiePath) {
         this.cookiePath = cookiePath;
         return this;
     }

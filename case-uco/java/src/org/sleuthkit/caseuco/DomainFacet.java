@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the Contact observable described in the UCO
- * ontology.
+ * This class definition mirrors the DomainFacet observable described in the UCO
+ ontology.
  */
-class Contact extends Facet {
+class DomainFacet extends Facet {
 
-    private String contactName;
+    @SerializedName("observable:value")
+    private String value;
 
-    Contact() {
-        super(Contact.class.getSimpleName());
+    DomainFacet() {
+        super(DomainFacet.class.getSimpleName());
     }
 
-    Contact setContactName(String contactName) {
-        this.contactName = contactName;
+    DomainFacet setValue(String value) {
+        this.value = value;
         return this;
     }
 
-    String getContactName() {
-        return contactName;
+    String getValue() {
+        return value;
     }
 }

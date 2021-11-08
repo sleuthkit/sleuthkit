@@ -18,45 +18,50 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the CalendarEntry observable described in the
- * UCO ontology.
+ * This class definition mirrors the CalendarEntryFacet observable described in the
+ UCO ontology.
  */
-class CalendarEntry extends Facet {
+class CalendarEntryFacet extends Facet {
 
+   @SerializedName("observable:eventType")
     private String eventType;
 
+   @SerializedName("observable:startTime")
     private String startTime;
 
+   @SerializedName("observable:endTime")
     private String endTime;
 
+   @SerializedName("observable:endTime")
     private String location;
 
-    CalendarEntry() {
-        super(CalendarEntry.class.getSimpleName());
+    CalendarEntryFacet() {
+        super(CalendarEntryFacet.class.getSimpleName());
     }
 
-    CalendarEntry setEventType(String eventType) {
+    CalendarEntryFacet setEventType(String eventType) {
         this.eventType = eventType;
         return this;
     }
 
-    CalendarEntry setLocation(Location location) {
+    CalendarEntryFacet setLocation(Location location) {
         this.location = location.getId();
         return this;
     }
 
-    CalendarEntry setEndTime(Long endTime) {
+    CalendarEntryFacet setEndTime(Long endTime) {
         if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    CalendarEntry setStartTime(Long startTime) {
+    CalendarEntryFacet setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }

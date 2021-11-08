@@ -2,7 +2,7 @@
  * Sleuth Kit CASE JSON LD Support
  *
  * Copyright 2020-2021 Basis Technology Corp.
- * Contact: carrier <at> sleuthkit <dot> org
+ * ContactFacet: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,35 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the BrowserBookmark observable described in the
- * UCO ontology.
+ * This class definition mirrors the ContactFacet observable described in the UCO
+ ontology.
  */
-class BrowserBookmark extends Facet {
+class ContactFacet extends Facet {
 
-    private String urlTargeted;
+    @SerializedName("observable:contact")
+    private String contactName;
 
-    private String application;
-
-    BrowserBookmark() {
-        super(BrowserBookmark.class.getSimpleName());
+    ContactFacet() {
+        super(ContactFacet.class.getSimpleName());
     }
 
-    BrowserBookmark setUrlTargeted(String urlTargeted) {
-        this.urlTargeted = urlTargeted;
+    ContactFacet setContactName(String contactName) {
+        this.contactName = contactName;
         return this;
     }
 
-    BrowserBookmark setApplication(CyberItem application) {
-        this.application = application.getId();
-        return this;
-    }
-
-    String getUrlTargeted() {
-        return urlTargeted;
-    }
-
-    String getApplication() {
-        return application;
+    String getContactName() {
+        return contactName;
     }
 }

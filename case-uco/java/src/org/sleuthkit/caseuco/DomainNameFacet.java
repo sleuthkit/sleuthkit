@@ -18,19 +18,22 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the Domain observable described in the UCO
- * ontology.
- */
-class Domain extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the DomainNameFacet observable described in the UCO
+ ontology.
+ */
+class DomainNameFacet extends Facet {
+
+    @SerializedName("observable:value")
     private String value;
 
-    Domain() {
-        super(Domain.class.getSimpleName());
+    DomainNameFacet() {
+        super(DomainNameFacet.class.getSimpleName());
     }
 
-    Domain setValue(String value) {
+    DomainNameFacet setValue(String value) {
         this.value = value;
         return this;
     }

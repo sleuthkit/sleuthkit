@@ -18,39 +18,44 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the Device observable described in the UCO
- * ontology.
- */
-class Device extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the DeviceFacet observable described in the UCO
+ ontology.
+ */
+class DeviceFacet extends Facet {
+
+    @SerializedName("observable:manufacturer")
     private String manufacturer;
 
+    @SerializedName("observable:model")
     private String model;
 
+    @SerializedName("observable:serialNumber")
     private String serialNumber;
 
-    Device() {
-        super(Device.class.getSimpleName());
+    DeviceFacet() {
+        super(DeviceFacet.class.getSimpleName());
     }
 
-    Device setManufacturer(String manufacturer) {
+    DeviceFacet setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
         return this;
     }
 
-    Device setModel(String model) {
+    DeviceFacet setModel(String model) {
         this.model = model;
         return this;
     }
 
     @Override
-    Device setId(String id) {
+    DeviceFacet setId(String id) {
         super.setId("_:" + id);
         return this;
     }
 
-    Device setSerialNumber(String serialNumber) {
+    DeviceFacet setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
         return this;
     }
