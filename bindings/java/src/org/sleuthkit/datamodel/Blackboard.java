@@ -475,11 +475,12 @@ public final class Blackboard {
 	 * Populate the attributes for all artifact in the list. 
 	 * This is done using one database call as an efficient way to
 	 * load many artifacts/attributes at once.
-	 * 
+	 *
 	 * @param arts The list of artifacts. When complete, each will have its attributes loaded.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */	
 	@Beta
-	public void loadBlackboardAttributes(List<BlackboardArtifact> arts) throws TskCoreException {
+	public <T extends BlackboardArtifact>  void loadBlackboardAttributes(List<T> arts) throws TskCoreException {
 
 		if (arts.isEmpty()) {
 			return;
