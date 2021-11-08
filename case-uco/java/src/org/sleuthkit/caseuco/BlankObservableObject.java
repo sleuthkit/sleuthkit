@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,27 +18,14 @@
  */
 package org.sleuthkit.caseuco;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 
 /**
- * A Trace template from the CASE ontology.
+ * Represents a blank node version of a ObservableObject.
  */
-class Trace extends CyberItem {
-
-    private final List<Facet> hasPropertyBundle;
+class BlankObservableObject extends ObservableObject {
     
-    Trace(String uuid) {
-        super(uuid, Trace.class.getSimpleName());
-        this.hasPropertyBundle = new ArrayList<>();
-    }
-    
-    final Trace addBundle(Facet bundle) {
-        hasPropertyBundle.add(bundle);
-        return this;
-    }
-
-    List<Facet> getHasPropertyBundle() {
-        return hasPropertyBundle;
+    BlankObservableObject() {
+        super("_:" + UUID.randomUUID().toString());
     }
 }
