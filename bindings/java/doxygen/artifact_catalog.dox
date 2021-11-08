@@ -394,7 +394,7 @@ A generic information artifact. Each content object will have at most one TSK_GE
 None
 
 ### OPTIONAL ATTRIBUTES
-- TSK_PHOTODNA_HASH (The PhotoDNA hash of an image)
+- TSK_HASH_PHOTODNA (The PhotoDNA hash of an image)
 
 
 ---

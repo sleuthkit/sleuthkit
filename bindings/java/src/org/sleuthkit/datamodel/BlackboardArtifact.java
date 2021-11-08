@@ -428,6 +428,18 @@ public abstract class BlackboardArtifact implements Content {
 		}
 		return attributes;
 	}
+	
+	/**
+	 * Set all attributes at once.
+	 * Will overwrite any already loaded attributes.
+	 * 
+	 * @param attributes The set of attributes for this artifact.
+	 */
+	void setAttributes(List<BlackboardAttribute> attributes) {
+		attrsCache.clear();
+		attrsCache.addAll(attributes);
+		loadedCacheFromDb = true;
+	}
 
 	/**
 	 * Gets the attribute of this artifact that matches a given type.
