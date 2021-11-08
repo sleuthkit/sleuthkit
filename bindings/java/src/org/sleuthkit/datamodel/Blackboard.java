@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -90,8 +91,10 @@ public final class Blackboard {
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
+	 * @deprecated Use postArtifact(BlackboardArtifact artifact, String
+	 * moduleName, Long ingestJobId) instead.
 	 */
-	// RJCTODO: Deprecate
+	@Deprecated
 	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName, null);
 	}
@@ -108,8 +111,10 @@ public final class Blackboard {
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
+	 * @deprecated postArtifacts(Collection\<BlackboardArtifact\> artifacts,
+	 * String moduleName, Long ingestJobId)
 	 */
-	// RJCTODO: Deprecate
+	@Deprecated
 	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
 		postArtifacts(artifacts, moduleName, null);
 	}
@@ -123,8 +128,8 @@ public final class Blackboard {
 	 *
 	 * @param artifact    The artifact.
 	 * @param moduleName  The display name of the module posting the artifact.
-	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifact was posted.
+	 * @param ingestJobId The numeric identifier of the ingest job for which the
+	 *                    artifact was posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -142,8 +147,8 @@ public final class Blackboard {
 	 *
 	 * @param artifacts   The artifacts.
 	 * @param moduleName  The display name of the module posting the artifacts.
-	 * @param ingestJobId The numeric identifier of the ingest job within which
-	 *                    the artifacts were posted.
+	 * @param ingestJobId The numeric identifier of the ingest job for which the
+	 *                    artifacts were posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -470,11 +475,12 @@ public final class Blackboard {
 	 * Populate the attributes for all artifact in the list. 
 	 * This is done using one database call as an efficient way to
 	 * load many artifacts/attributes at once.
-	 * 
+	 *
 	 * @param arts The list of artifacts. When complete, each will have its attributes loaded.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */	
 	@Beta
-	public void loadBlackboardAttributes(List<BlackboardArtifact> arts) throws TskCoreException {
+	public <T extends BlackboardArtifact>  void loadBlackboardAttributes(List<T> arts) throws TskCoreException {
 
 		if (arts.isEmpty()) {
 			return;
@@ -2036,7 +2042,7 @@ public final class Blackboard {
 		 * @param moduleName  The display name of the module posting the
 		 *                    artifacts.
 		 * @param ingestJobId The numeric identifier of the ingest job within
-		 *                    which the artifacts were posted.
+		 *                    which the artifacts were posted, may be null.
 		 */
 		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
@@ -2098,13 +2104,13 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the numeric identifier of the ingest job within which the
-		 * artifacts were posted.
+		 * Gets the numeric identifier of the ingest job for which the artifacts
+		 * were posted.
 		 *
 		 * @return The ingest job ID, may be null.
 		 */
-		public Long getIngestJobId() {
-			return ingestJobId;
+		public Optional<Long> getIngestJobId() {
+			return Optional.ofNullable(ingestJobId);
 		}
 
 	}
