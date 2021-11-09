@@ -1486,8 +1486,14 @@ public abstract class AbstractFile extends AbstractContent {
 			} else {
 				if ((this instanceof LayoutFile) && (parentPath.equals("/"))) {
 					// This may be the case where the layout file is a direct child of a 
-					// volume. We want to make sure to include the volume information,
-					// so go up the directory structure.
+					// volume. We want to make sure to include the volume information if present,
+					// so go up the directory structure instead of using the optimized code.
+					uniquePath = super.getUniquePath();
+				} else if (getName().equals(VirtualDirectory.NAME_CARVED) || getName().equals(VirtualDirectory.NAME_UNALLOC) || 
+						parentPath.startsWith("/" + VirtualDirectory.NAME_CARVED) || parentPath.startsWith("/" + VirtualDirectory.NAME_UNALLOC)) {
+					// We can make $Unalloc and $CarvedFiles under volumes without being part of a file system.
+					// As above, we want to make sure to include the volume information if present,
+					// so go up the directory structure instead of using the optimized code.
 					uniquePath = super.getUniquePath();
 				} else {
 					String dataSourceName = "";
