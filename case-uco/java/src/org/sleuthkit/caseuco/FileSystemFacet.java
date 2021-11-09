@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import org.sleuthkit.datamodel.TskData;
 import org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM;
 
@@ -26,25 +27,27 @@ import static org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_HFS;
 import static org.sleuthkit.datamodel.TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_NTFS;
 
 /**
- * This class definition mirrors the FileSystem observable described in the UCO
- * ontology.
+ * This class definition mirrors the FileSystemFacet observable described in the UCO
+ ontology.
  */
-class FileSystem extends Facet {
+class FileSystemFacet extends Facet {
 
+    @SerializedName("observable:fileSystemType")
     private FileSystemType fileSystemType;
 
+    @SerializedName("observable:clusterSize")
     private Long cluserSize;
 
-    FileSystem() {
-        super(FileSystem.class.getSimpleName());
+    FileSystemFacet() {
+        super(FileSystemFacet.class.getSimpleName());
     }
 
-    FileSystem setFileSystemType(TskData.TSK_FS_TYPE_ENUM fileSystemType) {
+    FileSystemFacet setFileSystemType(TskData.TSK_FS_TYPE_ENUM fileSystemType) {
         this.fileSystemType = FileSystemType.from(fileSystemType);
         return this;
     }
 
-    FileSystem setCluserSize(long cluserSize) {
+    FileSystemFacet setCluserSize(long cluserSize) {
         this.cluserSize = cluserSize;
         return this;
     }

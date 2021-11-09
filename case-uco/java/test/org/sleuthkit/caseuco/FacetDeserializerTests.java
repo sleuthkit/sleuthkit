@@ -89,7 +89,7 @@ public class FacetDeserializerTests {
         String tag = "The tag";
         TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_EXT4;
 
-        UcoObject fileSystem = new FileSystem()
+        UcoObject fileSystem = new FileSystemFacet()
                 .setCluserSize(clusterSize)
                 .setFileSystemType(fsType)
                 .setCreatedTime(createdTime)
@@ -104,9 +104,9 @@ public class FacetDeserializerTests {
 
         List<Facet> facets = parseFacets(gsonStr);
         Assert.assertEquals(1, facets.size());
-        Assert.assertTrue(facets.get(0) instanceof FileSystem);
+        Assert.assertTrue(facets.get(0) instanceof FileSystemFacet);
 
-        FileSystem deserialized = (FileSystem) facets.get(0);
+        FileSystemFacet deserialized = (FileSystemFacet) facets.get(0);
         Assert.assertEquals((Long) clusterSize, deserialized.getCluserSize());
         Assert.assertEquals(createdTime, OffsetDateTime.parse(deserialized.getCreatedTime()).toEpochSecond());
         Assert.assertEquals(modifiedTime, OffsetDateTime.parse(deserialized.getModifiedTime()).toEpochSecond());
@@ -130,7 +130,7 @@ public class FacetDeserializerTests {
         String tag = "The tag 2";
         TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.TSK_FS_TYPE_EXT4;
 
-        FileSystem fileSystem = (FileSystem) new FileSystem()
+        FileSystemFacet fileSystem = (FileSystemFacet) new FileSystemFacet()
                 .setCluserSize(clusterSize)
                 .setFileSystemType(fsType)
                 .setCreatedTime(createdTime)
@@ -175,9 +175,9 @@ public class FacetDeserializerTests {
         List<Facet> facets = deserializedTrace.getHasPropertyBundle();
         
         Assert.assertEquals(1, facets.size());
-        Assert.assertTrue(facets.get(0) instanceof FileSystem);
+        Assert.assertTrue(facets.get(0) instanceof FileSystemFacet);
 
-        FileSystem deserialized = (FileSystem) facets.get(0);
+        FileSystemFacet deserialized = (FileSystemFacet) facets.get(0);
         Assert.assertEquals((Long) clusterSize, deserialized.getCluserSize());
         Assert.assertEquals(createdTime, OffsetDateTime.parse(deserialized.getCreatedTime()).toEpochSecond());
         Assert.assertEquals(modifiedTime, OffsetDateTime.parse(deserialized.getModifiedTime()).toEpochSecond());

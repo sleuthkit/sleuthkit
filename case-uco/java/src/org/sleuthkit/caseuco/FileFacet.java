@@ -18,59 +18,66 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the File observable described in the UCO
- * ontology.
+ * This class definition mirrors the FileFacet observable described in the UCO
+ ontology.
  */
-class File extends Facet {
+class FileFacet extends Facet {
 
+    @SerializedName("observable:accessedTime")
     private String accessedTime;
 
+    @SerializedName("observable:extension")
     private String extension;
 
+    @SerializedName("observable:fileName")
     private String fileName;
 
+    @SerializedName("observable:filePath")
     private String filePath;
 
+    @SerializedName("observable:isDirectory")
     private Boolean isDirectory;
 
+    @SerializedName("observable:sizeInBytes")
     private Long sizeInBytes;
 
-    File() {
-        super(File.class.getSimpleName());
+    FileFacet() {
+        super(FileFacet.class.getSimpleName());
     }
 
-    File setAccessedTime(Long accessedTime) {
+    FileFacet setAccessedTime(Long accessedTime) {
         if (accessedTime != null) {
             this.accessedTime = Instant.ofEpochSecond(accessedTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    File setExtension(String extension) {
+    FileFacet setExtension(String extension) {
         this.extension = extension;
         return this;
     }
 
-    File setFileName(String fileName) {
+    FileFacet setFileName(String fileName) {
         this.fileName = fileName;
         return this;
     }
 
-    File setFilePath(String filePath) {
+    FileFacet setFilePath(String filePath) {
         this.filePath = filePath;
         return this;
     }
 
-    File setIsDirectory(boolean isDirectory) {
+    FileFacet setIsDirectory(boolean isDirectory) {
         this.isDirectory = isDirectory;
         return this;
     }
 
-    File setSizeInBytes(long sizeInBytes) {
+    FileFacet setSizeInBytes(long sizeInBytes) {
         this.sizeInBytes = sizeInBytes;
         return this;
     }

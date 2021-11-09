@@ -18,19 +18,22 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the EnvironmentVariable observable described in
- * the UCO ontology.
- */
-class EnvironmentVariable extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the EnvironmentVariableFacet observable described in
+ the UCO ontology.
+ */
+class EnvironmentVariableFacet extends Facet {
+
+    @SerializedName("observable:value")
     private String value;
 
-    EnvironmentVariable() {
-        super(EnvironmentVariable.class.getSimpleName());
+    EnvironmentVariableFacet() {
+        super(EnvironmentVariableFacet.class.getSimpleName());
     }
 
-    EnvironmentVariable setValue(String value) {
+    EnvironmentVariableFacet setValue(String value) {
         this.value = value;
         return this;
     }

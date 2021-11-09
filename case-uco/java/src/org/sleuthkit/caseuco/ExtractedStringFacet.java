@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the HTTPConnection observable described in the
- * UCO ontology.
+ * This class definition mirrors the ExtractedStringFacet observable described in the
+ UCO ontology.
  */
-class HTTPConnection extends Facet {
+class ExtractedStringFacet extends Facet {
 
-    private String httpRequestHeader;
+    @SerializedName("observable:value")
+    private String stringValue;
 
-    HTTPConnection() {
-        super(HTTPConnection.class.getSimpleName());
+    ExtractedStringFacet() {
+        super(ExtractedStringFacet.class.getSimpleName());
     }
 
-    HTTPConnection setHttpRequestHeader(String httpRequestHeader) {
-        this.httpRequestHeader = httpRequestHeader;
+    ExtractedStringFacet setStringValue(String stringValue) {
+        this.stringValue = stringValue;
         return this;
     }
 
-    String getHttpRequestHeader() {
-        return httpRequestHeader;
+    String getStringValue() {
+        return stringValue;
     }
 }

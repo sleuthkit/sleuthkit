@@ -1,4 +1,4 @@
-/*
+2/*
  * Sleuth Kit CASE JSON LD Support
  *
  * Copyright 2020-2021 Basis Technology Corp.
@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
@@ -27,28 +28,40 @@ import java.time.ZoneOffset;
  */
 class EmailMessageFacet extends Facet {
 
+    @SerializedName("observable:receivedTime")
     private String receivedTime;
 
+    @SerializedName("observable:sentTime")
     private String sentTime;
 
+    @SerializedName("observable:bcc")
     private String bcc;
 
+    @SerializedName("observable:cc")
     private String cc;
 
+    @SerializedName("observable:from")
     private String from;
 
+    @SerializedName("observable:headerRaw")
     private String headerRaw;
 
+    @SerializedName("observable:MessageID")
     private String messageID;
 
+    @SerializedName("observable:subject")
     private String subject;
 
+    @SerializedName("observable:sender")
     private String sender;
 
+    @SerializedName("observable:inReplyTo")
     private String inReplyTo;
 
+    @SerializedName("observable:body")
     private String body;
 
+    @SerializedName("observable:contentType")
     private String contentType;
 
     EmailMessageFacet() {

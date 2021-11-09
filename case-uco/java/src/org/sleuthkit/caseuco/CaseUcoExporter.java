@@ -179,11 +179,11 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(this.uuidService.createUUID(sleuthkitCase));
 
         if (sleuthkitCase.getDatabaseType().equals(DbType.POSTGRESQL)) {
-            export.addBundle(new File()
+            export.addBundle(new FileFacet()
                     .setFilePath(caseDirPath)
                     .setIsDirectory(true));
         } else {
-            export.addBundle(new File()
+            export.addBundle(new FileFacet()
                     .setFilePath(caseDirPath + "/" + sleuthkitCase.getDatabaseName())
                     .setIsDirectory(false));
         }
@@ -232,7 +232,7 @@ public class CaseUcoExporter {
             addToOutput(localPathTrace, output);
         }
 
-        File fileExport = new File()
+        FileFacet fileExport = new FileFacet()
                 .setAccessedTime(file.getAtime())
                 .setExtension(file.getNameExtension())
                 .setFileName(file.getName())
@@ -283,7 +283,7 @@ public class CaseUcoExporter {
         List<JsonElement> output = new ArrayList<>();
 
         ObservableObject export = new ObservableObject(this.uuidService.createUUID(dataSource))
-                .addBundle(new File()
+                .addBundle(new FileFacet()
                         .setFilePath(getDataSourcePath(dataSource)))
                 .addBundle(new ContentDataFacet()
                         .setSizeInBytes(dataSource.getSize()));
@@ -310,9 +310,9 @@ public class CaseUcoExporter {
     }
 
     /**
-     * Exports a FileSystem instance to CASE.
+     * Exports a FileSystemFacet instance to CASE.
      *
-     * @param fileSystem FileSystem instance to export
+     * @param fileSystem FileSystemFacet instance to export
      * @return A collection of CASE JSON elements
      * @throws TskCoreException If an error occurred during database access.
      */
@@ -320,7 +320,7 @@ public class CaseUcoExporter {
         List<JsonElement> output = new ArrayList<>();
 
         ObservableObject export = new ObservableObject(this.uuidService.createUUID(fileSystem))
-                .addBundle(new org.sleuthkit.caseuco.FileSystem()
+                .addBundle(new org.sleuthkit.caseuco.FileSystemFacet()
                         .setFileSystemType(fileSystem.getFsType())
                         .setCluserSize(fileSystem.getBlock_size()));
 
@@ -615,7 +615,7 @@ public class CaseUcoExporter {
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
                 .addBundle(new DomainNameFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DOMAIN)))
-                .addBundle(new File()
+                .addBundle(new FileFacet()
                         .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)))
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
@@ -645,13 +645,13 @@ public class CaseUcoExporter {
 
     private void assembleInstalledProg(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid)
-                .addBundle(new File()
+                .addBundle(new FileFacet()
                         .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH_SOURCE)));
         Software software = new Software();
         software.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME));
         export.addBundle(software);
 
-        File file = new File()
+        FileFacet file = new FileFacet()
                 .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH));
         file.setModifiedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
 
@@ -672,7 +672,7 @@ public class CaseUcoExporter {
 
         export.addBundle(registryValue);
 
-        File file = new File()
+        FileFacet file = new FileFacet()
                 .setAccessedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_ACCESSED));
         file.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
 
@@ -697,7 +697,7 @@ public class CaseUcoExporter {
 
     private void assembleExtractedText(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid)
-                .addBundle(new ExtractedString()
+                .addBundle(new ExtractedStringFacet()
                         .setStringValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_TEXT)));
         addToOutput(export, output);
     }
@@ -716,7 +716,7 @@ public class CaseUcoExporter {
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_FROM)));
 
         ObservableObject headerRawNode = new BlankObservableObject()
-                .addBundle(new ExtractedString()
+                .addBundle(new ExtractedStringFacet()
                         .setStringValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_HEADERS)));
 
         EmailMessageFacet emailMessage = new EmailMessageFacet();
@@ -745,7 +745,7 @@ public class CaseUcoExporter {
                         .setHeaderRaw(headerRawNode)
                         .setMessageID(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MSG_ID))
                         .setSubject(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SUBJECT)))
-                .addBundle(new File()
+                .addBundle(new FileFacet()
                         .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)));
 
         addToOutput(export, output);
@@ -782,7 +782,7 @@ public class CaseUcoExporter {
                 .setVersion(getValueIfPresent(artifact, StandardAttributeTypes.TSK_VERSION));
         operatingSystem.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME));
 
-        EnvironmentVariable envVar = new EnvironmentVariable()
+        EnvironmentVariableFacet envVar = new EnvironmentVariableFacet()
                 .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_TEMP_DIR));
         envVar.setName("TEMP");
         ObservableObject tempDirectoryNode = new BlankObservableObject()
@@ -1309,7 +1309,7 @@ public class CaseUcoExporter {
                         .setPath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)))
                 .addBundle(new URL()
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
-                .addBundle(new HTTPConnection()
+                .addBundle(new HTTPConnectionFacet()
                         .setHttpRequestHeader(getValueIfPresent(artifact, StandardAttributeTypes.TSK_HEADERS)));
 
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_CREATED));
