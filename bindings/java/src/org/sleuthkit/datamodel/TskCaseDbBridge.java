@@ -545,11 +545,11 @@ class TskCaseDbBridge {
                 fsObjIdForDb = null;
             }
 			
-			// If the layout file is in an $Unalloc folder, add the name. Otherwise use "/".
-			String parentPath = "/";
-			if (unallocFileDirs.containsKey(parentObjId)) {
-				parentPath = "/" + unallocFileDirs.get(parentObjId).getName() + "/";
-			}
+            // If the layout file is in an $Unalloc folder, add the name. Otherwise use "/".
+            String parentPath = "/";
+            if (unallocFileDirs.containsKey(parentObjId)) {
+                parentPath = "/" + unallocFileDirs.get(parentObjId).getName() + "/";
+            }
             
             beginTransaction();
             long objId = addFileToDb(parentObjId, 
