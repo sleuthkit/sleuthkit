@@ -7094,6 +7094,17 @@ public class SleuthkitCase {
 		try {
 			transaction = beginTransaction();
 			CaseDbConnection connection = transaction.getConnection();
+			
+			// If the parent is part of a file system, grab its file system ID
+			Long fileSystemObjectId;
+			if (0 != parent.getId()) {
+				fileSystemObjectId = this.getFileSystemId(parent.getId(), connection);
+				if (fileSystemObjectId == -1) {
+					fileSystemObjectId = null;
+				}
+			} else {
+				fileSystemObjectId = null;
+			}
 
 			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
 			for (TskFileRange fileRange : fileRanges) {
@@ -7115,8 +7126,12 @@ public class SleuthkitCase {
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
-				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects			
-				prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id				
+				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects
+				if (fileSystemObjectId != null) {
+					prepStmt.setLong(2, fileSystemObjectId);// fs_obj_id
+				} else {
+					prepStmt.setNull(2, java.sql.Types.BIGINT); 	
+				}
 				prepStmt.setString(3, "Unalloc_" + parent.getId() + "_" + fileRange.getByteStart() + "_" + end_byte_in_parent); // name of form Unalloc_[image obj_id]_[start byte in parent]_[end byte in parent]
 				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()); // type
 				prepStmt.setNull(5, java.sql.Types.BIGINT); // has_path
@@ -7163,7 +7178,7 @@ public class SleuthkitCase {
 				fileRangeLayoutFiles.add(new LayoutFile(this,
 						fileRangeId,
 						parent.getId(),
-						null,
+						fileSystemObjectId,
 						Long.toString(fileRange.getSequence()),
 						TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
 						TSK_FS_NAME_TYPE_ENUM.REG,
