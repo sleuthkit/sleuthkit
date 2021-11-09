@@ -6192,7 +6192,11 @@ public class SleuthkitCase {
 			Content parent = this.getAbstractFileById(parentId, connection);
 			if (parent instanceof AbstractFile) {
 				if (isRootDirectory((AbstractFile) parent, transaction)) {
-					parentPath = "/";
+					if (parent.getName().isEmpty()) {
+						parentPath = "/";
+					} else {
+						parentPath = "/" + parent.getName() + "/";
+					}
 				} else {
 					parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + "/"; //NON-NLS
 				}
@@ -7086,6 +7090,13 @@ public class SleuthkitCase {
 		if (null == parent) {
 			throw new TskCoreException("Conent is null");
 		}
+		
+		String parentPath;
+		if (parent instanceof AbstractFile) {
+			parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + '/'; //NON-NLS
+		} else {
+			parentPath = "/";
+		}
 
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
@@ -7106,7 +7117,7 @@ public class SleuthkitCase {
 				fileSystemObjectId = null;
 			}
 
-			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
+			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<>();
 			for (TskFileRange fileRange : fileRanges) {
 				/*
 				 * Insert a row for the Tsk file range into the tsk_objects
@@ -7148,7 +7159,7 @@ public class SleuthkitCase {
 				prepStmt.setNull(16, java.sql.Types.VARCHAR); // SHA-256
 				prepStmt.setByte(17, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 				prepStmt.setNull(18, java.sql.Types.VARCHAR); // MIME type
-				prepStmt.setNull(19, java.sql.Types.VARCHAR); // parent path
+				prepStmt.setString(19, parentPath); // parent path
 				prepStmt.setLong(20, parent.getId()); // data_source_obj_id
 
 				//extension, since this is not a FS file we just set it to null

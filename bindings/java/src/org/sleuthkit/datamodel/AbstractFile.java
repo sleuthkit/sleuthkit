@@ -1477,7 +1477,6 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getUniquePath() throws TskCoreException {
 
 		if (uniquePath == null) {
-			
 			if (getFileSystemObjectId().isPresent()) {
 				StringBuilder sb = new StringBuilder();
 				sb.append(getFileSystem().getUniquePath());
@@ -1485,10 +1484,10 @@ public abstract class AbstractFile extends AbstractContent {
 				sb.append(getName());
 				uniquePath = sb.toString();
 			} else {
-				if ((this instanceof LayoutFile)
-						&& (parentPath == null || parentPath.isEmpty() || parentPath.equals("/"))) {
-					// This is likely the case where the layout file is a direct child of a 
-					// volume. We want to make sure to include the volume information.
+				if ((this instanceof LayoutFile) && (parentPath.equals("/"))) {
+					// This may be the case where the layout file is a direct child of a 
+					// volume. We want to make sure to include the volume information,
+					// so go up the directory structure.
 					uniquePath = super.getUniquePath();
 				} else {
 					String dataSourceName = "";

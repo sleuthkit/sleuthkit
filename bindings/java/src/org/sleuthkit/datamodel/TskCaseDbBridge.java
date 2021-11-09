@@ -66,6 +66,7 @@ class TskCaseDbBridge {
     private final Queue<FileInfo> batchedFiles = new LinkedList<>();
     private final Queue<LayoutRangeInfo> batchedLayoutRanges = new LinkedList<>();
     private final List<Long> layoutFileIds = new ArrayList<>();
+	private final Map<Long, VirtualDirectory> unallocFileDirs = new HashMap<>();
     
     TskCaseDbBridge(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks, Host host) {
         this.caseDb = caseDb;
@@ -543,6 +544,12 @@ class TskCaseDbBridge {
             if (fsObjId == 0) {
                 fsObjIdForDb = null;
             }
+			
+			// If the layout file is in an $Unalloc folder, add the name. Otherwise use "/".
+			String parentPath = "/";
+			if (unallocFileDirs.containsKey(parentObjId)) {
+				parentPath = "/" + unallocFileDirs.get(parentObjId).getName() + "/";
+			}
             
             beginTransaction();
             long objId = addFileToDb(parentObjId, 
@@ -558,7 +565,7 @@ class TskCaseDbBridge {
                 null, null, null, null,
                 null, null, null,
                 null, TskData.FileKnown.UNKNOWN,
-                null, null, null, OsAccount.NO_ACCOUNT,
+                parentPath, null, null, OsAccount.NO_ACCOUNT,
                 true, trans);
             commitTransaction();
 
@@ -648,6 +655,7 @@ class TskCaseDbBridge {
             beginTransaction();
             VirtualDirectory dir = caseDb.addVirtualDirectory(fsIdToRootDir.get(fsObjId), name, trans);
             commitTransaction();
+			unallocFileDirs.put(dir.getId(), dir);
             addDataSourceCallbacks.onFilesAdded(Arrays.asList(dir.getId()));
             return dir.getId();
         } catch (TskCoreException ex) {
