@@ -666,12 +666,6 @@ public class CaseUcoExporter {
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
 
-        WindowsRegistryValue registryValue = new WindowsRegistryValue()
-                .setData(getValueIfPresent(artifact, StandardAttributeTypes.TSK_VALUE));
-        registryValue.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME));
-
-        export.addBundle(registryValue);
-
         FileFacet file = new FileFacet()
                 .setAccessedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_ACCESSED));
         file.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
