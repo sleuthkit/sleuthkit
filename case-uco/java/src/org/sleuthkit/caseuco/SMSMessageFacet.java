@@ -18,24 +18,29 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the WindowsAccount observable described in the UCO
- * ontology.
+ * This class definition mirrors the SMSMessageFacet observable described in the UCO
+ ontology.
  */
-class WindowsAccount extends Facet {
-    
-    private String groups;
-    
-    WindowsAccount() {
-        super(WindowsAccount.class.getSimpleName());
+class SMSMessageFacet extends Facet {
+
+    @SerializedName("observable:isRead")
+    private Boolean isRead;
+
+    SMSMessageFacet() {
+        super(SMSMessageFacet.class.getSimpleName());
     }
-    
-    WindowsAccount setGroups(String groups) {
-        this.groups = groups;
+
+    SMSMessageFacet setIsRead(Integer status) {
+        if (status != null) {
+            this.isRead = status == 1;
+        }
         return this;
     }
 
-    String getGroups() {
-        return groups;
+    Boolean getIsRead() {
+        return isRead;
     }
 }

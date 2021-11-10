@@ -18,54 +18,60 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the PhoneCall observable described in the UCO
- * ontology.
+ * This class definition mirrors the PhoneCallFacet observable described in the UCO
+ ontology.
  */
-class PhoneCall extends Facet {
+class PhoneCallFacet extends Facet {
 
+    @SerializedName("observable:to")
     private String to;
 
+    @SerializedName("observable:from")
     private String from;
 
+    @SerializedName("observable:startTime")
     private String startTime;
 
+    @SerializedName("observable:endTime")
     private String endTime;
 
+    @SerializedName("observable:callType")
     private String callType;
 
-    PhoneCall() {
-        super(PhoneCall.class.getSimpleName());
+    PhoneCallFacet() {
+        super(PhoneCallFacet.class.getSimpleName());
     }
 
-    PhoneCall setTo(CyberItem to) {
+    PhoneCallFacet setTo(CyberItem to) {
         this.to = to.getId();
         return this;
     }
 
-    PhoneCall setFrom(CyberItem from) {
+    PhoneCallFacet setFrom(CyberItem from) {
         this.from = from.getId();
         return this;
     }
 
-    PhoneCall setStartTime(Long startTime) {
+    PhoneCallFacet setStartTime(Long startTime) {
         if (startTime != null) {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    PhoneCall setEndTime(Long endTime) {
+    PhoneCallFacet setEndTime(Long endTime) {
         if (endTime != null) {
             this.endTime = Instant.ofEpochSecond(endTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    PhoneCall setCallType(String callType) {
+    PhoneCallFacet setCallType(String callType) {
         this.callType = callType;
         return this;
     }

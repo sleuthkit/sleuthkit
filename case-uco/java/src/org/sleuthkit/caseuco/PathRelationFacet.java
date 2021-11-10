@@ -18,30 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the Volume observable described in the UCO
- * ontology.
+ * This class definition mirrors the PathRelationFacet observable described in the
+ UCO ontology.
  */
-class Volume extends Facet {
+class PathRelationFacet extends Facet {
 
-    private String volumeType;
+    @SerializedName("observable:path")
+    private String path;
 
-    private Long sectorSize;
-
-    Volume() {
-        super(Volume.class.getSimpleName());
+    PathRelationFacet() {
+        super(PathRelationFacet.class.getSimpleName());
     }
 
-    Volume setSectorSize(long sectorSize) {
-        this.sectorSize = sectorSize;
+    PathRelationFacet setPath(String path) {
+        this.path = path;
         return this;
     }
 
-    String getVolumeType() {
-        return volumeType;
-    }
-
-    Long getSectorSize() {
-        return sectorSize;
+    String getPath() {
+        return path;
     }
 }

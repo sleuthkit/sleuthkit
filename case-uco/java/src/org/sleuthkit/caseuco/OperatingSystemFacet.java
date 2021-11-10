@@ -18,31 +18,34 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the OperatingSystem observable described in the
- * UCO ontology.
+ * This class definition mirrors the OperatingSystemFacet observable described in the
+ UCO ontology.
  */
-class OperatingSystem extends Facet {
+class OperatingSystemFacet extends Facet {
 
+    @SerializedName("observable:installDate")
     private String installDate;
 
+    @SerializedName("observable:version")
     private String version;
 
-    OperatingSystem() {
-        super(OperatingSystem.class.getSimpleName());
+    OperatingSystemFacet() {
+        super(OperatingSystemFacet.class.getSimpleName());
     }
 
-    OperatingSystem setInstallDate(Long installDate) {
+    OperatingSystemFacet setInstallDate(Long installDate) {
         if (installDate != null) {
             this.installDate = Instant.ofEpochSecond(installDate).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    OperatingSystem setVersion(String version) {
+    OperatingSystemFacet setVersion(String version) {
         this.version = version;
         return this;
     }

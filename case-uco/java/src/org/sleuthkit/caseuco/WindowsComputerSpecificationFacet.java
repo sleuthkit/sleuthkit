@@ -18,33 +18,38 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the WindowsComputerSpecification observable
- * described in the UCO ontology.
- */
-class WindowsComputerSpecification extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the WindowsComputerSpecificationFacet observable
+ described in the UCO ontology.
+ */
+class WindowsComputerSpecificationFacet extends Facet {
+
+    @SerializedName("observable:registeredOrganization")
     private String registeredOrganization;
 
+    @SerializedName("observable:registeredOwner")
     private String registeredOwner;
 
+    @SerializedName("observable:windowsTempDirectory")
     private String windowsTempDirectory;
 
-    WindowsComputerSpecification() {
-        super(WindowsComputerSpecification.class.getSimpleName());
+    WindowsComputerSpecificationFacet() {
+        super(WindowsComputerSpecificationFacet.class.getSimpleName());
     }
 
-    WindowsComputerSpecification setRegisteredOrganization(Identity registeredOrganization) {
+    WindowsComputerSpecificationFacet setRegisteredOrganization(Identity registeredOrganization) {
         this.registeredOrganization = registeredOrganization.getId();
         return this;
     }
 
-    WindowsComputerSpecification setRegisteredOwner(Identity registeredOwner) {
+    WindowsComputerSpecificationFacet setRegisteredOwner(Identity registeredOwner) {
         this.registeredOwner = registeredOwner.getId();
         return this;
     }
 
-    WindowsComputerSpecification setWindowsTempDirectory(CyberItem windowsTempDirectory) {
+    WindowsComputerSpecificationFacet setWindowsTempDirectory(CyberItem windowsTempDirectory) {
         this.windowsTempDirectory = windowsTempDirectory.getId();
         return this;
     }

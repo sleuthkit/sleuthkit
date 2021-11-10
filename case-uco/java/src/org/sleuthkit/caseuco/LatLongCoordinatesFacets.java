@@ -18,33 +18,38 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the LatLongCoordinates observable described in
- * the UCO ontology.
- */
-class LatLongCoordinates extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the LatLongCoordinatesFacets observable described in
+ the UCO ontology.
+ */
+class LatLongCoordinatesFacets extends Facet {
+
+    @SerializedName("observable:altitude")
     private Double altitude;
 
+    @SerializedName("observable:latitude")
     private Double latitude;
 
+    @SerializedName("observable:longitude")
     private Double longitude;
 
-    LatLongCoordinates() {
-        super(LatLongCoordinates.class.getSimpleName());
+    LatLongCoordinatesFacets() {
+        super(LatLongCoordinatesFacets.class.getSimpleName());
     }
 
-    LatLongCoordinates setAltitude(Double altitude) {
+    LatLongCoordinatesFacets setAltitude(Double altitude) {
         this.altitude = altitude;
         return this;
     }
 
-    LatLongCoordinates setLatitude(Double latitude) {
+    LatLongCoordinatesFacets setLatitude(Double latitude) {
         this.latitude = latitude;
         return this;
     }
 
-    LatLongCoordinates setLongitude(Double longitude) {
+    LatLongCoordinatesFacets setLongitude(Double longitude) {
         this.longitude = longitude;
         return this;
     }

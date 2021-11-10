@@ -18,12 +18,15 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * This class definition mirrors the WindowsRegistryValue observable described
- * in the UCO ontology.
+ in the UCO ontology.
  */
 class WindowsRegistryValue extends Facet {
 
+    @SerializedName("observable:data")
     private String data;
 
     WindowsRegistryValue() {

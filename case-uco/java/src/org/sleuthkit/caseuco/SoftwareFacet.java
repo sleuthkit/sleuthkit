@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,23 +19,12 @@
 package org.sleuthkit.caseuco;
 
 /**
- * This class definition mirrors the WirelessNetworkConnection observable
- * described in the UCO ontology.
+ * This class definition mirrors the SoftwareFacet observable described in the UCO
+ ontology.
  */
-class WirelessNetworkConnection extends Facet {
+class SoftwareFacet extends Facet {
 
-    private String ssid;
-
-    WirelessNetworkConnection() {
-        super(WirelessNetworkConnection.class.getSimpleName());
-    }
-
-    WirelessNetworkConnection setSSID(String ssid) {
-        this.ssid = ssid;
-        return this;
-    }
-
-    String getSsid() {
-        return ssid;
+    SoftwareFacet() {
+        super(SoftwareFacet.class.getSimpleName());
     }
 }

@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the Note observable described in the UCO
- * ontology.
+ * This class definition mirrors the WindowsAccountFacet observable described in the UCO
+ ontology.
  */
-class Note extends Facet {
-
-    private String text;
-
-    Note() {
-        super(Note.class.getSimpleName());
+class WindowsAccountFacet extends Facet {
+    
+    @SerializedName("observable:groups")
+    private String groups;
+    
+    WindowsAccountFacet() {
+        super(WindowsAccountFacet.class.getSimpleName());
     }
-
-    Note setText(String text) {
-        this.text = text;
+    
+    WindowsAccountFacet setGroups(String groups) {
+        this.groups = groups;
         return this;
     }
 
-    String getText() {
-        return text;
+    String getGroups() {
+        return groups;
     }
 }

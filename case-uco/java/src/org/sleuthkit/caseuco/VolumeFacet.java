@@ -18,35 +18,34 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the URL observable described in the UCO
- * ontology.
+ * This class definition mirrors the VolumeFacet observable described in the UCO
+ ontology.
  */
-class URL extends Facet {
+class VolumeFacet extends Facet {
 
-    private String fullValue;
+    @SerializedName("observable:volumeType")
+    private String volumeType;
 
-    private String userName;
+    @SerializedName("observable:sectorSize")
+    private Long sectorSize;
 
-    URL() {
-        super(URL.class.getSimpleName());
+    VolumeFacet() {
+        super(VolumeFacet.class.getSimpleName());
     }
 
-    URL setFullValue(String fullValue) {
-        this.fullValue = fullValue;
+    VolumeFacet setSectorSize(long sectorSize) {
+        this.sectorSize = sectorSize;
         return this;
     }
 
-    URL setUserName(CyberItem userName) {
-        this.userName = userName.getId();
-        return this;
+    String getVolumeType() {
+        return volumeType;
     }
 
-    String getFullValue() {
-        return fullValue;
-    }
-
-    String getUserName() {
-        return userName;
+    Long getSectorSize() {
+        return sectorSize;
     }
 }

@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the PhoneAccount observable described in the
- * UCO ontology.
+ * This class definition mirrors the MACAddressFacet observable described in the UCO
+ ontology.
  */
-class PhoneAccount extends Facet {
+class MACAddressFacet extends Facet {
 
-    private String phoneNumber;
+    @SerializedName("observable:addressValue")
+    private String value;
 
-    PhoneAccount() {
-        super(PhoneAccount.class.getSimpleName());
+    MACAddressFacet() {
+        super(MACAddressFacet.class.getSimpleName());
     }
 
-    PhoneAccount setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    MACAddressFacet setValue(String value) {
+        this.value = value;
         return this;
     }
 
-    String getPhoneNumber() {
-        return phoneNumber;
+    String getValue() {
+        return value;
     }
 }

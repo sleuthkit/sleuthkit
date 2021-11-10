@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,13 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the Software observable described in the UCO
- * ontology.
- */
-class Software extends Facet {
+import com.google.gson.annotations.SerializedName;
 
-    Software() {
-        super(Software.class.getSimpleName());
+/**
+ * This class definition mirrors the PhoneAccountFacet observable described in the
+ UCO ontology.
+ */
+class PhoneAccountFacet extends Facet {
+
+    @SerializedName("observable:phoneNumber")
+    private String phoneNumber;
+
+    PhoneAccountFacet() {
+        super(PhoneAccountFacet.class.getSimpleName());
+    }
+
+    PhoneAccountFacet setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+        return this;
+    }
+
+    String getPhoneNumber() {
+        return phoneNumber;
     }
 }

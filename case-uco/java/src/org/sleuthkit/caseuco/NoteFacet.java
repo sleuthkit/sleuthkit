@@ -18,24 +18,27 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the PathRelation observable described in the
- * UCO ontology.
+ * This class definition mirrors the NoteFacet observable described in the UCO
+ ontology.
  */
-class PathRelation extends Facet {
+class NoteFacet extends Facet {
 
-    private String path;
+    @SerializedName("observable:text")
+    private String text;
 
-    PathRelation() {
-        super(PathRelation.class.getSimpleName());
+    NoteFacet() {
+        super(NoteFacet.class.getSimpleName());
     }
 
-    PathRelation setPath(String path) {
-        this.path = path;
+    NoteFacet setText(String text) {
+        this.text = text;
         return this;
     }
 
-    String getPath() {
-        return path;
+    String getText() {
+        return text;
     }
 }

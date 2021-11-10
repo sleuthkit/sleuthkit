@@ -18,26 +18,30 @@
  */
 package org.sleuthkit.caseuco;
 
-/**
- * This class definition mirrors the MobileDevice observable described in the
- * UCO ontology.
- */
-class MobileDevice extends Facet {
+import com.google.gson.annotations.SerializedName;
 
+/**
+ * This class definition mirrors the MobileDeviceFacet observable described in the
+ UCO ontology.
+ */
+class MobileDeviceFacet extends Facet {
+
+    @SerializedName("observable:bluetoothDeviceName")
     private String bluetoothDeviceName;
 
+    @SerializedName("observable:IMEI")
     private String IMEI;
 
-    MobileDevice() {
-        super(MobileDevice.class.getSimpleName());
+    MobileDeviceFacet() {
+        super(MobileDeviceFacet.class.getSimpleName());
     }
 
-    MobileDevice setBluetoothDeviceName(String bluetoothDeviceName) {
+    MobileDeviceFacet setBluetoothDeviceName(String bluetoothDeviceName) {
         this.bluetoothDeviceName = bluetoothDeviceName;
         return this;
     }
 
-    MobileDevice setIMEI(String IMEI) {
+    MobileDeviceFacet setIMEI(String IMEI) {
         this.IMEI = IMEI;
         return this;
     }

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,23 +19,13 @@
 package org.sleuthkit.caseuco;
 
 /**
- * This class definition mirrors the MACAddress observable described in the UCO
- * ontology.
+ * This class definition mirrors the SimpleAddressFacet observable described in the
+ UCO ontology.
  */
-class MACAddress extends Facet {
+class SimpleAddressFacet extends Facet {
 
-    private String value;
-
-    MACAddress() {
-        super(MACAddress.class.getSimpleName());
+    SimpleAddressFacet() {
+        super(SimpleAddressFacet.class.getSimpleName());
     }
 
-    MACAddress setValue(String value) {
-        this.value = value;
-        return this;
-    }
-
-    String getValue() {
-        return value;
-    }
 }

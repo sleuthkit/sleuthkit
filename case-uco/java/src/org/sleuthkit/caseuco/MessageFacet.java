@@ -18,51 +18,56 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the Message observable described in the UCO
- * ontology.
+ * This class definition mirrors the MessageFacet observable described in the UCO
+ ontology.
  */
-class Message extends Facet {
+class MessageFacet extends Facet {
 
+    @SerializedName("observable:messageText")
     private String messageText;
 
+    @SerializedName("observable:application")
     private String application;
 
+    @SerializedName("observable:sentTime")
     private String sentTime;
 
+    @SerializedName("observable:messageType")
     private String messageType;
 
-    Message() {
-        super(Message.class.getSimpleName());
+    MessageFacet() {
+        super(MessageFacet.class.getSimpleName());
     }
 
-    Message setMessageText(String messageText) {
+    MessageFacet setMessageText(String messageText) {
         this.messageText = messageText;
         return this;
     }
 
-    Message setApplication(CyberItem application) {
+    MessageFacet setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
     }
 
-    Message setSentTime(Long sentTime) {
+    MessageFacet setSentTime(Long sentTime) {
         if (sentTime != null) {
             this.sentTime = Instant.ofEpochSecond(sentTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
     }
 
-    Message setMessageType(String messageType) {
+    MessageFacet setMessageType(String messageType) {
         this.messageType = messageType;
         return this;
     }
 
     @Override
-    Message setId(String id) {
+    MessageFacet setId(String id) {
         super.setId("_:" + id);
         return this;
     }

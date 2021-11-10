@@ -18,26 +18,39 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
- * This class definition mirrors the SMSMessage observable described in the UCO
- * ontology.
+ * This class definition mirrors the URLFacet observable described in the UCO
+ ontology.
  */
-class SMSMessage extends Facet {
+class URLFacet extends Facet {
 
-    private Boolean isRead;
+    @SerializedName("observable:fullValue")
+    private String fullValue;
 
-    SMSMessage() {
-        super(SMSMessage.class.getSimpleName());
+    @SerializedName("observable:userValue")
+    private String userName;
+
+    URLFacet() {
+        super(URLFacet.class.getSimpleName());
     }
 
-    SMSMessage setIsRead(Integer status) {
-        if (status != null) {
-            this.isRead = status == 1;
-        }
+    URLFacet setFullValue(String fullValue) {
+        this.fullValue = fullValue;
         return this;
     }
 
-    Boolean getIsRead() {
-        return isRead;
+    URLFacet setUserName(CyberItem userName) {
+        this.userName = userName.getId();
+        return this;
+    }
+
+    String getFullValue() {
+        return fullValue;
+    }
+
+    String getUserName() {
+        return userName;
     }
 }
