@@ -193,19 +193,16 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 	}
 
 	/**
-	 * Describes the relationship between an os account instance and the host
-	 * where the instance was found.
-	 *
-	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host (such as in a log file).
-	 * 
+	 * Describes what is known about what an OS Account did on an specific host. 
+     *
 	 * Note: lower ordinal value is more significant than higher ordinal value. 
 	 * Order of significance: LAUNCHED > ACCESSED > REFERENCED.
 	 */
 	public enum OsAccountInstanceType {
-		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user has interactive access or launched a program on the host
-		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")), // user accesed a resource for read/write via some service 
-		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text"));	// user was referenced in a log file, e.g. in a event log.
+		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // user had an interactive session or launched a program on the host
+		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")), // user accesed a resource/file for read/write. Could have been via a service (such as a file share) or a SID on a random file from an unknown location.  NOTE: Because Windows event logs do not show if an authentication was for an interactive login or accessing a service, we mark a user as ACCESSED based on authentication. They become LAUNCHED if we have proof of them starting a program or getting an interactive login. 
+		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text"));	// user was referenced in a log file (e.g. in a event log) or registry, but there was no evidence of activity or ownership on the host. Examples include an account that was never used and entries on a log server. 
+        
 
 		private final int id;
 		private final String name;
