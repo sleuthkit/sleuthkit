@@ -1450,7 +1450,6 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws org.sleuthkit.datamodel.TskCoreException If the file does not belong to a file system or
 	 *     another error occurs.
 	 */
-	@SuppressWarnings("deprecation")
 	public FileSystem getFileSystem() throws TskCoreException {
 		if (fileSystemObjectId == null) {
 			throw new TskCoreException("File with ID: " + this.getId() + " does not belong to a file system");
@@ -1467,7 +1466,7 @@ public abstract class AbstractFile extends AbstractContent {
 	
 	/**
 	 * Get the full path to this file or directory, starting with a "/" and the
-	 * image name and then all the other segments in the path.
+	 * data source name and then all the other segments in the path.
 	 *
 	 * @return A unique path for this object.
 	 *
@@ -1478,6 +1477,10 @@ public abstract class AbstractFile extends AbstractContent {
 
 		if (uniquePath == null) {
 			if (getFileSystemObjectId().isPresent()) {
+				// For file system files, construct the path using the path to
+				// the file system, the parent path, and the file name. FileSystem
+				// objects are cached so this is unlikely to perform any
+				// database operations.
 				StringBuilder sb = new StringBuilder();
 				sb.append(getFileSystem().getUniquePath());
 				if (! parentPath.isEmpty()) {
@@ -1501,6 +1504,10 @@ public abstract class AbstractFile extends AbstractContent {
 					// so go up the directory structure instead of using the optimized code.
 					uniquePath = super.getUniquePath();
 				} else {
+					// Optimized code to use for most files. Construct the path
+					// using the data source name, the parent path, and the file name.
+					// DataSource objects are cached so this is unlikely to perform any
+				    // database operations.
 					String dataSourceName = "";
 					Content dataSource = getDataSource();
 					if (dataSource != null) {
@@ -1541,92 +1548,6 @@ public abstract class AbstractFile extends AbstractContent {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		return super.newDataArtifact(artifactType, attributesList, getOsAccountObjectId().orElse(null));
-	}
-
-	/**
-	 * Initializes common fields used by AbstactFile implementations (objects in
-	 * tsk_files table)
-	 *
-	 * @param db         case / db handle where this file belongs to
-	 * @param objId      object id in tsk_objects table
-	 * @param attrType
-	 * @param attrId
-	 * @param name       name field of the file
-	 * @param fileType   type of the file
-	 * @param metaAddr
-	 * @param metaSeq
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
-	 * @param md5Hash    md5sum of the file, or null or "NULL" if not present
-	 * @param knownState knownState status of the file, or null if unknown
-	 *                   (default)
-	 * @param parentPath
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
-			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), null, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
-	}
-
-	/**
-	 * Initializes common fields used by AbstactFile implementations (objects in
-	 * tsk_files table). This deprecated version has attrId filed defined as a
-	 * short which has since been changed to an int.
-	 *
-	 * @param db                 case / db handle where this file belongs to
-	 * @param objId              object id in tsk_objects table
-	 * @param dataSourceObjectId The object id of the root data source of this
-	 *                           file.
-	 * @param attrType
-	 * @param attrId
-	 * @param name               name field of the file
-	 * @param fileType           type of the file
-	 * @param metaAddr
-	 * @param metaSeq
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
-	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
-	 *                           present
-	 * @param knownState         knownState status of the file, or null if
-	 *                           unknown (default)
-	 * @param parentPath
-	 * @param mimeType           The MIME type of the file, can be null
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	AbstractFile(SleuthkitCase db, long objId, long dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
-			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, null, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**

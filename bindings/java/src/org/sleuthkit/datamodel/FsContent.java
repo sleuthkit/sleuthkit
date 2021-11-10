@@ -42,13 +42,6 @@ public abstract class FsContent extends AbstractFile {
 	private List<String> metaDataText = null;
 
 	/**
-	 * @deprecated Use getFileSystemId instead.
-	 */
-	// TODO: This could be removed now that the file system ID is stored in AbstractFile.
-	@Deprecated
-	protected final long fsObjId;
-
-	/**
 	 *
 	 * @deprecated Use getFileHandle instead.
 	 */
@@ -108,7 +101,6 @@ public abstract class FsContent extends AbstractFile {
 	 *                           system, can be null.
 	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
-	@SuppressWarnings("deprecation")
 	FsContent(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
@@ -130,7 +122,6 @@ public abstract class FsContent extends AbstractFile {
 			Long osAccountObjId,
 			List<Attribute> fileAttributes) {
 		super(db, objId, dataSourceObjectId, new Long(fsObjId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
-		this.fsObjId = fsObjId;
 	}
 
 	/**
@@ -138,9 +129,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return the parent file system id
 	 */
-	@SuppressWarnings("deprecation")
 	public long getFileSystemId() {
-		return fsObjId;
+		return getFileSystemObjectId().orElse(0L);
 	}
 
 	/**
@@ -285,20 +275,19 @@ public abstract class FsContent extends AbstractFile {
 	 *                      representation of this object.
 	 */
 	@Override
-	@SuppressWarnings("deprecation")
 	public String toString(boolean preserveState) {
 		String path = "";
 		try {
 			path = getUniquePath();
 		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error loading unique path for object ID: " + this.getId());
+			logger.log(Level.SEVERE, "Error loading unique path for object ID: {0}", this.getId());
 		}
 		
 		return super.toString(preserveState)
 				+ "FsContent [\t" //NON-NLS
-				+ "fsObjId " + fsObjId //NON-NLS
+				+ "fsObjId " + getFileSystemId() //NON-NLS
 				+ "\t" + "uniquePath " + path //NON-NLS
-				+ "\t" + "fileHandle " + fileHandle //NON-NLS
+				+ "\t" + "fileHandle " + getFileHandle() //NON-NLS
 				+ "]\t";
 	}
 
