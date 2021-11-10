@@ -1480,7 +1480,12 @@ public abstract class AbstractFile extends AbstractContent {
 			if (getFileSystemObjectId().isPresent()) {
 				StringBuilder sb = new StringBuilder();
 				sb.append(getFileSystem().getUniquePath());
-				sb.append(parentPath);
+				if (! parentPath.isEmpty()) {
+					sb.append(parentPath);
+				} else {
+					// The parent path may not be set in older cases.
+					sb.append("/");
+				}
 				sb.append(getName());
 				uniquePath = sb.toString();
 			} else {
@@ -1501,7 +1506,12 @@ public abstract class AbstractFile extends AbstractContent {
 					if (dataSource != null) {
 					  dataSourceName = dataSource.getUniquePath(); 
 					}
-					uniquePath = dataSourceName + parentPath + getName();
+					if (! parentPath.isEmpty()) {
+						uniquePath = dataSourceName + parentPath + getName();
+					} else {
+						// The parent path may not be set in older cases.
+						uniquePath = dataSourceName + "/" + getName();
+					}
 				}
 			}
 		}
