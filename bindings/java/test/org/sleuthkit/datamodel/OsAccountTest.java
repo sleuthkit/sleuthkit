@@ -613,6 +613,15 @@ public class OsAccountTest {
 			assertEquals(osAccount11.getLoginName().orElse("").equalsIgnoreCase(loginName1), true);	
 			
 			
+			// try and get the account with null sid & login name.  It should use the login name to find the account
+			Optional<OsAccount> osAccount21 =  caseDB.getOsAccountManager().getWindowsOsAccount("S-1-0-0", loginName1, realmName1, host1);
+			
+			assertTrue(osAccount21.isPresent());
+			assertEquals(osAccount21.get().getAddr().orElse("").equalsIgnoreCase(ownerUid1), true);	
+			assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount21.get().getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName1), true);
+			assertEquals(osAccount21.get().getLoginName().orElse("").equalsIgnoreCase(loginName1), true);	
+			
+			
 			// Let's update osAccount1
 			String fullName1 = "Johnny Depp";
 			Long creationTime1 = 1611858618L;
@@ -813,6 +822,34 @@ public class OsAccountTest {
 					// continue
 				}
 
+				try {
+					// try to create account with NULL SID and null name - should fail. 
+					String sid4 = "S-1-0-0"; //  NULL SID
+					OsAccount osAccount4 = caseDB.getOsAccountManager().newWindowsOsAccount(sid4, null, realmName5, host5, OsAccountRealm.RealmScope.UNKNOWN);
+					
+					// above should raise an exception
+					assertEquals(true, false);
+				}
+				catch (TskCoreException ex) {
+					// continue
+				}
+				
+				try {
+					// try to create an account with "NULL SID" and valid login name. Should throw away the NULL SID And create account with login name.
+					String sid5 = "S-1-0-0"; //  NULL SID
+					String loginName5 = "login5";
+					OsAccount osAccount5 = caseDB.getOsAccountManager().newWindowsOsAccount(sid5, loginName5, realmName5, host5, OsAccountRealm.RealmScope.UNKNOWN);
+					
+					assertFalse(osAccount5.getAddr().isPresent());	// should NOT have a SID
+					assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount5.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(realmName5), true);
+					assertEquals(osAccount5.getLoginName().orElse("").equalsIgnoreCase(loginName5), true);	
+			
+				}
+				catch (OsAccountManager.NotUserSIDException ex) {
+					// DO NOT EXPECT this exception to be thrown here. 
+					assertEquals(true, false);
+				}
+				
 			}
 		}
 		
@@ -875,11 +912,11 @@ public class OsAccountTest {
 		
 		// TBD: perhaps add some files to the case and then use one of the files as the source of attributes.
 		
-		OsAccountAttribute attrib1 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
+		OsAccountAttribute attrib1 = osAccount1.new OsAccountAttribute(caseDB.getBlackboard().getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_PASSWORD_RESET.getTypeID()), resetTime1, osAccount1, null, image);
 		accountAttributes.add(attrib1);
 		
 		String hint = "HINT";
-		OsAccountAttribute attrib2 = osAccount1.new OsAccountAttribute(caseDB.getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
+		OsAccountAttribute attrib2 = osAccount1.new OsAccountAttribute(caseDB.getBlackboard().getAttributeType(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PASSWORD_HINT.getTypeID()), hint, osAccount1, host2, image);
 		accountAttributes.add(attrib2);
 		
 		// add attributes to account.

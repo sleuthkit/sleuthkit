@@ -153,16 +153,18 @@ public final class OsAccountManager {
 			throw new TskCoreException("A referring host is required to create an account.");
 		}
 
-		// ensure at least one of the two is supplied - unique id or a login name
-		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+		// ensure at least one of the two is supplied - a non-null unique id or a login name
+		if ((StringUtils.isBlank(sid) || sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(loginName)) {
 			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
 		}
 		// Realm name is required if the sid is null. 
-		if (StringUtils.isBlank(sid) && StringUtils.isBlank(realmName)) {
+		if ((StringUtils.isBlank(sid) || sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Realm name or SID is required to create a Windows account.");
 		}
 
-		if (!StringUtils.isBlank(sid) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
+		if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
 			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 		}
 
@@ -201,12 +203,13 @@ public final class OsAccountManager {
 	 */
 	public OsAccount newWindowsOsAccount(String sid, String loginName, OsAccountRealm realm) throws TskCoreException, NotUserSIDException {
 
-		// ensure at least one of the two is supplied - unique id or a login name
-		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+		// ensure at least one of the two is supplied - a non-null unique id or a login name
+		if ((StringUtils.isBlank(sid) || sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(loginName)) {
 			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
 		}
 
-		if (!StringUtils.isBlank(sid) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
+		if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
 			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 		}
 
@@ -214,10 +217,11 @@ public final class OsAccountManager {
 		try {
 			// try to create account
 			try {
-				OsAccount account = newOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				String uniqueId = (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) ?  sid : null;
+				OsAccount account = newOsAccount(uniqueId, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 
 				// If the SID indicates a special windows account, then set its full name. 
-				if (!StringUtils.isBlank(sid) && isWindowsSpecialSid(sid)) {
+				if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && isWindowsSpecialSid(sid)) {
 					String fullName = getWindowsSpecialSidName(sid);
 					if (StringUtils.isNotBlank(fullName)) {
 						OsAccountUpdateResult updateResult = updateStandardOsAccountAttributes(account, fullName, null, null, null, trans);
@@ -1034,8 +1038,8 @@ public final class OsAccountManager {
 			throw new TskCoreException("A referring host is required to get an account.");
 		}
 
-		// ensure at least one of the two is supplied - sid or a login name
-		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+		// ensure at least one of the two is supplied - a non-null sid or a login name
+		if ((StringUtils.isBlank(sid) || (sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) ) && StringUtils.isBlank(loginName)) {
 			throw new TskCoreException("Cannot get an OS account with both SID and loginName as null.");
 		}
 
@@ -1046,7 +1050,7 @@ public final class OsAccountManager {
 		}
 
 		// search by SID
-		if (!Strings.isNullOrEmpty(sid)) {
+		if (!Strings.isNullOrEmpty(sid) && !(sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))) {
 			if (!WindowsAccountUtils.isWindowsUserSid(sid)) {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 			}
@@ -1183,7 +1187,7 @@ public final class OsAccountManager {
 				if (!rs.wasNull()) {
 					sourceContent = this.db.getContentById(sourceObjId);
 				}
-				BlackboardAttribute.Type attributeType = db.getAttributeType(rs.getInt("attribute_type_id"));
+				BlackboardAttribute.Type attributeType = db.getBlackboard().getAttributeType(rs.getInt("attribute_type_id"));
 				OsAccountAttribute attribute = account.new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"),
 						rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
 						db, account, host, sourceContent);
@@ -1533,7 +1537,7 @@ public final class OsAccountManager {
 	private OsAccountUpdateResult updateCoreWindowsOsAccountAttributes(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
 
 		// first get and update the realm - if we have the info to find the realm
-		if (!StringUtils.isBlank(accountSid) || !StringUtils.isBlank(realmName)) {
+		if ((!StringUtils.isBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) || !StringUtils.isBlank(realmName)) {
 			db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, realmName, referringHost, trans.getConnection());
 		}
 
@@ -1573,12 +1577,12 @@ public final class OsAccountManager {
 		try {
 			CaseDbConnection connection = trans.getConnection();
 
-			// if a new addr is provided and the account already has an address, and they are not the same, throw an exception
-			if (!StringUtils.isBlank(address) && !StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !address.equalsIgnoreCase(osAccount.getAddr().orElse(""))) {
+			// if a new non-null addr is provided and the account already has an address, and they are not the same, throw an exception
+			if (!StringUtils.isBlank(address) && !address.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && !StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !address.equalsIgnoreCase(osAccount.getAddr().orElse(""))) {
 				throw new TskCoreException(String.format("Account (%d) already has an address (%s), address cannot be updated.", osAccount.getId(), osAccount.getAddr().orElse("NULL")));
 			}
 
-			if (StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address)) {
+			if (StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address) && !address.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 				updateAccountColumn(osAccount.getId(), "addr", address, connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}

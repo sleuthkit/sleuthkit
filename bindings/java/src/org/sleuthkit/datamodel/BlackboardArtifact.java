@@ -189,18 +189,20 @@ public abstract class BlackboardArtifact implements Content {
 	public int getArtifactTypeID() {
 		return this.artifactTypeId;
 	}
-	
+
 	/**
 	 * Gets the artifact type for this artifact.
-	 * 
+	 *
 	 * @return The artifact type.
+	 * 
+	 * @throws TskCoreException
 	 */
 	public BlackboardArtifact.Type getType() throws TskCoreException {
 		BlackboardArtifact.Type standardTypesValue = BlackboardArtifact.Type.STANDARD_TYPES.get(getArtifactTypeID());
 		if (standardTypesValue != null) {
 			return standardTypesValue;
 		} else {
-			return getSleuthkitCase().getArtifactType(getArtifactTypeID());
+			return getSleuthkitCase().getBlackboard().getArtifactType(getArtifactTypeID());
 		}
 	}
 
@@ -232,7 +234,7 @@ public abstract class BlackboardArtifact implements Content {
 	public String getShortDescription() throws TskCoreException {
 		BlackboardAttribute attr = null;
 		StringBuilder shortDescription = new StringBuilder("");
-		if(BlackboardArtifact.Type.STANDARD_TYPES.get(artifactTypeId) != null) {
+		if (BlackboardArtifact.Type.STANDARD_TYPES.get(artifactTypeId) != null) {
 			switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
 				case TSK_WIFI_NETWORK_ADAPTER:
 					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_MAC_ADDRESS));
@@ -260,7 +262,7 @@ public abstract class BlackboardArtifact implements Content {
 					break;
 				case TSK_ACCOUNT:
 					attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID));
-					if(attr == null) {
+					if (attr == null) {
 						attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_CARD_NUMBER));
 					}
 					break;
@@ -325,7 +327,7 @@ public abstract class BlackboardArtifact implements Content {
 						ATTRIBUTE_TYPE.TSK_EMAIL_FROM,
 						ATTRIBUTE_TYPE.TSK_EMAIL_TO,
 						ATTRIBUTE_TYPE.TSK_EMAIL_HOME,
-						ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE, 
+						ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE,
 						ATTRIBUTE_TYPE.TSK_LOCATION}; //in the order we want to use them
 					for (ATTRIBUTE_TYPE t : typesThatCanHaveName) {
 						attr = getAttribute(new BlackboardAttribute.Type(t));
@@ -416,14 +418,26 @@ public abstract class BlackboardArtifact implements Content {
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		ArrayList<BlackboardAttribute> attributes;
 		if (false == loadedCacheFromDb) {
-			attributes = getSleuthkitCase().getBlackboardAttributes(this);
+			attributes = getSleuthkitCase().getBlackboard().getBlackboardAttributes(this);
 			attrsCache.clear();
 			attrsCache.addAll(attributes);
 			loadedCacheFromDb = true;
 		} else {
-			attributes = new ArrayList<BlackboardAttribute>(attrsCache);
+			attributes = new ArrayList<>(attrsCache);
 		}
 		return attributes;
+	}
+	
+	/**
+	 * Set all attributes at once.
+	 * Will overwrite any already loaded attributes.
+	 * 
+	 * @param attributes The set of attributes for this artifact.
+	 */
+	void setAttributes(List<BlackboardAttribute> attributes) {
+		attrsCache.clear();
+		attrsCache.addAll(attributes);
+		loadedCacheFromDb = true;
 	}
 
 	/**
@@ -560,7 +574,7 @@ public abstract class BlackboardArtifact implements Content {
 	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
 		return sleuthkitCase.getBlackboard().getDataArtifactsBySource(artifactObjId);
 	}
-	
+
 	@Override
 	public Score getAggregateScore() throws TskCoreException {
 		return sleuthkitCase.getScoringManager().getAggregateScore(artifactObjId);
@@ -756,7 +770,8 @@ public abstract class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
-	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis
+	 * Results.
 	 */
 	@Deprecated
 	@Override
@@ -766,9 +781,12 @@ public abstract class BlackboardArtifact implements Content {
 
 	@Override
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		// Get the ID before starting the transaction
+		long dataSourceId = this.getDataSource().getId();
+		
 		CaseDbTransaction trans = sleuthkitCase.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = sleuthkitCase.getBlackboard().newAnalysisResult(artifactType, this.getId(), dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
@@ -796,12 +814,12 @@ public abstract class BlackboardArtifact implements Content {
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
-	
+
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
 		throw new TskCoreException("Cannot create data artifact of an artifact. Not supported.");
 	}
-	
+
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		return newDataArtifact(artifactType, attributesList, null);
@@ -816,7 +834,8 @@ public abstract class BlackboardArtifact implements Content {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
-	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis Results.
+	 * @deprecated Use the Blackboard to create Data Artifacts and Analysis
+	 * Results.
 	 */
 	@Deprecated
 	@Override
@@ -1346,21 +1365,35 @@ public abstract class BlackboardArtifact implements Content {
 		public static final Type TSK_WEB_CATEGORIZATION = new BlackboardArtifact.Type(68, "TSK_WEB_CATEGORIZATION", bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT);
 
 		/**
-		 * Indicates that the file or artifact was previously seen in another Autopsy case.
+		 * Indicates that the file or artifact was previously seen in another
+		 * Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_SEEN = new BlackboardArtifact.Type(69, "TSK_PREVIOUSLY_SEEN", bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT);
-		
+
 		/**
-		 * Indicates that the file or artifact was previously unseen in another Autopsy case.
+		 * Indicates that the file or artifact was previously unseen in another
+		 * Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_UNSEEN = new BlackboardArtifact.Type(70, "TSK_PREVIOUSLY_UNSEEN", bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT);
-		
+
 		/**
-		 * Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
+		 * Indicates that the file or artifact was previously tagged as
+		 * "Notable" in another Autopsy case.
 		 */
 		public static final Type TSK_PREVIOUSLY_NOTABLE = new BlackboardArtifact.Type(71, "TSK_PREVIOUSLY_NOTABLE", bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
-		
-		// NOTE: When adding a new standard BlackboardArtifact.Type, add the instance and then add to the STANDARD_TYPES map.
+		/*
+		 * IMPORTANT!
+		 *
+		 * Until BlackboardArtifact.ARTIFACT_TYPE is deprecated and/or removed,
+		 * new standard artifact types need to be added to both
+		 * BlackboardArtifact.ARTIFACT_TYPE and
+		 * BlackboardArtifact.Type.STANDARD_TYPES.
+		 *
+		 * Also, ensure that new types have a one line JavaDoc description and
+		 * are added to the standard artifacts catalog (artifact_catalog.dox).
+		 *
+		 */
+
 		/**
 		 * All standard artifact types with ids mapped to the type.
 		 */
@@ -1435,7 +1468,7 @@ public abstract class BlackboardArtifact implements Content {
 		private final int typeID;
 		private final String displayName;
 		private final Category category;
-		
+
 		/**
 		 * Constructs a custom artifact type.
 		 *
@@ -1926,27 +1959,35 @@ public abstract class BlackboardArtifact implements Content {
 		TSK_WEB_CATEGORIZATION(68, "TSK_WEB_CATEGORIZATION",
 				bundle.getString("BlackboardArtifact.tskWebCategorization.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * Indicates that the file or artifact was previously seen in another Autopsy case.
+		 * Indicates that the file or artifact was previously seen in another
+		 * Autopsy case.
 		 */
 		TSK_PREVIOUSLY_SEEN(69, "TSK_PREVIOUSLY_SEEN",
-				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),		
+				bundle.getString("BlackboardArtifact.tskPreviouslySeen.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * Indicates that the file or artifact was previously unseen in another Autopsy case.
+		 * Indicates that the file or artifact was previously unseen in another
+		 * Autopsy case.
 		 */
 		TSK_PREVIOUSLY_UNSEEN(70, "TSK_PREVIOUSLY_UNSEEN",
 				bundle.getString("BlackboardArtifact.tskPreviouslyUnseen.text"), Category.ANALYSIS_RESULT),
 		/**
-		 * Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
+		 * Indicates that the file or artifact was previously tagged as
+		 * "Notable" in another Autopsy case.
 		 */
 		TSK_PREVIOUSLY_NOTABLE(71, "TSK_PREVIOUSLY_NOTABLE",
 				bundle.getString("BlackboardArtifact.tskPreviouslyNotable.text"), Category.ANALYSIS_RESULT);
-
-		
 		/*
-		 * To developers: For each new artifact, ensure that: - The enum value
-		 * has 1-line JavaDoc description - The artifact catalog
-		 * (artifact_catalog.dox) is updated to reflect the attributes it uses
+		 * IMPORTANT!
+		 *
+		 * Until BlackboardArtifact.ARTIFACT_TYPE is deprecated and/or removed,
+		 * new standard artifact types need to be added to both
+		 * BlackboardArtifact.ARTIFACT_TYPE and
+		 * BlackboardArtifact.Type.STANDARD_TYPES.
+		 *
+		 * Also, ensure that new types have a one line JavaDoc description and
+		 * are added to the standard artifacts catalog (artifact_catalog.dox).
 		 */
+
 		private final String label;
 		private final int typeId;
 		private final String displayName;

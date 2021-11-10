@@ -1359,10 +1359,9 @@ public class CaseUcoExporter {
         Trace export = new Trace(uuid);
         serializeObjectToOutput(export, output);
 
-        BlackboardAttribute associatedArtifactID = artifact.getAttribute(StandardAttributeTypes.TSK_ASSOCIATED_ARTIFACT);
-        if (associatedArtifactID != null) {
-            long artifactID = associatedArtifactID.getValueLong();
-            BlackboardArtifact associatedArtifact = artifact.getSleuthkitCase().getArtifactByArtifactId(artifactID);
+        Long associatedArtifactId = getLongIfPresent(artifact, StandardAttributeTypes.TSK_ASSOCIATED_ARTIFACT);
+        if (associatedArtifactId != null) {
+            BlackboardArtifact associatedArtifact = artifact.getSleuthkitCase().getBlackboardArtifact(associatedArtifactId);
             if (associatedArtifact != null) {
                 serializeObjectToOutput(new BlankRelationshipNode()
                         .setSource(uuid)

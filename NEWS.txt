@@ -1,6 +1,14 @@
----------------- VERSION 4.X --------------
+---------------- VERSION 4.11.1 --------------
+
+C/C++:
+- Several fixes from Joachim Metz
+- NTFS Decompression bug fix from Kim Stone and Joel Uckelman
+
 Java:
 - Fixed connection leak when making OS Accounts in bridge
+- OsAccount updates for instance types and special Windows SIDs
+- Fixed issue with duplicate value in Japanese timeline translation
+
 
 ---------------- VERSION 4.11.0 --------------
 C/C++:

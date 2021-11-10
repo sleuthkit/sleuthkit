@@ -537,7 +537,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public List<Attribute> getAttributes() throws TskCoreException {
 		synchronized (this) {
 			if (!loadedAttributesCacheFromDb) {
-				ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
+				ArrayList<Attribute> attributes = getSleuthkitCase().getBlackboard().getFileAttributes(this);
 				fileAttributesCache.clear();
 				fileAttributesCache.addAll(attributes);
 				loadedAttributesCacheFromDb = true;

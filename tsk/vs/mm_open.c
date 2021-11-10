@@ -122,7 +122,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                         vs_set->close(vs_set);
                         vs->close(vs);
                         tsk_error_reset();
-                        tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+                        tsk_error_set_errno(TSK_ERR_VS_MULTTYPE);
                         tsk_error_set_errstr("GPT or %s at %" PRIuDADDR, set,
                             offset);
                         return NULL;
@@ -145,7 +145,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                 vs_set->close(vs_set);
                 vs->close(vs);
                 tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+                tsk_error_set_errno(TSK_ERR_VS_MULTTYPE);
                 tsk_error_set_errstr("Sun or %s at %" PRIuDADDR, set,
                     offset);
                 return NULL;
@@ -164,7 +164,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                 vs_set->close(vs_set);
                 vs->close(vs);
                 tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+                tsk_error_set_errno(TSK_ERR_VS_MULTTYPE);
                 tsk_error_set_errstr("Mac or %s at %" PRIuDADDR, set,
                     offset);
                 return NULL;
