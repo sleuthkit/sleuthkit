@@ -1,4 +1,4 @@
-2/*
+/*
  * Sleuth Kit CASE JSON LD Support
  *
  * Copyright 2020-2021 Basis Technology Corp.
