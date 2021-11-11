@@ -2,7 +2,7 @@
  * Sleuth Kit CASE JSON LD Support
  *
  * Copyright 2020-2021 Basis Technology Corp.
- * Contact: carrier <at> sleuthkit <dot> org
+ * ContactFacet: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,30 +19,26 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the ContactFacet observable described in the UCO
+ ontology.
  */
-class ObservableObject extends CyberItem {
+class ContactFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:contact")
+    private String contactName;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    ContactFacet() {
+        super(ContactFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    ContactFacet setContactName(String contactName) {
+        this.contactName = contactName;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    String getContactName() {
+        return contactName;
     }
 }

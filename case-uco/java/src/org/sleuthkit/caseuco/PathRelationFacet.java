@@ -19,30 +19,26 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the PathRelationFacet observable described in the
+ UCO ontology.
  */
-class ObservableObject extends CyberItem {
+class PathRelationFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:path")
+    private String path;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    PathRelationFacet() {
+        super(PathRelationFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    PathRelationFacet setPath(String path) {
+        this.path = path;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    String getPath() {
+        return path;
     }
 }

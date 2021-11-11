@@ -19,30 +19,26 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the HTTPConnectionFacet observable described in the
+ UCO ontology.
  */
-class ObservableObject extends CyberItem {
+class HTTPConnectionFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:httpRequestHeader")
+    private String httpRequestHeader;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    HTTPConnectionFacet() {
+        super(HTTPConnectionFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    HTTPConnectionFacet setHttpRequestHeader(String httpRequestHeader) {
+        this.httpRequestHeader = httpRequestHeader;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    String getHttpRequestHeader() {
+        return httpRequestHeader;
     }
 }

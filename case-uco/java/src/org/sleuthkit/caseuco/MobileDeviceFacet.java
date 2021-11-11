@@ -19,30 +19,38 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the MobileDeviceFacet observable described in the
+ UCO ontology.
  */
-class ObservableObject extends CyberItem {
+class MobileDeviceFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:bluetoothDeviceName")
+    private String bluetoothDeviceName;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    @SerializedName("observable:IMEI")
+    private String IMEI;
+
+    MobileDeviceFacet() {
+        super(MobileDeviceFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    MobileDeviceFacet setBluetoothDeviceName(String bluetoothDeviceName) {
+        this.bluetoothDeviceName = bluetoothDeviceName;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    MobileDeviceFacet setIMEI(String IMEI) {
+        this.IMEI = IMEI;
+        return this;
+    }
+
+    String getBluetoothDeviceName() {
+        return bluetoothDeviceName;
+    }
+
+    String getIMEI() {
+        return IMEI;
     }
 }

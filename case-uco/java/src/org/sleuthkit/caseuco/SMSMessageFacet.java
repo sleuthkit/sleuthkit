@@ -19,30 +19,28 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the SMSMessageFacet observable described in the UCO
+ ontology.
  */
-class ObservableObject extends CyberItem {
+class SMSMessageFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:isRead")
+    private Boolean isRead;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    SMSMessageFacet() {
+        super(SMSMessageFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    SMSMessageFacet setIsRead(Integer status) {
+        if (status != null) {
+            this.isRead = status == 1;
+        }
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    Boolean getIsRead() {
+        return isRead;
     }
 }

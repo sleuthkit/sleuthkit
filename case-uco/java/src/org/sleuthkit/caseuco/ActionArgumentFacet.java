@@ -19,30 +19,26 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the ActionArgumentFacet observable described in the
+ UCO ontology.
  */
-class ObservableObject extends CyberItem {
+class ActionArgumentFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("action:argumentName")
+    private String argumentName;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    ActionArgumentFacet() {
+        super(ActionArgumentFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    ActionArgumentFacet setArgumentName(String argumentName) {
+        this.argumentName = argumentName;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    String getArgumentName() {
+        return argumentName;
     }
 }

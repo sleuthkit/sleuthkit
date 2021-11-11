@@ -23,27 +23,38 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the core Action object described in the UCO
- * ontology.
+ * This class definition mirrors the OperatingSystemFacet observable described in the
+ UCO ontology.
  */
-class Action extends UcoObject {
+class OperatingSystemFacet extends Facet {
 
-    @SerializedName("action:startTime")
-    private String startTime;
+    @SerializedName("observable:installDate")
+    private String installDate;
 
-    Action(String id) {
-        super(id, Action.class.getSimpleName() + UcoObject.UCO_ACTION);
+    @SerializedName("observable:version")
+    private String version;
+
+    OperatingSystemFacet() {
+        super(OperatingSystemFacet.class.getSimpleName());
     }
 
-    Action setStartTime(Long startTime) {
-        if (startTime != null) {
-            this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
+    OperatingSystemFacet setInstallDate(Long installDate) {
+        if (installDate != null) {
+            this.installDate = Instant.ofEpochSecond(installDate).atOffset(ZoneOffset.UTC).toString();
         }
-
         return this;
     }
 
-    String getStartTime() {
-        return startTime;
+    OperatingSystemFacet setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
+    String getInstallDate() {
+        return installDate;
+    }
+
+    String getVersion() {
+        return version;
     }
 }

@@ -19,30 +19,26 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the WindowsAccountFacet observable described in the UCO
+ ontology.
  */
-class ObservableObject extends CyberItem {
-
-    static final String OBSERVABLE = "observable:";
-
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
+class WindowsAccountFacet extends Facet {
     
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    @SerializedName("observable:groups")
+    private String groups;
+    
+    WindowsAccountFacet() {
+        super(WindowsAccountFacet.class.getSimpleName());
     }
     
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+    WindowsAccountFacet setGroups(String groups) {
+        this.groups = groups;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    String getGroups() {
+        return groups;
     }
 }

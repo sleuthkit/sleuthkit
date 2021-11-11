@@ -19,30 +19,26 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the MACAddressFacet observable described in the UCO
+ ontology.
  */
-class ObservableObject extends CyberItem {
+class MACAddressFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:addressValue")
+    private String value;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    MACAddressFacet() {
+        super(MACAddressFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    MACAddressFacet setValue(String value) {
+        this.value = value;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    String getValue() {
+        return value;
     }
 }

@@ -23,27 +23,38 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 
 /**
- * This class definition mirrors the core Action object described in the UCO
- * ontology.
+ * This class definition mirrors the DigitalAccountFacet observable described in the
+ UCO ontology.
  */
-class Action extends UcoObject {
+class DigitalAccountFacet extends Facet {
 
-    @SerializedName("action:startTime")
-    private String startTime;
+    @SerializedName("observable:displayName")
+    private String displayName;
 
-    Action(String id) {
-        super(id, Action.class.getSimpleName() + UcoObject.UCO_ACTION);
+    @SerializedName("observable:lastLoginTime")
+    private String lastLoginTime;
+
+    DigitalAccountFacet() {
+        super(DigitalAccountFacet.class.getSimpleName());
     }
 
-    Action setStartTime(Long startTime) {
-        if (startTime != null) {
-            this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
-        }
-
+    DigitalAccountFacet setDisplayName(String displayName) {
+        this.displayName = displayName;
         return this;
     }
 
-    String getStartTime() {
-        return startTime;
+    DigitalAccountFacet setLastLoginTime(Long time) {
+        if (time != null) {
+            this.lastLoginTime = Instant.ofEpochSecond(time).atOffset(ZoneOffset.UTC).toString();
+        }
+        return this;
+    }
+
+    String getDisplayName() {
+        return displayName;
+    }
+
+    String getLastLoginTime() {
+        return lastLoginTime;
     }
 }

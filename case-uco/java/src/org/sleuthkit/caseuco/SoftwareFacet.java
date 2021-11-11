@@ -19,13 +19,12 @@
 package org.sleuthkit.caseuco;
 
 /**
- * This class definition mirrors the core Facet object described in the UCO
- * ontology.
+ * This class definition mirrors the SoftwareFacet observable described in the UCO
+ ontology.
  */
-abstract class Facet extends UcoObject {
+class SoftwareFacet extends Facet {
 
-    
-    Facet(String type) {
-        super(null, type);
+    SoftwareFacet() {
+        super(SoftwareFacet.class.getSimpleName());
     }
 }

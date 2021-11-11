@@ -19,30 +19,33 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the VolumeFacet observable described in the UCO
+ ontology.
  */
-class ObservableObject extends CyberItem {
+class VolumeFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:volumeType")
+    private String volumeType;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    @SerializedName("observable:sectorSize")
+    private Long sectorSize;
+
+    VolumeFacet() {
+        super(VolumeFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    VolumeFacet setSectorSize(long sectorSize) {
+        this.sectorSize = sectorSize;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    String getVolumeType() {
+        return volumeType;
+    }
+
+    Long getSectorSize() {
+        return sectorSize;
     }
 }

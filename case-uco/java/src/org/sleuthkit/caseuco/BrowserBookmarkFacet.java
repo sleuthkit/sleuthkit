@@ -19,30 +19,38 @@
 package org.sleuthkit.caseuco;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A ObservableObject template from the CASE ontology.
+ * This class definition mirrors the BrowserBookmarkFacet observable described in the
+ UCO ontology.
  */
-class ObservableObject extends CyberItem {
+class BrowserBookmarkFacet extends Facet {
 
-    static final String OBSERVABLE = "observable:";
+    @SerializedName("observable:urlTargeted")
+    private String urlTargeted;
 
-    @SerializedName("uco-core:hasFacet")
-    private final List<Facet> facets;
-    
-    ObservableObject(String uuid) {
-        super(uuid, UcoObject.UCO_OBSERV + ObservableObject.class.getSimpleName());
-        this.facets = new ArrayList<>();
+    @SerializedName("observable:sourceApplication")
+    private String application;
+
+    BrowserBookmarkFacet() {
+        super(BrowserBookmarkFacet.class.getSimpleName());
     }
-    
-    final ObservableObject addBundle(Facet bundle) {
-        facets.add(bundle);
+
+    BrowserBookmarkFacet setUrlTargeted(String urlTargeted) {
+        this.urlTargeted = urlTargeted;
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
-        return facets;
+    BrowserBookmarkFacet setApplication(CyberItem application) {
+        this.application = application.getId();
+        return this;
+    }
+
+    String getUrlTargeted() {
+        return urlTargeted;
+    }
+
+    String getApplication() {
+        return application;
     }
 }
