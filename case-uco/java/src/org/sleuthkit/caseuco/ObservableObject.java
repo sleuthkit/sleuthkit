@@ -27,6 +27,8 @@ import java.util.List;
  */
 class ObservableObject extends CyberItem {
 
+    static final String OBSERVABLE = "observable:";
+
     @SerializedName("uco-core:hasFacet")
     private final List<Facet> facets;
     

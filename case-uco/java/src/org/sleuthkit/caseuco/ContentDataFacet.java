@@ -49,7 +49,7 @@ class ContentDataFacet extends Facet {
     private String dataPayloadReferenceUrl;
 
     ContentDataFacet() {
-        super(OBSERVABLE + ContentDataFacet.class.getSimpleName());
+        super(ObservableObject.OBSERVABLE + ContentDataFacet.class.getSimpleName());
         this.hashes = new ArrayList<>();
     }
 
