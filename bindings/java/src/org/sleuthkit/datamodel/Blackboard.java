@@ -1226,17 +1226,26 @@ public final class Blackboard {
 
 		return analysisResults;
 	}
-
-	private final static String DATA_ARTIFACT_QUERY_STRING = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
+	
+	private final static String DATA_ARTIFACT_QUERY_STRING_GENERIC = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
 			+ "artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, " //NON-NLS
 			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 			+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
 			+ " data_artifacts.os_account_obj_id as os_account_obj_id " //NON-NLS
-			+ " FROM blackboard_artifacts AS artifacts "
+			+ " FROM blackboard_artifacts AS artifacts " //NON-NLS 
 			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
 			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
-			+ " LEFT JOIN tsk_data_artifacts AS data_artifacts "
-			+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id " //NON-NLS
+			+ " LEFT JOIN tsk_data_artifacts AS data_artifacts " //NON-NLS 
+			+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id "; //NON-NLS
+	
+	private final static String DATA_ARTIFACT_QUERY_STRING_WITH_ATTRIBUTES = 
+			DATA_ARTIFACT_QUERY_STRING_GENERIC
+			+ " JOIN blackboard_attributes AS attributes " //NON-NLS 
+            + " ON artifacts.artifact_id = attributes.artifact_id " //NON-NLS 
+			+ " WHERE types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS	
+
+	private final static String DATA_ARTIFACT_QUERY_STRING_WHERE = 
+			DATA_ARTIFACT_QUERY_STRING_GENERIC
 			+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
 			+ "     AND types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS
 
@@ -1384,7 +1393,7 @@ public final class Blackboard {
 	 */
 	List<DataArtifact> getDataArtifactsWhere(String whereClause, CaseDbConnection connection) throws TskCoreException {
 
-		final String queryString = DATA_ARTIFACT_QUERY_STRING
+		final String queryString = DATA_ARTIFACT_QUERY_STRING_WHERE
 				+ " AND " + whereClause + " ";
 
 		try (Statement statement = connection.createStatement();
@@ -1658,6 +1667,54 @@ public final class Blackboard {
 			artifacts.addAll(this.getDataArtifactsWhere(fullQuery));
 		}
 
+		return artifacts;
+	}
+
+	/**
+	 * Get all blackboard artifacts of the given type that contain attributes of
+	 * given types and values, for a given data source(s).
+	 *
+	 * @param artifactType		artifact type to get
+	 * @param attributeType		attribute type to be included
+	 * @param value				attribute value to be included. can be empty.
+	 * @param dataSourceObjId	data source to look under. If Null, then search
+	 *                          all data sources.
+	 * @param reviewStatus		review status of the artifacts
+	 *
+	 * @return list of blackboard artifacts
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType,
+			BlackboardAttribute.Type attributeType, String value, Long dataSourceObjId,
+			BlackboardArtifact.ReviewStatus reviewStatus) throws TskCoreException {
+
+		String query = " AND artifacts.artifact_type_id = " + artifactType.getTypeID() //NON-NLS 
+				+ " AND attributes.attribute_type_id = " + attributeType.getTypeID() //NON-NLS
+				+ ((value == null || value.isEmpty()) ? "" : " AND attributes.value_text = '" + value + "'") //NON-NLS
+				+ " AND artifacts.review_status_id = " + reviewStatus.getID() //NON-NLS
+				+ (dataSourceObjId != null ? " AND artifacts.data_source_obj_id = " + dataSourceObjId : ""); //NON-NLS
+	
+		List<BlackboardArtifact> artifacts = new ArrayList<>();
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+
+			if (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
+
+			} else {
+				String dataArtifactQuery = DATA_ARTIFACT_QUERY_STRING_WITH_ATTRIBUTES + query;
+				try (Statement statement = connection.createStatement();
+						ResultSet resultSet = connection.executeQuery(statement, dataArtifactQuery);) {
+					
+					artifacts.addAll(resultSetToDataArtifacts(resultSet, connection));
+				} catch (SQLException ex) {
+					throw new TskCoreException(String.format("Error getting data artifacts with queryString = %s", dataArtifactQuery), ex);
+				}
+			}
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
 		return artifacts;
 	}
 
