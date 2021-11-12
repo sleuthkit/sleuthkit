@@ -71,28 +71,16 @@ Indicates that the MD5 hash of a file matches a set of known MD5s (possibly user
 
 
 ---
-## TSK_INTERESTING_ARTIFACT_HIT
-Indicates that the source artifact matches some set of criteria which deem it interesting. Artifacts with this meta artifact will be brought to the attention of the user.
+## TSK_INTERESTING_ITEM
+Indicates that the source item matches some set of criteria which deem it interesting. Items with this meta artifact will be brought to the attention of the user.
 
 ### REQUIRED ATTRIBUTES
-- TSK_ASSOCIATED_ARTIFACT (The source artifact)
-- TSK_SET_NAME (The name of the set of criteria which deemed this artifact interesting)
+- TSK_SET_NAME (The name of the set of criteria which deemed this item interesting)
 
 ### OPTIONAL ATTRIBUTES
-- TSK_COMMENT (Comment on the reason that the source artifact is interesting)
+- TSK_COMMENT (Comment on the reason that the source item is interesting)
 - TSK_CATEGORY (The set membership rule that was satisfied)
-
-
----
-## TSK_INTERESTING_FILE_HIT
-Indication that the source file matches some set of criteria (possibly user defined) which deem it interesting. Files with this artifact will be brought to the attention of the user.
-
-### REQUIRED ATTRIBUTES
-- TSK_SET_NAME (The name of the set of criteria which deemed this file interesting)
-
-### OPTIONAL ATTRIBUTES
-- TSK_COMMENT (Comment on the reason that the source artifact is interesting)
-- TSK_CATEGORY (The set membership rule that was satisfied. I.e. a particular mime)
+- TSK_ASSOCIATED_ARTIFACT (The source artifact when the source item is an artifact)
 
 
 ---
