@@ -69,7 +69,7 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 *                           data source.
 	 */
 	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, String sha256Hash, TskData.FileKnown knownState, String parentPath) {
-		super(db, objId, dataSourceObjectId, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, knownState, parentPath);
+		super(db, objId, dataSourceObjectId, null, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, knownState, parentPath);
 		this.objectId = objId;
 		this.deviceId = deviceId;
 		this.timezone = timezone;
@@ -180,6 +180,11 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 		}
 
 		return contentSize;
+	}
+	
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		return "/" + getName();
 	}
 
 	/**

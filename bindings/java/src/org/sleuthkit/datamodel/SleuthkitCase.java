@@ -6192,7 +6192,11 @@ public class SleuthkitCase {
 			Content parent = this.getAbstractFileById(parentId, connection);
 			if (parent instanceof AbstractFile) {
 				if (isRootDirectory((AbstractFile) parent, transaction)) {
-					parentPath = "/";
+					if (parent.getName().isEmpty()) {
+						parentPath = "/";
+					} else {
+						parentPath = "/" + parent.getName() + "/";
+					}
 				} else {
 					parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + "/"; //NON-NLS
 				}
@@ -6213,12 +6217,14 @@ public class SleuthkitCase {
 			statement.setLong(1, newObjId);
 
 			// If the parent is part of a file system, grab its file system ID
+			Long fileSystemObjectId = null;
 			if (0 != parentId) {
-				long parentFs = this.getFileSystemId(parentId, connection);
-				if (parentFs != -1) {
-					statement.setLong(2, parentFs);
+				fileSystemObjectId = this.getFileSystemId(parentId, connection);
+				if (fileSystemObjectId != -1) {
+					statement.setLong(2, fileSystemObjectId);
 				} else {
 					statement.setNull(2, java.sql.Types.BIGINT);
+					fileSystemObjectId = null;
 				}
 			} else {
 				statement.setNull(2, java.sql.Types.BIGINT);
@@ -6278,7 +6284,7 @@ public class SleuthkitCase {
 
 			connection.executeUpdate(statement);
 
-			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
+			return new VirtualDirectory(this, newObjId, dataSourceObjectId, fileSystemObjectId, directoryName, dirType,
 					metaType, dirFlag, metaFlags, null, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
@@ -6998,7 +7004,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			Long osAccountId = (osAccount != null) ? osAccount.getId() : null;
-			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fsObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, ownerUid, osAccountId);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
@@ -7084,6 +7090,13 @@ public class SleuthkitCase {
 		if (null == parent) {
 			throw new TskCoreException("Conent is null");
 		}
+		
+		String parentPath;
+		if (parent instanceof AbstractFile) {
+			parentPath = ((AbstractFile) parent).getParentPath() + parent.getName() + '/'; //NON-NLS
+		} else {
+			parentPath = "/";
+		}
 
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
@@ -7092,8 +7105,19 @@ public class SleuthkitCase {
 		try {
 			transaction = beginTransaction();
 			CaseDbConnection connection = transaction.getConnection();
+			
+			// If the parent is part of a file system, grab its file system ID
+			Long fileSystemObjectId;
+			if (0 != parent.getId()) {
+				fileSystemObjectId = this.getFileSystemId(parent.getId(), connection);
+				if (fileSystemObjectId == -1) {
+					fileSystemObjectId = null;
+				}
+			} else {
+				fileSystemObjectId = null;
+			}
 
-			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
+			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<>();
 			for (TskFileRange fileRange : fileRanges) {
 				/*
 				 * Insert a row for the Tsk file range into the tsk_objects
@@ -7113,8 +7137,12 @@ public class SleuthkitCase {
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
-				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects			
-				prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id				
+				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects
+				if (fileSystemObjectId != null) {
+					prepStmt.setLong(2, fileSystemObjectId);// fs_obj_id
+				} else {
+					prepStmt.setNull(2, java.sql.Types.BIGINT); 	
+				}
 				prepStmt.setString(3, "Unalloc_" + parent.getId() + "_" + fileRange.getByteStart() + "_" + end_byte_in_parent); // name of form Unalloc_[image obj_id]_[start byte in parent]_[end byte in parent]
 				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()); // type
 				prepStmt.setNull(5, java.sql.Types.BIGINT); // has_path
@@ -7131,7 +7159,7 @@ public class SleuthkitCase {
 				prepStmt.setNull(16, java.sql.Types.VARCHAR); // SHA-256
 				prepStmt.setByte(17, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 				prepStmt.setNull(18, java.sql.Types.VARCHAR); // MIME type
-				prepStmt.setNull(19, java.sql.Types.VARCHAR); // parent path
+				prepStmt.setString(19, parentPath); // parent path
 				prepStmt.setLong(20, parent.getId()); // data_source_obj_id
 
 				//extension, since this is not a FS file we just set it to null
@@ -7161,6 +7189,7 @@ public class SleuthkitCase {
 				fileRangeLayoutFiles.add(new LayoutFile(this,
 						fileRangeId,
 						parent.getId(),
+						fileSystemObjectId,
 						Long.toString(fileRange.getSequence()),
 						TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
 						TSK_FS_NAME_TYPE_ENUM.REG,
@@ -7472,10 +7501,13 @@ public class SleuthkitCase {
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
 				prepStmt.setLong(1, carvedFileId); // obj_id
+				Long fileSystemObjectId;
 				if (root instanceof FileSystem) {
 					prepStmt.setLong(2, root.getId()); // fs_obj_id
+					fileSystemObjectId = root.getId();
 				} else {
 					prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id
+					fileSystemObjectId = null;
 				}
 				prepStmt.setString(3, carvedFile.getName()); // name
 				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()); // type
@@ -7523,6 +7555,7 @@ public class SleuthkitCase {
 				carvedFiles.add(new LayoutFile(this,
 						carvedFileId,
 						carvedFilesDir.getDataSourceObjectId(),
+						fileSystemObjectId,
 						carvedFile.getName(),
 						TSK_DB_FILES_TYPE_ENUM.CARVED,
 						TSK_FS_NAME_TYPE_ENUM.REG,
@@ -7643,10 +7676,11 @@ public class SleuthkitCase {
 			statement.setLong(1, newObjId);
 
 			// If the parentFile is part of a file system, use its file system object ID.
-			long fsObjId = this.getFileSystemId(parentId, connection);
+			Long fsObjId = this.getFileSystemId(parentId, connection);
 			if (fsObjId != -1) {
 				statement.setLong(2, fsObjId);
 			} else {
+				fsObjId = null;
 				statement.setNull(2, java.sql.Types.BIGINT);
 			}
 			statement.setString(3, fileName);
@@ -7703,7 +7737,7 @@ public class SleuthkitCase {
 			//add localPath
 			addFilePath(connection, newObjId, localPath, encodingType);
 
-			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fsObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 
 			timelineManager.addEventsForNewFile(derivedFile, connection);
@@ -7830,8 +7864,9 @@ public class SleuthkitCase {
 			updateFilePath(trans.getConnection(), derivedFile.getId(), localPath, encodingType);
 
 			long dataSourceObjId = getDataSourceObjectId(trans.getConnection(), parentObj);
+			Long fileSystemObjId = derivedFile.getFileSystemObjectId().orElse(null);
 			final String extension = extractExtension(derivedFile.getName());
-			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
+			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, fileSystemObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
 					savedSize, ctime, crtime, atime, mtime, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, derivedFile.getOwnerUid().orElse(null), derivedFile.getOsAccountObjectId().orElse(null));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -8289,15 +8324,18 @@ public class SleuthkitCase {
 			prepStmt.setLong(1, newFileId); // obj_id
 
 			// If the parent is part of a file system, grab its file system ID
+			Long fileSystemObjectId;
 			if (0 != parent.getId()) {
-				long parentFs = this.getFileSystemId(parent.getId(), connection);
-				if (parentFs != -1) {
-					prepStmt.setLong(2, parentFs);
+				fileSystemObjectId = this.getFileSystemId(parent.getId(), connection);
+				if (fileSystemObjectId != -1) {
+					prepStmt.setLong(2, fileSystemObjectId);
 				} else {
 					prepStmt.setNull(2, java.sql.Types.BIGINT);
+					fileSystemObjectId = null;
 				}
 			} else {
 				prepStmt.setNull(2, java.sql.Types.BIGINT);
+				fileSystemObjectId = null;
 			}
 			prepStmt.setString(3, fileName); // name
 			prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE.getFileType()); // type
@@ -8348,6 +8386,7 @@ public class SleuthkitCase {
 			LayoutFile layoutFile = new LayoutFile(this,
 					newFileId,
 					parent.getDataSource().getId(),
+					fileSystemObjectId,
 					fileName,
 					TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE,
 					TSK_FS_NAME_TYPE_ENUM.REG,
@@ -9771,6 +9810,7 @@ public class SleuthkitCase {
 					LayoutFile lf = new LayoutFile(this,
 							rs.getLong("obj_id"), //NON-NLS
 							rs.getLong("data_source_obj_id"),
+							rs.getLong("fs_obj_id"),
 							rs.getString("name"), //NON-NLS
 							atype,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
@@ -9924,6 +9964,7 @@ public class SleuthkitCase {
 		} else {
 			final VirtualDirectory vd = new VirtualDirectory(this,
 					objId, dsObjId,
+					rs.getLong("fs_obj_id"),
 					rs.getString("name"), //NON-NLS
 					TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 					TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
@@ -10006,6 +10047,7 @@ public class SleuthkitCase {
 		}
 
 		final DerivedFile df = new DerivedFile(this, objId, rs.getLong("data_source_obj_id"),
+				rs.getLong("fs_obj_id"),
 				rs.getString("name"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
@@ -10165,7 +10207,8 @@ public class SleuthkitCase {
 							osAccountObjId = null;
 						}
 						final LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
-								rs.getLong("data_source_obj_id"), rs.getString("name"), type,
+								rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"),
+								rs.getString("name"), type,
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 								TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
 								TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
