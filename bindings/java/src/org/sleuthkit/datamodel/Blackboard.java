@@ -1679,7 +1679,7 @@ public final class Blackboard {
 	 * @param value				attribute value to be included. can be empty.
 	 * @param dataSourceObjId	data source to look under. If Null, then search
 	 *                          all data sources.
-	 * @param reviewStatus		review status of the artifacts
+	 * @param showRejected		a flag whether to display rejected artifacts
 	 *
 	 * @return list of blackboard artifacts
 	 *
@@ -1688,12 +1688,12 @@ public final class Blackboard {
 	 */
 	public List<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type attributeType, String value, Long dataSourceObjId,
-			BlackboardArtifact.ReviewStatus reviewStatus) throws TskCoreException {
+			boolean showRejected) throws TskCoreException {
 
 		String query = " AND artifacts.artifact_type_id = " + artifactType.getTypeID() //NON-NLS 
 				+ " AND attributes.attribute_type_id = " + attributeType.getTypeID() //NON-NLS
 				+ ((value == null || value.isEmpty()) ? "" : " AND attributes.value_text = '" + value + "'") //NON-NLS
-				+ " AND artifacts.review_status_id = " + reviewStatus.getID() //NON-NLS
+				+ (showRejected ? "" : " AND artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()) //NON-NLS
 				+ (dataSourceObjId != null ? " AND artifacts.data_source_obj_id = " + dataSourceObjId : ""); //NON-NLS
 	
 		List<BlackboardArtifact> artifacts = new ArrayList<>();
