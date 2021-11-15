@@ -209,9 +209,9 @@ TskAutoDb::openImage(const char* a_deviceId)
 uint8_t
 TskAutoDb::addImageDetails(const char* deviceId)
 {
-   string md5 = "";
-   string sha1 = "";
-   string collectionDetails = "";
+   std::string md5 = "";
+   std::string sha1 = "";
+   std::string collectionDetails = "";
 #if HAVE_LIBEWF 
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
      // @@@ This should really probably be inside of a tsk_img_ method
@@ -227,7 +227,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
    }
 #endif
 
-    string devId;
+    std::string devId;
     if (NULL != deviceId) {
         devId = deviceId; 
     } else {
@@ -824,7 +824,7 @@ TskAutoDb::commitAddImage()
  * Set the current image's timezone
  */
 void
-TskAutoDb::setTz(string tzone)
+TskAutoDb::setTz(std::string tzone)
 {
     m_curImgTZone = tzone;
 }
@@ -849,7 +849,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     if (isDir(fs_file)) {
         m_curDirAddr = fs_file->name->meta_addr;
         tsk_take_lock(&m_curDirPathLock);
-        m_curDirPath = string(path) + fs_file->name->name;
+        m_curDirPath = std::string(path) + fs_file->name->name;
         tsk_release_lock(&m_curDirPathLock);
     }
     else if (m_curDirAddr != fs_file->name->par_addr) {
@@ -1406,7 +1406,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocBlockFileInChunks(uint64_t byteStart, TSK_O
 * @returns curDirPath string representing currently analyzed directory
 */
 const std::string TskAutoDb::getCurDir() {
-    string curDirPath;
+    std::string curDirPath;
     tsk_take_lock(&m_curDirPathLock);
     curDirPath = m_curDirPath;
     tsk_release_lock(&m_curDirPathLock);
