@@ -49,7 +49,7 @@ class WindowsComputerSpecificationFacet extends Facet {
         return this;
     }
 
-    WindowsComputerSpecificationFacet setWindowsTempDirectory(CyberItem windowsTempDirectory) {
+    WindowsComputerSpecificationFacet setWindowsTempDirectory(ObservableObject windowsTempDirectory) {
         this.windowsTempDirectory = windowsTempDirectory.getId();
         return this;
     }

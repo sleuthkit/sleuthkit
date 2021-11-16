@@ -33,7 +33,7 @@ class ApplicationAccountFacet extends Facet {
         super(ApplicationAccountFacet.class.getSimpleName());
     }
 
-    ApplicationAccountFacet setApplication(CyberItem application) {
+    ApplicationAccountFacet setApplication(ObservableObject application) {
         this.application = application.getId();
         return this;
     }

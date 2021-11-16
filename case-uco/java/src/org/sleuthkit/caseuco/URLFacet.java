@@ -41,7 +41,7 @@ class URLFacet extends Facet {
         return this;
     }
 
-    URLFacet setUserName(CyberItem userName) {
+    URLFacet setUserName(ObservableObject userName) {
         this.userName = userName.getId();
         return this;
     }

@@ -18,18 +18,25 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * This class definition mirrors the core Assertion object described in the UCO
  * ontology.
  */
 class Assertion extends UcoObject {
 
+    @SerializedName("core:statement")
     private String statement;
 
     Assertion(String uuid) {
-        super(uuid, "Assertion");
+        super(uuid, UcoObject.UCO_CORE + Assertion.class.getSimpleName());
     }
 
+    Assertion(String uuid, String type) {
+        super(uuid, type);
+    }
+ 
     Assertion setStatement(String statement) {
         this.statement = statement;
         return this;

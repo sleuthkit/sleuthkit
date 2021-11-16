@@ -22,9 +22,9 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Organization object described in the UCO
  * ontology.
  */
-class Organization extends UcoObject {
+class Organization extends Identity {
 
     Organization(String id) {
-        super(id, Organization.class.getSimpleName());
+        super(id, UcoObject.UCO_CORE + Organization.class.getSimpleName());
     }
 }

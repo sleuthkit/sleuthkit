@@ -47,12 +47,12 @@ class PhoneCallFacet extends Facet {
         super(PhoneCallFacet.class.getSimpleName());
     }
 
-    PhoneCallFacet setTo(CyberItem to) {
+    PhoneCallFacet setTo(ObservableObject to) {
         this.to = to.getId();
         return this;
     }
 
-    PhoneCallFacet setFrom(CyberItem from) {
+    PhoneCallFacet setFrom(ObservableObject from) {
         this.from = from.getId();
         return this;
     }

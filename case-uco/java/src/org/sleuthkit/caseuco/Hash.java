@@ -18,13 +18,17 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * This class definition mirrors the Hash type described in the UCO ontology.
  */
 class Hash extends UcoObject {
 
+    @SerializedName("types:hasMethod")
     private HashMethod hashMethod;
 
+    @SerializedName("types:hashValue")
     private final String hashValue;
 
     Hash(String hashValue) {
@@ -32,7 +36,7 @@ class Hash extends UcoObject {
     }
 
     Hash(String id, String hashValue) {
-        super(id, "Hash");
+        super(id, UcoObject.UCO_TYPES + Hash.class.getSimpleName());
         this.hashValue = hashValue;
     }
 

@@ -41,7 +41,7 @@ class BrowserBookmarkFacet extends Facet {
         return this;
     }
 
-    BrowserBookmarkFacet setApplication(CyberItem application) {
+    BrowserBookmarkFacet setApplication(ObservableObject application) {
         this.application = application.getId();
         return this;
     }

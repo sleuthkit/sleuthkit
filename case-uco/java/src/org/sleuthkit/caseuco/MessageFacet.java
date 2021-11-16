@@ -49,7 +49,7 @@ class MessageFacet extends Facet {
         return this;
     }
 
-    MessageFacet setApplication(CyberItem application) {
+    MessageFacet setApplication(ObservableObject application) {
         this.application = application.getId();
         return this;
     }

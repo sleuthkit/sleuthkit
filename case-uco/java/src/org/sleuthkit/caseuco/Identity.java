@@ -25,7 +25,10 @@ package org.sleuthkit.caseuco;
 class Identity extends UcoObject {
 
     Identity(String id) {
-        super(id, Identity.class.getSimpleName());
+        super(id, UcoObject.UCO_IDENTITY + Identity.class.getSimpleName());
     }
 
+    Identity(String id, String type) {
+        super(id, type);
+    }
 }

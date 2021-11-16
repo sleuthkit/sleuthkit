@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * A ObservableObject template from the CASE ontology.
  */
-class ObservableObject extends CyberItem {
+class ObservableObject extends UcoObject {
 
     static final String OBSERVABLE = "observable:";
 

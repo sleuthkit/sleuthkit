@@ -47,7 +47,7 @@ class ApplicationFacet extends Facet {
         return this;
     }
 
-    ApplicationFacet setOperatingSystem(CyberItem operatingSystem) {
+    ApplicationFacet setOperatingSystem(ObservableObject operatingSystem) {
         this.operatingSystem = operatingSystem.getId();
         return this;
     }
