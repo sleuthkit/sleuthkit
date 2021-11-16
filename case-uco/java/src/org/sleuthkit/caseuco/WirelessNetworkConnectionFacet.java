@@ -30,7 +30,7 @@ class WirelessNetworkConnectionFacet extends Facet {
     private String ssid;
 
     WirelessNetworkConnectionFacet() {
-        super(WirelessNetworkConnectionFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + WirelessNetworkConnectionFacet.class.getSimpleName());
     }
 
     WirelessNetworkConnectionFacet setSSID(String ssid) {

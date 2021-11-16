@@ -30,7 +30,7 @@ class ContactFacet extends Facet {
     private String contactName;
 
     ContactFacet() {
-        super(ContactFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + ContactFacet.class.getSimpleName());
     }
 
     ContactFacet setContactName(String contactName) {

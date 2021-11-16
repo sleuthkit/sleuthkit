@@ -30,7 +30,7 @@ class PathRelationFacet extends Facet {
     private String path;
 
     PathRelationFacet() {
-        super(PathRelationFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + PathRelationFacet.class.getSimpleName());
     }
 
     PathRelationFacet setPath(String path) {

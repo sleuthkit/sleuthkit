@@ -39,7 +39,7 @@ class ApplicationFacet extends Facet {
     private String version;
 
     ApplicationFacet() {
-        super(ApplicationFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + ApplicationFacet.class.getSimpleName());
     }
 
     ApplicationFacet setApplicationIdentifier(String applicationIdentifier) {

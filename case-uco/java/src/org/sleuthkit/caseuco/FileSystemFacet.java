@@ -39,7 +39,7 @@ class FileSystemFacet extends Facet {
     private Long cluserSize;
 
     FileSystemFacet() {
-        super(FileSystemFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + FileSystemFacet.class.getSimpleName());
     }
 
     FileSystemFacet setFileSystemType(TskData.TSK_FS_TYPE_ENUM fileSystemType) {

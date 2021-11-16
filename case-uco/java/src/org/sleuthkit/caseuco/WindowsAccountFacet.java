@@ -30,7 +30,7 @@ class WindowsAccountFacet extends Facet {
     private String groups;
     
     WindowsAccountFacet() {
-        super(WindowsAccountFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + WindowsAccountFacet.class.getSimpleName());
     }
     
     WindowsAccountFacet setGroups(String groups) {

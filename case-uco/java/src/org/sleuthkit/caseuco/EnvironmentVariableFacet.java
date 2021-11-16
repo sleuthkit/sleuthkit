@@ -30,7 +30,7 @@ class EnvironmentVariableFacet extends Facet {
     private String value;
 
     EnvironmentVariableFacet() {
-        super(EnvironmentVariableFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + EnvironmentVariableFacet.class.getSimpleName());
     }
 
     EnvironmentVariableFacet setValue(String value) {

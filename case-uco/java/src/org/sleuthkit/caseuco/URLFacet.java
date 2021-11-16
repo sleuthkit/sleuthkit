@@ -33,7 +33,7 @@ class URLFacet extends Facet {
     private String userName;
 
     URLFacet() {
-        super(URLFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + URLFacet.class.getSimpleName());
     }
 
     URLFacet setFullValue(String fullValue) {

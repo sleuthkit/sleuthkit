@@ -41,7 +41,7 @@ class CalendarEntryFacet extends Facet {
     private String location;
 
     CalendarEntryFacet() {
-        super(CalendarEntryFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + CalendarEntryFacet.class.getSimpleName());
     }
 
     CalendarEntryFacet setEventType(String eventType) {

@@ -30,7 +30,7 @@ class DomainFacet extends Facet {
     private String value;
 
     DomainFacet() {
-        super(DomainFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + DomainFacet.class.getSimpleName());
     }
 
     DomainFacet setValue(String value) {

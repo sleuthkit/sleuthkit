@@ -25,7 +25,7 @@ package org.sleuthkit.caseuco;
 class IdentityFacet extends Facet {
 
     IdentityFacet() {
-        super(IdentityFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + IdentityFacet.class.getSimpleName());
     }
 
 }

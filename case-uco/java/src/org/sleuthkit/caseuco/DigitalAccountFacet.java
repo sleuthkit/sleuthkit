@@ -35,7 +35,7 @@ class DigitalAccountFacet extends Facet {
     private String lastLoginTime;
 
     DigitalAccountFacet() {
-        super(DigitalAccountFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + DigitalAccountFacet.class.getSimpleName());
     }
 
     DigitalAccountFacet setDisplayName(String displayName) {

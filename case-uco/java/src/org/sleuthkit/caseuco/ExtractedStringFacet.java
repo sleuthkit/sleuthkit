@@ -30,7 +30,7 @@ class ExtractedStringFacet extends Facet {
     private String stringValue;
 
     ExtractedStringFacet() {
-        super(ExtractedStringFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + ExtractedStringFacet.class.getSimpleName());
     }
 
     ExtractedStringFacet setStringValue(String stringValue) {

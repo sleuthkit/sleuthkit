@@ -30,7 +30,7 @@ class SMSMessageFacet extends Facet {
     private Boolean isRead;
 
     SMSMessageFacet() {
-        super(SMSMessageFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + SMSMessageFacet.class.getSimpleName());
     }
 
     SMSMessageFacet setIsRead(Integer status) {

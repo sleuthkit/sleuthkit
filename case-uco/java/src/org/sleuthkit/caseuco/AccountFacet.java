@@ -36,7 +36,7 @@ class AccountFacet extends Facet {
     private String owner;
 
     AccountFacet() {
-        super(AccountFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + AccountFacet.class.getSimpleName());
     }
 
     AccountFacet setAccountType(String accountType) {

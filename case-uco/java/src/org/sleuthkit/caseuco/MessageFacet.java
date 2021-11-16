@@ -41,7 +41,7 @@ class MessageFacet extends Facet {
     private String messageType;
 
     MessageFacet() {
-        super(MessageFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + MessageFacet.class.getSimpleName());
     }
 
     MessageFacet setMessageText(String messageText) {

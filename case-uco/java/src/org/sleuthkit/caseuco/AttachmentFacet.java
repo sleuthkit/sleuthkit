@@ -30,7 +30,7 @@ class AttachmentFacet extends Facet {
     private String url;
 
     AttachmentFacet() {
-        super(AttachmentFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + AttachmentFacet.class.getSimpleName());
     }
 
     AttachmentFacet setUrl(String url) {

@@ -44,7 +44,7 @@ class PhoneCallFacet extends Facet {
     private String callType;
 
     PhoneCallFacet() {
-        super(PhoneCallFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + PhoneCallFacet.class.getSimpleName());
     }
 
     PhoneCallFacet setTo(ObservableObject to) {

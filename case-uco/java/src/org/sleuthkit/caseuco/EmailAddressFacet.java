@@ -30,7 +30,7 @@ class EmailAddressFacet extends Facet {
     private String value;
 
     EmailAddressFacet() {
-        super(EmailAddressFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + EmailAddressFacet.class.getSimpleName());
     }
 
     EmailAddressFacet setValue(String value) {

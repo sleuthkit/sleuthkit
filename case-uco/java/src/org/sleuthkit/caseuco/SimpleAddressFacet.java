@@ -25,7 +25,7 @@ package org.sleuthkit.caseuco;
 class SimpleAddressFacet extends Facet {
 
     SimpleAddressFacet() {
-        super(SimpleAddressFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + SimpleAddressFacet.class.getSimpleName());
     }
 
 }

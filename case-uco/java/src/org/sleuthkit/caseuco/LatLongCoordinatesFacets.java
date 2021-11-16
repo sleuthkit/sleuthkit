@@ -36,7 +36,7 @@ class LatLongCoordinatesFacets extends Facet {
     private Double longitude;
 
     LatLongCoordinatesFacets() {
-        super(LatLongCoordinatesFacets.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + LatLongCoordinatesFacets.class.getSimpleName());
     }
 
     LatLongCoordinatesFacets setAltitude(Double altitude) {

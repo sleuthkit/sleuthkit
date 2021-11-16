@@ -30,7 +30,7 @@ class NoteFacet extends Facet {
     private String text;
 
     NoteFacet() {
-        super(NoteFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + NoteFacet.class.getSimpleName());
     }
 
     NoteFacet setText(String text) {

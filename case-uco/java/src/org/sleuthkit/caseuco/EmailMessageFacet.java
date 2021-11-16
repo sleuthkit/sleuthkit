@@ -65,7 +65,7 @@ class EmailMessageFacet extends Facet {
     private String contentType;
 
     EmailMessageFacet() {
-        super(EmailMessageFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + EmailMessageFacet.class.getSimpleName());
     }
 
     EmailMessageFacet setBody(String body) {

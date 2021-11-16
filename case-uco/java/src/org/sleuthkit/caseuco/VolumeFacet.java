@@ -33,7 +33,7 @@ class VolumeFacet extends Facet {
     private Long sectorSize;
 
     VolumeFacet() {
-        super(VolumeFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + VolumeFacet.class.getSimpleName());
     }
 
     VolumeFacet setSectorSize(long sectorSize) {

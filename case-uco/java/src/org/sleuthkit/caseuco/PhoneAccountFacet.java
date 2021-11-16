@@ -30,7 +30,7 @@ class PhoneAccountFacet extends Facet {
     private String phoneNumber;
 
     PhoneAccountFacet() {
-        super(PhoneAccountFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + PhoneAccountFacet.class.getSimpleName());
     }
 
     PhoneAccountFacet setPhoneNumber(String phoneNumber) {

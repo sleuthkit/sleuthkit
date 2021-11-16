@@ -30,7 +30,7 @@ class ActionArgumentFacet extends Facet {
     private String argumentName;
 
     ActionArgumentFacet() {
-        super(ActionArgumentFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + ActionArgumentFacet.class.getSimpleName());
     }
 
     ActionArgumentFacet setArgumentName(String argumentName) {

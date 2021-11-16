@@ -30,7 +30,7 @@ class ApplicationAccountFacet extends Facet {
     private String application;
 
     ApplicationAccountFacet() {
-        super(ApplicationAccountFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + ApplicationAccountFacet.class.getSimpleName());
     }
 
     ApplicationAccountFacet setApplication(ObservableObject application) {

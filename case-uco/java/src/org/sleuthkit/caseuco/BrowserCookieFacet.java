@@ -47,7 +47,7 @@ class BrowserCookieFacet extends Facet {
    private String cookiePath;
 
     BrowserCookieFacet() {
-        super(BrowserCookieFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + BrowserCookieFacet.class.getSimpleName());
     }
 
     BrowserCookieFacet setCookieName(String cookieName) {
