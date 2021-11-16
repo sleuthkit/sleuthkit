@@ -47,7 +47,7 @@ class FileFacet extends Facet {
     private Long sizeInBytes;
 
     FileFacet() {
-        super(FileFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + FileFacet.class.getSimpleName());
     }
 
     FileFacet setAccessedTime(Long accessedTime) {

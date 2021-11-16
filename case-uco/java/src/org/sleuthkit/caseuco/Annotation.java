@@ -26,15 +26,16 @@ import java.util.List;
  * This class definition mirrors the core Annotation object described in the UCO
  * ontology.
  */
-class Annotation extends UcoObject {
+class Annotation extends Assertion {
 
     @SerializedName("tag")
     private final List<String> tags;
 
+    @SerializedName("core:object")
     private final List<String> object;
 
     Annotation(String uuid) {
-        super(uuid, "Annotation");
+        super(uuid, UcoObject.UCO_CORE + Annotation.class.getSimpleName());
         tags = new ArrayList<>();
         object = new ArrayList<>();
     }

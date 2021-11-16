@@ -33,7 +33,7 @@ class BrowserBookmarkFacet extends Facet {
     private String application;
 
     BrowserBookmarkFacet() {
-        super(BrowserBookmarkFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + BrowserBookmarkFacet.class.getSimpleName());
     }
 
     BrowserBookmarkFacet setUrlTargeted(String urlTargeted) {
@@ -41,7 +41,7 @@ class BrowserBookmarkFacet extends Facet {
         return this;
     }
 
-    BrowserBookmarkFacet setApplication(CyberItem application) {
+    BrowserBookmarkFacet setApplication(ObservableObject application) {
         this.application = application.getId();
         return this;
     }

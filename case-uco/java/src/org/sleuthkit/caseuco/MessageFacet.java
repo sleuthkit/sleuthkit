@@ -41,7 +41,7 @@ class MessageFacet extends Facet {
     private String messageType;
 
     MessageFacet() {
-        super(MessageFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + MessageFacet.class.getSimpleName());
     }
 
     MessageFacet setMessageText(String messageText) {
@@ -49,7 +49,7 @@ class MessageFacet extends Facet {
         return this;
     }
 
-    MessageFacet setApplication(CyberItem application) {
+    MessageFacet setApplication(ObservableObject application) {
         this.application = application.getId();
         return this;
     }

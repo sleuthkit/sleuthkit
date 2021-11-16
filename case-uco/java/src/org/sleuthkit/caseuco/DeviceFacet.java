@@ -36,7 +36,7 @@ class DeviceFacet extends Facet {
     private String serialNumber;
 
     DeviceFacet() {
-        super(DeviceFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + DeviceFacet.class.getSimpleName());
     }
 
     DeviceFacet setManufacturer(String manufacturer) {

@@ -47,7 +47,7 @@ class BrowserCookieFacet extends Facet {
    private String cookiePath;
 
     BrowserCookieFacet() {
-        super(BrowserCookieFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + BrowserCookieFacet.class.getSimpleName());
     }
 
     BrowserCookieFacet setCookieName(String cookieName) {
@@ -69,12 +69,12 @@ class BrowserCookieFacet extends Facet {
         return this;
     }
 
-    BrowserCookieFacet setCookieDomain(CyberItem cookieDomain) {
+    BrowserCookieFacet setCookieDomain(ObservableObject cookieDomain) {
         this.cookieDomain = cookieDomain.getId();
         return this;
     }
 
-    BrowserCookieFacet setApplication(CyberItem application) {
+    BrowserCookieFacet setApplication(ObservableObject application) {
         this.application = application.getId();
         return this;
     }

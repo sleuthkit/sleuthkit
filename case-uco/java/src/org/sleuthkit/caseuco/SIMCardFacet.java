@@ -33,7 +33,7 @@ class SIMCardFacet extends Facet {
     private String ICCID;
 
     SIMCardFacet() {
-        super(SIMCardFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + SIMCardFacet.class.getSimpleName());
     }
 
     SIMCardFacet setIMSI(String IMSI) {

@@ -36,7 +36,7 @@ class WindowsComputerSpecificationFacet extends Facet {
     private String windowsTempDirectory;
 
     WindowsComputerSpecificationFacet() {
-        super(WindowsComputerSpecificationFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + WindowsComputerSpecificationFacet.class.getSimpleName());
     }
 
     WindowsComputerSpecificationFacet setRegisteredOrganization(Identity registeredOrganization) {
@@ -49,7 +49,7 @@ class WindowsComputerSpecificationFacet extends Facet {
         return this;
     }
 
-    WindowsComputerSpecificationFacet setWindowsTempDirectory(CyberItem windowsTempDirectory) {
+    WindowsComputerSpecificationFacet setWindowsTempDirectory(ObservableObject windowsTempDirectory) {
         this.windowsTempDirectory = windowsTempDirectory.getId();
         return this;
     }

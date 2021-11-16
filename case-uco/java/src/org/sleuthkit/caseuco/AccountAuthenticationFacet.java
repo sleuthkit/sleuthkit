@@ -30,7 +30,7 @@ class AccountAuthenticationFacet extends Facet {
     private String password;
 
     AccountAuthenticationFacet() {
-        super(AccountAuthenticationFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + AccountAuthenticationFacet.class.getSimpleName());
     }
 
     AccountAuthenticationFacet setPassword(String password) {

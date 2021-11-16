@@ -65,7 +65,7 @@ class EmailMessageFacet extends Facet {
     private String contentType;
 
     EmailMessageFacet() {
-        super(EmailMessageFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + EmailMessageFacet.class.getSimpleName());
     }
 
     EmailMessageFacet setBody(String body) {
@@ -92,22 +92,22 @@ class EmailMessageFacet extends Facet {
         return this;
     }
 
-    EmailMessageFacet setBcc(CyberItem bcc) {
+    EmailMessageFacet setBcc(ObservableObject bcc) {
         this.bcc = bcc.getId();
         return this;
     }
 
-    EmailMessageFacet setCc(CyberItem cc) {
+    EmailMessageFacet setCc(ObservableObject cc) {
         this.cc = cc.getId();
         return this;
     }
 
-    EmailMessageFacet setFrom(CyberItem from) {
+    EmailMessageFacet setFrom(ObservableObject from) {
         this.from = from.getId();
         return this;
     }
 
-    EmailMessageFacet setHeaderRaw(CyberItem headerRaw) {
+    EmailMessageFacet setHeaderRaw(ObservableObject headerRaw) {
         this.headerRaw = headerRaw.getId();
         return this;
     }
@@ -122,12 +122,12 @@ class EmailMessageFacet extends Facet {
         return this;
     }
 
-    EmailMessageFacet setSender(CyberItem sender) {
+    EmailMessageFacet setSender(ObservableObject sender) {
         this.sender = sender.getId();
         return this;
     }
 
-    EmailMessageFacet setInReplyTo(CyberItem replyTo) {
+    EmailMessageFacet setInReplyTo(ObservableObject replyTo) {
         this.inReplyTo = replyTo.getId();
         return this;
     }

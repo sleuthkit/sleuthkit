@@ -35,7 +35,7 @@ class OperatingSystemFacet extends Facet {
     private String version;
 
     OperatingSystemFacet() {
-        super(OperatingSystemFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + OperatingSystemFacet.class.getSimpleName());
     }
 
     OperatingSystemFacet setInstallDate(Long installDate) {

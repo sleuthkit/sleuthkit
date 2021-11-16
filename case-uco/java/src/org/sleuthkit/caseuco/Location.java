@@ -25,7 +25,7 @@ package org.sleuthkit.caseuco;
 class Location extends UcoObject {
 
     Location(String id) {
-        super(id, Location.class.getSimpleName());
+        super(id, UcoObject.UCO_LOCATION + Location.class.getSimpleName());
     }
 
 }

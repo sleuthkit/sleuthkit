@@ -33,7 +33,7 @@ class MobileDeviceFacet extends Facet {
     private String IMEI;
 
     MobileDeviceFacet() {
-        super(MobileDeviceFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + MobileDeviceFacet.class.getSimpleName());
     }
 
     MobileDeviceFacet setBluetoothDeviceName(String bluetoothDeviceName) {

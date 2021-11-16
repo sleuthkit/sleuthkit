@@ -30,7 +30,7 @@ class MACAddressFacet extends Facet {
     private String value;
 
     MACAddressFacet() {
-        super(MACAddressFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + MACAddressFacet.class.getSimpleName());
     }
 
     MACAddressFacet setValue(String value) {

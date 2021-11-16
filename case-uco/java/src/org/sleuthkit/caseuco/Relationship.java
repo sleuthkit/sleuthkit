@@ -18,22 +18,28 @@
  */
 package org.sleuthkit.caseuco;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * This class definition mirrors the core Relationship object described in the
  * UCO ontology.
  */
 class Relationship extends UcoObject {
 
+    @SerializedName("core:source")
     private String source;
 
+    @SerializedName("core:target")
     private String target;
     
+    @SerializedName("core:kindOfRelationship")
     private String kindOfRelationship;
     
+    @SerializedName("core:isDirectional")
     private Boolean isDirectional;
 
     Relationship(String id) {
-        super(id, "Relationship");
+        super(id, UcoObject.UCO_CORE + Relationship.class.getSimpleName());
     }
 
     Relationship setSource(String source) {

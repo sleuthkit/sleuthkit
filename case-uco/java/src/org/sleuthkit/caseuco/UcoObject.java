@@ -28,7 +28,11 @@ import java.time.ZoneOffset;
 abstract class UcoObject {
 
     static final String UCO_OBSERV = "uco-observable:";
-    static final String UCO_ACTION = ":Action";
+    static final String UCO_ACTION = "action:";
+    static final String UCO_LOCATION = "Location:";
+    static final String UCO_CORE = "core:";
+    static final String UCO_IDENTITY = "identity:";
+    static final String UCO_TYPES = "types:";
     
     @SerializedName("@id")
     private String id;
@@ -36,14 +40,19 @@ abstract class UcoObject {
     @SerializedName("@type")
     private final String type;
 
+    @SerializedName("core:createdTime")
     private String createdTime;
     
+    @SerializedName("core:modifiedTime")
     private String modifiedTime;
 
+    @SerializedName("core:description")
     private String description;
 
+    @SerializedName("core:name")
     private String name;
 
+    @SerializedName("core:tag")
     private String tag;
 
     UcoObject(String id, String type) {

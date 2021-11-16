@@ -33,7 +33,7 @@ class ComputerSpecificationFacet extends Facet {
     private String processorArchitecture;
 
     ComputerSpecificationFacet() {
-        super(ComputerSpecificationFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + ComputerSpecificationFacet.class.getSimpleName());
     }
 
     ComputerSpecificationFacet setHostName(String hostName) {

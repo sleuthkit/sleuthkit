@@ -39,7 +39,7 @@ class ApplicationFacet extends Facet {
     private String version;
 
     ApplicationFacet() {
-        super(ApplicationFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + ApplicationFacet.class.getSimpleName());
     }
 
     ApplicationFacet setApplicationIdentifier(String applicationIdentifier) {
@@ -47,7 +47,7 @@ class ApplicationFacet extends Facet {
         return this;
     }
 
-    ApplicationFacet setOperatingSystem(CyberItem operatingSystem) {
+    ApplicationFacet setOperatingSystem(ObservableObject operatingSystem) {
         this.operatingSystem = operatingSystem.getId();
         return this;
     }

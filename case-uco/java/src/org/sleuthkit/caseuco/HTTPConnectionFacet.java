@@ -30,7 +30,7 @@ class HTTPConnectionFacet extends Facet {
     private String httpRequestHeader;
 
     HTTPConnectionFacet() {
-        super(HTTPConnectionFacet.class.getSimpleName());
+        super(UcoObject.UCO_OBSERV + HTTPConnectionFacet.class.getSimpleName());
     }
 
     HTTPConnectionFacet setHttpRequestHeader(String httpRequestHeader) {

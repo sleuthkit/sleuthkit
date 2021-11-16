@@ -36,7 +36,7 @@ class ContentDataFacet extends Facet {
     @SerializedName("observable:mimeType")   
     private String mimeType;
 
-    @SerializedName("observable:hashs")
+    @SerializedName("observable:hash")
     private final List<Hash> hashes;
 
     @SerializedName("observable:dataPayload")
@@ -80,7 +80,7 @@ class ContentDataFacet extends Facet {
         return this;
     }
     
-    ContentDataFacet setDataPayloadReferenceUrl(UcoObject url) {
+    ContentDataFacet setDataPayloadReferenceUrl(ObservableObject url) {
         this.dataPayloadReferenceUrl = url.getId();
         return this;
     }
