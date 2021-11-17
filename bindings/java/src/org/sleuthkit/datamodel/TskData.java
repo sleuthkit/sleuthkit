@@ -892,9 +892,29 @@ public class TskData {
 	 * Type of keyword search query 
 	 **/
     public enum KeywordSearchQueryType {
-        LITERAL, 
-		SUBSTRING, 
-		REGEX
+        LITERAL(0), 
+		SUBSTRING(1), 
+		REGEX(2);
+		
+		private final int type;
+		
+		private KeywordSearchQueryType(int type){
+			this.type = type;
+		}
+		
+		public int getType(){
+			return type;
+		}
+		
+		public static KeywordSearchQueryType valueOf(int type) {
+			for (KeywordSearchQueryType v : KeywordSearchQueryType.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.keywordSearchQueryType.exception.msg1.text"), type));
+		}		
     };	
 	
 	
