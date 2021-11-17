@@ -887,4 +887,15 @@ public class TskData {
 					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
 		}
 	}
+	
+    /** 
+	 * Type of keyword search query 
+	 **/
+    public enum KeywordSearchQueryType {
+        LITERAL, 
+		SUBSTRING, 
+		REGEX
+    };	
+	
+	
 }
