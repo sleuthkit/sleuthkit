@@ -276,7 +276,7 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * @return a list of FileSystem that are direct descendents of this Image.
+	 * @return a list of FileSystem that are direct descendants of this Image.
 	 *
 	 * @throws TskCoreException
 	 */

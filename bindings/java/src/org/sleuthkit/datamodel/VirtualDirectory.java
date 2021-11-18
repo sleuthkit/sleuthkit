@@ -54,6 +54,7 @@ public class VirtualDirectory extends SpecialDirectory {
 	 * @param dataSourceObjectId The object id of the data source for the
 	 *                           virtual directory; same as objId if the virtual
 	 *                           directory is a data source.
+	 * @param fileSystemObjectId The object id of the file system. May be null.
 	 * @param name               The name of the virtual directory.
 	 * @param dirType            The TSK_FS_NAME_TYPE_ENUM for the virtual
 	 *                           directory.
@@ -71,12 +72,13 @@ public class VirtualDirectory extends SpecialDirectory {
 	VirtualDirectory(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId,
 			String name,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			String md5Hash, String sha256Hash, FileKnown knownState,
 			String parentPath) {
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name,
+		super(db, objId, dataSourceObjectId, fileSystemObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name,
 				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, null);
 	}
