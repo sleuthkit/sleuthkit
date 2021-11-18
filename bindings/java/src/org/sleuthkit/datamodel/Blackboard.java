@@ -1408,7 +1408,7 @@ public final class Blackboard {
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
 
-			List<DataArtifact> dataArtifacts = resultSetToDataArtifacts(resultSet, connection);
+			List<DataArtifact> dataArtifacts = resultSetToDataArtifacts(resultSet);
 			return dataArtifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting data artifacts with queryString = %s", queryString), ex);
@@ -1422,7 +1422,6 @@ public final class Blackboard {
 	 * @param resultSet  A result set from a query of the blackboard_artifacts
 	 *                   table of the form "SELECT * FROM blackboard_artifacts,
 	 *                   tsk_data_artifacts WHERE ...".
-	 * @param connection Database connection.
 	 *
 	 * @return A list of DataArtifact objects.
 	 *
@@ -1431,7 +1430,7 @@ public final class Blackboard {
 	 * @throws TskCoreException Thrown if there is an error looking up the
 	 *                          artifact type id.
 	 */
-	private List<DataArtifact> resultSetToDataArtifacts(ResultSet resultSet, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private List<DataArtifact> resultSetToDataArtifacts(ResultSet resultSet) throws SQLException, TskCoreException {
 		ArrayList<DataArtifact> dataArtifacts = new ArrayList<>();
 
 		while (resultSet.next()) {
@@ -1707,25 +1706,22 @@ public final class Blackboard {
 	
 		List<BlackboardArtifact> artifacts = new ArrayList<>();
 		caseDb.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = caseDb.getConnection()) {
-			if (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
-				final String analysisResltsQuery = ANALYSIS_RESULT_QUERY_STRING_WITH_ATTRIBUTES + query;
-				try (Statement statement = connection.createStatement();
-						ResultSet resultSet = connection.executeQuery(statement, analysisResltsQuery);) {
+		
+		String finalQuery = (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT
+				? ANALYSIS_RESULT_QUERY_STRING_WITH_ATTRIBUTES + query
+				: DATA_ARTIFACT_QUERY_STRING_WITH_ATTRIBUTES + query);
 
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			try (Statement statement = connection.createStatement();
+					ResultSet resultSet = connection.executeQuery(statement, finalQuery);) {
+				
+				if (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
 					artifacts.addAll(resultSetToAnalysisResults(resultSet));
-				} catch (SQLException ex) {
-					throw new TskCoreException(String.format("Error getting analysis results with queryString = '%s'", analysisResltsQuery), ex);
+				} else {
+					artifacts.addAll(resultSetToDataArtifacts(resultSet));
 				}
-			} else {
-				final String dataArtifactQuery = DATA_ARTIFACT_QUERY_STRING_WITH_ATTRIBUTES + query;
-				try (Statement statement = connection.createStatement();
-						ResultSet resultSet = connection.executeQuery(statement, dataArtifactQuery);) {
-					
-					artifacts.addAll(resultSetToDataArtifacts(resultSet, connection));
-				} catch (SQLException ex) {
-					throw new TskCoreException(String.format("Error getting data artifacts with queryString = %s", dataArtifactQuery), ex);
-				}
+			} catch (SQLException ex) {
+				throw new TskCoreException(String.format("Error getting results with queryString = '%s'", finalQuery), ex);
 			}
 		} finally {
 			caseDb.releaseSingleUserCaseReadLock();
