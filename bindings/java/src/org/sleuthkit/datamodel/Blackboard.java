@@ -158,7 +158,7 @@ public final class Blackboard {
 			try {
 				caseDb.getTimelineManager().addArtifactEvents(artifact);
 			} catch (TskCoreException ex) {
-				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
+				throw new BlackboardException(String.format("Failed to add events to timeline for artifact '%s'", artifact), ex);
 			}
 		}
 		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
@@ -991,6 +991,31 @@ public final class Blackboard {
 		return getAnalysisResultsWhere(" artifacts.artifact_type_id = " + artifactTypeId + " AND artifacts.data_source_obj_id = " + dataSourceObjId);
 	}
 
+	/**
+	 * Gets all analysis results of a given type for a given data source. To get
+	 * all the analysis results for the data source, pass null for the type ID.
+	 *
+	 * @param dataSourceObjId The object ID of the data source.
+	 * @param artifactTypeID  The type ID of the desired analysis results or null.
+	 *
+	 * @return A list of the analysis results, possibly empty.
+	 *
+	 * @throws TskCoreException This exception is thrown if there is an error
+	 *                          querying the case database.
+	 */
+	public List<AnalysisResult> getAnalysisResults(long dataSourceObjId, Integer artifactTypeID) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			String whereClause = " artifacts.data_source_obj_id = " + dataSourceObjId;
+			if (artifactTypeID != null) {
+				whereClause += " AND artifacts.artifact_type_id = " + artifactTypeID;
+			}
+			return getAnalysisResultsWhere(whereClause, connection);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
+	}	
+	
 	/**
 	 * Get all analysis results for a given object.
 	 *
