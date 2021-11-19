@@ -1759,44 +1759,57 @@ public final class Blackboard {
         + " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
 		+ " AND artifacts.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + " ";
 
-	
-	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, TskData.KeywordSearchQueryType searchType, String setName, Long dataSourceId) throws TskCoreException {
-
-		String query = KWS_RESULT_QUERY_STRING;
-		
-		if (dataSourceId != null) {
-			query += " AND artifacts.data_source_obj_id = " + dataSourceId;
-		}
-
-		query += (setName == null || setName.isEmpty())
-				? " AND set_name IS NULL "
-				: " AND set_name = '" + setName + "' ";
-
-		query += (searchType == null)
-				? ""
-				: " AND search_type = " + searchType.getType();
-		
-		query += (keyword == null || keyword.isEmpty()
-			? ""
-			: " AND keyword = '" + keyword + "' ");
-
-		List<BlackboardArtifact> artifacts = new ArrayList<>();
-		caseDb.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = caseDb.getConnection()) {
-			try (Statement statement = connection.createStatement();
-					ResultSet resultSet = connection.executeQuery(statement, query);) {
-
-				artifacts.addAll(resultSetToAnalysisResults(resultSet));
-			} catch (SQLException ex) {
-				throw new TskCoreException(String.format("Error getting keyword search results with queryString = '%s'", query), ex);
-			}
-		} finally {
-			caseDb.releaseSingleUserCaseReadLock();
-		}
-		return artifacts;
+	/**
+	 * Returns a list of "Exact match / Literal" keyword hits blackboard
+	 * artifacts according to the input conditions.
+	 *
+	 * @param keyword      The keyword string to search for. This should always
+	 *                     be populated unless you are trying to get all keyword
+	 *                     hits of specific keyword search type or keyword list
+	 *                     name.
+	 * @param searchType   Type of keyword search query.
+	 * @param kwsListName  (Optional) Name of the keyword list for which the
+	 *                     search results are for. If not specified, then the
+	 *                     results will be for ad-hoc keyword searches.
+	 * @param dataSourceId (Optional) Data source id of the target data source.
+	 *                     If null, then the results will be for all data
+	 *                     sources.
+	 *
+	 * @return A list of keyword hits blackboard artifacts
+	 *
+	 * @throws TskCoreException If an exception is encountered while running
+	 *                          database query to obtain the keyword hits.
+	 */
+	public List<BlackboardArtifact> getExactMatchKeywordSearchResults(String keyword, TskData.KeywordSearchQueryType searchType, String kwsListName, Long dataSourceId) throws TskCoreException {
+		return getKeywordSearchResults(keyword, "", searchType, kwsListName, dataSourceId);
 	}
-	
-	public List<BlackboardArtifact> getKeywordRegexSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String setName, Long dataSourceId) throws TskCoreException {
+
+	/**
+	 * Returns a list of keyword hits blackboard artifacts according to the
+	 * input conditions.
+	 *
+	 * @param keyword      The keyword string to search for. This should always
+	 *                     be populated unless you are trying to get all keyword
+	 *                     hits of specific keyword search type or keyword list
+	 *                     name.
+	 * @param regex        For substring and regex keyword search types, the
+	 *                     regex/substring query string should be specified as
+	 *                     well as the keyword. It should be empty for literal
+	 *                     exact match keyword search types.
+	 * @param searchType   Type of keyword search query.
+	 * @param kwsListName  (Optional) Name of the keyword list for which the
+	 *                     search results are for. If not specified, then the
+	 *                     results will be for ad-hoc keyword searches.
+	 * @param dataSourceId (Optional) Data source id of the target data source.
+	 *                     If null, then the results will be for all data
+	 *                     sources.
+	 *
+	 * @return A list of keyword hits blackboard artifacts
+	 *
+	 * @throws TskCoreException If an exception is encountered while running
+	 *                          database query to obtain the keyword hits.
+	 */
+	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String kwsListName, Long dataSourceId) throws TskCoreException {
 
 		String query = KWS_RESULT_QUERY_STRING;
 		
@@ -1804,9 +1817,9 @@ public final class Blackboard {
 			query += " AND artifacts.data_source_obj_id = " + dataSourceId;
 		}
 
-		query += (setName == null || setName.isEmpty()
+		query += (kwsListName == null || kwsListName.isEmpty()
 				? " AND set_name IS NULL "
-				: " AND set_name = '" + setName + "' ");
+				: " AND set_name = '" + kwsListName + "' ");
 
 		query += (searchType == null
 				? ""
