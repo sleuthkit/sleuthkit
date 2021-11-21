@@ -68,6 +68,7 @@
 #define FATXXFS_CASE_LOWER_ALL	 0x18    /* both are lower */
 #define FATXXFS_ENCRYPTED_DATA	 0x01    /* data is EFS-encrypted */
 #define FATXXFS_LARGE_EFS_HEADER 0x02    /* data has large EFS header (if not set, its size is 4096 bytes) */
+/* other bits are used to store the padding size */
 
 /* flags for seq field */
 #define FATXXFS_LFN_SEQ_FIRST	0x40    /* This bit is set for the first lfn entry */
