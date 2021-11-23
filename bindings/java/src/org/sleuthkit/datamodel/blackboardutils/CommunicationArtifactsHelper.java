@@ -946,7 +946,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 				assocObjectArtifacts.add(artifact);
 			}
 		}
-		
+
 		try {
 			Optional<Long> ingestJobId = getIngestJobId();
 			getSleuthkitCase().getBlackboard().postArtifacts(assocObjectArtifacts, getModuleName(), ingestJobId.orElse(null));
