@@ -1887,51 +1887,47 @@ public final class Blackboard {
 		}
 	}
 
-	/*
-	 * Determine if an artifact of a given type exists for given content with a
-	 * specific list of attributes.
+	/**
+	 * Determines whether or not an artifact of a given type with a given set of
+	 * attributes already exists for a given content.
 	 *
-	 * @param content The content whose artifacts need to be looked at. @param
-	 * artifactType The type of artifact to look for. @param attributesList The
-	 * list of attributes to look for.
+	 * @param content      The content.
+	 * @param artifactType The artifact type.
+	 * @param attributes   The attributes.
 	 *
-	 * @return True if the specific artifact exists; otherwise false.
+	 * @return True or false
 	 *
-	 * @throws TskCoreException If there is a problem getting artifacts or
-	 * attributes.
+	 * @throws TskCoreException The exception is thrown if there is an issue
+	 *                          querying the case database.
 	 */
-	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType,
-			Collection<BlackboardAttribute> attributesList) throws TskCoreException {
-
-		ArrayList<BlackboardArtifact> artifactsList;
-
-		/*
-		 * Get the content's artifacts.
-		 */
-		artifactsList = content.getArtifacts(artifactType);
-		if (artifactsList.isEmpty()) {
-			return false;
-		}
-
-		/*
-		 * Get each artifact's attributes and analyze them for matches.
-		 */
-		for (BlackboardArtifact artifact : artifactsList) {
-			if (attributesMatch(artifact.getAttributes(), attributesList)) {
-				/*
-				 * The exact artifact exists, so we don't need to look any
-				 * further.
-				 */
+	public boolean artifactExists(Content content, BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributes) throws TskCoreException {
+		List<BlackboardArtifact> existingArtifacts = content.getArtifacts(artifactType.getTypeID());
+		for (BlackboardArtifact artifact : existingArtifacts) {
+			if (attributesMatch(artifact.getAttributes(), attributes)) {
 				return true;
 			}
 		}
-
-		/*
-		 * None of the artifacts have the exact set of attribute type/value
-		 * combinations. The provided content does not have the artifact being
-		 * sought.
-		 */
 		return false;
+	}
+
+	/**
+	 * Determines whether or not an artifact of a given type with a given set of
+	 * attributes already exists for a given content.
+	 *
+	 * @param content      The content.
+	 * @param artifactType The artifact type.
+	 * @param attributes   The attributes.
+	 *
+	 * @return True or false
+	 *
+	 * @throws TskCoreException The exception is thrown if there is an issue
+	 *                          querying the case database.
+	 * @deprecated Use artifactExists(Content content, BlackboardArtifact.Type
+	 * artifactType, Collection\<BlackboardAttribute\> attributes) instead.
+	 */
+	@Deprecated
+	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType, Collection<BlackboardAttribute> attributes) throws TskCoreException {		
+		return artifactExists(content, getArtifactType(artifactType.getTypeID()), attributes);
 	}
 
 	/**

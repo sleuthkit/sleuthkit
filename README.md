@@ -15,8 +15,8 @@ the tool or customize it to specific needs.
 The Sleuth Kit uses code from the file system analysis tools of
 The Coroner's Toolkit (TCT) by Wietse Venema and Dan Farmer.  The
 TCT code was modified for platform independence.  In addition,
-support was added for the NTFS (see [wiki/ntfs](http://wiki.sleuthkit.org/index.php?title=FAT_Implementation_Notes)) 
-and FAT (see [wiki/fat](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes)) file systems.  Previously, The Sleuth Kit was
+support was added for the NTFS (see [wiki/ntfs](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes)) 
+and FAT (see [wiki/fat](http://wiki.sleuthkit.org/index.php?title=FAT_Implementation_Notes)) file systems.  Previously, The Sleuth Kit was
 called The @stake Sleuth Kit (TASK).  The Sleuth Kit is now independent
 of any commercial or academic organizations.
 
