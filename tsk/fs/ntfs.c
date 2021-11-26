@@ -1446,7 +1446,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
 
                         /* if we've passed the initialized size while reading this block, 
                          * zero out the buffer beyond the initialized size. */
-                        if (has_init_size) {
+                        if (has_init_size && (off < fs_attr->nrd.initsize)) {
                             const int64_t prev_remanining_init_size = fs_attr->nrd.initsize - off;
                             if (prev_remanining_init_size < (int64_t)comp.buf_size_b) {
                                 memset(&comp.uncomp_buf[prev_remanining_init_size], 0, comp.buf_size_b - prev_remanining_init_size);
