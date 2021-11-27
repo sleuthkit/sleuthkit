@@ -2318,10 +2318,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
         /* File Name (always resident) */
         else if (type == NTFS_ATYPE_FNAME) {
-            ntfs_attr_fname *fname;
-            TSK_FS_META_NAME_LIST *fs_name;
-            UTF16 *name16;
-            UTF8 *name8;
+            uint32_t attr_len = tsk_getu32(fs->endian, attr->len);
+            uint16_t attr_off = tsk_getu16(fs->endian, attr->c.r.soff);
+
             if (attr->res != NTFS_MFT_RES) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -2329,9 +2328,26 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     ("proc_attr_seq: File Name Attribute is not resident!");
                 return TSK_COR;
             }
-            fname =
-                (ntfs_attr_fname *) ((uintptr_t) attr +
-                tsk_getu16(fs->endian, attr->c.r.soff));
+            if ((attr_off < 16) || (attr_off >= attr_len)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("proc_attrseq: resident data offset of File Name Attribute is out of bounds!");
+                return TSK_COR;
+            }
+            // A File Name Attribute should be at least 66 bytes in size
+            if ((attr_len < 66) || (attr_off > attr_len - 66)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("proc_attrseq: resident data of File Name Attribute is too small!");
+                return TSK_COR;
+            }
+            TSK_FS_META_NAME_LIST *fs_name;
+            UTF16 *name16;
+            UTF8 *name8;
+
+            ntfs_attr_fname *fname = (ntfs_attr_fname *) ((uintptr_t) attr + attr_off);
             if (fname->nspace == NTFS_FNAME_DOS) {
                 continue;
             }
