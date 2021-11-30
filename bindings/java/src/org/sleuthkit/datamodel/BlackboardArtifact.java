@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
@@ -177,7 +178,8 @@ public abstract class BlackboardArtifact implements Content {
 	 *
 	 * @return The data source object id, may be null.
 	 */
-	Long getDataSourceObjectID() {
+	@Beta
+	public Long getDataSourceObjectID() {
 		return this.dataSourceObjId;
 	}
 
