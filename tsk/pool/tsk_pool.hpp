@@ -44,7 +44,7 @@ class TSKPool {
   inline uint32_t dev_block_size() const noexcept { return _dev_block_size; }
   inline uint64_t num_blocks() const noexcept { return _num_blocks; }
   inline uint64_t first_img_offset() const noexcept {
-      if (_members.size() >= 1) {
+      if (!_members.empty()) {
           return _members[0].second;
       }
       return 0;
