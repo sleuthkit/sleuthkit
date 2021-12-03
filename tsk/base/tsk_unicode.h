@@ -153,7 +153,10 @@ extern "C" {
         const UTF8 * sourceEnd);
 
     extern void
-     tsk_cleanupUTF8(char *source, const char replacement);
+        tsk_cleanupUTF8(char *source, const char replacement);
+
+    extern void
+        tsk_cleanupUTF16_lclorder(wchar_t *source, const wchar_t replacement);
 #endif
 //@}
 

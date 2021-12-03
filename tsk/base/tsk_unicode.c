@@ -43,6 +43,7 @@
  */
 
 #include "tsk_base_i.h"
+#include <wchar.h>
 
 /* Some fundamental constants */
 typedef unsigned long UTF32;    /* at least 32 bits */
@@ -569,6 +570,50 @@ tsk_cleanupUTF8(char *source, const char replacement)
         cur_idx += length;
     }
 }
+
+
+/**
+ * Cleans up the passed in string to replace invalid
+ * UTF-16 values with the passed in character.
+ * @param source String to be cleaned up
+ * @param replacement Character to insert into source as needed.
+ */
+void
+tsk_cleanupUTF16_lclorder(wchar_t *source, const wchar_t replacement) {
+
+    size_t total_len = wcslen(source);
+    size_t cur_idx = 0;
+    
+    while (cur_idx < total_len) {
+        UTF32 ch = source[cur_idx++];
+
+        /* If we have a surrogate pair, check out the high part. */
+        if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+            /* If the 16 bits following the high surrogate are in the source buffer... */
+            if (cur_idx < total_len) {
+                UTF32 ch2 = source[cur_idx];
+                
+                /* If it's a low surrogate, we're good. */
+                if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
+                    // all good, use this one
+                    cur_idx++;
+                }
+                else {
+                    source[cur_idx-1] = replacement;
+                }
+            }
+            else {   /* We don't have the 16 bits following the high surrogate. */
+                source[cur_idx-1] = replacement;
+                break;
+            }
+        }
+        /* UTF-16 surrogate values are illegal in UTF-32 */
+        else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+            source[cur_idx-1] = replacement;
+        }
+    }
+}
+
 
 /* --------------------------------------------------------------------- */
 
