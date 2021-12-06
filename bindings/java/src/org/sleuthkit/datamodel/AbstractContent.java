@@ -18,11 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -125,12 +127,11 @@ public abstract class AbstractContent implements Content {
 		// It is possible that multiple threads could be doing this calculation
 		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
-			ObjectInfo parentInfo;
-			parentInfo = db.getParentInfo(this);
-			if (parentInfo == null) {
+			Optional<Long> parentIdOpt = getParentId();
+			if (!parentIdOpt.isPresent()) {
 				parent = null;
 			} else {
-				parent = db.getContentById(parentInfo.getId());
+				parent = db.getContentById(parentIdOpt.get());
 			}
 		}
 		return parent;
@@ -138,6 +139,28 @@ public abstract class AbstractContent implements Content {
 
 	void setParent(Content parent) {
 		this.parent = parent;
+	}
+
+	/**
+	 * Returns the parent object id of the content or empty if no parent can be
+	 * identified.
+	 *
+	 * @return An optional of the parent object id.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public Optional<Long> getParentId() throws TskCoreException {
+		if (parentId == UNKNOWN_ID) {
+			ObjectInfo parentInfo = db.getParentInfo(this);
+			if (parentInfo != null) {
+				parentId = parentInfo.getId();
+			}
+		}
+
+		return parentId == UNKNOWN_ID
+				? Optional.empty()
+				: Optional.of(parentId);
 	}
 
 	/**
