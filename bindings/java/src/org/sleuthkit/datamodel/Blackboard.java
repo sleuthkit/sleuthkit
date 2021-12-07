@@ -472,7 +472,7 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Populate the attributes for all artifact in the list. This is done using
+	 * Populate the attributes for all artifacts in the list. This is done using
 	 * one database call as an efficient way to load many artifacts/attributes
 	 * at once.
 	 *
