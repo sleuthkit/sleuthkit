@@ -158,7 +158,7 @@ public final class Blackboard {
 			try {
 				caseDb.getTimelineManager().addArtifactEvents(artifact);
 			} catch (TskCoreException ex) {
-				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
+				throw new BlackboardException(String.format("Failed to add events to timeline for artifact '%s'", artifact), ex);
 			}
 		}
 		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName, ingestJobId));
@@ -470,17 +470,19 @@ public final class Blackboard {
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
-	 * Populate the attributes for all artifact in the list. 
-	 * This is done using one database call as an efficient way to
-	 * load many artifacts/attributes at once.
+	 * Populate the attributes for all artifacts in the list. This is done using
+	 * one database call as an efficient way to load many artifacts/attributes
+	 * at once.
 	 *
-	 * @param arts The list of artifacts. When complete, each will have its attributes loaded.
+	 * @param arts The list of artifacts. When complete, each will have its
+	 *             attributes loaded.
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */	
+	 */
 	@Beta
-	public <T extends BlackboardArtifact>  void loadBlackboardAttributes(List<T> arts) throws TskCoreException {
+	public <T extends BlackboardArtifact> void loadBlackboardAttributes(List<T> arts) throws TskCoreException {
 
 		if (arts.isEmpty()) {
 			return;
@@ -538,14 +540,14 @@ public final class Blackboard {
 			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-	}	
+	}
 
 	/**
-	 * Create a BlackboardAttribute artifact from the result set.
-	 * Does not set the data source ID.
-	 * 
+	 * Create a BlackboardAttribute artifact from the result set. Does not set
+	 * the data source ID.
+	 *
 	 * @param rs The result set.
-	 * 
+	 *
 	 * @return The corresponding BlackboardAttribute object.
 	 */
 	private BlackboardAttribute createAttributeFromResultSet(ResultSet rs) throws SQLException {
@@ -573,8 +575,8 @@ public final class Blackboard {
 				rs.getString("value_text"),
 				rs.getBytes("value_byte"), caseDb
 		);
-	}	
-	
+	}
+
 	/**
 	 * Get the attributes associated with the given file.
 	 *
@@ -959,15 +961,15 @@ public final class Blackboard {
 			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
 			+ " LEFT JOIN tsk_analysis_results AS results "
 			+ "		ON artifacts.artifact_obj_id = results.artifact_obj_id "; //NON-NLS
-			
-	private final static String ANALYSIS_RESULT_QUERY_STRING_WITH_ATTRIBUTES = 
-			ANALYSIS_RESULT_QUERY_STRING_GENERIC
+
+	private final static String ANALYSIS_RESULT_QUERY_STRING_WITH_ATTRIBUTES
+			= ANALYSIS_RESULT_QUERY_STRING_GENERIC
 			+ " JOIN blackboard_attributes AS attributes " //NON-NLS 
-            + " ON artifacts.artifact_id = attributes.artifact_id " //NON-NLS 
+			+ " ON artifacts.artifact_id = attributes.artifact_id " //NON-NLS 
 			+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
-	
-	private final static String ANALYSIS_RESULT_QUERY_STRING_WHERE = 
-			ANALYSIS_RESULT_QUERY_STRING_GENERIC
+
+	private final static String ANALYSIS_RESULT_QUERY_STRING_WHERE
+			= ANALYSIS_RESULT_QUERY_STRING_GENERIC
 			+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
 			+ "     AND types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
@@ -998,6 +1000,32 @@ public final class Blackboard {
 	 */
 	public List<AnalysisResult> getAnalysisResultsByType(int artifactTypeId, long dataSourceObjId) throws TskCoreException {
 		return getAnalysisResultsWhere(" artifacts.artifact_type_id = " + artifactTypeId + " AND artifacts.data_source_obj_id = " + dataSourceObjId);
+	}
+
+	/**
+	 * Gets all analysis results of a given type for a given data source. To get
+	 * all the analysis results for the data source, pass null for the type ID.
+	 *
+	 * @param dataSourceObjId The object ID of the data source.
+	 * @param artifactTypeID  The type ID of the desired analysis results or
+	 *                        null.
+	 *
+	 * @return A list of the analysis results, possibly empty.
+	 *
+	 * @throws TskCoreException This exception is thrown if there is an error
+	 *                          querying the case database.
+	 */
+	public List<AnalysisResult> getAnalysisResults(long dataSourceObjId, Integer artifactTypeID) throws TskCoreException {
+		caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			String whereClause = " artifacts.data_source_obj_id = " + dataSourceObjId;
+			if (artifactTypeID != null) {
+				whereClause += " AND artifacts.artifact_type_id = " + artifactTypeID;
+			}
+			return getAnalysisResultsWhere(whereClause, connection);
+		} finally {
+			caseDb.releaseSingleUserCaseReadLock();
+		}
 	}
 
 	/**
@@ -1235,7 +1263,7 @@ public final class Blackboard {
 
 		return analysisResults;
 	}
-	
+
 	private final static String DATA_ARTIFACT_QUERY_STRING_GENERIC = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
 			+ "artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, " //NON-NLS
 			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
@@ -1246,15 +1274,15 @@ public final class Blackboard {
 			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
 			+ " LEFT JOIN tsk_data_artifacts AS data_artifacts " //NON-NLS 
 			+ "		ON artifacts.artifact_obj_id = data_artifacts.artifact_obj_id "; //NON-NLS
-	
-	private final static String DATA_ARTIFACT_QUERY_STRING_WITH_ATTRIBUTES = 
-			DATA_ARTIFACT_QUERY_STRING_GENERIC
+
+	private final static String DATA_ARTIFACT_QUERY_STRING_WITH_ATTRIBUTES
+			= DATA_ARTIFACT_QUERY_STRING_GENERIC
 			+ " JOIN blackboard_attributes AS attributes " //NON-NLS 
-            + " ON artifacts.artifact_id = attributes.artifact_id " //NON-NLS 
+			+ " ON artifacts.artifact_id = attributes.artifact_id " //NON-NLS 
 			+ " WHERE types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS	
 
-	private final static String DATA_ARTIFACT_QUERY_STRING_WHERE = 
-			DATA_ARTIFACT_QUERY_STRING_GENERIC
+	private final static String DATA_ARTIFACT_QUERY_STRING_WHERE
+			= DATA_ARTIFACT_QUERY_STRING_GENERIC
 			+ " WHERE artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID() //NON-NLS
 			+ "     AND types.category_type = " + BlackboardArtifact.Category.DATA_ARTIFACT.getID(); // NON-NLS
 
@@ -1419,9 +1447,9 @@ public final class Blackboard {
 	 * Creates DataArtifacts objects for the resultset of a table query of the
 	 * form "SELECT * FROM blackboard_artifacts JOIN data_artifacts WHERE ...".
 	 *
-	 * @param resultSet  A result set from a query of the blackboard_artifacts
-	 *                   table of the form "SELECT * FROM blackboard_artifacts,
-	 *                   tsk_data_artifacts WHERE ...".
+	 * @param resultSet A result set from a query of the blackboard_artifacts
+	 *                  table of the form "SELECT * FROM blackboard_artifacts,
+	 *                  tsk_data_artifacts WHERE ...".
 	 *
 	 * @return A list of DataArtifact objects.
 	 *
@@ -1586,12 +1614,12 @@ public final class Blackboard {
 		return getArtifactsCountHelper(artifactTypeID,
 				"blackboard_artifacts.data_source_obj_id = '" + dataSourceObjId + "';");
 	}
-	
+
 	/**
-	 * Get count of all blackboard artifacts of a given type.
-	 * Does not include rejected artifacts.
+	 * Get count of all blackboard artifacts of a given type. Does not include
+	 * rejected artifacts.
 	 *
-	 * @param artifactTypeID  artifact type id (must exist in database)
+	 * @param artifactTypeID artifact type id (must exist in database)
 	 *
 	 * @return count of blackboard artifacts
 	 *
@@ -1682,12 +1710,12 @@ public final class Blackboard {
 	 * Get all blackboard artifacts of the given type that contain attribute of
 	 * given type and value, for a given data source(s).
 	 *
-	 * @param artifactType		artifact type to get
-	 * @param attributeType		attribute type to be included
-	 * @param value				attribute value to be included. can be empty.
+	 * @param artifactType		  artifact type to get
+	 * @param attributeType		 attribute type to be included
+	 * @param value				       attribute value to be included. can be empty.
 	 * @param dataSourceObjId	data source to look under. If Null, then search
-	 *                          all data sources.
-	 * @param showRejected		a flag whether to display rejected artifacts
+	 *                        all data sources.
+	 * @param showRejected		  a flag whether to display rejected artifacts
 	 *
 	 * @return list of blackboard artifacts
 	 *
@@ -1703,10 +1731,10 @@ public final class Blackboard {
 				+ ((value == null || value.isEmpty()) ? "" : " AND attributes.value_text = '" + value + "'") //NON-NLS
 				+ (showRejected ? "" : " AND artifacts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()) //NON-NLS
 				+ (dataSourceObjId != null ? " AND artifacts.data_source_obj_id = " + dataSourceObjId : ""); //NON-NLS
-	
+
 		List<BlackboardArtifact> artifacts = new ArrayList<>();
 		caseDb.acquireSingleUserCaseReadLock();
-		
+
 		String finalQuery = (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT
 				? ANALYSIS_RESULT_QUERY_STRING_WITH_ATTRIBUTES + query
 				: DATA_ARTIFACT_QUERY_STRING_WITH_ATTRIBUTES + query);
@@ -1714,7 +1742,7 @@ public final class Blackboard {
 		try (CaseDbConnection connection = caseDb.getConnection()) {
 			try (Statement statement = connection.createStatement();
 					ResultSet resultSet = connection.executeQuery(statement, finalQuery);) {
-				
+
 				if (artifactType.getCategory() == BlackboardArtifact.Category.ANALYSIS_RESULT) {
 					artifacts.addAll(resultSetToAnalysisResults(resultSet));
 				} else {
@@ -1882,7 +1910,8 @@ public final class Blackboard {
 	 * clause. Uses a SELECT COUNT(*) FROM blackboard_artifacts statement
 	 *
 	 * @param artifactTypeID artifact type to count
-	 * @param whereClause    The WHERE clause to append to the SELECT statement (may be null).
+	 * @param whereClause    The WHERE clause to append to the SELECT statement
+	 *                       (may be null).
 	 *
 	 * @return A count of matching BlackboardArtifact .
 	 *
@@ -1893,7 +1922,7 @@ public final class Blackboard {
 		String queryString = "SELECT COUNT(*) AS count FROM blackboard_artifacts "
 				+ "WHERE blackboard_artifacts.artifact_type_id = " + artifactTypeID
 				+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID();
-		
+
 		if (whereClause != null) {
 			queryString += " AND " + whereClause;
 		}
@@ -1953,7 +1982,7 @@ public final class Blackboard {
 	 * artifactType, Collection\<BlackboardAttribute\> attributes) instead.
 	 */
 	@Deprecated
-	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType, Collection<BlackboardAttribute> attributes) throws TskCoreException {		
+	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType, Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		return artifactExists(content, getArtifactType(artifactType.getTypeID()), attributes);
 	}
 
@@ -2246,11 +2275,11 @@ public final class Blackboard {
 		private final Long ingestJobId;
 
 		/**
-		 * Constructs an Event published by SleuthkitCase when one or more
+		 * Constructs an event published by SleuthkitCase when one or more
 		 * artifacts are posted. Posted artifacts should be complete (all
 		 * attributes have been added) and ready for further analysis.
 		 *
-		 * @param artifacts   The artifacts.
+		 * @param artifacts   The artifacts. 
 		 * @param moduleName  The display name of the module posting the
 		 *                    artifacts.
 		 * @param ingestJobId The numeric identifier of the ingest job within
