@@ -35,6 +35,8 @@
 // Local includes
 #include "RegistryByteBuffer.h"
 #include "RejistryException.h"
+#include "../../tsk/base/tsk_base.h"
+#include "../../tsk/base/tsk_unicode.h"
 
 namespace Rejistry {
 
@@ -130,30 +132,12 @@ namespace Rejistry {
 			return L"";
 		}
 
-		// We do this so we can reference the last character in the string
-		// data.size() -2. if we didn't add a char to the string then returned
-		// string would be missing the last character. 
-		data.push_back('\0');
-		data.push_back('\0');
+		size_t numOfWchars = data.size() / sizeof(wchar_t);
 
-		// We are unsure how from_bytes() works. Microsofts docs seem to indicate that the second pointer
-		// should point to the last character which will be included in the conversion.[1] However, another
-		// reference indicates that the data pointed to by the second pointer will not be included, which is 
-		// what our testing has shown.[2] We previously had the second pointer point to data.size() but there were
-		// concerns that we were pointing to memory we did not own. As a result, we add a char to the end of every
-		// string so we can use data.size() - 2 and still get the original string back.  
-		// 1. https://docs.microsoft.com/en-us/cpp/standard-library/wstring-convert-class?view=vs-2017#from_bytes
-		// 2. http://www.cplusplus.com/reference/locale/wstring_convert/from_bytes/
-		std::wstring result;
-		try {
-			result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[data.size()-2]));
-		}
-		catch (std::exception&)
-		{
-			throw RegistryParseException("Error: Failed to convert string");
-		}
+		// Sanitize data to ensure its valid UTF16 (CT-4851)
+		tsk_cleanupUTF16(TSK_LIT_ENDIAN, (wchar_t*)(&data[0]), numOfWchars, L'\uFFFD');
 
-		return result;
+		return std::wstring((wchar_t*)(&data[0]), numOfWchars);
 	}
 
     ByteBuffer::ByteArray RegistryByteBuffer::getData() const {

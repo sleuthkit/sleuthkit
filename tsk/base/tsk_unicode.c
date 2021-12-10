@@ -580,18 +580,16 @@ tsk_cleanupUTF8(char *source, const char replacement)
  * @param replacement Character to insert into source as needed.
  */
 void
-tsk_cleanupUTF16(TSK_ENDIAN_ENUM endian, wchar_t *source, const wchar_t replacement) {
+tsk_cleanupUTF16(TSK_ENDIAN_ENUM endian, wchar_t *source, size_t wstrlen, const wchar_t replacement) {
 
-    size_t total_len = wcslen(source);
     size_t cur_idx = 0;
-    
-    while (cur_idx < total_len) {
+    while (cur_idx < wstrlen) {
         UTF32 ch = tsk_getu16(endian, (uint8_t *) &source[cur_idx]);
 
         /* If we have a surrogate pair, check out the high part. */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
-            if (cur_idx + 1 < total_len) {
+            if (cur_idx + 1 < wstrlen) {
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) &source[cur_idx+1]);
                 
                 /* If it's a low surrogate, we're good. */
