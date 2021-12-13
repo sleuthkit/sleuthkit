@@ -156,7 +156,7 @@ extern "C" {
         tsk_cleanupUTF8(char *source, const char replacement);
 
     extern void
-        tsk_cleanupUTF16(TSK_ENDIAN_ENUM endian, wchar_t *source, const wchar_t replacement);
+        tsk_cleanupUTF16(TSK_ENDIAN_ENUM endian, wchar_t *source, size_t source_len, const wchar_t replacement);
 #endif
 //@}
 
