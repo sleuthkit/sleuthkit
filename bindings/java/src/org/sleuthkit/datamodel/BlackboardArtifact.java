@@ -2404,7 +2404,8 @@ public abstract class BlackboardArtifact implements Content {
 		List<Content> children = new ArrayList<>();
 		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
 		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
-
+		children.addAll(getSleuthkitCase().getCustomChildren(this));
+		
 		return children;
 	}
 }

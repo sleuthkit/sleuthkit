@@ -197,6 +197,15 @@ public interface SleuthkitItemVisitor<T> {
 	T visit(UnsupportedContent unsupportedContent);
 	
 	/**
+	 * Act on (visit) a CustomContent object
+	 *
+	 * @param customContent content to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(CustomContent customContent);
+	
+	/**
 	 * Act on (visit) a LocalFilesDataSource content object
 	 *
 	 * @param localFilesDataSource report to visit / act on
@@ -306,6 +315,11 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(UnsupportedContent unsupportedContent) {
 			return defaultVisit(unsupportedContent);
+		}
+		
+		@Override
+		public T visit(CustomContent customContent) {
+			return defaultVisit(customContent);
 		}
 		
 		@Override

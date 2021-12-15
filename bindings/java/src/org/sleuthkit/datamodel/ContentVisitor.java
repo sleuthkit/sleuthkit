@@ -185,6 +185,15 @@ public interface ContentVisitor<T> {
 	T visit(UnsupportedContent uc);
 
 	/**
+	 * Act on (visit) a CustomContent object
+	 *
+	 * @param cc CustomContent object to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(CustomContent cc);
+	
+	/**
 	 * The default content visitor - quickest method for implementing a custom
 	 * visitor. Every visit method delegates to the defaultVisit method, the
 	 * only required method to be implemented. Then, implement the specific
@@ -281,6 +290,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(UnsupportedContent uc) {
 			return defaultVisit(uc);
+		}
+		
+		@Override
+		public T visit(CustomContent cc) {
+			return defaultVisit(cc);
 		}
 	}
 }

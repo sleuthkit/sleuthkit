@@ -635,7 +635,8 @@ public class TskData {
 		POOL(7, bundle.getString("TskData.ObjectType.Pool.name")),	///< Pool
 		OS_ACCOUNT(8, bundle.getString("TskData.ObjectType.OsAccount.name")), ///< OS Account - see tsk_os_accounts for more details
 		HOST_ADDRESS(9, bundle.getString("TskData.ObjectType.HostAddress.name")), ///< Host Address - see tsk_host_addresses for more details
-		UNSUPPORTED(-1, bundle.getString("TskData.ObjectType.Unsupported.name")) ///< Unsupported type
+		UNSUPPORTED(-1, bundle.getString("TskData.ObjectType.Unsupported.name")), ///< Unsupported type
+		CUSTOM(10,bundle.getString("TskData.ObjectType.Custom.name")) /// Custom type - the objects are stored in custom tables 
 		; 
 		private final short objectType;
 		private final String displayName;

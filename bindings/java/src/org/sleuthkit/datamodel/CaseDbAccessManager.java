@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018-2019 Basis Technology Corp.
+ * Copyright 2018-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import org.sleuthkit.datamodel.TskData.DbType;
+import org.sleuthkit.datamodel.TskData.ObjectType;
 
 /**
  * This class provides modules with access to the case database 
@@ -606,6 +607,27 @@ public final class CaseDbAccessManager {
 			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Create a new custom object for the given parent object id.
+	 * 
+	 * @param parentId Object id of the parent.
+	 * @param transaction Transaction to use for the database operation.
+	 * 
+	 * @return Object id of the new custom object. 
+	 * @throws TskCoreException 
+	 */
+	public long newCustomObject(long parentId, CaseDbTransaction transaction) throws TskCoreException {
+		
+		CaseDbConnection connection = transaction.getConnection();
+		
+		try {
+			long customObjId = tskDB.addObject(parentId, ObjectType.CUSTOM.getObjectType(), connection);
+			return customObjId;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error adding custom object for parent obj id %d", parentId), ex);
+		} 
+	 }
 	
 	/**
 	 * Creates a prepared statement object for the purposes of running a select

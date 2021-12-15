@@ -3186,6 +3186,8 @@ public class SleuthkitCase {
 							break;
 						case UNSUPPORTED:
 							break;
+						case CUSTOM:
+							break;
 						default:
 							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
 					}
@@ -5254,6 +5256,45 @@ public class SleuthkitCase {
 		}
 	}
 
+	
+	/**
+	 * Returns the list of all custom content children for the given
+	 * parent object.
+	 *
+	 * @param parent Content parent to get custom children for.
+	 *
+	 * @throws TskCoreException Exception thrown if a critical error occurs
+	 *                          within tsk core
+	 */
+	List<CustomContent> getCustomChildren(Content parent) throws TskCoreException {
+		CaseDbConnection connection = null;
+		ResultSet rs = null;
+		acquireSingleUserCaseReadLock();
+		try {
+			connection = connections.getConnection();
+
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_CUSTOM_CHILDREN_BY_PARENT);
+			statement.clearParameters();
+			long parentId = parent.getId();
+			statement.setLong(1, parentId);
+			rs = connection.executeQuery(statement);
+			
+			List<CustomContent> children = new ArrayList<>();
+			while (rs.next()) {
+				children.add(new CustomContent(this, rs.getLong("obj_id"))); //NON-NLS
+			}
+			
+			return children;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting AbstractFile children for Content", ex);
+		} finally {
+			closeResultSet(rs);
+			closeConnection(connection);
+			releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	
 	/**
 	 * Get list of IDs for abstract files of a given type that are children of a
 	 * given content.
@@ -5579,6 +5620,9 @@ public class SleuthkitCase {
 				break;
 			case HOST_ADDRESS:
 				content = hostAddressManager.getHostAddress(id);
+				break;
+			case CUSTOM:
+				content = new CustomContent(this, id);
 				break;
 			default:
 				content = new UnsupportedContent(this, id);
@@ -12835,8 +12879,13 @@ public class SleuthkitCase {
 		INSERT_POOL_INFO("INSERT INTO tsk_pool_info (obj_id, pool_type) VALUES (?, ?)"),
 		INSERT_FS_INFO("INSERT INTO tsk_fs_info (obj_id, data_source_obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum, display_name)"
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?");
-
+		SELECT_TAG_NAME_BY_ID("SELECT * FROM tag_names where tag_name_id = ?"),
+		SELECT_CUSTOM_CHILDREN_BY_PARENT("SELECT obj_id " //NON-NLS
+				+ "FROM tsk_objects " //NON-NLS
+				+ "WHERE ( tsk_objects.type = "  + ObjectType.CUSTOM.getObjectType() //NON-NLS
+				+ " AND tsk_objects.par_obj_id = ? ) "); //NON-NLS
+				
+		
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {
