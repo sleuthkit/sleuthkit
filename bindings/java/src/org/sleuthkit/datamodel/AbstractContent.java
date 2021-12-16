@@ -193,7 +193,6 @@ public abstract class AbstractContent implements Content {
 
 		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
 		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
-		
 		return children;
 	}
 
