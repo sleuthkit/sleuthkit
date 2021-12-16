@@ -254,9 +254,12 @@ public class Report implements Content {
 
 	@Override
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		// Get the data source before opening the transaction
+		long dataSourceObjId = getDataSource().getId();
+		
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objectId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objectId, dataSourceObjId, score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
