@@ -178,12 +178,5 @@ public class DataModelMiscTests {
 		assertTrue(child1 instanceof CustomContent);
 		assertTrue(child2 instanceof CustomContent);
 		
-		// verify that custom children are included in call to getChildren() 
-		List<Content> children = _windows.getChildren();
-		assertEquals(5, children.size());	// has 5 children - 4 files and one custom object that we just created
-		
-		children = _abcTextFile.getChildren();
-		assertEquals(1, children.size());	// has only one custom child
-		
 	}
 }
