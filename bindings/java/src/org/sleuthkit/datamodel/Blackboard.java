@@ -446,10 +446,10 @@ public final class Blackboard {
 		String rowId;
 		switch (caseDb.getDatabaseType()) {
 			case POSTGRESQL: 
-				rowId = "attrs.CTID ASC";
+				rowId = "attrs.CTID";
 				break;
 			case SQLITE:
-				rowId = "attrs.ROWID DESC";
+				rowId = "attrs.ROWID";
 				break;
 			default:
 				throw new TskCoreException("Unknown database type: " + caseDb.getDatabaseType());
@@ -514,6 +514,18 @@ public final class Blackboard {
 		// Get all artifact IDs as a comma-separated string
 		String idString = arts.stream().map(p -> Long.toString(p.getArtifactID())).collect(Collectors.joining(", "));
 
+		String rowId;
+		switch (caseDb.getDatabaseType()) {
+			case POSTGRESQL:
+				rowId = "attrs.CTID";
+				break;
+			case SQLITE:
+				rowId = "attrs.ROWID";
+				break;
+			default:
+				throw new TskCoreException("Unknown database type: " + caseDb.getDatabaseType());
+		}
+
 		// Get the attributes
 		CaseDbConnection connection = null;
 		Statement statement = null;
@@ -529,7 +541,8 @@ public final class Blackboard {
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id IN (" + idString + ") "
-					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+					+ " AND attrs.attribute_type_id = types.attribute_type_id"
+					+ " ORDER BY " + rowId);
 			while (rs.next()) {
 				final BlackboardAttribute attr = createAttributeFromResultSet(rs);
 				attr.setParentDataSourceID(artifactMap.get(attr.getArtifactID()).getDataSourceObjectID());
