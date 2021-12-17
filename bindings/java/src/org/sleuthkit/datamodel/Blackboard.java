@@ -446,10 +446,10 @@ public final class Blackboard {
 		String rowId;
 		switch (caseDb.getDatabaseType()) {
 			case POSTGRESQL: 
-				rowId = "CTID";
+				rowId = "attrs.CTID ASC";
 				break;
 			case SQLITE:
-				rowId = "ROWID";
+				rowId = "attrs.ROWID DESC";
 				break;
 			default:
 				throw new TskCoreException("Unknown database type: " + caseDb.getDatabaseType());
