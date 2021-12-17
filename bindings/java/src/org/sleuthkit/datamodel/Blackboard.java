@@ -442,6 +442,19 @@ public final class Blackboard {
 		CaseDbConnection connection = null;
 		Statement statement = null;
 		ResultSet rs = null;
+		
+		String rowId;
+		switch (caseDb.getDatabaseType()) {
+			case POSTGRESQL: 
+				rowId = "CTID";
+				break;
+			case SQLITE:
+				rowId = "ROWID";
+				break;
+			default:
+				throw new TskCoreException("Unknown database type: " + caseDb.getDatabaseType());
+		}
+		
 		caseDb.acquireSingleUserCaseReadLock();
 		try {
 			connection = caseDb.getConnection();
@@ -453,7 +466,8 @@ public final class Blackboard {
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id = " + artifact.getArtifactID()
-					+ " AND attrs.attribute_type_id = types.attribute_type_id");
+					+ " AND attrs.attribute_type_id = types.attribute_type_id " 
+					+ " ORDER BY " + rowId);
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
 				final BlackboardAttribute attr = createAttributeFromResultSet(rs);
