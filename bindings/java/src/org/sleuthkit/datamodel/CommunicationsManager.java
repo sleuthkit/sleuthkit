@@ -248,6 +248,7 @@ public final class CommunicationsManager {
 	 *                        address).
 	 * @param moduleName      The module creating the account.
 	 * @param sourceFile      The source file the account was found in.
+	 * @param attributes      List of blackboard attributes to add to the data artifact.
 	 * @param ingestJobId     The ingest job in which the analysis that found
 	 *                        the account was performed, may be null.
 	 *
@@ -259,7 +260,8 @@ public final class CommunicationsManager {
 	 *                                   ID is not valid for the account type.
 	 */
 	// NOTE: Full name given for Type for doxygen linking
-	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile, Long ingestJobId) throws TskCoreException, InvalidAccountIDException {
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, 
+			String moduleName, Content sourceFile, List<BlackboardAttribute> attributes, Long ingestJobId) throws TskCoreException, InvalidAccountIDException {
 
 		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
@@ -270,7 +272,7 @@ public final class CommunicationsManager {
 		 * address multiple times. Only one artifact is created for each email
 		 * message in that PST.
 		 */
-		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, ingestJobId);
+		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, attributes, ingestJobId);
 
 		// The account instance map was unused so we have removed it from the database, 
 		// but we expect we may need it so I am preserving this method comment and usage here.
@@ -307,7 +309,7 @@ public final class CommunicationsManager {
 	@Deprecated
 	// NOTE: Full name given for Type for doxygen linking
 	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException, InvalidAccountIDException {
-		return createAccountFileInstance(accountType, accountUniqueID, moduleName, sourceFile, null);
+		return createAccountFileInstance(accountType, accountUniqueID, moduleName, sourceFile, null, null);
 	}
 
 	/**
@@ -514,6 +516,7 @@ public final class CommunicationsManager {
 	 * @param moduleName      The name of the module that found the account
 	 *                        instance.
 	 * @param sourceFile      The file in which the account instance was found.
+	 * @param originalAttrs   List of blackboard attributes to add to the data artifact.
 	 * @param ingestJobId     The ingest job in which the analysis that found
 	 *                        the account was performed, may be null.
 	 *
@@ -522,17 +525,20 @@ public final class CommunicationsManager {
 	 * @throws TskCoreException If there is an error querying or updating the
 	 *                          case database.
 	 */
-	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile, Long ingestJobId) throws TskCoreException {
+	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, 
+			Content sourceFile, List<BlackboardAttribute> originalAttrs, Long ingestJobId) throws TskCoreException {
 		if (sourceFile == null) {
 			throw new TskCoreException("Source file not provided.");
 		}
 
 		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
 		if (accountArtifact == null) {
-			List<BlackboardAttribute> attributes = Arrays.asList(
-					new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()),
-					new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID)
-			);
+			List<BlackboardAttribute> attributes = new ArrayList<>();
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()));
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID));
+			if (originalAttrs != null) {
+				attributes.addAll(originalAttrs);
+			}
 
 			accountArtifact = sourceFile.newDataArtifact(ACCOUNT_TYPE, attributes);
 
