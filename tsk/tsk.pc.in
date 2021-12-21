@@ -1,0 +1,15 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+libdir=@libdir@
+
+Name: @PACKAGE_NAME@
+Description: An open source forensic toolkit
+URL: http://www.sleuthkit.org/sleuthkit
+Version: @PACKAGE_VERSION@
+
+Cflags: -I${includedir}
+Libs: -L${libdir} -ltsk
+Libs.private: @PACKAGE_LIBS_PRIVATE@
+Requires: @AX_PACKAGE_REQUIRES@
+Requires.private: @AX_PACKAGE_REQUIRES_PRIVATE@ 

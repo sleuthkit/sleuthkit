@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -186,6 +186,24 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(OsAccount account);
+	
+	/**
+	 * Act on (visit) an UnsupportedContent object
+	 *
+	 * @param unsupportedContent content to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(UnsupportedContent unsupportedContent);
+	
+	/**
+	 * Act on (visit) a LocalFilesDataSource content object
+	 *
+	 * @param localFilesDataSource report to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(LocalFilesDataSource localFilesDataSource);
 
 	/**
 	 * The default visitor - quickest method for implementing a custom visitor.
@@ -283,6 +301,16 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(OsAccount account) {
 			return defaultVisit(account);
+		}
+		
+		@Override
+		public T visit(UnsupportedContent unsupportedContent) {
+			return defaultVisit(unsupportedContent);
+		}
+		
+		@Override
+		public T visit(LocalFilesDataSource localFilesDataSource) {
+			return defaultVisit(localFilesDataSource);
 		}
 	}
 }

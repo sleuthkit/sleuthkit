@@ -217,7 +217,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
     }
@@ -227,7 +227,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_pool_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
 
@@ -236,7 +236,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
     }
@@ -258,12 +258,12 @@ main(int argc, char **argv1)
             type_used, id, id_used,
             (TSK_FS_DIR_WALK_FLAG_ENUM) dir_walk_flags)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
     exit(0);
 }

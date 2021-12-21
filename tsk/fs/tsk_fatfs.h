@@ -266,7 +266,7 @@ extern "C" {
 
         TSK_RETVAL_ENUM (*dent_parse_buf)(FATFS_INFO *a_fatfs, 
             TSK_FS_DIR *a_fs_dir, char *a_buf, TSK_OFF_T a_buf_len, 
-            TSK_DADDR_T *a_sector_addrs);
+            TSK_DADDR_T *a_sector_addrs, int recursion_depth);
 
         TSK_RETVAL_ENUM (*dinode_copy)(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
             FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_FS_FILE *a_fs_file);
@@ -347,7 +347,7 @@ extern "C" {
 
     extern TSK_RETVAL_ENUM
         fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-        TSK_INUM_T a_addr);
+        TSK_INUM_T a_addr, int recursion_depth);
 
     extern int fatfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
 

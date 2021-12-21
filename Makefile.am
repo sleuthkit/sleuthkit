@@ -1,7 +1,7 @@
 # File that we want to include in the dist
 EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-CHANGES.txt \
-    licenses/GNU-COPYING licenses/IBM-LICENSE \
-    licenses/cpl1.0.txt licenses/bsd.txt licenses/mit.txt \
+    licenses/README.md licenses/GNUv2-COPYING licenses/GNUv3-COPYING licenses/IBM-LICENSE \
+    licenses/Apache-LICENSE-2.0.txt licenses/cpl1.0.txt licenses/bsd.txt licenses/mit.txt \
     m4/*.m4 \
     docs/README.txt \
     packages/sleuthkit.spec \
@@ -24,9 +24,11 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
     bindings/java/src/*.html \
     case-uco/java/*.xml \
+    case-uco/java/*.md \
     case-uco/java/nbproject/*.xml \
     case-uco/java/nbproject/*.properties \
-    case-uco/java/src/org/sleuthkit/caseuco/*.java
+    case-uco/java/src/org/sleuthkit/caseuco/*.java \
+    case-uco/java/test/org/sleuthkit/caseuco/*.java
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -59,7 +61,8 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/auto/tsk_is_image_supported.h tsk/auto/guid.h \
     tsk/pool/tsk_pool.h tsk/pool/tsk_pool.hpp tsk/pool/tsk_apfs.h tsk/pool/tsk_apfs.hpp \
 	tsk/pool/pool_compat.hpp tsk/pool/apfs_pool_compat.hpp \
-    tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp
+    tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp \
+    tsk/util/detect_encryption.h
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \

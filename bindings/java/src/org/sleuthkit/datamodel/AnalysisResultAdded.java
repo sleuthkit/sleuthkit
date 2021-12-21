@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,19 +19,19 @@
 package org.sleuthkit.datamodel;
 
 /**
- * This class encapsulates an analysis result added to Content, and the content's 
- * aggregate score upon adding the analysis result. 
+ * This class encapsulates an analysis result added to Content, and the
+ * content's aggregate score upon adding the analysis result.
  */
 public class AnalysisResultAdded {
-	
+
 	private final AnalysisResult analysisResult;
 	private final Score score;
-	
+
 	AnalysisResultAdded(AnalysisResult analysisResult, Score score) {
 		this.analysisResult = analysisResult;
 		this.score = score;
 	}
-	
+
 	public AnalysisResult getAnalysisResult() {
 		return analysisResult;
 	}
@@ -39,5 +39,5 @@ public class AnalysisResultAdded {
 	public Score getAggregateScore() {
 		return score;
 	}
-	
+
 }

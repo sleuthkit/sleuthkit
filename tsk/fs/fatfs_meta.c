@@ -759,6 +759,11 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 tsk_error_set_errstr
                     ("%s: Invalid sector address in FAT (too large): %"
                     PRIuDADDR " (plus %d sectors)", func_name, sbase, fatfs->csize);
+                tsk_fs_attr_run_free(data_run_head);
+                if (list_seen != NULL) {
+                    tsk_list_free(list_seen);
+                    list_seen = NULL;
+                }
                 return 1;
             }
 
@@ -770,6 +775,10 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 if (data_run_tmp == NULL) {
                     tsk_fs_attr_run_free(data_run_head);
                     fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+                    if (list_seen != NULL) {
+                        tsk_list_free(list_seen);
+                        list_seen = NULL;
+                    }
                     return 1;
                 }
 
@@ -798,8 +807,10 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                         "  cluster: %" PRIuDADDR, func_name, fs_meta->addr, clust);
                     fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                     tsk_fs_attr_run_free(data_run_head);
-                    tsk_list_free(list_seen);
-                    list_seen = NULL;
+                    if (list_seen != NULL) {
+                        tsk_list_free(list_seen);
+                        list_seen = NULL;
+                    }
                     return 1;
                 }
                 clust = nxt;
@@ -809,13 +820,25 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                             "Loop found while processing file\n");
+                    if (data_run_head != NULL ) {
+                      tsk_fs_attr_run_free(data_run_head);
+                      // Make sure to set data_run_head to NULL to prevent a use-after-free
+                      data_run_head = NULL;
+                    }
+                    if (list_seen != NULL) {
+                        tsk_list_free(list_seen);
+                        list_seen = NULL;
+                    }
                     break;
                 }
 
                 if (tsk_list_add(&list_seen, clust)) {
                     fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
-                    tsk_list_free(list_seen);
-                    list_seen = NULL;
+                    tsk_fs_attr_run_free(data_run_head);
+                    if (list_seen != NULL) {
+                        tsk_list_free(list_seen);
+                        list_seen = NULL;
+                    }
                     return 1;
                 }
             }
@@ -826,6 +849,10 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+            if (list_seen != NULL) {
+                tsk_list_free(list_seen);
+                list_seen = NULL;
+            }
             return 1;
         }
 
@@ -835,6 +862,11 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 fs_meta->size, fs_meta->size, roundup(fs_meta->size,
                     fatfs->csize * fs->block_size), 0, 0)) {
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+            tsk_fs_attr_run_free(data_run_head);
+            if (list_seen != NULL) {
+                tsk_list_free(list_seen);
+                list_seen = NULL;
+            }
             return 1;
         }
 

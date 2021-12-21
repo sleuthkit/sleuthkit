@@ -39,16 +39,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(FsContent.class.getName());
-	private volatile String uniquePath;
 	private List<String> metaDataText = null;
-	private volatile FileSystem parentFileSystem;
-
-	/**
-	 * @deprecated Use getFileSystemId instead.
-	 */
-	// TODO: Make private.
-	@Deprecated
-	protected final long fsObjId;
 
 	/**
 	 *
@@ -110,7 +101,6 @@ public abstract class FsContent extends AbstractFile {
 	 *                           system, can be null.
 	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
-	@SuppressWarnings("deprecation")
 	FsContent(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
@@ -131,8 +121,7 @@ public abstract class FsContent extends AbstractFile {
 			String ownerUid,
 			Long osAccountObjId,
 			List<Attribute> fileAttributes) {
-		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
-		this.fsObjId = fsObjId;
+		super(db, objId, dataSourceObjectId, new Long(fsObjId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
 	}
 
 	/**
@@ -140,37 +129,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return the parent file system id
 	 */
-	@SuppressWarnings("deprecation")
 	public long getFileSystemId() {
-		return fsObjId;
-	}
-
-	/**
-	 * Sets the parent file system of this file or directory.
-	 *
-	 * @param parent The parent file system object.
-	 */
-	void setFileSystem(FileSystem parent) {
-		parentFileSystem = parent;
-	}
-
-	/**
-	 * Gets the parent file system of this file or directory.
-	 *
-	 * @return the file system object of the parent
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	@SuppressWarnings("deprecation")
-	public FileSystem getFileSystem() throws TskCoreException {
-		if (parentFileSystem == null) {
-			synchronized (this) {
-				if (parentFileSystem == null) {
-					parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
-				}
-			}
-		}
-		return parentFileSystem;
+		return getFileSystemObjectId().orElse(0L);
 	}
 
 	/**
@@ -258,28 +218,6 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Get the full path to this file or directory, starting with a "/" and the
-	 * image name and then all the other segments in the path.
-	 *
-	 * @return A unique path for this object.
-	 *
-	 * @throws TskCoreException if there is an error querying the case database.
-	 */
-	@Override
-	public String getUniquePath() throws TskCoreException {
-		// It is possible that multiple threads could be doing this calculation
-		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
-		if (uniquePath == null) {
-			StringBuilder sb = new StringBuilder();
-			sb.append(getFileSystem().getUniquePath());
-			sb.append(getParentPath());
-			sb.append(getName());
-			uniquePath = sb.toString();
-		}
-		return uniquePath;
-	}
-
-	/**
 	 * Gets a text-based description of the file's metadata. This is the same
 	 * content as the TSK istat tool produces and is different information for
 	 * each type of file system.
@@ -337,13 +275,19 @@ public abstract class FsContent extends AbstractFile {
 	 *                      representation of this object.
 	 */
 	@Override
-	@SuppressWarnings("deprecation")
 	public String toString(boolean preserveState) {
+		String path = "";
+		try {
+			path = getUniquePath();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error loading unique path for object ID: {0}", this.getId());
+		}
+		
 		return super.toString(preserveState)
 				+ "FsContent [\t" //NON-NLS
-				+ "fsObjId " + fsObjId //NON-NLS
-				+ "\t" + "uniquePath " + uniquePath //NON-NLS
-				+ "\t" + "fileHandle " + fileHandle //NON-NLS
+				+ "fsObjId " + getFileSystemId() //NON-NLS
+				+ "\t" + "uniquePath " + path //NON-NLS
+				+ "\t" + "fileHandle " + getFileHandle() //NON-NLS
 				+ "]\t";
 	}
 

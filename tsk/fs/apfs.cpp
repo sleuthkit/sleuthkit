@@ -345,9 +345,9 @@ APFSFileSystem::APFSFileSystem(const APFSPool& pool,
   }
 }
 
-APFSFileSystem::wrapped_kek::wrapped_kek(Guid&& id,
+APFSFileSystem::wrapped_kek::wrapped_kek(TSKGuid&& id,
                                          const std::unique_ptr<uint8_t[]>& kp)
-    : uuid{std::forward<Guid>(id)} {
+    : uuid{std::forward<TSKGuid>(id)} {
   // Parse KEK
   wrapped_key_parser wp{kp.get()};
 
@@ -384,11 +384,11 @@ APFSFileSystem::APFSFileSystem(const APFSPool& pool,
 // These are the known special recovery UUIDs.  The ones that are commented out
 // are currently supported.
 static const auto unsupported_recovery_keys = {
-    Guid{"c064ebc6-0000-11aa-aa11-00306543ecac"},  // Institutional Recovery
-    Guid{"2fa31400-baff-4de7-ae2a-c3aa6e1fd340"},  // Institutional User
-    // Guid{"ebc6C064-0000-11aa-aa11-00306543ecac"},  // Personal Recovery
-    Guid{"64c0c6eb-0000-11aa-aa11-00306543ecac"},  // iCould Recovery
-    Guid{"ec1c2ad9-b618-4ed6-bd8d-50f361c27507"},  // iCloud User
+    TSKGuid{"c064ebc6-0000-11aa-aa11-00306543ecac"},  // Institutional Recovery
+    TSKGuid{"2fa31400-baff-4de7-ae2a-c3aa6e1fd340"},  // Institutional User
+    // TSKGuid{"ebc6C064-0000-11aa-aa11-00306543ecac"},  // Personal Recovery
+    TSKGuid{"64c0c6eb-0000-11aa-aa11-00306543ecac"},  // iCould Recovery
+    TSKGuid{"ec1c2ad9-b618-4ed6-bd8d-50f361c27507"},  // iCloud User
 };
 
 void APFSFileSystem::init_crypto_info() {
@@ -1000,7 +1000,7 @@ APFSKeybag::APFSKeybag(const APFSPool& pool, const apfs_block_num block_num,
   }
 }
 
-std::unique_ptr<uint8_t[]> APFSKeybag::get_key(const Guid& uuid,
+std::unique_ptr<uint8_t[]> APFSKeybag::get_key(const TSKGuid& uuid,
                                                uint16_t type) const {
   if (kb()->num_entries == 0) {
     return nullptr;

@@ -2,6 +2,7 @@
     <info organisation="org.sleuthkit" module="SleuthkitCaseUco"/>
     <dependencies>		
         <dependency org="com.google.code.gson" name="gson" rev="2.8.5"/>
+        <dependency org="junit" name="junit" rev="4.12"/>
     </dependencies>
 </ivy-module>
 

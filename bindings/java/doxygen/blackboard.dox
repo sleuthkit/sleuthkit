@@ -6,7 +6,7 @@ The blackboard allows modules (in Autopsy or other frameworks) to communicate an
 
 \subsection jni_bb_concepts Concepts
 
-The blackboard is a collection of <em>artifacts</em>.  Each artifact has a type, such as web browser history, EXIF, or GPS route. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE and the \ref artifact_catalog_page "artifact catalog") and you can also \ref jni_bb_artifact2 "create your own". 
+The blackboard is a collection of <em>artifacts</em>.  Each artifact is a either a data artifact or an analysis result. In general, data artifacts record data found in the image (ex: a call log entry) while analysis results are more subjective (ex: a file matching a user-created interesting file set rule). Each artifact has a type, such as web browser history, EXIF, or GPS route. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE and the \ref artifact_catalog_page "artifact catalog") and you can also \ref jni_bb_artifact2 "create your own". 
 
 Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, created date, or device make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also \ref jni_bb_artifact2 "create your own".  
 
@@ -22,19 +22,30 @@ The second special type of artifact is the TSK_ASSOCIATED_OBJECT. All artifacts 
 
 \section jni_bb_access Accessing the Blackboard
 
-Modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.
+Modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase, org.sleuthkit.datamodel.Blackboard, or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.
 
 \subsection jni_bb_access_post Posting to the Blackboard
 
-The first thing you need to do is create the artifact.  All artifacts must be associated with a Content object.  You can do this by creating an instance of org.sleuthkit.datamodel.BlackboardArtifact by calling either:
-- org.sleuthkit.datamodel.Content.newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) on the Content object you are adding the artifact to
-- org.sleuthkit.datamodel.SleuthkitCase.newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) or a variation.
+First you need to decide what type of artifact you are making and what category it is. Artifact types fall into two categories:
+<ul>
+<li>Analysis Result: Result from an analysis technique on a given object with a given configuration. Includes Conclusion, Relevance Score, and Confidence.
+<li>Data Artifact: Data that was originally embedded by an application/OS in a file or other data container.
+</ul>
+Consult the \ref artifact_catalog_page "artifact catalog" for a list of built-in types and what categories they belong to. If you are creating a data artifact, you can optionally add an OS account to it. If you are creating an analysis result, you can optionally add a score and other notes about the result. Note that you must use the category defined in the artifact catalog for each type or you will get an error. For example, you can't create a web bookmark analysis result. 
 
-With either of these approaches, the artifact is created in the database immediately. 
+There are may ways to create artifacts, but we will focus on creating them through the Blackboard class or directly through a Content object. Regardless of how they are created, all artifacts must be associated with a Content object. 
+
+<ul>
+<li>org.sleuthkit.datamodel.AbstractContent.newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId)
+<li>org.sleuthkit.datamodel.AbstractContent.newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList)
+<li>org.sleuthkit.datamodel.Blackboard.newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId, Collection<BlackboardAttribute> attributes, Long osAccountId)
+<li>org.sleuthkit.datamodel.Blackboard.newAnalysisResult(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score, 
+			String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, CaseDbTransaction transaction)
+</ul>
+
+Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. Attributes can either be added when creating the artifact using the methods in the above list or at a later time using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). Note that you should not manually add attributes of type JSON for standard attribute types such as TSK_ATTACHMENTS or TSK_GEO_TRACKPOINTS. Instead, you should use the helper classes in org.sleuthkit.datamodel.blackboardutils.attributes or org.sleuthkit.datamodel.blackboardutils to create your artifacts.
 
 If you want to create an attribute in the TSK_GEN_INFO artifact, use org.sleuthkit.datamodel.Content.getGenInfoArtifact() to ensure that you do not create a second TSK_GEN_INFO artifact for the file and to ensure that you used the cached version (which will be faster for you). 
-
-Next, you need to make attributes and add them to the artifact.  Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. After you create one with the correct type and value, you add it to the artifact using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). Note that you should not manually add attributes of type JSON for standard attribute types such as TSK_ATTACHMENTS or TSK_GEO_TRACKPOINTS. Instead, you should use the helper classes in org.sleuthkit.datamodel.blackboardutils.attributes or org.sleuthkit.datamodel.blackboardutils to create your artifacts.
 
 \subsubsection jni_bb_artifact2 Creating Multiple Artifacts or Multiple Attributes
 
@@ -98,7 +109,11 @@ We achieve this relationship by creating a TSK_ASSOCIATED_OBJECT artifact on the
  
 \subsection jni_bb_query  Querying the Blackboard
 
+You can find artifacts by querying the blackboard in a variety of ways. It is preferable to use the methods that specifically return either data artifacts or analysis results since these will contain the complete information for the artifact. You can use the more general "Artifact" or "BlackboardArtifact" methods to get both, however these results will only contain the blackboard attributes and not any associated OS account or score/justification.
+
 You can find artifacts  using a variety of ways:
+- org.sleuthkit.datamodel.Content.getAllDataArtifacts() to get all data artifacts for a specific Content object.
+- org.sleuthkit.datamodel.Content.getAnalysisResults() to get analysis results of a given type for a specific Content object.
 - org.sleuthkit.datamodel.Content.getArtifacts() in its various forms to get a specific type of artifact for a specific Content object. 
 - org.sleuthkit.datamodel.Content.getGenInfoArtifact() to get the TSK_GEN_INFO artifact for a specific content object.
 - org.sleuthkit.datamodel.SleuthkitCase.getBlackboardArtifacts() in its various forms to get artifacts based on some combination of artifact type, attribute type and value, and content object.
@@ -112,7 +127,7 @@ in the Autopsy UI alongside the built in artifacts and will also appear in the r
 \subsection jni_bb_custom_make Making Custom Artifacts and Attributes
 
 
-org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
+org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display name, unique name and category (data artifact or analysis result) and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
 
 To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the artifact type and get its ID. Like artifacts, you must create the attribute type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). Your attribute will be a name-value pair where the value is of the type you specified when creating it. The current types are: String, Integer, Long, Double, Byte, Datetime, and JSON. If you believe you need to create an attribute with type JSON, please read the 
 \ref jni_bb_json_attr_overview "overview" and \ref jni_bb_json_attr "tutorial" sections below. 

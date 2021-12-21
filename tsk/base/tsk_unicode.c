@@ -43,6 +43,7 @@
  */
 
 #include "tsk_base_i.h"
+#include <wchar.h>
 
 /* Some fundamental constants */
 typedef unsigned long UTF32;    /* at least 32 bits */
@@ -150,12 +151,15 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
     TSKConversionResult result = TSKconversionOK;
     const UTF16 *source = *sourceStart;
     UTF8 *target = *targetStart;
+
     while (source < sourceEnd) {
         UTF32 ch;
         unsigned short bytesToWrite = 0;
         const UTF32 byteMask = 0xBF;
         const UTF32 byteMark = 0x80;
         const UTF16 *oldSource = source;        /* In case we have to back up because of target overflow. */
+
+        // Need at least 2 bytes
         ch = tsk_getu16(endian, (uint8_t *) source);
         source++;
 
@@ -163,6 +167,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
             if (source < sourceEnd) {
+                // Need at least 2 bytes
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) source);
                 ++source;
 
@@ -565,6 +570,50 @@ tsk_cleanupUTF8(char *source, const char replacement)
         cur_idx += length;
     }
 }
+
+
+/**
+ * Cleans up the passed in string to replace invalid
+ * UTF-16 values with the passed in character.
+ * @param endian Ordering that data is stored in
+ * @param source String to be cleaned up
+ * @param source_len Number of wchar_t characters in source
+ * @param replacement Character to insert into source as needed.
+ */
+void
+tsk_cleanupUTF16(TSK_ENDIAN_ENUM endian, wchar_t *source, size_t source_len, const wchar_t replacement) {
+
+    size_t cur_idx = 0;
+    while (cur_idx < source_len) {
+        UTF32 ch = tsk_getu16(endian, (uint8_t *) &source[cur_idx]);
+
+        /* If we have a surrogate pair, check out the high part. */
+        if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+            /* If the 16 bits following the high surrogate are in the source buffer... */
+            if (cur_idx + 1 < source_len) {
+                UTF32 ch2 = tsk_getu16(endian, (uint8_t *) &source[cur_idx+1]);
+                
+                /* If it's a low surrogate, we're good. */
+                if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
+                    // all good, use both
+                    cur_idx++;
+                }
+                else {
+                    source[cur_idx] = replacement;
+                }
+            }
+            else {   /* We don't have the 16 bits following the high surrogate. */
+                source[cur_idx] = replacement;
+            }
+        }
+        /* UTF-16 surrogate values are illegal in UTF-32 */
+        else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+            source[cur_idx] = replacement;
+        }
+        cur_idx++;
+    }
+}
+
 
 /* --------------------------------------------------------------------- */
 

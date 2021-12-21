@@ -22,15 +22,14 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Attributes are a name-value pairs. Abstract Attribute provides the base
- * functionality for a name value pair with type safety (analogous to a C union)
- *
+ * An abstract base class for attributes as name-value pairs with type safety.
+ * The attribute type field indicates which one of the value fields is valid.
  */
 public abstract class AbstractAttribute {
 
-	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray(); 
+	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
-	private BlackboardAttribute.Type attributeType;
+	private final BlackboardAttribute.Type attributeType;
 
 	private final int valueInt;
 	private final long valueLong;
@@ -40,10 +39,8 @@ public abstract class AbstractAttribute {
 
 	private SleuthkitCase sleuthkitCase;
 
-	
 	/**
-	 * Constructs an attribute with an integer value. The attribute should be
-	 * added to an appropriate artifact.
+	 * Constructs an attribute with an integer value.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param valueInt      The attribute value.
@@ -64,10 +61,8 @@ public abstract class AbstractAttribute {
 		this.valueBytes = new byte[0];
 	}
 
-
 	/**
-	 * Constructs an attribute with a long/datetime value. The attribute should
-	 * be added to an appropriate artifact.
+	 * Constructs an attribute with a long/datetime value.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param valueLong     The attribute value.
@@ -91,10 +86,8 @@ public abstract class AbstractAttribute {
 		this.valueBytes = new byte[0];
 	}
 
-
 	/**
-	 * Constructs an attribute with a double value. The attribute should be
-	 * added to an appropriate artifact.
+	 * Constructs an attribute with a double value.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param valueDouble   The attribute value.
@@ -115,10 +108,8 @@ public abstract class AbstractAttribute {
 		this.valueBytes = new byte[0];
 	}
 
-
 	/**
-	 * Constructs an attribute with a string value. The attribute should be
-	 * added to an appropriate artifact.
+	 * Constructs an attribute with a string value.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param valueString   The attribute value.
@@ -144,10 +135,8 @@ public abstract class AbstractAttribute {
 		this.valueBytes = new byte[0];
 	}
 
-
 	/**
-	 * Constructs an attribute with a byte array value. The attribute should be
-	 * added to an appropriate artifact.
+	 * Constructs an attribute with a byte array value.
 	 *
 	 * @param attributeType The attribute type.
 	 * @param valueBytes    The attribute value.
@@ -173,19 +162,17 @@ public abstract class AbstractAttribute {
 	}
 
 	/**
-	 * Constructs an artifact attribute. To be used when creating an attribute
-	 * based on a query of the blackboard _attributes table in the case
-	 * database.
+	 * Constructs an attribute.
 	 *
-	 * @param attributeTypeID  The attribute type id. 
-	 * @param valueType        The attribute value type.
-	 * @param valueInt         The value from the the value_int32 column.
-	 * @param valueLong        The value from the the value_int64 column.
-	 * @param valueDouble      The value from the the value_double column.
-	 * @param valueString      The value from the the value_text column.
-	 * @param valueBytes       The value from the the value_byte column.
-	 * @param sleuthkitCase    A reference to the SleuthkitCase object
-	 *                         representing the case database.
+	 * @param attributeTypeID The attribute type id.
+	 * @param valueType       The attribute value type.
+	 * @param valueInt        The value from the the value_int32 column.
+	 * @param valueLong       The value from the the value_int64 column.
+	 * @param valueDouble     The value from the the value_double column.
+	 * @param valueString     The value from the the value_text column.
+	 * @param valueBytes      The value from the the value_byte column.
+	 * @param sleuthkitCase   A reference to the SleuthkitCase object
+	 *                        representing the case database.
 	 */
 	AbstractAttribute(BlackboardAttribute.Type attributeType,
 			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
@@ -226,13 +213,13 @@ public abstract class AbstractAttribute {
 					}
 				}
 				return Integer.toString(getValueInt());
-			case LONG: 
+			case LONG:
 				return Long.toString(getValueLong());
 			case DOUBLE:
 				return Double.toString(getValueDouble());
 			case BYTE:
 				return bytesToHexString(getValueBytes());
-			case DATETIME: 
+			case DATETIME:
 				// once we have TSK timezone, that should be used here.
 				return TimeUtilities.epochToTime(getValueLong());
 			case JSON: {
@@ -252,7 +239,7 @@ public abstract class AbstractAttribute {
 	}
 
 	/**
-	 * Gets the value type.
+	 * Gets the value type of this attribute.
 	 *
 	 * @return The value type
 	 */
@@ -311,14 +298,19 @@ public abstract class AbstractAttribute {
 		return Arrays.copyOf(valueBytes, valueBytes.length);
 	}
 
-
+	/**
+	 * Gets the reference to the SleuthkitCase object that represents the case
+	 * database where this attribute is stored.
+	 *
+	 * @return A reference to a SleuthkitCase object.
+	 */
 	SleuthkitCase getCaseDatabase() {
 		return this.sleuthkitCase;
 	}
-	
+
 	/**
 	 * Sets the reference to the SleuthkitCase object that represents the case
-	 * database.
+	 * database where this attribute is stored.
 	 *
 	 * @param sleuthkitCase A reference to a SleuthkitCase object.
 	 */
@@ -343,7 +335,7 @@ public abstract class AbstractAttribute {
 		}
 		return new String(hexChars);
 	}
-	
+
 	/**
 	 * Replace all NUL characters in the string with the SUB character
 	 *
@@ -351,19 +343,25 @@ public abstract class AbstractAttribute {
 	 *
 	 * @return The output string.
 	 */
-	final String replaceNulls(String text) {
+	static String replaceNulls(String text) {
 		return text.replace((char) 0x00, (char) 0x1A);
 	}
 
-
-	boolean isAttributeEquals(Object that) {
+	/**
+	 * Checks whether all of the the value fields of this attribute are equal to
+	 * that of another attribute.
+	 *
+	 * @param that Another attribute.
+	 *
+	 * @return True or false.
+	 */
+	boolean areValuesEqual(Object that) {
 		if (that instanceof AbstractAttribute) {
 			AbstractAttribute other = (AbstractAttribute) that;
 			Object[] thisObject = new Object[]{this.getAttributeType(), this.getValueInt(), this.getValueLong(), this.getValueDouble(),
 				this.getValueString(), this.getValueBytes()};
 			Object[] otherObject = new Object[]{other.getAttributeType(), other.getValueInt(), other.getValueLong(), other.getValueDouble(),
 				other.getValueString(), other.getValueBytes()};
-
 			return Objects.deepEquals(thisObject, otherObject);
 		} else {
 			return false;

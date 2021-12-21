@@ -28,10 +28,10 @@ using std::vector;
 using std::string;
 
 /**
- * Keep these values in sync with CURRENT_DB_SCHEMA_VERSION in SleuthkitCase.java
- */
+* Do not change these values - the schema is no longer being updated in this code and does not match the current version in SleuthkitCase.java.
+*/
 #define TSK_SCHEMA_VER 8
-#define TSK_SCHEMA_MINOR_VER 6
+#define TSK_SCHEMA_MINOR_VER 4
 
 /**
  * Values for the type column in the tsk_objects table. 

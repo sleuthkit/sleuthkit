@@ -558,7 +558,7 @@ main(int argc, char **argv1)
 
         if (hasTskLogicalImager()) {
             ReportUtil::consoleOutput(stdout, "Skipping drive %s because tsk_logical_imager.exe exists at the root directory.\n", imageShortName.c_str());
-            img->close(img);
+            tsk_img_close(img);
             TskHelper::getInstance().reset();
             continue; // Don't process a drive with /tsk_logicial_image.exe at the root
         }
@@ -624,7 +624,7 @@ main(int argc, char **argv1)
 
         if (closeImgNow) {
             // close the image, if not creating VHD.
-            img->close(img);
+            tsk_img_close(img);
         }
     }
 
@@ -644,7 +644,7 @@ main(int argc, char **argv1)
                 }
             }
         }
-        img->close(img);
+        tsk_img_close(img);
     }
 
     if (config) {

@@ -1,0 +1,118 @@
+/*! \page mod_os_accounts_page OS Accounts and Realms
+
+\section os_acct_overview Overview
+
+This page outlines some of the core concepts around OS accounts and realms and how they are stored.
+OS accounts are unique data types in the TSK datamodel and have more complexity than other types because
+we often will not fully understand the details when creating the OS accounts early in the processing and will 
+need to update them at various points as analysis continues. 
+
+\section os_acct_basics Basic Terminology
+
+- An <b>OS account</b> allows a person to do some action or access some resource on a device. 
+- A <b>realm</b> is the scope in which the OS account is defined. A realm can be scoped to a single host (i.e., for accounts that exist only on a single host) or to a network domain (such as Windows domain accounts). 
+
+
+\section os_acct_challenges OS Account Challenges
+
+A key challenge with OS accounts is that we do not know the account information until we have started to parse files, and the more detailed information will only come from OS configuration files. It is also possible that we may never know the details if we have only a media card.  
+
+As a user adds a disk image to the case, we may learn about addresses from the files. But, we won't yet know the account name or if it is domain-scoped or local-scoped. So, the basic properties of the realm and account may change as more data is ingested and analyzed. This could even result in needing to merge realms and accounts.
+
+Another difference from other data types in the TSK data model is that OS accounts may span multiple data sources if they are domain accounts. Therefore, they are not "children" of a data source and exist outside of the usual tree model in TSK. 
+
+\section os_acct_realm OS Account Realms
+
+An org.sleuthkit.datamodel.OsAccountRealm represents the scope of a set of OS accounts. A realm's scope is defined by org.sleuthkit.datamodel.OsAccountRealm.RealmScope. By default, the scope is set to host-level and the org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence is set to inferred. As more is learned, the confidence and scope can be made more specific. 
+
+A realm has two core fields:
+- Address that the OS uses internally, such as part of a Windows SID
+- Name that is what users more often see
+
+When searching for realms, the address has priority over the name. Often times with Windows systems, we may have a realm address from SIDs but not a specific realm name. 
+
+Realms are managed by org.sleuthkit.datamodel.OsAccountRealmManager.
+
+
+\section os_acct_acct OS Accounts
+
+An org.sleuthkit.datamodel.OsAccount represents an account that was configured in an operating system. It must be defined within the scope of an OsAccountRealm.  
+
+An OS account has two core fields:
+- Login name that the user enters (such as jdoe)
+- Address that the operating system uses internally (such as a UID of 0 or a Windows SID) 
+
+OS accounts also have other properties, such as full name, creation date, etc., that can be set after the account is created. 
+
+OS accounts are managed by org.sleuthkit.datamodel.OsAccountManager.
+
+\subsection os_acct_acct_os Supported Operating Systems
+
+At this point, APIs exist for only Windows accounts, such as: 
+- org.sleuthkit.datamodel.OsAccountManager.newWindowsOsAccount()
+- org.sleuthkit.datamodel.OsAccountManager.getWindowsOsAccount()
+
+The underlying database schema supports other operating systems, but the utility APIs do not exist to populate them other than with Windows SIDs. These methods may be added in the future.
+
+\section os_account_storing Storing Original Account Data
+
+We recommend that the OS account addresses or names that were parsed from the data source be saved alongside any references to OsAccount objects. For example, the case database stores the UID or SID that was stored in a file system for a file in addition to the reference to the OsAccount object that is associated with that address.  This helps to ensure the original data is preserved in case an Os account can't be created, gets deleted, or is incorrectly merged. 
+
+
+\section os_acct_example Example Creation & Update Code
+
+There are three unique elements to creating and updating OS accounts when adding data to the case database:
+
+<ol>
+<li>When creating and updating OS accounts in the case database, you need to avoid some pitfalls involving doing a lot of work in a transaction. Why? For single-user cases, if you have created a org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction, you should never call another database access method unless it allows you to pass in the CaseDbTransaction you are using. Otherwise, the method that you call will attempt to create its own transaction and because you already have the underlying SQLite case database locked, the called method will block forever waiting for a lock it cannot obtain. For a multi-user case, you will run the risk of attempting to create OS accounts in the case database that would duplicate accounts created by another user on another machine. In this scenario, uniqueness constraints will cause your entire transaction to fail and everything you have done up to that point will be rolled back and will have to be redone.
+
+This means that if you want to use a CaseDbTransation to add a lot of files or artifacts associated with OS accounts, you'll need to:
+<ol type="a">
+<li>Pre-process the data to identify what OS accounts you need to create or look up 
+<li>Look up or create the OS accounts in individual transactions 
+<li>Start a new transaction and add the files or artifacts with the references to the OS accounts
+</ol>
+
+<li>You need to check if you have more information than what is already stored (e.g., maybe the realm name was unknown).
+
+<li>You need to record that an OS account was referenced on a given data source because OS accounts are stored in parallel to data sources and are not children of them.
+</ol> 
+
+Here are some examples.
+
+\subsection os_acct_ex_get Adding a File or Data Artifact
+
+If you pass in an OsAccount to the various methods to add files and data artifacts, then the database will make the association and record the occurence. All you need to do is get the account.  You can do that with org.sleuthkit.datamodel.OsAccountManager.getWindowsOsAccount(). Note that sometimes that call will fail if the SID associated with the file is for a group, for example, if the OS account has admin rights. 
+
+If you get an OsAccount, you can try to update it if you think you may have new information. 
+
+Here is example pseudo-code:
+
+\code
+OsAccount osAcct = null;
+
+try {
+    Optional<OsAccount> osAcctOpt = getWindowsOsAccount("S-....", "jdoe", "ACME", host);
+    if (osAcctOpt.isPresent(())  {
+            osAcct = osAcctOpt.get();
+            updateWindowsOsAccount(osAccount, "S-.....", "jdoe", "ACME", host);
+    }
+    else {
+            osAcct = newWindowsOsAccount("S-....", "jdoe", "ACME", host)
+    }
+}
+catch (NotUserSIDException ex) {
+    // Ignore this SID
+}
+
+// Pass in osAcct when making artifacts and files 
+\endcode
+
+\subsection os_acct_ex_update Parsing OS Configuration Data
+
+When parsing the Windows registry or other OS Configuration file, you may find updated information about OS accounts.  You can call various org.sleuthkit.datamodel.OsAccountManager methods to get and update the accounts.  When adding extended attributes, you can choose to limit the scope of the attribute to the single host being parsed or to the domain-level.  
+
+You should make sure to call org.sleuthkit.datamodel.OsAccountManager.newOsAccountInstance() to ensure it is recorded that there was at least some reference to account on that data source. Otherwise, it will not be associated with the data source unless there were also files or artifacts that were mapped to the OS account. 
+
+
+*/

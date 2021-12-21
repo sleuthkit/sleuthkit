@@ -469,11 +469,21 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 size_t rec_off;
                 hfs_btree_key_ext *key;
 
+                // Make sure node is large enough, note that (rec + 1) * 2 is an offset
+                // relative to the end of node
+                if ((rec + 1) * 2 > (int) nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_ext_find_extent_record: offset of record %d in leaf node %d too small (%"
+                        PRIu16 ")", rec, cur_node, nodesize);
+                    free(node);
+                    return 1;
+                }
                 // get the record offset in the node
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off + sizeof(hfs_btree_key_ext) > nodesize) {
+                if (rec_off > nodesize - sizeof(hfs_btree_key_ext)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%d vs %"
@@ -502,7 +512,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     int keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
                             key->key_len), &(hfs->extents_header));
-                    if (rec_off + keylen > nodesize) {
+                    if ((nodesize < 4) || (keylen > nodesize - 4) || (rec_off >= nodesize - 4 - keylen)) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
                             ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%d vs %"
@@ -554,11 +564,22 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 int keylen;
                 TSK_FS_ATTR_RUN *attr_run;
 
+                // Make sure node is large enough, note that (rec + 1) * 2 is an offset
+                // relative to the end of node
+                if ((rec + 1) * 2 > (int) nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too small (%"
+                        PRIu16 ")", rec, cur_node, nodesize);
+                    free(node);
+                    return 1;
+                }
                 // get the record offset in the node
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off > nodesize) {
+
+                if (rec_off >= nodesize - sizeof(hfs_btree_key_ext)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too large (%d vs %"
@@ -687,11 +708,17 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
  */
 int
 hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
-    const hfs_btree_key_cat * key2)
+    int keylen1, const hfs_btree_key_cat * key2)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
     uint32_t cnid1, cnid2;
 
+    if (keylen1 < 6) {
+        // Note that it would be better to return an error value here
+        // but the current function interface does not support this
+        // Also see issue #2365
+        return -1;
+    }
     cnid1 = tsk_getu32(fs->endian, key1->parent_cnid);
     cnid2 = tsk_getu32(fs->endian, key2->parent_cnid);
 
@@ -700,7 +727,7 @@ hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
     if (cnid1 > cnid2)
         return 1;
 
-    return hfs_unicode_compare(hfs, &key1->name, &key2->name);
+    return hfs_unicode_compare(hfs, &key1->name, keylen1 - 6, &key2->name);
 }
 
 
@@ -821,11 +848,23 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 uint8_t retval;
                 int keylen;
 
+                // Make sure node is large enough, note that (rec + 1) * 2 is an offset
+                // relative to the end of node
+                if ((rec + 1) * 2 > (int) nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: offset of record %d in leaf node %d too small (%"
+                        PRIu16 ")", rec, cur_node, nodesize);
+                    free(node);
+                    return 1;
+                }
                 // get the record offset in the node
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off > nodesize) {
+
+                // Need at least 2 bytes for key_len
+                if (rec_off >= nodesize - 2) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in index node %d too large (%d vs %"
@@ -838,10 +877,11 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 key = (hfs_btree_key_cat *) & node[rec_off];
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
 
-                if (keylen > nodesize - rec_off) {
+                // Want a key of at least 6 bytes, the size of the first 2 members of hfs_btree_key_cat
+                if ((keylen < 6) || (keylen > nodesize - rec_off)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: length of key %d in index node %d too large (%d vs %"
+                        ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %d < %"
                         PRIu16 ")", rec, cur_node, keylen, (nodesize - rec_off));
                     free(node);
                     return 1;
@@ -859,7 +899,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
 
                 /* save the info from this record unless it is too big */
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, key,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, key, keylen, nodesize,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_ERR) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -931,11 +971,23 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 uint8_t retval;
                 int keylen;
 
+                // Make sure node is large enough, note that (rec + 1) * 2 is an offset
+                // relative to the end of node
+                if ((rec + 1) * 2 > (int) nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: offset of record %d in leaf node %d too small (%"
+                        PRIu16 ")", rec, cur_node, nodesize);
+                    free(node);
+                    return 1;
+                }
                 // get the record offset in the node
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off > nodesize) {
+
+                // Need at least 2 bytes for key_len
+                if (rec_off >= nodesize - 2) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%d vs %"
@@ -948,10 +1000,11 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 key = (hfs_btree_key_cat *) & node[rec_off];
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
 
-                if (keylen > nodesize - rec_off) {
+                // Want a key of at least 6 bytes, the size of the first 2 members of hfs_btree_key_cat
+                if ((keylen < 6) || (keylen > nodesize - rec_off)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: length of key %d in leaf node %d too large (%d vs %"
+                        ("hfs_cat_traverse: length of key %d in leaf node %d out of bounds (6 < %d < %"
                         PRIu16 ")", rec, cur_node, keylen, nodesize);
                     free(node);
                     return 1;
@@ -967,8 +1020,10 @@ hfs_cat_traverse(HFS_INFO * hfs,
                  */
                 //                rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
+                // The nodesize passed to the callback should contain the available node
+                // data size relative from the start of the key.
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen, nodesize - rec_off,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_LEAF_STOP) {
                     is_done = 1;
@@ -1014,7 +1069,7 @@ typedef struct {
 
 static uint8_t
 hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t node_size,
     TSK_OFF_T key_off, void *ptr)
 {
     HFS_CAT_GET_RECORD_OFFSET_DATA *offset_data = (HFS_CAT_GET_RECORD_OFFSET_DATA *)ptr;
@@ -1029,14 +1084,14 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
             tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid));
 
     if (level_type == HFS_BT_NODE_TYPE_IDX) {
-        int diff = hfs_cat_compare_keys(hfs, cur_key, targ_key);
+        int diff = hfs_cat_compare_keys(hfs, cur_key, cur_keylen, targ_key);
         if (diff < 0)
             return HFS_BTREE_CB_IDX_LT;
         else
             return HFS_BTREE_CB_IDX_EQGT;
     }
     else {
-        int diff = hfs_cat_compare_keys(hfs, cur_key, targ_key);
+        int diff = hfs_cat_compare_keys(hfs, cur_key, cur_keylen, targ_key);
 
         // see if this record is for our file or if we passed the interesting entries
         if (diff < 0) {
@@ -1609,9 +1664,15 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 
 static uint8_t
 hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t node_size,
     TSK_OFF_T key_off, void *ptr)
 {
+    if (cur_keylen < 6) {
+        // Note that it would be better to return an error value here
+        // but the current function interface does not support this
+        // Also see issue #2365
+        return -1;
+    }
     // NOTE: This assumes that the biggest inum is the last one that we
     // see.  the traverse method does not currently promise that as part of
     // its callback "contract".
@@ -3854,6 +3915,13 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         return 0;
     }
 
+    if (attrFile.nodeSize < sizeof(hfs_btree_node)) {
+        error_returned
+            ("hfs_load_extended_attrs: node size too small");
+        close_attr_file(&attrFile);
+        return 1;
+    }
+
     // A place to hold one node worth of data
     nodeData = (uint8_t *) malloc(attrFile.nodeSize);
     if (nodeData == NULL) {
@@ -3947,13 +4015,19 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             uint8_t *recData;   // pointer to the data part of the record
             uint32_t keyFileID;
 
+            if ((attrFile.nodeSize < 2) || (recIndx > ((attrFile.nodeSize - 2) / 2))) {
+                error_detected(TSK_ERR_FS_READ,
+                    "hfs_load_extended_attrs: Unable to process attribute (recIndx exceeds attrFile.nodeSize)");
+                goto on_error;
+            }
+
             // The offset to the record is stored in table at end of node
             uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
             //uint8_t * nextRecOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+2)];
 
             // make sure the record and first fields are in the buffer
-            if (recOffset + 14 > attrFile.nodeSize) {
+            if ((attrFile.nodeSize < 14) || (recOffset >= attrFile.nodeSize - 14)) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (offset too big)");
                 goto on_error;
@@ -4010,7 +4084,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             // make sure the fields we care about are still in the buffer
             // +2 is because key_len doesn't include its own length
             // +4 is because of the amount of data we read from the data
-            if (recOffset + keyLength + 2 + 4 > attrFile.nodeSize) {
+            if ((keyLength > attrFile.nodeSize - 2 - 4) || (recOffset >= attrFile.nodeSize - 2 - 4 - keyLength)) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute");
                 goto on_error;
@@ -4058,6 +4132,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
 
+            if ((attrFile.nodeSize < 2) || (recIndx > ((attrFile.nodeSize - 2) / 2))) {
+                error_detected(TSK_ERR_FS_READ,
+                    "hfs_load_extended_attrs: Unable to process attribute (recIndx exceeds attrFile.nodeSize)");
+                goto on_error;
+            }
             // The offset to the record is stored in table at end of node
             uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
@@ -4067,7 +4146,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             uint32_t keyFileID;
 
             // make sure the record and first fields are in the buffer
-            if (recOffset + 14 > attrFile.nodeSize) {
+            if (recOffset >= attrFile.nodeSize - 14) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (offset too big)");
                 goto on_error;
@@ -4120,7 +4199,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // make sure the fields we care about are still in the buffer
                 // +2 because key_len doesn't include its own length
                 // +16 for the amount of data we'll read from data
-                if (recOffset + keyLength + 2 + 16 > attrFile.nodeSize) {
+                if ((attrFile.nodeSize < 2 + 16) || (keyLength > attrFile.nodeSize - 2 - 16) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength)) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;
@@ -4150,7 +4229,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Check the attribute fits in the node
                 //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
-                if (recOffset + keyLength + 2 + attributeLength > attrFile.nodeSize) {
+                if ((attributeLength > attrFile.nodeSize - 2 - 16 - keyLength) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength - attributeLength)) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;

@@ -828,7 +828,7 @@ class APFSKeybag : public APFSObject {
   }
 
   using key = struct {
-    Guid uuid;
+    TSKGuid uuid;
     std::unique_ptr<uint8_t[]> data;
     uint16_t type;
   };
@@ -837,7 +837,7 @@ class APFSKeybag : public APFSObject {
   APFSKeybag(const APFSPool &pool, const apfs_block_num block_num,
              const uint8_t *key, const uint8_t *key2 = nullptr);
 
-  std::unique_ptr<uint8_t[]> get_key(const Guid &uuid, uint16_t type) const;
+  std::unique_ptr<uint8_t[]> get_key(const TSKGuid &uuid, uint16_t type) const;
 
   std::vector<key> get_keys() const;
 };
@@ -876,7 +876,7 @@ class APFSSuperblock : public APFSObject {
     return spaceman().num_free_blocks();
   }
 
-  inline Guid uuid() const { return {sb()->uuid}; }
+  inline TSKGuid uuid() const { return {sb()->uuid}; }
 
   const std::vector<apfs_block_num> volume_blocks() const;
   const std::vector<apfs_block_num> sm_bitmap_blocks() const;
@@ -961,12 +961,12 @@ class APFSFileSystem : public APFSObject {
   };
 
   struct wrapped_kek {
-    Guid uuid;
+    TSKGuid uuid;
     uint8_t data[0x28];
     uint64_t iterations;
     uint64_t flags;
     uint8_t salt[0x10];
-    wrapped_kek(Guid &&uuid, const std::unique_ptr<uint8_t[]> &);
+    wrapped_kek(TSKGuid &&uuid, const std::unique_ptr<uint8_t[]> &);
 
     inline bool hw_crypt() const noexcept {
       // If this bit is set, some sort of hardware encryption is used.
@@ -1032,7 +1032,7 @@ class APFSFileSystem : public APFSObject {
 
   bool unlock(const std::string &password) noexcept;
 
-  inline Guid uuid() const noexcept { return {fs()->uuid}; }
+  inline TSKGuid uuid() const noexcept { return {fs()->uuid}; }
 
   inline std::string name() const { return {fs()->name}; }
 

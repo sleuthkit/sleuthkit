@@ -162,7 +162,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
         inum = fs->journ_inum;
@@ -179,7 +179,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
     }
@@ -188,8 +188,8 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Inode value is too large for image (%" PRIuINUM ")\n",
             fs->last_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -197,16 +197,16 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Inode value is too small for image (%" PRIuINUM ")\n",
             fs->first_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
     if (fs->jopen == NULL) {
         tsk_fprintf(stderr,
             "Journal support does not exist for this file system\n");
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -214,26 +214,26 @@ main(int argc, char **argv1)
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
         fprintf(stderr,
             "jcat: error setting stdout to binary: %s", strerror(errno));
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 #endif
 
     if (fs->jopen(fs, inum)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
     if (fs->jblk_walk(fs, blk, blk, 0, 0, NULL)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
     exit(0);
 }
