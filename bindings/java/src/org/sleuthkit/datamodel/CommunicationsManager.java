@@ -534,8 +534,8 @@ public final class CommunicationsManager {
 		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
 		if (accountArtifact == null) {
 			List<BlackboardAttribute> attributes = new ArrayList<>();
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()));
-			attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID, moduleName, accountUniqueID));
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.Type.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()));
+			attributes.add(new BlackboardAttribute(BlackboardAttribute.Type.TSK_ID, moduleName, accountUniqueID));
 			if (originalAttrs != null) {
 				attributes.addAll(originalAttrs);
 			}
