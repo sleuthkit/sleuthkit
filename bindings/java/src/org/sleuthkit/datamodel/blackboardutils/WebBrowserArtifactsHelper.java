@@ -328,7 +328,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 		Optional<Long> ingestJobId = getIngestJobId();
 		if (StringUtils.isNotEmpty(email)) {
 			try {
-				commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent(), ingestJobId.orElse(null));
+				commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent(), null, ingestJobId.orElse(null));
 			} catch (InvalidAccountIDException ex) {
 				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", email), ex);
 			}
@@ -336,7 +336,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		if (StringUtils.isNotEmpty(phoneNumber)) {
 			try {
-				commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent(), ingestJobId.orElse(null));
+				commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent(), null, ingestJobId.orElse(null));
 			} catch (InvalidAccountIDException ex) {
 				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", phoneNumber), ex);
 			}
