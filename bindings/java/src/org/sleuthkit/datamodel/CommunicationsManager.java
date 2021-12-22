@@ -248,7 +248,7 @@ public final class CommunicationsManager {
 	 *                        address).
 	 * @param moduleName      The module creating the account.
 	 * @param sourceFile      The source file the account was found in.
-	 * @param attributes      List of blackboard attributes to add to the data artifact.
+	 * @param attributes      List of blackboard attributes to add to the data artifact (may be empty or null).
 	 * @param ingestJobId     The ingest job in which the analysis that found
 	 *                        the account was performed, may be null.
 	 *
@@ -516,7 +516,7 @@ public final class CommunicationsManager {
 	 * @param moduleName      The name of the module that found the account
 	 *                        instance.
 	 * @param sourceFile      The file in which the account instance was found.
-	 * @param originalAttrs   List of blackboard attributes to add to the data artifact.
+	 * @param originalAttrs   List of blackboard attributes to add to the data artifact (may be empty or null).
 	 * @param ingestJobId     The ingest job in which the analysis that found
 	 *                        the account was performed, may be null.
 	 *
