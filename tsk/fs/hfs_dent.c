@@ -258,6 +258,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This will link the folder to its parent, which is the ".." entry */
         else if (rec_type == HFS_FOLDER_THREAD) {
+            if ((nodesize < sizeof(hfs_thread)) || (rec_off2 > nodesize - sizeof(hfs_thread))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
             hfs_thread *thread = (hfs_thread *) & rec_buf[rec_off2];
             strcpy(info->fs_name->name, "..");
             info->fs_name->meta_addr =
