@@ -37,12 +37,12 @@ class ObservableObject extends UcoObject {
         this.facets = new ArrayList<>();
     }
     
-    final ObservableObject addBundle(Facet bundle) {
+    final ObservableObject addFacet(Facet bundle) {
         facets.add(bundle);
         return this;
     }
 
-    List<Facet> getHasPropertyBundle() {
+    List<Facet> getFacets() {
         return facets;
     }
 }
