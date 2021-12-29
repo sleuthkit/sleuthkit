@@ -464,7 +464,7 @@ public class CaseUcoExporter {
         } else if (TSK_MESSAGE.getTypeID() == artifactTypeId) {
             assembleMessage(uuid, artifact, output);
         } else if (TSK_CALLLOG.getTypeID() == artifactTypeId) {
-            assembleCallog(uuid, artifact, output);
+            assembleCallLog(uuid, artifact, output);
         } else if (TSK_CALENDAR_ENTRY.getTypeID() == artifactTypeId) {
             assembleCalendarEntry(uuid, artifact, output);
         } else if (TSK_SPEED_DIAL_ENTRY.getTypeID() == artifactTypeId) {
@@ -1000,7 +1000,7 @@ public class CaseUcoExporter {
         serializeObjectToOutput(export, output);
     }
 
-    private void assembleCallog(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
+    private void assembleCallLog(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject fromNode = new BlankObservableObject()
                 .addBundle(new PhoneAccountFacet()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER_FROM)));
