@@ -221,6 +221,7 @@ public class CaseUcoExporter {
         ContentDataFacet contentData = new ContentDataFacet()
                 .setMimeType(file.getMIMEType())
                 .setSizeInBytes(file.getSize())
+                .setComment()
                 .setMd5Hash(file.getMd5Hash());
 
         if (localPath != null) {
@@ -540,6 +541,7 @@ public class CaseUcoExporter {
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
                 .addBundle(new ContentDataFacet()
                         .setDataPayload(getValueIfPresent(artifact, StandardAttributeTypes.TSK_VALUE)));
+         
 
         ObservableObject cookieDomainNode = new BlankObservableObject()
                 .addBundle(new DomainNameFacet()
@@ -579,6 +581,7 @@ public class CaseUcoExporter {
                 .addBundle(bookmark)
                 .addBundle(new DomainNameFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DOMAIN)));
+         
 
         addToOutput(export, output);
         addToOutput(applicationNode, output);
@@ -604,6 +607,7 @@ public class CaseUcoExporter {
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DOMAIN)))
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
+         
 
         addToOutput(export, output);
         addToOutput(userNameNode, output);
@@ -619,6 +623,7 @@ public class CaseUcoExporter {
                         .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)))
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
+         
         addToOutput(export, output);
     }
 
@@ -630,6 +635,7 @@ public class CaseUcoExporter {
                         .setId(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DEVICE_ID)))
                 .addBundle(new MACAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MAC_ADDRESS)));
+         
 
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
         addToOutput(export, output);
@@ -647,6 +653,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new FileFacet()
                         .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH_SOURCE)));
+         
         SoftwareFacet software = new SoftwareFacet();
         software.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME));
         export.addBundle(software);
@@ -665,6 +672,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
+         
 
         FileFacet file = new FileFacet()
                 .setAccessedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_ACCESSED));
@@ -691,8 +699,9 @@ public class CaseUcoExporter {
 
     private void assembleExtractedText(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid)
-                .addBundle(new ExtractedStringFacet()
+                .addBundle(new ExtractedStringsFacet()
                         .setStringValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_TEXT)));
+         
         addToOutput(export, output);
     }
 
@@ -710,7 +719,7 @@ public class CaseUcoExporter {
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_EMAIL_FROM)));
 
         ObservableObject headerRawNode = new BlankObservableObject()
-                .addBundle(new ExtractedStringFacet()
+                .addBundle(new ExtractedStringsFacet()
                         .setStringValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_HEADERS)));
 
         EmailMessageFacet emailMessage = new EmailMessageFacet();
@@ -741,6 +750,7 @@ public class CaseUcoExporter {
                         .setSubject(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SUBJECT)))
                 .addBundle(new FileFacet()
                         .setFilePath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)));
+         
 
         addToOutput(export, output);
         addToOutput(bccNode, output);
@@ -761,6 +771,7 @@ public class CaseUcoExporter {
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DOMAIN)))
                 .addBundle(new ApplicationAccountFacet()
                         .setApplication(applicationNode));
+         
         addToOutput(export, output);
         addToOutput(applicationNode, output);
     }
@@ -795,6 +806,7 @@ public class CaseUcoExporter {
                         .setRegisteredOrganization(registeredOrganizationNode)
                         .setRegisteredOwner(registeredOwnerNode)
                         .setWindowsTempDirectory(tempDirectoryNode));
+         
 
         addToOutput(export, output);
         addToOutput(registeredOwnerNode, output);
@@ -810,6 +822,7 @@ public class CaseUcoExporter {
                         .setPath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PATH)))
                 .addBundle(new WindowsAccountFacet()
                         .setGroups(getValueIfPresent(artifact, StandardAttributeTypes.TSK_GROUPS)));
+         
 
         export.setTag(getValueIfPresent(artifact, StandardAttributeTypes.TSK_FLAG));
 
@@ -857,6 +870,7 @@ public class CaseUcoExporter {
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
                 .addBundle(new DigitalAccountFacet()
                         .setDisplayName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_USER_NAME)));
+         
 
         export.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DESCRIPTION));
 
@@ -910,6 +924,7 @@ public class CaseUcoExporter {
                 .addBundle(homePhone)
                 .addBundle(workPhone)
                 .addBundle(mobilePhone);
+         
         addToOutput(export, output);
     }
 
@@ -946,6 +961,7 @@ public class CaseUcoExporter {
                         .setTo(toNode))
                 .addBundle(new SMSMessageFacet()
                         .setIsRead(getIntegerIfPresent(artifact, StandardAttributeTypes.TSK_READ_STATUS)));
+         
 
         BlackboardAttribute attachments = artifact.getAttribute(StandardAttributeTypes.TSK_ATTACHMENTS);
         if (attachments != null) {
@@ -977,6 +993,7 @@ public class CaseUcoExporter {
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
                         .setLatitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LATITUDE))
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)));
+         
 
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_CREATED));
         addToOutput(export, output);
@@ -1002,6 +1019,7 @@ public class CaseUcoExporter {
                         .setCallType(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DIRECTION)))
                 .addBundle(new ContactFacet()
                         .setContactName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME)));
+         
 
         addToOutput(export, output);
         addToOutput(toNode, output);
@@ -1010,6 +1028,7 @@ public class CaseUcoExporter {
 
     private void assembleCalendarEntry(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid);
+         
 
         CalendarEntryFacet calendarEntry = new CalendarEntryFacet()
                 .setStartTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_START))
@@ -1034,6 +1053,7 @@ public class CaseUcoExporter {
                         .setContactName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME_PERSON)))
                 .addBundle(new PhoneAccountFacet()
                         .setPhoneNumber(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PHONE_NUMBER)));
+         
 
         addToOutput(export, output);
     }
@@ -1044,6 +1064,7 @@ public class CaseUcoExporter {
                         .setBluetoothDeviceName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DEVICE_NAME)))
                 .addBundle(new MACAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MAC_ADDRESS)));
+         
 
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
         addToOutput(export, output);
@@ -1057,6 +1078,7 @@ public class CaseUcoExporter {
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)))
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
+         
 
         SimpleAddressFacet simpleAddress = new SimpleAddressFacet();
         simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
@@ -1073,6 +1095,7 @@ public class CaseUcoExporter {
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
                         .setLatitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LATITUDE))
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)));
+         
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
 
         BlankLocationNode locationNode = new BlankLocationNode();
@@ -1095,6 +1118,7 @@ public class CaseUcoExporter {
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
                         .setLatitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LATITUDE))
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)));
+         
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
 
         BlankLocationNode locationNode = new BlankLocationNode();
@@ -1112,11 +1136,21 @@ public class CaseUcoExporter {
     }
 
     private void assembleProgRun(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        ObservableObject export = new ObservableObject(uuid)
-                .addBundle(new ApplicationFacet()
-                        .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME))
-                        .setNumberOfLaunches(getIntegerIfPresent(artifact, StandardAttributeTypes.TSK_COUNT)));
-
+        
+        String comment = getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT);
+        ObservableObject export = new ObservableObject(uuid);
+         
+        if (comment.toLowerCase().contains("prefetch")) {
+            export.addBundle(new WindowsPrefetchFacet()
+                            .setApplicationFileName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME))
+                            .setTimesExecuted(getIntegerIfPresent(artifact, StandardAttributeTypes.TSK_COUNT)));
+            
+        } else {
+        
+            export.addBundle(new ApplicationFacet()
+                            .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME))
+                            .setNumberOfLaunches(getIntegerIfPresent(artifact, StandardAttributeTypes.TSK_COUNT)));
+        }
         addToOutput(export, output);
     }
 
@@ -1148,6 +1182,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
+         
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
 
         SimpleAddressFacet simpleAddress = new SimpleAddressFacet();
@@ -1170,6 +1205,7 @@ public class CaseUcoExporter {
                         .setPath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_REMOTE_PATH)))
                 .addBundle(new PathRelationFacet()
                         .setPath(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCAL_PATH)));
+         
 
         addToOutput(export, output);
     }
@@ -1186,6 +1222,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(account)
                 .addBundle(creditCardAccount);
+         
 
         addToOutput(export, output);
     }
@@ -1218,6 +1255,7 @@ public class CaseUcoExporter {
 
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(wirelessNetwork);
+         
 
         addToOutput(export, output);
     }
@@ -1229,6 +1267,7 @@ public class CaseUcoExporter {
                 .addBundle(new SIMCardFacet()
                         .setICCID(getValueIfPresent(artifact, StandardAttributeTypes.TSK_ICCID))
                         .setIMSI(getValueIfPresent(artifact, StandardAttributeTypes.TSK_IMSI)));
+         
 
         addToOutput(export, output);
     }
@@ -1238,6 +1277,7 @@ public class CaseUcoExporter {
                 .addBundle(new SIMCardFacet()
                         .setICCID(getValueIfPresent(artifact, StandardAttributeTypes.TSK_ICCID))
                         .setIMSI(getValueIfPresent(artifact, StandardAttributeTypes.TSK_IMSI)));
+         
 
         addToOutput(export, output);
     }
@@ -1246,6 +1286,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new MACAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MAC_ADDRESS)));
+         
 
         addToOutput(export, output);
     }
@@ -1254,6 +1295,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new MACAddressFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_MAC_ADDRESS)));
+         
 
         addToOutput(export, output);
     }
@@ -1305,6 +1347,7 @@ public class CaseUcoExporter {
                         .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
                 .addBundle(new HTTPConnectionFacet()
                         .setHttpRequestHeader(getValueIfPresent(artifact, StandardAttributeTypes.TSK_HEADERS)));
+         
 
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_CREATED));
 
@@ -1341,12 +1384,14 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new NoteFacet()
                         .setText(getValueIfPresent(artifact, StandardAttributeTypes.TSK_TEXT)));
+         
 
         addToOutput(export, output);
     }
 
     private void assembleAssociatedObject(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid);
+         
         addToOutput(export, output);
 
         Long associatedArtifactId = getLongIfPresent(artifact, StandardAttributeTypes.TSK_ASSOCIATED_ARTIFACT);
@@ -1372,6 +1417,7 @@ public class CaseUcoExporter {
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME))
                         .setVersion(getValueIfPresent(artifact, StandardAttributeTypes.TSK_VERSION)));
+         
 
         ContentDataFacet contentData = new ContentDataFacet();
         contentData.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME_CREATED));
@@ -1411,6 +1457,7 @@ public class CaseUcoExporter {
         ObservableObject export = new ObservableObject(uuid)
                 .addBundle(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
+         
         export.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME));
 
         BlackboardAttribute trackpoints = artifact.getAttribute(StandardAttributeTypes.TSK_GEO_TRACKPOINTS);

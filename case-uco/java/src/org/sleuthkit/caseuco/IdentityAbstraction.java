@@ -19,12 +19,16 @@
 package org.sleuthkit.caseuco;
 
 /**
- * This class definition mirrors the Organization object described in the UCO
+ * This class definition mirrors the Core Identity object described in the UCO
  * ontology.
  */
-class Organization extends Identity {
+class IdentityAbstraction extends UcoObject {
 
-    Organization(String id) {
-        super(id, UcoObject.UCO_IDENTITY + Organization.class.getSimpleName());
+    IdentityAbstraction(String id) {
+        super(id, UcoObject.UCO_IDENTITY + IdentityAbstraction.class.getSimpleName());
+    }
+
+    IdentityAbstraction(String id, String type) {
+        super(id, type);
     }
 }

@@ -22,7 +22,7 @@ package org.sleuthkit.caseuco;
  * This class definition mirrors the Core Identity object described in the UCO
  * ontology.
  */
-class Identity extends UcoObject {
+class Identity extends IdentityAbstraction {
 
     Identity(String id) {
         super(id, UcoObject.UCO_IDENTITY + Identity.class.getSimpleName());
