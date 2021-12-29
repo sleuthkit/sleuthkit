@@ -37,7 +37,7 @@ class CalendarEntryFacet extends Facet {
    @SerializedName("observable:endTime")
     private String endTime;
 
-   @SerializedName("observable:endTime")
+   @SerializedName("observable:location")
     private String location;
 
     CalendarEntryFacet() {

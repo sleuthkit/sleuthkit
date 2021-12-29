@@ -81,7 +81,7 @@ class FileFacet extends Facet {
         this.sizeInBytes = sizeInBytes;
         return this;
     }
-
+    
     String getAccessedTime() {
         return accessedTime;
     }
@@ -104,5 +104,5 @@ class FileFacet extends Facet {
 
     Long getSizeInBytes() {
         return sizeInBytes;
-    }
+    }    
 }

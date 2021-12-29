@@ -33,6 +33,9 @@ class ContentDataFacet extends Facet {
     @SerializedName("observable:sizeInBytes")
     private Long sizeInBytes;
 
+    @SerializedName("rdfs:comment")
+    private String comment = "When used to characterize a file the sizeInBytes property conveys the recorded size of a file in a file system.";
+    
     @SerializedName("observable:mimeType")   
     private String mimeType;
 
@@ -58,6 +61,9 @@ class ContentDataFacet extends Facet {
         return this;
     }
 
+    ContentDataFacet setComment() {
+        return this;
+    }
     ContentDataFacet setMimeType(String mimeType) {
         this.mimeType = mimeType;
         return this;

@@ -21,19 +21,19 @@ package org.sleuthkit.caseuco;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * This class definition mirrors the ExtractedStringFacet observable described in the
+ * This class definition mirrors the ExtractedStringsFacet observable described in the
  UCO ontology.
  */
-class ExtractedStringFacet extends Facet {
+class ExtractedStringsFacet extends Facet {
 
     @SerializedName("observable:value")
     private String stringValue;
 
-    ExtractedStringFacet() {
-        super(UcoObject.UCO_OBSERV + ExtractedStringFacet.class.getSimpleName());
+    ExtractedStringsFacet() {
+        super(UcoObject.UCO_OBSERV + ExtractedStringsFacet.class.getSimpleName());
     }
 
-    ExtractedStringFacet setStringValue(String stringValue) {
+    ExtractedStringsFacet setStringValue(String stringValue) {
         this.stringValue = stringValue;
         return this;
     }

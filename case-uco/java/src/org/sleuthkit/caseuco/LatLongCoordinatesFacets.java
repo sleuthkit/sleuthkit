@@ -26,17 +26,17 @@ import com.google.gson.annotations.SerializedName;
  */
 class LatLongCoordinatesFacets extends Facet {
 
-    @SerializedName("observable:altitude")
+    @SerializedName("location:altitude")
     private Double altitude;
 
-    @SerializedName("observable:latitude")
+    @SerializedName("location:latitude")
     private Double latitude;
 
-    @SerializedName("observable:longitude")
+    @SerializedName("location:longitude")
     private Double longitude;
 
     LatLongCoordinatesFacets() {
-        super(UcoObject.UCO_OBSERV + LatLongCoordinatesFacets.class.getSimpleName());
+        super(UcoObject.UCO_LOCATION + LatLongCoordinatesFacets.class.getSimpleName());
     }
 
     LatLongCoordinatesFacets setAltitude(Double altitude) {
