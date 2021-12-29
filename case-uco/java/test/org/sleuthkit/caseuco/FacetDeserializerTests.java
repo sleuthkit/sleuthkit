@@ -148,7 +148,7 @@ public class FacetDeserializerTests {
         String traceName = "The name 2";
         String traceTag = "The tag 2";
         UcoObject trace = new ObservableObject(traceUuid)
-                .addBundle(fileSystem)
+                .addFacet(fileSystem)
                 .setCreatedTime(traceCreateTime)
                 .setDescription(traceDescription)
                 .setId(traceId)
@@ -172,7 +172,7 @@ public class FacetDeserializerTests {
         Assert.assertEquals(traceName, deserializedTrace.getName());
         Assert.assertEquals(traceTag, deserializedTrace.getTag());
 
-        List<Facet> facets = deserializedTrace.getHasPropertyBundle();
+        List<Facet> facets = deserializedTrace.getFacets();
         
         Assert.assertEquals(1, facets.size());
         Assert.assertTrue(facets.get(0) instanceof FileSystemFacet);
