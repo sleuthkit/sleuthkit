@@ -21,10 +21,10 @@ package org.sleuthkit.caseuco;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * This class definition mirrors the LatLongCoordinatesFacets observable described in
+ * This class definition mirrors the LatLongCoordinatesFacet observable described in
  the UCO ontology.
  */
-class LatLongCoordinatesFacets extends Facet {
+class LatLongCoordinatesFacet extends Facet {
 
     @SerializedName("location:altitude")
     private Double altitude;
@@ -35,21 +35,21 @@ class LatLongCoordinatesFacets extends Facet {
     @SerializedName("location:longitude")
     private Double longitude;
 
-    LatLongCoordinatesFacets() {
-        super(UcoObject.UCO_LOCATION + LatLongCoordinatesFacets.class.getSimpleName());
+    LatLongCoordinatesFacet() {
+        super(UcoObject.UCO_LOCATION + LatLongCoordinatesFacet.class.getSimpleName());
     }
 
-    LatLongCoordinatesFacets setAltitude(Double altitude) {
+    LatLongCoordinatesFacet setAltitude(Double altitude) {
         this.altitude = altitude;
         return this;
     }
 
-    LatLongCoordinatesFacets setLatitude(Double latitude) {
+    LatLongCoordinatesFacet setLatitude(Double latitude) {
         this.latitude = latitude;
         return this;
     }
 
-    LatLongCoordinatesFacets setLongitude(Double longitude) {
+    LatLongCoordinatesFacet setLongitude(Double longitude) {
         this.longitude = longitude;
         return this;
     }
