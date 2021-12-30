@@ -604,13 +604,15 @@ public class CaseUcoExporter {
         userNameNode.addFacet(identityFacet);
 
         ObservableObject export = new ObservableObject(uuid)
-                .addFacet(new URLFacet()
-                        .setUserName(userNameNode)
-                        .setFullValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
+                .addFacet(new URLHistoryFacet()
+                        .setBrowserInformation(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME))
+                        .setUrlHistoryEntry(getValueIfPresent(artifact, StandardAttributeTypes.TSK_URL)))
                 .addFacet(new DomainNameFacet()
                         .setValue(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DOMAIN)))
                 .addFacet(new ApplicationFacet()
-                        .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
+                        .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)))
+                .addFacet(identityFacet);
+                         
          
 
         serializeObjectToOutput(export, output);
