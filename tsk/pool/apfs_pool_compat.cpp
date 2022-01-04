@@ -185,7 +185,7 @@ uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
                                    vol.changed() % 1000000000, time_buf));
 
     const auto unmount_log = vol.unmount_log();
-    if (unmount_log.size() != 0) {
+    if (!unmount_log.empty()) {
       tsk_fprintf(hFile, "|\n");
       tsk_fprintf(hFile, "|   Unmount Logs\n");
       tsk_fprintf(hFile, "|   ------------\n");
