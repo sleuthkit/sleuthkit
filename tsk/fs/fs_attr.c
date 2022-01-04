@@ -1101,7 +1101,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
     TSK_FS_INFO *fs;
 
     if ((a_fs_attr == NULL) || (a_fs_attr->fs_file == NULL)
-        || (a_fs_attr->fs_file->fs_info == NULL)) {
+        || (a_fs_attr->fs_file->fs_info == NULL) || (a_buf == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
             ("tsk_fs_attr_read: Attribute has null pointers.");
