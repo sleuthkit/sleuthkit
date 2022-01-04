@@ -5,6 +5,14 @@ Clients will interface with the CaseUcoExporter class. This class contains metho
 
 **DISCLAIMER**: All API's in this package are subject to change.
 
+# CASE/UCO Support 
+
+- The code currently supports CASE/UCO 0.5/0.7
+- Many of the analysis results (such as keyword hits) from TSK are not being stored as CASE/UCO and are waiting for the Inference concept
+- Duplicate accounts are created. For example, an account will be created each time a phone number or email is seen in an email
+- IDs are not unique accross cases
+- We are not declaring all IDs inside of the investigation object 
+
 # Building the JAR file
 To build the JAR file, simply run '**ant jar**' in the case-uco/java folder. Alternatively, you can add the code to a NetBeans project and build using the regular 'build' action.
 
