@@ -641,14 +641,13 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     file_ver = NULL;
                 }
 
-                // if no extension, remove the final '.'
                 size_t name8_len = strnlen(in_node->inode.fn, ISO9660_MAXNAMLEN);
                 if (name8_len > 0 && in_node->inode.fn[name8_len - 1] == '.') {
+                    // if no extension, remove the final '.'
                     in_node->inode.fn[name8_len - 1] = '\0';
+                    name8_len -= 1;
                 }
-                
-                
-                if (strlen(in_node->inode.fn) == 0) {
+                if (name8_len == 0) {
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: length of name after processing is 0. bailing\n");
