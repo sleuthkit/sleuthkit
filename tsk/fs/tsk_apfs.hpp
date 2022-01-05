@@ -131,8 +131,11 @@ class APFSBtreeNodeIterator {
   }
 
   template <typename Void = void>
-  auto init_value()
+  auto init_value(int recursion_depth)
       -> std::enable_if_t<Node::is_variable_kv_node::value, Void> {
+    if ((recursion_depth < 0) || (recursion_depth > 64)) {
+      throw std::runtime_error("init_value exceeds recursion depth");
+    }
     if (this->_node->has_fixed_kv_size()) {
       throw std::runtime_error("btree does not have variable sized keys");
     }
@@ -150,12 +153,15 @@ class APFSBtreeNodeIterator {
       const auto block_num = *((apfs_block_num *)val_data);
 
       _child_it = std::make_unique<typename Node::iterator>(
-          own_node(_node.get(), block_num), 0);
+          own_node(_node.get(), block_num), 0, recursion_depth);
     }
   }
 
   template <typename Void = void>
-  auto init_value() -> std::enable_if_t<Node::is_fixed_kv_node::value, Void> {
+  auto init_value(int recursion_depth) -> std::enable_if_t<Node::is_fixed_kv_node::value, Void> {
+    if ((recursion_depth < 0) || (recursion_depth > 64)) {
+      throw std::runtime_error("init_value exceeds recursion depth");
+    }
     if (!this->_node->has_fixed_kv_size()) {
       throw std::runtime_error("btree does not have fixed sized keys");
     }
@@ -170,7 +176,7 @@ class APFSBtreeNodeIterator {
       const auto block_num = *((apfs_block_num *)val_data);
 
       _child_it = std::make_unique<typename Node::iterator>(
-          own_node(_node.get(), block_num), 0);
+          own_node(_node.get(), block_num), 0, recursion_depth);
     }
   }
 
@@ -178,12 +184,12 @@ class APFSBtreeNodeIterator {
   // Forward iterators must be DefaultConstructible
   APFSBtreeNodeIterator() = default;
 
-  APFSBtreeNodeIterator(const Node *node, uint32_t index);
+  APFSBtreeNodeIterator(const Node *node, uint32_t index, int recursion_depth);
 
-  APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node, uint32_t index);
+  APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node, uint32_t index, int recursion_depth);
 
   APFSBtreeNodeIterator(const Node *node, uint32_t index,
-                        typename Node::iterator &&child);
+                        typename Node::iterator &&child, int recursion_depth);
 
   virtual ~APFSBtreeNodeIterator() = default;
 
@@ -270,7 +276,7 @@ class APFSBtreeNodeIterator {
         auto index{_index};
 
         this->~APFSBtreeNodeIterator();
-        new (this) APFSBtreeNodeIterator(std::move(node), index);
+        new (this) APFSBtreeNodeIterator(std::move(node), index, 0);
       }
       return (*this);
     }
@@ -287,7 +293,7 @@ class APFSBtreeNodeIterator {
     auto index{_index};
 
     this->~APFSBtreeNodeIterator();
-    new (this) APFSBtreeNodeIterator(std::move(node), index);
+    new (this) APFSBtreeNodeIterator(std::move(node), index, 0);
 
     return (*this);
   }
@@ -484,8 +490,8 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
  public:
   using iterator = APFSBtreeNodeIterator<APFSBtreeNode>;
 
-  iterator begin() const { return {this, 0}; }
-  iterator end() const { return {this, key_count()}; }
+  iterator begin() const { return {this, 0, 0}; }
+  iterator end() const { return {this, key_count(), 0}; }
 
   template <typename T, typename Compare>
   iterator find(const T &value, Compare comp) const {
@@ -505,7 +511,7 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
 
         if (res == 0) {
           // We've found it!
-          return {this, i - 1};
+          return {this, i - 1, 0};
         }
 
         if (res < 0) {
@@ -526,14 +532,14 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
       const auto &k = key(i - 1);
 
       if (comp(k, value) <= 0) {
-        iterator it{this, i - 1};
+        iterator it{this, i - 1, 0};
 
         auto ret = it._child_it->_node->find(value, comp);
         if (ret == it._child_it->_node->end()) {
           return end();
         }
 
-        return {this, i - 1, std::move(ret)};
+        return {this, i - 1, std::move(ret), 0};
       }
     }
 
@@ -580,8 +586,8 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
 
   inline bool is_leaf() const noexcept { return (bn()->level == 0); }
 
-  inline iterator begin() const { return {this, 0}; }
-  inline iterator end() const { return {this, key_count()}; }
+  inline iterator begin() const { return {this, 0, 0}; }
+  inline iterator end() const { return {this, key_count(), 0}; }
 
   template <typename T, typename Compare>
   inline iterator find(const T &value, Compare comp) const {
@@ -595,7 +601,7 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
 
         if (res == 0) {
           // We've found it!
-          return {this, i};
+          return {this, i, 0};
         }
 
         if (res > 0) {
@@ -627,11 +633,11 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
       if (v == 0) {
         // We need to see if the jobj might be in the last node
         if (last != 0) {
-          iterator it{this, last - 1};
+          iterator it{this, last - 1, 0};
 
           auto ret = it._child_it->_node->find(value, comp);
           if (ret != it._child_it->_node->end()) {
-            return {this, last - 1, std::move(ret)};
+            return {this, last - 1, std::move(ret), 0};
           }
         }
 
@@ -644,14 +650,14 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
       return end();
     }
 
-    iterator it{this, last};
+    iterator it{this, last, 0};
 
     auto ret = it._child_it->_node->find(value, comp);
     if (ret == it._child_it->_node->end()) {
       return end();
     }
 
-    return {this, last, std::move(ret)};
+    return {this, last, std::move(ret), 0};
   }
 
   template <typename T, typename Compare>
@@ -1135,7 +1141,7 @@ APFSBtreeNodeIterator<APFSJObjBtreeNode>::own_node(
 
 template <>
 template <>
-inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>() {
+inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>(int recursion_depth) {
   const auto &t = _node->_table_data.toc.variable[_index];
   const auto key_data = _node->_table_data.koff + t.key_offset;
   const auto val_data = _node->_table_data.voff - t.val_offset;
@@ -1156,37 +1162,37 @@ inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>() {
     }
 
     _child_it = std::make_unique<typename APFSJObjBtreeNode::iterator>(
-        own_node(_node.get(), it->value->paddr), 0);
+        own_node(_node.get(), it->value->paddr), 0, recursion_depth);
   }
 }
 
 template <typename Node>
 APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(const Node *node,
-                                                   uint32_t index)
+                                                   uint32_t index, int recursion_depth)
     : _node{own_node(node)}, _index{index} {
   // If we're the end, then there's nothing to do
   if (index >= _node->key_count()) {
     return;
   }
 
-  init_value();
+  init_value(recursion_depth + 1);
 }
 
 template <typename Node>
 APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node,
-                                                   uint32_t index)
+                                                   uint32_t index, int recursion_depth)
     : _node{std::forward<lw_shared_ptr<Node>>(node)}, _index{index} {
   // If we're the end, then there's nothing to do
   if (index >= _node->key_count()) {
     return;
   }
 
-  init_value();
+  init_value(recursion_depth + 1);
 }
 
 template <typename Node>
 APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(
-    const Node *node, uint32_t index, typename Node::iterator &&child)
+    const Node *node, uint32_t index, typename Node::iterator &&child, int recursion_depth)
     : _node{own_node(node)}, _index{index} {
   _child_it = std::make_unique<typename Node::iterator>(
       std::forward<typename Node::iterator>(child));
