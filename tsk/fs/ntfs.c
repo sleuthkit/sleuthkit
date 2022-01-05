@@ -2343,10 +2343,6 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     ("proc_attrseq: resident data of File Name Attribute is too small!");
                 return TSK_COR;
             }
-            TSK_FS_META_NAME_LIST *fs_name;
-            UTF16 *name16;
-            UTF8 *name8;
-
             ntfs_attr_fname *fname = (ntfs_attr_fname *) ((uintptr_t) attr + attr_off);
             if (fname->nspace == NTFS_FNAME_DOS) {
                 continue;
@@ -2374,6 +2370,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
             fs_file->meta->time2.ntfs.fn_id = id;
 
+            TSK_FS_META_NAME_LIST *fs_name;
 
             /* Seek to the end of the fs_name structures in TSK_FS_META */
             if (fs_file->meta->name2) {
@@ -2400,9 +2397,16 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 }
                 fs_name->next = NULL;
             }
+            if (fname->nlen > attr_len - 66) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("proc_attrseq: invalid name value size out of bounds!");
+                return TSK_COR;
+            }
+            UTF16 *name16 = (UTF16 *) & fname->name;
+            UTF8 *name8 = (UTF8 *) fs_name->name;
 
-            name16 = (UTF16 *) & fname->name;
-            name8 = (UTF8 *) fs_name->name;
             retVal =
                 tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
                 (UTF16 *) ((uintptr_t) name16 +
