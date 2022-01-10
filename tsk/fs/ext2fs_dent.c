@@ -323,7 +323,8 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         size = fs_dir->fs_file->meta->size;
     }
     else {
-        if (fs_dir->fs_file->meta->size <= 0 || fs_dir->fs_file->meta->size > INT64_MAX / fs_dir->fs_file->meta->size || a_fs->block_size <= 1) {
+        if (fs_dir->fs_file->meta->size <= 0 || a_fs->block_size <= 0
+                || (INT64_MAX - (a_fs->block_size - 1) < fs_dir->fs_file->meta->size)) {
             tsk_error_set_errstr("ext2fs_dir_open_meta: invalid data size value out of bounds.\n");
             free(dirbuf);
             return TSK_ERR;
