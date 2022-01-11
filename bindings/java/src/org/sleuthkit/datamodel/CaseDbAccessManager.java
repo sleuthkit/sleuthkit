@@ -693,41 +693,21 @@ public final class CaseDbAccessManager {
 	 * Performs a insert statement query with the given case prepared statement.
 	 *
 	 * @param preparedStatement The case prepared statement.
-	 *
-	 * @return Row ID of inserted row.
 	 * 
 	 * @throws TskCoreException
 	 */
 	@Beta
-	public long insert(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+	public void insert(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
 		
 		if (!preparedStatement.getType().equals(StatementType.INSERT)) {
 			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for insert operation");
 		}
 		
-		long rowId = 0;
-		ResultSet resultSet = null;
 		try {
 			preparedStatement.getStatement().executeUpdate();
-			
-			resultSet = preparedStatement.getStatement().getGeneratedKeys();
-			if (resultSet.next()) {
-				rowId = resultSet.getLong(1); //last_insert_rowid()
-			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error inserting row in table " + "" + " with sql = "+ "", ex);
-		} finally {
-			if (resultSet != null) {
-				try {
-					resultSet.close();
-				} catch (Exception ex) {
-					ex.printStackTrace();
-				}
-			}
-			//closeStatement(statement);
 		}
-
-		return rowId;
 	}
 
 	/**
