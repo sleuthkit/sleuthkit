@@ -629,7 +629,7 @@ public final class CaseDbAccessManager {
 	public CaseDbPreparedStatement prepareSelect(String sql) throws TskCoreException {
 		String selectSQL = "SELECT " + sql; // NON-NLS
 		try {
-			return new CaseDbPreparedStatement(selectSQL, false);
+			return new CaseDbPreparedStatement(StatementType.SELECT, selectSQL, false);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
 		}
@@ -645,11 +645,89 @@ public final class CaseDbAccessManager {
 	 */
 	@Beta
 	public void select(CaseDbPreparedStatement preparedStatement, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
+		if (!preparedStatement.getType().equals(StatementType.SELECT)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for select operation");
+		}
+		
 		try (ResultSet resultSet = preparedStatement.getStatement().executeQuery()) {
 			queryCallback.process(resultSet);
 		} catch (SQLException ex) {
 			throw new TskCoreException(MessageFormat.format("Error running SELECT query:\n{0}", preparedStatement.getOriginalSql()), ex);
 		}
+	}
+	
+	/**
+	 * Creates a prepared statement object for the purposes of running an insert
+	 * statement. The given SQL should not include the starting "INSERT INTO" 
+	 * or the name of the table.
+	 * 
+	 * For PostGreSQL, the caller must include the ON CONFLICT DO NOTHING clause
+	 *
+	 * @param tableName The name of the table being updated.
+	 * @param sql       The insert statement without the starting "INSERT INTO (table name)" part.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareInsert(String tableName, String sql, CaseDbTransaction trans) throws TskCoreException {
+		validateTableName(tableName);
+		validateSQL(sql);
+		
+		String insertSQL = "INSERT";
+		if (DbType.SQLITE == tskDB.getDatabaseType()) {
+			insertSQL += " OR IGNORE";
+		}
+		insertSQL = insertSQL + " INTO " + tableName + " " + sql; // NON-NLS
+	
+		try {
+			return new CaseDbPreparedStatement(StatementType.INSERT, insertSQL, trans);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating insert prepared statement for query:\n" + insertSQL, ex);
+		}
+	}
+	
+	/**
+	 * Performs a insert statement query with the given case prepared statement.
+	 *
+	 * @param preparedStatement The case prepared statement.
+	 *
+	 * @return Row ID of inserted row.
+	 * 
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public long insert(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+		
+		if (!preparedStatement.getType().equals(StatementType.INSERT)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for insert operation");
+		}
+		
+		long rowId = 0;
+		ResultSet resultSet = null;
+		try {
+			preparedStatement.getStatement().executeUpdate();
+			
+			resultSet = preparedStatement.getStatement().getGeneratedKeys();
+			if (resultSet.next()) {
+				rowId = resultSet.getLong(1); //last_insert_rowid()
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error inserting row in table " + "" + " with sql = "+ "", ex);
+		} finally {
+			if (resultSet != null) {
+				try {
+					resultSet.close();
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+			//closeStatement(statement);
+		}
+
+		return rowId;
 	}
 
 	/**
@@ -726,6 +804,22 @@ public final class CaseDbAccessManager {
 		 */
 	}
 	
+	/**
+	 * Enum to track which type of lock the CaseDbPreparedStatement holds.
+	 */
+	private enum LockType {
+		READ,
+		WRITE,
+		NONE;
+	}
+	
+	/**
+	 * Enum to track which type of statement the CaseDbPreparedStatement holds.
+	 */
+	private enum StatementType {
+		SELECT,
+		INSERT;
+	}
 	
 	/**
 	 * A wrapper around a PreparedStatement to execute queries against the
@@ -737,10 +831,12 @@ public final class CaseDbAccessManager {
 		private final CaseDbConnection connection;
 		private final PreparedStatement preparedStatement;
 		private final String originalSql;
-		private final boolean hasWriteLock;
-
+		private final LockType lockType;
+		private final StatementType type;
+		
 		/**
-		 * Main constructor.
+		 * Construct a prepared statement. This should not be used if a transaction
+		 * is already open.
 		 *
 		 * NOTE: Creating the CaseDbPreparedStatement opens a connection and
 		 * acquires a read lock on the case database. For this reason, it is
@@ -750,6 +846,7 @@ public final class CaseDbAccessManager {
 		 * the database should be avoided while the prepared statement is open
 		 * to prevent possible deadlocks.
 		 *
+		 * @param type                The type of statement.
 		 * @param query               The query string.
 		 * @param isWriteLockRequired Whether or not a write lock is required.
 		 *                            If a write lock is not required, just a
@@ -758,18 +855,36 @@ public final class CaseDbAccessManager {
 		 * @throws SQLException
 		 * @throws TskCoreException
 		 */
-		private CaseDbPreparedStatement(String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {		
+		private CaseDbPreparedStatement(StatementType type, String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {		
 			if (isWriteLockRequired) {
-				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();	
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();
+				this.lockType = LockType.WRITE;
 			} else {
-				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();	
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();
+				this.lockType = LockType.READ;
 			}
-			
-			this.hasWriteLock = isWriteLockRequired;
 			this.connection = tskDB.getConnection();
 			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
 			this.originalSql = query;
-			
+			this.type = type;
+		}
+		
+		/**
+		 * Construct a prepared statement using an already open transaction.
+		 *
+		 * @param type                The type of statement.
+		 * @param query               The query string.
+		 * @param trans               The open transaction.
+		 *
+		 * @throws SQLException
+		 * @throws TskCoreException
+		 */
+		private CaseDbPreparedStatement(StatementType type, String query, CaseDbTransaction trans) throws SQLException, TskCoreException {		
+			this.lockType = LockType.NONE;
+			this.connection = trans.getConnection();
+			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			this.originalSql = query;
+			this.type = type;
 		}
 
 		/**
@@ -779,6 +894,15 @@ public final class CaseDbAccessManager {
 		 */
 		private PreparedStatement getStatement() {
 			return preparedStatement;
+		}
+		
+		/**
+		 * Get the type of statement.
+		 * 
+		 * @return The statement type (select or insert).
+		 */
+		private StatementType getType() {
+			return type;
 		}
 
 		/**
@@ -969,9 +1093,14 @@ public final class CaseDbAccessManager {
 		public void close() throws SQLException {
 
 			preparedStatement.close();
+			
+			// Don't close the connection or release a lock if we were supplied a transaction.
+			if (lockType.equals(LockType.NONE)) {
+				return;
+			}
+			
 			connection.close();
-
-			if (hasWriteLock) {
+			if (lockType.equals(LockType.WRITE)) {
 				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseWriteLock();
 			} else {
 				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseReadLock();
