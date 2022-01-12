@@ -901,6 +901,21 @@ public abstract class BlackboardArtifact implements Content {
 	}
 
 	/**
+	 * Accepts a visitor SleuthkitItemVisitor that will perform an operation on
+	 * this artifact type and return some object as the result of the operation.
+	 *
+	 * @param visitor The visitor, where the type parameter of the visitor is
+	 *                the type of the object that will be returned as the result
+	 *                of the visit operation.
+	 *
+	 * @return An object of type T.
+	 */
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+
+	/**
 	 * Get the (reported) size of the content object. Artifact content is a
 	 * string dump of all its attributes.
 	 *
@@ -1579,7 +1594,7 @@ public abstract class BlackboardArtifact implements Content {
 	 * http://sleuthkit.org/sleuthkit/docs/jni-docs/latest/artifact_catalog_page.html
 	 * for details on the standard attributes for each artifact type.
 	 */
-	public enum ARTIFACT_TYPE {
+	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
 		/**
 		 * A generic information artifact.
@@ -2101,6 +2116,23 @@ public abstract class BlackboardArtifact implements Content {
 		public String getDisplayName() {
 			return displayName;
 		}
+
+		/**
+		 * Accepts a visitor SleuthkitItemVisitor that will perform an operation
+		 * on this artifact type and return some object as the result of the
+		 * operation.
+		 *
+		 * @param visitor The visitor, where the type parameter of the visitor
+		 *                is the type of the object that will be returned as the
+		 *                result of the visit operation.
+		 *
+		 * @return An object of type T.
+		 */
+		@Override
+		public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
+
 	}
 
 	/**
