@@ -992,7 +992,7 @@ public class CaseUcoExporter {
                 .addFacet(new DeviceFacet()
                         .setManufacturer(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DEVICE_MAKE))
                         .setModel(getValueIfPresent(artifact, StandardAttributeTypes.TSK_DEVICE_MODEL)))
-                .addFacet(new LatLongCoordinatesFacets()
+                .addFacet(new LatLongCoordinatesFacet()
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
                         .setLatitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LATITUDE))
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)));
@@ -1075,17 +1075,19 @@ public class CaseUcoExporter {
 
     private void assembleGpsBookmark(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid)
-                .addFacet(new LatLongCoordinatesFacets()
+                .addFacet(new LatLongCoordinatesFacet()
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
                         .setLatitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LATITUDE))
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)))
                 .addFacet(new ApplicationFacet()
                         .setApplicationIdentifier(getValueIfPresent(artifact, StandardAttributeTypes.TSK_PROG_NAME)));
-         
+                       
 
         SimpleAddressFacet simpleAddress = new SimpleAddressFacet();
-        simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
-        export.addFacet(simpleAddress);
+        if (getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION) != null) {
+            simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
+            export.addFacet(simpleAddress);
+        }
 
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
         export.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME));
@@ -1094,7 +1096,7 @@ public class CaseUcoExporter {
 
     private void assembleGpsLastKnownLocation(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid)
-                .addFacet(new LatLongCoordinatesFacets()
+                .addFacet(new LatLongCoordinatesFacet()
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
                         .setLatitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LATITUDE))
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)));
@@ -1105,9 +1107,11 @@ public class CaseUcoExporter {
         locationNode.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME));
 
         SimpleAddressFacet simpleAddress = new SimpleAddressFacet();
-        simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
-        export.addFacet(simpleAddress);
-
+        if (getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION) != null) {
+            simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
+            export.addFacet(simpleAddress);
+        }
+        
         serializeObjectToOutput(export, output);
         serializeObjectToOutput(locationNode, output);
         serializeObjectToOutput(new BlankRelationshipNode()
@@ -1117,7 +1121,7 @@ public class CaseUcoExporter {
 
     private void assembleGpsSearch(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         ObservableObject export = new ObservableObject(uuid)
-                .addFacet(new LatLongCoordinatesFacets()
+                .addFacet(new LatLongCoordinatesFacet()
                         .setAltitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_ALTITUDE))
                         .setLatitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LATITUDE))
                         .setLongitude(getDoubleIfPresent(artifact, StandardAttributeTypes.TSK_GEO_LONGITUDE)));
@@ -1128,8 +1132,11 @@ public class CaseUcoExporter {
         locationNode.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME));
 
         SimpleAddressFacet simpleAddress = new SimpleAddressFacet();
-        simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
-        export.addFacet(simpleAddress);
+        
+        if (getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION) != null) {
+            simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
+            export.addFacet(simpleAddress);
+        }
 
         serializeObjectToOutput(export, output);
         serializeObjectToOutput(locationNode, output);
@@ -1190,8 +1197,10 @@ public class CaseUcoExporter {
         export.setCreatedTime(getLongIfPresent(artifact, StandardAttributeTypes.TSK_DATETIME));
 
         SimpleAddressFacet simpleAddress = new SimpleAddressFacet();
-        simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
-        export.addFacet(simpleAddress);
+        if (getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION) != null) {
+            simpleAddress.setDescription(getValueIfPresent(artifact, StandardAttributeTypes.TSK_LOCATION));
+            export.addFacet(simpleAddress);
+        }
 
         Location location = new BlankLocationNode();
         location.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_NAME));
@@ -1468,7 +1477,7 @@ public class CaseUcoExporter {
         if (trackpoints != null) {
             GeoTrackPoints points = BlackboardJsonAttrUtil.fromAttribute(trackpoints, GeoTrackPoints.class);
             for (GeoTrackPoints.TrackPoint point : points) {
-                export.addFacet(new LatLongCoordinatesFacets()
+                export.addFacet(new LatLongCoordinatesFacet()
                         .setAltitude(point.getAltitude())
                         .setLatitude(point.getLatitude())
                         .setLongitude(point.getLongitude()));

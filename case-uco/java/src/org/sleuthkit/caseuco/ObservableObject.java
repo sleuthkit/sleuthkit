@@ -29,7 +29,7 @@ class ObservableObject extends UcoObject {
 
     static final String OBSERVABLE = "observable:";
 
-    @SerializedName("uco-core:hasFacet")
+    @SerializedName("core:hasFacet")
     private final List<Facet> facets;
     
     ObservableObject(String uuid) {
