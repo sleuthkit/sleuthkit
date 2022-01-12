@@ -30,7 +30,7 @@ import java.util.Set;
  * interface defines the basic methods for reading the content associated with
  * this object, the parent and children, and adding artifacts.
  */
-public interface Content extends SleuthkitVisitableItem {
+public interface Content {
 
 	/**
 	 * Reads data that this content object is associated with (file contents,
