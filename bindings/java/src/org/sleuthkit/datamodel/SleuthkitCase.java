@@ -13228,7 +13228,7 @@ public class SleuthkitCase {
 		PreparedStatement getPreparedStatement(String sqlStatement, int generateKeys) throws SQLException {
 			PreparedStatement statement;
 			String statementKey = "SQL:" + sqlStatement + " Key:" + generateKeys;
-			if (adHocPreparedStatements.containsKey(statementKey)) {
+			if (adHocPreparedStatements.containsKey(statementKey) && !adHocPreparedStatements.get(statementKey).isClosed()) {
 				statement = this.adHocPreparedStatements.get(statementKey);
 			} else {
 				statement = prepareStatement(sqlStatement, generateKeys);

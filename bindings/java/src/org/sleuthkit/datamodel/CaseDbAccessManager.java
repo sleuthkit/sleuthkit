@@ -1071,10 +1071,9 @@ public final class CaseDbAccessManager {
 
 		@Override
 		public void close() throws SQLException {
-
-			preparedStatement.close();
 			
-			// Don't close the connection or release a lock if we were supplied a transaction.
+			// Don't close the statement/connection or release a lock if we were supplied a transaction.
+			// Everything will be handled when the transaction is closed.
 			if (lockType.equals(LockType.NONE)) {
 				return;
 			}
