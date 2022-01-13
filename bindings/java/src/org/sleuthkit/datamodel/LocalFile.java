@@ -147,20 +147,6 @@ public class LocalFile extends AbstractFile {
 	}
 
 	/**
-	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
-	 *
-	 * @param <T>     The type returned by the visitor.
-	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
-	 *                this local file as input.
-	 *
-	 * @return The output of the algorithm.
-	 */
-	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
-		return visitor.visit(this);
-	}
-
-	/**
 	 * Provides a string representation of this local file.
 	 *
 	 * @param preserveState True if state should be included in the string
