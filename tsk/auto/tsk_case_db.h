@@ -40,7 +40,7 @@ class TskAutoDb:public TskAuto {
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual void closeImage();
-    virtual void setTz(string tzone);
+    virtual void setTz(std::string tzone);
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
@@ -133,9 +133,9 @@ class TskAutoDb:public TskAuto {
     int64_t m_curFileId;    ///< Object ID of file currently being processed
     TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed
     int64_t m_curUnallocDirId;	
-    string m_curDirPath;		//< Path of the current directory being processed
+    std::string m_curDirPath;		//< Path of the current directory being processed
     tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath
-    string m_curImgTZone;
+    std::string m_curImgTZone;
     bool m_blkMapFlag;
     bool m_fileHashFlag;
     bool m_vsFound;

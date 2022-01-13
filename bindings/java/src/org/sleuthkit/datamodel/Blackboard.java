@@ -1835,61 +1835,62 @@ public final class Blackboard {
 	 *                          database query to obtain the keyword hits.
 	 */
 	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String kwsListName, Long dataSourceId) throws TskCoreException {
-	
+		
 		String dataSourceClause = dataSourceId == null
-                ? ""
-                : " AND artifacts.data_source_obj_id = ? "; // dataSourceId
+				? ""
+				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
 
 		String kwsListClause = (kwsListName == null || kwsListName.isEmpty()
-				? " AND set_name IS NULL "
-				: " AND set_name = ? ");
+				? " WHERE r.set_name IS NULL "
+				: " WHERE r.set_name = ? ");
 
 		String keywordClause = (keyword == null || keyword.isEmpty()
-			? ""
-			: " AND keyword = ? ");
+				? ""
+				: " AND r.keyword = ? ");
 
 		String searchTypeClause = (searchType == null
 				? ""
-				: " AND search_type = ? ");		
-		
+				: " AND r.search_type = ? ");
+
 		String regexClause = (regex == null || regex.isEmpty()
-			? ""
-			: " AND regexp_str = ? ");
-		
-		String query =  "SELECT DISTINCT artifacts.artifact_id AS artifact_id, "
-        + " artifacts.obj_id AS obj_id, "
-        + " artifacts.artifact_obj_id AS artifact_obj_id, "
-        + " artifacts.data_source_obj_id AS data_source_obj_id, "
-        + " artifacts.artifact_type_id AS artifact_type_id, "
-        + " types.type_name AS type_name, "
-        + " types.display_name AS display_name, "
-        + " types.category_type as category_type," 
-        + " artifacts.review_status_id AS review_status_id, "
-        + " results.conclusion AS conclusion, "
-        + " results.significance AS significance, "
-        + " results.priority AS priority, "
-        + " results.configuration AS configuration, "
-        + " results.justification AS justification, "
-        + " (SELECT value_text FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = "
-                + BlackboardAttribute.Type.TSK_SET_NAME.getTypeID() + " LIMIT 1) AS set_name, "
-        + " (SELECT value_int32 FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = " 
+				? ""
+				: " AND r.regexp_str = ? ");
+
+		String query = "SELECT r.* FROM ( "
+				+ " SELECT DISTINCT artifacts.artifact_id AS artifact_id, "
+				+ " artifacts.obj_id AS obj_id, "
+				+ " artifacts.artifact_obj_id AS artifact_obj_id, "
+				+ " artifacts.data_source_obj_id AS data_source_obj_id, "
+				+ " artifacts.artifact_type_id AS artifact_type_id, "
+				+ " types.type_name AS type_name, "
+				+ " types.display_name AS display_name, "
+				+ " types.category_type as category_type,"
+				+ " artifacts.review_status_id AS review_status_id, "
+				+ " results.conclusion AS conclusion, "
+				+ " results.significance AS significance, "
+				+ " results.priority AS priority, "
+				+ " results.configuration AS configuration, "
+				+ " results.justification AS justification, "
+				+ " (SELECT value_text FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = "
+				+ BlackboardAttribute.Type.TSK_SET_NAME.getTypeID() + " LIMIT 1) AS set_name, "
+				+ " (SELECT value_int32 FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = "
 				+ BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SEARCH_TYPE.getTypeID() + " LIMIT 1) AS search_type, "
-        + " (SELECT value_text FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = "
-                + BlackboardAttribute.Type.TSK_KEYWORD_REGEXP.getTypeID() + " LIMIT 1) AS regexp_str, "
-        + " (SELECT value_text FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = "
-                + BlackboardAttribute.Type.TSK_KEYWORD.getTypeID() + " LIMIT 1) AS keyword "
-        + " FROM blackboard_artifacts artifacts "
-		+ " JOIN blackboard_artifact_types AS types "
-        + " ON artifacts.artifact_type_id = types.artifact_type_id "
-		+ " LEFT JOIN tsk_analysis_results AS results "
-        + " ON artifacts.artifact_obj_id = results.artifact_obj_id "
-        + " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
-		+ " AND artifacts.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + " "
-		+ dataSourceClause
-		+ searchTypeClause
-		+ kwsListClause
-		+ keywordClause
-		+ regexClause;
+				+ " (SELECT value_text FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = "
+				+ BlackboardAttribute.Type.TSK_KEYWORD_REGEXP.getTypeID() + " LIMIT 1) AS regexp_str, "
+				+ " (SELECT value_text FROM blackboard_attributes attr WHERE attr.artifact_id = artifacts.artifact_id AND attr.attribute_type_id = "
+				+ BlackboardAttribute.Type.TSK_KEYWORD.getTypeID() + " LIMIT 1) AS keyword "
+				+ " FROM blackboard_artifacts artifacts "
+				+ " JOIN blackboard_artifact_types AS types "
+				+ " ON artifacts.artifact_type_id = types.artifact_type_id "
+				+ " LEFT JOIN tsk_analysis_results AS results "
+				+ " ON artifacts.artifact_obj_id = results.artifact_obj_id "
+				+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
+				+ " AND artifacts.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + " "
+				+ dataSourceClause + " ) r "
+				+ kwsListClause
+				+ keywordClause
+				+ searchTypeClause
+				+ regexClause;
 
 		List<BlackboardArtifact> artifacts = new ArrayList<>();
 		caseDb.acquireSingleUserCaseReadLock();
@@ -1902,17 +1903,17 @@ public final class Blackboard {
 				if (dataSourceId != null) {
 					preparedStatement.setLong(++paramIdx, dataSourceId);
 				}
-				
-				if (searchType != null) {
-					preparedStatement.setInt(++paramIdx, searchType.getType());
-				}
-				
+								
 				if (!(kwsListName == null || kwsListName.isEmpty())) {
 					preparedStatement.setString(++paramIdx, kwsListName);
 				}
 
 				if (!(keyword == null || keyword.isEmpty())) {
 					preparedStatement.setString(++paramIdx, keyword);
+				}
+
+				if (searchType != null) {
+					preparedStatement.setInt(++paramIdx, searchType.getType());
 				}
 
 				if (!(regex == null || regex.isEmpty())) {
