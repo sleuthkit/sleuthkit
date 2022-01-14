@@ -13,6 +13,8 @@ EXIT_SKIP=77
 MMLS_CMD=$(realpath ../tools/vstools/mmls)
 TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
 
+IMGBASE="data/imageformat_mmls_1"
+
 if [ -n "$WINEARCH" ]; then
   linkage=${STAGE_NAME#*/*/}
   if [ "$linkage" = 'shared' ]; then
@@ -24,6 +26,7 @@ if [ -n "$WINEARCH" ]; then
   fi
 
   MMLS_CMD+='.exe'
+  IMGBASE=$(echo "$IMGBASE" | tr '/' '\\')
 fi
 
 # exits with FAILURE status if the command failed
@@ -56,21 +59,21 @@ done
 
 # Verify mmls does not return an error with various formats.
 if [[ "${imgFormatList}" =~ "vmdk" ]]; then
-  $MMLS_CMD ./data/imageformat_mmls_1.vmdk >/dev/null
+  $MMLS_CMD ${IMGBASE}.vmdk >/dev/null
   _check_exit_status $? "vmdk"
 else
   echo "Tools not compiled with libvmdk"
 fi
 
 if [[ "${imgFormatList}" =~ "vhd" ]]; then
-  $MMLS_CMD ./data/imageformat_mmls_1.vhd >/dev/null
+  $MMLS_CMD ${IMGBASE}.vhd >/dev/null
   _check_exit_status $? "vhd"
 else
   echo "Tools not compiled with libvhdi"
 fi
 
 if [[ "${imgFormatList}" =~ "ewf" ]]; then
-  $MMLS_CMD ./data/imageformat_mmls_1.E01 >/dev/null
+  $MMLS_CMD ${IMGBASE}.E01 >/dev/null
   _check_exit_status $? "ewf"
 else
   echo "Tools not compiled with libewf"
