@@ -32,7 +32,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-u usize] image [images] unit_addr [num]\n"),
+        ("usage: " PRIttocTSK " [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-u usize] image [images] unit_addr [num]\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: displays in all ASCII \n");
     tsk_fprintf(stderr, "\t-h: displays in hexdump-like fashion\n");

@@ -17,7 +17,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-tvV] [-i imgtype] [-b dev_sector_size] image\n"),
+        ("usage: " PRIttocTSK " [-tvV] [-i imgtype] [-b dev_sector_size] image\n"),
         progname);
     tsk_fprintf(stderr, "\t-t: display type only\n");
     tsk_fprintf(stderr,

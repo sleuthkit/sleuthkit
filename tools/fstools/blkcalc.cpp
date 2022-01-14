@@ -31,7 +31,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-dsu unit_addr] [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images]\n"),
+        ("usage: " PRIttocTSK " [-dsu unit_addr] [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images]\n"),
         progname);
     tsk_fprintf(stderr, "Slowly calculates the opposite block number\n");
     tsk_fprintf(stderr, "\tOne of the following must be given:\n");
