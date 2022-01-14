@@ -99,13 +99,13 @@ uint8_t
     hFind = FindFirstFile((LPCWSTR) fullpath, &ffd);
     DWORD err = GetLastError();
     if (hFind == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "Error opening directory: %S\n", fullpath);
+        fprintf(stderr, "Error opening directory: %ls\n", fullpath);
 
         wchar_t message[64];
         FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, 0,
             (LPWSTR) & message, 64, NULL);
-        fprintf(stderr, "error: %S", message);
+        fprintf(stderr, "error: %ls", message);
         return 1;
     }
 

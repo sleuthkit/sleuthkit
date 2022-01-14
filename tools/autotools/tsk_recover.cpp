@@ -181,7 +181,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
                 result = CreateDirectoryW((LPCTSTR) path16full, NULL);
             if (result == FALSE) {
                 if (GetLastError() == ERROR_PATH_NOT_FOUND) {
-                    fprintf(stderr, "Error Creating Directory (%S)", path16full);
+                    fprintf(stderr, "Error Creating Directory (%ls)", path16full);
                     return 1;
                 }
             }
@@ -227,14 +227,14 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         CreateFileW((LPCTSTR) path16full, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "Error Creating File (%S)", path16full);
+        fprintf(stderr, "Error Creating File (%ls)", path16full);
         return 1;
     }
 
     //try to write to the file
     if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) 0,
             file_walk_cb, handle)) {
-        fprintf(stderr, "Error writing file %S\n", path16full);
+        fprintf(stderr, "Error writing file %ls\n", path16full);
         tsk_error_print(stderr);
         CloseHandle(handle);
         return 1;
