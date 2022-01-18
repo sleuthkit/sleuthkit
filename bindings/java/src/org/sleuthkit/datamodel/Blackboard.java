@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeConnection;
@@ -46,8 +47,8 @@ import static org.sleuthkit.datamodel.SleuthkitCase.closeResultSet;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 
 /**
- * A representation of the blackboard, a place where artifacts and their
- * attributes are posted.
+ * A representation of the blackboard, a place where objIdsToDelete and their
+ attributes are posted.
  */
 public final class Blackboard {
 
@@ -70,8 +71,8 @@ public final class Blackboard {
 	private final SleuthkitCase caseDb;
 
 	/**
-	 * Constructs a representation of the blackboard, a place where artifacts
-	 * and their attributes are posted.
+	 * Constructs a representation of the blackboard, a place where objIdsToDelete
+ and their attributes are posted.
 	 *
 	 * @param casedb The case database.
 	 */
@@ -106,8 +107,8 @@ public final class Blackboard {
 	 * events, if any, and broadcast of a notification that the artifacts are
 	 * ready for further analysis.
 	 *
-	 * @param artifacts  The artifacts.
-	 * @param moduleName The display name of the module posting the artifacts.
+	 * @param artifacts  The objIdsToDelete.
+	 * @param moduleName The display name of the module posting the objIdsToDelete.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -145,10 +146,10 @@ public final class Blackboard {
 	 * events, if any, and broadcast of a notification that the artifacts are
 	 * ready for further analysis.
 	 *
-	 * @param artifacts   The artifacts.
-	 * @param moduleName  The display name of the module posting the artifacts.
+	 * @param artifacts   The objIdsToDelete.
+	 * @param moduleName  The display name of the module posting the objIdsToDelete.
 	 * @param ingestJobId The numeric identifier of the ingest job for which the
-	 *                    artifacts were posted, may be null.
+                    objIdsToDelete were posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -490,8 +491,8 @@ public final class Blackboard {
 	 * one database call as an efficient way to load many artifacts/attributes
 	 * at once.
 	 *
-	 * @param arts The list of artifacts. When complete, each will have its
-	 *             attributes loaded.
+	 * @param arts The list of objIdsToDelete. When complete, each will have its
+             attributes loaded.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
@@ -554,7 +555,7 @@ public final class Blackboard {
 				attributeMap.get(attr.getArtifactID()).add(attr);
 			}
 
-			// Save the attributes to the artifacts
+			// Save the attributes to the objIdsToDelete
 			for (Long artifactID : attributeMap.keySet()) {
 				artifactMap.get(artifactID).setAttributes(attributeMap.get(artifactID));
 			}
@@ -958,7 +959,7 @@ public final class Blackboard {
 		try {
 			CaseDbConnection connection = transaction.getConnection();
 
-			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
+			// delete the blackboard objIdsToDelete row. This will also delete the tsk_analysis_result row
 			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
 
 			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
@@ -975,6 +976,94 @@ public final class Blackboard {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
 		}
+	}
+	
+	public void deleteAnalysisResults(BlackboardArtifact.Type type, Long dataSourceId) throws TskCoreException {
+		deleteAnalysisResults(type, dataSourceId, "");
+	}
+	
+	public void deleteAnalysisResults(BlackboardArtifact.Type type, Long dataSourceId, String configuration) throws TskCoreException {
+
+		String dataSourceClause = dataSourceId == null
+				? ""
+				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
+
+		String configurationClause = (configuration == null || configuration.isEmpty()
+				? ""
+				: " AND configuration = ? ");
+
+		String getIdsQuery = "SELECT artifacts.obj_id AS obj_id "
+				+ " FROM blackboard_artifacts artifacts "
+				+ " JOIN blackboard_artifact_types AS types  ON artifacts.artifact_type_id = types.artifact_type_id "
+				+ " LEFT JOIN tsk_analysis_results AS results  ON artifacts.artifact_obj_id = results.artifact_obj_id "
+				+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
+				+ " AND artifacts.artifact_type_id = ? "
+				+ dataSourceClause
+				+ configurationClause;
+		
+		List<Long> objIdsToDelete = new ArrayList<>();
+		CaseDbTransaction transaction = this.caseDb.beginTransaction();
+		// ELTODO caseDb.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = transaction.getConnection()) {
+
+			try {
+				// get obj_ids of the artifacts that need to be deleted
+				PreparedStatement preparedStatement = connection.getPreparedStatement(getIdsQuery, Statement.RETURN_GENERATED_KEYS);
+				preparedStatement.clearParameters();
+				int paramIdx = 0;
+				
+				preparedStatement.setInt(++paramIdx, type.getTypeID());
+				
+				if (dataSourceId != null) {
+					preparedStatement.setLong(++paramIdx, dataSourceId);
+				}
+								
+				if (!(configuration == null || configuration.isEmpty())) {
+					preparedStatement.setString(++paramIdx, configuration);
+				}
+				
+				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
+					while (resultSet.next()) {
+						objIdsToDelete.add(resultSet.getLong("obj_id"));
+					}
+				}
+				
+				if (objIdsToDelete.isEmpty()) {
+					transaction.close();
+					transaction = null;
+					return;
+				}
+				
+				// delete the identified artifacts by obj_id
+				String deleteQuery = "DELETE FROM blackboard_artifacts WHERE obj_id IN ("
+						+ StringUtils.join(objIdsToDelete, ',')
+						+ ")";
+				
+				// ELTODO the objIdsToDelete could be very large, we should split deletion into batches
+				
+				Statement statement = connection.createStatement();
+				connection.executeUpdate(statement, deleteQuery);
+
+				for (Long objId : objIdsToDelete) {
+					// register the deleted result with the transaction so an event can be fired for it. 
+					transaction.registerDeletedAnalysisResult(objId);
+
+					// ELTODO DO I NEED THIS?
+					caseDb.getScoringManager().updateAggregateScoreAfterDeletion(objId, dataSourceId, transaction);
+				}
+
+				transaction.commit();
+				transaction = null;
+
+			} catch (SQLException ex) {
+				throw new TskCoreException(String.format("Error getting keyword search results with queryString = '%s'", getIdsQuery), ex);
+			}
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+			// ELTODO caseDb.releaseSingleUserCaseReadLock();
+		}		
 	}
 
 	private final static String ANALYSIS_RESULT_QUERY_STRING_GENERIC = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
@@ -1070,11 +1159,11 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Get all data artifacts for a given object.
+	 * Get all data objIdsToDelete for a given object.
 	 *
 	 * @param sourceObjId Object id.
 	 *
-	 * @return List of data artifacts.
+	 * @return List of data objIdsToDelete.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
@@ -1089,11 +1178,11 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Returns true if there are data artifacts belonging to the sourceObjId.
+	 * Returns true if there are data objIdsToDelete belonging to the sourceObjId.
 	 *
 	 * @param sourceObjId The source content object id.
 	 *
-	 * @return True if there are data artifacts belonging to this source obj id.
+	 * @return True if there are data objIdsToDelete belonging to this source obj id.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -1116,14 +1205,14 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Returns true if there are artifacts of the given category belonging to
-	 * the sourceObjId.
+	 * Returns true if there are objIdsToDelete of the given category belonging to
+ the sourceObjId.
 	 *
-	 * @param category    The category of the artifacts.
+	 * @param category    The category of the objIdsToDelete.
 	 * @param sourceObjId The source content object id.
 	 *
-	 * @return True if there are artifacts of the given category belonging to
-	 *         this source obj id.
+	 * @return True if there are objIdsToDelete of the given category belonging to
+         this source obj id.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -1318,9 +1407,9 @@ public final class Blackboard {
 	 * all the data artifacts for the data source, pass null for the type ID.
 	 *
 	 * @param dataSourceObjId The object ID of the data source.
-	 * @param artifactTypeID  The type ID of the desired artifacts or null.
+	 * @param artifactTypeID  The type ID of the desired objIdsToDelete or null.
 	 *
-	 * @return A list of the data artifacts, possibly empty.
+	 * @return A list of the data objIdsToDelete, possibly empty.
 	 *
 	 * @throws TskCoreException This exception is thrown if there is an error
 	 *                          querying the case database.
@@ -1339,12 +1428,12 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Get all data artifacts of a given type for a given data source.
+	 * Get all data objIdsToDelete of a given type for a given data source.
 	 *
 	 * @param artifactTypeID  Artifact type to get.
 	 * @param dataSourceObjId Data source to look under.
 	 *
-	 * @return List of data artifacts. May be an empty list.
+	 * @return List of data objIdsToDelete. May be an empty list.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
@@ -1369,11 +1458,11 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Get all data artifacts of a given type.
+	 * Get all data objIdsToDelete of a given type.
 	 *
 	 * @param artifactTypeID Artifact type to get.
 	 *
-	 * @return List of data artifacts. May be an empty list.
+	 * @return List of data objIdsToDelete. May be an empty list.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
@@ -1425,11 +1514,11 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Get all data artifacts matching the given where sub-clause.
+	 * Get all data objIdsToDelete matching the given where sub-clause.
 	 *
 	 * @param whereClause SQL Where sub-clause, specifies conditions to match.
 	 *
-	 * @return List of data artifacts. May be an empty list.
+	 * @return List of data objIdsToDelete. May be an empty list.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
@@ -1450,7 +1539,7 @@ public final class Blackboard {
 	 * @param whereClause SQL Where sub-clause, specifies conditions to match.
 	 * @param connection  Database connection to use.
 	 *
-	 * @return List of data artifacts. May be an empty list.
+	 * @return List of data objIdsToDelete. May be an empty list.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core.
@@ -1632,7 +1721,7 @@ public final class Blackboard {
 	 * @param artifactTypeID  artifact type id (must exist in database)
 	 * @param dataSourceObjId data source object id
 	 *
-	 * @return count of blackboard artifacts
+	 * @return count of blackboard objIdsToDelete
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -1648,7 +1737,7 @@ public final class Blackboard {
 	 *
 	 * @param artifactTypeID artifact type id (must exist in database)
 	 *
-	 * @return count of blackboard artifacts
+	 * @return count of blackboard objIdsToDelete
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -1664,7 +1753,7 @@ public final class Blackboard {
 	 * @param artifactTypeID  artifact type to get
 	 * @param dataSourceObjId data source to look under
 	 *
-	 * @return list of blackboard artifacts
+	 * @return list of blackboard objIdsToDelete
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -1681,7 +1770,7 @@ public final class Blackboard {
 	 * @param artifactTypes    list of artifact types to get
 	 * @param dataSourceObjIds data sources to look under
 	 *
-	 * @return list of blackboard artifacts
+	 * @return list of blackboard objIdsToDelete
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -1734,17 +1823,17 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Get all blackboard artifacts of the given type that contain attribute of
-	 * given type and value, for a given data source(s).
+	 * Get all blackboard objIdsToDelete of the given type that contain attribute of
+ given type and value, for a given data source(s).
 	 *
 	 * @param artifactType		  artifact type to get
 	 * @param attributeType		 attribute type to be included
 	 * @param value				       attribute value to be included. can be empty.
 	 * @param dataSourceObjId	data source to look under. If Null, then search
 	 *                        all data sources.
-	 * @param showRejected		  a flag whether to display rejected artifacts
+	 * @param showRejected		  a flag whether to display rejected objIdsToDelete
 	 *
-	 * @return list of blackboard artifacts
+	 * @return list of blackboard objIdsToDelete
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -1786,7 +1875,7 @@ public final class Blackboard {
 
 	/**
 	 * Returns a list of "Exact match / Literal" keyword hits blackboard
-	 * artifacts according to the input conditions.
+ objIdsToDelete according to the input conditions.
 	 *
 	 * @param keyword      The keyword string to search for. This should always
 	 *                     be populated unless you are trying to get all keyword
@@ -1800,7 +1889,7 @@ public final class Blackboard {
 	 *                     If null, then the results will be for all data
 	 *                     sources.
 	 *
-	 * @return A list of keyword hits blackboard artifacts
+	 * @return A list of keyword hits blackboard objIdsToDelete
 	 *
 	 * @throws TskCoreException If an exception is encountered while running
 	 *                          database query to obtain the keyword hits.
@@ -1810,8 +1899,8 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Returns a list of keyword hits blackboard artifacts according to the
-	 * input conditions.
+	 * Returns a list of keyword hits blackboard objIdsToDelete according to the
+ input conditions.
 	 *
 	 * @param keyword      The keyword string to search for. This should always
 	 *                     be populated unless you are trying to get all keyword
@@ -1829,7 +1918,7 @@ public final class Blackboard {
 	 *                     If null, then the results will be for all data
 	 *                     sources.
 	 *
-	 * @return A list of keyword hits blackboard artifacts
+	 * @return A list of keyword hits blackboard objIdsToDelete
 	 *
 	 * @throws TskCoreException If an exception is encountered while running
 	 *                          database query to obtain the keyword hits.
@@ -2242,11 +2331,11 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Returns a list of artifacts of the given type.
+	 * Returns a list of objIdsToDelete of the given type.
 	 *
-	 * @param artifactType The type of artifacts to retrieve.
+	 * @param artifactType The type of objIdsToDelete to retrieve.
 	 *
-	 * @return A list of artifacts of the given type.
+	 * @return A list of objIdsToDelete of the given type.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -2307,11 +2396,11 @@ public final class Blackboard {
 		 * artifacts are posted. Posted artifacts should be complete (all
 		 * attributes have been added) and ready for further analysis.
 		 *
-		 * @param artifacts   The artifacts. 
+		 * @param artifacts   The objIdsToDelete. 
 		 * @param moduleName  The display name of the module posting the
-		 *                    artifacts.
+                    objIdsToDelete.
 		 * @param ingestJobId The numeric identifier of the ingest job within
-		 *                    which the artifacts were posted, may be null.
+                    which the objIdsToDelete were posted, may be null.
 		 */
 		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
@@ -2332,20 +2421,20 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the posted artifacts.
+		 * Gets the posted objIdsToDelete.
 		 *
-		 * @return The artifacts (data artifacts and/or analysis results).
+		 * @return The objIdsToDelete (data objIdsToDelete and/or analysis results).
 		 */
 		public Collection<BlackboardArtifact> getArtifacts() {
 			return ImmutableSet.copyOf(artifacts);
 		}
 
 		/**
-		 * Gets the posted artifacts of a given type.
+		 * Gets the posted objIdsToDelete of a given type.
 		 *
 		 * @param artifactType The artifact type.
 		 *
-		 * @return The artifacts, if any.
+		 * @return The objIdsToDelete, if any.
 		 */
 		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
 			Set<BlackboardArtifact> tempSet = artifacts.stream()
@@ -2355,7 +2444,7 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the display name of the module that posted the artifacts.
+		 * Gets the display name of the module that posted the objIdsToDelete.
 		 *
 		 * @return The display name.
 		 */
@@ -2364,7 +2453,7 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the types of artifacts that were posted.
+		 * Gets the types of objIdsToDelete that were posted.
 		 *
 		 * @return The types.
 		 */
@@ -2373,8 +2462,8 @@ public final class Blackboard {
 		}
 
 		/**
-		 * Gets the numeric identifier of the ingest job for which the artifacts
-		 * were posted.
+		 * Gets the numeric identifier of the ingest job for which the objIdsToDelete
+ were posted.
 		 *
 		 * @return The ingest job ID, may be null.
 		 */
