@@ -48,7 +48,7 @@ import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
- attributes are posted.
+ * attributes are posted.
  */
 public final class Blackboard {
 
@@ -72,7 +72,7 @@ public final class Blackboard {
 
 	/**
 	 * Constructs a representation of the blackboard, a place where artifacts
- and their attributes are posted.
+	 * and their attributes are posted.
 	 *
 	 * @param casedb The case database.
 	 */
@@ -149,7 +149,7 @@ public final class Blackboard {
 	 * @param artifacts   The artifacts.
 	 * @param moduleName  The display name of the module posting the artifacts.
 	 * @param ingestJobId The numeric identifier of the ingest job for which the
-                    artifacts were posted, may be null.
+	 *                    artifacts were posted, may be null.
 	 *
 	 * @throws BlackboardException The exception is thrown if there is an issue
 	 *                             posting the artifact.
@@ -443,10 +443,10 @@ public final class Blackboard {
 		CaseDbConnection connection = null;
 		Statement statement = null;
 		ResultSet rs = null;
-		
+
 		String rowId;
 		switch (caseDb.getDatabaseType()) {
-			case POSTGRESQL: 
+			case POSTGRESQL:
 				rowId = "attrs.CTID";
 				break;
 			case SQLITE:
@@ -455,7 +455,7 @@ public final class Blackboard {
 			default:
 				throw new TskCoreException("Unknown database type: " + caseDb.getDatabaseType());
 		}
-		
+
 		caseDb.acquireSingleUserCaseReadLock();
 		try {
 			connection = caseDb.getConnection();
@@ -467,7 +467,7 @@ public final class Blackboard {
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id = " + artifact.getArtifactID()
-					+ " AND attrs.attribute_type_id = types.attribute_type_id " 
+					+ " AND attrs.attribute_type_id = types.attribute_type_id "
 					+ " ORDER BY " + rowId);
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
@@ -492,7 +492,7 @@ public final class Blackboard {
 	 * at once.
 	 *
 	 * @param arts The list of artifacts. When complete, each will have its
-             attributes loaded.
+	 *             attributes loaded.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
@@ -993,7 +993,7 @@ public final class Blackboard {
 	public void deleteAnalysisResults(BlackboardArtifact.Type type, Long dataSourceId) throws TskCoreException {
 		deleteAnalysisResults(type, dataSourceId, "");
 	}
-	
+
 	/**
 	 * Deletes all analysis results of certain type and (optionally) data
 	 * source.
@@ -1027,7 +1027,7 @@ public final class Blackboard {
 				+ " AND artifacts.artifact_type_id = ? "
 				+ dataSourceClause
 				+ configurationClause;
-		
+
 		List<Long> resultIdsToDelete = new ArrayList<>();
 		CaseDbTransaction transaction = this.caseDb.beginTransaction();
 		// ELTODO caseDb.acquireSingleUserCaseReadLock();
@@ -1038,29 +1038,29 @@ public final class Blackboard {
 				PreparedStatement preparedStatement = connection.getPreparedStatement(getIdsQuery, Statement.RETURN_GENERATED_KEYS);
 				preparedStatement.clearParameters();
 				int paramIdx = 0;
-				
+
 				preparedStatement.setInt(++paramIdx, type.getTypeID());
-				
+
 				if (dataSourceId != null) {
 					preparedStatement.setLong(++paramIdx, dataSourceId);
 				}
-								
+
 				if (!(configuration == null || configuration.isEmpty())) {
 					preparedStatement.setString(++paramIdx, configuration);
 				}
-				
+
 				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
 					while (resultSet.next()) {
 						resultIdsToDelete.add(resultSet.getLong("obj_id"));
 					}
 				}
-				
+
 				if (resultIdsToDelete.isEmpty()) {
 					transaction.close();
 					transaction = null;
 					return;
 				}
-				
+
 				// delete the identified artifacts by obj_id. the number of results 
 				// could be very large so we should split deletion into batches to limit the
 				// size of the SQL string
@@ -1082,14 +1082,14 @@ public final class Blackboard {
 						count = 0;
 					}
 				}
-				
+
 				if (count > 0) {
 					// delete remaining objIds
 					idsToDelete += ")";
 					Statement statement = connection.createStatement();
 					connection.executeUpdate(statement, idsToDelete);
 				}
-	
+
 				for (Long objId : resultIdsToDelete) {
 					// register the deleted result with the transaction so an event can be fired for it. 
 					transaction.registerDeletedAnalysisResult(objId);
@@ -1109,7 +1109,7 @@ public final class Blackboard {
 				transaction.rollback();
 			}
 			// ELTODO caseDb.releaseSingleUserCaseReadLock();
-		}		
+		}
 	}
 
 	private final static String ANALYSIS_RESULT_QUERY_STRING_GENERIC = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
@@ -1252,13 +1252,13 @@ public final class Blackboard {
 
 	/**
 	 * Returns true if there are artifacts of the given category belonging to
- the sourceObjId.
+	 * the sourceObjId.
 	 *
 	 * @param category    The category of the artifacts.
 	 * @param sourceObjId The source content object id.
 	 *
 	 * @return True if there are artifacts of the given category belonging to
-         this source obj id.
+	 *         this source obj id.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -1870,7 +1870,7 @@ public final class Blackboard {
 
 	/**
 	 * Get all blackboard artifacts of the given type that contain attribute of
- given type and value, for a given data source(s).
+	 * given type and value, for a given data source(s).
 	 *
 	 * @param artifactType		  artifact type to get
 	 * @param attributeType		 attribute type to be included
@@ -1921,7 +1921,7 @@ public final class Blackboard {
 
 	/**
 	 * Returns a list of "Exact match / Literal" keyword hits blackboard
- artifacts according to the input conditions.
+	 * artifacts according to the input conditions.
 	 *
 	 * @param keyword      The keyword string to search for. This should always
 	 *                     be populated unless you are trying to get all keyword
@@ -1946,7 +1946,7 @@ public final class Blackboard {
 
 	/**
 	 * Returns a list of keyword hits blackboard artifacts according to the
- input conditions.
+	 * input conditions.
 	 *
 	 * @param keyword      The keyword string to search for. This should always
 	 *                     be populated unless you are trying to get all keyword
@@ -1970,7 +1970,7 @@ public final class Blackboard {
 	 *                          database query to obtain the keyword hits.
 	 */
 	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String kwsListName, Long dataSourceId) throws TskCoreException {
-		
+
 		String dataSourceClause = dataSourceId == null
 				? ""
 				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
@@ -2038,7 +2038,7 @@ public final class Blackboard {
 				if (dataSourceId != null) {
 					preparedStatement.setLong(++paramIdx, dataSourceId);
 				}
-								
+
 				if (!(kwsListName == null || kwsListName.isEmpty())) {
 					preparedStatement.setString(++paramIdx, kwsListName);
 				}
@@ -2054,7 +2054,7 @@ public final class Blackboard {
 				if (!(regex == null || regex.isEmpty())) {
 					preparedStatement.setString(++paramIdx, regex);
 				}
-				
+
 				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
 					artifacts.addAll(resultSetToAnalysisResults(resultSet));
 				}
@@ -2067,7 +2067,7 @@ public final class Blackboard {
 		}
 		return artifacts;
 	}
-	
+
 	/**
 	 * Gets count of blackboard artifacts of given type that match a given WHERE
 	 * clause. Uses a SELECT COUNT(*) FROM blackboard_artifacts statement
@@ -2442,11 +2442,11 @@ public final class Blackboard {
 		 * artifacts are posted. Posted artifacts should be complete (all
 		 * attributes have been added) and ready for further analysis.
 		 *
-		 * @param artifacts   The artifacts. 
+		 * @param artifacts   The artifacts.
 		 * @param moduleName  The display name of the module posting the
-                    artifacts.
+		 *                    artifacts.
 		 * @param ingestJobId The numeric identifier of the ingest job within
-                    which the artifacts were posted, may be null.
+		 *                    which the artifacts were posted, may be null.
 		 */
 		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName, Long ingestJobId) throws BlackboardException {
 			Set<Integer> typeIDS = artifacts.stream()
@@ -2509,7 +2509,7 @@ public final class Blackboard {
 
 		/**
 		 * Gets the numeric identifier of the ingest job for which the artifacts
- were posted.
+		 * were posted.
 		 *
 		 * @return The ingest job ID, may be null.
 		 */
