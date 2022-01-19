@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeConnection;
@@ -1064,30 +1063,19 @@ public final class Blackboard {
 				// delete the identified artifacts by obj_id. the number of results 
 				// could be very large so we should split deletion into batches to limit the
 				// size of the SQL string
-				int count = 0;
 				int maxArtifactsToDeleteAtOnce = 50;
-				String deleteQuery = "DELETE FROM blackboard_artifacts WHERE obj_id IN (";
-				String idsToDelete = deleteQuery;
-				for (Long objId : resultIdsToDelete) {
-					count++;
-					if (count < maxArtifactsToDeleteAtOnce) {
-						// add objId to the list
-						idsToDelete += objId + ",";
-					} else {
-						// delete the current batch
-						idsToDelete += ")";
-						Statement statement = connection.createStatement();
-						connection.executeUpdate(statement, idsToDelete);
-						idsToDelete = deleteQuery;
-						count = 0;
-					}
-				}
+				for (int startId = 0; startId < resultIdsToDelete.size(); startId += maxArtifactsToDeleteAtOnce) {
 
-				if (count > 0) {
-					// delete remaining objIds
-					idsToDelete += ")";
+					List<String> newList = resultIdsToDelete.subList(startId, Math.min(resultIdsToDelete.size(), startId + maxArtifactsToDeleteAtOnce)).stream()
+							.map(String::valueOf)
+							.collect(Collectors.toList());
+					
+					String deleteQuery = "DELETE FROM blackboard_artifacts WHERE obj_id IN ("
+							+ String.join(",", newList)
+							+ ")";
+
 					Statement statement = connection.createStatement();
-					connection.executeUpdate(statement, idsToDelete);
+					connection.executeUpdate(statement, deleteQuery);
 				}
 
 				for (Long objId : resultIdsToDelete) {
