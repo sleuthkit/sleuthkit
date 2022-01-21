@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -92,7 +93,7 @@ public interface TskEvent {
 			super(scoreChanges.asList());
 			this.dataSourceObjectId = dataSourceObjectId;
 			scoreChanges.stream().forEach(chg -> {
-				if (!chg.getDataSourceObjectId().equals(dataSourceObjectId)) {
+				if (!Objects.equals(chg.getDataSourceObjectId(), dataSourceObjectId)) {
 					throw new IllegalArgumentException("All data source object IDs in List<ScoreChange> must match dataSourceObjectId");
 				}
 			});
