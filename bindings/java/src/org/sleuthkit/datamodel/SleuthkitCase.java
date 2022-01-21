@@ -13538,16 +13538,7 @@ public class SleuthkitCase {
 			} catch (SQLException ex) {
 				sleuthkitCase.releaseSingleUserCaseWriteLock();
 				throw new TskCoreException("Failed to create transaction on case database", ex);
-			} catch (Exception ex2) {
-				// ELTODO REMOVE
-				sleuthkitCase.releaseSingleUserCaseWriteLock();
-				throw new TskCoreException("Failed to create transaction on case database", ex2);
-			} catch (Throwable ex3) {
-				// ELTODO REMOVE
-				sleuthkitCase.releaseSingleUserCaseWriteLock();
-				//throw new TskCoreException("Failed to create transaction on case database", ex2);
 			}
-
 		}
 
 		/**
