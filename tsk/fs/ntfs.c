@@ -5158,7 +5158,7 @@ ntfs_close(TSK_FS_INFO * fs)
 }
 
 /**
- * Check if the boot format matches that produced in certain VHDs
+ * Check if the boot format matches that produced in KAPE VHDs
  * that are missing the 0x55AA marker.
  * Will also set the endianness.
  *
@@ -5166,7 +5166,7 @@ ntfs_close(TSK_FS_INFO * fs)
  * @returns 0 if format appeares valid, 1 otherwise
  */
 static int
-process_alternate_boot_format(NTFS_INFO* ntfs_info) {
+process_kape_boot_format(NTFS_INFO* ntfs_info) {
 
     // Check that we have a VHD
     if (ntfs_info->fs_info.img_info->itype != TSK_IMG_TYPE_VHD_VHD) {
@@ -5265,7 +5265,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* Check the magic value */
     if (tsk_fs_guessu16(fs, ntfs->fs->magic, NTFS_FS_MAGIC)) {
-        if (process_alternate_boot_format(ntfs)) {
+        if (process_kape_boot_format(ntfs)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
             tsk_error_set_errstr("Not a NTFS file system (magic)");
