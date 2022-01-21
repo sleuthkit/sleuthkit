@@ -1018,7 +1018,7 @@ public final class Blackboard {
 				? ""
 				: " AND configuration = ? ");
 
-		String getIdsQuery = "SELECT artifacts.obj_id AS obj_id "
+		String getIdsQuery = "SELECT artifacts.obj_id AS obj_id, artifacts.data_source_obj_id AS data_source_obj_id "
 				+ " FROM blackboard_artifacts artifacts "
 				+ " JOIN blackboard_artifact_types AS types  ON artifacts.artifact_type_id = types.artifact_type_id "
 				+ " LEFT JOIN tsk_analysis_results AS results  ON artifacts.artifact_obj_id = results.artifact_obj_id "
@@ -1028,13 +1028,15 @@ public final class Blackboard {
 				+ configurationClause;
 
 		List<Long> resultIdsToDelete = new ArrayList<>();
+		List<Long> dataSourceIds = new ArrayList<>();
 		CaseDbTransaction transaction = this.caseDb.beginTransaction();
-		// ELTODO caseDb.acquireSingleUserCaseReadLock();
+		String currentQuery = "";
 		try (CaseDbConnection connection = transaction.getConnection()) {
 
 			try {
 				// get obj_ids of the artifacts that need to be deleted
-				PreparedStatement preparedStatement = connection.getPreparedStatement(getIdsQuery, Statement.RETURN_GENERATED_KEYS);
+				currentQuery = getIdsQuery;
+				PreparedStatement preparedStatement = connection.getPreparedStatement(currentQuery, Statement.RETURN_GENERATED_KEYS);
 				preparedStatement.clearParameters();
 				int paramIdx = 0;
 
@@ -1051,6 +1053,7 @@ public final class Blackboard {
 				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
 					while (resultSet.next()) {
 						resultIdsToDelete.add(resultSet.getLong("obj_id"));
+						dataSourceIds.add(resultSet.getLong("data_source_obj_id"));
 					}
 				}
 
@@ -1070,33 +1073,35 @@ public final class Blackboard {
 							.map(String::valueOf)
 							.collect(Collectors.toList());
 					
-					String deleteQuery = "DELETE FROM blackboard_artifacts WHERE obj_id IN ("
+					currentQuery = "DELETE FROM blackboard_artifacts WHERE obj_id IN ("
 							+ String.join(",", newList)
 							+ ")";
 
 					Statement statement = connection.createStatement();
-					connection.executeUpdate(statement, deleteQuery);
+					connection.executeUpdate(statement, currentQuery);
 				}
 
-				for (Long objId : resultIdsToDelete) {
+				for (int indx = 0; indx < resultIdsToDelete.size(); indx++) {
+					
+					Long objId = resultIdsToDelete.get(indx);
+					Long dsId = dataSourceIds.get(indx);
 					// register the deleted result with the transaction so an event can be fired for it. 
 					transaction.registerDeletedAnalysisResult(objId);
 
-					// ELTODO DO I NEED THIS?
-					caseDb.getScoringManager().updateAggregateScoreAfterDeletion(objId, dataSourceId, transaction);
+					// update score of the source file
+					caseDb.getScoringManager().updateAggregateScoreAfterDeletion(objId, dsId, transaction);
 				}
 
 				transaction.commit();
 				transaction = null;
 
 			} catch (SQLException ex) {
-				throw new TskCoreException(String.format("Error getting keyword search results with queryString = '%s'", getIdsQuery), ex);
-			}
+				throw new TskCoreException(String.format("Error while performing query = '%s'", currentQuery), ex);
+			} 
 		} finally {
 			if (transaction != null) {
 				transaction.rollback();
 			}
-			// ELTODO caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
 
