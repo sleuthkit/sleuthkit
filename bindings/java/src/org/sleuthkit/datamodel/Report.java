@@ -286,7 +286,7 @@ public class Report implements Content {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
 
-		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() ||
+		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() &&
 				artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
 		}
@@ -297,7 +297,7 @@ public class Report implements Content {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
 
-		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() ||
+		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() &&
 				artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
 		}		
