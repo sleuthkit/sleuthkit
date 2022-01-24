@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A utility class for handling Windows specific accounts and SIDs.
@@ -131,7 +133,12 @@ final class WindowsAccountUtils {
 			.put("S-1-5-94", "WinRM Virtual accountt")
 			.put("S-1-5-96", "Font Driver Host Virtual Account")
 			.build();
-				
+			
+	
+	//More information on security identifier architecture can be found at: 
+	// https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/security-identifiers
+	private static final Pattern WINDOWS_SPECIAL_ACCOUNT_REGEX = Pattern.compile("^\\s*S\\-\\d*\\-\\d*\\-(\\d*)");
+	
 	/**
 	 * Checks if the given SID is a special Windows SID.
 	 * 
@@ -151,14 +158,14 @@ final class WindowsAccountUtils {
 			}
 		}
 		
-		// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
-		tempSID = tempSID.replaceFirst(DOMAIN_SID_PREFIX + "-", "");
-		String subAuthStr = tempSID.substring(0, tempSID.indexOf('-'));
-		Integer subAuth = Optional.ofNullable(subAuthStr).map(Integer::valueOf).orElse(0);
-		if (subAuth >= 80 && subAuth <= 111) {
-			return true;
+		Matcher match = WINDOWS_SPECIAL_ACCOUNT_REGEX.matcher(tempSID);
+		if (match.find()) {
+			Integer domainIdentifier = Integer.valueOf(match.group(1));
+			// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
+			if (domainIdentifier != null && domainIdentifier >= 80 && domainIdentifier <= 111) {
+				return true;
+			}
 		}
-		
 		
 		return false;
 	}
