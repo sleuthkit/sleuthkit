@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -135,6 +134,7 @@ final class WindowsAccountUtils {
 			.build();
 			
 	
+	// Looks for security identifier prefixes of the form S-<number>-<number>-<number>
 	//More information on security identifier architecture can be found at: 
 	// https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/security-identifiers
 	private static final Pattern WINDOWS_SPECIAL_ACCOUNT_REGEX = Pattern.compile("^\\s*S\\-\\d*\\-\\d*\\-(\\d*)");
