@@ -239,7 +239,7 @@ final class WindowsAccountUtils {
 		String tempSID = stripWindowsBackupPostfix(sid);
 		
 		// When copying realms into portable cases, the SID may already be set to the special windows string.
-		if (isWindowsSpecialSid(tempSID) || tempSID.equals(SPECIAL_WINDOWS_REALM_ADDR)) {
+		if (tempSID.equals(SPECIAL_WINDOWS_REALM_ADDR) || isWindowsSpecialSid(tempSID)) {
 			realmAddr = SPECIAL_WINDOWS_REALM_ADDR;
 		} else {
 			// regular SIDs should have at least 5 components: S-1-x-y-z
