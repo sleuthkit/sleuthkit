@@ -442,10 +442,10 @@ public final class Blackboard {
 		CaseDbConnection connection = null;
 		Statement statement = null;
 		ResultSet rs = null;
-		
+
 		String rowId;
 		switch (caseDb.getDatabaseType()) {
-			case POSTGRESQL: 
+			case POSTGRESQL:
 				rowId = "attrs.CTID";
 				break;
 			case SQLITE:
@@ -454,7 +454,7 @@ public final class Blackboard {
 			default:
 				throw new TskCoreException("Unknown database type: " + caseDb.getDatabaseType());
 		}
-		
+
 		caseDb.acquireSingleUserCaseReadLock();
 		try {
 			connection = caseDb.getConnection();
@@ -466,7 +466,7 @@ public final class Blackboard {
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id = " + artifact.getArtifactID()
-					+ " AND attrs.attribute_type_id = types.attribute_type_id " 
+					+ " AND attrs.attribute_type_id = types.attribute_type_id "
 					+ " ORDER BY " + rowId);
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
@@ -974,6 +974,134 @@ public final class Blackboard {
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
+		}
+	}
+
+	/**
+	 * Deletes all analysis results of certain type and (optionally) data
+	 * source.
+	 *
+	 * @param type	        Type of analysis results to delete
+	 *                     (BlackboardArtifact.Type)
+	 * @param dataSourceId Data source ID to delete only analysis results from
+	 *                     specific data source. If null, then delete analysis
+	 *                     results from all data sources.
+	 *
+	 * @throws TskCoreException
+	 */
+	public void deleteAnalysisResults(BlackboardArtifact.Type type, Long dataSourceId) throws TskCoreException {
+		deleteAnalysisResults(type, dataSourceId, "");
+	}
+
+	/**
+	 * Deletes all analysis results of certain type and (optionally) data
+	 * source.
+	 *
+	 * @param type	         Type of analysis results to delete
+	 *                      (BlackboardArtifact.Type)
+	 * @param dataSourceId  Data source ID to delete only analysis results from
+	 *                      specific data source. If null, then delete analysis
+	 *                      results from all data sources.
+	 * @param configuration Name of the analysis result configuration to delete.
+	 *                      Can be empty if there is no configuration for this
+	 *                      analysis result type.
+	 *
+	 * @throws TskCoreException
+	 */
+	public void deleteAnalysisResults(BlackboardArtifact.Type type, Long dataSourceId, String configuration) throws TskCoreException {
+
+		String dataSourceClause = dataSourceId == null
+				? ""
+				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
+
+		String configurationClause = (configuration == null || configuration.isEmpty()
+				? ""
+				: " AND configuration = ? ");
+
+		String getIdsQuery = "SELECT artifacts.obj_id AS obj_id, artifacts.data_source_obj_id AS data_source_obj_id "
+				+ " FROM blackboard_artifacts artifacts "
+				+ " JOIN blackboard_artifact_types AS types  ON artifacts.artifact_type_id = types.artifact_type_id "
+				+ " LEFT JOIN tsk_analysis_results AS results  ON artifacts.artifact_obj_id = results.artifact_obj_id "
+				+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
+				+ " AND artifacts.artifact_type_id = ? "
+				+ dataSourceClause
+				+ configurationClause;
+
+		List<Long> resultIdsToDelete = new ArrayList<>();
+		List<Long> dataSourceIds = new ArrayList<>();
+		CaseDbTransaction transaction = this.caseDb.beginTransaction();
+		String currentQuery = "";
+		try (CaseDbConnection connection = transaction.getConnection()) {
+
+			try {
+				// get obj_ids of the artifacts that need to be deleted
+				currentQuery = getIdsQuery;
+				PreparedStatement preparedStatement = connection.getPreparedStatement(currentQuery, Statement.RETURN_GENERATED_KEYS);
+				preparedStatement.clearParameters();
+				int paramIdx = 0;
+
+				preparedStatement.setInt(++paramIdx, type.getTypeID());
+
+				if (dataSourceId != null) {
+					preparedStatement.setLong(++paramIdx, dataSourceId);
+				}
+
+				if (!(configuration == null || configuration.isEmpty())) {
+					preparedStatement.setString(++paramIdx, configuration);
+				}
+
+				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
+					while (resultSet.next()) {
+						resultIdsToDelete.add(resultSet.getLong("obj_id"));
+						dataSourceIds.add(resultSet.getLong("data_source_obj_id"));
+					}
+				}
+
+				if (resultIdsToDelete.isEmpty()) {
+					transaction.close();
+					transaction = null;
+					return;
+				}
+
+				// delete the identified artifacts by obj_id. the number of results 
+				// could be very large so we should split deletion into batches to limit the
+				// size of the SQL string
+				int maxArtifactsToDeleteAtOnce = 50;
+				for (int startId = 0; startId < resultIdsToDelete.size(); startId += maxArtifactsToDeleteAtOnce) {
+
+					List<String> newList = resultIdsToDelete.subList(startId, Math.min(resultIdsToDelete.size(), startId + maxArtifactsToDeleteAtOnce)).stream()
+							.map(String::valueOf)
+							.collect(Collectors.toList());
+					
+					currentQuery = "DELETE FROM blackboard_artifacts WHERE obj_id IN ("
+							+ String.join(",", newList)
+							+ ")";
+
+					Statement statement = connection.createStatement();
+					connection.executeUpdate(statement, currentQuery);
+				}
+
+				for (int indx = 0; indx < resultIdsToDelete.size(); indx++) {
+					
+					Long objId = resultIdsToDelete.get(indx);
+					Long dsId = dataSourceIds.get(indx);
+					// register the deleted result with the transaction so an event can be fired for it. 
+					transaction.registerDeletedAnalysisResult(objId);
+
+					// update score of the source file
+					caseDb.getScoringManager().updateAggregateScoreAfterDeletion(objId, dsId, transaction);
+				}
+
+				transaction.commit();
+				transaction = null;
+
+			} catch (SQLException ex) {
+				throw new TskCoreException(String.format("Error while performing query = '%s'", currentQuery), ex);
+			} 
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 	}
 
@@ -1835,7 +1963,7 @@ public final class Blackboard {
 	 *                          database query to obtain the keyword hits.
 	 */
 	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String kwsListName, Long dataSourceId) throws TskCoreException {
-		
+
 		String dataSourceClause = dataSourceId == null
 				? ""
 				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
@@ -1903,7 +2031,7 @@ public final class Blackboard {
 				if (dataSourceId != null) {
 					preparedStatement.setLong(++paramIdx, dataSourceId);
 				}
-								
+
 				if (!(kwsListName == null || kwsListName.isEmpty())) {
 					preparedStatement.setString(++paramIdx, kwsListName);
 				}
@@ -1919,7 +2047,7 @@ public final class Blackboard {
 				if (!(regex == null || regex.isEmpty())) {
 					preparedStatement.setString(++paramIdx, regex);
 				}
-				
+
 				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
 					artifacts.addAll(resultSetToAnalysisResults(resultSet));
 				}
@@ -1932,7 +2060,7 @@ public final class Blackboard {
 		}
 		return artifacts;
 	}
-	
+
 	/**
 	 * Gets count of blackboard artifacts of given type that match a given WHERE
 	 * clause. Uses a SELECT COUNT(*) FROM blackboard_artifacts statement
@@ -2307,7 +2435,7 @@ public final class Blackboard {
 		 * artifacts are posted. Posted artifacts should be complete (all
 		 * attributes have been added) and ready for further analysis.
 		 *
-		 * @param artifacts   The artifacts. 
+		 * @param artifacts   The artifacts.
 		 * @param moduleName  The display name of the module posting the
 		 *                    artifacts.
 		 * @param ingestJobId The numeric identifier of the ingest job within

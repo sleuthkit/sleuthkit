@@ -13539,7 +13539,6 @@ public class SleuthkitCase {
 				sleuthkitCase.releaseSingleUserCaseWriteLock();
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
-
 		}
 
 		/**
@@ -13643,8 +13642,17 @@ public class SleuthkitCase {
 				close();
 
 				if (!scoreChangeMap.isEmpty()) {
-					Map<Long, List<ScoreChange>> changesByDataSource = scoreChangeMap.values().stream()
-							.collect(Collectors.groupingBy(ScoreChange::getDataSourceObjectId));
+					// NOTE: data source ID can be NULL so we can't use Collectors.groupingBy(ScoreChange::getDataSourceObjectId)
+					// because that doesn't support NULL and throws an NPE
+					Map<Long, List<ScoreChange>> changesByDataSource = new HashMap<>();
+					for (Map.Entry<Long, ScoreChange> entry : scoreChangeMap.entrySet()) {						
+						List<ScoreChange> scoreChanges = changesByDataSource.get(entry.getValue().getDataSourceObjectId());
+						if (scoreChanges == null) {
+							changesByDataSource.put(entry.getValue().getDataSourceObjectId(), new ArrayList<>(Arrays.asList(entry.getValue())));
+						} else {
+							scoreChanges.add(entry.getValue());
+						}
+					}					
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
 						sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
