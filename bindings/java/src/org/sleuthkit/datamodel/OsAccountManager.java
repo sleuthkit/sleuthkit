@@ -1062,7 +1062,11 @@ public final class OsAccountManager {
 		}
 
 		// search by login name
-		return this.getOsAccountByLoginName(loginName, realm.get());
+		if (!Strings.isNullOrEmpty(loginName)) {
+			return this.getOsAccountByLoginName(loginName, realm.get());
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	/**
