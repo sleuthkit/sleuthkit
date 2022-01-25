@@ -1950,9 +1950,7 @@ public final class Blackboard {
 	 *                     well as the keyword. It should be empty for literal
 	 *                     exact match keyword search types.
 	 * @param searchType   Type of keyword search query.
-	 * @param kwsListName  (Optional) Name of the keyword list for which the
-	 *                     search results are for. If not specified, then the
-	 *                     results will be for ad-hoc keyword searches.
+	 * @param configuration  ELTODO.
 	 * @param dataSourceId (Optional) Data source id of the target data source.
 	 *                     If null, then the results will be for all data
 	 *                     sources.
@@ -1962,15 +1960,15 @@ public final class Blackboard {
 	 * @throws TskCoreException If an exception is encountered while running
 	 *                          database query to obtain the keyword hits.
 	 */
-	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String kwsListName, Long dataSourceId) throws TskCoreException {
+	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String configuration, Long dataSourceId) throws TskCoreException {
 
 		String dataSourceClause = dataSourceId == null
 				? ""
 				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
 
-		String kwsListClause = (kwsListName == null || kwsListName.isEmpty()
-				? " WHERE r.set_name IS NULL "
-				: " WHERE r.set_name = ? ");
+		String configurationClause = (configuration == null || configuration.isEmpty()
+				? " WHERE r.configuration IS NULL "
+				: " WHERE r.configuration = ? ");
 
 		String keywordClause = (keyword == null || keyword.isEmpty()
 				? ""
@@ -2015,7 +2013,7 @@ public final class Blackboard {
 				+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
 				+ " AND artifacts.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + " "
 				+ dataSourceClause + " ) r "
-				+ kwsListClause
+				+ configurationClause
 				+ keywordClause
 				+ searchTypeClause
 				+ regexClause;
@@ -2032,8 +2030,8 @@ public final class Blackboard {
 					preparedStatement.setLong(++paramIdx, dataSourceId);
 				}
 
-				if (!(kwsListName == null || kwsListName.isEmpty())) {
-					preparedStatement.setString(++paramIdx, kwsListName);
+				if (!(configuration == null || configuration.isEmpty())) {
+					preparedStatement.setString(++paramIdx, configuration);
 				}
 
 				if (!(keyword == null || keyword.isEmpty())) {
