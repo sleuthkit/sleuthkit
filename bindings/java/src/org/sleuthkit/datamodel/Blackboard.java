@@ -1511,8 +1511,8 @@ public final class Blackboard {
 	 * this method to define custom attribute types.
 	 *
 	 * NOTE: This method is synchronized to prevent simultaneous access from
-	 * different threads, but this does not fully prevent possible concurrency
-	 * issues with checking for the exi
+	 * different threads, but there is still the possibility of concurrency 
+	 * issues from different clients.
 	 *
 	 * @param typeName    The type name of the attribute type.
 	 * @param valueType   The value type of the attribute type.
