@@ -1015,7 +1015,7 @@ public final class Blackboard {
 				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
 
 		String configurationClause = (configuration == null || configuration.isEmpty()
-				? ""
+				? " AND configuration IS NULL "
 				: " AND configuration = ? ");
 
 		String getIdsQuery = "SELECT artifacts.artifact_obj_id AS artifact_obj_id, artifacts.obj_id AS obj_id, artifacts.data_source_obj_id AS data_source_obj_id "
