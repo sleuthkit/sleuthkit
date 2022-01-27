@@ -1018,7 +1018,7 @@ public final class Blackboard {
 				? ""
 				: " AND configuration = ? ");
 
-		String getIdsQuery = "SELECT artifacts.obj_id AS obj_id, artifacts.data_source_obj_id AS data_source_obj_id "
+		String getIdsQuery = "SELECT artifacts.artifact_obj_id AS artifact_obj_id, artifacts.obj_id AS obj_id, artifacts.data_source_obj_id AS data_source_obj_id "
 				+ " FROM blackboard_artifacts artifacts "
 				+ " JOIN blackboard_artifact_types AS types  ON artifacts.artifact_type_id = types.artifact_type_id "
 				+ " LEFT JOIN tsk_analysis_results AS results  ON artifacts.artifact_obj_id = results.artifact_obj_id "
@@ -1027,8 +1027,8 @@ public final class Blackboard {
 				+ dataSourceClause
 				+ configurationClause;
 
-		List<Long> resultIdsToDelete = new ArrayList<>();
-		List<Long> dataSourceIds = new ArrayList<>();
+		List<Long> artifactObjIdsToDelete = new ArrayList<>();
+		Map<Long, Long> objIdsToDsIds = new HashMap<>();
 		CaseDbTransaction transaction = this.caseDb.beginTransaction();
 		String currentQuery = "";
 		try (CaseDbConnection connection = transaction.getConnection()) {
@@ -1052,12 +1052,13 @@ public final class Blackboard {
 
 				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
 					while (resultSet.next()) {
-						resultIdsToDelete.add(resultSet.getLong("obj_id"));
-						dataSourceIds.add(resultSet.getLong("data_source_obj_id"));
+						artifactObjIdsToDelete.add(resultSet.getLong("artifact_obj_id"));
+						
+						objIdsToDsIds.put(resultSet.getLong("obj_id"), resultSet.getLong("data_source_obj_id"));
 					}
 				}
 
-				if (resultIdsToDelete.isEmpty()) {
+				if (artifactObjIdsToDelete.isEmpty()) {
 					transaction.close();
 					transaction = null;
 					return;
@@ -1067,13 +1068,13 @@ public final class Blackboard {
 				// could be very large so we should split deletion into batches to limit the
 				// size of the SQL string
 				int maxArtifactsToDeleteAtOnce = 50;
-				for (int startId = 0; startId < resultIdsToDelete.size(); startId += maxArtifactsToDeleteAtOnce) {
+				for (int startId = 0; startId < artifactObjIdsToDelete.size(); startId += maxArtifactsToDeleteAtOnce) {
 
-					List<String> newList = resultIdsToDelete.subList(startId, Math.min(resultIdsToDelete.size(), startId + maxArtifactsToDeleteAtOnce)).stream()
+					List<String> newList = artifactObjIdsToDelete.subList(startId, Math.min(artifactObjIdsToDelete.size(), startId + maxArtifactsToDeleteAtOnce)).stream()
 							.map(String::valueOf)
 							.collect(Collectors.toList());
 					
-					currentQuery = "DELETE FROM blackboard_artifacts WHERE obj_id IN ("
+					currentQuery = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id IN ("
 							+ String.join(",", newList)
 							+ ")";
 
@@ -1081,10 +1082,9 @@ public final class Blackboard {
 					connection.executeUpdate(statement, currentQuery);
 				}
 
-				for (int indx = 0; indx < resultIdsToDelete.size(); indx++) {
-					
-					Long objId = resultIdsToDelete.get(indx);
-					Long dsId = dataSourceIds.get(indx);
+				for (Map.Entry<Long, Long> entry : objIdsToDsIds.entrySet()) {
+					Long objId = entry.getKey();
+					Long dsId = entry.getValue();
 					// register the deleted result with the transaction so an event can be fired for it. 
 					transaction.registerDeletedAnalysisResult(objId);
 
@@ -1950,7 +1950,7 @@ public final class Blackboard {
 	 *                     well as the keyword. It should be empty for literal
 	 *                     exact match keyword search types.
 	 * @param searchType   Type of keyword search query.
-	 * @param configuration  ELTODO.
+	 * @param configuration  Configuration of keyword hits.
 	 * @param dataSourceId (Optional) Data source id of the target data source.
 	 *                     If null, then the results will be for all data
 	 *                     sources.
