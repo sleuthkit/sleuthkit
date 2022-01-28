@@ -1015,7 +1015,7 @@ public final class Blackboard {
 				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
 
 		String configurationClause = (configuration == null || configuration.isEmpty()
-				? " AND configuration IS NULL "
+				? " AND (configuration IS NULL OR configuration IS '' )"
 				: " AND configuration = ? ");
 
 		String getIdsQuery = "SELECT artifacts.artifact_obj_id AS artifact_obj_id, artifacts.obj_id AS obj_id, artifacts.data_source_obj_id AS data_source_obj_id "
@@ -1960,6 +1960,7 @@ public final class Blackboard {
 	 * @throws TskCoreException If an exception is encountered while running
 	 *                          database query to obtain the keyword hits.
 	 */
+	@Beta
 	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String configuration, Long dataSourceId) throws TskCoreException {
 
 		String dataSourceClause = dataSourceId == null
