@@ -350,12 +350,14 @@ public final class OsAccountRealmManager {
 			//			(i.e. allow the clients to override names of well known SID (which may be in different language than the default stored name)
 			//	current SID is (if exists) not a well known SID, current name is empty and passed in realm is not empty
 			
-			if ( ((StringUtils.isBlank(currRealmAddr) || WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr) ) && StringUtils.isNotBlank(realmName) && !realmName.equalsIgnoreCase(currRealmName) ) || 
-				 ((StringUtils.isBlank(currRealmAddr) || !WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr)) && StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)) ) {
-				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
-				updateStatusCode = OsRealmUpdateStatus.UPDATED;
-			}
-
+			if (!StringUtils.isBlank(currRealmAddr)) {	// a realm must already have an address if we are about to change its name
+				if ((WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr) && StringUtils.isNotBlank(realmName) && !realmName.equalsIgnoreCase(currRealmName)) || 
+					(!WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr) && StringUtils.isNotBlank(realmName) && StringUtils.isBlank(currRealmName) )) {
+					updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
+					updateStatusCode = OsRealmUpdateStatus.UPDATED;
+				}
+			} 
+			
 			// if nothing is to be changed, return
 			if (updateStatusCode == OsRealmUpdateStatus.NO_CHANGE) {
 				return new OsRealmUpdateResult(updateStatusCode, realm);
