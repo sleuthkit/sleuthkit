@@ -103,7 +103,7 @@ public final class OsAccountRealmManager {
 
 			case UNKNOWN:
 			default:
-				// NOTE: if there's a Well known SID, the scope will be changed to LOCAL later. 
+				// NOTE: if there's a well known SID, the scope will be changed to LOCAL later. 
 				// check if the referring host already has a realm
 				boolean isHostRealmKnown = isHostRealmKnown(referringHost);
 				if (isHostRealmKnown) {
@@ -134,7 +134,7 @@ public final class OsAccountRealmManager {
 				scopeHost = referringHost;
 				scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;
 				
-				// if the sid is a Windows well known SID, and the caller did not provide a realm name, use the known realm name. 
+				// if the SID is a Windows well known SID, and the caller did not provide a realm name, use the known realm name. 
 				if (StringUtils.isEmpty(realmName)) {
 					realmName = WindowsAccountUtils.getWindowsWellKnownSidRealmName(accountSid);
 				}
@@ -346,12 +346,12 @@ public final class OsAccountRealmManager {
 			String currRealmName = realmNames.isEmpty() ? null : realmNames.get(0);	// currently there is only one name.
 
 			// Update realm name if:
-			//  current SID (if exists)  is a wellknown windows SID, and the passed in realm name is not empty and is not the same as current realm name 
+			//  current SID (if exists) is a well known windows SID, and the passed in realm name is not empty and is not the same as current realm name 
 			//			(i.e. allow the clients to override names of well known SID (which may be in different language than the default stored name)
 			//	current SID is (if exists) not a well known SID, current name is empty and passed in realm is not empty
 			
 			if ( ((StringUtils.isBlank(currRealmAddr) || WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr) ) && StringUtils.isNotBlank(realmName) && !realmName.equalsIgnoreCase(currRealmName) ) || 
-				 ((StringUtils.isBlank(currRealmAddr) || !WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr)) && StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)  ) ) {
+				 ((StringUtils.isBlank(currRealmAddr) || !WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr)) && StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)) ) {
 				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
@@ -606,7 +606,7 @@ public final class OsAccountRealmManager {
 	 * assume a new realm is domain-scoped when this method returns true.  I.e. once we know
 	 * the host-scoped realm, then everything else is domain-scoped. 
 	 * 
-	 * NOTE: a host may now have several local realms for Windows Well known SIDs.  
+	 * NOTE: a host may now have several local realms for Windows well known SIDs.  
 	 *       The above assumption only holds for a non well known SID. 
 	 *       Caller must take the account SID into consideration when using this method. 
 	 * 
@@ -622,7 +622,6 @@ public final class OsAccountRealmManager {
 				+ " WHERE realms.scope_host_id = " + host.getHostId()
 				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId();
-				//+ " AND LOWER(realms.realm_addr) <> LOWER('"+ WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR + "') ";
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();

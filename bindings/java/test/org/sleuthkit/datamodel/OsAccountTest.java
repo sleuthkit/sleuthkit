@@ -695,9 +695,6 @@ public class OsAccountTest {
 
 		try {
 			
-			//String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
-			
-			
 			// TEST create accounts with special SIDs on host2
 			{
 				String hostname2 = "host222";
