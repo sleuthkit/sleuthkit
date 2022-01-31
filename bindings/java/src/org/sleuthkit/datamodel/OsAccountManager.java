@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,8 +41,8 @@ import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskEvent.OsAccountsUpdatedTskEvent;
-import static org.sleuthkit.datamodel.WindowsAccountUtils.getWindowsSpecialSidName;
-import static org.sleuthkit.datamodel.WindowsAccountUtils.isWindowsSpecialSid;
+import static org.sleuthkit.datamodel.WindowsAccountUtils.isWindowsWellKnownSid;
+import static org.sleuthkit.datamodel.WindowsAccountUtils.getWindowsWellKnownSidFullName;
 
 /**
  * Responsible for creating/updating/retrieving the OS accounts for files and
@@ -221,8 +221,8 @@ public final class OsAccountManager {
 				OsAccount account = newOsAccount(uniqueId, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 
 				// If the SID indicates a special windows account, then set its full name. 
-				if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && isWindowsSpecialSid(sid)) {
-					String fullName = getWindowsSpecialSidName(sid);
+				if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && isWindowsWellKnownSid(sid)) {
+					String fullName = getWindowsWellKnownSidFullName(sid);
 					if (StringUtils.isNotBlank(fullName)) {
 						OsAccountUpdateResult updateResult = updateStandardOsAccountAttributes(account, fullName, null, null, null, trans);
 						if (updateResult.getUpdatedAccount().isPresent()) {

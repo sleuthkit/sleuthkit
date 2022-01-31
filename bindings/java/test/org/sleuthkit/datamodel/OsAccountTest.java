@@ -695,7 +695,7 @@ public class OsAccountTest {
 
 		try {
 			
-			String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
+			//String SPECIAL_WINDOWS_REALM_ADDR = "SPECIAL_WINDOWS_ACCOUNTS";
 			
 			
 			// TEST create accounts with special SIDs on host2
@@ -711,9 +711,9 @@ public class OsAccountTest {
 				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid2, null, null, host2, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount3 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid3, null, null, host2, OsAccountRealm.RealmScope.UNKNOWN);
 
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid1), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid2), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid3), true);
 			}
 			
 			
@@ -726,18 +726,39 @@ public class OsAccountTest {
 				String specialSid2 = "S-1-5-19";
 				String specialSid3 = "S-1-5-20";
 
+				String specialRealmName = "NT AUTHORITY";
+				// each of these well known SIDs should get their own realm with the SID as the realm addr
 				OsAccount specialAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1, null, null, host3, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid2, null, null, host3, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount3 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid3, null, null, host3, OsAccountRealm.RealmScope.UNKNOWN);
 
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				// the realm address for these 3 SIDS are the SIDs themselves. 
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid1), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid2), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid3), true);
 				
 				// verify a new local realm with host3 was created for these account even they've been seen previously on another host
 				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
+				
+				// default realm name for these three special SIDs is 'NT AUTHORITY' 
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(specialRealmName), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(specialRealmName), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(specialRealmName), true);
+				
+					
+				//create  new account with S-1-5-18: NT instans/SYSTEM - it should overwrite the realm name with new name
+				String newSpecialRealmName = "NT instans";
+				OsAccount specialAccount4 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1, "SYSTEM", newSpecialRealmName, host3, OsAccountRealm.RealmScope.UNKNOWN);
+				
+				// Ensure it's the same realm as specialAccount1
+				assertEquals(specialAccount4.getRealmId(), specialAccount1.getRealmId());
+				
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid1), true);
+				
+				// ensure that name has changed
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(newSpecialRealmName), true);
 			}
 
 			
@@ -751,12 +772,27 @@ public class OsAccountTest {
 				String specialSid3 = "S-1-5-90-0-2";
 				String specialSid4 = "S-1-5-96-0-3";
 				
-				// All accounts in the range S-1-5-80 to S-1-5-111 are special and should be created with SPECIAL_WINDOWS_REALM_ADDR
+				// expected realm addresses for these special SIDs
+				String specialSidRealmAddr1 = "S-1-5-80";
+				String specialSidRealmAddr2 = "S-1-5-82";
+				String specialSidRealmAddr3 = "S-1-5-90";
+				String specialSidRealmAddr4 = "S-1-5-96";
+				
+				// All accounts in the range S-1-5-80 to S-1-5-111 are well known SIDS
 				String specialSid5 = "S-1-5-99-0-3";
 				String specialSid6 = "S-1-5-100-0-3";
 				String specialSid7 = "S-1-5-111-0-3";
 				String specialSid8 = "S-1-5-112-0-3"; // NOT SPECIAL SID
 				String specialSid9 = "S-1-5-79-0-3"; // NOT SPECIAL SID
+				
+				// expected realm addresses for these special SIDs
+				String specialSidRealmAddr5 = "S-1-5-99";
+				String specialSidRealmAddr6 = "S-1-5-100";
+				String specialSidRealmAddr7 = "S-1-5-111";
+				String specialSidRealmAddr8 = "S-1-5-112-0"; // NOT SPECIAL SID
+				String specialSidRealmAddr9 = "S-1-5-79-0"; // NOT SPECIAL SID
+				
+				
 				
 				OsAccount specialAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid2, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
@@ -764,10 +800,10 @@ public class OsAccountTest {
 				OsAccount specialAccount4 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid4, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				
 
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr1), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr2), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr4), true);
 				
 				
 				OsAccount specialAccount5 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid5, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
@@ -776,11 +812,11 @@ public class OsAccountTest {
 				OsAccount specialAccount8 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid8, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount9 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid9, null, null, host4, OsAccountRealm.RealmScope.UNKNOWN);
 				
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount5.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount6.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount7.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount8.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), false);  // specialSid8 is NOT special.
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount9.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(SPECIAL_WINDOWS_REALM_ADDR), false);  // specialSid9 is NOT special.
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount5.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr5), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount6.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr6), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount7.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr7), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount8.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr8), true);  // specialSid8 is NOT special.
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount9.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSidRealmAddr9), true);  // specialSid9 is NOT special.
 		}
 			
 			// TEST: create accounts with a invalid user SIDs - these should generate an exception

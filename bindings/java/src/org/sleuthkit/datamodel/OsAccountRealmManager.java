@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import static org.sleuthkit.datamodel.WindowsAccountUtils.isWindowsWellKnownSid;
 
 
 /**
@@ -102,6 +103,7 @@ public final class OsAccountRealmManager {
 
 			case UNKNOWN:
 			default:
+				// NOTE: if there's a Well known SID, the scope will be changed to LOCAL later. 
 				// check if the referring host already has a realm
 				boolean isHostRealmKnown = isHostRealmKnown(referringHost);
 				if (isHostRealmKnown) {
@@ -125,10 +127,17 @@ public final class OsAccountRealmManager {
 			
 			realmAddr = WindowsAccountUtils.getWindowsRealmAddress(accountSid);
 			
-			// if the account is special windows account, create a local realm for it.
-			if (realmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR)) {
+			
+			if (WindowsAccountUtils.isWindowsWellKnownSid(accountSid)) {
+				
+				// if the sid is a Windows well known SID, create a local realm for it.
 				scopeHost = referringHost;
 				scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;
+				
+				// if the sid is a Windows well known SID, and the caller did not provide a realm name, use the known realm name. 
+				if (StringUtils.isEmpty(realmName)) {
+					realmName = WindowsAccountUtils.getWindowsWellKnownSidRealmName(accountSid);
+				}
 			}
 		}
 		
@@ -337,11 +346,12 @@ public final class OsAccountRealmManager {
 			String currRealmName = realmNames.isEmpty() ? null : realmNames.get(0);	// currently there is only one name.
 
 			// Update realm name if:
-			//	 Current realm name is empty
-			//	 The passed in realm name is not empty
-			//	 The address is not a special windows address
-			if (StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName) && 
-					((currRealmAddr == null || !currRealmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR)))) {
+			//  current SID (if exists)  is a wellknown windows SID, and the passed in realm name is not empty and is not the same as current realm name 
+			//			(i.e. allow the clients to override names of well known SID (which may be in different language than the default stored name)
+			//	current SID is (if exists) not a well known SID, current name is empty and passed in realm is not empty
+			
+			if ( ((StringUtils.isBlank(currRealmAddr) || WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr) ) && StringUtils.isNotBlank(realmName) && !realmName.equalsIgnoreCase(currRealmName) ) || 
+				 ((StringUtils.isBlank(currRealmAddr) || !WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr)) && StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)  ) ) {
 				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
 				updateStatusCode = OsRealmUpdateStatus.UPDATED;
 			}
@@ -591,23 +601,28 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Check is there is any realm with a host-scope and KNOWN confidence for the given host.  
+	 * Check if there is any realm with a host-scope and KNOWN confidence for the given host.  
 	 * If we can assume that a host will have only a single host-scoped realm, then you can 
 	 * assume a new realm is domain-scoped when this method returns true.  I.e. once we know
 	 * the host-scoped realm, then everything else is domain-scoped. 
+	 * 
+	 * NOTE: a host may now have several local realms for Windows Well known SIDs.  
+	 *       The above assumption only holds for a non well known SID. 
+	 *       Caller must take the account SID into consideration when using this method. 
 	 * 
 	 * @param host Host for which to look for a realm.
 	 * 
 	 * @return True if there exists a a realm with the host scope matching the host. False otherwise
 	 */
+	
 	private boolean isHostRealmKnown(Host host) throws TskCoreException {
 	
 		// check if this host has a local known realm aleady, other than the special windows realm.
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE realms.scope_host_id = " + host.getHostId()
 				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
-				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
-				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR + "') ";
+				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId();
+				//+ " AND LOWER(realms.realm_addr) <> LOWER('"+ WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR + "') ";
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
