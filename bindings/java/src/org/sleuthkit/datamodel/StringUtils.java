@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Collection of string utility methods.
@@ -54,6 +55,9 @@ final class StringUtils {
 		if (values == null || values.isEmpty()) {
 			return "";
 		}
+		
+		values.removeAll(Collections.singleton(null));
+		
 		return org.apache.commons.lang3.StringUtils.join(values, separator);
 	}
 
