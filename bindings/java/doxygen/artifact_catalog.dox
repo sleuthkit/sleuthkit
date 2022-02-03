@@ -373,7 +373,7 @@ An email message found in an application file or database.
 - TSK_EMAIL_TO (Email addresses the email message was sent to, multiple emails should be in a comma separated string)
 - TSK_HEADERS (Transport message headers)
 - TSK_MSG_ID (Message ID supplied by the email application)
-- TSK_PATH (Path in the data source to the file containing the email message)
+- TSK_PATH (Path of email folders prefixed and separated by backslashes like '\Drafts\Work')
 - TSK_SUBJECT (Subject of the email message)
 - TSK_THREAD_ID (ID specified by the analysis module to group emails into threads for display purposes)
 
