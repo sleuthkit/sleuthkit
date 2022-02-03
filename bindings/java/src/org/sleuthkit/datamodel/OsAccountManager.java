@@ -619,7 +619,15 @@ public final class OsAccountManager {
 
 					return accountInstance;
 				} else {
-					throw new TskCoreException(String.format("Could not get autogen key after row insert for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
+					// there is the possibility that another thread may be adding the same os account instance at the same time
+					// the database may be updated prior to the cache being updated so this provides an extra opportunity to check
+					// the cache before throwing the exception
+					Optional<OsAccountInstance> existingInstanceRetry = cachedAccountInstance(osAccountId, dataSourceObjId, instanceType);
+					if (existingInstanceRetry.isPresent()) {
+						return existingInstanceRetry.get();
+					} else {
+						throw new TskCoreException(String.format("Could not get autogen key after row insert for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));	
+					}
 				}
 			}
 		} catch (SQLException ex) {
@@ -1062,7 +1070,11 @@ public final class OsAccountManager {
 		}
 
 		// search by login name
-		return this.getOsAccountByLoginName(loginName, realm.get());
+		if (!Strings.isNullOrEmpty(loginName)) {
+			return this.getOsAccountByLoginName(loginName, realm.get());
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	/**
