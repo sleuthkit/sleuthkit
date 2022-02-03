@@ -46,9 +46,9 @@ import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import static org.sleuthkit.datamodel.CollectionUtils.isNotEmpty;
+import static org.sleuthkit.datamodel.CommManagerSqlStringUtils.buildCSVString;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
-import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
 
 /**
  * Provides access to the timeline data in a case database.

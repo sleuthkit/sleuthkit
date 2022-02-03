@@ -62,7 +62,7 @@ public final class CommunicationsManager {
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID(),
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
 	));
-	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR = StringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
+	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR = CommManagerSqlStringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 
 	/**
 	 * Construct a CommunicationsManager for the given SleuthkitCase.
@@ -780,8 +780,8 @@ public final class CommunicationsManager {
 				CommunicationsFilter.RelationshipTypeFilter.class.getName()
 		));
 
-		String accountIDsCSL = StringUtils.buildCSVString(accountIDs);
-		String accountDeviceIDsCSL = StringUtils.buildCSVString(accountDeviceIDs);
+		String accountIDsCSL = CommManagerSqlStringUtils.buildCSVString(accountIDs);
+		String accountDeviceIDsCSL = CommManagerSqlStringUtils.buildCSVString(accountDeviceIDs);
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 		final String queryString
@@ -880,7 +880,7 @@ public final class CommunicationsManager {
 		long account_id = accountDeviceInstance.getAccount().getAccountID();
 
 		// Get the list of Data source objects IDs correpsonding to this DeviceID.
-		String datasourceObjIdsCSV = StringUtils.buildCSVString(
+		String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildCSVString(
 				db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
 
 		// set up applicable filters
@@ -959,7 +959,7 @@ public final class CommunicationsManager {
 		List<String> adiSQLClauses = new ArrayList<>();
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
 			final Long accountID = entry.getKey();
-			String datasourceObjIdsCSV = StringUtils.buildCSVString(entry.getValue());
+			String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildCSVString(entry.getValue());
 			
 			adiSQLClauses.add(
 					"( "
@@ -968,7 +968,7 @@ public final class CommunicationsManager {
 					+ " OR relationships.account2_id = " + accountID + " ) )"
 			);
 		}
-		String adiSQLClause = StringUtils.joinAsStrings(adiSQLClauses, " OR ");
+		String adiSQLClause = CommManagerSqlStringUtils.joinAsStrings(adiSQLClauses, " OR ");
 		
 		if(adiSQLClause.isEmpty()) {
 			LOGGER.log(Level.SEVERE, "There set of AccountDeviceInstances had no valid data source ids.");
@@ -1058,7 +1058,7 @@ public final class CommunicationsManager {
 				+ "		  data_source_obj_id"
 				+ " FROM account_relationships as relationships"
 				+ " WHERE %2$1s = " + accountDeviceInstance.getAccount().getAccountID() + ""
-				+ " AND data_source_obj_id IN (" + StringUtils.buildCSVString(dataSourceObjIds) + ")"
+				+ " AND data_source_obj_id IN (" + CommManagerSqlStringUtils.buildCSVString(dataSourceObjIds) + ")"
 				+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
 
 		String innerQuery1 = String.format(innerQueryTemplate, "account1_id", "account2_id");
