@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2021 Basis Technology Corp.
+ * Copyright 2021-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,9 +22,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import java.util.Locale;
 
 /**
  * A utility class for handling Windows specific accounts and SIDs.
@@ -83,7 +87,10 @@ final class WindowsAccountUtils {
 	);
 	
 	// SIDS that begin with a domain SID prefix and have on of these 
-	private static final String DOMAIN_SID_PREFIX = "S-1-5";	
+	private static final String NTAUTHORITY_SID_PREFIX = "S-1-5";	
+	private static final String NTAUTHORITY_REALM_NAME = "NT AUTHORITY";
+	
+	
 	private static final Set<String> DOMAIN_GROUP_SID_SUFFIX = ImmutableSet.of(
 			"-512",		// Domain Admins
 			"-513",		// Domain Users
@@ -117,21 +124,21 @@ final class WindowsAccountUtils {
 	 * This encapsulates a WellKnown windows SID. 
 	 * 
 	 */
-	public static class WellKnownSid {
+	public static class WellKnownSidInfo {
 
-		WellKnownSid(boolean isUserSID, String addr,   String realmName, String userName, String description) {
+		WellKnownSidInfo(boolean isUserSID, String addr, String realmName, String loginName, String description) {
 			this.realmAddr = addr;
 			this.isUserSID = isUserSID;
 			this.realmName = realmName;
-			this.userName =  this.isUserSID ? userName : "";
+			this.loginName =  this.isUserSID ? loginName : "";
 			this.description = description;
 		}
 		
-		private final String realmAddr;	// unique identifier - S-1-5-18
+		private final String realmAddr;		// realm identifier - S-1-5-18
 		private final boolean isUserSID;	// is this a realm SID or a user SID
-		private final String realmName;	// realm name 
-		private final String userName;	// user name, may be empty
-		private final String description; // description 
+		private final String realmName;		// realm name 
+		private final String loginName;		// user login name, may be empty
+		private final String description;	// description 
 
 		public String getRealmAddr() {
 			return realmAddr;
@@ -145,8 +152,8 @@ final class WindowsAccountUtils {
 			return realmName;
 		}
 
-		public String getUserName() {
-			return userName;
+		public String getLoginName() {
+			return loginName;
 		}
 
 		public String getDescription() {
@@ -156,23 +163,68 @@ final class WindowsAccountUtils {
 		
 	}
 	
-	// Some windows SID indicate special account.
-	// These should be handled differently from regular user accounts.
-	private static final Map<String, WellKnownSid> SPECIAL_SIDS_MAP =  ImmutableMap.<String, WellKnownSid>builder() 
-			.put("S-1-5-18", new WellKnownSid(true, "S-1-5-18", "NT AUTHORITY", "SYSTEM", "Local System Account"))
-			.put("S-1-5-19", new WellKnownSid(true, "S-1-5-19", "NT AUTHORITY", "LOCAL SERVICE", "Local Service Account"))
-			.put("S-1-5-20", new WellKnownSid(true, "S-1-5-20", "NT AUTHORITY", "NETWORK SERVICE", "Network Service Account"))
+	// These windows SID indicate well known windows accounts.
+	// Well known SIDs and account are handled slightly differently from the regular accounts:
+	//  - We can assume and fill in SID from given account name, and vice versa.
+	//  - We map account names in foreign languages (some known set) to english names, for these well known accounts. 
+	private static final Map<String, WellKnownSidInfo> SPECIAL_SIDS_MAP =  ImmutableMap.<String, WellKnownSidInfo>builder() 
+			.put("S-1-5-18", new WellKnownSidInfo(true, "S-1-5", NTAUTHORITY_REALM_NAME, "SYSTEM", "Local System Account"))
+			.put("S-1-5-19", new WellKnownSidInfo(true, "S-1-5", NTAUTHORITY_REALM_NAME, "LOCAL SERVICE", "Local Service Account"))
+			.put("S-1-5-20", new WellKnownSidInfo(true, "S-1-5", NTAUTHORITY_REALM_NAME, "NETWORK SERVICE", "Network Service Account"))
 			.build();
 		
-	private static final Map<String, WellKnownSid> SPECIAL_SID_PREFIXES_MAP = ImmutableMap.<String, WellKnownSid>builder() 
-			.put("S-1-5-80", new WellKnownSid(false, "S-1-5-80", "NT Service", "", "NT Service Virtual Account"))
-			.put("S-1-5-82", new WellKnownSid(false, "S-1-5-82", "IIS AppPool", "", "IIS AppPool Virtual Account"))
-			.put("S-1-5-83", new WellKnownSid(false, "S-1-5-83", "NT Virtual Machine", "", "Virtual Machine Virtual Account") )
-			.put("S-1-5-90", new WellKnownSid(false, "S-1-5-90", "Window Manager", "", "Windows Manager Virtual Account"))
-			.put("S-1-5-94", new WellKnownSid(false, "S-1-5-94", "Windows Remoting Virtual Users", "", "Windows Remoting Virtual Account"))
-			.put("S-1-5-96",  new WellKnownSid(false, "S-1-5-96", "Font Driver Host", "", "Font Driver Host Virtual Account"))
+
+	// These SID prefixes indicate well known windows accounts.
+	//  - We can fill in the login names for these SID, as well as account user description.
+	private static final Map<String, WellKnownSidInfo> SPECIAL_SID_PREFIXES_MAP = ImmutableMap.<String, WellKnownSidInfo>builder() 
+			.put("S-1-5-80", new WellKnownSidInfo(false, "S-1-5-80", "NT Service", "", "NT Service Virtual Account"))
+			.put("S-1-5-82", new WellKnownSidInfo(false, "S-1-5-82", "IIS AppPool", "", "IIS AppPool Virtual Account"))
+			.put("S-1-5-83", new WellKnownSidInfo(false, "S-1-5-83", "NT Virtual Machine", "", "Virtual Machine Virtual Account") )
+			.put("S-1-5-90", new WellKnownSidInfo(false, "S-1-5-90", "Window Manager", "", "Windows Manager Virtual Account"))
+			.put("S-1-5-94", new WellKnownSidInfo(false, "S-1-5-94", "Windows Remoting Virtual Users", "", "Windows Remoting Virtual Account"))
+			.put("S-1-5-96",  new WellKnownSidInfo(false, "S-1-5-96", "Font Driver Host", "", "Font Driver Host Virtual Account"))
 			.build();
-				
+			
+
+	// This map reverse maps some of the Well know account names (realm name &login name) to their well known SIDs. 
+	private static final Table<String, String, String> SPECIAL_ACCOUNTS_TO_SID_MAP = HashBasedTable.create();
+	static {
+		SPECIAL_ACCOUNTS_TO_SID_MAP.put(NTAUTHORITY_REALM_NAME, "SYSTEM", "S-1-5-18");
+		SPECIAL_ACCOUNTS_TO_SID_MAP.put(NTAUTHORITY_REALM_NAME, "LOCAL SERVICE", "S-1-5-19");
+		SPECIAL_ACCOUNTS_TO_SID_MAP.put(NTAUTHORITY_REALM_NAME, "NETWORK SERVICE", "S-1-5-20");
+	}
+	
+	// A mapping of various well known realm names to their English names.  
+	// We store only english names in the database for well known SIDs.  
+	// Input names provided by client are first mapped to english before lookup or insert. 
+	private static final Map<String, String> REALM_NAME_TO_ENGLISH_MAP =  ImmutableMap.<String, String>builder() 
+			.put("NT AUTHORITY", NTAUTHORITY_REALM_NAME)	// to facilitate a quick hit on the english name
+			.put("NT-AUTORITÄT", NTAUTHORITY_REALM_NAME)
+			.put("AUTORITE NT", NTAUTHORITY_REALM_NAME)
+			.put("NT INSTANS", NTAUTHORITY_REALM_NAME)
+			.build();
+
+	// A mapping of various well known realm names to their English names.  
+	// We store only english names in the database for well known SIDs.  
+	// Input names provided by client are first mapped to english before lookup or insert. 
+	private static final Map<String, String> LOGINNAME_TO_ENGLISH_MAP =  ImmutableMap.<String, String>builder() 
+			.put("SYSTEM", "SYSTEM")	// to facilitate a quick hit on the english name
+			.put("SYSTÈME", "SYSTEM")
+			
+			.put("LOCAL SERVICE", "LOCAL SERVICE")
+			.put("LOKALER DIENST", "LOCAL SERVICE")
+			.put("SERVICE LOCAL", "LOCAL SERVICE")
+			.put("SERVIZIO LOCALE", "LOCAL SERVICE")
+			.put("SERVICIO LOC", "LOCAL SERVICE")
+			
+			.put("NETWORK SERVICE", "NETWORK SERVICE")
+			.put("NETZWERKDIENST", "NETWORK SERVICE")
+			.put("NÄTVERKSTJÄNST", "NETWORK SERVICE")
+			.put("SERVICE RÉSEAU", "NETWORK SERVICE")
+			.put("SERVIZIO DI RETE", "NETWORK SERVICE")
+			.put("SERVICIO DE RED", "NETWORK SERVICE")
+			.build();
+	
 	/**
 	 * Checks if the given SID is a well known Windows SID.
 	 * 
@@ -193,7 +245,7 @@ final class WindowsAccountUtils {
 		}
 		
 		// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
-		tempSID = tempSID.replaceFirst(DOMAIN_SID_PREFIX + "-", "");
+		tempSID = tempSID.replaceFirst(NTAUTHORITY_SID_PREFIX + "-", "");
 		String subAuthStr = tempSID.substring(0, tempSID.indexOf('-'));
 		Integer subAuth = Optional.ofNullable(subAuthStr).map(Integer::valueOf).orElse(0);
 		if (subAuth >= 80 && subAuth <= 111) {
@@ -204,45 +256,22 @@ final class WindowsAccountUtils {
 	}
 	
 	/**
-	 * Get the realm addr for the given special Windows SID.
+	 * Checks if the given realmName/loginName is a well known account..
 	 * 
 	 * @param sid SID to check.
 	 * 
-	 * @return Name for Windows special SID, an empty string if the SID is not a known special SID. 
+	 * @return True if the SID is a Windows well known SID, false otherwise 
 	 */
-	static String getWindowsWellKnownSidFullName(String sid) {
-		String tempSID = stripWindowsBackupPostfix(sid);
+	static boolean isWindowsWellKnownAccountName(String loginName, String realmName) {
 		
-		if (SPECIAL_SIDS_MAP.containsKey(tempSID)) {
-			return SPECIAL_SIDS_MAP.get(tempSID).getDescription();
+		String resolvedRealmName = toWellknownEnglishRealmName(realmName);
+		String resolvedLoginName = toWellknownEnglishLoginName(loginName);
+		if (StringUtils.isBlank(resolvedRealmName) ||  StringUtils.isBlank(resolvedLoginName)) {
+			return false;
 		}
-		for (Entry<String, WellKnownSid> specialPrefixEntry: SPECIAL_SID_PREFIXES_MAP.entrySet()) {
-			if (tempSID.startsWith(specialPrefixEntry.getKey())) {
-				return specialPrefixEntry.getValue().getDescription();
-			}
-		}
-		return "";
-	}
-	
-	/**
-	 * Get the realm name for the given well known Windows SID.
-	 * 
-	 * @param sid SID to check.
-	 * 
-	 * @return Realm Name for Windows special SID, an empty string if the SID is not a known special SID. 
-	 */
-	static String getWindowsWellKnownSidRealmName(String sid) {
-		String tempSID = stripWindowsBackupPostfix(sid);
 		
-		if (SPECIAL_SIDS_MAP.containsKey(tempSID)) {
-			return SPECIAL_SIDS_MAP.get(tempSID).getRealmName();
-		}
-		for (Entry<String, WellKnownSid> specialPrefixEntry: SPECIAL_SID_PREFIXES_MAP.entrySet()) {
-			if (tempSID.startsWith(specialPrefixEntry.getKey())) {
-				return specialPrefixEntry.getValue().getRealmName();
-			}
-		}
-		return "";
+		return SPECIAL_ACCOUNTS_TO_SID_MAP.contains(resolvedRealmName.toUpperCase(), resolvedLoginName.toUpperCase());
+		
 	}
 	
 	/**
@@ -259,21 +288,25 @@ final class WindowsAccountUtils {
 		if (SPECIAL_SIDS_MAP.containsKey(tempSID)) {
 			return SPECIAL_SIDS_MAP.get(tempSID).getRealmAddr();
 		}
-		for (Entry<String, WellKnownSid> specialPrefixEntry : SPECIAL_SID_PREFIXES_MAP.entrySet()) {
+		
+		for (Entry<String, WellKnownSidInfo> specialPrefixEntry : SPECIAL_SID_PREFIXES_MAP.entrySet()) {
 			if (tempSID.startsWith(specialPrefixEntry.getKey())) {
 				return specialPrefixEntry.getValue().getRealmAddr();
 			}
 		}
 
 		// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
-		String subAuthSID = tempSID.replaceFirst(DOMAIN_SID_PREFIX + "-", "");
+		String subAuthSID = tempSID.replaceFirst(NTAUTHORITY_SID_PREFIX + "-", "");
 		String subAuthStr = subAuthSID.substring(0, subAuthSID.indexOf('-'));
 		Integer subAuth = Optional.ofNullable(subAuthStr).map(Integer::valueOf).orElse(0);
 		if (subAuth >= 80 && subAuth <= 111) {
 			
-			// regular SIDs should have at least 5 components: S-1-x-y-z
+			// SIDs should have at least 4 components: S-1-A-S
+			// A: authority identifier
+			// S: one or more sub-authority identifiers (RIDs)
+			//  For these special SID prefixes in this range we expect at least 2 sub authority identifiers
 			if (org.apache.commons.lang3.StringUtils.countMatches(tempSID, "-") < 4) {
-				throw new TskCoreException(String.format("Invalid SID %s for a host/domain", tempSID));
+				throw new TskCoreException(String.format("Invalid well known SID prefix %s for a host/domain", tempSID));
 			}
 			// extract the S-1-x-y as realm addr
 			int endIndex = StringUtils.ordinalIndexOf(tempSID, "-", 4);
@@ -283,6 +316,121 @@ final class WindowsAccountUtils {
 		}
 
 		return "";
+	}
+	/**
+	 * Get the well known SID info for the given SID. 
+	 * 
+	 * @param sid SID to check.
+	 * 
+	 * @return WellKnownSidInfo for the SID, null if there is no info available. 
+	 */
+	private static WellKnownSidInfo getWindowsWellKnownInfo(String sid) {
+		String tempSID = stripWindowsBackupPostfix(sid);
+		
+		if (SPECIAL_SIDS_MAP.containsKey(tempSID)) {
+			return SPECIAL_SIDS_MAP.get(tempSID);
+		}
+		for (Entry<String, WellKnownSidInfo> specialPrefixEntry: SPECIAL_SID_PREFIXES_MAP.entrySet()) {
+			if (tempSID.startsWith(specialPrefixEntry.getKey())) {
+				return specialPrefixEntry.getValue();
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Get the realm address for the given special Windows SID.
+	 * 
+	 * @param sid SID to check.
+	 * 
+	 * @return Name for Windows special SID, an empty string if the SID is not a known special SID. 
+	 */
+	static String getWindowsWellKnownSidFullName(String sid) {
+		WellKnownSidInfo wellKnownSidInfo = getWindowsWellKnownInfo(sid);
+		return Objects.nonNull(wellKnownSidInfo) ? wellKnownSidInfo.getDescription() : "";
+	}
+	
+	/**
+	 * Get the realm name for the given well known Windows SID.
+	 * 
+	 * @param sid SID to check.
+	 * 
+	 * @return Realm Name for Windows special SID, an empty string if the SID is not a known special SID. 
+	 */
+	static String getWindowsWellKnownSidRealmName(String sid) {
+		
+		if (StringUtils.isNotBlank(sid) && sid.equals(NTAUTHORITY_SID_PREFIX)) {
+			return NTAUTHORITY_REALM_NAME;
+		}
+		
+		WellKnownSidInfo wellKnownSidInfo = getWindowsWellKnownInfo(sid);
+		return Objects.nonNull(wellKnownSidInfo) 
+				? wellKnownSidInfo.getRealmName() 
+				: null;
+	}
+	
+	/**
+	 * Get the login name for the given well known Windows SID.
+	 * 
+	 * @param sid SID to check.
+	 * 
+	 * @return Login Name for Windows special SID, an empty string if the SID is not a known special SID. 
+	 */
+	static String getWindowsWellKnownSidLoginName(String sid) {
+		
+		WellKnownSidInfo wellKnownSidInfo = getWindowsWellKnownInfo(sid);
+		return Objects.nonNull(wellKnownSidInfo) 
+				? wellKnownSidInfo.getLoginName()
+				: null;
+	}
+	
+	
+	/**
+	 * Returns the SID for a well known account name.
+	 * 
+	 * @param loginName Well known login name.
+	 * @param realmName Well known realm name. 
+	 * 
+	 * @return SID corresponding to the well known account name, NULL if its not known. 
+	 */
+	static String getWindowsWellKnownAccountSid( String loginName, String realmName) {
+		
+		String resolvedRealmName = toWellknownEnglishRealmName(realmName);
+		String resolvedLoginName = toWellknownEnglishLoginName(loginName);
+		if (StringUtils.isBlank(resolvedRealmName) ||  StringUtils.isBlank(resolvedLoginName)) {
+			return null;
+		}
+		
+		return SPECIAL_ACCOUNTS_TO_SID_MAP.get(resolvedRealmName.toUpperCase(), resolvedLoginName.toUpperCase());
+		
+	}
+	
+	/**
+	 * Returns english name for a given well known realm name.
+	 *
+	 * @param name Realm name to translate.
+	 *
+	 * @return English realm name corresponding to given realm name, NULL if
+	 *         realm name is not known.
+	 */
+	static String toWellknownEnglishRealmName(String name) {
+		return StringUtils.isNotBlank(name)
+				? REALM_NAME_TO_ENGLISH_MAP.getOrDefault(name.toUpperCase(), name)
+				: null;
+	}
+
+	/**
+	 * Returns english name for the given well known login name.
+	 *
+	 * @param name Login name to translate.
+	 *
+	 * @return English login name corresponding to given login name. NULL if
+	 *         login name is not known.
+	 */
+	static String toWellknownEnglishLoginName(String name) {
+		return StringUtils.isNotBlank(name)
+				? LOGINNAME_TO_ENGLISH_MAP.getOrDefault(name.toUpperCase(), name)
+				: null;
 	}
 		
 	/**
@@ -309,7 +457,7 @@ final class WindowsAccountUtils {
 		}
 		
 		// check for domain groups - they have a domains specific identifier but have a fixed prefix and suffix
-		if (tempSID.startsWith(DOMAIN_SID_PREFIX)) {
+		if (tempSID.startsWith(NTAUTHORITY_SID_PREFIX)) {
 			for (String suffix : DOMAIN_GROUP_SID_SUFFIX) {
 				if (tempSID.endsWith(suffix)) {
 					return false;
@@ -323,15 +471,15 @@ final class WindowsAccountUtils {
 	
 	/**
 	 * Get the windows realm address from the given SID.
-	 * 
+	 *
 	 * For all regular account SIDs, the realm address is the sub-authority SID.
-	 * For special Windows account the realm address is a special address, 
-	 * SPECIAL_WINDOWS_REALM_ADDR { @link WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR}
-	 * 
+	 * For some well known accounts, the realm address is returned from a
+	 * predetermined list.
+	 *
 	 * @param sid SID
-	 * 
+	 *
 	 * @return Realm address for the SID.
-	 * 
+	 *
 	 * @throws TskCoreException If the given SID is not a valid host/domain SID.
 	 */
 	public static String getWindowsRealmAddress(String sid) throws TskCoreException {
@@ -342,8 +490,10 @@ final class WindowsAccountUtils {
 		if ( isWindowsWellKnownSid(tempSID)) {
 			realmAddr = getWindowsWellKnownSidRealmAddr(sid);
 		} else {
-			// regular SIDs should have at least 5 components: S-1-x-y-z
-			if (org.apache.commons.lang3.StringUtils.countMatches(tempSID, "-") < 4) {
+			// SIDs should have at least 4 components: S-1-A-S
+			// A: authority identifier
+			// S: one or more sub-authority identifiers (RIDs)
+			if (org.apache.commons.lang3.StringUtils.countMatches(tempSID, "-") < 3) {
 				throw new TskCoreException(String.format("Invalid SID %s for a host/domain", tempSID));
 			}
 			// get the sub authority SID

@@ -168,6 +168,13 @@ public final class OsAccountManager {
 			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 		}
 
+		// If no SID is given and the given realm/login names is a well known account, get and use the well known SID
+		if (StringUtils.isBlank(sid) 
+			&& !StringUtils.isBlank(loginName) && !StringUtils.isBlank(realmName) 
+				&& WindowsAccountUtils.isWindowsWellKnownAccountName(loginName, realmName)) {
+			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
+		}
+		
 		// get the realm for the account, and update it if it is missing addr or name.
 		Optional<OsAccountRealm> realmOptional;
 		try (CaseDbConnection connection = db.getConnection()) {
@@ -213,12 +220,23 @@ public final class OsAccountManager {
 			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 		}
 
+		// If the login name is well known, we use the well known english name. 
+		String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
+		
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			// try to create account
 			try {
 				String uniqueId = (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) ?  sid : null;
-				OsAccount account = newOsAccount(uniqueId, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && isWindowsWellKnownSid(sid)) {
+					// if the SID is a Windows well known SID, then prefer to use the default well known login name
+					String wellKnownLoginName = WindowsAccountUtils.getWindowsWellKnownSidLoginName(sid);
+					if (!StringUtils.isEmpty(wellKnownLoginName)) {
+						resolvedLoginName = wellKnownLoginName;
+					}
+				}
+					
+				OsAccount account = newOsAccount(uniqueId, resolvedLoginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
 
 				// If the SID indicates a special windows account, then set its full name. 
 				if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && isWindowsWellKnownSid(sid)) {
@@ -250,8 +268,8 @@ public final class OsAccountManager {
 				}
 
 				// search by loginName
-				if (!Strings.isNullOrEmpty(loginName)) {
-					osAccount = getOsAccountByLoginName(loginName, realm);
+				if (!Strings.isNullOrEmpty(resolvedLoginName)) {
+					osAccount = getOsAccountByLoginName(resolvedLoginName, realm);
 					if (osAccount.isPresent()) {
 						return osAccount.get();
 					}
@@ -260,7 +278,7 @@ public final class OsAccountManager {
 				// create failed for some other reason, throw an exception
 				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %s",
 						(sid != null) ? sid : "Null",
-						(loginName != null) ? loginName : "Null",
+						(resolvedLoginName != null) ? resolvedLoginName : "Null",
 						(!realm.getRealmNames().isEmpty()) ? realm.getRealmNames().get(0) : "Null",
 						realm.getScopeHost().isPresent() ? realm.getScopeHost().get().getName() : "Null"), ex);
 
@@ -1043,6 +1061,14 @@ public final class OsAccountManager {
 			throw new TskCoreException("Cannot get an OS account with both SID and loginName as null.");
 		}
 
+		// If no SID is given and the given realm/login names is a well known account, get and use the well known SID
+		if (StringUtils.isBlank(sid) 
+			&& !StringUtils.isBlank(loginName) && !StringUtils.isBlank(realmName) 
+				&& WindowsAccountUtils.isWindowsWellKnownAccountName(loginName, realmName)) {
+			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
+			
+		}
+			
 		// first get the realm for the given sid
 		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost);
 		if (!realm.isPresent()) {
@@ -1063,7 +1089,8 @@ public final class OsAccountManager {
 
 		// search by login name
 		if (!Strings.isNullOrEmpty(loginName)) {
-			return this.getOsAccountByLoginName(loginName, realm.get());
+			String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
+			return this.getOsAccountByLoginName(resolvedLoginName, realm.get());
 		} else {
 			return Optional.empty();
 		}
@@ -1541,12 +1568,16 @@ public final class OsAccountManager {
 	private OsAccountUpdateResult updateCoreWindowsOsAccountAttributes(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
 
 		// first get and update the realm - if we have the info to find the realm
+		
 		if ((!StringUtils.isBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) || !StringUtils.isBlank(realmName)) {
-			db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, realmName, referringHost, trans.getConnection());
+			// If the SID is a well known SID, ensure we use the well known english name
+			String resolvedRealmName = WindowsAccountUtils.toWellknownEnglishRealmName(realmName);
+			db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, resolvedRealmName, referringHost, trans.getConnection());
 		}
 
 		// now update the account core data
-		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, loginName, trans);
+		String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
+		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, resolvedLoginName, trans);
 
 		return updateStatus;
 	}

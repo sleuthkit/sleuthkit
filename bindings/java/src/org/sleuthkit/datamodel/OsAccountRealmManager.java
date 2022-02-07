@@ -119,6 +119,7 @@ public final class OsAccountRealmManager {
 		
 		// get windows realm address from sid
 		String realmAddr = null;
+		String resolvedRealmName = WindowsAccountUtils.toWellknownEnglishRealmName(realmName);
 		if (!Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 			
 			if (!WindowsAccountUtils.isWindowsUserSid(accountSid)) {
@@ -134,17 +135,18 @@ public final class OsAccountRealmManager {
 				scopeHost = referringHost;
 				scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;
 				
-				// if the SID is a Windows well known SID, and the caller did not provide a realm name, use the known realm name. 
-				if (StringUtils.isEmpty(realmName)) {
-					realmName = WindowsAccountUtils.getWindowsWellKnownSidRealmName(accountSid);
+				// if the SID is a Windows well known SID, then prefer to use the default well known name to create the realm 
+				String wellKnownRealmName = WindowsAccountUtils.getWindowsWellKnownSidRealmName(accountSid);
+				if (!StringUtils.isEmpty(wellKnownRealmName)) {
+					resolvedRealmName = wellKnownRealmName;
 				}
 			}
 		}
 		
-		String signature = makeRealmSignature(realmAddr, realmName, scopeHost);
+		String signature = makeRealmSignature(realmAddr, resolvedRealmName, scopeHost);
 		
 		// create a realm
-		return newRealm(realmName, realmAddr, signature, scopeHost, scopeConfidence);
+		return newRealm(resolvedRealmName, realmAddr, signature, scopeHost, scopeConfidence);
 	}
 	
 	/**
@@ -222,8 +224,11 @@ public final class OsAccountRealmManager {
 			}
 		}
 
+		// ensure we are using English names for any well known SIDs. 
+		String resolvedRealmName = WindowsAccountUtils.toWellknownEnglishRealmName(realmName);
+		
 		// No realm addr so search by name.
-		Optional<OsAccountRealm> realm = getRealmByName(realmName, referringHost, connection);
+		Optional<OsAccountRealm> realm = getRealmByName(resolvedRealmName, referringHost, connection);
 		if (realm.isPresent() && !Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 			// If we were given a non-null accountSID, make sure there isn't one set on the matching realm.
 			// We know it won't match because the previous search by SID failed.
@@ -344,19 +349,14 @@ public final class OsAccountRealmManager {
 			
 			List<String> realmNames = realm.getRealmNames();
 			String currRealmName = realmNames.isEmpty() ? null : realmNames.get(0);	// currently there is only one name.
-
-			// Update realm name if:
-			//  current SID (if exists) is a well known windows SID, and the passed in realm name is not empty and is not the same as current realm name 
-			//			(i.e. allow the clients to override names of well known SID (which may be in different language than the default stored name)
-			//	current SID is (if exists) not a well known SID, current name is empty and passed in realm is not empty
 			
-			if (!StringUtils.isBlank(currRealmAddr)) {	// a realm must already have an address if we are about to change its name
-				if ((WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr) && StringUtils.isNotBlank(realmName) && !realmName.equalsIgnoreCase(currRealmName)) || 
-					(!WindowsAccountUtils.isWindowsWellKnownSid(currRealmAddr) && StringUtils.isNotBlank(realmName) && StringUtils.isBlank(currRealmName) )) {
-					updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
-					updateStatusCode = OsRealmUpdateStatus.UPDATED;
-				}
-			} 
+			// Update realm name if:
+			//	 Current realm name is empty
+			//	 The passed in realm name is not empty
+			if (StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)) {
+				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
+				updateStatusCode = OsRealmUpdateStatus.UPDATED;
+			}
 			
 			// if nothing is to be changed, return
 			if (updateStatusCode == OsRealmUpdateStatus.NO_CHANGE) {

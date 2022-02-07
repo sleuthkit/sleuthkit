@@ -700,6 +700,8 @@ public class OsAccountTest {
 				String hostname2 = "host222";
 				Host host2 = caseDB.getHostManager().newHost(hostname2);
 
+				String ntAuthorityRealmAddr = "S-1-5";
+				
 				String specialSid1 = "S-1-5-18";
 				String specialSid2 = "S-1-5-19";
 				String specialSid3 = "S-1-5-20";
@@ -708,9 +710,9 @@ public class OsAccountTest {
 				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid2, null, null, host2, OsAccountRealm.RealmScope.UNKNOWN);
 				OsAccount specialAccount3 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid3, null, null, host2, OsAccountRealm.RealmScope.UNKNOWN);
 
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid1), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid2), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
 			}
 			
 			
@@ -719,43 +721,130 @@ public class OsAccountTest {
 				String hostname3 = "host333";
 				Host host3 = caseDB.getHostManager().newHost(hostname3);
 
-				String specialSid1 = "S-1-5-18";
-				String specialSid2 = "S-1-5-19";
-				String specialSid3 = "S-1-5-20";
-
-				String specialRealmName = "NT AUTHORITY";
+				String ntAuthorityRealmName = "NT AUTHORITY";
+				String ntAuthorityRealmAddr = "S-1-5";
+				
+				
+				String specialSid1518 = "S-1-5-18";
+				
+				// Create an account with just the well known SID - it should automatically get a realmname and loginName
 				// each of these well known SIDs should get their own realm with the SID as the realm addr
-				OsAccount specialAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1, null, null, host3, OsAccountRealm.RealmScope.UNKNOWN);
-				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid2, null, null, host3, OsAccountRealm.RealmScope.UNKNOWN);
-				OsAccount specialAccount3 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid3, null, null, host3, OsAccountRealm.RealmScope.UNKNOWN);
-
-				// the realm address for these 3 SIDS are the SIDs themselves. 
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid1), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid2), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid3), true);
+				OsAccount specialAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1518, null, null, host3, OsAccountRealm.RealmScope.UNKNOWN);
+				
+				// the realm address for this wellknown SIDS are the SIDs themselves. 
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
 				
 				// verify a new local realm with host3 was created for these account even they've been seen previously on another host
 				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
 				
 				// default realm name for these three special SIDs is 'NT AUTHORITY' 
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(specialRealmName), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(specialRealmName), true);
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(specialRealmName), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount1.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
 				
 					
-				//create  new account with S-1-5-18: NT instans/SYSTEM - it should overwrite the realm name with new name
-				String newSpecialRealmName = "NT instans";
-				OsAccount specialAccount4 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1, "SYSTEM", newSpecialRealmName, host3, OsAccountRealm.RealmScope.UNKNOWN);
+				
+				// Get the same account in another language - "NT instans"/SYSTEM - it should resolve to the account create above. 
+				Optional<OsAccount> optSpecialAccount11 = caseDB.getOsAccountManager().getWindowsOsAccount(null, "SYSTEM", "NT instans", host3);
+				assertEquals(optSpecialAccount11.isPresent(), true);
+				
+				OsAccount specialAccount11 = optSpecialAccount11.get();
+				assertEquals(specialAccount11.getId(), specialAccount1.getId());	// should return the same account we created above
+				
+				// should have the same SID
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount11.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
+				
+				// should have the english realm name
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount11.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+			
+				
+				
+				// Test getting account in yet another language - AUTORITE NT/SYSTÈME
+				Optional<OsAccount> optSpecialAccount12 = caseDB.getOsAccountManager().getWindowsOsAccount(null, "SYSTÈME", "AUTORITE NT", host3);
+				assertEquals(optSpecialAccount12.isPresent(), true);
+				
+				OsAccount specialAccount12 = optSpecialAccount12.get();
+				assertEquals(specialAccount11.getId(), specialAccount1.getId());	// should return the same account we created above
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount12.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount12.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+				
+				
+			
+				//create new account with S-1-5-18/NT instans/SYSTEM - it should be resolved to the exiting account S-1-5-18/NT AUTHORITY/SYSTEM
+				OsAccount specialAccount13 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1518, "SYSTEM", "NT instans", host3, OsAccountRealm.RealmScope.UNKNOWN);
 				
 				// Ensure it's the same realm as specialAccount1
-				assertEquals(specialAccount4.getRealmId(), specialAccount1.getRealmId());
+				assertEquals(specialAccount13.getRealmId(), specialAccount1.getRealmId());
 				
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(specialSid1), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount13.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
 				
-				// ensure that name has changed
-				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount4.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(newSpecialRealmName), true);
+				// ensure that the name of the realm stays the well known english name - "NT AUTHORITY"
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount13.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+				
+				
+			
+				// Test another well known SID
+				String specialSid1519 = "S-1-5-19";
+				String localServiceLoginName = "LOCAL SERVICE";
+				
+				// create account with SID and non english names S-1-5-19/SERVIZIO LOCALE/AUTORITE NT - it shuould be created anew with english names. 
+				OsAccount specialAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(specialSid1519, "SERVIZIO LOCALE", "AUTORITE NT", host3, OsAccountRealm.RealmScope.UNKNOWN);
+						
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount2.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+				assertEquals(specialAccount2.getLoginName().get().equalsIgnoreCase(localServiceLoginName), true);
+				
+				
+				// now get account for NT INSTANS/LOKALER DIENST - it should just get the above account
+				Optional<OsAccount> optSpecialAccount21 = caseDB.getOsAccountManager().getWindowsOsAccount(null, "LOKALER DIENST", "NT INSTANS", host3);	
+				assertEquals(optSpecialAccount21.isPresent(), true);
+				
+				OsAccount specialAccount21 = optSpecialAccount21.get();
+			
+				// should be same account as one created above
+				assertEquals(specialAccount2.getId(), specialAccount21.getId());
+				assertEquals(specialAccount2.getRealmId(), specialAccount21.getRealmId());
+				
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount21.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount21.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+				assertEquals(specialAccount21.getLoginName().get().equalsIgnoreCase(localServiceLoginName), true);
+				
+				
+				//---- 
+				String specialSid1520 = "S-1-5-20";
+				String networkServiceLoginName = "NETWORK SERVICE";
+				
+				//Test where we first create an account with realm/name only and then get it with SID alone.  What should happen in that case ???
+				OsAccount specialAccount3 = caseDB.getOsAccountManager().newWindowsOsAccount(null, "NETZWERKDIENST", "NT instans", host3, OsAccountRealm.RealmScope.UNKNOWN);
+						
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount3.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+				assertEquals(specialAccount3.getLoginName().get().equalsIgnoreCase(networkServiceLoginName), true);
+				
+				
+				// Now get the account by correpsonding SID - it should resolve to the account created above. 
+				Optional<OsAccount> optSpecialAccount31 = caseDB.getOsAccountManager().getWindowsOsAccount(specialSid1520, null, null, host3);	
+				assertEquals(optSpecialAccount31.isPresent(), true);
+				
+				OsAccount specialAccount31 = optSpecialAccount31.get();
+				assertEquals(specialAccount3.getId(), specialAccount31.getId());
+				assertEquals(specialAccount3.getRealmId(), specialAccount31.getRealmId());
+				
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount31.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount31.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount31.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+				assertEquals(specialAccount31.getLoginName().get().equalsIgnoreCase(networkServiceLoginName), true);
+				
+				// Try getting the account with realm/loginName in another language
+				Optional<OsAccount> optSpecialAccount32 = caseDB.getOsAccountManager().getWindowsOsAccount(null, "SERVICE RÉSEAU", "AUTORITE NT", host3);	
+				assertEquals(optSpecialAccount32.isPresent(), true);
+				
+				OsAccount specialAccount32 = optSpecialAccount32.get();
+				assertEquals(specialAccount3.getId(), specialAccount32.getId());
+				assertEquals(specialAccount3.getRealmId(), specialAccount32.getRealmId());
+				
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount32.getRealmId()).getRealmAddr().orElse("").equalsIgnoreCase(ntAuthorityRealmAddr), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount32.getRealmId()).getScopeHost().orElse(null).getName().equalsIgnoreCase(hostname3), true);
+				assertEquals(caseDB.getOsAccountRealmManager().getRealmByRealmId(specialAccount32.getRealmId()).getRealmNames().get(0).equalsIgnoreCase(ntAuthorityRealmName), true);
+				assertEquals(specialAccount32.getLoginName().get().equalsIgnoreCase(networkServiceLoginName), true);
 			}
 
 			
