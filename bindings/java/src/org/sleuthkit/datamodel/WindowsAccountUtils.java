@@ -25,6 +25,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -185,7 +187,14 @@ final class WindowsAccountUtils {
 			.put("S-1-5-96",  new WellKnownSidInfo(false, "S-1-5-96", "Font Driver Host", "", "Font Driver Host Virtual Account"))
 			.build();
 			
-
+	
+	// Looks for security identifier prefixes of the form S-<number>-<number>-<number>
+	// More information on security identifier architecture can be found at: 
+	// https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/security-identifiers
+	// A number of accounts in the range S-1-5-80-* to S-1-5-111-* are special. 
+	private static final Pattern WINDOWS_SPECIAL_ACCOUNT_PREFIX_REGEX = Pattern.compile("^\\s*S\\-1\\-5\\-(\\d*)\\-");
+	
+			
 	// This map reverse maps some of the Well know account names (realm name &login name) to their well known SIDs. 
 	private static final Table<String, String, String> SPECIAL_ACCOUNTS_TO_SID_MAP = HashBasedTable.create();
 	static {
@@ -244,12 +253,13 @@ final class WindowsAccountUtils {
 			}
 		}
 		
-		// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
-		tempSID = tempSID.replaceFirst(NTAUTHORITY_SID_PREFIX + "-", "");
-		String subAuthStr = tempSID.substring(0, tempSID.indexOf('-'));
-		Integer subAuth = Optional.ofNullable(subAuthStr).map(Integer::valueOf).orElse(0);
-		if (subAuth >= 80 && subAuth <= 111) {
-			return true;
+		Matcher match = WINDOWS_SPECIAL_ACCOUNT_PREFIX_REGEX.matcher(tempSID);
+		if (match.find()) {
+			Integer domainIdentifier = Integer.valueOf(match.group(1));
+			// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
+			if (domainIdentifier != null && domainIdentifier >= 80 && domainIdentifier <= 111) {
+				return true;
+			}
 		}
 		
 		return false;
@@ -295,26 +305,16 @@ final class WindowsAccountUtils {
 			}
 		}
 
-		// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
-		String subAuthSID = tempSID.replaceFirst(NTAUTHORITY_SID_PREFIX + "-", "");
-		String subAuthStr = subAuthSID.substring(0, subAuthSID.indexOf('-'));
-		Integer subAuth = Optional.ofNullable(subAuthStr).map(Integer::valueOf).orElse(0);
-		if (subAuth >= 80 && subAuth <= 111) {
-			
-			// SIDs should have at least 4 components: S-1-A-S
-			// A: authority identifier
-			// S: one or more sub-authority identifiers (RIDs)
-			//  For these special SID prefixes in this range we expect at least 2 sub authority identifiers
-			if (org.apache.commons.lang3.StringUtils.countMatches(tempSID, "-") < 4) {
-				throw new TskCoreException(String.format("Invalid well known SID prefix %s for a host/domain", tempSID));
+		Matcher match = WINDOWS_SPECIAL_ACCOUNT_PREFIX_REGEX.matcher(tempSID);
+		if (match.find()) {
+			Integer domainIdentifier = Integer.valueOf(match.group(1));
+			// All the prefixes in the range S-1-5-80 to S-1-5-111 are special
+			if (domainIdentifier != null && domainIdentifier >= 80 && domainIdentifier <= 111) {
+				String realmAddr = String.format("%s-%d", NTAUTHORITY_SID_PREFIX, domainIdentifier);
+				return realmAddr;
 			}
-			// extract the S-1-x-y as realm addr
-			int endIndex = StringUtils.ordinalIndexOf(tempSID, "-", 4);
-			String realmAddr = tempSID.substring(0, endIndex);
-			
-			return realmAddr;
 		}
-
+		
 		return "";
 	}
 	/**
