@@ -192,7 +192,7 @@ final class WindowsAccountUtils {
 	// More information on security identifier architecture can be found at: 
 	// https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/security-identifiers
 	// A number of accounts in the range S-1-5-80-* to S-1-5-111-* are special. 
-	private static final Pattern WINDOWS_SPECIAL_ACCOUNT_PREFIX_REGEX = Pattern.compile("^\\s*S\\-1\\-5\\-(\\d*)\\-");
+	private static final Pattern WINDOWS_SPECIAL_ACCOUNT_PREFIX_REGEX = Pattern.compile("^[sS]\\-1\\-5\\-(\\d*)\\-");
 	
 			
 	// This map reverse maps some of the Well know account names (realm name &login name) to their well known SIDs. 
