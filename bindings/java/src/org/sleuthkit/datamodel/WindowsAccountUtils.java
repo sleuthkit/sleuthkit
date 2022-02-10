@@ -179,11 +179,11 @@ final class WindowsAccountUtils {
 	// These SID prefixes indicate well known windows accounts.
 	//  - We can fill in the login names for these SID, as well as account user description.
 	private static final Map<String, WellKnownSidInfo> SPECIAL_SID_PREFIXES_MAP = ImmutableMap.<String, WellKnownSidInfo>builder() 
-			.put("S-1-5-80", new WellKnownSidInfo(false, "S-1-5-80", "NT Service", "", "NT Service Virtual Account"))
-			.put("S-1-5-82", new WellKnownSidInfo(false, "S-1-5-82", "IIS AppPool", "", "IIS AppPool Virtual Account"))
-			.put("S-1-5-83", new WellKnownSidInfo(false, "S-1-5-83", "NT Virtual Machine", "", "Virtual Machine Virtual Account") )
+			.put("S-1-5-80", new WellKnownSidInfo(false, "S-1-5-80", "NT SERVICE", "", "NT Service Virtual Account"))
+			.put("S-1-5-82", new WellKnownSidInfo(false, "S-1-5-82", "IIS APPPOOL", "", "IIS AppPool Virtual Account"))
+			.put("S-1-5-83", new WellKnownSidInfo(false, "S-1-5-83", "NT VIRTUAL MACHINE", "", "Virtual Machine Virtual Account") )
 			.put("S-1-5-90", new WellKnownSidInfo(false, "S-1-5-90", "Window Manager", "", "Windows Manager Virtual Account"))
-			.put("S-1-5-94", new WellKnownSidInfo(false, "S-1-5-94", "Windows Remoting Virtual Users", "", "Windows Remoting Virtual Account"))
+			.put("S-1-5-94", new WellKnownSidInfo(false, "S-1-5-94", "WinRM Virtial Users", "", "Windows Remoting Virtual Account"))
 			.put("S-1-5-96",  new WellKnownSidInfo(false, "S-1-5-96", "Font Driver Host", "", "Font Driver Host Virtual Account"))
 			.build();
 			
@@ -192,7 +192,7 @@ final class WindowsAccountUtils {
 	// More information on security identifier architecture can be found at: 
 	// https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/security-identifiers
 	// A number of accounts in the range S-1-5-80-* to S-1-5-111-* are special. 
-	private static final Pattern WINDOWS_SPECIAL_ACCOUNT_PREFIX_REGEX = Pattern.compile("^[sS]\\-1\\-5\\-(\\d*)\\-");
+	private static final Pattern WINDOWS_SPECIAL_ACCOUNT_PREFIX_REGEX = Pattern.compile("^[sS]\\-1\\-5\\-(\\d+)\\-");
 	
 			
 	// This map reverse maps some of the Well know account names (realm name &login name) to their well known SIDs. 
@@ -355,7 +355,7 @@ final class WindowsAccountUtils {
 	 * 
 	 * @param sid SID to check.
 	 * 
-	 * @return Realm Name for Windows special SID, an empty string if the SID is not a known special SID. 
+	 * @return Realm Name for Windows special SID, NULL if the SID is not a known special SID. 
 	 */
 	static String getWindowsWellKnownSidRealmName(String sid) {
 		
@@ -374,7 +374,7 @@ final class WindowsAccountUtils {
 	 * 
 	 * @param sid SID to check.
 	 * 
-	 * @return Login Name for Windows special SID, an empty string if the SID is not a known special SID. 
+	 * @return Login Name for Windows special SID, NULL if the SID is not a known special SID. 
 	 */
 	static String getWindowsWellKnownSidLoginName(String sid) {
 		
