@@ -959,7 +959,7 @@ public final class Blackboard {
 			CaseDbConnection connection = transaction.getConnection();
 
 			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
-			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
+			String deleteSQL = "DELETE FROM tsk_objects WHERE obj_id = ?";
 
 			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
 			deleteStatement.clearParameters();
@@ -1074,7 +1074,7 @@ public final class Blackboard {
 							.map(String::valueOf)
 							.collect(Collectors.toList());
 					
-					currentQuery = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id IN ("
+					currentQuery = "DELETE FROM tsk_objects WHERE obj_id IN ("
 							+ String.join(",", newList)
 							+ ")";
 
