@@ -24,6 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1637,6 +1638,10 @@ public final class Blackboard {
 	 * Gets an attribute type, creating it if it does not already exist. Use
 	 * this method to define custom attribute types.
 	 *
+	 * NOTE: This method is synchronized to prevent simultaneous access from
+	 * different threads, but there is still the possibility of concurrency 
+	 * issues from different clients.
+	 *
 	 * @param typeName    The type name of the attribute type.
 	 * @param valueType   The value type of the attribute type.
 	 * @param displayName The display name of the attribute type.
@@ -1646,50 +1651,81 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem getting or adding the
 	 *                             attribute type.
 	 */
-	public BlackboardAttribute.Type getOrAddAttributeType(String typeName, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws BlackboardException {
-
+	public synchronized BlackboardAttribute.Type getOrAddAttributeType(String typeName, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws BlackboardException {
+		// check local cache
 		if (typeNameToAttributeTypeMap.containsKey(typeName)) {
 			return typeNameToAttributeTypeMap.get(typeName);
 		}
 
 		CaseDbTransaction trans = null;
-		Statement s = null;
-		ResultSet rs = null;
 		try {
-			trans = caseDb.beginTransaction();
-			CaseDbConnection connection = trans.getConnection();
-			connection.beginTransaction();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + typeName + "'"); //NON-NLS
-			if (!rs.next()) {
-				rs.close();
-				rs = connection.executeQuery(s, "SELECT MAX(attribute_type_id) AS highest_id FROM blackboard_attribute_types");
-				int maxID = 0;
+			trans = this.caseDb.beginTransaction();
+			String matchingAttrQuery = "SELECT attribute_type_id, type_name, display_name, value_type "
+					+ "FROM blackboard_attribute_types WHERE type_name = ?";
+			// find matching attribute name
+			PreparedStatement query = trans.getConnection().getPreparedStatement(matchingAttrQuery, Statement.RETURN_GENERATED_KEYS);
+			query.clearParameters();
+			query.setString(1, typeName);
+			try (ResultSet rs = query.executeQuery()) {
+				// if previously existing, commit the results and return the attribute type
 				if (rs.next()) {
-					maxID = rs.getInt("highest_id");
-					if (maxID < MIN_USER_DEFINED_TYPE_ID) {
-						maxID = MIN_USER_DEFINED_TYPE_ID;
-					} else {
-						maxID++;
-					}
-				}
-				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES ('" + maxID + "', '" + typeName + "', '" + displayName + "', '" + valueType.getType() + "')"); //NON-NLS
-				BlackboardAttribute.Type type = new BlackboardAttribute.Type(maxID, typeName, displayName, valueType);
-				this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
-				this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
-				trans.commit();
-				trans = null;
-				return type;
-			} else {
-				trans.commit();
-				trans = null;
-				try {
-					return getAttributeType(typeName);
-				} catch (TskCoreException ex) {
-					throw new BlackboardException("Failed to get or add attribute type: " + typeName, ex);
+					trans.commit();
+					trans = null;
+					BlackboardAttribute.Type foundType = new BlackboardAttribute.Type(
+							rs.getInt("attribute_type_id"),
+							rs.getString("type_name"),
+							rs.getString("display_name"),
+							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type"))
+					);
+
+					this.typeIdToAttributeTypeMap.put(foundType.getTypeID(), foundType);
+					this.typeNameToAttributeTypeMap.put(foundType.getTypeName(), foundType);
+
+					return foundType;
 				}
 			}
+
+			// if not found in database, insert
+			String insertStatement = "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (\n"
+					// get the maximum of the attribute type id's or the min user defined type id and add 1 to it for the new id
+					+ "(SELECT MAX(q.attribute_type_id) FROM (SELECT attribute_type_id FROM blackboard_attribute_types UNION SELECT " + MIN_USER_DEFINED_TYPE_ID + ") q) + 1,\n"
+					// typeName, displayName, valueType
+					+ "?, ?, ?)";
+
+			PreparedStatement insertPreparedStatement = trans.getConnection().getPreparedStatement(insertStatement, Statement.RETURN_GENERATED_KEYS);
+			insertPreparedStatement.clearParameters();
+			insertPreparedStatement.setString(1, typeName);
+			insertPreparedStatement.setString(2, displayName);
+			insertPreparedStatement.setLong(3, valueType.getType());
+
+			int numUpdated = insertPreparedStatement.executeUpdate();
+
+			// get id for inserted to create new attribute.
+			Integer attrId = null;
+
+			if (numUpdated > 0) {
+				try (ResultSet insertResult = insertPreparedStatement.getGeneratedKeys()) {
+					if (insertResult.next()) {
+						attrId = insertResult.getInt(1);
+					}
+				}
+			}
+
+			if (attrId == null) {
+				throw new BlackboardException(MessageFormat.format(
+						"Error adding attribute type.  Item with name {0} was not inserted successfully into the database.", typeName));
+			}
+
+			trans.commit();
+			trans = null;
+
+			BlackboardAttribute.Type type = new BlackboardAttribute.Type(attrId, typeName, displayName, valueType);
+			this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
+			this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
+			return type;
 		} catch (SQLException | TskCoreException ex) {
+			throw new BlackboardException("Error adding attribute type: " + typeName, ex);
+		} finally {
 			try {
 				if (trans != null) {
 					trans.rollback();
@@ -1697,17 +1733,6 @@ public final class Blackboard {
 				}
 			} catch (TskCoreException ex2) {
 				LOGGER.log(Level.SEVERE, "Error rolling back transaction", ex2);
-			}
-			throw new BlackboardException("Error adding attribute type: " + typeName, ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			if (trans != null) {
-				try {
-					trans.rollback();
-				} catch (TskCoreException ex) {
-					throw new BlackboardException("Error rolling back transaction", ex);
-				}
 			}
 		}
 	}
