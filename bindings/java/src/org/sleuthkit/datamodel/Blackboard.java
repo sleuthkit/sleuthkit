@@ -1688,7 +1688,7 @@ public final class Blackboard {
 			// if not found in database, insert
 			String insertStatement = "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (\n"
 					// get the maximum of the attribute type id's or the min user defined type id and add 1 to it for the new id
-					+ "(SELECT MAX(q.attribute_type_id) FROM (SELECT attribute_type_id FROM blackboard_attribute_types UNION SELECT " + MIN_USER_DEFINED_TYPE_ID + ") q) + 1,\n"
+					+ "(SELECT MAX(q.attribute_type_id) FROM (SELECT attribute_type_id FROM blackboard_attribute_types UNION SELECT " + (MIN_USER_DEFINED_TYPE_ID - 1) + ") q) + 1,\n"
 					// typeName, displayName, valueType
 					+ "?, ?, ?)";
 
