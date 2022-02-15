@@ -11301,6 +11301,8 @@ public class SleuthkitCase {
 
 			trans.commit();
 			trans = null;
+			
+			fireTSKEvent(new TskEvent.ContentTagsDeletedTskEvent(Collections.singletonList(tag.getId())));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
@@ -11646,10 +11648,14 @@ public class SleuthkitCase {
 		return taggingMgr.addArtifactTag(artifact, tagName, comment).getAddedTag();
 	}
 
-	/*
+	/**
 	 * Deletes a row from the blackboard_artifact_tags table in the case
-	 * database. @param tag A BlackboardArtifactTag data transfer object (DTO)
-	 * representing the row to delete. @throws TskCoreException
+	 * database. 
+	 * 
+	 * @param tag A BlackboardArtifactTag data transfer object (DTO)
+	 * representing the row to delete. 
+	 * 
+	 * @throws TskCoreException
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
 		CaseDbTransaction trans = beginTransaction();
@@ -11670,6 +11676,9 @@ public class SleuthkitCase {
 
 			trans.commit();
 			trans = null;
+			
+			fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(Collections.singletonList(tag.getId())));
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
