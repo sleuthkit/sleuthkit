@@ -613,7 +613,7 @@ public interface TskEvent {
 			return getDataModelObjects();
 		}
 	}
-	
+
 	/**
 	 * Class for BlackboardArtifactTag (Result Tag) events.
 	 */
@@ -622,7 +622,8 @@ public interface TskEvent {
 		/**
 		 * Constructs the BlackboardArtifactTag event.
 		 *
-		 * @param tags The BlackboardArtifactTag that are the subjects of the event.
+		 * @param tags The BlackboardArtifactTag that are the subjects of the
+		 *             event.
 		 */
 		BlackboardArtifactTagsAddedTskEvent(List<BlackboardArtifactTag> tags) {
 			super(tags);
@@ -631,26 +632,27 @@ public interface TskEvent {
 		/**
 		 * Gets the tags.
 		 *
-		 * @return The persons.
+		 * @return The tags.
 		 */
 		public List<BlackboardArtifactTag> getTags() {
 			return getDataModelObjects();
 		}
 
 	}
-	
+
 	/**
-	 * An event published when one or more BlackboardArtifactTag (Result Tag) have been deleted.
+	 * An event published when one or more BlackboardArtifactTag (Result Tag)
+	 * have been deleted.
 	 */
-	public final static class BlackboardArtifactTagsDeletedTskEvent extends TskObjectsEvent<Long> {
+	public final static class BlackboardArtifactTagsDeletedTskEvent extends TskObjectsEvent<BlackboardArtifactTag> {
 
 		/**
 		 * Constructs a deleted event for one or more BlackboardArtifactTag.
 		 *
-		 * @param tagIds The ids of the deleted tags.
+		 * @param tags The ids of the deleted tags.
 		 */
-		public BlackboardArtifactTagsDeletedTskEvent(List<Long> tagIds) {
-			super(tagIds);
+		public BlackboardArtifactTagsDeletedTskEvent(List<BlackboardArtifactTag> tags) {
+			super(tags);
 		}
 
 		/**
@@ -658,11 +660,11 @@ public interface TskEvent {
 		 *
 		 * @return The list of deleted tag ids.
 		 */
-		public List<Long> getBlackboardArtifactTagIds() {
+		public List<BlackboardArtifactTag> getTags() {
 			return getDataModelObjects();
 		}
 	}
-	
+
 	/**
 	 * Class for BlackboardArtifactTag (File Tag) events.
 	 */
@@ -687,27 +689,28 @@ public interface TskEvent {
 		}
 
 	}
-	
+
 	/**
-	 * An event published when one or more ContentTag (File Tag) have been deleted.
+	 * An event published when one or more ContentTags (File Tag) have been
+	 * deleted.
 	 */
-	public final static class ContentTagsDeletedTskEvent extends TskObjectsEvent<Long> {
+	public final static class ContentTagsDeletedTskEvent extends TskObjectsEvent<ContentTag> {
 
 		/**
 		 * Constructs a deleted event for one or more ContentTag.
 		 *
-		 * @param tagIds The ids of the deleted tags.
+		 * @param tags The deleted tags.
 		 */
-		public ContentTagsDeletedTskEvent(List<Long> tagIds) {
-			super(tagIds);
+		public ContentTagsDeletedTskEvent(List<ContentTag> tags) {
+			super(tags);
 		}
 
 		/**
-		 * Returns the list of deleted ContentTag ids.
+		 * Returns the list of deleted ContentTags.
 		 *
 		 * @return The list of deleted tag ids.
 		 */
-		public List<Long> getContentTagIds() {
+		public List<ContentTag> getTags() {
 			return getDataModelObjects();
 		}
 	}

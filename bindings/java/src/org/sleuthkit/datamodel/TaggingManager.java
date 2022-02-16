@@ -348,14 +348,8 @@ public class TaggingManager {
 					artifact.getId(), artifact.getDataSourceObjectID(), getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
-			
-			if(!removedTags.isEmpty()) {
-				List<Long> tagIds = new ArrayList<>();
-				for(BlackboardArtifactTag tag: removedTags) {
-					tagIds.add(tag.getId());
-				}
-				skCase.fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(tagIds));
-			}
+
+			skCase.fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(removedTags));
 
 			skCase.fireTSKEvent(new TskEvent.BlackboardArtifactTagsAddedTskEvent(Collections.singletonList(artifactTag)));
 			
@@ -528,16 +522,8 @@ public class TaggingManager {
 
 			trans.commit();
 			
-			if(!removedTags.isEmpty()) {
-				List<Long> tagIds = new ArrayList<>();
-				for(ContentTag tag: removedTags) {
-					tagIds.add(tag.getId());
-				}
-				skCase.fireTSKEvent(new TskEvent.ContentTagsDeletedTskEvent(tagIds));
-			}
-
+			skCase.fireTSKEvent(new TskEvent.ContentTagsDeletedTskEvent(Collections.singletonList(contentTag)));
 			skCase.fireTSKEvent(new TskEvent.ContentTagsAddedTskEvent(Collections.singletonList(contentTag)));
-			
 			
 			return new ContentTagChange(contentTag, removedTags);
 		} catch (SQLException ex) {
@@ -757,7 +743,7 @@ public class TaggingManager {
 					.collect(Collectors.joining(",")) + ")", ex);
 		}
 		
-		transaction.registerDeletedBlackboardArtifactTags(tagIds);
+		transaction.registerDeletedBlackboardArtifactTags(tags);
 	}
 
 	/**

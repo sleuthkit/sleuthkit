@@ -11302,7 +11302,7 @@ public class SleuthkitCase {
 			trans.commit();
 			trans = null;
 			
-			fireTSKEvent(new TskEvent.ContentTagsDeletedTskEvent(Collections.singletonList(tag.getId())));
+			fireTSKEvent(new TskEvent.ContentTagsDeletedTskEvent(Collections.singletonList(tag)));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
@@ -11677,7 +11677,7 @@ public class SleuthkitCase {
 			trans.commit();
 			trans = null;
 			
-			fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(Collections.singletonList(tag.getId())));
+			fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(Collections.singletonList(tag)));
 			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
@@ -13529,7 +13529,7 @@ public class SleuthkitCase {
 
 		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
 		private List<Long> deletedResultObjectIds = new ArrayList<>();
-		private List<Long> deletedBlackboardArtifactTagIds = new ArrayList<>();
+		private List<BlackboardArtifactTag> deletedBlackboardArtifactTagIds = new ArrayList<>();
 
     // Keep track of which threads have connections to debug deadlocks
     private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
@@ -13629,8 +13629,8 @@ public class SleuthkitCase {
 		 * 
 		 * @param tagIds Deleted tags.
 		 */
-		void registerDeletedBlackboardArtifactTags(List<Long> tagIds) {
-			deletedBlackboardArtifactTagIds.addAll(tagIds);
+		void registerDeletedBlackboardArtifactTags(List<BlackboardArtifactTag> tags) {
+			deletedBlackboardArtifactTagIds.addAll(tags);
 		}
 
 		/**
