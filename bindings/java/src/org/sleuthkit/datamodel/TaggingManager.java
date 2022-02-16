@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
@@ -271,7 +272,7 @@ public class TaggingManager {
 		CaseDbTransaction trans = null;
 		try {
 			// If a TagName is part of a TagSet remove any existing tags from the
-			// set that are currenctly on the artifact
+			// set that are currently on the artifact
 			long tagSetId = tagName.getTagSetId();
 			if (tagSetId > 0) {
 				// Get the list of all of the blackboardArtifactTags that use
@@ -347,7 +348,17 @@ public class TaggingManager {
 					artifact.getId(), artifact.getDataSourceObjectID(), getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
+			
+			if(!removedTags.isEmpty()) {
+				List<Long> tagIds = new ArrayList<>();
+				for(BlackboardArtifactTag tag: removedTags) {
+					tagIds.add(tag.getId());
+				}
+				skCase.fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(tagIds));
+			}
 
+			skCase.fireTSKEvent(new TskEvent.BlackboardArtifactTagsAddedTskEvent(Collections.singletonList(artifactTag)));
+			
 			return new BlackboardArtifactTagChange(artifactTag, removedTags);
 		} catch (SQLException ex) {
 			if (trans != null) {
@@ -516,6 +527,18 @@ public class TaggingManager {
 					content.getId(), dataSourceId, getTagScore(tagName.getKnownStatus()), trans);
 
 			trans.commit();
+			
+			if(!removedTags.isEmpty()) {
+				List<Long> tagIds = new ArrayList<>();
+				for(ContentTag tag: removedTags) {
+					tagIds.add(tag.getId());
+				}
+				skCase.fireTSKEvent(new TskEvent.ContentTagsDeletedTskEvent(tagIds));
+			}
+
+			skCase.fireTSKEvent(new TskEvent.ContentTagsAddedTskEvent(Collections.singletonList(contentTag)));
+			
+			
 			return new ContentTagChange(contentTag, removedTags);
 		} catch (SQLException ex) {
 			trans.rollback();
@@ -697,6 +720,44 @@ public class TaggingManager {
 		}
 
 		return tagNameList;
+	}
+	
+	/**
+	 * Delete any BlackboardArtifactTags (Result Tag) associated with the given
+	 * artifact.
+	 * 
+	 * @param artifact 
+	 * @param transaction
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void deleteBlackboardArtifactTags(BlackboardArtifact artifact, CaseDbTransaction transaction) throws TskCoreException {
+		List<BlackboardArtifactTag> tags = skCase.getBlackboardArtifactTagsByArtifact(artifact);
+		if (tags.isEmpty()) {
+			return;
+		}
+
+		List<Long> tagIds = new ArrayList<>();
+		for (BlackboardArtifactTag tag : tags) {
+			tagIds.add(tag.getId());
+		}
+
+		String query = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (%s)",
+				tagIds.stream().
+						map(String::valueOf)
+						.collect(Collectors.joining(",")));
+
+		CaseDbConnection connection = transaction.getConnection();
+
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate(query);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (ids = " + tagIds.stream().
+					map(String::valueOf)
+					.collect(Collectors.joining(",")) + ")", ex);
+		}
+		
+		transaction.registerDeletedBlackboardArtifactTags(tagIds);
 	}
 
 	/**

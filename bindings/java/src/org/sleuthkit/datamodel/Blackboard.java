@@ -956,8 +956,11 @@ public final class Blackboard {
 	 */
 	private Score deleteAnalysisResult(AnalysisResult analysisResult, CaseDbTransaction transaction) throws TskCoreException {
 
-		try {
+		try {			
 			CaseDbConnection connection = transaction.getConnection();
+			
+			// Delete the BlackboardArtifactTags for the analysisResult
+			caseDb.getTaggingManager().deleteBlackboardArtifactTags(analysisResult, transaction);
 
 			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
 			String deleteSQL = "DELETE FROM tsk_objects WHERE obj_id = ?";

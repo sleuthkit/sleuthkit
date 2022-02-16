@@ -613,4 +613,102 @@ public interface TskEvent {
 			return getDataModelObjects();
 		}
 	}
+	
+	/**
+	 * Class for BlackboardArtifactTag (Result Tag) events.
+	 */
+	static final class BlackboardArtifactTagsAddedTskEvent extends TskObjectsEvent<BlackboardArtifactTag> {
+
+		/**
+		 * Constructs the BlackboardArtifactTag event.
+		 *
+		 * @param tags The BlackboardArtifactTag that are the subjects of the event.
+		 */
+		BlackboardArtifactTagsAddedTskEvent(List<BlackboardArtifactTag> tags) {
+			super(tags);
+		}
+
+		/**
+		 * Gets the tags.
+		 *
+		 * @return The persons.
+		 */
+		public List<BlackboardArtifactTag> getTags() {
+			return getDataModelObjects();
+		}
+
+	}
+	
+	/**
+	 * An event published when one or more BlackboardArtifactTag (Result Tag) have been deleted.
+	 */
+	public final static class BlackboardArtifactTagsDeletedTskEvent extends TskObjectsEvent<Long> {
+
+		/**
+		 * Constructs a deleted event for one or more BlackboardArtifactTag.
+		 *
+		 * @param tagIds The ids of the deleted tags.
+		 */
+		public BlackboardArtifactTagsDeletedTskEvent(List<Long> tagIds) {
+			super(tagIds);
+		}
+
+		/**
+		 * Returns the list of deleted TagSet ids.
+		 *
+		 * @return The list of deleted tag ids.
+		 */
+		public List<Long> getBlackboardArtifactTagIds() {
+			return getDataModelObjects();
+		}
+	}
+	
+	/**
+	 * Class for BlackboardArtifactTag (File Tag) events.
+	 */
+	static class ContentTagsAddedTskEvent extends TskObjectsEvent<ContentTag> {
+
+		/**
+		 * Constructs the ContentTag event.
+		 *
+		 * @param tags The ContentTag that are the subjects of the event.
+		 */
+		ContentTagsAddedTskEvent(List<ContentTag> tags) {
+			super(tags);
+		}
+
+		/**
+		 * Gets the tags.
+		 *
+		 * @return The tags.
+		 */
+		public List<ContentTag> getTags() {
+			return getDataModelObjects();
+		}
+
+	}
+	
+	/**
+	 * An event published when one or more ContentTag (File Tag) have been deleted.
+	 */
+	public final static class ContentTagsDeletedTskEvent extends TskObjectsEvent<Long> {
+
+		/**
+		 * Constructs a deleted event for one or more ContentTag.
+		 *
+		 * @param tagIds The ids of the deleted tags.
+		 */
+		public ContentTagsDeletedTskEvent(List<Long> tagIds) {
+			super(tagIds);
+		}
+
+		/**
+		 * Returns the list of deleted ContentTag ids.
+		 *
+		 * @return The list of deleted tag ids.
+		 */
+		public List<Long> getContentTagIds() {
+			return getDataModelObjects();
+		}
+	}
 }
