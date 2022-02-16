@@ -13529,6 +13529,7 @@ public class SleuthkitCase {
 
 		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
 		private List<Long> deletedResultObjectIds = new ArrayList<>();
+		private List<Long> deletedBlackboardArtifactTagIds = new ArrayList<>();
 
     // Keep track of which threads have connections to debug deadlocks
     private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
@@ -13621,6 +13622,16 @@ public class SleuthkitCase {
 		void registerDeletedAnalysisResult(long analysisResultObjId) {
 			this.deletedResultObjectIds.add(analysisResultObjId);
 		}
+		
+		/**
+		 * Saves a list of BlackboardArtifactTags that have been deleted as 
+		 * a parent of this transaction;
+		 * 
+		 * @param tagIds Deleted tags.
+		 */
+		void registerDeletedBlackboardArtifactTags(List<Long> tagIds) {
+			deletedBlackboardArtifactTagIds.addAll(tagIds);
+		}
 
 		/**
 		 * Check if the given thread has an open transaction.
@@ -13665,6 +13676,9 @@ public class SleuthkitCase {
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
 						sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
+				}
+				if(!deletedBlackboardArtifactTagIds.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(deletedBlackboardArtifactTagIds));
 				}
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.HostsAddedTskEvent(hostsAdded));

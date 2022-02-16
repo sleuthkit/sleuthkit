@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
@@ -719,6 +720,44 @@ public class TaggingManager {
 		}
 
 		return tagNameList;
+	}
+	
+	/**
+	 * Delete any BlackboardArtifactTags (Result Tag) associated with the given
+	 * artifact.
+	 * 
+	 * @param artifact 
+	 * @param transaction
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void deleteBlackboardArtifactTags(BlackboardArtifact artifact, CaseDbTransaction transaction) throws TskCoreException {
+		List<BlackboardArtifactTag> tags = skCase.getBlackboardArtifactTagsByArtifact(artifact);
+		if (tags.isEmpty()) {
+			return;
+		}
+
+		List<Long> tagIds = new ArrayList<>();
+		for (BlackboardArtifactTag tag : tags) {
+			tagIds.add(tag.getId());
+		}
+
+		String query = String.format("DELETE FROM blackboard_artifact_tags WHERE tag_id IN (%s)",
+				tagIds.stream().
+						map(String::valueOf)
+						.collect(Collectors.joining(",")));
+
+		CaseDbConnection connection = transaction.getConnection();
+
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate(query);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (ids = " + tagIds.stream().
+					map(String::valueOf)
+					.collect(Collectors.joining(",")) + ")", ex);
+		}
+		
+		transaction.registerDeletedBlackboardArtifactTags(tagIds);
 	}
 
 	/**
