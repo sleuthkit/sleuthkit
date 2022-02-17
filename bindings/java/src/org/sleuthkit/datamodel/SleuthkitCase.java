@@ -11301,6 +11301,8 @@ public class SleuthkitCase {
 
 			trans.commit();
 			trans = null;
+			
+			fireTSKEvent(new TskEvent.ContentTagsDeletedTskEvent(Collections.singletonList(tag)));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
@@ -11646,10 +11648,14 @@ public class SleuthkitCase {
 		return taggingMgr.addArtifactTag(artifact, tagName, comment).getAddedTag();
 	}
 
-	/*
+	/**
 	 * Deletes a row from the blackboard_artifact_tags table in the case
-	 * database. @param tag A BlackboardArtifactTag data transfer object (DTO)
-	 * representing the row to delete. @throws TskCoreException
+	 * database. 
+	 * 
+	 * @param tag A BlackboardArtifactTag data transfer object (DTO)
+	 * representing the row to delete. 
+	 * 
+	 * @throws TskCoreException
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
 		CaseDbTransaction trans = beginTransaction();
@@ -11670,6 +11676,9 @@ public class SleuthkitCase {
 
 			trans.commit();
 			trans = null;
+			
+			fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(Collections.singletonList(tag)));
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
@@ -13520,6 +13529,7 @@ public class SleuthkitCase {
 
 		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
 		private List<Long> deletedResultObjectIds = new ArrayList<>();
+		private List<BlackboardArtifactTag> deletedBlackboardArtifactTagIds = new ArrayList<>();
 
     // Keep track of which threads have connections to debug deadlocks
     private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
@@ -13612,6 +13622,16 @@ public class SleuthkitCase {
 		void registerDeletedAnalysisResult(long analysisResultObjId) {
 			this.deletedResultObjectIds.add(analysisResultObjId);
 		}
+		
+		/**
+		 * Saves a list of BlackboardArtifactTags that have been deleted as 
+		 * a parent of this transaction;
+		 * 
+		 * @param tagIds Deleted tags.
+		 */
+		void registerDeletedBlackboardArtifactTags(List<BlackboardArtifactTag> tags) {
+			deletedBlackboardArtifactTagIds.addAll(tags);
+		}
 
 		/**
 		 * Check if the given thread has an open transaction.
@@ -13656,6 +13676,9 @@ public class SleuthkitCase {
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
 						sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
+				}
+				if(!deletedBlackboardArtifactTagIds.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new TskEvent.BlackboardArtifactTagsDeletedTskEvent(deletedBlackboardArtifactTagIds));
 				}
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.HostsAddedTskEvent(hostsAdded));
