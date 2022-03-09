@@ -5157,6 +5157,41 @@ ntfs_close(TSK_FS_INFO * fs)
     tsk_fs_free(fs);
 }
 
+/**
+ * Check if the boot format matches that produced in KAPE VHDs
+ * that are missing the 0x55AA marker.
+ * Will also set the endianness.
+ *
+ * @param ntfs_info File system info
+ * @returns 0 if format appeares valid, 1 otherwise
+ */
+static int
+process_kape_boot_format(NTFS_INFO* ntfs_info) {
+
+    // Check that we have a VHD
+    if (ntfs_info->fs_info.img_info->itype != TSK_IMG_TYPE_VHD_VHD) {
+        return 1;
+    }
+
+    // Check that expected name is present
+    if (strncmp(ntfs_info->fs->oemname, "NTFS    ", 8) != 0) {
+        return 1;
+    }
+
+    // Check endianness using the sector size
+    uint16_t ssize = tsk_getu16(TSK_LIT_ENDIAN, ntfs_info->fs->ssize);
+    if ((ssize != 0) && (ssize % 512 == 0)) {
+        ntfs_info->fs_info.endian = TSK_LIT_ENDIAN;
+        return 0;
+    }
+    ssize = tsk_getu16(TSK_BIG_ENDIAN, ntfs_info->fs->ssize);
+    if ((ssize != 0) && (ssize % 512 == 0)) {
+        ntfs_info->fs_info.endian = TSK_BIG_ENDIAN;
+        return 0;
+    }
+
+    return 1;
+}
 
 /**
  * Open part of a disk image as an NTFS file system.
@@ -5230,12 +5265,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* Check the magic value */
     if (tsk_fs_guessu16(fs, ntfs->fs->magic, NTFS_FS_MAGIC)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr("Not a NTFS file system (magic)");
-        if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: Incorrect NTFS magic\n");
-        goto on_error;
+        if (process_kape_boot_format(ntfs)) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+            tsk_error_set_errstr("Not a NTFS file system (magic)");
+            if (tsk_verbose)
+                fprintf(stderr, "ntfs_open: Incorrect NTFS magic\n");
+            goto on_error;
+        }
     }
 
 
