@@ -90,10 +90,8 @@ public abstract class FsContent extends AbstractFile {
 	 * @param gid                The GID for the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
-	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if
-	 *                           not present
-	 * @param sha1Hash           SHA-1 hash of the file, or or null or "NULL" if
-	 *                           not present
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.

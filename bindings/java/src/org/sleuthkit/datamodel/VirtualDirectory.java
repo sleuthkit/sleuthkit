@@ -64,13 +64,12 @@ public class VirtualDirectory extends SpecialDirectory {
 	 *                           directory.
 	 * @param metaFlags          The meta flags for the virtual directory.
 	 * @param md5Hash            The MD5 hash for the virtual directory.
-	 * 
+	 * @param sha1Hash           SHA-1 hash for the virtual directory, may be
+	 *                           null.
 	 * @param knownState         The known state for the virtual directory
 	 * @param parentPath         The parent path for the virtual directory,
 	 *                           should be "/" if the virtual directory is a
 	 *                           data source.
-	 * @param sha1Hash           SHA-1 hash for the virtual directory, may be
-	 *                           null.
 	 */
 	VirtualDirectory(SleuthkitCase db,
 			long objId,

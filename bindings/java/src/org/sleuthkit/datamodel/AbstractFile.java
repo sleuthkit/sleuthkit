@@ -141,12 +141,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param modes
 	 * @param uid
 	 * @param gid
-	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
-	 *                           present
-	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if
-	 *                           not present
-	 * @param sha1Hash           SHA-1 hash of the file, or or null or "NULL" if
-	 *                           not present
+	 * @param md5Hash            md5sum of the file, or null if not present
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath

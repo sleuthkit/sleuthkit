@@ -53,10 +53,8 @@ public class LocalDirectory extends SpecialDirectory {
 	 * @param size               The size of the local directory, should be
 	 *                           zero.
 	 * @param md5Hash            The MD5 hash for the local directory.
-	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if
-	 *                           not present
-	 * @param sha1Hash           SHA-1 hash of the file, or or null or "NULL" if
-	 *                           not present
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state for the local directory
 	 * @param parentPath         The parent path for the local directory
 	 */

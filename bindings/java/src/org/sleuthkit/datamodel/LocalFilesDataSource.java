@@ -63,8 +63,7 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 * @param timezone           The timezone for the data source.
 	 * @param md5Hash            The MD5 hash for the virtual directory.
 	 * @param sha256Hash         The SHA-256 hash for the virtual directory.
-	 * @param sha1Hash           SHA-1 hash of the file, or or null or "NULL" if
-	 *                           not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state for the virtual directory
 	 * @param parentPath         The parent path for the virtual directory,
 	 *                           should be "/" if the virtual directory is a

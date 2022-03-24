@@ -101,12 +101,8 @@ public class SleuthkitCase {
 
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
-	/**
-	 * This must be the same as TSK_SCHEMA_VER and TSK_SCHEMA_MINOR_VER in
-	 * tsk/auto/tsk_db.h.
-	 */
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 2);
+			= new CaseDbSchemaVersionNumber(9, 3);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
