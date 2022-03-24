@@ -2,7 +2,7 @@
 	<info organisation="org.sleuthkit" module="datamodel"/>
 	<dependencies>
 		<dependency org="joda-time" name="joda-time" rev="2.4" />
-		<dependency org="com.google.guava" name="guava" rev="31.0.1-jre"/>
+		<dependency org="com.google.guava" name="guava" rev="31.1-jre"/>
 		<dependency org="org.apache.commons" name="commons-lang3" rev="3.0"/>
 		<dependency org="commons-validator" name="commons-validator" rev="1.6"/>
 		
