@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,6 +64,8 @@ public class LocalFile extends AbstractFile {
 	 *                           yet been determined.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentId           The object id of parent of the file.
@@ -86,7 +88,8 @@ public class LocalFile extends AbstractFile {
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size,
 			long ctime, long crtime, long atime, long mtime,
-			String mimeType, String md5Hash, String sha256Hash, FileKnown knownState,
+			String mimeType, String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
 			long parentId, String parentPath,
 			long dataSourceObjectId,
 			String localPath,
@@ -96,7 +99,7 @@ public class LocalFile extends AbstractFile {
 			Long osAccountObjId) {
 		super(db, objId, dataSourceObjectId, null, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors, using 
 		// AbstractContent.UNKNOWN_ID as needed.
@@ -223,7 +226,7 @@ public class LocalFile extends AbstractFile {
 				dirFlag, metaFlags,
 				size,
 				ctime, crtime, atime, mtime,
-				null, md5Hash, null, knownState,
+				null, md5Hash, null, null, knownState,
 				AbstractContent.UNKNOWN_ID, parentPath,
 				db.getDataSourceObjectId(objId),
 				localPath,
