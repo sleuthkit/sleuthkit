@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2021 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,6 +90,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String sha256Hash;
 	private boolean sha256HashDirty = false;
+	
+	/*
+	 * SHA-1 hash
+	 */
+	protected String sha1Hash;
+	private boolean sha1HashDirty = false;
+	
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
 	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
@@ -138,6 +145,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           present
 	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if
 	 *                           not present
+	 * @param sha1Hash           SHA-1 hash of the file, or or null or "NULL" if
+	 *                           not present
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
@@ -162,7 +171,8 @@ public abstract class AbstractFile extends AbstractContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes,
 			int uid, int gid,
-			String md5Hash, String sha256Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
 			String parentPath,
 			String mimeType,
 			String extension,
@@ -202,6 +212,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 		this.md5Hash = md5Hash;
 		this.sha256Hash = sha256Hash;
+		this.sha1Hash = sha1Hash;
 		if (knownState == null) {
 			this.knownState = FileKnown.UNKNOWN;
 		} else {
@@ -542,6 +553,28 @@ public abstract class AbstractFile extends AbstractContent {
 		return this.sha256Hash;
 	}
 
+	/**
+	 * Sets the SHA-1 hash for this file.
+	 *
+	 * IMPORTANT: The SHA-1 hash is set for this AbstractFile object, but it
+	 * is not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param sha1Hash The SHA-1 hash of the file.
+	 */
+	public void setSha1Hash(String sha1Hash) {
+		this.sha1Hash = sha1Hash;
+		this.sha1HashDirty = true;
+	}
+
+	/**
+	 * Get the SHA-1 hash value as calculated, if present
+	 *
+	 * @return SHA-1 hash string, if it is present or null if it is not
+	 */
+	public String getSha1Hash() {
+		return this.sha1Hash;
+	}
+	
 	/**
 	 * Gets the attributes of this File
 	 *
@@ -1285,7 +1318,7 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "\t" + "metaAddr " + metaAddr + "\t" + "metaSeq " + metaSeq + "\t" + "metaFlags " + metaFlags //NON-NLS
 				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes //NON-NLS
 				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size //NON-NLS
-				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash + "\t" + "sha256Hash " + sha256Hash //NON-NLS
+				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash + "\t" + "sha256Hash " + sha256Hash + "\t" + "sha1Hash " + sha1Hash//NON-NLS
 				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath //NON-NLS
 				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile //NON-NLS
 				+ "]\t";
@@ -1351,7 +1384,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                          properties to the case database.
 	 */
 	public void save(CaseDbTransaction transaction) throws TskCoreException {
-		if (!(md5HashDirty || sha256HashDirty || mimeTypeDirty || knownStateDirty)) {
+		if (!(md5HashDirty || sha256HashDirty || sha1HashDirty || mimeTypeDirty || knownStateDirty)) {
 			return;
 		}
 
@@ -1371,6 +1404,12 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 			updateSql += "sha256 = '" + this.getSha256Hash() + "'";
 		}
+		if (sha1HashDirty) {
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
+			}
+			updateSql += "sha1 = '" + this.getSha1Hash() + "'";
+		}
 		if (knownStateDirty) {
 			if (!updateSql.isEmpty()) {
 				updateSql += ", ";
@@ -1384,6 +1423,7 @@ public abstract class AbstractFile extends AbstractContent {
 			connection.executeUpdate(statement, updateSql);
 			md5HashDirty = false;
 			sha256HashDirty = false;
+			sha1HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
 		} catch (SQLException ex) {

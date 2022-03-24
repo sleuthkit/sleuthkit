@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,6 +73,10 @@ public class DerivedFile extends AbstractFile {
 	 * @param mtime              The modified time of the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
+	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if
+	 *                           not present
+	 * @param sha1Hash           SHA-1 hash of the file, or or null or "NULL" if
+	 *                           not present
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.
@@ -97,7 +101,8 @@ public class DerivedFile extends AbstractFile {
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size,
 			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, String sha256Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
 			String parentPath,
 			String localPath,
 			long parentId,
@@ -110,7 +115,7 @@ public class DerivedFile extends AbstractFile {
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, fileSystemObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
 		setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}
