@@ -215,7 +215,7 @@ class CaseDatabaseFactory {
 				+ "dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size " + dbQueryHelper.getBigIntType() + ", "
 				+ "ctime " + dbQueryHelper.getBigIntType() + ", "
 				+ "crtime " + dbQueryHelper.getBigIntType() + ", atime " + dbQueryHelper.getBigIntType() + ", "
-				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, "
+				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, sha1 TEXT,"
 				+ "known INTEGER, "
 				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
 				+ "owner_uid TEXT DEFAULT NULL, "
