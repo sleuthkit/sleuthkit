@@ -350,6 +350,12 @@ public final class TimelineManager {
 	 *         the event type is not found.
 	 */
 	public Optional<TimelineEventType> getEventType(long eventTypeID) {
+		// The parent EventType with ID 22 has been deprecated. This ID had two
+		// children which have be reassigned to MISC_TYPES.
+		if(eventTypeID == TimelineEventType.DEPRECATED_OTHER_EVENT_ID) {
+			return Optional.of(TimelineEventType.MISC_TYPES);
+		}
+
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 
@@ -687,7 +693,7 @@ public final class TimelineManager {
 					.collect(Collectors.toSet());
 
 			boolean duplicateExists = false;
-			for (TimelineEventArtifactTypeImpl eventType : eventTypesForArtifact) {			
+			for (TimelineEventArtifactTypeImpl eventType : eventTypesForArtifact) {
 				try {
 					addArtifactEvent(eventType.makeEventDescription(artifact), eventType, artifact)
 							.ifPresent(newEvents::add);
