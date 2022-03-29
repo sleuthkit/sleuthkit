@@ -21,10 +21,12 @@ package org.sleuthkit.datamodel;
 import com.google.common.annotations.Beta;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
@@ -173,6 +175,20 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		}
 
 	}
+
+	/**
+	 * Tracks any Timeline Event Types that have been deprecated.  These will no
+	 * longer be assigned during ingest and will be assigned to MISC_TYPE 
+	 * if viewed.
+	 */
+	Set<Long> DEPRECATED_EVENT_IDS = ImmutableSet.of(
+		// TimelineEventType with id 22 has been deprecated.  If 22
+		// is reused create upgrade code to reassign event 22 to MISC_TYPE id = 3.
+		22L,
+		// WEB_COOKIE_END was id 42, but has been removed.	
+		42L
+	);
+
 
 	/**
 	 * The root type of all event types. No event should actually have this
@@ -431,11 +447,6 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
-	
-	// TimelineEventType with id 22 has been deprecated. Trying to reuse 22
-	// may cause backwards combatibility issues and is not recommened. If 22
-	// is reused create upgrade code to reassign event 22 to MISC_TYPE id = 3.
-	int DEPRECATED_OTHER_EVENT_ID = 22;
 
 	// Event for any artifact event with an artifact type for which we don't have
 	// a hard-corded event type. In other words, we recognize the artifact type
@@ -655,8 +666,6 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-
-//	WEB_COOKIE_END was id 42, but has been removed.	
 	
 	TimelineEventType BACKUP_EVENT_START = new TimelineEventArtifactTypeImpl(43,
 			getBundle().getString("TimelineEventType.BackupEventStart.txt"),// NON-NLS

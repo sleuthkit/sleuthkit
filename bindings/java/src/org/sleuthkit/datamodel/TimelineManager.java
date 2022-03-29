@@ -352,7 +352,7 @@ public final class TimelineManager {
 	public Optional<TimelineEventType> getEventType(long eventTypeID) {
 		// The parent EventType with ID 22 has been deprecated. This ID had two
 		// children which have be reassigned to MISC_TYPES.
-		if(eventTypeID == TimelineEventType.DEPRECATED_OTHER_EVENT_ID) {
+		if(TimelineEventType.DEPRECATED_EVENT_IDS.contains(eventTypeID)) {
 			return Optional.of(TimelineEventType.MISC_TYPES);
 		}
 		
