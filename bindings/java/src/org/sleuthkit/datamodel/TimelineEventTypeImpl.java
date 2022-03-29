@@ -84,6 +84,17 @@ class TimelineEventTypeImpl implements TimelineEventType {
 	public long getTypeID() {
 		return typeID;
 	}
+	
+	/**
+	 * Returns true if the particular instance is deprecated. If deprecated, no
+	 * new timeline event types of this type will be created, but it can be
+	 * shown in the timeline.
+	 *
+	 * @return True if deprecated.
+	 */
+	boolean isDeprecated() {
+		return false;
+	}
 
 	@Override
 	public int hashCode() {

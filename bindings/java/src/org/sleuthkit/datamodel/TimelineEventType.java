@@ -177,20 +177,6 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	}
 
 	/**
-	 * Tracks any Timeline Event Types that have been deprecated.  These will no
-	 * longer be assigned during ingest and will be assigned to MISC_TYPE 
-	 * if viewed.
-	 */
-	Set<Long> DEPRECATED_EVENT_IDS = ImmutableSet.of(
-		// TimelineEventType with id 22 has been deprecated.  If 22
-		// is reused create upgrade code to reassign event 22 to MISC_TYPE id = 3.
-		22L,
-		// WEB_COOKIE_END was id 42, but has been removed.	
-		42L
-	);
-
-
-	/**
 	 * The root type of all event types. No event should actually have this
 	 * type.
 	 */
@@ -228,7 +214,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE,
-					WEB_COOKIE_ACCESSED, WEB_BOOKMARK,
+					WEB_COOKIE_ACCESSED, WEB_COOKIE_END, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL,
 					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED,
 					WEB_FORM_AUTOFILL_ACCESSED, WEB_CACHE, WEB_HISTORY_CREATED);
@@ -447,6 +433,17 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
+
+	//custom event type base type 22 has been deprecated and should be replaced with 23.
+	//custom event type base type
+	TimelineEventType CUSTOM_TYPES = new TimelineEventTypeImpl(22,
+			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
+			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
+		@Override
+		public boolean isDeprecated() {
+			return true;
+		}
+	};
 
 	// Event for any artifact event with an artifact type for which we don't have
 	// a hard-corded event type. In other words, we recognize the artifact type
@@ -667,6 +664,19 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
 	
+	TimelineEventType WEB_COOKIE_END = new URLArtifactEventType(42,
+			getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
+			WEB_ACTIVITY,
+			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+			new Type(TSK_DATETIME_END),
+			new Type(TSK_URL)) {
+				
+		@Override
+		public boolean isDeprecated() {
+			return true;
+		}
+	};
+
 	TimelineEventType BACKUP_EVENT_START = new TimelineEventArtifactTypeImpl(43,
 			getBundle().getString("TimelineEventType.BackupEventStart.txt"),// NON-NLS
 			MISC_TYPES,

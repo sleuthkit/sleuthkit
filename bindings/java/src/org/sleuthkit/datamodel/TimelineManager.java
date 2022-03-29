@@ -350,12 +350,6 @@ public final class TimelineManager {
 	 *         the event type is not found.
 	 */
 	public Optional<TimelineEventType> getEventType(long eventTypeID) {
-		// The parent EventType with ID 22 has been deprecated. This ID had two
-		// children which have be reassigned to MISC_TYPES.
-		if(TimelineEventType.DEPRECATED_EVENT_IDS.contains(eventTypeID)) {
-			return Optional.of(TimelineEventType.MISC_TYPES);
-		}
-		
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 
@@ -586,6 +580,7 @@ public final class TimelineManager {
 	 */
 	Set<TimelineEvent> addEventsForNewFileQuiet(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
 		//gather time stamps into map
+		// if any of these events become deprecated in the future, filtering may need to occur.
 		Map<TimelineEventType, Long> timeMap = ImmutableMap.of(TimelineEventType.FILE_CREATED, file.getCrtime(),
 				TimelineEventType.FILE_ACCESSED, file.getAtime(),
 				TimelineEventType.FILE_CHANGED, file.getCtime(),
@@ -692,7 +687,7 @@ public final class TimelineManager {
 					.collect(Collectors.toSet());
 
 			boolean duplicateExists = false;
-			for (TimelineEventArtifactTypeImpl eventType : eventTypesForArtifact) {
+			for (TimelineEventArtifactTypeImpl eventType : eventTypesForArtifact) {			
 				try {
 					addArtifactEvent(eventType.makeEventDescription(artifact), eventType, artifact)
 							.ifPresent(newEvents::add);
@@ -806,7 +801,9 @@ public final class TimelineManager {
 	private Optional<TimelineEvent> addArtifactEvent(TimelineEventDescriptionWithTime eventPayload,
 			TimelineEventType eventType, BlackboardArtifact artifact) throws TskCoreException, DuplicateException {
 
-		if (eventPayload == null) {
+		// make sure event payload is present
+		// only create event for a timeline event type if not deprecated
+		if (eventPayload == null || (eventType instanceof TimelineEventTypeImpl && ((TimelineEventTypeImpl) eventType).isDeprecated())) {
 			return Optional.empty();
 		}
 		long time = eventPayload.getTime();
