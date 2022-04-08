@@ -809,7 +809,7 @@ public final class TimelineManager {
 
 		// make sure event payload is present
 		// only create event for a timeline event type if not deprecated
-		if (eventPayload == null || (eventType instanceof TimelineEventTypeImpl && ((TimelineEventTypeImpl) eventType).isDeprecated())) {
+		if (eventPayload == null || eventType.isDeprecated()) {
 			return Optional.empty();
 		}
 		long time = eventPayload.getTime();

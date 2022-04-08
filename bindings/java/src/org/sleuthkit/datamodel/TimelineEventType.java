@@ -124,6 +124,18 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				? ImmutableSortedSet.of(ROOT_EVENT_TYPE)
 				: this.getParent().getChildren();
 	}
+	
+	/**
+	 * Returns true if the particular instance is deprecated. If deprecated, no
+	 * new timeline event types of this type will be created, but it can be
+	 * shown in the timeline.
+	 *
+	 * @return True if deprecated.
+	 */
+	default boolean isDeprecated() {
+		return false;
+	}
+	
 
 	@Override
 	default int compareTo(TimelineEventType otherType) {
