@@ -1995,9 +1995,11 @@ public final class Blackboard {
 				? ""
 				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
 
+		// allow for current way configuration is used for keyword sets (i.e. configuration is list name)
+		// as well as previous way configuration was used for keyword sets (i.e. configuration was null or empty and TSK_SET_NAME was used)
 		String configurationClause = (configuration == null || configuration.isEmpty()
-				? " WHERE r.configuration IS NULL "
-				: " WHERE r.configuration = ? ");
+				? " WHERE ((r.configuration IS NULL OR LENGTH(r.configuration) = 0) AND (r.set_name IS NULL OR LENGTH(r.set_name) = 0))"
+				: " WHERE (r.configuration = ? OR ((r.configuration IS NULL OR LENGTH(r.configuration) = 0) AND r.set_name = ?))");
 
 		String keywordClause = (keyword == null || keyword.isEmpty()
 				? ""
@@ -2060,6 +2062,7 @@ public final class Blackboard {
 				}
 
 				if (!(configuration == null || configuration.isEmpty())) {
+					preparedStatement.setString(++paramIdx, configuration);
 					preparedStatement.setString(++paramIdx, configuration);
 				}
 
