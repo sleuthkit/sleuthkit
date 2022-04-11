@@ -21,10 +21,12 @@ package org.sleuthkit.datamodel;
 import com.google.common.annotations.Beta;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
@@ -122,6 +124,18 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				? ImmutableSortedSet.of(ROOT_EVENT_TYPE)
 				: this.getParent().getChildren();
 	}
+	
+	/**
+	 * Returns true if the particular instance is deprecated. If deprecated, no
+	 * new timeline event types of this type will be created, but it can be
+	 * shown in the timeline.
+	 *
+	 * @return True if deprecated.
+	 */
+	default boolean isDeprecated() {
+		return false;
+	}
+	
 
 	@Override
 	default int compareTo(TimelineEventType otherType) {
@@ -212,7 +226,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE,
-					WEB_COOKIE_ACCESSED, WEB_BOOKMARK,
+					WEB_COOKIE_ACCESSED, WEB_COOKIE_END, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL,
 					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED,
 					WEB_FORM_AUTOFILL_ACCESSED, WEB_CACHE, WEB_HISTORY_CREATED);
@@ -655,9 +669,20 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-
-//	WEB_COOKIE_END was id 42, but has been removed.	
 	
+	TimelineEventType WEB_COOKIE_END = new URLArtifactEventType(42,
+			getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
+			WEB_ACTIVITY,
+			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+			new Type(TSK_DATETIME_END),
+			new Type(TSK_URL)) {
+				
+		@Override
+		public boolean isDeprecated() {
+			return true;
+		}
+	};
+
 	TimelineEventType BACKUP_EVENT_START = new TimelineEventArtifactTypeImpl(43,
 			getBundle().getString("TimelineEventType.BackupEventStart.txt"),// NON-NLS
 			MISC_TYPES,
