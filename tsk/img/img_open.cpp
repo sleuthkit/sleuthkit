@@ -17,6 +17,7 @@
 #include "tsk_img_i.h"
 
 #include "raw.h"
+#include "logical_img.h"
 
 #if HAVE_LIBAFFLIB
 #include "aff.h"
@@ -233,6 +234,10 @@ tsk_img_open(int num_img,
     case TSK_IMG_TYPE_RAW:
         img_info = raw_open(num_img, images, a_ssize);
         break;
+
+	case TSK_IMG_TYPE_LOGICAL:
+		img_info = logical_open(num_img, images, a_ssize);
+		break;
 
 #if HAVE_LIBAFFLIB
     case TSK_IMG_TYPE_AFF_AFF:

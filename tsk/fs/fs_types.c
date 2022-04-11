@@ -48,6 +48,7 @@ static FS_TYPES fs_type_table[] = {
 #endif
     {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
+	{"logical", TSK_FS_TYPE_LOGICAL, "Logical Directory"},
     {"ufs", TSK_FS_TYPE_FFS_DETECT, "UFS (Auto Detection)"},
     {"raw", TSK_FS_TYPE_RAW, "Raw Data"}, // RAW == RAW_DETECT
     {"swap", TSK_FS_TYPE_SWAP, "Swap Space"}, // SWAP == SWAP_DETECT
