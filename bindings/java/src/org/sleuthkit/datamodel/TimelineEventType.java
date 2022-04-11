@@ -22,6 +22,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +55,9 @@ import static org.sleuthkit.datamodel.TimelineEventArtifactTypeImpl.getAttribute
 @Beta
 public interface TimelineEventType extends Comparable<TimelineEventType> {
 
+	static final Long DEPRECATED_WEB_COOKIE_END_TYPE_ID = 42L;
+	static final List<Long> REMOVE_TYPES = Collections.singletonList(DEPRECATED_WEB_COOKIE_END_TYPE_ID);
+	
 	/**
 	 * Gets the display name of this event type.
 	 *
@@ -656,7 +660,14 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
 
-//	WEB_COOKIE_END was id 42, but has been removed.	
+//	WEB_COOKIE_END was id 42, but was removed with intention. This ID should not
+//  be reused. Leaving the definition of WEB_COOKIE_END in would cause the type
+//  to continue to be included in the UI which was not desired as that type was 
+//  in a small number of releases and was unlikely to appear. For now the code
+//  in TimelineManager will ignore the type if it exists in a case.
+	
+//  It is not recommended that 42 is reused, but if needed updated code should 
+//  be added to check that type 42 is not in existing cases.  	
 	
 	TimelineEventType BACKUP_EVENT_START = new TimelineEventArtifactTypeImpl(43,
 			getBundle().getString("TimelineEventType.BackupEventStart.txt"),// NON-NLS

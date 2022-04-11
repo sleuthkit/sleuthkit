@@ -356,6 +356,11 @@ public final class TimelineManager {
 			return Optional.of(TimelineEventType.MISC_TYPES);
 		}
 		
+		// If an old case had a type that was removed mark it as "Unknown"
+		if(TimelineEventType.REMOVE_TYPES.contains(eventTypeID)) {
+			return Optional.empty();
+		}
+		
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 
