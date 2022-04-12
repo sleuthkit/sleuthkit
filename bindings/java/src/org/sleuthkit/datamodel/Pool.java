@@ -118,7 +118,7 @@ public class Pool extends AbstractContent {
 				// uses block size from parent volume system
 				return parent.getStart() * ((VolumeSystem) parent.getParent()).getBlockSize(); // Offset needs to be in bytes
 			} else {
-				// uses sector size from from parent image (old behavior fallback)
+				// uses sector size from parent image (old behavior fallback)
 				return parent.getStart() * image.getSsize(); // Offset needs to be in bytes
 			}
 		}
