@@ -18,6 +18,8 @@
 extern "C" {
 #endif
 
+#define LOGICAL_IMG_DEBUG_PRINT 0
+
     extern TSK_IMG_INFO *logical_open(int a_num_img,
         const TSK_TCHAR * const a_images[], unsigned int a_ssize);
 

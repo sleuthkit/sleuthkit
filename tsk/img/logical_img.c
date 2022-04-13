@@ -80,7 +80,7 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	IMG_LOGICAL_INFO *logical_info;
 	TSK_IMG_INFO *img_info;
 
-	fprintf(stderr, "logical_open - Opening image\n");
+	if (LOGICAL_IMG_DEBUG_PRINT) fprintf(stderr, "logical_open - Opening image\n");
 	fflush(stderr);
 
 #ifndef TSK_WIN32
@@ -133,7 +133,7 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	TSTRNCPY(logical_info->base_path, a_images[0], len + 1);
 
 
-	fprintf(stderr, "logical_open - Image opened successfully\n");
+	if (LOGICAL_IMG_DEBUG_PRINT) fprintf(stderr, "logical_open - Image opened successfully\n");
 	fflush(stderr);
     return img_info;
 }

@@ -147,8 +147,6 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
         { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }
     };
-	fprintf(stderr, "In tsk_fs_open_img_decrypt with a_ftype = %d\n", a_ftype);
-	fflush(stderr);
     if (a_img_info == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
