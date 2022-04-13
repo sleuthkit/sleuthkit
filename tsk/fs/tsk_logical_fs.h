@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-#define LOGICAL_DEBUG_PRINT 1
+#define LOGICAL_DEBUG_PRINT 0
 
 #define LOGICAL_ROOT_INUM 0x10000
 #define LOGICAL_INUM_DIR_INC 0x10000

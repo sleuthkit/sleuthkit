@@ -144,9 +144,6 @@ create_max_inum_search_helper() {
 */
 static LOGICALFS_SEARCH_HELPER*
 create_path_search_helper(const TSK_TCHAR *target_path) {
-	printf("Search helper size: %lld\n", sizeof(LOGICALFS_SEARCH_HELPER));
-	printf("Search helper path: %ws (%lld)\n", target_path, TSTRLEN(target_path));
-	fflush(stdout);
 	LOGICALFS_SEARCH_HELPER *helper = (LOGICALFS_SEARCH_HELPER *)tsk_malloc(sizeof(LOGICALFS_SEARCH_HELPER));
 	if (helper == NULL)
 		return NULL;
@@ -155,8 +152,6 @@ create_path_search_helper(const TSK_TCHAR *target_path) {
 	helper->search_type = LOGICALFS_SEARCH_BY_PATH;
 	TSTRNCPY(helper->target_path, target_path, TSTRLEN(target_path) + 1);
 	helper->found_inum = LOGICAL_INVALID_INUM;
-	printf("Returning helper\n");
-	fflush(stdout);
 	return helper;
 }
 
@@ -206,15 +201,21 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 	if (a_fs_file == NULL || a_fs_file->meta == NULL) {
 		return TSK_ERR;
 	}
-	printf("Loading win find data\n");
-	fflush(stdout);
+
+	if (LOGICAL_DEBUG_PRINT) {
+		if (a_fs_file->name != NULL) {
+			printf("Populating data for file with inum 0x%llx (%ws)\n", a_fs_file->name->meta_addr, fd->cFileName);
+		}
+		else {
+			printf("a_fs_file-> name was null\n");
+		}
+	}
+
 	// Set the timestamps
 	a_fs_file->meta->crtime = filetime_to_timet(fd->ftCreationTime);
 	a_fs_file->meta->atime = filetime_to_timet(fd->ftLastAccessTime);
 	a_fs_file->meta->mtime = filetime_to_timet(fd->ftLastWriteTime);
 
-	printf("Setting mode\n");
-	fflush(stdout);
 	// Set the type
 	if (fd->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		a_fs_file->meta->type = TSK_FS_META_TYPE_DIR;
@@ -228,26 +229,6 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 	ull.LowPart = fd->nFileSizeLow;
 	ull.HighPart = fd->nFileSizeHigh;
 	a_fs_file->meta->size = ull.QuadPart;
-
-	printf("Preparing to set name\n");
-	fflush(stdout);
-	/*
-	// Set the name
-	if ((a_fs_file->meta->name2 = (TSK_FS_META_NAME_LIST *) tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
-		return TSK_ERR;
-	}
-	printf("Allocated name2")
-	a_fs_file->meta->name2->next = NULL;
-	char *utf8Name = convert_wide_string_to_utf8(fd->cFileName);
-	if (utf8Name != NULL) {
-		strncpy(a_fs_file->meta->name2->name, utf8Name, TSK_FS_META_NAME_LIST_NSIZE);
-		free(utf8Name);
-	}
-	else {
-		a_fs_file->meta->name2->name[0] = '\0';
-	}*/
-	printf("Done with win data load\n");
-	fflush(stdout);
 
 	return TSK_OK;
 }
@@ -350,7 +331,34 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 	vector<string> dir_names;
 #endif
 
-	//if (search_helper->search_type == )
+	// If we're searching for a file and this is the correct directory, load only the files in the folder and
+	// return the correct one.
+	if (search_helper->search_type == LOGICALFS_SEARCH_BY_INUM
+		&& (*last_inum_ptr == (search_helper->target_inum & 0xffff0000))
+		& ((search_helper->target_inum & 0xffff) != 0)) {
+
+#ifdef TSK_WIN32
+		if (TSK_OK != load_dir_and_file_lists_win(parent_path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
+			// Error message already set
+			return TSK_ERR;
+		}
+#endif
+		sort(file_names.begin(), file_names.end());
+
+		// Look for the file corresponding to the given inum
+		size_t file_index = (search_helper->target_inum & 0xffff) - 1;
+		if (file_names.size() <= file_index) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+			tsk_error_set_errstr("search_directory_recusive - inum not found"); // TODO
+			return TSK_ERR;
+		}
+		search_helper->target_found = true;
+		TSTRNCPY(search_helper->found_path, parent_path, TSTRLEN(parent_path) + 1);
+		TSTRNCAT(search_helper->found_path, L"/", 2);
+		TSTRNCAT(search_helper->found_path, file_names[file_index].c_str(), TSTRLEN(file_names[file_index].c_str()) + 1);
+		return TSK_OK;
+	}
 
 #ifdef TSK_WIN32
 	if (TSK_OK != load_dir_and_file_lists_win(parent_path, file_names, dir_names, LOGICALFS_LOAD_DIRS_ONLY)) {
@@ -359,7 +367,6 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 	}
 #endif
 
-	
 	// Sort the directory names
 	sort(dir_names.begin(), dir_names.end());
 		
@@ -388,39 +395,12 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 			search_helper->found_inum = current_inum;
 			return TSK_OK;
 		}
-		printf("Comparing inum %llx with target %llx\n", current_inum, search_helper->target_inum);
+
 		if ((search_helper->search_type == LOGICALFS_SEARCH_BY_INUM)
-			&& (current_inum == (search_helper->target_inum & 0xffff0000))) {
+				&& (current_inum == search_helper->target_inum)) {
 
-			// If we were looking for a directory, we're done
-			if (current_inum == search_helper->target_inum) {
-				search_helper->target_found = true;
-				printf("### Copying %zd characters into search_helper->found_path (%ws)\n", TSTRLEN(current_path), current_path);
-				TSTRNCPY(search_helper->found_path, current_path, TSTRLEN(current_path) + 1);
-				return TSK_OK;
-			}
-			printf("Looking for file\n");
-			// Otherwise the file we're looking for should be in this folder. Load the files now.
-			// Using the LOGICALFS_LOAD_FILES_ONLY mode will prevent dir_names from being altered.
-			if (TSK_OK != load_dir_and_file_lists_win(current_path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
-				// Error message already set
-				return TSK_ERR;
-			}
-			printf("Found %zd files\n", file_names.size());
-			sort(file_names.begin(), file_names.end());
-
-			// Look for the file corresponding to the given inum
-			size_t file_index = search_helper->target_inum & 0xffff - 1;
-			if (file_names.size() <= file_index) {
-				tsk_error_reset();
-				tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-				tsk_error_set_errstr("search_directory_recusive - inum not found"); // TODO
-				return TSK_ERR;
-			}
 			search_helper->target_found = true;
 			TSTRNCPY(search_helper->found_path, current_path, TSTRLEN(current_path) + 1);
-			TSTRNCAT(search_helper->found_path, L"/", 2);
-			TSTRNCAT(search_helper->found_path, file_names[file_index].c_str(), TSTRLEN(file_names[file_index].c_str()) + 1);
 			return TSK_OK;
 		}
 
@@ -464,7 +444,6 @@ load_base_path(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr, TSK_TCHAR *ba
 	TSK_RETVAL_ENUM result = search_directory_recusive(logical_fs_info->base_path, &last_assigned_inum, search_helper);
 
 	if ((result != TSK_OK) || (!search_helper->target_found)) {
-		printf("### Bailing out of load_base_path???\n");
 		free(search_helper);
 		return TSK_ERR;
 	}
@@ -481,8 +460,7 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 	TSK_INUM_T inum)
 {
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
-	printf("file_add_meta for %llx\n", inum);
-	
+
 	if (a_fs_file == NULL) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -497,33 +475,28 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 	else {
 		tsk_fs_meta_reset(a_fs_file->meta);
 	}
+
+	a_fs_file->meta->addr = inum;
 	
 	// Get the full path to the given file
-	printf("Loading path for inum\n");
-	fflush(stdout);
 	TSK_TCHAR base_path[MAX_LOGICAL_NAME_LEN + 1];
 	TSK_RETVAL_ENUM result = load_base_path(logical_fs_info, inum, base_path, MAX_LOGICAL_NAME_LEN);
 	if (result != TSK_OK) {
-		printf("Not ok\n");
-		fflush(stdout);
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
 		tsk_error_set_errstr("logicalfs_file_add_meta - Error loading directory %" PRIttocTSK, base_path);
 		return TSK_ERR;
 	}
+	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_file_add_meta: Path for inum 0x%llx is %" PRIttocTSK "\n", inum, base_path);
 
 #ifdef TSK_WIN32
 	// Load the file
-	printf("Loading file\n");
-	fflush(stdout);
 	WIN32_FIND_DATA fd;
 	HANDLE hFind = ::FindFirstFile(base_path, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 
 		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, a_fs_file);
 		::FindClose(hFind);
-		printf("Ready to return\n");
-		fflush(stdout);
 		return result;
 	}
 	else {
@@ -545,8 +518,7 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 */
 static TSK_INUM_T
 find_max_inum(LOGICALFS_INFO *logical_fs_info) {
-	printf("### Loading max inum ###\n");
-	fflush(stdout);
+
 	// Create the struct that holds search params and results
 	LOGICALFS_SEARCH_HELPER *search_helper = create_max_inum_search_helper();
 	if (search_helper == NULL) {
@@ -559,8 +531,6 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	free(search_helper);
 
 	if (result != TSK_OK) {
-		printf("### Max inum - search_directory_recursive failed\n");
-		fflush(stdout);
 		return LOGICAL_INVALID_INUM;
 	}
 
@@ -570,21 +540,8 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	TSK_TCHAR base_path[MAX_LOGICAL_NAME_LEN + 1];
 	result = load_base_path(logical_fs_info, last_assigned_inum, base_path, MAX_LOGICAL_NAME_LEN);
 	if (result != TSK_OK) {
-		printf("### Max inum - failed to look up path for inum %llx\n", last_assigned_inum);
-		fflush(stdout);
 		return LOGICAL_INVALID_INUM;
 	}
-
-	printf("### base_path: ");
-	for (int i = 0; i < 20; i++) {
-		if (isascii(base_path[i] & 0xff)) {
-			printf("%c ", base_path[i] & 0xff);
-		}
-		else {
-			printf("%x ", base_path[i]);
-		}
-	}
-	printf("\n");
 
 	// Finally we need to get a count of files in that last folder. The max inum is the 
 	// folder inum plus the number of files (if none, it'll just be the folder inum).
@@ -592,8 +549,6 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	vector<wstring> file_names;
 	vector<wstring> dir_names;
 	if (TSK_OK != load_dir_and_file_lists_win(base_path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
-		printf("### Max inum - loading files for path %ws failed\n", base_path);
-		fflush(stdout);
 		return LOGICAL_INVALID_INUM;
 	}
 #else
@@ -601,8 +556,6 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	vector<string> dir_names;
 #endif
 	last_assigned_inum += file_names.size();
-	printf("### Last inum: 0x%llx\n", last_assigned_inum);
-	fflush(stdout);
 	return last_assigned_inum;
 }
 
@@ -620,8 +573,6 @@ static TSK_INUM_T
 get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_path, wstring& dir_path) {
 
 	// Get the full path on disk by combining the base path for the logical image with the relative path in dir_path
-	printf("Making path\n");
-	fflush(stdout);
 	size_t len = TSTRLEN(base_path) + dir_path.length() + 1;
 	TSK_TCHAR *path_buf = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) *(len + 2));
 	TSTRNCPY(path_buf, base_path, TSTRLEN(base_path) + 1);
@@ -629,8 +580,6 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 	TSTRNCAT(path_buf, dir_path.c_str(), TSTRLEN(dir_path.c_str()) + 1);
 
 	// Create the struct that holds search params and results
-	printf("Making search helper\n");
-	fflush(stdout);
 	LOGICALFS_SEARCH_HELPER *search_helper = create_path_search_helper(path_buf);
 	free(path_buf);
 	if (search_helper == NULL) {
@@ -638,8 +587,6 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 	}
 
 	// Run the search
-	printf("Running search\n");
-	fflush(stdout);
 	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
 	TSK_RETVAL_ENUM result = search_directory_recusive(logical_fs_info->base_path, &last_assigned_inum, search_helper);
 
@@ -652,8 +599,6 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 		target_inum = search_helper->found_inum;
 	}
 	free(search_helper);
-	printf("Returning from get_inum_from_directory_path\n");
-	fflush(stdout);
 	return target_inum;
 }
 
@@ -722,8 +667,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	}
 #endif
 
-	printf("Loading dirs\n");
-	fflush(stdout);
 #ifdef TSK_WIN32
 	vector<wstring> file_names;
 	vector<wstring> dir_names;
@@ -744,25 +687,15 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %lld folders\n", dir_names.size());
 	fflush(stdout);
 	for (auto it = begin(dir_names); it != end(dir_names); ++it) {
-		printf("Getting inum from path\n");
-		fflush(stdout);
 		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, base_path, *it);
-		printf("Got inum\n");
-		fflush(stdout);
 		TSK_FS_NAME *fs_name;
 
-		printf("Adding folder with inum %llx\n", dir_inum);
-		fflush(stdout);
 #ifdef TSK_WIN32
 		char *utf8Name = convert_wide_string_to_utf8(it->c_str());
-		printf("finshed conversion\n");
-		fflush(stdout);
 #else
 		char *utf8Name = *it;
 #endif
 		size_t name_len = strlen(utf8Name);
-		if (LOGICAL_DEBUG_PRINT) printf("strlen name_buf = %zd", name_len);
-		fflush(stdout);
 		if ((fs_name = tsk_fs_name_alloc(name_len, 0)) == NULL) {
 #ifdef TSK_WIN32
 			if (utf8Name != NULL) {
