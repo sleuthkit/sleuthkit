@@ -112,8 +112,9 @@ create_inum_search_helper(TSK_INUM_T target_inum) {
 
 	helper->target_found = false;
 	helper->search_type = LOGICALFS_SEARCH_BY_INUM;
+	helper->target_path = NULL;
 	helper->target_inum = target_inum;
-	helper->found_path[0] = '\0';
+	helper->found_path = NULL;
 	return helper;
 }
 
@@ -131,6 +132,8 @@ create_max_inum_search_helper() {
 
 	helper->target_found = false;
 	helper->search_type = LOGICALFS_NO_SEARCH;
+	helper->target_path = NULL;
+	helper->found_path = NULL;
 	return helper;
 }
 
@@ -150,9 +153,22 @@ create_path_search_helper(const TSK_TCHAR *target_path) {
 
 	helper->target_found = false;
 	helper->search_type = LOGICALFS_SEARCH_BY_PATH;
+	helper->target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(target_path) + 1));
 	TSTRNCPY(helper->target_path, target_path, TSTRLEN(target_path) + 1);
 	helper->found_inum = LOGICAL_INVALID_INUM;
+	helper->found_path = NULL;
 	return helper;
+}
+
+static void
+free_search_helper(LOGICALFS_SEARCH_HELPER* helper) {
+	if (helper->target_path != NULL) {
+		free(helper->target_path);
+	}
+	if (helper->found_path != NULL) {
+		free(helper->found_path);
+	}
+	free(helper);
 }
 
 /*
@@ -353,7 +369,10 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 			tsk_error_set_errstr("search_directory_recusive - inum not found"); // TODO
 			return TSK_ERR;
 		}
+
 		search_helper->target_found = true;
+		size_t found_path_len = TSTRLEN(parent_path) + 1 + TSTRLEN(file_names[file_index].c_str());
+		search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (found_path_len + 1));
 		TSTRNCPY(search_helper->found_path, parent_path, TSTRLEN(parent_path) + 1);
 		TSTRNCAT(search_helper->found_path, L"/", 2);
 		TSTRNCAT(search_helper->found_path, file_names[file_index].c_str(), TSTRLEN(file_names[file_index].c_str()) + 1);
@@ -400,6 +419,7 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 				&& (current_inum == search_helper->target_inum)) {
 
 			search_helper->target_found = true;
+			search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(current_path) + 1));
 			TSTRNCPY(search_helper->found_path, current_path, TSTRLEN(current_path) + 1);
 			return TSK_OK;
 		}
@@ -444,13 +464,13 @@ load_base_path(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr, TSK_TCHAR *ba
 	TSK_RETVAL_ENUM result = search_directory_recusive(logical_fs_info->base_path, &last_assigned_inum, search_helper);
 
 	if ((result != TSK_OK) || (!search_helper->target_found)) {
-		free(search_helper);
+		free_search_helper(search_helper);
 		return TSK_ERR;
 	}
 
 	// Copy the path
 	TSTRNCPY(base_path, search_helper->found_path, TSTRLEN(search_helper->found_path) + 1);
-	free(search_helper);
+	free_search_helper(search_helper);
 	return TSK_OK;
 }
 
@@ -528,7 +548,7 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	// Run the search to get the maximum directory inum
 	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
 	TSK_RETVAL_ENUM result = search_directory_recusive(logical_fs_info->base_path, &last_assigned_inum, search_helper);
-	free(search_helper);
+	free_search_helper(search_helper);
 
 	if (result != TSK_OK) {
 		return LOGICAL_INVALID_INUM;
@@ -598,7 +618,7 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 	else {
 		target_inum = search_helper->found_inum;
 	}
-	free(search_helper);
+	free_search_helper(search_helper);
 	return target_inum;
 }
 

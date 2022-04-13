@@ -47,10 +47,10 @@ enum LOGICALFS_SEARCH_TYPE {
 
 typedef struct {
 	LOGICALFS_SEARCH_TYPE search_type;
-	TSK_TCHAR target_path[MAX_LOGICAL_NAME_LEN + 1];
+	TSK_TCHAR* target_path;
 	TSK_INUM_T target_inum;
 	bool target_found;
-	TSK_TCHAR found_path[MAX_LOGICAL_NAME_LEN + 1];
+	TSK_TCHAR* found_path;
 	TSK_INUM_T found_inum;
 } LOGICALFS_SEARCH_HELPER;
 
