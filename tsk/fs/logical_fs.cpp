@@ -84,6 +84,7 @@ logicalfs_load_attrs(TSK_FS_FILE *file)
  *
  * @return The converted timet
  */
+#ifdef TSK_WIN32
 time_t filetime_to_timet(FILETIME const& ft) 
 { 
 	ULARGE_INTEGER ull;    
@@ -91,6 +92,7 @@ time_t filetime_to_timet(FILETIME const& ft)
 	ull.HighPart = ft.dwHighDateTime;    
 	return ull.QuadPart / 10000000ULL - 11644473600ULL; 
 }
+#endif
 
 /*
  * Create a LOGICALFS_SEARCH_HELPER that will run a search for
@@ -255,7 +257,11 @@ TSK_TCHAR * create_search_path(const TSK_TCHAR *base_path) {
 		return NULL;
 	}
 	TSTRNCPY(searchPath, base_path, len + 1);
+#ifdef TSK_WIN32
 	TSTRNCAT(searchPath, L"/*", 3);
+#else
+	TSTRNCAT(searchPath, "/*", 3);
+#endif
 	return searchPath;
 }
 
@@ -364,7 +370,11 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 		size_t found_path_len = TSTRLEN(parent_path) + 1 + TSTRLEN(file_names[file_index].c_str());
 		search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (found_path_len + 1));
 		TSTRNCPY(search_helper->found_path, parent_path, TSTRLEN(parent_path) + 1);
+#ifdef TSK_WIN32
 		TSTRNCAT(search_helper->found_path, L"/", 2);
+#else
+		TSTRNCAT(search_helper->found_path, "/", 2);
+#endif
 		TSTRNCAT(search_helper->found_path, file_names[file_index].c_str(), TSTRLEN(file_names[file_index].c_str()) + 1);
 		return TSK_OK;
 	}
@@ -387,10 +397,14 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 	if (current_path == NULL)
 		return TSK_ERR;
 	TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
+#ifdef TSK_WIN32
 	TSTRNCAT(current_path, L"/", 2);
+#else
+	TSTRNCAT(current_path, "/", 2);
+#endif
 	size_t parent_path_len = TSTRLEN(current_path);
 
-	for (int i = 0; i < dir_names.size();i++) {
+	for (size_t i = 0; i < dir_names.size();i++) {
 
 		// If we don't have space for this name, increase the size of the buffer
 		if (TSTRLEN(dir_names[i].c_str()) > allocated_dir_name_len) {
@@ -400,7 +414,11 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 			if (current_path == NULL)
 				return TSK_ERR;
 			TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
+#ifdef TSK_WIN32
 			TSTRNCAT(current_path, L"/", 2);
+#else
+			TSTRNCAT(current_path, "/", 2);
+#endif
 		}
 
 		// Append the current directory name to the parent path
@@ -612,13 +630,21 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 * @return The corresponding inum, or LOGICAL_INVALID_INUM if an error occurs
 */
 static TSK_INUM_T
+#ifdef TSK_WIN32
 get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_path, wstring& dir_path) {
+#else
+get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_path, string& dir_path) {
+#endif
 
 	// Get the full path on disk by combining the base path for the logical image with the relative path in dir_path
 	size_t len = TSTRLEN(base_path) + dir_path.length() + 1;
 	TSK_TCHAR *path_buf = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) *(len + 2));
 	TSTRNCPY(path_buf, base_path, TSTRLEN(base_path) + 1);
+#ifdef TSK_WIN32
 	TSTRNCAT(path_buf, L"/", 2);
+#else
+	TSTRNCAT(path_buf, "/", 2);
+#endif
 	TSTRNCAT(path_buf, dir_path.c_str(), TSTRLEN(dir_path.c_str()) + 1);
 
 	// Create the struct that holds search params and results
@@ -789,7 +815,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	free(path);
 
 	// Add the files
-	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %lld files\n", file_names.size());
+	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %" PRIuSIZE " files\n", file_names.size());
 	fflush(stdout);
 	TSK_INUM_T file_inum = a_addr | 1; // First inum is directory inum in the high part, 1 in the low part
 	for (auto it = begin(file_names); it != end(file_names); ++it) {
