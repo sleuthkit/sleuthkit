@@ -786,10 +786,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			tsk_error_set_errstr("logicalfs_dir_open_meta: Error converting wide string");
 			return TSK_ERR;
 		}
-#else
-		char *utf8Name = it->c_str();
-#endif
 		size_t name_len = strlen(utf8Name);
+#else
+		size_t name_len = strlen(it->c_str());
+#endif
 		if ((fs_name = tsk_fs_name_alloc(name_len, 0)) == NULL) {
 #ifdef TSK_WIN32
 			free(utf8Name);
@@ -801,9 +801,11 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->type = TSK_FS_NAME_TYPE_DIR;
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = dir_inum;
-		strncpy(fs_name->name, utf8Name, name_len);
 #ifdef TSK_WIN32
+		strncpy(fs_name->name, utf8Name, name_len);
 		free(utf8Name);
+#else
+		strncpy(fs_name->name, it->c_str(), name_len);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
