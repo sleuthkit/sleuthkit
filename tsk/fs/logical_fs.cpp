@@ -772,7 +772,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	sort(dir_names.begin(), dir_names.end());
 
 	// Add the folders
-	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %lld folders\n", dir_names.size());
+	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %" PRIuSIZE " folders\n", dir_names.size());
 	fflush(stdout);
 	for (auto it = begin(dir_names); it != end(dir_names); ++it) {
 		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, path, *it);
