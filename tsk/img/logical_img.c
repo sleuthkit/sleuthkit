@@ -71,7 +71,7 @@ logical_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
  */
 TSK_IMG_INFO *
 logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
-    unsigned int a_ssize)
+	unsigned int a_ssize)
 {
 	IMG_LOGICAL_INFO *logical_info;
 	TSK_IMG_INFO *img_info;
@@ -127,7 +127,16 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 		return NULL;
 	}
 	TSTRNCPY(logical_info->base_path, a_images[0], len + 1);
-
+	// Remove trailing slash
+#ifdef TSK_WIN32
+	if (logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'/') {
+		logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] = '\0';
+	}
+#else
+	if (logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == '/') {
+		logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] = '\0';
+	}
+#endif
 
 	if (LOGICAL_IMG_DEBUG_PRINT) fprintf(stderr, "logical_open - Image opened successfully\n");
 	fflush(stderr);
