@@ -1,15 +1,11 @@
 /*
 ** The Sleuth Kit
 **
-** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
+** Copyright (c) 2022 Basis Technology Corp.  All rights reserved
+** Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
 **
-** TASK
-v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
+** This software is distributed under the Common Public License 1.0
 **
-** Copyright (c) 1997,1998,1999, International Business Machines
-** Corporation and others. All Rights Reserved.
 */
 
 /**
@@ -195,7 +191,7 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 			&utf8[maxUTF8len], TSKlenientConversion);
 
 	if (retVal != TSKconversionOK) {
-		return NULL;
+		return NULL; // TODO - revisit failed conversion handling
 	}
 	return dest;
 }
@@ -215,16 +211,10 @@ TSK_RETVAL_ENUM
 populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_fs_file) {
 
 	if (a_fs_file == NULL || a_fs_file->meta == NULL) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr("populate_fs_file_from_win_find_data - a_fs_file argument not initialized");
 		return TSK_ERR;
-	}
-
-	if (LOGICAL_DEBUG_PRINT) {
-		if (a_fs_file->name != NULL) {
-			printf("Populating data for file with inum 0x%llx (%ws)\n", a_fs_file->name->meta_addr, fd->cFileName);
-		}
-		else {
-			printf("a_fs_file-> name was null\n");
-		}
 	}
 
 	// Set the timestamps
@@ -366,7 +356,7 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 		if (file_names.size() <= file_index) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-			tsk_error_set_errstr("search_directory_recusive - inum not found"); // TODO
+			tsk_error_set_errstr("search_directory_recusive - inum %" PRIuINUM " not found", search_helper->target_inum);
 			return TSK_ERR;
 		}
 
@@ -390,28 +380,41 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 	sort(dir_names.begin(), dir_names.end());
 		
 	// Set up the beginning of full path to the file on disk
-	TSK_TCHAR current_path[MAX_LOGICAL_NAME_LEN + 1];
+	// The directoy name being added should generally be less than 270 characters, but if necessary we will
+	// make more space available.
+	size_t allocated_dir_name_len = 270;
+	TSK_TCHAR* current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(parent_path) + 2 + allocated_dir_name_len));
+	if (current_path == NULL)
+		return TSK_ERR;
 	TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
 	TSTRNCAT(current_path, L"/", 2);
 	size_t parent_path_len = TSTRLEN(current_path);
-	size_t path_len_left = MAX_LOGICAL_NAME_LEN - parent_path_len;
 
 	for (int i = 0; i < dir_names.size();i++) {
+
+		// If we don't have space for this name, increase the size of the buffer
+		if (TSTRLEN(dir_names[i].c_str()) > allocated_dir_name_len) {
+			free(current_path);
+			allocated_dir_name_len = TSTRLEN(dir_names[i].c_str()) + 20;
+			current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(parent_path) + 2 + allocated_dir_name_len));
+			if (current_path == NULL)
+				return TSK_ERR;
+			TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
+			TSTRNCAT(current_path, L"/", 2);
+		}
+
 		// Append the current directory name to the parent path
 		TSTRNCPY(current_path + parent_path_len, dir_names[i].c_str(), TSTRLEN(dir_names[i].c_str()) + 1);
-		if (LOGICAL_DEBUG_PRINT) printf( "Assigning 0x%llx to dir %ws\n", (*last_inum_ptr) + 1, current_path);
 		TSK_INUM_T current_inum = *last_inum_ptr + LOGICAL_INUM_DIR_INC;
 		*last_inum_ptr = current_inum;
+		if (LOGICAL_DEBUG_PRINT) printf("Assigning 0x%" PRIxINUM " to dir %" PRIttocTSK " \n", current_inum, current_path);
 
 		// Check if we've found it
 		if ((search_helper->search_type == LOGICALFS_SEARCH_BY_PATH)
-#ifdef TSK_WIN32
-			&& (wcsncmp(current_path, search_helper->target_path, MAX_LOGICAL_NAME_LEN) == 0)) {
-#else
-			&& (strncmp(current_path, search_helper->target_path, MAX_LOGICAL_NAME_LEN) == 0)) {
-#endif
+			&& (TSTRCMP(current_path, search_helper->target_path) == 0)) {
 			search_helper->target_found = true;
 			search_helper->found_inum = current_inum;
+			free(current_path);
 			return TSK_OK;
 		}
 
@@ -420,18 +423,24 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 
 			search_helper->target_found = true;
 			search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(current_path) + 1));
+			if (search_helper->found_path == NULL)
+				return TSK_ERR;
 			TSTRNCPY(search_helper->found_path, current_path, TSTRLEN(current_path) + 1);
+			free(current_path);
 			return TSK_OK;
 		}
 
 		TSK_RETVAL_ENUM result = search_directory_recusive(current_path, last_inum_ptr, search_helper);
 		if (result != TSK_OK) {
+			free(current_path);
 			return result;
 		}
 		if (search_helper->target_found) {
+			free(current_path);
 			return TSK_OK;
 		}
 	}
+	free(current_path);
 	return TSK_OK;
 }
 
@@ -440,23 +449,26 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
  *
  * @param logical_fs_info The logical file system
  * @param a_addr          The inum to search for
- * @param base_path       Will be loaded with path corresponding to the inum
- * @param base_path_len   Size of base_path
  *
- * @return TSK_OK if successful, TSK_ERR otherwise 
+ * @return The path corresponding to the inum. Null on error. Must be freed by caller.
  */
-static TSK_RETVAL_ENUM
-load_base_path(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr, TSK_TCHAR *base_path, size_t base_path_len) {
+static TSK_TCHAR *
+load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
+
+	TSK_TCHAR *path = NULL;
 	if (a_addr == logical_fs_info->fs_info.root_inum) {
 		// No need to do a search - it's just the root folder
-		TSTRNCPY(base_path, logical_fs_info->base_path, TSTRLEN(logical_fs_info->base_path) + 1);
-		return TSK_OK;
+		path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_fs_info->base_path) + 1));
+		if (path == NULL)
+			return NULL;
+		TSTRNCPY(path, logical_fs_info->base_path, TSTRLEN(logical_fs_info->base_path) + 1);
+		return path;
 	}
 
 	// Create the struct that holds search params and results
 	LOGICALFS_SEARCH_HELPER *search_helper = create_inum_search_helper(a_addr);
 	if (search_helper == NULL) {
-		return TSK_ERR;
+		return NULL;
 	}
 
 	// Run the search
@@ -465,15 +477,22 @@ load_base_path(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr, TSK_TCHAR *ba
 
 	if ((result != TSK_OK) || (!search_helper->target_found)) {
 		free_search_helper(search_helper);
-		return TSK_ERR;
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+		tsk_error_set_errstr("load_path_from_inum - failed to find path corresponding to inum %" PRIuINUM, search_helper->target_inum);
+		return NULL;
 	}
 
 	// Copy the path
-	TSTRNCPY(base_path, search_helper->found_path, TSTRLEN(search_helper->found_path) + 1);
+	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(search_helper->found_path) + 1));
+	if (path == NULL) {
+		free_search_helper(search_helper);
+		return NULL;
+	}
+	TSTRNCPY(path, search_helper->found_path, TSTRLEN(search_helper->found_path) + 1);
 	free_search_helper(search_helper);
-	return TSK_OK;
+	return path;
 }
-
 
 static uint8_t
 logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
@@ -499,33 +518,35 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 	a_fs_file->meta->addr = inum;
 	
 	// Get the full path to the given file
-	TSK_TCHAR base_path[MAX_LOGICAL_NAME_LEN + 1];
-	TSK_RETVAL_ENUM result = load_base_path(logical_fs_info, inum, base_path, MAX_LOGICAL_NAME_LEN);
-	if (result != TSK_OK) {
+	TSK_TCHAR* path  = load_path_from_inum(logical_fs_info, inum);
+	if (path == NULL) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-		tsk_error_set_errstr("logicalfs_file_add_meta - Error loading directory %" PRIttocTSK, base_path);
+		tsk_error_set_errstr("logicalfs_file_add_meta - Error loading directory with inum %" PRIuINUM, inum);
 		return TSK_ERR;
 	}
-	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_file_add_meta: Path for inum 0x%llx is %" PRIttocTSK "\n", inum, base_path);
+	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_file_add_meta: Path for inum 0x%" PRIxINUM " is %" PRIttocTSK "\n", inum, path);
 
 #ifdef TSK_WIN32
 	// Load the file
 	WIN32_FIND_DATA fd;
-	HANDLE hFind = ::FindFirstFile(base_path, &fd);
+	HANDLE hFind = ::FindFirstFile(path, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 
 		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, a_fs_file);
 		::FindClose(hFind);
+		free(path);
 		return result;
 	}
 	else {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("logicalfs_dir_open_meta: Error loading directory %" PRIttocTSK, base_path);
+		tsk_error_set_errstr("logicalfs_dir_open_meta: Error loading directory %" PRIttocTSK, path);
+		free(path);
 		return TSK_ERR;
 	}
 #endif
+	free(path);
 	return TSK_OK;
 }
 
@@ -557,9 +578,8 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	// The maximum inum will be the inum of the last file in that folder. We don't care which file it is, 
 	// so just getting a count is sufficient. First we need the path on disk corresponding to the last
 	// directory inum.
-	TSK_TCHAR base_path[MAX_LOGICAL_NAME_LEN + 1];
-	result = load_base_path(logical_fs_info, last_assigned_inum, base_path, MAX_LOGICAL_NAME_LEN);
-	if (result != TSK_OK) {
+	TSK_TCHAR* path = load_path_from_inum(logical_fs_info, last_assigned_inum);
+	if (path == NULL) {
 		return LOGICAL_INVALID_INUM;
 	}
 
@@ -568,13 +588,15 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 #ifdef TSK_WIN32
 	vector<wstring> file_names;
 	vector<wstring> dir_names;
-	if (TSK_OK != load_dir_and_file_lists_win(base_path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
+	if (TSK_OK != load_dir_and_file_lists_win(path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
+		free(path);
 		return LOGICAL_INVALID_INUM;
 	}
 #else
 	vector<string> file_names;
 	vector<string> dir_names;
 #endif
+	free(path);
 	last_assigned_inum += file_names.size();
 	return last_assigned_inum;
 }
@@ -630,7 +652,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
 	
 
-	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_dir_open_meta - addr: 0x%llx, recursion depth: %d\n", a_addr, recursion_depth);
+	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_dir_open_meta - a_addr: 0x%" PRIxINUM ", recursion depth: %d\n", a_addr, recursion_depth);
 
 	if (recursion_depth != 1) {
 		tsk_error_reset();
@@ -639,10 +661,22 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			PRIuINUM, a_addr);
 		return TSK_ERR;
 	}
-	else if (a_fs_dir == NULL) {
+	if (a_fs_dir == NULL) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
 		tsk_error_set_errstr("logicalfs_dir_open_meta: NULL fs_dir argument given");
+		return TSK_ERR;
+	}
+	if ((a_addr & 0xffff) != 0) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr("logicalfs_dir_open_meta: Inode %" PRIuINUM " is not a directory", a_addr);
+		return TSK_ERR;
+	}
+	if (a_addr == LOGICAL_INVALID_INUM) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr("logicalfs_dir_open_meta: Inode %" PRIuINUM " is not valid", a_addr);
 		return TSK_ERR;
 	}
 
@@ -656,25 +690,31 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	}
 	
 	// Load the base path for the given meta address
-	TSK_TCHAR base_path[MAX_LOGICAL_NAME_LEN + 1];
-	load_base_path(logical_fs_info, a_addr, base_path, MAX_LOGICAL_NAME_LEN);
+	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_dir_open_meta: Loading path for inum 0x%" PRIxINUM "\n", a_addr);
+	TSK_TCHAR* path = load_path_from_inum(logical_fs_info, a_addr);
+	if (path == NULL) {
+		return TSK_ERR;
+	}
+	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_dir_open_meta: Found path %" PRIttocTSK, path);
 
 #ifdef TSK_WIN32
-	// Look up the base folder and populate the fs_file field
+	// Populate the fs_file field
 	WIN32_FIND_DATA fd;
-	HANDLE hFind = ::FindFirstFile(base_path, &fd);
+	HANDLE hFind = ::FindFirstFile(path, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
-		if ((fs_dir->fs_file = tsk_fs_file_alloc(a_fs)) == NULL)
+		if ((fs_dir->fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
+			free(path);
 			return TSK_ERR;
+		}
 
-		if ((fs_dir->fs_file->meta = tsk_fs_meta_alloc(0)) == NULL)
+		if ((fs_dir->fs_file->meta = tsk_fs_meta_alloc(0)) == NULL) {
+			free(path);
 			return TSK_ERR;
+		}
 		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, fs_dir->fs_file);
 		::FindClose(hFind);
 		if (result != TSK_OK) {
-			tsk_error_reset();
-			tsk_error_set_errno(TSK_ERR_FS_GENFS);
-			tsk_error_set_errstr("logicalfs_dir_open_meta: Error loading directory %" PRIttocTSK, base_path);
+			// Error message already set
 			return TSK_ERR;
 		}
 		
@@ -682,7 +722,8 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	else {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("logicalfs_dir_open_meta: Error loading directory %" PRIttocTSK, base_path);
+		tsk_error_set_errstr("logicalfs_dir_open_meta: Error loading directory %" PRIttocTSK, path);
+		free(path);
 		return TSK_ERR;
 	}
 #endif
@@ -690,8 +731,9 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 #ifdef TSK_WIN32
 	vector<wstring> file_names;
 	vector<wstring> dir_names;
-	if (TSK_OK != load_dir_and_file_lists_win(base_path, file_names, dir_names, LOGICALFS_LOAD_ALL)) {
+	if (TSK_OK != load_dir_and_file_lists_win(path, file_names, dir_names, LOGICALFS_LOAD_ALL)) {
 		// Error message already set
+		free(path);
 		return TSK_ERR;
 	}
 #else
@@ -707,21 +749,26 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %lld folders\n", dir_names.size());
 	fflush(stdout);
 	for (auto it = begin(dir_names); it != end(dir_names); ++it) {
-		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, base_path, *it);
+		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, path, *it);
 		TSK_FS_NAME *fs_name;
 
 #ifdef TSK_WIN32
 		char *utf8Name = convert_wide_string_to_utf8(it->c_str());
+		if (utf8Name == NULL) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+			tsk_error_set_errstr("logicalfs_dir_open_meta: Error converting wide string");
+			return TSK_ERR;
+		}
 #else
 		char *utf8Name = *it;
 #endif
 		size_t name_len = strlen(utf8Name);
 		if ((fs_name = tsk_fs_name_alloc(name_len, 0)) == NULL) {
 #ifdef TSK_WIN32
-			if (utf8Name != NULL) {
-				free(utf8Name);
-			}
+			free(utf8Name);
 #endif
+			free(path);
 			return TSK_ERR;
 		}
 
@@ -730,16 +777,16 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->meta_addr = dir_inum;
 		strncpy(fs_name->name, utf8Name, name_len);
 #ifdef TSK_WIN32
-		if (utf8Name != NULL) {
-			free(utf8Name);
-		}
+		free(utf8Name);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
+			free(path);
 			return TSK_ERR;
 		}
 		tsk_fs_name_free(fs_name);
 	}
+	free(path);
 
 	// Add the files
 	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %lld files\n", file_names.size());
@@ -770,7 +817,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->type = TSK_FS_NAME_TYPE_REG;
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = file_inum;
-		if (LOGICAL_DEBUG_PRINT) printf("Assigning 0x%llx to file %ws\n", file_inum, it->c_str());
+		if (LOGICAL_DEBUG_PRINT) printf("Assigning 0x%" PRIxINUM " to file %" PRIttocTSK "\n", file_inum, it->c_str());
 #ifdef TSK_WIN32
 		strncpy(fs_name->name, utf8Name, name_len);
 		free(utf8Name);

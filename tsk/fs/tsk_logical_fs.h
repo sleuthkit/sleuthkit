@@ -1,13 +1,11 @@
 /*
 ** The Sleuth Kit
 **
-** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
-**
-** TASK
-** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
+** Copyright (c) 2022 Basis Technology Corp.  All rights reserved
+** Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
 **
 ** This software is distributed under the Common Public License 1.0
+**
 */
 
 /*
@@ -18,7 +16,6 @@
 #define _TSK_LOGICALFS_H
 
 #ifdef __cplusplus
-#include <map>
 extern "C" {
 #endif
 
@@ -27,8 +24,6 @@ extern "C" {
 #define LOGICAL_ROOT_INUM 0x10000
 #define LOGICAL_INUM_DIR_INC 0x10000
 #define LOGICAL_INVALID_INUM 0
-
-#define MAX_LOGICAL_NAME_LEN 32767 // For Windows
 
 /*
 * Structure of an logcial file system handle.

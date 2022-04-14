@@ -1,24 +1,20 @@
 /*
- * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
- * Copyright (c) 2005 Brian Carrier.  All rights reserved
- *
- * raw
- *
- * This software is distributed under the Common Public License 1.0
- *
- */
-
+** The Sleuth Kit
+**
+** Copyright (c) 2022 Basis Technology Corp.  All rights reserved
+** Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
+**
+** This software is distributed under the Common Public License 1.0
+**
+*/
 
 /**
- * \file raw.c
- * Internal code to open and read single or split raw disk images
+ * Internal code to open and read logical directories
  */
 
 #include "tsk_img_i.h"
 #include "logical_img.h"
 #include "tsk/util/file_system_utils.h"
-
 
 /** 
  * \internal

@@ -1,11 +1,12 @@
 /*
- * The Sleuth Kit
- *
- * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
- *
- * This software is distributed under the Common Public License 1.0
- */
+** The Sleuth Kit
+**
+** Copyright (c) 2022 Basis Technology Corp.  All rights reserved
+** Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
+**
+** This software is distributed under the Common Public License 1.0
+**
+*/
 
 /* 
  * Contains the single raw data file-specific functions and structures.

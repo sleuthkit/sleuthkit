@@ -9,6 +9,10 @@
 **
 */
 
+/*
+ * Common code used by the raw and logical images.
+ */
+
 #include "tsk/base/tsk_base.h"
 #include "file_system_utils.h"
 
