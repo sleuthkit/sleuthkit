@@ -62,7 +62,7 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/pool/tsk_pool.h tsk/pool/tsk_pool.hpp tsk/pool/tsk_apfs.h tsk/pool/tsk_apfs.hpp \
 	tsk/pool/pool_compat.hpp tsk/pool/apfs_pool_compat.hpp \
     tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp \
-    tsk/util/detect_encryption.h file_system_utils.h
+    tsk/util/detect_encryption.h tsk/util/file_system_utils.h
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \
