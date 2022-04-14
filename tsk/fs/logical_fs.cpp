@@ -787,7 +787,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			return TSK_ERR;
 		}
 #else
-		char *utf8Name = *it;
+		char *utf8Name = it->c_str();
 #endif
 		size_t name_len = strlen(utf8Name);
 		if ((fs_name = tsk_fs_name_alloc(name_len, 0)) == NULL) {
