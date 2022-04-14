@@ -13,7 +13,8 @@
  * Common code used by the raw and logical images.
  */
 
-#include "tsk/base/tsk_base.h"
+#include "tsk/base/tsk_base_i.h"
+#include "tsk/img/tsk_img_i.h"
 #include "file_system_utils.h"
 
 #ifdef __APPLE__
