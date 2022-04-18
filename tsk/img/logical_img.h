@@ -20,14 +20,36 @@ extern "C" {
 #endif
 
 #define LOGICAL_IMG_DEBUG_PRINT 0
+#define LOGICAL_IMG_CACHE_AGE   1000
+#define LOGICAL_FILE_HANDLE_CACHE_LEN 10
+#define LOGICAL_INVALID_INUM 0
 
     extern TSK_IMG_INFO *logical_open(int a_num_img,
         const TSK_TCHAR * const a_images[], unsigned int a_ssize);
+
+	typedef struct {
+#ifdef TSK_WIN32
+		HANDLE fd;
+#else
+		int fd;
+#endif
+		TSK_INUM_T inum;
+		TSK_OFF_T seek_pos;
+	} LOGICAL_FILE_HANDLE_CACHE;
 
     typedef struct {
 		TSK_IMG_INFO img_info;
 		TSK_TCHAR * base_path;
 		uint8_t is_winobj;
+
+		// Goes with the cache handling in tsk_img.h.
+		// To cache blocks, we need to keep track of both the file inum and the offset,
+		// so we need one additional array to track logical file data.
+		TSK_INUM_T cache_inum[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock) 
+
+		// Cache a number of open file handles (protected by cache_lock)
+		LOGICAL_FILE_HANDLE_CACHE file_handle_cache[LOGICAL_FILE_HANDLE_CACHE_LEN];     /* small number of fds for open images */
+		int next_file_handle_cache_slot;
     } IMG_LOGICAL_INFO;
 
 #ifdef __cplusplus

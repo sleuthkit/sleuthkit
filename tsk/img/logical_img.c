@@ -48,14 +48,23 @@ logical_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
 logical_close(TSK_IMG_INFO * img_info)
 {
-	IMG_LOGICAL_INFO *dir_info = (IMG_LOGICAL_INFO *)img_info;
-	free(dir_info->base_path);
+	IMG_LOGICAL_INFO *logical_img_info = (IMG_LOGICAL_INFO *)img_info;
+	free(logical_img_info->base_path);
+	for (int i = 0; i < LOGICAL_FILE_HANDLE_CACHE_LEN; i++) {
+#ifdef TSK_WIN32
+		if (logical_img_info->file_handle_cache[i].fd != 0) {
+			if (1) printf("Closing file handle in position %d\n", i);
+			CloseHandle(logical_img_info->file_handle_cache[i].fd);
+		}
+#endif
+	}
 	tsk_img_free(img_info);
 }
 
 static ssize_t
 logical_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 {
+	printf("logical_read not supported\n");
 	return 0;
 }
 
@@ -115,6 +124,14 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 
 	img_info->size = INT64_MAX;
 	img_info->itype = TSK_IMG_TYPE_LOGICAL;
+
+	// Initialize file handle cache
+	for (int i = 0; i < LOGICAL_FILE_HANDLE_CACHE_LEN; i++) {
+		logical_info->file_handle_cache[i].fd = 0;
+		logical_info->file_handle_cache[i].inum = LOGICAL_INVALID_INUM;
+	}
+	logical_info->next_file_handle_cache_slot = 0;
+
 	img_info->read = logical_read;
 	img_info->close = logical_close;
 	img_info->imgstat = logical_imgstat;

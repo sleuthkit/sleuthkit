@@ -33,6 +33,7 @@
  * They form a linked list and are added to the TSK_FS_META structure
  */
 #include "tsk_fs_i.h"
+#include "tsk_logical_fs.h"
 
 
 /**
@@ -923,9 +924,14 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 }
                 else {
                     ssize_t cnt;
-
-                    cnt = tsk_fs_read_block_decrypt
-                        (fs, addr + len_idx, buf, fs->block_size, fs_attr_run->crypto_id + len_idx);
+					if (fs->ftype == TSK_FS_TYPE_LOGICAL) {
+						// We can't read logical files directly from the image.
+						cnt = logicalfs_read_block(fs, fs_attr->fs_file, addr + len_idx, buf);
+					}
+					else {
+						cnt = tsk_fs_read_block_decrypt
+						(fs, addr + len_idx, buf, fs->block_size, fs_attr_run->crypto_id + len_idx);
+					}
                     if (cnt != fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
@@ -1068,7 +1074,6 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
     }
     // non-resident data
     else if (a_fs_attr->flags & TSK_FS_ATTR_NONRES) {
-		fflush(stderr);
         return tsk_fs_attr_walk_nonres(a_fs_attr, a_flags, a_action,
             a_ptr);
     }

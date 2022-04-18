@@ -22,8 +22,8 @@
 #include <filesystem>
 
 #include "tsk_fs_i.h"
-#include "tsk_logical_fs.h"
 #include "tsk_fs.h"
+#include "tsk_logical_fs.h"
 #include "tsk/img/logical_img.h"
 
 #ifdef TSK_WIN32
@@ -65,16 +65,7 @@ logicalfs_block_getflags(TSK_FS_INFO *fs, TSK_DADDR_T a_addr)
 static TSK_FS_ATTR_TYPE_ENUM
 logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
 {
-	return TSK_FS_ATTR_TYPE_NOT_FOUND;
-}
-
-static uint8_t
-logicalfs_load_attrs(TSK_FS_FILE *file)
-{
-	tsk_error_reset();
-	tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-	tsk_error_set_errstr("load_attrs for logical directory is not implemented");
-	return 1;
+	return TSK_FS_ATTR_TYPE_DEFAULT;
 }
 
 /*
@@ -773,7 +764,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 
 	// Add the folders
 	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %" PRIuSIZE " folders\n", dir_names.size());
-	fflush(stdout);
 	for (auto it = begin(dir_names); it != end(dir_names); ++it) {
 		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, path, *it);
 		TSK_FS_NAME *fs_name;
@@ -819,6 +809,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	// Add the files
 	if (LOGICAL_DEBUG_PRINT) printf( "\nlogicalfs_dir_open_meta - adding %" PRIuSIZE " files\n", file_names.size());
 	fflush(stdout);
+
 	TSK_INUM_T file_inum = a_addr | 1; // First inum is directory inum in the high part, 1 in the low part
 	for (auto it = begin(file_names); it != end(file_names); ++it) {
 		TSK_FS_NAME *fs_name;
@@ -856,12 +847,324 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			tsk_fs_name_free(fs_name);
 			return TSK_ERR;
 		}
-		tsk_fs_name_free(fs_name);
 
 		file_inum++;
 	}
 
 	return TSK_OK;
+}
+
+static uint8_t
+logicalfs_load_attrs(TSK_FS_FILE *file)
+{
+	if (file == NULL || file->meta == NULL || file->fs_info == NULL)
+	{
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr
+		("logicalfs_load_attrs: called with NULL pointers");
+		return 1;
+	}
+
+	if (LOGICAL_ICAT_PRINT) {
+		fprintf(stderr, "logicalfs_load_attrs: loading inum 0x%" PRIxINUM "\n", file->meta->addr);
+	}
+
+	LOGICALFS_INFO* logical_fs_info = (LOGICALFS_INFO*)file->fs_info;
+	TSK_FS_META* meta = file->meta;
+
+	// See if we have already loaded the runs
+	if ((meta->attr != NULL)
+		&& (meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
+		return 0;
+	}
+	else if (meta->attr_state == TSK_FS_META_ATTR_ERROR) {
+		return 1;
+	}
+	else if (meta->attr != NULL) {
+		tsk_fs_attrlist_markunused(meta->attr);
+	}
+	else if (meta->attr == NULL) {
+		meta->attr = tsk_fs_attrlist_alloc();
+	}
+
+	TSK_FS_ATTR_RUN *data_run;
+	TSK_FS_ATTR *attr = tsk_fs_attrlist_getnew(meta->attr, TSK_FS_ATTR_NONRES);
+	if (attr == NULL) {
+		meta->attr_state = TSK_FS_META_ATTR_ERROR;
+		return 1;
+	}
+
+	if (meta->size == 0) {
+		data_run = NULL;
+	}
+	else {
+		data_run = tsk_fs_attr_run_alloc();
+		if (data_run == NULL) {
+			meta->attr_state = TSK_FS_META_ATTR_ERROR;
+			return 1;
+		}
+
+		data_run->next = NULL;
+		data_run->offset = 0;
+		data_run->addr = 0;
+		data_run->len = (meta->size + file->fs_info->block_size - 1) / file->fs_info->block_size;
+		data_run->flags = TSK_FS_ATTR_RUN_FLAG_NONE;
+	}
+
+	if (tsk_fs_attr_set_run(file, attr, NULL, NULL,
+		TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+		meta->size, meta->size, 
+		roundup(meta->size, file->fs_info->block_size),
+		(TSK_FS_ATTR_FLAG_ENUM)0, 0)) {
+
+		meta->attr_state = TSK_FS_META_ATTR_ERROR;
+		return 1;
+	}
+
+	if (0 != tsk_fs_attr_add_run(file->fs_info, attr, data_run)) {
+		return 1;
+	}
+	meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+
+	return 0;
+}
+
+/*
+ * Reads a block from a logical file. If the file is not long enough to complete the block,
+ * null bytes are padded on to the end of the bytes read.
+ *
+ * @param a_fs         File system
+ * @param a_fs_file    File being read
+ * @param a_offset     Starting offset
+ * @param buf          Holds bytes read from the file (should be the size of a block)
+ *
+ * @return Size of the block or -1 on error.
+ */
+ssize_t 
+logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_block_num, char *buf) {
+	if (LOGICAL_ICAT_PRINT) {
+		fprintf(stderr, "logical_fs_read_block - file inum: 0x%" PRIxINUM ", offset: 0x%" PRIx64 "\n", a_fs_file->meta->addr, a_block_num);
+	}
+
+	if ((a_fs == NULL) || (a_fs_file == NULL) || (a_fs_file->meta == NULL)) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr("logical_fs_read_block: Called with null arguments");
+		return -1;
+	}
+
+	if (a_fs->ftype != TSK_FS_TYPE_LOGICAL) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr("logical_fs_read_block: Called with files system that is not TSK_FS_TYPE_LOGICAL");
+		return -1;
+	}
+
+	unsigned int block_size = a_fs->block_size;
+
+	// The caching used for logical file blocks is simpler than
+	// the version for images in img_io.c because we will always store complete 
+	// blocks - the block size for logical files is set to the same size as 
+	// the image cache. So each block in the cache will correspond to a
+	// file inum and block number.
+
+	// cache_lock is used for both the cache in IMG_INFO and
+	// the shared variables in the img type specific INFO structs.
+	// Grab it now so that it is held before any reads.
+	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)a_fs->img_info;
+	TSK_IMG_INFO* img_info = a_fs->img_info;
+	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
+	tsk_take_lock(&(img_info->cache_lock));
+
+	// Check if this block is in the cache
+	int cache_next = 0;         // index to lowest age cache (to use next)
+	bool match_found = 0;
+	if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Looking for block %" PRIdOFF " in cache\n", a_block_num);
+	for (int cache_index = 0; cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
+
+		// Look into the in-use cache entries
+		if (img_info->cache_len[cache_index] > 0) {
+			if ((logical_img_info->cache_inum[cache_index] == a_fs_file->meta->addr)
+				&& (img_info->cache_off[cache_index] == a_block_num)) {
+
+				// We found it
+				if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Found block %" PRIdOFF " in cache\n", a_block_num);
+				memcpy(buf, img_info->cache[cache_index], block_size);
+				match_found = true;
+
+				// reset its "age" since it was useful
+				img_info->cache_age[cache_index] = LOGICAL_IMG_CACHE_AGE;
+
+				// we don't break out of the loop so that we update all ages
+			}
+			else {
+				// Decrease its "age" since it was not useful.
+				// We don't let used ones go below 1 so that they are not
+				// confused with entries that have never been used.
+				if (img_info->cache_age[cache_index] > 2) {
+					img_info->cache_age[cache_index]--;
+				}
+
+				// See if this is the most eligible replacement
+				if ((img_info->cache_len[cache_next] > 0)
+					&& (img_info->cache_age[cache_index] <
+						img_info->cache_age[cache_next])) {
+					cache_next = cache_index;
+				}
+			}
+		}
+	}
+
+	// If we found the block in the cache, we're done
+	if (match_found) {
+		tsk_release_lock(&(img_info->cache_lock));
+		return block_size;
+	}
+
+	// See if this file is already open
+	if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Checking if file 0x%" PRIxINUM " is already open\n", a_fs_file->meta->addr);
+	LOGICAL_FILE_HANDLE_CACHE* file_handle_entry = NULL;
+	for (int i = 0; i < LOGICAL_FILE_HANDLE_CACHE_LEN; i++) {
+		if (logical_img_info->file_handle_cache[i].inum == a_fs_file->meta->addr) {
+			// File is already open
+			file_handle_entry = &(logical_img_info->file_handle_cache[i]);
+			if (LOGICAL_ICAT_PRINT) fprintf(stderr,"File handle already open\n");
+		}
+	}
+
+	// If we didn't find it, open the file and save to the cache
+	if (file_handle_entry == NULL) {
+		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"File handle not found in cache - opening\n");
+		// Load the path
+		TSK_TCHAR* path = load_path_from_inum(logical_fs_info, a_fs_file->meta->addr);
+		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"File path: %" PRIttocTSK ", file size: %lld\n", path, a_fs_file->meta->size);
+
+#ifdef TSK_WIN32
+		// Open the file
+		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Opening file\n");
+		HANDLE fd = CreateFile(path, FILE_READ_DATA,
+			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
+			NULL);
+		if (fd == INVALID_HANDLE_VALUE) {
+			tsk_release_lock(&(img_info->cache_lock));
+			int lastError = (int)GetLastError();
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_READ);
+			tsk_error_set_errstr("logical_fs_read_block: file \"%" PRIttocTSK
+				"\" - %d", path, lastError);
+			return -1;
+		}
+#endif
+
+		// Set up this cache entry
+		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Saving file handle to file cache position %d\n", logical_img_info->next_file_handle_cache_slot);
+		file_handle_entry = &(logical_img_info->file_handle_cache[logical_img_info->next_file_handle_cache_slot]);
+		if (file_handle_entry->fd != 0) {
+			// Close the current file handle
+#ifdef TSK_WIN32
+			CloseHandle(file_handle_entry->fd);
+#endif
+		}
+		file_handle_entry->fd = fd;
+		file_handle_entry->inum = a_fs_file->meta->addr;
+		file_handle_entry->seek_pos = 0;
+
+		// Set up the next cache entry to use
+		logical_img_info->next_file_handle_cache_slot++;
+		if (logical_img_info->next_file_handle_cache_slot >= LOGICAL_FILE_HANDLE_CACHE_LEN) {
+			logical_img_info->next_file_handle_cache_slot = 0;
+		}
+	}
+
+	// Seek to the starting offset (if necessary)
+	TSK_OFF_T offset_to_read = a_block_num * block_size;
+	if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Want to read offset 0x%" PRIx64 "\n", offset_to_read);
+	if (offset_to_read != file_handle_entry->seek_pos) {
+		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Current pos 0x%" PRIx64 " - seeking\n", file_handle_entry->seek_pos);
+#ifdef TSK_WIN32
+		LARGE_INTEGER li;
+		li.QuadPart = a_block_num * block_size;
+
+		li.LowPart = SetFilePointer(file_handle_entry->fd, li.LowPart,
+			&li.HighPart, FILE_BEGIN);
+
+		if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
+			(GetLastError() != NO_ERROR)) {
+
+			// TODO What to do with cache
+
+			tsk_release_lock(&(img_info->cache_lock));
+			int lastError = (int)GetLastError();
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_IMG_SEEK);
+			tsk_error_set_errstr("logical_fs_read_block: file addr %" PRIuINUM
+				" offset %" PRIdOFF " seek - %d",
+				a_fs_file->meta->addr, a_block_num, lastError);
+			return -1;
+		}
+#endif
+		file_handle_entry->seek_pos = offset_to_read;
+	}
+
+	// Read the data
+	unsigned int len_to_read;
+	if (((a_block_num + 1) * block_size) <= (unsigned long long)a_fs_file->meta->size) {
+		// If the file is large enough to read the entire block, then try to do so
+		len_to_read = block_size;
+	}
+	else {
+		// Otherwise, we expect to only be able to read a smaller number of bytes
+		len_to_read = a_fs_file->meta->size % block_size;
+		memset(buf, 0, block_size);
+	}
+
+	if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Reading %d bytes\n", len_to_read);
+	DWORD nread;
+#ifdef TSK_WIN32
+	if (FALSE == ReadFile(file_handle_entry->fd, buf, (DWORD)len_to_read, &nread, NULL)) {
+		tsk_release_lock(&(img_info->cache_lock));
+		int lastError = GetLastError();
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_IMG_READ);
+		tsk_error_set_errstr("raw_read: file addr %" PRIuINUM
+			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
+			a_fs_file->meta->addr, a_block_num, block_size,
+			lastError);
+		return -1;
+	}
+#endif
+	file_handle_entry->seek_pos += nread;
+
+	// Copy the block into the cache
+	memcpy(img_info->cache[cache_next], buf, block_size);
+	img_info->cache_len[cache_next] = block_size;
+	img_info->cache_age[cache_next] = LOGICAL_IMG_CACHE_AGE;
+	img_info->cache_off[cache_next] = a_block_num;
+	logical_img_info->cache_inum[cache_next] = a_fs_file->meta->addr;
+
+	tsk_release_lock(&(img_info->cache_lock));
+
+	if (LOGICAL_ICAT_PRINT) {
+		fprintf(stderr, "First bytes of block: ");
+		for (int i = 0; i < 16; i++) {
+			fprintf(stderr, "%02x ", buf[i] & 0xff);
+		}
+		fprintf(stderr, "\n");
+	}
+
+	// If we didn't read the expected number of bytes, return an error
+	if (nread != len_to_read) {
+		int lastError = GetLastError();
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_IMG_READ);
+		tsk_error_set_errstr("raw_read: file addr %" PRIuINUM
+			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
+			a_fs_file->meta->addr, a_block_num, block_size,
+			lastError);
+		return -1;
+	}
+
+	return block_size;
 }
 
 /**
@@ -963,9 +1266,6 @@ logical_fs_open(TSK_IMG_INFO * img_info) {
 	TSK_FS_INFO *fs = NULL;
 	IMG_LOGICAL_INFO *logical_img_info = NULL;
 
-	if (LOGICAL_DEBUG_PRINT) printf( "logical_fs_open\n");
-	fflush(stdout);
-
 	if (img_info->itype != TSK_IMG_TYPE_LOGICAL) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -996,12 +1296,13 @@ logical_fs_open(TSK_IMG_INFO * img_info) {
 
 	// Block info
 	fs->dev_bsize = 0;
-	fs->block_size = 0;
+	fs->block_size = LOGICAL_BLOCK_SIZE;
 	fs->block_pre_size = 0;
 	fs->block_post_size = 0;
 	fs->block_count = 0;
 	fs->first_block = 0;
-	fs->last_block_act = 0;
+	fs->last_block = INT64_MAX;
+	fs->last_block_act = INT64_MAX;
 
 	// Set the generic function pointers. Most will be no-ops for now.
 	fs->inode_walk = logicalfs_inode_walk;
