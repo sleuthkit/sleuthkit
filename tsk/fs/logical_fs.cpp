@@ -1154,13 +1154,13 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	}
 
 	// If we didn't read the expected number of bytes, return an error
-	if (nread != len_to_read) {
 #ifdef TSK_WIN32
+	if (nread != len_to_read) {
 		int lastError = GetLastError();
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("raw_read: file addr %" PRIuINUM
-			" offset: %" PRIu64 " read len: %" PRIuSIZE " - %d",
+			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
 			a_fs_file->meta->addr, a_block_num, block_size,
 			lastError);
 		return -1;
