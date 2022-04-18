@@ -869,7 +869,6 @@ logicalfs_load_attrs(TSK_FS_FILE *file)
 		fprintf(stderr, "logicalfs_load_attrs: loading inum 0x%" PRIxINUM "\n", file->meta->addr);
 	}
 
-	LOGICALFS_INFO* logical_fs_info = (LOGICALFS_INFO*)file->fs_info;
 	TSK_FS_META* meta = file->meta;
 
 	// See if we have already loaded the runs
@@ -1037,7 +1036,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"File handle not found in cache - opening\n");
 		// Load the path
 		TSK_TCHAR* path = load_path_from_inum(logical_fs_info, a_fs_file->meta->addr);
-		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"File path: %" PRIttocTSK ", file size: %lld\n", path, a_fs_file->meta->size);
+		if (LOGICAL_ICAT_PRINT) fprintf(stderr,"File path: %" PRIttocTSK ", file size: %" PRId64 "\n", path, a_fs_file->meta->size);
 
 #ifdef TSK_WIN32
 		// Open the file
@@ -1054,6 +1053,8 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 				"\" - %d", path, lastError);
 			return -1;
 		}
+#else
+		int fd = 0;
 #endif
 
 		// Set up this cache entry
@@ -1119,21 +1120,21 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	}
 
 	if (LOGICAL_ICAT_PRINT) fprintf(stderr,"Reading %d bytes\n", len_to_read);
-	DWORD nread;
 #ifdef TSK_WIN32
+	DWORD nread;
 	if (FALSE == ReadFile(file_handle_entry->fd, buf, (DWORD)len_to_read, &nread, NULL)) {
 		tsk_release_lock(&(img_info->cache_lock));
 		int lastError = GetLastError();
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
-		tsk_error_set_errstr("raw_read: file addr %" PRIuINUM
-			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
+		tsk_error_set_errstr("logicalfs_read_block: file addr %" PRIuINUM
+			" offset: %" PRIu64 " read len: %" PRIuSIZE " - %d",
 			a_fs_file->meta->addr, a_block_num, block_size,
 			lastError);
 		return -1;
 	}
-#endif
 	file_handle_entry->seek_pos += nread;
+#endif
 
 	// Copy the block into the cache
 	memcpy(img_info->cache[cache_next], buf, block_size);
@@ -1154,15 +1155,17 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 
 	// If we didn't read the expected number of bytes, return an error
 	if (nread != len_to_read) {
+#ifdef TSK_WIN32
 		int lastError = GetLastError();
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("raw_read: file addr %" PRIuINUM
-			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
+			" offset: %" PRIu64 " read len: %" PRIuSIZE " - %d",
 			a_fs_file->meta->addr, a_block_num, block_size,
 			lastError);
 		return -1;
 	}
+#endif
 
 	return block_size;
 }
