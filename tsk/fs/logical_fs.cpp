@@ -671,12 +671,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 
 	if (LOGICAL_DEBUG_PRINT) printf("logicalfs_dir_open_meta - a_addr: 0x%" PRIxINUM ", recursion depth: %d\n", a_addr, recursion_depth);
 
-	if (recursion_depth != 1) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-		tsk_error_set_errstr("logicalfs_dir_open_meta: Recursion is not currently supported");
-		return TSK_ERR;
-	}
 	if (a_fs_dir == NULL) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
