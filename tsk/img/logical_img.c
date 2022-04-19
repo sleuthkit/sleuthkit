@@ -53,7 +53,6 @@ logical_close(TSK_IMG_INFO * img_info)
 	for (int i = 0; i < LOGICAL_FILE_HANDLE_CACHE_LEN; i++) {
 #ifdef TSK_WIN32
 		if (logical_img_info->file_handle_cache[i].fd != 0) {
-			if (1) printf("Closing file handle in position %d\n", i);
 			CloseHandle(logical_img_info->file_handle_cache[i].fd);
 		}
 #endif
