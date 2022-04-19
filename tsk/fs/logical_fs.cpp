@@ -223,6 +223,9 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 		a_fs_file->meta->type = TSK_FS_META_TYPE_REG;
 	}
 
+	// All files are allocated
+	a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
+
 	// Set the file size
 	LARGE_INTEGER ull;
 	ull.LowPart = fd->nFileSizeLow;
@@ -782,6 +785,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		}
 
 		fs_name->type = TSK_FS_NAME_TYPE_DIR;
+		fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = dir_inum;
 #ifdef TSK_WIN32
@@ -827,6 +831,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		}
 
 		fs_name->type = TSK_FS_NAME_TYPE_REG;
+		fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = file_inum;
 		if (LOGICAL_DEBUG_PRINT) printf("Assigning 0x%" PRIxINUM " to file %" PRIttocTSK "\n", file_inum, it->c_str());
