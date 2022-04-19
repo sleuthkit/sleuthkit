@@ -674,8 +674,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	if (recursion_depth != 1) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-		tsk_error_set_errstr("logicalfs_dir_open_meta: Recursion is not currently supported"
-			PRIuINUM, a_addr);
+		tsk_error_set_errstr("logicalfs_dir_open_meta: Recursion is not currently supported");
 		return TSK_ERR;
 	}
 	if (a_fs_dir == NULL) {
