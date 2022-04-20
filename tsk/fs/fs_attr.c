@@ -1114,6 +1114,11 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
     }
     fs = a_fs_attr->fs_file->fs_info;
 
+	// Handle logical directories separately
+	if (fs->ftype == TSK_FS_TYPE_LOGICAL) {
+		return logicalfs_read(fs, a_fs_attr->fs_file, a_offset, a_len, a_buf);
+	}
+
     /* for compressed data, call the specialized function */
     if (a_fs_attr->flags & TSK_FS_ATTR_COMP) {
         if (a_fs_attr->r == NULL) {
@@ -1267,11 +1272,11 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
                 // add the byte offset in the block
                 fs_offset_b += byteoffset_toread;
+				cnt =
+					tsk_fs_read_decrypt(fs, fs_offset_b,
+						&a_buf[len_toread - len_remain], len_inrun,
+						data_run_cur->crypto_id + blkoffset_inrun);
 
-                cnt =
-                    tsk_fs_read_decrypt(fs, fs_offset_b,
-                    &a_buf[len_toread - len_remain], len_inrun, 
-                    data_run_cur->crypto_id + blkoffset_inrun);
                 if (cnt != (ssize_t)len_inrun) {
                     if (cnt >= 0) {
                         tsk_error_reset();

@@ -56,6 +56,7 @@ enum LOGICALFS_DIR_LOADING_MODE {
 };
 
 extern ssize_t logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, char *buf);
+extern ssize_t logicalfs_read(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, size_t len, char *buf);
 
 #ifdef __cplusplus
 }

@@ -918,6 +918,13 @@ logicalfs_load_attrs(TSK_FS_FILE *file)
 		return 1;
 	}
 
+	// If the file has size zero, return now
+	if (meta->size == 0) {
+		meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+		return 0;
+	}
+
+	// Otherwise add the data run
 	if (0 != tsk_fs_attr_add_run(file->fs_info, attr, data_run)) {
 		return 1;
 	}
@@ -1168,6 +1175,109 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	return block_size;
 }
 
+/*
+* Reads data from a logical file.
+*
+* @param a_fs         File system
+* @param a_fs_file    File being read
+* @param a_offset     Starting offset
+* @param a_len        Length to read
+* @param a_buf        Holds bytes read from the file (should have length at least a_len)
+*
+* @return Number of bytes read or -1 on error.
+*/
+ssize_t 
+logicalfs_read(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, size_t a_len, char *a_buf) { // TODO review sizet
+
+	size_t bytes_written = 0;
+	TSK_DADDR_T current_block_num = a_offset / a_fs->block_size;
+	char block_buffer[LOGICAL_BLOCK_SIZE];
+	size_t cnt;
+	char *dest = a_buf;
+	size_t bytes_left = a_len;
+	size_t bytes_read = 0;
+	size_t filler_len = 0;
+
+	if ((a_fs == NULL) || (a_fs_file == NULL) || (a_fs_file->meta == NULL)) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr("logicalfs_read: Called with null arguments");
+		return -1;
+	}
+
+	if (a_offset >= (TSK_DADDR_T)a_fs_file->meta->size) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_ARG);
+		tsk_error_set_errstr("logicalfs_read: Attempted to read offset beyond end of file (file addr: %" 
+			PRIuINUM ", file size: %" PRIdOFF ", offset: %" PRIuDADDR ")", a_fs_file->meta->addr, a_fs_file->meta->size, a_offset);
+		return -1;
+	}
+
+	// Only attempt to read to the end of the file at most
+	if (a_offset + a_len > (TSK_DADDR_T)a_fs_file->meta->size) {
+		bytes_left = a_fs_file->meta->size - a_offset;
+		filler_len = a_offset + a_len - a_fs_file->meta->size;
+
+		// Fill in the end of the buffer
+		if (filler_len > 0) {
+			memset(dest + bytes_left, 0, filler_len);
+		}
+	}
+
+	// Read bytes prior to the first block boundary
+	if (a_offset % a_fs->block_size != 0) {
+		// Read in the smaller of the requested length and the bytes at the end of the block
+		size_t len_to_read = a_fs->block_size - (a_offset % a_fs->block_size);
+		if (len_to_read > bytes_left) {
+			len_to_read = bytes_left;
+		}
+		cnt = logicalfs_read_block(a_fs, a_fs_file, current_block_num, block_buffer);
+		if (cnt != a_fs->block_size) {
+			// Error already set
+			return cnt;
+		}
+		memcpy(dest, block_buffer + (a_offset % a_fs->block_size), len_to_read);
+		dest += len_to_read;
+		bytes_read += len_to_read;
+		bytes_left -= len_to_read;
+		current_block_num++;
+	}
+	// Check if we're done
+	if (bytes_left == 0) {
+		return bytes_read;
+	}
+
+	// Read complete blocks
+	while (bytes_left >= a_fs->block_size) {
+		cnt = logicalfs_read_block(a_fs, a_fs_file, current_block_num, dest);
+		if (cnt != a_fs->block_size) {
+			// Error already set
+			return cnt;
+		}
+		dest += a_fs->block_size;
+		bytes_read += a_fs->block_size;
+		bytes_left -= a_fs->block_size;
+		current_block_num++;
+	}
+
+	// Check if we're done
+	if (bytes_left == 0) {
+		return bytes_read;
+	}
+
+	// Read the final, incomplete block
+	cnt = logicalfs_read_block(a_fs, a_fs_file, current_block_num, block_buffer);
+	if (cnt != a_fs->block_size) {
+		// Error already set
+		return cnt;
+	}
+	memcpy(dest, block_buffer, bytes_left);
+	dest += bytes_left;
+	bytes_read += bytes_left;
+
+	return bytes_read;
+}
+
 /**
 * Print details about the file system to a file handle.
 *
@@ -1260,6 +1370,12 @@ logicalfs_jopen(TSK_FS_INFO * /*info*/, TSK_INUM_T /*inum*/)
 	return 1;
 }
 
+int
+logicalfs_name_cmp(TSK_FS_INFO * /*a_fs_info*/, const char *s1, const char *s2)
+{
+	return strcasecmp(s1, s2);
+}
+
 TSK_FS_INFO *
 logical_fs_open(TSK_IMG_INFO * img_info) {
 
@@ -1318,7 +1434,7 @@ logical_fs_open(TSK_IMG_INFO * img_info) {
 	fs->fsstat = logicalfs_fsstat;
 	fs->fscheck = logicalfs_fscheck;
 	fs->istat = logicalfs_istat;
-	fs->name_cmp = tsk_fs_unix_name_cmp;
+	fs->name_cmp = logicalfs_name_cmp;
 
 	fs->close = logicalfs_close;
 
