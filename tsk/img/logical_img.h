@@ -9,7 +9,7 @@
 */
 
 /* 
- * Contains the single raw data file-specific functions and structures.
+ * Contains the logical directory image-specific functions and structures.
  */
 
 #ifndef _LOGICAL_H
@@ -22,7 +22,7 @@ extern "C" {
 #define LOGICAL_IMG_DEBUG_PRINT 0
 #define LOGICAL_IMG_CACHE_AGE   1000
 #define LOGICAL_FILE_HANDLE_CACHE_LEN 10
-#define LOGICAL_INUM_CACHE_LEN 2000
+#define LOGICAL_INUM_CACHE_LEN 1000
 #define LOGICAL_INUM_CACHE_MAX_AGE 10000
 #define LOGICAL_INVALID_INUM 0
 
