@@ -76,7 +76,8 @@ logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
  * @return The converted timet
  */
 #ifdef TSK_WIN32
-time_t filetime_to_timet(FILETIME const& ft) 
+static time_t 
+filetime_to_timet(FILETIME const& ft) 
 { 
 	ULARGE_INTEGER ull;    
 	ull.LowPart = ft.dwLowDateTime;    
@@ -315,6 +316,189 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 }
 #endif
 
+static void
+print_cache(LOGICALFS_INFO *logical_fs_info) {
+	if (LOGICAL_CACHE_PRINT) {
+		TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
+		IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
+		tsk_take_lock(&(img_info->cache_lock));
+
+		// Print until we hit the first invalid inum
+		printf("Inum cache: \n");
+		for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+			if (logical_img_info->inum_cache[i].inum == LOGICAL_INVALID_INUM) {
+				break;
+			}
+			printf("%d:\t%d\t0x%" PRIxINUM " -> %" PRIttocTSK "\n", i, logical_img_info->inum_cache[i].cache_age,
+				logical_img_info->inum_cache[i].inum, logical_img_info->inum_cache[i].path);
+		}
+		tsk_release_lock(&(img_info->cache_lock));
+	}
+}
+
+/*
+ * Finds closest cache match for the given path.
+ * If found_path is not NULL, caller must free.
+ */
+static TSK_RETVAL_ENUM
+find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *target_path, TSK_TCHAR **best_path, TSK_INUM_T *best_inum) {
+	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
+	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
+	tsk_take_lock(&(img_info->cache_lock));
+
+	if (LOGICAL_CACHE_PRINT) printf("find_closest_path_match_in_cache - looking for best match for %" PRIttocTSK "\n", target_path);
+
+	*best_inum = LOGICAL_INVALID_INUM;
+	*best_path = NULL;
+	int best_match_index = -1;
+	size_t longest_match = 0;
+	size_t target_len = TSTRLEN(target_path);
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		if (logical_img_info->inum_cache[i].path != NULL) {
+			size_t cache_path_len = TSTRLEN(logical_img_info->inum_cache[i].path);
+			if (LOGICAL_CACHE_PRINT) printf("  %d: cache_path_len: %zd, target_len: %zd, longest_match: %zd\n", i, cache_path_len, target_len, longest_match);
+			if ((longest_match != target_len) && (cache_path_len > longest_match) && (cache_path_len <= target_len)) {
+				size_t matching_len;
+#ifdef TSK_WIN32
+				if (LOGICAL_CACHE_PRINT) printf("   Comparing %" PRIttocTSK " and %" PRIttocTSK "\n", target_path, logical_img_info->inum_cache[i].path);
+				matching_len = 0;
+				if (0 == _wcsnicmp(target_path, logical_img_info->inum_cache[i].path, cache_path_len)) {
+					matching_len = cache_path_len;
+				}
+				if (LOGICAL_CACHE_PRINT) printf("   matching_len: %zd\n", matching_len);
+#endif
+				if (matching_len > longest_match) {
+					// We potentially have a new best match. 
+					if ((matching_len == target_len) ||
+						(((matching_len < target_len) && (target_path[matching_len] == L'/')))) {
+
+						if (LOGICAL_CACHE_PRINT) printf("   Path %" PRIttocTSK " is our new best match\n", logical_img_info->inum_cache[i].path);
+
+						// We found the full path or a partial match
+						longest_match = matching_len;
+						best_match_index = i;
+
+						// For the moment, consider any potential best match to have been useful. We could
+						// change this to only reset the age of the actual best match.
+						logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+					}
+					else {
+						if (LOGICAL_CACHE_PRINT) printf("   Path %" PRIttocTSK " was not helpful (1)\n", logical_img_info->inum_cache[i].path);
+						// The path wasn't actually a substring of our target
+						if (logical_img_info->inum_cache[i].cache_age > 1) {
+							logical_img_info->inum_cache[i].cache_age--;
+						}
+					}
+				}
+				else {
+					if (LOGICAL_CACHE_PRINT) printf("   Path %" PRIttocTSK " is shorter than the previous best match\n", logical_img_info->inum_cache[i].path);
+				}
+			}
+			else {
+				if (LOGICAL_CACHE_PRINT) printf("   Path %" PRIttocTSK " was not helpful (2)\n", logical_img_info->inum_cache[i].path);
+				// The cache entry was not useful so decrease the age
+				if (logical_img_info->inum_cache[i].cache_age > 1) {
+					logical_img_info->inum_cache[i].cache_age--;
+				}
+			}
+		}
+	}
+
+	// If we found a full or partial match, store the values
+	if (best_match_index >= 0) {
+		if (LOGICAL_CACHE_PRINT) printf("   Saving best match - path: %" PRIttocTSK ", inum 0x%" PRIxINUM "\n",
+			logical_img_info->inum_cache[best_match_index].path, logical_img_info->inum_cache[best_match_index].inum);
+		*best_inum = logical_img_info->inum_cache[best_match_index].inum;
+		*best_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1));
+		if (*best_path == NULL) {
+			tsk_release_lock(&(img_info->cache_lock));
+			return TSK_ERR;
+		}
+		TSTRNCPY(*best_path, logical_img_info->inum_cache[best_match_index].path, TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1);
+	}
+
+	tsk_release_lock(&(img_info->cache_lock));
+	return TSK_OK;
+}
+
+/*
+ * Look up the path corresponding to the given inum in the cache.
+ * Returned path must be freed by caller.
+ */
+static TSK_TCHAR*
+find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_inum) {
+	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
+	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
+	tsk_take_lock(&(img_info->cache_lock));
+	TSK_TCHAR *target_path = NULL;
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		if ((target_path == NULL) && (logical_img_info->inum_cache[i].inum == target_inum)) {
+			// The cache entry was useful so reset the age
+			logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+
+			// Copy the path
+			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[i].path) + 1));
+			if (target_path == NULL) {
+				tsk_release_lock(&(img_info->cache_lock));
+				return NULL;
+			}
+			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, TSTRLEN(logical_img_info->inum_cache[i].path) + 1);
+		}
+		else {
+			// The cache entry was not useful so decrease the age
+			if (logical_img_info->inum_cache[i].cache_age > 1) {
+				logical_img_info->inum_cache[i].cache_age--;
+			}
+		}
+	}
+
+	tsk_release_lock(&(img_info->cache_lock));
+	return target_path;
+}
+
+static TSK_RETVAL_ENUM
+add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum) {
+	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
+	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
+	tsk_take_lock(&(img_info->cache_lock));
+
+	// Find the next cache slot. If we find an unused slot, use that. Otherwise find the entry
+	// with the lowest age.
+	int next_slot = 0;
+	int lowest_age = LOGICAL_INUM_CACHE_MAX_AGE + 1;
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		if (logical_img_info->inum_cache[i].inum == LOGICAL_INVALID_INUM) {
+			next_slot = i;
+			break;
+		}
+
+		if (logical_img_info->inum_cache[i].cache_age < lowest_age) {
+			next_slot = i;
+			lowest_age = logical_img_info->inum_cache[i].cache_age;
+		}
+	}
+
+	print_cache(logical_fs_info);
+
+	clear_inum_cache_entry(logical_img_info, next_slot);
+
+	if (LOGICAL_CACHE_PRINT) printf("Adding directory %" PRIttocTSK " with inum 0x%" PRIxINUM " to the cache in slot %d\n",
+		path, inum, next_slot);
+
+	// Copy the data
+	logical_img_info->inum_cache[next_slot].path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(path) + 1));
+	if (logical_img_info->inum_cache[next_slot].path == NULL) {
+		tsk_release_lock(&(img_info->cache_lock));
+		return TSK_ERR;
+	}
+	TSTRNCPY(logical_img_info->inum_cache[next_slot].path, path, TSTRLEN(path) + 1);
+	logical_img_info->inum_cache[next_slot].inum = inum;
+	logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+
+	tsk_release_lock(&(img_info->cache_lock));
+	return TSK_OK;
+}
+
 /*
  * Main recursive method for walking the directories. Will load and sort all directories found
  * in parent_path, assign an inum to each and check if this is what we're searching for, calling
@@ -327,7 +511,7 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
  * @return TSK_OK if successfull, TSK_ERR otherwise
  */
 static TSK_RETVAL_ENUM
-search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_ptr, LOGICALFS_SEARCH_HELPER* search_helper) {
+search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_ptr, LOGICALFS_SEARCH_HELPER* search_helper) {
 
 #ifdef TSK_WIN32
 	vector<wstring> file_names;
@@ -420,6 +604,7 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 		TSK_INUM_T current_inum = *last_inum_ptr + LOGICAL_INUM_DIR_INC;
 		*last_inum_ptr = current_inum;
 		if (LOGICAL_DEBUG_PRINT) printf("Assigning 0x%" PRIxINUM " to dir %" PRIttocTSK " \n", current_inum, current_path);
+		add_directory_to_cache(logical_fs_info, current_path, current_inum);
 
 		// Check if we've found it
 		if ((search_helper->search_type == LOGICALFS_SEARCH_BY_PATH)
@@ -442,7 +627,7 @@ search_directory_recusive(const TSK_TCHAR * parent_path, TSK_INUM_T *last_inum_p
 			return TSK_OK;
 		}
 
-		TSK_RETVAL_ENUM result = search_directory_recusive(current_path, last_inum_ptr, search_helper);
+		TSK_RETVAL_ENUM result = search_directory_recursive(logical_fs_info, current_path, last_inum_ptr, search_helper);
 		if (result != TSK_OK) {
 			free(current_path);
 			return result;
@@ -477,6 +662,31 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 		return path;
 	}
 
+	// Default starting position for the search is the base folder
+	TSK_INUM_T starting_inum = logical_fs_info->fs_info.root_inum;
+	const TSK_TCHAR *starting_path = logical_fs_info->base_path;
+
+	// See if the directory is in the cache
+	TSK_INUM_T dir_addr = a_addr & 0xffff0000;
+	if (LOGICAL_CACHE_PRINT) printf("Checking for inum 0x%" PRIxINUM " in the cache...", dir_addr);
+	TSK_TCHAR *cache_path = find_path_for_inum_in_cache(logical_fs_info, dir_addr);
+	if (cache_path != NULL) {
+		if (dir_addr == a_addr) {
+			// If we were looking for a directory, we're done
+			if (LOGICAL_CACHE_PRINT) printf("   found exact match for directory\n");
+			return cache_path;
+		}
+		
+		// Otherwise, set up the search parameters to start with the folder found
+		if (LOGICAL_CACHE_PRINT) printf("   found start point for file\n");
+		starting_inum = dir_addr;
+		starting_path = cache_path;
+	}
+	else {
+		if (LOGICAL_CACHE_PRINT) printf("   did not find it\n");
+		print_cache(logical_fs_info);
+	}
+
 	// Create the struct that holds search params and results
 	LOGICALFS_SEARCH_HELPER *search_helper = create_inum_search_helper(a_addr);
 	if (search_helper == NULL) {
@@ -484,8 +694,11 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	// Run the search
-	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
-	TSK_RETVAL_ENUM result = search_directory_recusive(logical_fs_info->base_path, &last_assigned_inum, search_helper);
+	TSK_RETVAL_ENUM result = search_directory_recursive(logical_fs_info, starting_path, &starting_inum, search_helper);
+
+	if (cache_path != NULL) {
+		free(cache_path);
+	}
 
 	if ((result != TSK_OK) || (!search_helper->target_found)) {
 		free_search_helper(search_helper);
@@ -580,7 +793,7 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 
 	// Run the search to get the maximum directory inum
 	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
-	TSK_RETVAL_ENUM result = search_directory_recusive(logical_fs_info->base_path, &last_assigned_inum, search_helper);
+	TSK_RETVAL_ENUM result = search_directory_recursive(logical_fs_info, logical_fs_info->base_path, &last_assigned_inum, search_helper);
 	free_search_helper(search_helper);
 
 	if (result != TSK_OK) {
@@ -641,16 +854,51 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 #endif
 	TSTRNCAT(path_buf, dir_path.c_str(), TSTRLEN(dir_path.c_str()) + 1);
 
+	// Default starting position for search is the base folder
+	TSK_INUM_T starting_inum = logical_fs_info->fs_info.root_inum;
+	const TSK_TCHAR *starting_path = logical_fs_info->base_path;
+
+	// See how close we can get using the cache
+	if (LOGICAL_CACHE_PRINT) printf("Checking for path %" PRIttocTSK " in the cache...\n", path_buf);
+	TSK_TCHAR *cache_path = NULL;
+	TSK_INUM_T cache_inum = LOGICAL_INVALID_INUM;
+	TSK_RETVAL_ENUM result = find_closest_path_match_in_cache(logical_fs_info, path_buf, &cache_path, &cache_inum);
+	if (result != TSK_OK) {
+		return LOGICAL_INVALID_INUM;
+	}
+	if (cache_inum != LOGICAL_INVALID_INUM) {
+		if (TSTRCMP(path_buf, cache_path) == 0) {
+			if (LOGICAL_CACHE_PRINT) printf("  Found exact match - inum 0x%" PRIxINUM "\n", cache_inum);
+			// We found an exact match - no need to do a search
+			free(cache_path);
+			return cache_inum;
+		}
+		// Otherwise, we at least have a better place to start the search
+		if (LOGICAL_CACHE_PRINT) printf("  Found partial match - inum 0x%" PRIxINUM ", path %" PRIttocTSK "\n", cache_inum, cache_path);
+		starting_inum = cache_inum;
+		starting_path = cache_path;
+	}
+	else {
+		if (LOGICAL_CACHE_PRINT) printf("  Did not find a match\n");
+	}
+
 	// Create the struct that holds search params and results
 	LOGICALFS_SEARCH_HELPER *search_helper = create_path_search_helper(path_buf);
 	free(path_buf);
 	if (search_helper == NULL) {
+		if (cache_path != NULL) {
+			free(cache_path);
+		}
 		return LOGICAL_INVALID_INUM;
 	}
 
 	// Run the search
 	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
-	TSK_RETVAL_ENUM result = search_directory_recusive(logical_fs_info->base_path, &last_assigned_inum, search_helper);
+	result = search_directory_recursive(logical_fs_info, starting_path, &starting_inum, search_helper);
+
+	if (cache_path != NULL) {
+		free(cache_path);
+	}
 
 	// Return the target inum if found
 	TSK_INUM_T target_inum;

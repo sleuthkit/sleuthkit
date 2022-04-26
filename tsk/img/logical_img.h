@@ -22,10 +22,9 @@ extern "C" {
 #define LOGICAL_IMG_DEBUG_PRINT 0
 #define LOGICAL_IMG_CACHE_AGE   1000
 #define LOGICAL_FILE_HANDLE_CACHE_LEN 10
+#define LOGICAL_INUM_CACHE_LEN 10
+#define LOGICAL_INUM_CACHE_MAX_AGE 10000
 #define LOGICAL_INVALID_INUM 0
-
-    extern TSK_IMG_INFO *logical_open(int a_num_img,
-        const TSK_TCHAR * const a_images[], unsigned int a_ssize);
 
 	typedef struct {
 #ifdef TSK_WIN32
@@ -36,6 +35,12 @@ extern "C" {
 		TSK_INUM_T inum;
 		TSK_OFF_T seek_pos;
 	} LOGICAL_FILE_HANDLE_CACHE;
+
+	typedef struct {
+		TSK_INUM_T inum;
+		TSK_TCHAR *path;
+		int cache_age;
+	} LOGICAL_INUM_CACHE;
 
     typedef struct {
 		TSK_IMG_INFO img_info;
@@ -50,7 +55,17 @@ extern "C" {
 		// Cache a number of open file handles (protected by cache_lock)
 		LOGICAL_FILE_HANDLE_CACHE file_handle_cache[LOGICAL_FILE_HANDLE_CACHE_LEN];     /* small number of fds for open images */
 		int next_file_handle_cache_slot;
+
+		// Cache a number of inums / directory path pairs (protected by cache_lock)
+		LOGICAL_INUM_CACHE inum_cache[LOGICAL_INUM_CACHE_LEN];
+
     } IMG_LOGICAL_INFO;
+
+	extern TSK_IMG_INFO *logical_open(int a_num_img,
+		const TSK_TCHAR * const a_images[], unsigned int a_ssize);
+
+	extern void
+		clear_inum_cache_entry(IMG_LOGICAL_INFO *logical_img_info, int index);
 
 #ifdef __cplusplus
 }

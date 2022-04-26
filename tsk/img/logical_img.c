@@ -38,6 +38,19 @@ logical_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     return;
 }
 
+/*
+ * Clear a cache entry. Assumes we acquired the cache_lock already or are in the process
+ * of closing the image and don't need it.
+ */
+void
+clear_inum_cache_entry(IMG_LOGICAL_INFO *logical_img_info, int index) {
+	logical_img_info->inum_cache[index].inum = LOGICAL_INVALID_INUM;
+	if (logical_img_info->inum_cache[index].path != NULL) {
+		free(logical_img_info->inum_cache[index].path);
+		logical_img_info->inum_cache[index].path = NULL;
+	}
+	logical_img_info->inum_cache[index].cache_age = 0;
+}
 
 /** 
  * \internal
@@ -56,6 +69,9 @@ logical_close(TSK_IMG_INFO * img_info)
 			CloseHandle(logical_img_info->file_handle_cache[i].fd);
 		}
 #endif
+	}
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		clear_inum_cache_entry(logical_img_info, i);
 	}
 	tsk_img_free(img_info);
 }
@@ -130,6 +146,13 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 		logical_info->file_handle_cache[i].inum = LOGICAL_INVALID_INUM;
 	}
 	logical_info->next_file_handle_cache_slot = 0;
+
+	// Initialize the inum cache
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		logical_info->inum_cache[i].inum = LOGICAL_INVALID_INUM;
+		logical_info->inum_cache[i].path = NULL;
+		logical_info->inum_cache[i].cache_age = 0;
+	}
 
 	img_info->read = logical_read;
 	img_info->close = logical_close;
