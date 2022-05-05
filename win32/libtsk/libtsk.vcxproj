@@ -310,6 +310,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
     <ClCompile Include="..\..\tsk\util\crypto.cpp" />
     <ClCompile Include="..\..\tsk\util\detect_encryption.c" />
+	<ClCompile Include="..\..\tsk\util\file_system_utils.c" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -363,6 +364,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\fs\unix_misc.c" />
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp" />
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\logical_fs.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto_db.cpp" />
     <ClCompile Include="..\..\tsk\auto\case_db.cpp" />
@@ -396,6 +398,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\img\img_types.c" />
     <ClCompile Include="..\..\tsk\img\mult_files.c" />
     <ClCompile Include="..\..\tsk\img\raw.c" />
+    <ClCompile Include="..\..\tsk\img\logical_img.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\auto\guid.h" />
@@ -424,6 +427,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
     <ClInclude Include="..\..\tsk\util\crypto.hpp" />
     <ClInclude Include="..\..\tsk\util\detect_encryption.h" />
+    <ClInclude Include="..\..\tsk\util\file_system_utils.h" />
     <ClInclude Include="..\..\tsk\util\lw_shared_ptr.hpp" />
     <ClInclude Include="..\..\tsk\util\span.hpp" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
@@ -442,6 +446,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\fs\tsk_iso9660.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_ntfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_logical_fs.h" />
     <ClInclude Include="..\..\tsk\auto\sqlite3.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_auto.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_auto_i.h" />
@@ -455,6 +460,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\img\aff.h" />
     <ClInclude Include="..\..\tsk\img\ewf.h" />
     <ClInclude Include="..\..\tsk\img\raw.h" />
+    <ClInclude Include="..\..\tsk\img\logical_img.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img_i.h" />
   </ItemGroup>

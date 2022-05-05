@@ -43,6 +43,13 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         return NULL;
     }
 
+	if (img_info->itype == TSK_IMG_TYPE_LOGICAL) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_VS_UNSUPTYPE);
+		tsk_error_set_errstr("Logical image type can not have a volume system");
+		return NULL;
+	}
+
     /* Autodetect mode 
      * We need to try all of them in case there are multiple 
      * installations

@@ -249,6 +249,10 @@ TskAuto::findFilesInImg()
         return 1;
     }
 
+	if (m_img_info->itype == TSK_IMG_TYPE_LOGICAL) {
+		return findFilesInFs(0, TSK_FS_TYPE_LOGICAL);
+	}
+
     return findFilesInVs(0);
 }
 
