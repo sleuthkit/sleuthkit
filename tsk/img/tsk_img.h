@@ -46,6 +46,13 @@ extern "C" {
 #define TSK_IMG_TYPE_ISEWF(t) \
     ((((t) & TSK_IMG_TYPE_EWF_EWF))?1:0)
 
+	 /**
+	 * \ingroup imglib
+	 * Macro that takes a image type and returns 1 if the type
+	 * is for a logical directory file format. */
+#define TSK_IMG_TYPE_ISDIR(t) \
+    ((((t) & TSK_IMG_TYPE_LOGICAL))?1:0)
+
 
     /**
      * Flag values for the disk image format type.  Each type has a
@@ -69,6 +76,7 @@ extern "C" {
         TSK_IMG_TYPE_VHD_VHD = 0x0100,   ///< VHD version
         TSK_IMG_TYPE_EXTERNAL = 0x1000,  ///< external defined format which at least implements TSK_IMG_INFO, used by pytsk
         TSK_IMG_TYPE_POOL = 0x4000,      ///< Pool
+		TSK_IMG_TYPE_LOGICAL = 0x8000,       ///< Logical directory
 
         TSK_IMG_TYPE_UNSUPP = 0xffff   ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;

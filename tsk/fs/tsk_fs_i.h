@@ -201,6 +201,7 @@ extern "C" {
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
+	extern TSK_FS_INFO *logical_fs_open(TSK_IMG_INFO *);
 
     /* Specific pool file system routines */
     extern TSK_FS_INFO *apfs_open_auto_detect(TSK_IMG_INFO*, TSK_OFF_T,
