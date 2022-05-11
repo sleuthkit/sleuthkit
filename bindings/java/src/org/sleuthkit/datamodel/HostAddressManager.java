@@ -42,6 +42,7 @@ public class HostAddressManager {
 	private static final Logger LOGGER = Logger.getLogger(HostAddressManager.class.getName());
 
 	private final SleuthkitCase db;
+	private final static byte DEFAULT_MAPPING_CACHE_VALUE = 1;
 
 	/**
 	 * An HostAddress Object Id entry is maintained in this cache when a
@@ -441,8 +442,8 @@ public class HostAddressManager {
 			preparedStatement.setNull(4, java.sql.Types.BIGINT);
 		}
 		connection.executeUpdate(preparedStatement);
-		recentHostNameAndIpMappingCache.put(ipAddress.getId(), new Byte((byte) 1));
-		recentHostNameAndIpMappingCache.put(dnsNameAddress.getId(), new Byte((byte) 1));
+		recentHostNameAndIpMappingCache.put(ipAddress.getId(), DEFAULT_MAPPING_CACHE_VALUE);
+		recentHostNameAndIpMappingCache.put(dnsNameAddress.getId(), DEFAULT_MAPPING_CACHE_VALUE);
 	}
 
 	/**
@@ -479,7 +480,7 @@ public class HostAddressManager {
 				} else {
 					boolean status = rs.getLong("mappingCount") > 0;
 					if (status) {
-						recentHostNameAndIpMappingCache.put(addressObjectId, new Byte((byte) 1));
+						recentHostNameAndIpMappingCache.put(addressObjectId, DEFAULT_MAPPING_CACHE_VALUE);
 					}
 					return status;
 				}
@@ -571,7 +572,7 @@ public class HostAddressManager {
 				while (rs.next()) {
 					long ipAddressObjId = rs.getLong("ip_address_id");
 					IpAddresses.add(HostAddressManager.this.getHostAddress(ipAddressObjId, connection));
-					recentHostNameAndIpMappingCache.put(ipAddressObjId, new Byte((byte) 1));
+					recentHostNameAndIpMappingCache.put(ipAddressObjId, DEFAULT_MAPPING_CACHE_VALUE);
 				}
 				return IpAddresses;
 			}
@@ -609,7 +610,7 @@ public class HostAddressManager {
 				while (rs.next()) {
 					long dnsAddressId = rs.getLong("dns_address_id");
 					dnsNames.add(HostAddressManager.this.getHostAddress(dnsAddressId, connection));
-					recentHostNameAndIpMappingCache.put(dnsAddressId, new Byte((byte) 1));
+					recentHostNameAndIpMappingCache.put(dnsAddressId, DEFAULT_MAPPING_CACHE_VALUE);
 				}
 				return dnsNames;
 			}
