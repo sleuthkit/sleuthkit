@@ -190,7 +190,7 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 	TSKConversionResult retVal =
 		tsk_UTF16toUTF8_lclorder((const UTF16 **)&utf16,
 			&utf16[ilen], &utf8,
-			&utf8[maxUTF8len], TSKstrictConversion);
+			&utf8[maxUTF8len], TSKlenientConversion);
 
 	if (retVal != TSKconversionOK) {
 		// If the conversion failed, use a default name
