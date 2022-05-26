@@ -171,17 +171,23 @@ free_search_helper(LOGICALFS_SEARCH_HELPER* helper) {
  * 
  * @param source The wide string to convert.
  * 
- * @return The converted string (must be freed by caller). NULL if conversion fails.
+ * @return The converted string (must be freed by caller) or "INVALID FILE NAME" if conversion fails. NULL if memory allocation fails.
  */
 #ifdef TSK_WIN32
 static char*
 convert_wide_string_to_utf8(const wchar_t *source) {
 
+	const char invalidName[] = "INVALID FILE NAME";
 	UTF16 *utf16 = (UTF16 *)source;
-
 	size_t ilen = wcslen(source);
 	size_t maxUTF8len = ilen * 4;
+	if (maxUTF8len < strlen(invalidName) + 1) {
+		maxUTF8len = strlen(invalidName) + 1;
+	}
 	char *dest = (char*)tsk_malloc(maxUTF8len);
+	if (dest == NULL) {
+		return NULL;
+	}
 	UTF8 *utf8 = (UTF8*)dest;
 
 	TSKConversionResult retVal =
@@ -190,7 +196,11 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 			&utf8[maxUTF8len], TSKlenientConversion);
 
 	if (retVal != TSKconversionOK) {
-		return NULL; // TODO - revisit failed conversion handling
+		// If the conversion failed, use a default name
+		if (tsk_verbose)
+			tsk_fprintf(stderr,
+				"convert_wide_string_to_utf8: error converting logical file name to UTF-8\n");
+		strncpy(dest, invalidName, strlen(invalidName));
 	}
 	return dest;
 }
@@ -216,10 +226,10 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 		return TSK_ERR;
 	}
 
-	// Set the timestamps
-	a_fs_file->meta->crtime = filetime_to_timet(fd->ftCreationTime);
-	a_fs_file->meta->atime = filetime_to_timet(fd->ftLastAccessTime);
-	a_fs_file->meta->mtime = filetime_to_timet(fd->ftLastWriteTime);
+	// For the current use case, we leave the timestamps set to zero.
+	//a_fs_file->meta->crtime = filetime_to_timet(fd->ftCreationTime);
+	//a_fs_file->meta->atime = filetime_to_timet(fd->ftLastAccessTime);
+	//a_fs_file->meta->mtime = filetime_to_timet(fd->ftLastWriteTime);
 
 	// Set the type
 	if (fd->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
@@ -456,6 +466,12 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
  */
 static TSK_RETVAL_ENUM
 add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum) {
+
+	// If the path is very long then don't cache it to make sure the cache stays reasonably small.
+	if (TSTRLEN(path) > LOGICAL_INUM_CACHE_MAX_PATH_LEN) {
+		return TSK_OK;
+	}
+
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 	tsk_take_lock(&(img_info->cache_lock));
