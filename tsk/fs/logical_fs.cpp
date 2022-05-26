@@ -181,6 +181,9 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 	UTF16 *utf16 = (UTF16 *)source;
 	size_t ilen = wcslen(source);
 	size_t maxUTF8len = ilen * 4;
+	if (maxUTF8len < strlen(invalidName) + 1) {
+		maxUTF8len = strlen(invalidName) + 1;
+	}
 	char *dest = (char*)tsk_malloc(maxUTF8len);
 	if (dest == NULL) {
 		return NULL;
