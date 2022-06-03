@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Date;
 import java.util.EnumMap;
@@ -192,7 +193,7 @@ public class SleuthkitCase {
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private final String caseHandleIdentifier; // Used to identify this case in the JNI cache.
 	private String dbBackupPath;
-	private boolean timelineEventsDisabled = false;
+	private AtomicBoolean timelineEventsDisabled = new AtomicBoolean(false);
 
 	private CaseDbSchemaVersionNumber caseDBSchemaCreationVersion;
 
@@ -3071,8 +3072,8 @@ public class SleuthkitCase {
 	 * This setting is not saved to the case database.
 	 */
 	@Beta
-	public synchronized void disableTimelineEventCreation() {
-		timelineEventsDisabled = true;
+	public void disableTimelineEventCreation() {
+		timelineEventsDisabled.set(true);
 	}
 
 	/**
@@ -7113,7 +7114,7 @@ public class SleuthkitCase {
 			DerivedFile derivedFile = new DerivedFile(this, objectId, dataSourceObjId, fsObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, md5Hash, sha256Hash, sha1Hash, null, parentPath, null, parent.getId(), mimeType, null, extension, ownerUid, osAccountId);
 
-			if (!timelineEventsDisabled) {
+			if (!timelineEventsDisabled.get()) {
 				timelineManager.addEventsForNewFile(derivedFile, connection);
 			}
 
@@ -7854,7 +7855,7 @@ public class SleuthkitCase {
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fsObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					savedSize, ctime, crtime, atime, mtime, null, null, null, null, parentPath, localPath, parentId, null, encodingType, extension, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 
-			if (!timelineEventsDisabled) {
+			if (!timelineEventsDisabled.get()) {
 				timelineManager.addEventsForNewFile(derivedFile, connection);
 			}
 
@@ -8285,7 +8286,7 @@ public class SleuthkitCase {
 					localPath,
 					encodingType, extension,
 					ownerAccount, osAccountId);
-			if (!timelineEventsDisabled) {
+			if (!timelineEventsDisabled.get()) {
 				getTimelineManager().addEventsForNewFile(localFile, connection);
 			}
 			return localFile;
