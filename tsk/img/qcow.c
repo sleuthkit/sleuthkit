@@ -91,21 +91,18 @@ qcow_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuSIZE "\n",
         img_info->size);
     tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
-
-    return;
 }
 
 
 static void
     qcow_image_close(TSK_IMG_INFO * img_info)
 {
-    int i;
     char error_string[TSK_QCOW_ERROR_STRING_SIZE];
     libqcow_error_t *qcow_error = NULL;
     char *errmsg = NULL;
     IMG_QCOW_INFO *qcow_info = (IMG_QCOW_INFO *) img_info;
 
-    if( libqcow_file_close(qcow_info->handle, &qcow_error ) != 0 )
+    if (libqcow_file_close(qcow_info->handle, &qcow_error) != 0)
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
@@ -118,7 +115,7 @@ static void
     }
 
     libqcow_file_free(&(qcow_info->handle), NULL);
-    if( libqcow_file_free(&(qcow_info->handle), &qcow_error ) != 1 )
+    if (libqcow_file_free(&(qcow_info->handle), &qcow_error) != 1)
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
@@ -130,7 +127,7 @@ static void
         tsk_error_set_errstr("qcow_image_close: unable to free handle - %s", errmsg);
     }
 
-    for (i = 0; i < qcow_info->img_info.num_img; i++) {
+    for (int i = 0; i < qcow_info->img_info.num_img; i++) {
         free(qcow_info->img_info.images[i]);
     }
     free(qcow_info->img_info.images);
@@ -145,7 +142,6 @@ qcow_open(int a_num_img,
 {
     char error_string[TSK_QCOW_ERROR_STRING_SIZE];
     libqcow_error_t *qcow_error = NULL;
-    int i;
 
     IMG_QCOW_INFO *qcow_info = NULL;
     TSK_IMG_INFO *img_info = NULL;
@@ -170,7 +166,7 @@ qcow_open(int a_num_img,
             tsk_img_free(qcow_info);
             return NULL;
     }
-    for (i = 0; i < a_num_img; i++) {
+    for (int i = 0; i < a_num_img; i++) {
         if ((qcow_info->img_info.images[i] =
             (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
             1) * sizeof(TSK_TCHAR))) == NULL) {
@@ -198,7 +194,7 @@ qcow_open(int a_num_img,
     }
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
-    if (libqcow_check_file_signature_wide((const wchar_t *) qcow_info->img_info.images[0], &qcow_error ) != 1)
+    if (libqcow_check_file_signature_wide((const wchar_t *) qcow_info->img_info.images[0], &qcow_error) != 1)
 #else
     if (libqcow_check_file_signature((const char *) qcow_info->img_info.images[0], &qcow_error) != 1)
 #endif
