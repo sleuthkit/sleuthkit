@@ -31,9 +31,8 @@ getError(libqcow_error_t * qcow_error,
     error_string[0] = '\0';
     retval = libqcow_error_backtrace_sprint(qcow_error,
         error_string, TSK_QCOW_ERROR_STRING_SIZE);
-    if (retval)
-        return 1;
-    return 0;
+    libqcow_error_free(&qcow_error);
+    return retval ? 1 : 0;
 } 
 
 
@@ -189,7 +188,6 @@ qcow_open(int a_num_img,
         getError(qcow_error, error_string);
         tsk_error_set_errstr("qcow_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
-        libqcow_error_free(&qcow_error);
 
         tsk_img_free(qcow_info);
 
@@ -212,7 +210,6 @@ qcow_open(int a_num_img,
         tsk_error_set_errstr("qcow_open file: %" PRIttocTSK
             ": Error checking file signature for image (%s)", a_images[0],
             error_string);
-        libqcow_error_free(&qcow_error);
 
         tsk_img_free(qcow_info);
 
@@ -237,7 +234,6 @@ qcow_open(int a_num_img,
         getError(qcow_error, error_string);
         tsk_error_set_errstr("qcow_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
-        libqcow_error_free(&qcow_error);
 
         tsk_img_free(qcow_info);
 
@@ -255,7 +251,6 @@ qcow_open(int a_num_img,
         tsk_error_set_errstr("qcow_open file: %" PRIttocTSK
             ": Error getting size of image (%s)", a_images[0],
             error_string);
-        libqcow_error_free(&qcow_error);
 
         tsk_img_free(qcow_info);
 
