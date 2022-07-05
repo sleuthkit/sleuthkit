@@ -259,10 +259,6 @@ tsk_img_open(int num_img,
         img_info = raw_open(num_img, images, a_ssize);
         break;
 
-	case TSK_IMG_TYPE_LOGICAL:
-		img_info = logical_open(num_img, images, a_ssize);
-		break;
-
 #if HAVE_LIBAFFLIB
     case TSK_IMG_TYPE_AFF_AFF:
     case TSK_IMG_TYPE_AFF_AFD:
@@ -296,17 +292,9 @@ tsk_img_open(int num_img,
         break;
 #endif
 
-#if HAVE_LIBVHDI
-    case TSK_IMG_TYPE_VHD_VHD:
-        img_info = vhdi_open(num_img, images, a_ssize);
-        break;
-#endif
-
-#if HAVE_LIBVMDK
-    case TSK_IMG_TYPE_VMDK_VMDK:
-        img_info = vmdk_open(num_img, images, a_ssize);
-        break;
-#endif
+    case TSK_IMG_TYPE_LOGICAL:
+		    img_info = logical_open(num_img, images, a_ssize);
+		    break;
 
     default:
         tsk_error_reset();
