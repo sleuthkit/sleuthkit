@@ -207,6 +207,17 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 #endif
 
 /*
+ * Check if we should set the type as directory.
+ * We currently treat sym links as regular files to avoid
+ * issues trying to read then as directories.
+ */
+int
+shouldTreatAsDirectory(DWORD dwFileAttributes) {
+	return ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		&& (!(dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)));
+}
+
+/*
  * Use data in the WIN32_FIND_DATA to populate a TSK_FS_FILE object.
  * Expects a_fs_file and a_fs_file->meta to be allocated
  *
@@ -232,7 +243,7 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 	//a_fs_file->meta->mtime = filetime_to_timet(fd->ftLastWriteTime);
 
 	// Set the type
-	if (fd->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+	if (shouldTreatAsDirectory(fd->dwFileAttributes)) {
 		a_fs_file->meta->type = TSK_FS_META_TYPE_DIR;
 	}
 	else {
@@ -302,7 +313,7 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 	hFind = ::FindFirstFile(search_path_wildcard, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 		do {
-			if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			if (shouldTreatAsDirectory(fd.dwFileAttributes)) {
 				if (mode == LOGICALFS_LOAD_ALL || mode == LOGICALFS_LOAD_DIRS_ONLY) {
 					// For the moment at least, skip . and ..
 					if (0 != wcsncmp(fd.cFileName, L"..", 3) && 0 != wcsncmp(fd.cFileName, L".", 3)) {
