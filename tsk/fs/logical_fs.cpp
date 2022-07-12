@@ -1008,6 +1008,13 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	// Add the folders
 	for (auto it = begin(dir_names); it != end(dir_names); ++it) {
 		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, path, *it);
+		if (dir_inum == LOGICAL_INVALID_INUM) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_GENFS);
+			tsk_error_set_errstr("logicalfs_dir_open_meta: Error looking up inum from path");
+			return TSK_ERR;
+		}
+
 		TSK_FS_NAME *fs_name;
 
 #ifdef TSK_WIN32
@@ -1087,6 +1094,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			tsk_fs_name_free(fs_name);
 			return TSK_ERR;
 		}
+		tsk_fs_name_free(fs_name);
 
 		file_inum++;
 	}
