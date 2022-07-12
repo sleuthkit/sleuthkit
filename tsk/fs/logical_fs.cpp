@@ -1672,5 +1672,13 @@ logical_fs_open(TSK_IMG_INFO * img_info) {
 	// Calculate the last inum
 	fs->last_inum = find_max_inum(logical_fs_info);
 
+	// We don't really care about the last inum, but if traversing the 
+	// folders to calculate it fails then we're going to encounter
+	// the same error when using the logical file system.
+	if (fs->last_inum == LOGICAL_INVALID_INUM) {
+		logicalfs_close(fs);
+		return NULL;
+	}
+
 	return fs;
 }
