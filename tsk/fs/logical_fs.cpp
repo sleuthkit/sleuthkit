@@ -207,6 +207,17 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 #endif
 
 /*
+ * Check if we should set the type as directory.
+ * We currently treat sym links as regular files to avoid
+ * issues trying to read then as directories.
+ */
+int
+shouldTreatAsDirectory(DWORD dwFileAttributes) {
+	return ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		&& (!(dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)));
+}
+
+/*
  * Use data in the WIN32_FIND_DATA to populate a TSK_FS_FILE object.
  * Expects a_fs_file and a_fs_file->meta to be allocated
  *
@@ -232,7 +243,7 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 	//a_fs_file->meta->mtime = filetime_to_timet(fd->ftLastWriteTime);
 
 	// Set the type
-	if (fd->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+	if (shouldTreatAsDirectory(fd->dwFileAttributes)) {
 		a_fs_file->meta->type = TSK_FS_META_TYPE_DIR;
 	}
 	else {
@@ -298,11 +309,19 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 		return TSK_ERR;
 	}
 
+	if (TSTRLEN(search_path_wildcard) >= MAX_PATH) {
+		free(search_path_wildcard);
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_GENFS);
+		tsk_error_set_errstr("load_dir_and_file_lists: Error looking up contents of directory (path too long) %" PRIttocTSK, base_path);
+		return TSK_ERR;
+	}
+
 	// Look up all files and folders in the base directory 
 	hFind = ::FindFirstFile(search_path_wildcard, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 		do {
-			if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			if (shouldTreatAsDirectory(fd.dwFileAttributes)) {
 				if (mode == LOGICALFS_LOAD_ALL || mode == LOGICALFS_LOAD_DIRS_ONLY) {
 					// For the moment at least, skip . and ..
 					if (0 != wcsncmp(fd.cFileName, L"..", 3) && 0 != wcsncmp(fd.cFileName, L".", 3)) {
@@ -753,6 +772,14 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 
 #ifdef TSK_WIN32
 	// Load the file
+	if (TSTRLEN(path) >= MAX_PATH) {
+		free(path);
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_GENFS);
+		tsk_error_set_errstr("load_dir_and_file_lists: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+		return TSK_ERR;
+	}
+
 	WIN32_FIND_DATA fd;
 	HANDLE hFind = ::FindFirstFile(path, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
@@ -997,6 +1024,13 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	// Add the folders
 	for (auto it = begin(dir_names); it != end(dir_names); ++it) {
 		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, path, *it);
+		if (dir_inum == LOGICAL_INVALID_INUM) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_GENFS);
+			tsk_error_set_errstr("logicalfs_dir_open_meta: Error looking up inum from path");
+			return TSK_ERR;
+		}
+
 		TSK_FS_NAME *fs_name;
 
 #ifdef TSK_WIN32
@@ -1076,6 +1110,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			tsk_fs_name_free(fs_name);
 			return TSK_ERR;
 		}
+		tsk_fs_name_free(fs_name);
 
 		file_inum++;
 	}
@@ -1652,6 +1687,14 @@ logical_fs_open(TSK_IMG_INFO * img_info) {
 
 	// Calculate the last inum
 	fs->last_inum = find_max_inum(logical_fs_info);
+
+	// We don't really care about the last inum, but if traversing the 
+	// folders to calculate it fails then we're going to encounter
+	// the same error when using the logical file system.
+	if (fs->last_inum == LOGICAL_INVALID_INUM) {
+		logicalfs_close(fs);
+		return NULL;
+	}
 
 	return fs;
 }
