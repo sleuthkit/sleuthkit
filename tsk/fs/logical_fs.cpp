@@ -309,6 +309,14 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 		return TSK_ERR;
 	}
 
+	if (TSTRLEN(search_path_wildcard) >= MAX_PATH) {
+		free(search_path_wildcard);
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_GENFS);
+		tsk_error_set_errstr("load_dir_and_file_lists: Error looking up contents of directory (path too long) %" PRIttocTSK, base_path);
+		return TSK_ERR;
+	}
+
 	// Look up all files and folders in the base directory 
 	hFind = ::FindFirstFile(search_path_wildcard, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
@@ -764,6 +772,14 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 
 #ifdef TSK_WIN32
 	// Load the file
+	if (TSTRLEN(path) >= MAX_PATH) {
+		free(path);
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_GENFS);
+		tsk_error_set_errstr("load_dir_and_file_lists: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+		return TSK_ERR;
+	}
+
 	WIN32_FIND_DATA fd;
 	HANDLE hFind = ::FindFirstFile(path, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
