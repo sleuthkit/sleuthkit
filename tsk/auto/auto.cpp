@@ -16,7 +16,6 @@
 #include "tsk_auto_i.h"
 #include "tsk/fs/tsk_fatxxfs.h"
 #include "tsk/img/img_writer.h"
-#include <signal.h>
 
 
 // @@@ Follow through some error paths for sanity check and update docs somewhere to reflect the new scheme
@@ -249,17 +248,6 @@ TskAuto::findFilesInImg()
         registerError();
         return 1;
     }
-	//char buf[7] = "abcdef";
-	//int bob = 0;
-	//bob = bob + 0x123456;
-	//fprintf(stderr, "0x%2x", bob);
-	//fflush(stderr);
-
-	//*(char *)0 = 0;
-	//buf[2000] = 0;
-
-	//fprintf(stderr, "After 0x%2x", bob);
-	//fflush(stderr);
 
 	if (m_img_info->itype == TSK_IMG_TYPE_LOGICAL) {
 		return findFilesInFs(0, TSK_FS_TYPE_LOGICAL);

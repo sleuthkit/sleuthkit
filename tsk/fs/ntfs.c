@@ -4243,7 +4243,6 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     else
         end_inum_tmp = end_inum;
 
-	fprintf(stderr, "Looping over mft entries - start: 0x%llx, end: 0x%llx. Flags: 0x%x\n", start_inum, end_inum_tmp, flags);
     for (mftnum = start_inum; mftnum <= end_inum_tmp; mftnum++) {
         int retval;
         TSK_RETVAL_ENUM retval2;
