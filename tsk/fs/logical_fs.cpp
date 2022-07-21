@@ -211,11 +211,13 @@ convert_wide_string_to_utf8(const wchar_t *source) {
  * We currently treat sym links as regular files to avoid
  * issues trying to read then as directories.
  */
+#ifdef TSK_WIN32
 int
 shouldTreatAsDirectory(DWORD dwFileAttributes) {
 	return ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		&& (!(dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)));
 }
+#endif
 
 /*
  * Use data in the WIN32_FIND_DATA to populate a TSK_FS_FILE object.
