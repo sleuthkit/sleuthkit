@@ -204,7 +204,6 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 	}
 	return dest;
 }
-#endif
 
 /*
  * Check if we should set the type as directory.
@@ -226,7 +225,6 @@ shouldTreatAsDirectory(DWORD dwFileAttributes) {
  *
  * @return TSK_OK if successful, TSK_ERR otherwise
  */
-#ifdef TSK_WIN32
 TSK_RETVAL_ENUM
 populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_fs_file) {
 
