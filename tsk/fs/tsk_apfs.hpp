@@ -440,8 +440,17 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
     }
 
     _table_data.toc = {_storage.data() + toffset()};
+    if ((uintptr_t)_table_data.toc.v - (uintptr_t)_storage.data() > _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid toffset");
+    }
     _table_data.voff = _storage.data() + voffset();
+    if (_table_data.voff - _storage.data() > _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid voffset");
+    }
     _table_data.koff = _storage.data() + koffset();
+    if (_table_data.koff - _storage.data() > _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid koffset");
+    }
   }
 
   inline bool is_root() const noexcept {
