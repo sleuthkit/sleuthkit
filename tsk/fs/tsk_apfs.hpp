@@ -1194,6 +1194,7 @@ template <typename Node>
 APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(
     const Node *node, uint32_t index, typename Node::iterator &&child, int recursion_depth)
     : _node{own_node(node)}, _index{index} {
+  (void)recursion_depth; // so that project builds without unused parameter warning and error
   _child_it = std::make_unique<typename Node::iterator>(
       std::forward<typename Node::iterator>(child));
 }
