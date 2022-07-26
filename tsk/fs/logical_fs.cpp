@@ -1250,10 +1250,11 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 
 		// Look into the in-use cache entries
 		if (img_info->cache_len[cache_index] > 0) {
-			#pragma GCC diagnostic error "-Wsign-compare"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
 			if ((logical_img_info->cache_inum[cache_index] == a_fs_file->meta->addr)
 				&& (img_info->cache_off[cache_index] == a_block_num)) {
-
+#pragma GCC diagnostic pop
 				// We found it
 				memcpy(buf, img_info->cache[cache_index], block_size);
 				match_found = true;
@@ -1392,6 +1393,9 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		return -1;
 	}
 	file_handle_entry->seek_pos += nread;
+#else
+	// otherwise, not used; ensure used to prevent warning
+	(void)len_to_read;
 #endif
 
 	// Copy the block into the cache
