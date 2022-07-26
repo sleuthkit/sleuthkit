@@ -211,11 +211,13 @@ convert_wide_string_to_utf8(const wchar_t *source) {
  * We currently treat sym links as regular files to avoid
  * issues trying to read then as directories.
  */
+ #ifdef TSK_WIN32
 int
 shouldTreatAsDirectory(DWORD dwFileAttributes) {
 	return ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		&& (!(dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)));
 }
+#endif
 
 /*
  * Use data in the WIN32_FIND_DATA to populate a TSK_FS_FILE object.
@@ -1249,6 +1251,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		// Look into the in-use cache entries
 		if (img_info->cache_len[cache_index] > 0) {
 			if ((logical_img_info->cache_inum[cache_index] == a_fs_file->meta->addr)
+				#pragma GCC diagnostic error "-Wsign-compare"
 				&& (img_info->cache_off[cache_index] == a_block_num)) {
 
 				// We found it
