@@ -914,6 +914,8 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 
 	// Run the search
 	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
+	// use last_assigned_inum variable on non-win32 builds to prevent error
+	(void)last_assigned_inum;
 	result = search_directory_recursive(logical_fs_info, starting_path, &starting_inum, search_helper);
 
 	if (cache_path != NULL) {
@@ -1312,6 +1314,8 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		}
 #else
 		int fd = 0;
+		// use path variable on non-win32 builds to prevent error
+		(void)path;
 #endif
 
 		// Set up this cache entry
