@@ -189,7 +189,7 @@ class APFSBtreeNodeIterator {
   APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node, uint32_t index, int recursion_depth);
 
   APFSBtreeNodeIterator(const Node *node, uint32_t index,
-                        typename Node::iterator &&child, int recursion_depth);
+                        typename Node::iterator &&child);
 
   virtual ~APFSBtreeNodeIterator() = default;
 
@@ -539,7 +539,7 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
           return end();
         }
 
-        return {this, i - 1, std::move(ret), 0};
+        return {this, i - 1, std::move(ret)};
       }
     }
 
@@ -637,7 +637,7 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
 
           auto ret = it._child_it->_node->find(value, comp);
           if (ret != it._child_it->_node->end()) {
-            return {this, last - 1, std::move(ret), 0};
+            return {this, last - 1, std::move(ret)};
           }
         }
 
@@ -657,7 +657,7 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
       return end();
     }
 
-    return {this, last, std::move(ret), 0};
+    return {this, last, std::move(ret)};
   }
 
   template <typename T, typename Compare>
@@ -1192,9 +1192,8 @@ APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node,
 
 template <typename Node>
 APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(
-    const Node *node, uint32_t index, typename Node::iterator &&child, int recursion_depth)
+    const Node *node, uint32_t index, typename Node::iterator &&child)
     : _node{own_node(node)}, _index{index} {
-  (void)recursion_depth; // so that project builds without unused parameter warning and error
   _child_it = std::make_unique<typename Node::iterator>(
       std::forward<typename Node::iterator>(child));
 }
