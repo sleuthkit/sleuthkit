@@ -125,11 +125,12 @@ nt2nano(uint64_t ntdate)
  * @param a_ntfs File system to read from
  * @param a_buf Buffer to save raw data to.  Must be of size NTFS_INFO.mft_rsize_b
  * @param a_mftnum Address of MFT entry to read
+ * @param mft_start_addr Within-file-system byte address of start of MFT entry
  *
  * @returns Error value
  */
 TSK_RETVAL_ENUM
-ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
+ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum, TSK_OFF_T * mft_start_addr)
 {
     TSK_OFF_T mftaddr_b, mftaddr2_b, offset;
     size_t mftaddr_len = 0;
@@ -336,6 +337,11 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
 					PRIdOFF, mftaddr_b);
             return TSK_ERR;
         }
+    }
+    
+    /* A nonzero address means that mftaddr_b has been requested for export */
+    if (mft_start_addr) {
+        *mft_start_addr = mftaddr_b;
     }
 
     /* Sanity Check */
@@ -2701,7 +2707,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         if ((retval =
                 ntfs_dinode_lookup(ntfs, (char *) mft,
-                    mftToDo[a])) != TSK_OK) {
+                    mftToDo[a], 0)) != TSK_OK) {
             // if the entry is corrupt, then continue
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -3023,7 +3029,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     /* Lookup inode and store it in the ntfs structure */
-    if (ntfs_dinode_lookup(ntfs, mft, mftnum) != TSK_OK) {
+    if (ntfs_dinode_lookup(ntfs, mft, mftnum, 0) != TSK_OK) {
         free(mft);
         return 1;
     }
@@ -3219,7 +3225,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     }
 
     /* Get data on the bitmap */
-    if (ntfs_dinode_lookup(ntfs, (char *) mft, NTFS_MFT_BMAP) != TSK_OK) {
+    if (ntfs_dinode_lookup(ntfs, (char *) mft, NTFS_MFT_BMAP, 0) != TSK_OK) {
         goto on_error;
     }
 
@@ -4204,7 +4210,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         /* read MFT entry in to NTFS_INFO */
         if ((retval2 =
                 ntfs_dinode_lookup(ntfs, (char *) mft,
-                    mftnum)) != TSK_OK) {
+                    mftnum, 0)) != TSK_OK) {
             // if the entry is corrupt, then skip to the next one
             if (retval2 == TSK_COR) {
                 if (tsk_verbose)
@@ -4557,7 +4563,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         return 1;
     }
 
-    if (ntfs_dinode_lookup(ntfs, (char *) mft, inum)) {
+    if (ntfs_dinode_lookup(ntfs, (char *) mft, inum, 0)) {
         free(mft);
         return 1;
     }
