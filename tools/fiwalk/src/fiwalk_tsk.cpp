@@ -208,7 +208,17 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
         file_info("nlink",fs_file->meta->nlink);
         file_info("uid",fs_file->meta->uid);
         file_info("gid",fs_file->meta->gid);
-    
+
+        char i_buf[1024];
+        memset(i_buf, 0, 1024);
+        string i_runs = "";
+        uint64_t current_partition_start = fs_file->fs_info->offset;
+        if (fs_file->meta->start_of_inode != 0){
+            sprintf(i_buf,"       <byte_run fs_offset='%" PRIu64 "' img_offset='%" PRIu64 "'/>\n",fs_file->meta->start_of_inode, current_partition_start + fs_file->meta->start_of_inode);
+        }
+        i_runs += i_buf;
+        file_info_xml2("byte_runs","facet='inode'", i_runs);
+
     	/* Special processing for FAT */
     	if(TSK_FS_TYPE_ISFAT(fs_file->fs_info->ftype))
     	{
