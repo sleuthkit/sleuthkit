@@ -271,6 +271,16 @@ void file_info_xml(const string &name,const string &value)
     }
 }
 
+void file_info_xml2(const string &name,const string &attrib,const string &value)
+{
+    if(x){
+	x->push(name,attrib);
+	x->puts(value);
+	x->pop();
+    }
+}
+
+
 /* Process a string value */
 void file_info(const string &name,const string &value)
 {
