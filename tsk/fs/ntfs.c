@@ -3029,7 +3029,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     /* Lookup inode and store it in the ntfs structure */
-    if (ntfs_dinode_lookup(ntfs, mft, mftnum, 0) != TSK_OK) {
+    if (ntfs_dinode_lookup(ntfs, mft, mftnum, & (a_fs_file->meta->start_of_inode)) != TSK_OK) {
         free(mft);
         return 1;
     }
@@ -4210,7 +4210,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         /* read MFT entry in to NTFS_INFO */
         if ((retval2 =
                 ntfs_dinode_lookup(ntfs, (char *) mft,
-                    mftnum, 0)) != TSK_OK) {
+                    mftnum, & (fs_file->meta->start_of_inode))) != TSK_OK) {
             // if the entry is corrupt, then skip to the next one
             if (retval2 == TSK_COR) {
                 if (tsk_verbose)
