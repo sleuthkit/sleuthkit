@@ -73,6 +73,7 @@ tsk_fs_dir_realloc(TSK_FS_DIR * a_fs_dir, size_t a_cnt)
     prev_cnt = a_fs_dir->names_alloc;
 
     a_fs_dir->names_alloc = a_cnt;
+
     if ((a_fs_dir->names =
         (TSK_FS_NAME *)tsk_realloc((void *)a_fs_dir->names,
             sizeof(TSK_FS_NAME) * a_fs_dir->names_alloc)) == NULL) {
@@ -865,7 +866,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                         if (indexToOrderedIndex != NULL) {
                             free(indexToOrderedIndex);
                         }
-                        return TSK_WALK_STOP;
+                        return TSK_WALK_ERROR;
                     }
 
                     if (tsk_verbose) {
@@ -1007,11 +1008,6 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     }
 
     tsk_stack_free(dinfo.stack_seen);
-
-    if ((retval == TSK_WALK_STOP) && (tsk_error_get_errno() & TSK_ERR_AUX)) {
-        // We ran out of memory so make sure to return an error
-        return 1;
-    }
 
     if (retval == TSK_WALK_ERROR)
         return 1;
