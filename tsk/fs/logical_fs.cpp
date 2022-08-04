@@ -211,11 +211,13 @@ convert_wide_string_to_utf8(const wchar_t *source) {
  * We currently treat sym links as regular files to avoid
  * issues trying to read then as directories.
  */
+ #ifdef TSK_WIN32
 int
 shouldTreatAsDirectory(DWORD dwFileAttributes) {
 	return ((dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		&& (!(dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)));
 }
+#endif
 
 /*
  * Use data in the WIN32_FIND_DATA to populate a TSK_FS_FILE object.
@@ -914,6 +916,8 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 
 	// Run the search
 	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
+	// use last_assigned_inum variable on non-win32 builds to prevent error
+	(void)last_assigned_inum;
 	result = search_directory_recursive(logical_fs_info, starting_path, &starting_inum, search_helper);
 
 	if (cache_path != NULL) {
@@ -1247,8 +1251,8 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		// Look into the in-use cache entries
 		if (img_info->cache_len[cache_index] > 0) {
 			if ((logical_img_info->cache_inum[cache_index] == a_fs_file->meta->addr)
-				&& (img_info->cache_off[cache_index] == a_block_num)) {
-
+				// check if non-negative and cast to uint to avoid signed/unsigned comparison warning
+				&& (img_info->cache_off[cache_index] >= 0 && (TSK_DADDR_T)img_info->cache_off[cache_index] == a_block_num)) {
 				// We found it
 				memcpy(buf, img_info->cache[cache_index], block_size);
 				match_found = true;
@@ -1312,6 +1316,8 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		}
 #else
 		int fd = 0;
+		// use path variable on non-win32 builds to prevent error
+		(void)path;
 #endif
 
 		// Set up this cache entry
@@ -1385,6 +1391,9 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		return -1;
 	}
 	file_handle_entry->seek_pos += nread;
+#else
+	// otherwise, not used; ensure used to prevent warning
+	(void)len_to_read;
 #endif
 
 	// Copy the block into the cache
@@ -1427,7 +1436,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 ssize_t 
 logicalfs_read(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, size_t a_len, char *a_buf) {
 
-	size_t bytes_written = 0;
 	TSK_DADDR_T current_block_num = a_offset / a_fs->block_size;
 	char block_buffer[LOGICAL_BLOCK_SIZE];
 	size_t cnt;
