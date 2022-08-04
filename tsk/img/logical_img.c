@@ -79,7 +79,9 @@ logical_close(TSK_IMG_INFO * img_info)
 static ssize_t
 logical_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 {
-	printf("Logical image read not supported\n");
+	tsk_error_reset();
+	tsk_error_set_errno(TSK_ERR_IMG_READ);
+	tsk_error_set_errstr("logical_read: Logical image read is not supported");
 	return 0;
 }
 
