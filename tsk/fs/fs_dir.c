@@ -252,8 +252,16 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     if (fs_name_dest == NULL) {
         // make sure we got the room
         if (a_fs_dir->names_used >= a_fs_dir->names_alloc) {
-            if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 512))
-                return 1;
+			if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 512)) {
+				if (a_fs_dir->fs_file != NULL && a_fs_dir->fs_file->meta != NULL
+					&& a_fs_dir->fs_file->meta->name2 != NULL && a_fs_dir->fs_file->meta->name2->name != NULL) {
+					tsk_error_set_errstr2("(Folder: %s (%zu))", a_fs_dir->fs_file->meta->name2->name, a_fs_dir->names_used);
+				}
+				else {
+					tsk_error_set_errstr2("(Folder: (unknown) (%zu))", a_fs_dir->fs_file->meta->name2->name, a_fs_dir->names_used);
+				}
+				return 1;
+			}
         }
 
         fs_name_dest = &a_fs_dir->names[a_fs_dir->names_used++];
@@ -859,6 +867,16 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                      * did not load, but if we ran out
                      * of memory we should stop */
                     if (tsk_error_get_errno() & TSK_ERR_AUX) {
+
+						if (fs_dir->fs_file != NULL && fs_dir->fs_file->meta != NULL
+							&& fs_dir->fs_file->meta->name2 != NULL && fs_dir->fs_file->meta->name2->name != NULL) {
+								
+							tsk_error_errstr2_concat("(Folder: %s (%zu))", fs_dir->fs_file->meta->name2->name, fs_dir->names_used);
+						}
+						else {
+							tsk_error_errstr2_concat("(Folder: (unknown) (%zu))", fs_dir->fs_file->meta->name2->name, fs_dir->names_used);
+						}
+
                         tsk_fs_dir_close(fs_dir);
                         fs_file->name = NULL;
                         tsk_fs_file_close(fs_file);
