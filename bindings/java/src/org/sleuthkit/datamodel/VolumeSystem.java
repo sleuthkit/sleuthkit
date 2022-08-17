@@ -123,6 +123,7 @@ public class VolumeSystem extends AbstractContent {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {

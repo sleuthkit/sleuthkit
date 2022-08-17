@@ -124,7 +124,7 @@ public abstract class FsContent extends AbstractFile {
 			String ownerUid,
 			Long osAccountObjId,
 			List<Attribute> fileAttributes) {
-		super(db, objId, dataSourceObjectId, new Long(fsObjId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
+		super(db, objId, dataSourceObjectId, Long.valueOf(fsObjId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, fileAttributes);
 	}
 
 	/**

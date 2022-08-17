@@ -10492,6 +10492,7 @@ public class SleuthkitCase {
 		return caseHandleIdentifier;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void finalize() throws Throwable {
 		try {
