@@ -110,7 +110,7 @@ tsk_img_open(int num_img,
 
     if (tsk_verbose)
         TFPRINTF(stderr,
-            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %s\n"),
+            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: " PRIttocTSK "\n"),
             type, num_img, images[0]);
 
 

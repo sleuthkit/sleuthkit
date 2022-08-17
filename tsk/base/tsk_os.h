@@ -160,9 +160,9 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #endif
 
 
-#define PRIcTSK _TSK_T("S")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
-#define PRIwTSK _TSK_T("s")     ///< sprintf macro to print a UTF-16 wchar_t string to TSK_TCHAR buffer
-#define PRIttocTSK  "S"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
+#define PRIcTSK _TSK_T("s")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
+#define PRIwTSK _TSK_T("ls")     ///< sprintf macro to print a UTF-16 wchar_t string to TSK_TCHAR buffer
+#define PRIttocTSK  "ls"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
 #define PRIuSIZE "Iu"           ///< printf macro to print a size_t value in Windows printf codes
 
 #define unlink _unlink
@@ -202,7 +202,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TZNAME	tzname
 
 #define PRIcTSK _TSK_T("s")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
-#define PRIwTSK _TSK_T("S")     ///< sprintf macro to print a UTF-16 wchar_t string to TSK_TCHAR buffer
+#define PRIwTSK _TSK_T("ls")     ///< sprintf macro to print a UTF-16 wchar_t string to TSK_TCHAR buffer
 #define PRIttocTSK  "s"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
 #define PRIuSIZE "zu"           ///< printf macro to print a size_t value in non-Windows printf codes
 
