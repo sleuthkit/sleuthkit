@@ -1224,7 +1224,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     /* Allocate a bitmap to keep track of which sectors are allocated to
      * directories. */
     if ((dir_sectors_bitmap =
-            (uint8_t*)tsk_malloc((size_t) (a_fs->block_count / 8 + 1))) == NULL) {
+            (uint8_t*)tsk_malloc((size_t) (a_fs->block_count / 8 + (a_fs->block_count % 8 > 0) ? 1 : 0))) == NULL) {
         tsk_fs_file_close(fs_file);
         return 1;
     }
