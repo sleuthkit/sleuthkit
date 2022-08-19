@@ -21,7 +21,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVae] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-d dir_inum] image [image] output_dir\n"),
+        ("usage: " PRIttocTSK " [-vVae] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-d dir_inum] image [image] output_dir\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -181,7 +181,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
                 result = CreateDirectoryW((LPCTSTR) path16full, NULL);
             if (result == FALSE) {
                 if (GetLastError() == ERROR_PATH_NOT_FOUND) {
-                    fprintf(stderr, "Error Creating Directory (%S)", path16full);
+                    fprintf(stderr, "Error Creating Directory (%ls)", path16full);
                     return 1;
                 }
             }
@@ -227,14 +227,14 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         CreateFileW((LPCTSTR) path16full, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "Error Creating File (%S)", path16full);
+        fprintf(stderr, "Error Creating File (%ls)", path16full);
         return 1;
     }
 
     //try to write to the file
     if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) 0,
             file_walk_cb, handle)) {
-        fprintf(stderr, "Error writing file %S\n", path16full);
+        fprintf(stderr, "Error writing file %ls\n", path16full);
         tsk_error_print(stderr);
         CloseHandle(handle);
         return 1;
@@ -442,7 +442,7 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: " PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
 
@@ -455,7 +455,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: " PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -464,7 +464,7 @@ main(int argc, char **argv1)
         case _TSK_T('d'):
             if (tsk_fs_parse_inum(OPTARG, &dirInum, NULL, NULL, NULL, NULL)) {
                 TFPRINTF(stderr,
-                        _TSK_T("invalid argument for directory inode: %s\n"),
+                        _TSK_T("invalid argument for directory inode: " PRIttocTSK "\n"),
                         OPTARG);
                 usage();
             }
@@ -484,7 +484,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                         _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                         _TSK_T("Unsupported file system type: " PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -497,7 +497,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: " PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }

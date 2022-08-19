@@ -124,6 +124,7 @@ public class Pool extends AbstractContent {
 		// Pools will be closed during case closing by the JNI code.
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void finalize() throws Throwable {
 		try {

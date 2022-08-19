@@ -195,6 +195,7 @@ public class FileSystem extends AbstractContent {
 		return lastInum;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {

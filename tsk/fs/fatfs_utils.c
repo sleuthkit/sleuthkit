@@ -149,7 +149,7 @@ fatfs_dos_2_unix_time(uint16_t date, uint16_t time, uint8_t timetens)
         tm1.tm_sec = 0;
 
     /* The ctimetens value has a range of 0 to 199 */
-    if (timetens > 100)
+    if (timetens >= 100)
         tm1.tm_sec++;
 
     tm1.tm_min = ((time & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT);

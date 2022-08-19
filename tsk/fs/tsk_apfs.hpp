@@ -142,6 +142,12 @@ class APFSBtreeNodeIterator {
     const auto &t = _node->_table_data.toc.variable[_index];
     const auto key_data = _node->_table_data.koff + t.key_offset;
     const auto val_data = _node->_table_data.voff - t.val_offset;
+    if (key_data > _node->_storage.data()) {
+      throw std::runtime_error("init_value: invalid key_offset");
+    }
+    if (val_data < _node->_storage.data()) {
+      throw std::runtime_error("init_value: invalid val_offset");
+    }
 
     memory_view key{key_data, t.key_length};
 
@@ -168,6 +174,12 @@ class APFSBtreeNodeIterator {
     const auto &t = _node->_table_data.toc.fixed[_index];
     const auto key_data = _node->_table_data.koff + t.key_offset;
     const auto val_data = _node->_table_data.voff - t.val_offset;
+    if (key_data > _node->_storage.data()) {
+      throw std::runtime_error("init_value: invalid key_offset");
+    }
+    if (val_data < _node->_storage.data()) {
+      throw std::runtime_error("init_value: invalid val_offset");
+    }
 
     if (_node->is_leaf()) {
       _val = {(typename Node::key_type)key_data,
@@ -440,8 +452,17 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
     }
 
     _table_data.toc = {_storage.data() + toffset()};
+    if ((uintptr_t)_table_data.toc.v - (uintptr_t)_storage.data() > _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid toffset");
+    }
     _table_data.voff = _storage.data() + voffset();
+    if (_table_data.voff - _storage.data() > _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid voffset");
+    }
     _table_data.koff = _storage.data() + koffset();
+    if (_table_data.koff - _storage.data() > _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid koffset");
+    }
   }
 
   inline bool is_root() const noexcept {
@@ -1145,6 +1166,12 @@ inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>(int recur
   const auto &t = _node->_table_data.toc.variable[_index];
   const auto key_data = _node->_table_data.koff + t.key_offset;
   const auto val_data = _node->_table_data.voff - t.val_offset;
+  if (key_data > _node->_storage.data()) {
+    throw std::runtime_error("APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value: invalid key_offset");
+  }
+  if (val_data < _node->_storage.data()) {
+    throw std::runtime_error("APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value: invalid val_offset");
+  }
 
   memory_view key{key_data, t.key_length};
 

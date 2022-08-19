@@ -92,6 +92,7 @@ public class Volume extends AbstractContent {
         volumeHandle = 0;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {

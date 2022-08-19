@@ -838,7 +838,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 strncpy(a_dinfo->didx[a_dinfo->depth],
                     fs_file->name->name,
                     DIR_STRSZ - strlen(a_dinfo->dirs));
-                strncat(a_dinfo->dirs, "/", DIR_STRSZ-1);
+                strncat(a_dinfo->dirs, "/", DIR_STRSZ - strlen(a_dinfo->dirs) - 1);
                 depth_added = 1;
                 a_dinfo->depth++;
 

@@ -1291,6 +1291,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void finalize() throws Throwable {
 		try {
