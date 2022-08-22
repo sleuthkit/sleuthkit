@@ -10,6 +10,8 @@ Each Autopsy release is associated with a schema version with a major and minor 
 - If the case database has the same major number as the version of Autopsy being used, the case should generally be able to be opened and used.
 - If the case database has a higher major number than the version of Autopsy being used, an error will be displayed when attempting to open the case. 
 
+You can find more of a description in the org.sleuthkit.datamodel.CaseDbSchemaVersionNumber class description. 
+
 You can find a basic graphic of some of the table relationships <a href="https://docs.google.com/drawings/d/1omR_uUAp1fQt720oJ-kk8C48BXmVa3PNjPZCDdT0Tb4/edit?usp#sharing">here</a>
 
 
