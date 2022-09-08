@@ -121,7 +121,7 @@ tsk_img_open(int num_img,
 
     if (tsk_verbose)
         TFPRINTF(stderr,
-            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: " PRIttocTSK "\n"),
+            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
             type, num_img, images[0]);
 
 
@@ -294,6 +294,7 @@ tsk_img_open(int num_img,
 #if HAVE_LIBVHDI
     case TSK_IMG_TYPE_VHD_VHD:
         img_info = vhdi_open(num_img, images, a_ssize);
+#endif
 
 #if HAVE_LIBAFF4
     case TSK_IMG_TYPE_AFF4_AFF4:
