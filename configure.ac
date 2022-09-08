@@ -115,11 +115,16 @@ AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
   )]
 )
 
-dnl needed for sqllite
-AC_CHECK_LIB(dl, dlopen)
-
-AC_CHECK_HEADERS([sqlite3.h], [AC_CHECK_LIB([sqlite3], [sqlite3_open])])
-AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"], [ax_sqlite3=yes])
+dnl check again for sqlite3 if not found by pkgconfig
+AS_IF([test "x$ax_sqlite3" != "xyes"],
+  [
+    AC_CHECK_HEADERS(
+      [sqlite3.h],
+      [AC_CHECK_LIB([dl], [dlopen])
+       AC_CHECK_LIB([sqlite3], [sqlite3_open], [ax_sqlite3=yes], [])]
+    )
+  ]
+)
 
 dnl Compile the bundled sqlite if there is no system one installed
 AC_MSG_CHECKING(which sqlite3 to use)
