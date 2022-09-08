@@ -29,13 +29,13 @@ aff4_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "aff4_image_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE
+            "aff4_image_read: byte offset: %" PRIdOFF " len: %" PRIuSIZE
             "\n", offset, len);
 
     if (offset > img_info->size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("aff4_image_read - %" PRIuOFF, offset);
+        tsk_error_set_errstr("aff4_image_read - %" PRIdOFF, offset);
         return -1;
     }
 
@@ -44,7 +44,7 @@ aff4_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     if (cnt < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr("aff4_image_read - offset: %" PRIuOFF
+        tsk_error_set_errstr("aff4_image_read - offset: %" PRIdOFF
             " - len: %" PRIuSIZE " - %s", offset, len, strerror(errno));
         tsk_release_lock(&(aff4_info->read_lock));
         return -1;
@@ -60,7 +60,7 @@ aff4_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 	tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type:\t\taff4\n");
-    tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuOFF "\n", img_info->size);
+    tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuSIZE "\n", img_info->size);
 
     // TODO: Expand on this when C API expands to allow dumping TURTLE to FILE*
     return;
