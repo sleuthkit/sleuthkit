@@ -242,6 +242,15 @@ case "$host" in
   ;;
 esac
 
+dnl ensure static linkage of tools during static builds
+if test "x$enable_shared" != "xyes"; then
+  CXXLD="$CXX -all-static"
+else
+  CXXLD="$CXX"
+fi
+
+AC_SUBST([CXXLD])
+
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
