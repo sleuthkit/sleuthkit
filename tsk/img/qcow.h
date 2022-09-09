@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-    extern TSK_IMG_INFO *qcow_file_open(int, const TSK_TCHAR * const images[],
+    extern TSK_IMG_INFO *qcow_open(int, const TSK_TCHAR * const images[],
         unsigned int a_ssize);
 
     typedef struct {
