@@ -62,7 +62,6 @@ static void free_image_names(TSK_IMG_INFO* img_info) {
     free(img_info->images);
 }
 
->>>>>>> ff70c2d76 (Adjustments to aff4 handle for updated libaff4 C API.)
 static ssize_t
 aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
     size_t len)
