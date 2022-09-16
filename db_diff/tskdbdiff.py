@@ -1184,12 +1184,13 @@ def main():
 
     if dump_passed and bb_dump_passed:
         print("Database comparison passed.")
+        sys.exit(0)
     if not dump_passed:
         print("Non blackboard database comparison failed.")
     if not bb_dump_passed:
         print("Blackboard database comparison failed.")
 
-    sys.exit(0)
+    sys.exit(2)
 
 
 if __name__ == "__main__":
