@@ -237,6 +237,9 @@ ntfs_parent_act(TSK_FS_FILE * fs_file, void * /*ptr*/)
 
 /****************/
 
+/**
+  * @returns 1 on error
+  */
 static uint8_t
 ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe, uintptr_t endaddr,
     TSK_FS_NAME * fs_name)
