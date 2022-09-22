@@ -1004,6 +1004,12 @@ def normalize_tsk_objects_path(guid_util: TskGuidUtils, objid: int,
                         path_parts[idx + 1].lower().startswith("autopsytestcase html report"):
                     path_parts = ["Reports", "AutopsyTestCase HTML Report"]
                     break
+                if path_parts[idx].lower() == "reports" and \
+                        "html report" in path_parts[idx + 1].lower() and \
+                        len(path_parts) > idx + 2 and \
+                        path_parts[idx + 2].lower().endswith("report.html"):
+                    path_parts = ["Reports", "html-report.html"]
+                    break
 
         path = os.path.join(*path_parts) if len(path_parts) > 0 else '/'
 
