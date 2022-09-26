@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountRealm.ScopeConfidence;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import static org.sleuthkit.datamodel.WindowsAccountUtils.isWindowsWellKnownSid;
 
 
 /**
@@ -254,28 +253,26 @@ public final class OsAccountRealmManager {
 	 * @param referringHost Referring Host.
 	 * @param connection    Database connection to use.
 	 *
-	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm
-	 *         is found.
+	 * @return OsRealmUpdateResult account update result. 
 	 *
 	 * @throws TskCoreException
 	 */
-	Optional<OsAccountRealm> getAndUpdateWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException, OsAccountManager.NotUserSIDException {
+	OsRealmUpdateResult getAndUpdateWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException, OsAccountManager.NotUserSIDException {
 		
 		// get realm
-		Optional<OsAccountRealm> realmOptional =  getWindowsRealm(accountSid, realmName, referringHost, connection );
-		
+		Optional<OsAccountRealm> realmOptional = getWindowsRealm(accountSid, realmName, referringHost, connection);
+
 		// if found, update it if needed
 		if (realmOptional.isPresent()) {
-			String realmAddr = (StringUtils.isNotBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))  ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
+			String realmAddr = (StringUtils.isNotBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
 			OsRealmUpdateResult realmUpdateResult = updateRealm(realmOptional.get(), realmAddr, realmName, connection);
-			
-			// if realm was updated, return the updated realm
-			if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
-				return realmUpdateResult.getUpdatedRealm();
-			} 
-		} 
-		
-		return realmOptional; // return the found realm as is, if any
+
+			return realmUpdateResult;
+
+		} else {
+			return new OsRealmUpdateResult(OsRealmUpdateStatus.NO_CHANGE, null);
+		}
+
 	}
 	
 	
@@ -519,34 +516,36 @@ public final class OsAccountRealmManager {
 				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
 				    
-		db.acquireSingleUserCaseReadLock();
-		try (	Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
-			OsAccountRealm accountRealm = null;
-			if (rs.next()) {
-				Host realmHost = null;
-				long hostId = rs.getLong("scope_host_id");
-				if (!rs.wasNull()) {
-					if (host != null ) {
-						realmHost = host; // exact match on given host
-					} else {
-						realmHost = new Host(hostId, rs.getString("host_name"));
-					}
-				}
-				
-				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"), 
-												rs.getString("realm_addr"), rs.getString("realm_signature"), 
-												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")),
-												OsAccountRealm.RealmDbStatus.fromID(rs.getInt("db_status")));
-			} 
-			return Optional.ofNullable(accountRealm);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error running the realms query = %s with realmaddr = %s and host name = %s",
-					queryString, realmAddr, (host != null ? host.getName() : "Null")), ex);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
-		}
+		return getRealmUsingQuery(queryString, host,  connection);
+	}
+	
+	/**
+	 * Get another realm with the given addr and specified host, 
+	 * that's different from the specified realm.
+	 * 
+	 * @param realm A known realm, the returned realm should be different from this. 
+	 * @param host Host for realm, may be null.
+	 * @param connection Database connection to use.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no realm found with matching real address.
+	 * 
+	 * @throws TskCoreException.
+	 */
+	Optional<OsAccountRealm> getAnotherRealmByAddr(OsAccountRealm realm, String realmAddr, Host host, CaseDbConnection connection) throws TskCoreException {
+		
+		// If a host is specified, we want to match the realm with matching addr and specified host, or a realm with matching addr and no host.
+		// If no host is specified, then we return the first realm with matching addr.
+		String whereHostClause = (host == null) 
+							? " 1 = 1 " 
+							: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL) ";
+		String queryString = REALM_QUERY_STRING
+						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
+						+ " AND " + whereHostClause
+						+ " AND realms.id <> " + realm.getRealmId()
+				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
+						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
+				    
+		return getRealmUsingQuery(queryString, host,  connection);
 	}
 	
 	/**
@@ -572,6 +571,52 @@ public final class OsAccountRealmManager {
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
 
+		return getRealmUsingQuery(queryString, host,  connection);
+	}
+	
+	/**
+	 * Get another realm with the given name and specified host, 
+	 * that's different from the specified realm.
+	 * 
+	 * @param realm A known realm, the returned realm should be different from this. 
+	 * @param realmName Realm name.
+	 * @param host Host for realm, may be null.
+	 * @param connection Database connection to use.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
+	 * @throws TskCoreException.
+	 */
+	Optional<OsAccountRealm> getAnotherRealmByName(OsAccountRealm realm, String realmName, Host host, CaseDbConnection connection) throws TskCoreException {
+		
+		// If a host is specified, we want to match the realm with matching name and specified host, or a realm with matching name and no host.
+		// If no host is specified, then we return the first realm with matching name.
+		String whereHostClause = (host == null)
+				? " 1 = 1 "
+				: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL ) ";
+		String queryString = REALM_QUERY_STRING
+				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
+				+ " AND " + whereHostClause
+				+ " AND realms.id <> " + realm.getRealmId()
+				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
+				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
+
+		return getRealmUsingQuery(queryString, host,  connection);
+		
+	}
+	
+	/**
+	 * Get the realm using the given realm query. 
+	 * 
+	 * @param queryString Query string
+	 * 
+	  * @param host Host for realm, may be null.
+	 * @param connection Database connection to use.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
+	 * @throws TskCoreException 
+	 */
+	private Optional<OsAccountRealm> getRealmUsingQuery(String queryString,  Host host, CaseDbConnection connection) throws TskCoreException {
+		
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -596,7 +641,7 @@ public final class OsAccountRealmManager {
 			} 
 			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting account realm for with name = %s", realmName), ex);
+			throw new TskCoreException(String.format("Error getting realm using query = %s", queryString), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
