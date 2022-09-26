@@ -31,7 +31,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: " PRIttocTSK " [-alvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n"),
+        ("usage: %" PRIttocTSK " [-alvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: find all inodes\n");
     tsk_fprintf(stderr,
@@ -115,7 +115,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: " PRIttocTSK "\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -129,7 +129,7 @@ main(int argc, char **argv1)
             type = IFIND_DATA;
             block = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid block address: " PRIttocTSK "\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid block address: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -142,7 +142,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: " PRIttocTSK "\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -153,7 +153,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: " PRIttocTSK "\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -211,7 +211,7 @@ main(int argc, char **argv1)
             type = IFIND_PARENT;
             if (tsk_fs_parse_inum(OPTARG, &parinode, NULL, NULL, NULL,
                     NULL)) {
-                TFPRINTF(stderr, _TSK_T("Invalid inode address: " PRIttocTSK "\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid inode address: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }

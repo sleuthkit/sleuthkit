@@ -29,14 +29,12 @@ tsk_malloc(size_t len)
 {
     void *ptr;
 
-    if ((ptr = malloc(len)) == 0) {
+    if ((ptr = calloc(len, 1)) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
         tsk_error_set_errstr("tsk_malloc: %s (%" PRIuSIZE" requested)", strerror(errno), len);
     }
-    else {
-        memset(ptr, 0, len);
-    }
+
     return ptr;
 }
 

@@ -26,7 +26,7 @@ usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: " PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size]"
+             ("usage: %" PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size]"
               " [-o imgoffset] [-lmvV] image [inode]\n"),
              progname);
     tsk_fprintf(stderr,
@@ -86,7 +86,7 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'): {
             default:
-                TFPRINTF(stderr, _TSK_T("Invalid argument: " PRIttocTSK "\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                          argv[OPTIND]);
                 usage();
         }
@@ -95,7 +95,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                          _TSK_T("invalid argument: sector size "
-                                "must be positive: " PRIttocTSK "\n"),
+                                "must be positive: %" PRIttocTSK "\n"),
                          OPTARG);
                 usage();
             }
@@ -108,7 +108,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                         _TSK_T("Unsupported file system type: " PRIttocTSK "\n"), OPTARG);
+                         _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -119,7 +119,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: " PRIttocTSK "\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                          OPTARG);
                 usage();
             }
