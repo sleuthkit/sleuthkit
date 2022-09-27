@@ -1024,21 +1024,23 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
 
 	// Taking 128 MiB as an arbitrary upper bound
-        if ((fs_attr_idx->nrd.allocsize == 0) || (fs_attr_idx->nrd.allocsize > (128 * 1024 * 1024))) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr
-                ("fs_attr_idx->nrd.allocsize value out of bounds");
-            return TSK_COR;
+        if (fs_attr_idx->nrd.allocsize > (128 * 1024 * 1024)) {
+           tsk_error_reset();
+           tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+           tsk_error_set_errstr
+               ("fs_attr_idx->nrd.allocsize value out of bounds");
+           return TSK_COR;
         }
 
         /*
          * Copy the index allocation run into a big buffer
          */
         idxalloc_len = fs_attr_idx->nrd.allocsize;
-        if ((idxalloc = (char *)tsk_malloc((size_t) idxalloc_len)) == NULL) {
-            return TSK_ERR;
-        }
+		// default to null unless length is greater than 0
+		idxalloc = NULL;
+		if ((idxalloc_len > 0) && ((idxalloc = (char *)tsk_malloc((size_t)idxalloc_len)) == NULL)) {
+			return TSK_ERR;
+		}
 
         /* Fill in the loading data structure */
         load_file.total = load_file.left = (size_t) idxalloc_len;
@@ -1048,17 +1050,21 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             tsk_fprintf(stderr,
                 "ntfs_dir_open_meta: Copying $IDX_ALLOC into buffer\n");
 
-        if (tsk_fs_attr_walk(fs_attr_idx,
-                TSK_FS_FILE_WALK_FLAG_SLACK, tsk_fs_load_file_action,
-                (void *) &load_file)) {
-            free(idxalloc);
+		if (tsk_fs_attr_walk(fs_attr_idx,
+			TSK_FS_FILE_WALK_FLAG_SLACK, tsk_fs_load_file_action,
+			(void *)&load_file)) {
+			if (idxalloc != NULL) {
+				free(idxalloc);
+			}
             tsk_error_errstr2_concat(" - ntfs_dir_open_meta");
             return TSK_COR;     // this could be an error though
         }
 
         /* Not all of the directory was copied, so we exit */
         if (load_file.left > 0) {
-            free(idxalloc);
+			if (idxalloc != NULL) {
+				free(idxalloc);
+			}
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
@@ -1093,7 +1099,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
                     ("ntfs_dir_open_meta: Not enough data in idxalloc buffer for an idxrec.");
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_COR;
             }
 
@@ -1133,7 +1141,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* remove the update sequence in the index record */
             if (ntfs_fix_idxrec(ntfs, idxrec_p, rec_len)) {
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_COR;
             }
 
@@ -1159,7 +1169,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 tsk_error_set_errstr
                     ("Error: Index list offsets are invalid on entry: %"
                     PRIuINUM, fs_dir->fs_file->meta->addr);
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_COR;
             }
 
@@ -1173,7 +1185,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     idxelist->begin_off));
             // stop if we get an error, record if we get corruption
             if (retval_tmp == TSK_ERR) {
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_ERR;
             }
             else if (retval_tmp == TSK_COR) {
@@ -1202,7 +1216,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* remove the update sequence */
             if (ntfs_fix_idxrec(ntfs, idxrec_p, rec_len)) {
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_COR;
             }
 
@@ -1213,7 +1229,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 tsk_error_set_errstr
                     ("Error: Index list offsets are invalid on entry: %"
                     PRIuINUM, fs_dir->fs_file->meta->addr);
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_COR;
             }
 
@@ -1235,7 +1253,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 tsk_error_set_errstr
                     ("Error: Index list offsets are invalid on entry: %"
                     PRIuINUM, fs_dir->fs_file->meta->addr);
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_COR;
             }
 
@@ -1248,7 +1268,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     idxelist->begin_off));
             // stop if we get an error, record if we get corruption
             if (retval_tmp == TSK_ERR) {
-                free(idxalloc);
+				if (idxalloc != NULL) {
+					free(idxalloc);
+				}
                 return TSK_ERR;
             }
             else if (retval_tmp == TSK_COR) {
@@ -1256,7 +1278,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             }
         }
 
-        free(idxalloc);
+		if (idxalloc != NULL) {
+			free(idxalloc);
+		}
     }
 
 
