@@ -1023,20 +1023,22 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_COR;
         }
 
-	// Taking 128 MiB as an arbitrary upper bound
-        if ((fs_attr_idx->nrd.allocsize == 0) || (fs_attr_idx->nrd.allocsize > (128 * 1024 * 1024))) {
+        // Taking 128 MiB as an arbitrary upper bound
+        if (fs_attr_idx->nrd.allocsize > (128 * 1024 * 1024)) {
             tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr
-                ("fs_attr_idx->nrd.allocsize value out of bounds");
-            return TSK_COR;
+           tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+           tsk_error_set_errstr
+               ("fs_attr_idx->nrd.allocsize value out of bounds");
+           return TSK_COR;
         }
 
         /*
          * Copy the index allocation run into a big buffer
          */
         idxalloc_len = fs_attr_idx->nrd.allocsize;
-        if ((idxalloc = (char *)tsk_malloc((size_t) idxalloc_len)) == NULL) {
+        // default to null unless length is greater than 0
+        idxalloc = NULL;
+        if ((idxalloc_len > 0) && ((idxalloc = (char *)tsk_malloc((size_t)idxalloc_len)) == NULL)) {
             return TSK_ERR;
         }
 
