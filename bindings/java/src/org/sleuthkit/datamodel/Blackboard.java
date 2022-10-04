@@ -2236,6 +2236,9 @@ public final class Blackboard {
 					statement.setLong(1, artifact_obj_id);
 					statement.setLong(2, osAccountObjId);
 					connection.executeUpdate(statement);
+					
+					// Add an OS account instance 
+					caseDb.getOsAccountManager().newOsAccountInstance(osAccountObjId, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
 				}
 
 				// if attributes are provided, add them to the artifact.
