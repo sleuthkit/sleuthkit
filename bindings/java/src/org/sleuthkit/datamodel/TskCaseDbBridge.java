@@ -488,7 +488,7 @@ class TskCaseDbBridge {
                 // Exception firewall to prevent unexpected return to the native code
                 logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
             }
-        } catch (TskCoreException ex) {
+        } catch (Throwable ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
             return -1;
