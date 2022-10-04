@@ -170,6 +170,7 @@ final class WindowsAccountUtils {
 	//  - We can assume and fill in SID from given account name, and vice versa.
 	//  - We map account names in foreign languages (some known set) to english names, for these well known accounts. 
 	private static final Map<String, WellKnownSidInfo> SPECIAL_SIDS_MAP =  ImmutableMap.<String, WellKnownSidInfo>builder() 
+			.put("S-1-5-17", new WellKnownSidInfo(true, "S-1-5", NTAUTHORITY_REALM_NAME, "IUSR", "IIS Default Account"))			
 			.put("S-1-5-18", new WellKnownSidInfo(true, "S-1-5", NTAUTHORITY_REALM_NAME, "SYSTEM", "Local System Account"))
 			.put("S-1-5-19", new WellKnownSidInfo(true, "S-1-5", NTAUTHORITY_REALM_NAME, "LOCAL SERVICE", "Local Service Account"))
 			.put("S-1-5-20", new WellKnownSidInfo(true, "S-1-5", NTAUTHORITY_REALM_NAME, "NETWORK SERVICE", "Network Service Account"))
