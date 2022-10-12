@@ -662,6 +662,7 @@ INPUT                  = tsk/docs/main.dox \
                          tsk/docs/img.dox \
                          tsk/docs/vs.dox \
                          tsk/docs/fs.dox \
+                         tsk/docs/pool.dox \
                          tsk/docs/hashdb.dox \
                          tsk/docs/auto.dox \
                          tsk/docs/cpp.dox \
