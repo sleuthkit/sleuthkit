@@ -183,7 +183,7 @@ final class WindowsAccountUtils {
 			.put("S-1-5-82", new WellKnownSidInfo(false, "S-1-5-82", "IIS APPPOOL", "", "IIS AppPool Virtual Account"))
 			.put("S-1-5-83", new WellKnownSidInfo(false, "S-1-5-83", "NT VIRTUAL MACHINE", "", "Virtual Machine Virtual Account") )
 			.put("S-1-5-90", new WellKnownSidInfo(false, "S-1-5-90", "Window Manager", "", "Windows Manager Virtual Account"))
-			.put("S-1-5-94", new WellKnownSidInfo(false, "S-1-5-94", "WinRM Virtial Users", "", "Windows Remoting Virtual Account"))
+			.put("S-1-5-94", new WellKnownSidInfo(false, "S-1-5-94", "WinRM Virtual Users", "", "Windows Remoting Virtual Account"))
 			.put("S-1-5-96",  new WellKnownSidInfo(false, "S-1-5-96", "Font Driver Host", "", "Font Driver Host Virtual Account"))
 			.build();
 			
