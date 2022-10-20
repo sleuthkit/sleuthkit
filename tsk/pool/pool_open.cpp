@@ -35,6 +35,13 @@ const TSK_POOL_INFO *tsk_pool_open_sing(const TSK_VS_PART_INFO *part,
   return tsk_pool_open_img_sing(part->vs->img_info, offset, type);
 }
 
+
+/** 
+ * @param num_vols Number of volumes in parts array
+ * @param parts List of Volume partitions to review
+ * @type Type of pool to open (or auto detect)
+ * @returns Pool structure
+ */
 const TSK_POOL_INFO *tsk_pool_open(int num_vols,
                                    const TSK_VS_PART_INFO *const parts[],
                                    TSK_POOL_TYPE_ENUM type) {
@@ -52,6 +59,7 @@ const TSK_POOL_INFO *tsk_pool_open(int num_vols,
     return nullptr;
   }
 
+  // Make arrays of equal size to store the volume offset and IMG_INFO
   auto imgs = std::make_unique<TSK_IMG_INFO *[]>(num_vols);
   auto offsets = std::make_unique<TSK_OFF_T[]>(num_vols);
 
@@ -73,11 +81,22 @@ const TSK_POOL_INFO *tsk_pool_open(int num_vols,
   return tsk_pool_open_img(num_vols, imgs.get(), offsets.get(), type);
 }
 
+/**
+ * Open a pool at the given offset in the given image.
+ */
 const TSK_POOL_INFO *tsk_pool_open_img_sing(TSK_IMG_INFO *img, TSK_OFF_T offset,
                                             TSK_POOL_TYPE_ENUM type) {
   return tsk_pool_open_img(1, &img, &offset, type);
 }
 
+
+/**
+ * Open a pool at the set of image offsets
+ * @param num_imgs Size of imgs array
+ * @param imgs List of IMG_INFO to look for pool
+ * @param offsets List of offsets to look for pool in the img at the same array index
+ * @param type Pool type to open
+ */
 const TSK_POOL_INFO *tsk_pool_open_img(int num_imgs, TSK_IMG_INFO *const imgs[],
                                        const TSK_OFF_T offsets[],
                                        TSK_POOL_TYPE_ENUM type) {
