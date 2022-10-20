@@ -177,10 +177,15 @@ public final class OsAccountManager {
 			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
 		}
 		
+		
+		OsRealmUpdateResult realmUpdateResult;
+		Optional<OsAccountRealm> anotherRealmWithSameName = Optional.empty();
+		Optional<OsAccountRealm> anotherRealmWithSameAddr = Optional.empty();
+		
 		// get the realm for the account, and update it if it is missing addr or name.
 		OsAccountRealm realm = null;
 		try (CaseDbConnection connection = db.getConnection()) {
-			OsRealmUpdateResult realmUpdateResult = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(sid, realmName, referringHost, connection);
+			realmUpdateResult = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(sid, realmName, referringHost, connection);
 			
 			Optional<OsAccountRealm> realmOptional = realmUpdateResult.getUpdatedRealm();
 			if (realmOptional.isPresent()) {
@@ -192,23 +197,10 @@ public final class OsAccountManager {
 					// say another realm with same name but no SID, or same SID but no name
 					
 					//1. Check if there is any OTHER realm with the same name, same host but no addr
-					Optional<OsAccountRealm> anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, connection);
+					anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, connection);
 					
 					// 2. Check if there is any OTHER realm with same addr and host, but NO name
-					Optional<OsAccountRealm> anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, connection);
-
-					if (anotherRealmWithSameName.isPresent() || anotherRealmWithSameAddr.isPresent()) {
-
-						CaseDbTransaction trans = this.db.beginTransaction();
-						if (anotherRealmWithSameName.isPresent()) {
-							db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realmOptional.get(), trans);
-						}
-						if (anotherRealmWithSameAddr.isPresent()) {
-							db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameAddr.get(), realmOptional.get(), trans);
-						}
-
-						trans.commit();
-					}
+					anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, connection);
 				}
 			}
 		}
@@ -216,7 +208,27 @@ public final class OsAccountManager {
 		if (null == realm) {
 			// realm was not found, create it.
 			realm = db.getOsAccountRealmManager().newWindowsRealm(sid, realmName, referringHost, realmScope);
+		} else if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
+			// if the realm already existed and was updated, and there are other realms with same  name or addr that should now be merged into the updated realm
+			if (anotherRealmWithSameName.isPresent() || anotherRealmWithSameAddr.isPresent()) {
+
+				CaseDbTransaction trans = this.db.beginTransaction();
+				try {
+					if (anotherRealmWithSameName.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realm, trans);
+					}
+					if (anotherRealmWithSameAddr.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameAddr.get(), realm, trans);
+					}
+
+					trans.commit();
+				} catch (TskCoreException ex) {
+					trans.rollback();
+					throw ex;	// rethrow
+				}
+			}
 		}
+		
 
 		return newWindowsOsAccount(sid, loginName, realm);
 	}

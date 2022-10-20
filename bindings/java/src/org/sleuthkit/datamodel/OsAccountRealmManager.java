@@ -520,7 +520,7 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Get another realm with the given addr and specified host, 
+	 * Get another realm with the given addr
 	 * that's different from the specified realm.
 	 * 
 	 * @param realm A known realm, the returned realm should be different from this. 
@@ -532,12 +532,12 @@ public final class OsAccountRealmManager {
 	 * @throws TskCoreException.
 	 */
 	Optional<OsAccountRealm> getAnotherRealmByAddr(OsAccountRealm realm, String realmAddr, Host host, CaseDbConnection connection) throws TskCoreException {
-		
-		// If a host is specified, we want to match the realm with matching addr and specified host, or a realm with matching addr and no host.
-		// If no host is specified, then we return the first realm with matching addr.
-		String whereHostClause = (host == null) 
-							? " 1 = 1 " 
-							: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL) ";
+			
+		// If the given realm has a host id, then the other realm should have the same host id
+		// If the given realm has no host id,  then the other realm should have no host id
+		String whereHostClause = (realm.getScopeHost().isEmpty()) 
+							? " realms.scope_host_id IS NULL " 
+							: " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) ";
 		String queryString = REALM_QUERY_STRING
 						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
 						+ " AND " + whereHostClause
@@ -575,7 +575,7 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Get another realm with the given name and specified host, 
+	 * Get another realm with the given name
 	 * that's different from the specified realm.
 	 * 
 	 * @param realm A known realm, the returned realm should be different from this. 
@@ -588,11 +588,11 @@ public final class OsAccountRealmManager {
 	 */
 	Optional<OsAccountRealm> getAnotherRealmByName(OsAccountRealm realm, String realmName, Host host, CaseDbConnection connection) throws TskCoreException {
 		
-		// If a host is specified, we want to match the realm with matching name and specified host, or a realm with matching name and no host.
-		// If no host is specified, then we return the first realm with matching name.
-		String whereHostClause = (host == null)
-				? " 1 = 1 "
-				: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL ) ";
+		// If the given realm has a host id, then the other realm should have the same host id
+		// If the given realm has no host id,  then the other realm should have no host id
+		String whereHostClause = (realm.getScopeHost().isEmpty()) 
+							? " realms.scope_host_id IS NULL " 
+							: " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) ";
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
 				+ " AND " + whereHostClause
