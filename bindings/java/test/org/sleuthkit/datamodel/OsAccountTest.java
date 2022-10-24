@@ -428,7 +428,7 @@ public class OsAccountTest {
 			Optional<OsAccount> oOsAccount2 = caseDB.getOsAccountManager().getWindowsOsAccount(ownerUid2, loginName2, realmName2, host);
 			
 			// this account should not exists
-			assertTrue(oOsAccount2.isEmpty());
+			assertEquals(oOsAccount2.isPresent(), false);
 			
 			// create a new account -  a new realm as there is nothing to tie it to realm1 
 			OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid2, loginName2, realmName2, host, OsAccountRealm.RealmScope.LOCAL);
