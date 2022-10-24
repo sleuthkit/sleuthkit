@@ -398,26 +398,12 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
-		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
-
-		if (osAccountId != null) {
-			try (CaseDbConnection connection = db.getConnection()) {
-				db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
-			}
-		}
-		return artifact;
+		return db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
 	}
 
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
-		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, dataSourceId, attributesList, osAccountId);
-
-		if (osAccountId != null) {
-			try (CaseDbConnection connection = db.getConnection()) {
-				db.getOsAccountManager().newOsAccountInstance(osAccountId, dataSourceId, OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
-			}
-		}
-		return artifact;
+		return db.getBlackboard().newDataArtifact(artifactType, objId, dataSourceId, attributesList, osAccountId);
 	}
 
 	@Override
