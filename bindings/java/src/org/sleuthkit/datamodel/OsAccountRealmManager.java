@@ -535,9 +535,9 @@ public final class OsAccountRealmManager {
 			
 		// If the given realm has a host id, then the other realm should have the same host id
 		// If the given realm has no host id,  then the other realm should have no host id
-		String whereHostClause = (realm.getScopeHost().isEmpty()) 
-							? " realms.scope_host_id IS NULL " 
-							: " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) ";
+		String whereHostClause = realm.getScopeHost().isPresent() 
+							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
+							: " realms.scope_host_id IS NULL ";
 		String queryString = REALM_QUERY_STRING
 						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
 						+ " AND " + whereHostClause
@@ -590,9 +590,9 @@ public final class OsAccountRealmManager {
 		
 		// If the given realm has a host id, then the other realm should have the same host id
 		// If the given realm has no host id,  then the other realm should have no host id
-		String whereHostClause = (realm.getScopeHost().isEmpty()) 
-							? " realms.scope_host_id IS NULL " 
-							: " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) ";
+		String whereHostClause = realm.getScopeHost().isPresent()
+							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
+							: " realms.scope_host_id IS NULL ";
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
 				+ " AND " + whereHostClause
