@@ -3,7 +3,7 @@
 
                     Installation Instructions
 
-                     Last Modified: Oct 2012
+                     Last Modified: Oct 2022
 
 
 REQUIREMENTS
@@ -54,6 +54,27 @@ currently support.  You can download it from:
     https://github.com/libyal/libewf
     Available at: http://sourceforge.net/projects/libewf/
 
+- LibVHDI: Allows you to process disk images that are stored in the
+Virtual Hard Disk format (VHD).  
+
+    The official repository is available hereL:
+
+    https://github.com/libyal/libvhdi
+
+- LibVMDK: Allows you to process disk images that are stored in the
+VMware Virtual Disk format (VMDK).  
+
+    The official repository is available hereL:
+
+    https://github.com/libyal/libvmdk
+
+- Libvslvm: Allows you to access the Linux Logical Volume Manager (LVM) format 
+that is sotred on a disk image.  Libbfio is a requirement for Libvslvm to work:  
+
+    The official repository is available hereL:
+
+    https://github.com/libyal/libvslvm
+    https://github.com/libyal/libbfio
 
 
 INSTALLATION
@@ -122,6 +143,27 @@ if it is installed.
 
 --with-libewf=dir: Supply this if you want TSK to look in 'dir' for
 the libewf installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-libvhdi: Supply this if you want TSK to ignore libvhdi even
+if it is installed.
+
+--with-libvhdi=dir: Supply this if you want TSK to look in 'dir' for
+the libvhdi installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-libvmdk: Supply this if you want TSK to ignore libvmdk even
+if it is installed.
+
+--with-libvmdk=dir: Supply this if you want TSK to look in 'dir' for
+the libvmdk installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-libvslvm: Supply this if you want TSK to ignore libvslvm even
+if it is installed.
+
+--with-libvslvm=dir: Supply this if you want TSK to look in 'dir' for
+the libvslvm installation (the directory should have 'lib' and 'include'
 directories in it).
 
 -----------------------------------------------------------------------------
