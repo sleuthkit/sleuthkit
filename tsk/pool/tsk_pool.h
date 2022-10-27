@@ -25,6 +25,7 @@ typedef struct TSK_FS_ATTR_RUN TSK_FS_ATTR_RUN;
 typedef enum {
   TSK_POOL_TYPE_DETECT = 0x0000,  ///< Use autodetection methods
   TSK_POOL_TYPE_APFS = 0x0001,    ///< APFS Pooled Volumes
+  TSK_POOL_TYPE_LVM = 0x0002,    ///< Linux LVM volume group
   TSK_POOL_TYPE_UNSUPP = 0xffff,  ///< Unsupported pool container type
 } TSK_POOL_TYPE_ENUM;
 
