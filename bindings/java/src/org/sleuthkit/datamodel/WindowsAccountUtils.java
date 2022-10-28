@@ -83,7 +83,9 @@ final class WindowsAccountUtils {
 	
 	// Any SIDs with the following prefixes are group SID and should be excluded.
 	private static final Set<String> GROUP_SID_PREFIX = ImmutableSet.of(
-			"S-1-5-32"		// Builtin
+			"S-1-5-32",		// Builtin
+			"S-1-5-87"		// Task ID prefix
+			
 	);
 	
 	// SIDS that begin with a domain SID prefix and have on of these 
@@ -182,8 +184,7 @@ final class WindowsAccountUtils {
 			.put("S-1-5-83", new WellKnownSidInfo(false, "S-1-5-83", "NT VIRTUAL MACHINE", "", "Virtual Machine Virtual Account") )
 			.put("S-1-5-90", new WellKnownSidInfo(false, "S-1-5-90", "Window Manager", "", "Windows Manager Virtual Account"))
 			.put("S-1-5-94", new WellKnownSidInfo(false, "S-1-5-94", "WinRM Virtual Users", "", "Windows Remoting Virtual Account"))
-			.put("S-1-5-96", new WellKnownSidInfo(false, "S-1-5-96", "Font Driver Host", "", "Font Driver Host Virtual Account"))
-			.put("S-1-5-87", new WellKnownSidInfo(false, "S-1-5-87", "NT TASK", "", "NT Task Virtual Account"))
+			.put("S-1-5-96",  new WellKnownSidInfo(false, "S-1-5-96", "Font Driver Host", "", "Font Driver Host Virtual Account"))
 			.build();
 			
 	
