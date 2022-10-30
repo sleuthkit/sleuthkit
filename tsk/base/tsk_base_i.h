@@ -203,6 +203,10 @@ extern "C" {
 #define TSK_IS_CNTRL(x) \
 (((x) < 0x20) && ((x) >= 0x00))
 
+/* strnlen is a POSIX function and not part of the C stdlib */
+#ifndef HAVE_STRNLEN
+extern size_t strnlen(const char* s, size_t maxlen);
+#endif
 
 #ifdef __cplusplus
 }

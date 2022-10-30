@@ -119,7 +119,6 @@ typedef int32_t ssize_t;
 
 #endif
 
-
 /* When TSK deals with the outside world (printing / input), the data will 
  * be in either UTF-16 or UTF-8 (Windows or Unix).  TSK_TCHAR is defined 
  * as the data type needed and the following function map to the required 

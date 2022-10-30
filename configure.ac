@@ -78,7 +78,7 @@ AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
 AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
-AC_CHECK_FUNCS([strlcpy strlcat])
+AC_CHECK_FUNCS([strlcpy strlcat strnlen])
 
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
@@ -166,6 +166,8 @@ dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
 TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
+dnl Check if we should link with libaff4
+TSK_OPT_DEP_CHECK([libaff4], [], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
 
 dnl check for cppunit
 AC_ARG_ENABLE([cppunit],
@@ -356,11 +358,12 @@ dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
+   libaff4 support:                       $ax_libaff4
    libewf support:                        $ax_libewf
-   zlib support:                          $ax_zlib
-
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
+   zlib support:                          $ax_zlib
+
 Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
