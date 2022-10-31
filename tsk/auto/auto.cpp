@@ -771,8 +771,7 @@ TSK_RETVAL_ENUM
     if (tsk_fs_dir_walk(a_fs_info, a_inum,
             (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_RECURSE |
                 m_fileFilterFlags), dirWalkCb, this)) {
-
-        tsk_error_set_errstr2(
+		tsk_error_errstr2_concat(
             "Error walking directory in file system at offset %" PRIdOFF, a_fs_info->offset);
         registerError();
         return TSK_ERR;
