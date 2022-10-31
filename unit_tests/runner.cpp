@@ -6,15 +6,12 @@
  *
  * This software is distributed under the Common Public License 1.0
  */
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <libtsk.h>
+
+#include <iostream>
+
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
-
-
 
 int main(int argc, char **argv) {
 	// Get the top level suite from the registry
@@ -33,7 +30,3 @@ int main(int argc, char **argv) {
 	  // Return error code 1 if the one of test failed.
 	  return wasSuccessful ? 0 : 1;
 }
-
-
-
-
