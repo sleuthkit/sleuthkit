@@ -1,29 +1,16 @@
 dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-
 AC_PREREQ(2.59)
 
 AC_INIT(sleuthkit, 4.11.1)
-m4_include([m4/ax_pthread.m4])
-dnl include the version from 1.12.1. This will work for
-m4_include([m4/cppunit.m4])
-m4_include([m4/ax_jni_include_dir.m4])
-m4_include([m4/ac_prog_javac_works.m4])
-m4_include([m4/ac_prog_javac.m4])
-m4_include([m4/ac_prog_java_works.m4])
-m4_include([m4/ac_prog_java.m4])
-m4_include([m4/ax_cxx_compile_stdcxx.m4])
-
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
-AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE([foreign tar-ustar])
-AM_PATH_CPPUNIT(1.12.1)
-AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
+AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
-AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.
 AC_PROG_CXX
@@ -82,7 +69,7 @@ AC_CHECK_FUNCS([strlcpy strlcat])
 
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
-    CLIBS="$PTHREAD_LIBS $LIBS"
+    LIBS="$PTHREAD_LIBS $LIBS"
     CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
     LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"],[])
@@ -94,25 +81,11 @@ AC_ARG_ENABLE([multithreading],
 dnl Enable multithreading by default in the presence of pthread
 AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno"], [ax_multithread=yes], [ax_multithread=no])
 
-case "$host" in
-*-*-mingw*)
-  dnl Adding the native /usr/local is wrong for cross-compiling
-  ;;
-*)
-  dnl Not all compilers include /usr/local in the include and link path
-  if test -d /usr/local/include; then
-    CPPFLAGS="$CPPFLAGS -I/usr/local/include"
-    LDFLAGS="$LDFLAGS -L/usr/local/lib"
-  fi
-  ;;
-esac
-
 dnl Add enable/disable option
 AC_ARG_ENABLE([java],
     [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
 
 dnl Checks for libraries.
-
 
 dnl Some platforms will complain about missing included functions if libstdc++ is not included.
 AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++]))
@@ -142,11 +115,16 @@ AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
   )]
 )
 
-dnl needed for sqllite
-AC_CHECK_LIB(dl, dlopen)
-
-AC_CHECK_HEADERS([sqlite3.h], [AC_CHECK_LIB([sqlite3], [sqlite3_open])])
-AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"], [ax_sqlite3=yes])
+dnl check again for sqlite3 if not found by pkgconfig
+AS_IF([test "x$ax_sqlite3" != "xyes"],
+  [
+    AC_CHECK_HEADERS(
+      [sqlite3.h],
+      [AC_CHECK_LIB([dl], [dlopen])
+       AC_CHECK_LIB([sqlite3], [sqlite3_open], [ax_sqlite3=yes], [])]
+    )
+  ]
+)
 
 dnl Compile the bundled sqlite if there is no system one installed
 AC_MSG_CHECKING(which sqlite3 to use)
@@ -209,7 +187,6 @@ AS_IF([test "x$enable_cppunit" != "xno"], [
 AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
 
 dnl check for user online input
-
 AC_ARG_ENABLE([offline],
     [ AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
     [case "${enableval}" in
@@ -219,6 +196,16 @@ AC_ARG_ENABLE([offline],
      esac],[offline=false])
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
+
+AC_CHECK_PROG([PKGCONFIG], [pkg-config], [yes], [no])
+if test "x$PKGCONFIG" = "xyes"; then
+  AX_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit >= 1.12.1], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
+else
+  AM_PATH_CPPUNIT(1.12.1)
+  AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
+fi
+
+AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$ac_cv_cppunit" = xyes])
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
@@ -347,7 +334,8 @@ AC_CONFIG_FILES([
     bindings/java/jni/Makefile
     case-uco/java/Makefile
     unit_tests/Makefile
-    unit_tests/base/Makefile])
+    unit_tests/base/Makefile
+    unit_tests/img/Makefile])
 
 AC_OUTPUT
 
@@ -357,11 +345,13 @@ AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
-   zlib support:                          $ax_zlib
-
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
+
+   zlib support:                          $ax_zlib
+
 Features:
+   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
-]);
+])

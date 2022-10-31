@@ -181,6 +181,8 @@ tools/*/*/*.exe
 unit_tests/base/*.log
 unit_tests/base/*.trs
 unit_tests/base/test_base
+unit_tests/img/test_img
+
 # EMACS backup files
 *~
 
