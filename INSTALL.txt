@@ -3,7 +3,7 @@
 
                     Installation Instructions
 
-                     Last Modified: Oct 2012
+                     Last Modified: Oct 2022
 
 
 REQUIREMENTS
@@ -51,9 +51,31 @@ currently support.  You can download it from:
     The official repository is available here, but there is not
     a package of the last stable release:
 
-    https://github.com/libyal/libewf
+    https://github.com/libyal/libewf-legacy
     Available at: http://sourceforge.net/projects/libewf/
 
+- Libvhdi: Allows you to process disk images that are stored in the
+Virtual Hard Disk format (VHD).  
+
+    The official repository is available here:
+
+    https://github.com/libyal/libvhdi
+
+- Libvmdk: Allows you to process disk images that are stored in the
+VMware Virtual Disk format (VMDK).  
+
+    The official repository is available here:
+
+    https://github.com/libyal/libvmdk
+
+- Libvslvm: Allows you to access the Linux Logical Volume Manager (LVM) format 
+that is sotred on a disk image.  A stand-alone version of libbfio is needed 
+to allow libvslvm to directly read from a TSK_IMAGE.  
+
+    The official repository is available here:
+
+    https://github.com/libyal/libvslvm
+    https://github.com/libyal/libbfio
 
 
 INSTALLATION
@@ -122,6 +144,34 @@ if it is installed.
 
 --with-libewf=dir: Supply this if you want TSK to look in 'dir' for
 the libewf installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-libvhdi: Supply this if you want TSK to ignore libvhdi even
+if it is installed.
+
+--with-libvhdi=dir: Supply this if you want TSK to look in 'dir' for
+the libvhdi installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-libvmdk: Supply this if you want TSK to ignore libvmdk even
+if it is installed.
+
+--with-libvmdk=dir: Supply this if you want TSK to look in 'dir' for
+the libvmdk installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-libvslvm: Supply this if you want TSK to ignore libvslvm even
+if it is installed.
+
+--with-libvslvm=dir: Supply this if you want TSK to look in 'dir' for
+the libvslvm installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-libbfio: Supply this if you want TSK to ignore libbfio even
+if it is installed.
+
+--with-libbfio=dir: Supply this if you want TSK to look in 'dir' for
+the libbfio installation (the directory should have 'lib' and 'include'
 directories in it).
 
 -----------------------------------------------------------------------------
