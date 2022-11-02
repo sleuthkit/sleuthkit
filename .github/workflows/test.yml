@@ -1,0 +1,59 @@
+name: Makefile CI
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+jobs:
+  java8build:    
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: install dependencies
+      run: |
+        sudo apt -y install build-essential autoconf libtool automake git zip wget ant \
+        libpq-dev \
+        testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev && \
+        pushd /usr/src/ && 
+        wget -q -O - https://download.bell-sw.com/pki/GPG-KEY-bellsoft | sudo apt-key add - &&
+        echo "deb [arch=amd64] https://apt.bell-sw.com/ stable main" | sudo tee /etc/apt/sources.list.d/bellsoft.list &&
+        sudo apt update &&
+        sudo apt -y install bellsoft-java8-full &&
+        popd
+
+    - name: Build The Sleuth Kit and install
+      run: |
+        export JAVA_HOME=/usr/lib/jvm/bellsoft-java8-full-amd64 &&
+        export PATH=$PATH:/usr/lib/jvm/bellsoft-java8-full-amd64/bin &&
+        ./bootstrap &&
+        ./configure &&
+        make &&
+        sudo make install
+    - name: Run The Sleuth Kit tests
+      run: |
+        export JAVA_HOME=/usr/lib/jvm/bellsoft-java8-full-amd64 &&
+        export PATH=$PATH:/usr/lib/jvm/bellsoft-java8-full-amd64/bin &&
+        ant -f ./bindings/java clean dist test
+
+  java17build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: install dependencies
+      run: |
+        sudo apt -y openjdk-17-jdk openjdk-17-jre \
+        install build-essential autoconf libtool automake git zip wget ant \
+        libpq-dev \
+        testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev 
+
+    - name: Build The Sleuth Kit and install
+      run: |
+        ./bootstrap &&
+        ./configure &&
+        make &&
+        sudo make install
+    - name: Run The Sleuth Kit tests
+      run: |
+        ant -f ./bindings/java clean dist test

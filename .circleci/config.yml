@@ -1,0 +1,50 @@
+version: 2.1
+
+# loosely based on react's: https://github.com/facebook/react/blob/main/.circleci/config.yml
+commands:
+  build_test_and_run:
+    parameters:
+      description: 
+        type: string
+    description: << parameters.description >>
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt -y install build-essential autoconf libtool automake zip ant \
+            libpq-dev \
+            testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev
+      - run:
+          name: Build The Sleuth Kit and install
+          command: |
+            ./bootstrap &&
+            ./configure &&
+            make &&
+            sudo make install
+      - run:
+          name: Run The Sleuth Kit tests
+          command: |
+            ant -f ./bindings/java clean dist test
+            
+jobs:
+  java_8_test_job:
+    docker: 
+      - image: cimg/openjdk:8.0.345
+    steps:
+      - build_test_and_run:
+          description: Java 8 Test
+  java_17_test_job:
+    docker:
+      - image: cimg/openjdk:17.0.5
+    steps:
+      - build_test_and_run:
+          description: Java 17 Test
+
+workflows:
+  java_8_test:
+    jobs:
+      - java_8_test_job
+  java_17_test:
+    jobs:
+      - java_17_test_job
