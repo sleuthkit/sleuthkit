@@ -122,6 +122,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                                     tsk_fprintf(stderr,
                                         "mm_open: Ignoring DOS Safety GPT Partition\n");
                                 prev_type = NULL;
+                                prev_vs->close(prev_vs);
                                 prev_vs = NULL;
                                 break;
                             }
