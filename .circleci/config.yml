@@ -12,6 +12,7 @@ commands:
       - run:
           name: Install dependencies
           command: |
+            sudo apt update &&
             sudo apt -y install build-essential autoconf libtool automake zip ant \
             libpq-dev \
             testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev
