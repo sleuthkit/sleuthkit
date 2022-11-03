@@ -22,8 +22,27 @@ jobs:
         sudo tee /etc/apt/sources.list.d/bellsoft.list && \
         sudo apt update && \
         sudo apt -y install bellsoft-java8-full
-    - uses: ./.github/actions/build_and_test
-
+    - name: Install Dependencies
+      run: |
+        sudo apt update &&
+        sudo apt -y install build-essential autoconf libtool automake git zip wget ant \
+        libpq-dev \
+        testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev
+    - name: Fix Line Endings
+      run: |
+        sudo apt update &&
+        sudo apt -y install dos2unix &&
+        find . \( -name "*.m4" -o -name "*.ac" -o -name "*.am" \) | xargs dos2unix
+    - name: Build And Install
+      run: |
+        chmod a+x ./bootstrap && 
+        ./bootstrap && 
+        chmod a+x ./configure && 
+        ./configure &&
+        make &&
+        sudo make install
+    - name: Run The Sleuth Kit tests
+      run: ant -f ./bindings/java clean dist test
 
   java17build:
     runs-on: ubuntu-latest
@@ -33,4 +52,24 @@ jobs:
       run: |
         sudo apt update &&
         sudo apt -y install openjdk-17-jdk openjdk-17-jre 
-    - uses: ./.github/actions/build_and_test
+    - name: Install Dependencies
+      run: |
+        sudo apt update &&
+        sudo apt -y install build-essential autoconf libtool automake git zip wget ant \
+        libpq-dev \
+        testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev
+    - name: Fix Line Endings
+      run: |
+        sudo apt update &&
+        sudo apt -y install dos2unix &&
+        find . \( -name "*.m4" -o -name "*.ac" -o -name "*.am" \) | xargs dos2unix
+    - name: Build And Install
+      run: |
+        chmod a+x ./bootstrap && 
+        ./bootstrap && 
+        chmod a+x ./configure && 
+        ./configure &&
+        make &&
+        sudo make install
+    - name: Run The Sleuth Kit tests
+      run: ant -f ./bindings/java clean dist test
