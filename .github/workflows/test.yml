@@ -1,10 +1,11 @@
-name: Makefile CI
+name: Sleuthkit Tests
 
 on:
   push:
     branches: [ $default-branch ]
   pull_request:
     branches: [ $default-branch ]
+  
 
 jobs:
   java8build:    
@@ -26,8 +27,17 @@ jobs:
         sudo apt -y install bellsoft-java8-full &&
         echo "/usr/lib/jvm/bellsoft-java8-full-amd64/bin" >> $GITHUB_PATH
         popd
+    - name: Fix Line Endings
+      run: |
+        sudo apt update &&
+        sudo apt -y install dos2unix &&
+        find . \( -name "*.m4" -o -name "*.ac" -o -name "*.am" \) | xargs dos2unix
     - name: Configure
-      run:  chmod a+x ./bootstrap && ./bootstrap && chmod a+x ./configure && ./configure
+      run: |
+        chmod a+x ./bootstrap && 
+        ./bootstrap && 
+        chmod a+x ./configure && 
+        ./configure
     - name: Make
       run: make 
     - name: Install
@@ -42,12 +52,21 @@ jobs:
     - name: install dependencies
       run: |
         sudo apt update &&
-        sudo apt -y openjdk-17-jdk openjdk-17-jre \
-        install build-essential autoconf libtool automake git zip wget ant \
+        sudo apt -y install openjdk-17-jdk openjdk-17-jre \
+        build-essential autoconf libtool automake git zip wget ant \
         libpq-dev \
         testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev 
+    - name: Fix Line Endings
+      run: |
+        sudo apt update &&
+        sudo apt -y install dos2unix &&
+        find . \( -name "*.m4" -o -name "*.ac" -o -name "*.am" \) | xargs dos2unix
     - name: Configure
-      run: chmod a+x ./bootstrap && chmod a+x ./configure && ./bootstrap && ./configure
+      run: |
+        chmod a+x ./bootstrap && 
+        ./bootstrap && 
+        chmod a+x ./configure && 
+        ./configure
     - name: Make
       run: make 
     - name: Install
