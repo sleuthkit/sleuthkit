@@ -1,4 +1,4 @@
-name: Sleuthkit Tests
+name: The Sleuth Kit Tests
 
 on:
   push:
@@ -14,62 +14,23 @@ jobs:
       JAVA_HOME: /usr/lib/jvm/bellsoft-java8-full-amd64
     steps:
     - uses: actions/checkout@v3
-    - name: install dependencies
+    - name: Install Java 8
       run: |
-        sudo apt update &&
-        sudo apt -y install build-essential autoconf libtool automake git zip wget ant \
-        libpq-dev \
-        testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev && \
-        pushd /usr/src/ && 
-        wget -q -O - https://download.bell-sw.com/pki/GPG-KEY-bellsoft | sudo apt-key add - &&
-        echo "deb [arch=amd64] https://apt.bell-sw.com/ stable main" | sudo tee /etc/apt/sources.list.d/bellsoft.list &&
-        sudo apt update &&
-        sudo apt -y install bellsoft-java8-full &&
-        echo "/usr/lib/jvm/bellsoft-java8-full-amd64/bin" >> $GITHUB_PATH
-        popd
-    - name: Fix Line Endings
-      run: |
-        sudo apt update &&
-        sudo apt -y install dos2unix &&
-        find . \( -name "*.m4" -o -name "*.ac" -o -name "*.am" \) | xargs dos2unix
-    - name: Configure
-      run: |
-        chmod a+x ./bootstrap && 
-        ./bootstrap && 
-        chmod a+x ./configure && 
-        ./configure
-    - name: Make
-      run: make 
-    - name: Install
-      run: sudo make install
-    - name: Run The Sleuth Kit tests
-      run: ant -f ./bindings/java clean dist test
+        # technique taken from https://stackoverflow.com/a/71384057/2375948
+        wget -O- https://download.bell-sw.com/pki/GPG-KEY-bellsoft | gpg --dearmor | sudo tee /usr/share/keyrings/bellsoft.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/bellsoft.gpg] https://apt.bell-sw.com/ stable main" |\
+        sudo tee /etc/apt/sources.list.d/bellsoft.list && \
+        sudo apt update && \
+        sudo apt -y install bellsoft-java8-full
+    - uses: ./.github/actions/build_and_test
+
 
   java17build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: install dependencies
+    - name: Install Java 17
       run: |
         sudo apt update &&
-        sudo apt -y install openjdk-17-jdk openjdk-17-jre \
-        build-essential autoconf libtool automake git zip wget ant \
-        libpq-dev \
-        testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev 
-    - name: Fix Line Endings
-      run: |
-        sudo apt update &&
-        sudo apt -y install dos2unix &&
-        find . \( -name "*.m4" -o -name "*.ac" -o -name "*.am" \) | xargs dos2unix
-    - name: Configure
-      run: |
-        chmod a+x ./bootstrap && 
-        ./bootstrap && 
-        chmod a+x ./configure && 
-        ./configure
-    - name: Make
-      run: make 
-    - name: Install
-      run: sudo make install
-    - name: Run The Sleuth Kit tests
-      run: ant -f ./bindings/java clean dist test
+        sudo apt -y install openjdk-17-jdk openjdk-17-jre 
+    - uses: ./.github/actions/build_and_test

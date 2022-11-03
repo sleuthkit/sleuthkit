@@ -2,45 +2,71 @@ version: 2.1
 
 # loosely based on react's: https://github.com/facebook/react/blob/main/.circleci/config.yml
 commands:
-  build_test_and_run:
-    parameters:
-      description: 
-        type: string
-    description: << parameters.description >>
+  install_java17:
     steps:
-      - checkout
       - run:
-          name: Install dependencies
+          name: Install Java 17
+          command: |
+            sudo apt update && \
+            sudo apt -y install openjdk-17-jdk openjdk-17-jre
+  install_java8:
+    steps:
+      - run:
+          name: Install Liberica Java 8
+          command: |
+            # technique taken from https://stackoverflow.com/a/71384057/2375948
+            wget -O- https://download.bell-sw.com/pki/GPG-KEY-bellsoft | gpg --dearmor | sudo tee /usr/share/keyrings/bellsoft.gpg > /dev/null
+            echo "deb [signed-by=/usr/share/keyrings/bellsoft.gpg] https://apt.bell-sw.com/ stable main" |\
+            sudo tee /etc/apt/sources.list.d/bellsoft.list && \
+            sudo apt update && \
+            sudo apt -y install bellsoft-java8-full
+  install_dependencies:
+    steps:
+      - run:
+          name: Install Dependencies
           command: |
             sudo apt update &&
             sudo apt -y install build-essential autoconf libtool automake zip ant \
             libpq-dev \
             testdisk libafflib-dev libewf-dev libvhdi-dev libvmdk-dev
+  build_tsk:
+    steps:
       - run:
-          name: Build The Sleuth Kit and install
+          name: Build The Sleuth Kit and Install
           command: |
             ./bootstrap &&
             ./configure &&
             make &&
             sudo make install
+  test_tsk:
+    steps:
       - run:
-          name: Run The Sleuth Kit tests
+          name: Run The Sleuth Kit Tests
           command: |
             ant -f ./bindings/java clean dist test
             
 jobs:
   java_8_test_job:
+    description: Java 8 Test
     docker: 
-      - image: cimg/openjdk:8.0.345
+      - image: cimg/base:2022.11
     steps:
-      - build_test_and_run:
-          description: Java 8 Test
+      - checkout
+      - install_java8
+      - install_dependencies
+      - build_tsk
+      - test_tsk
+          
   java_17_test_job:
+    description: Java 17 Test
     docker:
-      - image: cimg/openjdk:17.0.5
+      - image: cimg/base:2022.11
     steps:
-      - build_test_and_run:
-          description: Java 17 Test
+      - checkout
+      - install_java17
+      - install_dependencies
+      - build_tsk
+      - test_tsk
 
 workflows:
   java_8_test:
