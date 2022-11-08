@@ -3562,8 +3562,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
 	// be multiple entries for each security ID. Some may no longer be valid, so we loop over all of them
 	// until we find one that looks valid.
 	for (i = 0; i < ntfs->sii_data.used; i++) {
-		if (! tsk_getu32(fs->endian,
-			((ntfs_attr_sii *)(ntfs->sii_data.buffer))[i].key_sec_id) == secid) {
+		if (! (tsk_getu32(fs->endian,
+			((ntfs_attr_sii *)(ntfs->sii_data.buffer))[i].key_sec_id) == secid)) {
 			continue;
 		}
 
