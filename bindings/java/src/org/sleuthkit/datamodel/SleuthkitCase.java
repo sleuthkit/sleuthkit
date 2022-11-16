@@ -628,7 +628,11 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (IngestModuleType type : IngestModuleType.values()) {
 				try {
-					statement.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+					String query = "INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT ingest_module_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_module_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
 					resultSet.next();
@@ -661,7 +665,11 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (IngestJobStatusType type : IngestJobStatusType.values()) {
 				try {
-					statement.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+					String query = "INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT ingest_job_status_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_job_status_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
 					resultSet.next();
@@ -693,8 +701,12 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (BlackboardArtifact.ReviewStatus status : BlackboardArtifact.ReviewStatus.values()) {
 				try {
-					statement.execute("INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
-							+ "VALUES (" + status.getID() + ",'" + status.getName() + "','" + status.getDisplayName() + "')"); //NON-NLS
+					String query = "INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
+							+ "VALUES (" + status.getID() + ",'" + status.getName() + "','" + status.getDisplayName() + "')";
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT review_statuses_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM review_statuses WHERE review_status_id = " + status.getID()); //NON-NLS
 					resultSet.next();
@@ -727,7 +739,11 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (TskData.EncodingType type : TskData.EncodingType.values()) {
 				try {
-					statement.execute("INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+					String query = "INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT file_encoding_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
 					resultSet.next();
