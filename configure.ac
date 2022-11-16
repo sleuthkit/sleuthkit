@@ -160,12 +160,18 @@ dnl Check if we should link with afflib
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
 dnl Check if we should link with zlib
 TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
+dnl Check if we should link with libbfio
+TSK_OPT_DEP_CHECK([libbfio], [], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
 dnl Check if we should link with libewf
 TSK_OPT_DEP_CHECK([libewf], [EWF], [libewf], [libewf.h], [ewf], [libewf_get_version])
 dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
 TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
+dnl Check if we should link with libvslvm
+AS_IF([test "x$ax_libbfio" = "xyes"],
+      [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
+      [ax_libvslvm=no])
 
 dnl check for cppunit
 AC_ARG_ENABLE([cppunit],
@@ -359,8 +365,10 @@ Building:
    libewf support:                        $ax_libewf
    zlib support:                          $ax_zlib
 
+   libbfio support:                       $ax_libbfio
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
+   libvslvm support:                      $ax_libvslvm
 Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
