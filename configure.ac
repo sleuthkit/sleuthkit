@@ -304,17 +304,22 @@ AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 
-dnl OpenSSL support for encryption - currently disabled due to automatic test failures
-dnl AX_CHECK_OPENSSL(
-dnl  [ax_openssl=yes]
-dnl  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS",
-dnl  AC_SUBST([LIBTSK_LDFLAGS])
-[ax_openssl=no]
-dnl  [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])]
-dnl )
-dnl For the moment, disable the openssl library so the Travis test will pass
-dnl AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
-
+dnl OpenSSL support for encryption  
+AX_CHECK_OPENSSL(
+  [
+   ax_openssl=yes
+   LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS"
+   AC_SUBST([LIBTSK_LDFLAGS])
+  ],
+  [
+   ax_openssl=no
+   AC_MSG_WARN([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])
+  ]
+)
+AS_IF([test "x$ax_openssl" = "xyes"],
+       [ AC_DEFINE([HAVE_LIBOPENSSL],[1], [Define if using openssl]) ],
+       []
+)
 
 dnl Enable compliation warnings
 WARNINGS='-Wall -Wextra -Wno-unused-parameter'
@@ -361,6 +366,8 @@ dnl Print a summary
 dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
+   openssl support:                       $ax_openssl
+
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
    zlib support:                          $ax_zlib
