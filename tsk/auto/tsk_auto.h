@@ -35,7 +35,6 @@
 #include <string>
 #include <vector>
 
-
 #define TSK_AUTO_TAG 0x9191ABAB
 
 typedef enum {
@@ -88,7 +87,7 @@ class TskAuto {
     bool hasPool(TSK_OFF_T a_start);
     uint8_t findFilesInPool(TSK_OFF_T start);
     uint8_t findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype);
-    uint8_t findFilesInFs(TSK_OFF_T start);
+    virtual uint8_t findFilesInFs(TSK_OFF_T start);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype,
