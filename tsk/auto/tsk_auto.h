@@ -34,6 +34,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 
 #define TSK_AUTO_TAG 0x9191ABAB
 
@@ -87,7 +88,7 @@ class TskAuto {
     bool hasPool(TSK_OFF_T a_start);
     uint8_t findFilesInPool(TSK_OFF_T start);
     uint8_t findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype);
-    virtual uint8_t findFilesInFs(TSK_OFF_T start);
+    uint8_t findFilesInFs(TSK_OFF_T start);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype,
@@ -99,6 +100,7 @@ class TskAuto {
 
     void setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM);
     void setVolFilterFlags(TSK_VS_PART_FLAG_ENUM);
+	void setOpenFileSystems(std::list<TSK_FS_INFO *> fsInfoList);
 
     /**
      * TskAuto calls this method before it processes the volume system that is found in an 
@@ -263,6 +265,7 @@ class TskAuto {
   protected:
     TSK_IMG_INFO * m_img_info;
     std::vector<const TSK_POOL_INFO*> m_poolInfos;
+	std::list<TSK_FS_INFO *> m_fsInfoList;
 
     bool m_internalOpen;        ///< True if m_img_info was opened in TskAuto and false if passed in
     bool m_stopAllProcessing;   ///< True if no further processing should occur
