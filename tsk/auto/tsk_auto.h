@@ -100,7 +100,7 @@ class TskAuto {
 
     void setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM);
     void setVolFilterFlags(TSK_VS_PART_FLAG_ENUM);
-	void setExternalFileSystemList(std::list<TSK_FS_INFO *> exteralFsInfoList);
+	void setExternalFileSystemList(const std::list<TSK_FS_INFO *>& exteralFsInfoList);
 
     /**
      * TskAuto calls this method before it processes the volume system that is found in an 

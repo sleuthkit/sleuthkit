@@ -189,7 +189,7 @@ void
  * instead of opening a new copy.
  */
 void
-TskAuto::setExternalFileSystemList(std::list<TSK_FS_INFO *> fsInfoList)
+TskAuto::setExternalFileSystemList(const std::list<TSK_FS_INFO *>& fsInfoList)
 {
 	m_exteralFsInfoList.resize(fsInfoList.size());
 	m_exteralFsInfoList.assign(fsInfoList.begin(), fsInfoList.end());
@@ -660,6 +660,18 @@ uint8_t
         registerError();
         return 1;
     }
+
+	// If we already have an open copy of this file system, use it
+	for (auto itr = m_exteralFsInfoList.begin(); itr != m_exteralFsInfoList.end(); itr++) {
+		if ((*itr)->offset == a_start) {
+			TSK_FS_INFO *fs_info = *itr;
+			TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+			if (m_errors.empty() == false)
+				return TSK_ERR;
+			else
+				return retval;
+		}
+	}
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
