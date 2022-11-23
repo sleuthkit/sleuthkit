@@ -38,7 +38,7 @@ TskAuto::TskAuto()
 TskAuto::~TskAuto()
 {
     closeImage();
-	m_fsInfoList.clear(); // Don't close the file systems that were passed in
+	m_exteralFsInfoList.clear(); // Don't close the file systems that were passed in
     m_tag = 0;
 }
 
@@ -189,10 +189,10 @@ void
  * instead of opening a new copy.
  */
 void
-TskAuto::setOpenFileSystems(std::list<TSK_FS_INFO *> fsInfoList)
+TskAuto::setExternalFileSystemList(std::list<TSK_FS_INFO *> fsInfoList)
 {
-	m_fsInfoList.resize(fsInfoList.size());
-	m_fsInfoList.assign(fsInfoList.begin(), fsInfoList.end());
+	m_exteralFsInfoList.resize(fsInfoList.size());
+	m_exteralFsInfoList.assign(fsInfoList.begin(), fsInfoList.end());
 }
 
 /**
@@ -563,7 +563,7 @@ TSK_RETVAL_ENUM
     }
 
 	// If we already have an open copy of this file system, use it
-	for (auto itr = m_fsInfoList.begin(); itr != m_fsInfoList.end(); itr++) {
+	for (auto itr = m_exteralFsInfoList.begin(); itr != m_exteralFsInfoList.end(); itr++) {
 		if ((*itr)->offset == a_start) {
 			TSK_FS_INFO *fs_info = *itr;
 			TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
