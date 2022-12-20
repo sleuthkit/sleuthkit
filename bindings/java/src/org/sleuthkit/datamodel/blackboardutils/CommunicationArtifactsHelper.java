@@ -41,6 +41,7 @@ import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.InvalidAccountIDException;
 import org.sleuthkit.datamodel.Relationship;
 import org.sleuthkit.datamodel.SleuthkitCase;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskDataException;
 import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
@@ -807,6 +808,49 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			long startDateTime, long endDateTime,
 			CallMediaType mediaType,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
+		
+		CaseDbTransaction transaction = this.getSleuthkitCase().beginTransaction();
+		try {
+			BlackboardArtifact callLogArt = addCalllog(direction, callerId, calleeIdsList, startDateTime, endDateTime, mediaType, otherAttributesList, transaction);
+			transaction.commit();
+			return callLogArt;
+		} catch (TskCoreException | BlackboardException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+	
+	
+	/**
+	 * Adds a TSK_CALLLOG artifact.
+	 *
+	 * Also creates an account instance for the caller and each of the callees,
+	 * and creates relationships between caller and callees.
+	 *
+	 * @param direction           Call direction, UNKNOWN if not available.
+	 * @param callerId            Caller id, required for incoming call.
+	 * @param calleeIdsList       Callee ids list, required for an outgoing
+	 *                            call.
+	 *
+	 * At least one of the two must be provided - the caller Id, or a callee id.
+	 *
+	 * @param startDateTime       Start date/time, 0 if not available.
+	 * @param endDateTime         End date/time, 0 if not available.
+	 * @param mediaType           Call media type, UNKNOWN if not available.
+	 * @param otherAttributesList other attributes, can be an empty list
+	 *
+	 * @return Call log artifact.
+	 *
+	 * @throws TskCoreException    If there is an error creating the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
+	 */
+	public BlackboardArtifact addCalllog(CommunicationDirection direction,
+			String callerId,
+			Collection<String> calleeIdsList,
+			long startDateTime, long endDateTime,
+			CallMediaType mediaType,
+			Collection<BlackboardAttribute> otherAttributesList,
+			CaseDbTransaction trans) throws TskCoreException, BlackboardException {
 
 		// Either caller id or a callee id must be provided.
 		if (StringUtils.isEmpty(callerId) && (isEffectivelyEmpty(calleeIdsList))) {
@@ -815,7 +859,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 
 		AccountFileInstance selfAccountInstanceLocal = null;
 		try {
-			selfAccountInstanceLocal = getSelfAccountInstance();
+			selfAccountInstanceLocal = getSelfAccountInstance(trans);
 		} catch (InvalidAccountIDException ex) {
 			LOGGER.log(Level.WARNING, String.format("Failed to get/create self account with id %s", selfAccountId), ex);
 		}
@@ -830,7 +874,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		AccountFileInstance callerAccountInstance = null;
 		if (StringUtils.isNotBlank(callerId)) {
 			try {
-				callerAccountInstance = createAccountInstance(moduleAccountsType, callerId);
+				callerAccountInstance = createAccountInstance(moduleAccountsType, callerId, trans);
 			} catch (InvalidAccountIDException ex) {
 				LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callerId));
 			}
@@ -844,7 +888,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			for (String callee : calleeIdsList) {
 				if (StringUtils.isNotBlank(callee)) {
 					try {
-						recipientAccountsList.add(createAccountInstance(moduleAccountsType, callee));
+						recipientAccountsList.add(createAccountInstance(moduleAccountsType, callee, trans));
 					} catch (InvalidAccountIDException ex) {
 						LOGGER.log(Level.WARNING, String.format("Failed to create account with id %s", callee));
 					}
@@ -908,7 +952,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		// create relationships between caller/callees
 		try {
 			getSleuthkitCase().getCommunicationsManager().addRelationships(callerAccountInstance,
-					recipientAccountsList, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime);
+					recipientAccountsList, callLogArtifact, Relationship.Type.CALL_LOG, startDateTime, trans);
 		} catch (TskDataException ex) {
 			throw new TskCoreException(String.format("Failed to create Call log relationships between caller account = %s and callees = %s.",
 					(callerAccountInstance != null) ? callerAccountInstance.getAccount() : "", calleesStr), ex);
@@ -1039,14 +1083,15 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * Returns self account instance. Lazily creates it if one doesn't exist
 	 * yet.
 	 *
+	 * @param transaction The transaction
 	 * @return Self account instance.
 	 *
 	 * @throws TskCoreException
 	 */
-	private synchronized AccountFileInstance getSelfAccountInstance() throws TskCoreException, InvalidAccountIDException {
+	private synchronized AccountFileInstance getSelfAccountInstance(CaseDbTransaction transaction) throws TskCoreException, InvalidAccountIDException {
 		if (selfAccountInstance == null) {
 			Optional<Long> ingestJobId = getIngestJobId();
-			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getContent(), null, ingestJobId.orElse(null));
+			selfAccountInstance = getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(selfAccountType, selfAccountId, this.getModuleName(), getContent(), null, ingestJobId.orElse(null), transaction);
 		}
 		return selfAccountInstance;
 	}

@@ -189,6 +189,32 @@ public final class CommunicationsManager {
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
+		CaseDbTransaction transaction = this.db.beginTransaction();
+		try {
+			org.sleuthkit.datamodel.Account.Type accountType = addAccountType(accountTypeName, displayName, transaction);
+			transaction.commit();
+			return accountType;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+	
+	/**
+	 * Add a custom account type that is not already defined in Account.Type.
+	 * Will not allow duplicates and will return existing type if the name is
+	 * already defined.
+	 *
+	 * @param accountTypeName account type that must be unique
+	 * @param displayName     account type display name
+	 * @param trans			  The case database transaction
+	 *
+	 * @return Account.Type
+	 *
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	// NOTE: Full name given for Type for doxygen linking
+	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName, CaseDbTransaction trans) throws TskCoreException {
 		Account.Type accountType = new Account.Type(accountTypeName, displayName);
 
 		// check if already in map
@@ -196,7 +222,6 @@ public final class CommunicationsManager {
 			return accountType;
 		}
 
-		CaseDbTransaction trans = db.beginTransaction();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
@@ -217,8 +242,6 @@ public final class CommunicationsManager {
 				this.accountTypeToTypeIdMap.put(accountType, typeID);
 				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
 
-				trans.commit();
-
 				return accountType;
 			} else {
 				int typeID = rs.getInt("account_type_id");
@@ -229,7 +252,6 @@ public final class CommunicationsManager {
 				return accountType;
 			}
 		} catch (SQLException ex) {
-			trans.rollback();
 			throw new TskCoreException("Error adding account type", ex);
 		} finally {
 			closeResultSet(rs);
@@ -237,6 +259,7 @@ public final class CommunicationsManager {
 		}
 	}
 
+	
 	/**
 	 * Records that an account was used in a specific file. Behind the scenes,
 	 * it will create a case-specific Account object if it does not already
@@ -262,6 +285,45 @@ public final class CommunicationsManager {
 	// NOTE: Full name given for Type for doxygen linking
 	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, 
 			String moduleName, Content sourceFile, List<BlackboardAttribute> attributes, Long ingestJobId) throws TskCoreException, InvalidAccountIDException {
+		CaseDbTransaction transaction = this.db.beginTransaction();
+		try {
+			AccountFileInstance accountFileInstance = createAccountFileInstance(accountType, accountUniqueID, moduleName, 
+					sourceFile, attributes, ingestJobId, transaction);
+			transaction.commit();
+			return accountFileInstance;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+	
+	/**
+	 * Records that an account was used in a specific file. Behind the scenes,
+	 * it will create a case-specific Account object if it does not already
+	 * exist, and it will create the needed database entries (which currently
+	 * includes making a TSK_ACCOUNT data artifact).
+	 *
+	 * @param accountType     The account type.
+	 * @param accountUniqueID The unique account identifier (such as an email
+	 *                        address).
+	 * @param moduleName      The module creating the account.
+	 * @param sourceFile      The source file the account was found in.
+	 * @param attributes      List of blackboard attributes to add to the data artifact (may be empty or null).
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
+	 * @param transaction     The case db transaction
+	 *
+	 * @return	An AccountFileInstance object.
+	 *
+	 * @throws TskCoreException          The exception is thrown if there is an
+	 *                                   issue updating the case database.
+	 * @throws InvalidAccountIDException The exception is thrown if the account
+	 *                                   ID is not valid for the account type.
+	 */
+	// NOTE: Full name given for Type for doxygen linking
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, 
+			String accountUniqueID, String moduleName, Content sourceFile, List<BlackboardAttribute> attributes, 
+			Long ingestJobId, CaseDbTransaction transaction) throws TskCoreException, InvalidAccountIDException {
 
 		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
@@ -272,8 +334,14 @@ public final class CommunicationsManager {
 		 * address multiple times. Only one artifact is created for each email
 		 * message in that PST.
 		 */
-		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, attributes, ingestJobId);
+		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, attributes, ingestJobId, transaction);
 
+		try {
+			db.getBlackboard().postArtifact(accountArtifact, moduleName, ingestJobId);
+		} catch (BlackboardException ex) {
+			LOGGER.log(Level.SEVERE, String.format("Error posting new account artifact to the blackboard (object ID = %d)", accountArtifact.getId()), ex);
+		}
+					
 		// The account instance map was unused so we have removed it from the database, 
 		// but we expect we may need it so I am preserving this method comment and usage here.
 		// add a row to Accounts to Instances mapping table
@@ -347,6 +415,7 @@ public final class CommunicationsManager {
 		return account;
 	}
 
+	
 	/**
 	 * Adds relationships between the sender and each of the recipient account
 	 * instances and between all recipient account instances. All account
@@ -371,7 +440,46 @@ public final class CommunicationsManager {
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
-			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
+			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, 
+			long dateTime) throws TskCoreException, TskDataException {
+		
+		CaseDbTransaction transaction = this.db.beginTransaction();
+		try {
+			addRelationships(sender, recipients, sourceArtifact, relationshipType, dateTime, transaction);
+			transaction.commit();
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+
+	/**
+	 * Adds relationships between the sender and each of the recipient account
+	 * instances and between all recipient account instances. All account
+	 * instances must be from the same data source.
+	 *
+	 * @param sender           Sender account, may be null.
+	 * @param recipients       List of recipients, may be empty.
+	 * @param sourceArtifact   Artifact that relationships were derived from.
+	 * @param relationshipType The type of relationships to be created.
+	 * @param dateTime         Date of communications/relationship, as epoch
+	 *                         seconds.
+	 * @param trans			   The database transaction.
+	 *
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @throws org.sleuthkit.datamodel.TskDataException If the all the accounts
+	 *                                                  and the relationship are
+	 *                                                  not from the same data
+	 *                                                  source, or if the
+	 *                                                  sourceArtifact and
+	 *                                                  relationshipType are not
+	 *                                                  compatible.
+	 */
+	// NOTE: Full name given for Type for doxygen linking
+	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
+			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime,
+			CaseDbTransaction trans) throws TskCoreException, TskDataException {
 
 		if (sourceArtifact.getDataSourceObjectID() == null) {
 			throw new TskDataException("Source Artifact does not have a valid data source.");
@@ -420,7 +528,6 @@ public final class CommunicationsManager {
 				throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
 		}
 
-		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			SleuthkitCase.CaseDbConnection connection = trans.getConnection();
 			PreparedStatement preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
@@ -445,9 +552,7 @@ public final class CommunicationsManager {
 					connection.executeUpdate(preparedStatement);
 				}
 			}
-			trans.commit();
 		} catch (SQLException ex) {
-			trans.rollback();
 			throw new TskCoreException("Error adding accounts relationship", ex);
 		}
 	}
@@ -467,6 +572,34 @@ public final class CommunicationsManager {
 	 *
 	 */
 	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException, InvalidAccountIDException {
+		CaseDbTransaction transaction = this.db.beginTransaction();
+		try {
+			Account acct = getOrCreateAccount(accountType, accountUniqueID, transaction);
+			transaction.commit();
+			return acct;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}		
+	}
+	
+	
+	/**
+	 * Get the Account for the given account type and account ID. Create a
+	 * new account if one doesn't exist
+	 *
+	 * @param accountType     account type
+	 * @param accountUniqueID unique account identifier
+	 * @param trans     The case database transaction
+	 *
+	 * @return A matching account, either existing or newly created.
+	 *
+	 * @throws TskCoreException          exception thrown if a critical error
+	 *                                   occurs within TSK core
+	 * @throws InvalidAccountIDException If the account identifier is not valid.
+	 *
+	 */
+	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID, CaseDbTransaction trans) throws TskCoreException, InvalidAccountIDException {
 		Account account = getAccount(accountType, accountUniqueID);
 		if (null == account) {
 			String query = " INTO accounts (account_type_id, account_unique_identifier) "
@@ -483,7 +616,6 @@ public final class CommunicationsManager {
 					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
 			}
 
-			CaseDbTransaction trans = db.beginTransaction();
 			Statement s = null;
 			ResultSet rs = null;
 			try {
@@ -491,10 +623,8 @@ public final class CommunicationsManager {
 
 				s.execute(query);
 
-				trans.commit();
 				account = getAccount(accountType, accountUniqueID);
 			} catch (SQLException ex) {
-				trans.rollback();
 				throw new TskCoreException("Error adding an account", ex);
 			} finally {
 				closeResultSet(rs);
@@ -503,7 +633,7 @@ public final class CommunicationsManager {
 		}
 
 		return account;
-	}
+	}	
 
 	/**
 	 * Gets or creates an account artifact for an instance of an account found
@@ -525,8 +655,8 @@ public final class CommunicationsManager {
 	 * @throws TskCoreException If there is an error querying or updating the
 	 *                          case database.
 	 */
-	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, 
-			Content sourceFile, List<BlackboardAttribute> originalAttrs, Long ingestJobId) throws TskCoreException {
+	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName,
+			Content sourceFile, List<BlackboardAttribute> originalAttrs, Long ingestJobId, CaseDbTransaction trans) throws TskCoreException {
 		if (sourceFile == null) {
 			throw new TskCoreException("Source file not provided.");
 		}
@@ -540,13 +670,15 @@ public final class CommunicationsManager {
 				attributes.addAll(originalAttrs);
 			}
 
-			accountArtifact = sourceFile.newDataArtifact(ACCOUNT_TYPE, attributes);
-
-			try {
-				db.getBlackboard().postArtifact(accountArtifact, moduleName, ingestJobId);
-			} catch (BlackboardException ex) {
-				LOGGER.log(Level.SEVERE, String.format("Error posting new account artifact to the blackboard (object ID = %d)", accountArtifact.getId()), ex);
-			}
+			accountArtifact = this.db.getBlackboard().newDataArtifact(
+					ACCOUNT_TYPE,
+					sourceFile.getId(),
+					sourceFile instanceof AbstractFile
+							? ((AbstractFile) sourceFile).getDataSourceObjectId()
+							: sourceFile.getDataSource().getId(),
+					attributes,
+					null,
+					trans);
 		}
 		return accountArtifact;
 	}

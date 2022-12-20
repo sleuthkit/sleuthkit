@@ -8470,6 +8470,46 @@ public class SleuthkitCase {
 			long ctime, long crtime, long atime, long mtime,
 			List<TskFileRange> fileRanges,
 			Content parent) throws TskCoreException {
+		
+		CaseDbTransaction transaction = beginTransaction();
+		try {
+			LayoutFile lf = addLayoutFile(fileName, size, dirFlag, metaFlag, 
+					ctime, crtime, atime, mtime, fileRanges, parent, transaction);
+			transaction.commit();
+			return lf;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+	
+	
+	/**
+	 * Add a new layout file to the database.
+	 *
+	 * @param fileName   The name of the file.
+	 * @param size       The size of the file in bytes.
+	 * @param dirFlag    The allocated status from the name structure
+	 * @param metaFlag   The allocated status from the metadata structure
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The creation time of the file.
+	 * @param atime      The accessed time of the file
+	 * @param mtime      The modified time of the file.
+	 * @param fileRanges The byte ranges that belong to this file (relative to
+	 *                   start of image)
+	 * @param parent     The parent of the file
+	 * @param trans        The current transaction.
+	 *
+	 * @return The new LayoutFile
+	 *
+	 * @throws TskCoreException
+	 */
+	public LayoutFile addLayoutFile(String fileName,
+			long size,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, TSK_FS_META_FLAG_ENUM metaFlag,
+			long ctime, long crtime, long atime, long mtime,
+			List<TskFileRange> fileRanges,
+			Content parent, CaseDbTransaction trans) throws TskCoreException {
 
 		if (null == parent) {
 			throw new TskCoreException("Parent can not be null");
@@ -8482,13 +8522,10 @@ public class SleuthkitCase {
 			parentPath = "/";
 		}
 
-		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
-			transaction = beginTransaction();
-			CaseDbConnection connection = transaction.getConnection();
-
+			CaseDbConnection connection = trans.getConnection();
 			/*
 			 * Insert a row for the layout file into the tsk_objects table:
 			 * INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
@@ -8588,8 +8625,8 @@ public class SleuthkitCase {
 					OsAccount.NO_OWNER_ID,
 					OsAccount.NO_ACCOUNT);
 
-			transaction.commit();
-			transaction = null;
+			trans.commit();
+			trans = null;
 			return layoutFile;
 
 		} catch (SQLException ex) {
@@ -8597,14 +8634,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
-				}
-			}
 		}
 	}
 
