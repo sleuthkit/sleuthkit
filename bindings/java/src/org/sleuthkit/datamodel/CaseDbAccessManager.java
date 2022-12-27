@@ -682,6 +682,31 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
 		}
 	}
+	
+	/**
+	 * Creates a prepared statement object for the purposes of running a select
+	 * statement. The given SQL should not include the starting "SELECT" keyword.
+	 *
+	 * @param sql       The select statement without the starting select keyword.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareSelect(String sql, CaseDbTransaction trans) throws TskCoreException {
+		validateSQL(sql);
+
+		String selectSQL = "SELECT " + sql; // NON-NLS
+
+		try {
+			return new CaseDbPreparedStatement(StatementType.SELECT, selectSQL, trans);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
+		}
+	}
+
 
 	/**
 	 * Performs a select statement query with the given case prepared statement.
