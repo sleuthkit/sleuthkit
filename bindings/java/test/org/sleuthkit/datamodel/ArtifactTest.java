@@ -185,7 +185,7 @@ public class ArtifactTest {
         attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD, MODULE_NAME, "keyword1"));
         
 		// Test: attach an analysis result to the file. 
-		AnalysisResultAdded analysisResultAdded1 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT), 
+		AnalysisResultAdded analysisResultAdded1 = abcTextFile.newAnalysisResult(BlackboardArtifact.Type.TSK_KEYWORD_HIT, 
 																		Score.SCORE_LIKELY_NOTABLE, "Keyword hit found", "", "", attributes);
    
 		assertEquals(Score.Significance.LIKELY_NOTABLE.getId(), analysisResultAdded1.getAnalysisResult().getScore().getSignificance().getId());
@@ -193,11 +193,11 @@ public class ArtifactTest {
 		assertTrue(analysisResultAdded1.getAnalysisResult().getConclusion().equalsIgnoreCase("Keyword hit found"));
 		
 		// Add a 2nd analysis result to the same file
-		AnalysisResultAdded analysisResultAdded2 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+		AnalysisResultAdded analysisResultAdded2 = abcTextFile.newAnalysisResult(BlackboardArtifact.Type.TSK_INTERESTING_ITEM, 
 																	Score.SCORE_LIKELY_NOTABLE, "Thats a rather intersting file.", "", "", Collections.emptyList());
    
 		// Add a 3rd analysis result to the same file 
-		AnalysisResultAdded analysisResultAdded3 = abcTextFile.newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED), 
+		AnalysisResultAdded analysisResultAdded3 = abcTextFile.newAnalysisResult(BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED, 
 																	Score.SCORE_NOTABLE, "Highly scrambled text!!", "", "", Collections.emptyList());
 		// get analysis results and verify count
 		
@@ -224,10 +224,10 @@ public class ArtifactTest {
 		
 		// Test Analysis Results in a Transaction
 		SleuthkitCase.CaseDbTransaction transAr = caseDB.beginTransaction();
-		AnalysisResultAdded analysisResultAdded4 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+		AnalysisResultAdded analysisResultAdded4 = caseDB.getBlackboard().newAnalysisResult(BlackboardArtifact.Type.TSK_INTERESTING_ITEM, 
 																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), Score.SCORE_LIKELY_NOTABLE, "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
 		
-		AnalysisResultAdded analysisResultAdded5 = caseDB.getBlackboard().newAnalysisResult(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+		AnalysisResultAdded analysisResultAdded5 = caseDB.getBlackboard().newAnalysisResult(BlackboardArtifact.Type.TSK_INTERESTING_ITEM, 
 																	abcTextFile.getId(), abcTextFile.getDataSourceObjectId(), new Score(Score.Significance.LIKELY_NONE, Score.Priority.OVERRIDE), "Thats a rather intersting file.", "", "", Collections.emptyList(), transAr);
 
 		transAr.commit();
@@ -374,7 +374,7 @@ public class ArtifactTest {
 		assertEquals(dataArtifactCount, dataArtifactResults.size());
 		
 		// TEST: getBlackboardArtifacts(artifact type id, data source id)
-		artifactResults = caseDB.getBlackboardArtifacts(dataArtType.getTypeID());
+		artifactResults = caseDB.getBlackboard().getArtifactsByType(dataArtType);
 		assertEquals(dataArtifactCount, artifactResults.size());
 
         // TEST: getBlackboardArtifacts(artifact type id, file id)
