@@ -394,7 +394,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		attributes.addAll(additionalAttributes);
 		Content content = getContent();
 
-		contactArtifact = content.newDataArtifact(CONTACT_TYPE, attributes);
+		contactArtifact = newDataArtifact(content, CONTACT_TYPE, attributes, trans);
 
 		// create an account for each specified contact method, and a relationship with self account
 		createContactMethodAccountAndRelationship(Account.Type.PHONE, phoneNumber, contactArtifact, 0, trans);
@@ -1077,7 +1077,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		attributes.addAll(otherAttributesList);
 		// Create TSK_CALLLOG artifact
 		Content content = getContent();
-		BlackboardArtifact callLogArtifact = content.newDataArtifact(CALLOG_TYPE, attributes);
+		BlackboardArtifact callLogArtifact = newDataArtifact(content, CALLOG_TYPE, attributes, trans);
 
 		callLogArtifact.addAttributes(attributes);
 

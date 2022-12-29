@@ -117,6 +117,4 @@ public final class AccountFileInstance {
 	Long getDataSourceObjectID() {
 		return artifact.getDataSourceObjectID();
 	}
-	
-	
 }

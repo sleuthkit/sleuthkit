@@ -19,12 +19,10 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.annotations.Beta;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,11 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import java.util.logging.StreamHandler;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
@@ -325,7 +320,8 @@ public final class CommunicationsManager {
 	 * Records that an account was used in a specific file. Behind the scenes,
 	 * it will create a case-specific Account object if it does not already
 	 * exist, and it will create the needed database entries (which currently
-	 * includes making a TSK_ACCOUNT data artifact).
+	 * includes making a TSK_ACCOUNT data artifact). NOTE: Does not post the
+	 * created artifact.
 	 *
 	 * @param accountType     The account type.
 	 * @param accountUniqueID The unique account identifier (such as an email
@@ -398,17 +394,6 @@ public final class CommunicationsManager {
 	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException, InvalidAccountIDException {
 		return createAccountFileInstance(accountType, accountUniqueID, moduleName, sourceFile, null, null);
 	}
-	
-	static Logger logger = Logger.getLogger(CommunicationsManager.class.getName());
-	static {
-		try {
-			logger.addHandler(new FileHandler("C:\\Users\\gregd\\Desktop\\output.log"));
-		} catch (IOException ex) {
-			Logger.getLogger(CommunicationsManager.class.getName()).log(Level.SEVERE, null, ex);
-		} catch (SecurityException ex) {
-			Logger.getLogger(CommunicationsManager.class.getName()).log(Level.SEVERE, null, ex);
-		}
-	}
 
 	/**
 	 * Get the Account with the given account type and account ID.
@@ -452,8 +437,8 @@ public final class CommunicationsManager {
 	// NOTE: Full name given for Type for doxygen linking
 	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, CaseDbConnection caseDbConnection) throws TskCoreException, InvalidAccountIDException {
 		try (Statement s = caseDbConnection.createStatement();
-			ResultSet rs = s.executeQuery("SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
-					+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'")) {
+				ResultSet rs = s.executeQuery("SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
+						+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'")) {
 
 			if (rs.next()) {
 				return new Account(rs.getInt("account_id"), accountType,
@@ -463,11 +448,11 @@ public final class CommunicationsManager {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding an account", ex);
-		} 
+		}
 	}
 
 	/**
-	 * Adds attachments to a message.
+	 * Adds attachments to a message. NOTE: Does not post the created artifacts.
 	 *
 	 * @param message     Message artifact.
 	 * @param attachments Attachments to add to the message.
@@ -596,8 +581,8 @@ public final class CommunicationsManager {
 	 * @param relationshipType The type of relationships to be created.
 	 * @param dateTime         Date of communications/relationship, as epoch
 	 *                         seconds.
-	 * @param trans			         The database transaction.
-	 *
+	 * @param trans			         The database transaction. NOTE: Does not post the
+	 *                         created artifact.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 * @throws org.sleuthkit.datamodel.TskDataException If the all the accounts
@@ -755,6 +740,7 @@ public final class CommunicationsManager {
 	 *                        artifact (may be empty or null).
 	 * @param ingestJobId     The ingest job in which the analysis that found
 	 *                        the account was performed, may be null.
+	 * @param trans           The case db transaction.
 	 *
 	 * @return The account artifact.
 	 *
@@ -776,15 +762,7 @@ public final class CommunicationsManager {
 				attributes.addAll(originalAttrs);
 			}
 
-			accountArtifact = this.db.getBlackboard().newDataArtifact(
-					ACCOUNT_TYPE,
-					sourceFile.getId(),
-					sourceFile instanceof AbstractFile
-							? ((AbstractFile) sourceFile).getDataSourceObjectId()
-							: sourceFile.getDataSource().getId(),
-					attributes,
-					null,
-					trans);
+			accountArtifact = newDataArtifact(sourceFile, ACCOUNT_TYPE, attributes, trans);
 		}
 		return accountArtifact;
 	}
@@ -1214,7 +1192,7 @@ public final class CommunicationsManager {
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
 			final Long accountID = entry.getKey();
 			String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildCSVString(entry.getValue());
-
+			
 			adiSQLClauses.add(
 					"( "
 					+ (!datasourceObjIdsCSV.isEmpty() ? "( relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " ) ) AND" : "")
@@ -1223,8 +1201,8 @@ public final class CommunicationsManager {
 			);
 		}
 		String adiSQLClause = CommManagerSqlStringUtils.joinAsStrings(adiSQLClauses, " OR ");
-
-		if (adiSQLClause.isEmpty()) {
+		
+		if(adiSQLClause.isEmpty()) {
 			LOGGER.log(Level.SEVERE, "There set of AccountDeviceInstances had no valid data source ids.");
 			return Collections.emptySet();
 		}
@@ -1240,7 +1218,7 @@ public final class CommunicationsManager {
 
 		// Basic join.
 		String limitQuery = " account_relationships AS relationships";
-
+		
 		// If the user set filters expand this to be a subquery that selects
 		// accounts based on the filter.
 		String limitStr = getMostRecentFilterLimitSQL(filter);
