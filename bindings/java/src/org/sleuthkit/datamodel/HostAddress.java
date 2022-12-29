@@ -128,12 +128,6 @@ public final class HostAddress extends AbstractContent {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
-	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		// TODO
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
 	/**
 	 * A host may have different types of addresses at a given point in time.
 	 */

@@ -128,19 +128,6 @@ public class SlackFile extends FsContent {
 	}
 
 	/**
-	 * Accepts a content visitor (Visitor design pattern).
-	 *
-	 * @param v A ContentVisitor supplying an algorithm to run using this file
-	 *          as input.
-	 *
-	 * @return The output of the algorithm.
-	 */
-	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		return v.visit(this);
-	}
-
-	/**
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
 	 * @param v A SleuthkitItemVisitor supplying an algorithm to run using this

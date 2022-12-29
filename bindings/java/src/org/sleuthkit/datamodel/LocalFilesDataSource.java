@@ -335,20 +335,6 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	}
 	
 	/**
-	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
-	 *
-	 * @param <T>     The type returned by the visitor.
-	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
-	 *                this virtual directory as input.
-	 *
-	 * @return The output of the algorithm.
-	 */
-	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
-		return visitor.visit(this);
-	}
-	
-	/**
 	 * Constructs a local/logical files and/or directories data source.
 	 *
 	 * @param db                 The case database.
