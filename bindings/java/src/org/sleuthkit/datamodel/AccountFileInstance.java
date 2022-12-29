@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.util.Collection;
 
 /**
@@ -50,6 +51,16 @@ public final class AccountFileInstance {
 	 */
 	public BlackboardAttribute getAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType) throws TskCoreException {
 		return this.artifact.getAttribute(new BlackboardAttribute.Type(attrType));
+	}
+
+	/**
+	 * Returns the account file instance artifact.
+	 * 
+	 * @return The account file instance artifact.
+	 */
+	@Beta
+	public BlackboardArtifact getArtifact() {
+		return artifact;
 	}
 
 	/**
@@ -106,4 +117,6 @@ public final class AccountFileInstance {
 	Long getDataSourceObjectID() {
 		return artifact.getDataSourceObjectID();
 	}
+	
+	
 }

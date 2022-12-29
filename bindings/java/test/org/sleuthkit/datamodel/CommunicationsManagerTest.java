@@ -1366,7 +1366,7 @@ public class CommunicationsManagerTest {
 		if (senderAddressList.size() == 1) {
 			senderAddress = senderAddressList.get(0);
 			try {
-				senderAccountInstance = commsMgr.createAccountFileInstance(EMAIL, senderAddress, MODULE_NAME, abstractFile);
+				senderAccountInstance = commsMgr.createAccountFileInstance(EMAIL, senderAddress, MODULE_NAME, abstractFile, null, null);
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Failed to create account for email address  " + senderAddress, ex); //NON-NLS
 			}
@@ -1384,7 +1384,7 @@ public class CommunicationsManagerTest {
 			try {
 				AccountFileInstance recipientAccountInstance
 						= commsMgr.createAccountFileInstance(EMAIL, addr,
-								MODULE_NAME, abstractFile);
+								MODULE_NAME, abstractFile, null, null);
 				recipientAccountInstances.add(recipientAccountInstance);
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Failed to create account for email address  " + addr, ex); //NON-NLS
