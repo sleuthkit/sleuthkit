@@ -19,7 +19,6 @@
 #include <string>
 #include <set>
 #include <string.h>
-#include <filesystem>
 
 #include "tsk_fs_i.h"
 #include "tsk_fs.h"
@@ -1632,6 +1631,13 @@ logical_fs_open(TSK_IMG_INFO * img_info) {
 	LOGICALFS_INFO *logical_fs_info = NULL;
 	TSK_FS_INFO *fs = NULL;
 	IMG_LOGICAL_INFO *logical_img_info = NULL;
+
+#ifndef TSK_WIN32
+	tsk_error_reset();
+	tsk_error_set_errno(TSK_ERR_FS_ARG);
+	tsk_error_set_errstr("logical_fs_open: logical file systems currently only enabled on Windows");
+	return NULL;
+#endif
 
 	if (img_info->itype != TSK_IMG_TYPE_LOGICAL) {
 		tsk_error_reset();

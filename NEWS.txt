@@ -1,3 +1,19 @@
+---------------- VERSION 4.12.0 --------------
+- There was a 1-year gap since 4.11.1 and the git log has 441 commits in that timeframe. 
+- Many for small fixes.  
+- This set of release notes is much more of an overview than other releases
+
+What's New:
+- LVM Support (non-Windows) from Joachim Metz
+- Logical File System support (a folder structure is parsed by TSK libraries) from Ann Priestman (Basis)
+
+What's Changed:
+- Lots of bug fixes from the Basis team and Joachim Metz
+- Additional fixes from Eran-YT, msuhanov, Joel Uckelman, Aleks L, dschoemantruter
+- General themes of C/C++ bounds checks and Java improvements to OS Accounts, Ingest jobs, CaseDbAccessManager, and much more.
+
+
+
 ---------------- VERSION 4.11.1 --------------
 
 C/C++:
