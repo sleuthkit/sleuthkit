@@ -454,9 +454,6 @@ documentation and/or software.
 #define TRUE  ( !FALSE )
 #endif                          /* TRUE */
 
-/* Threshold to prevent the processing of very large directories */
-#define MAX_DIR_SIZE_TO_PROCESS 1000000
-
 /* MD5 context. */
 #define TSK_MD5_DIGEST_LENGTH 16
     typedef struct {
