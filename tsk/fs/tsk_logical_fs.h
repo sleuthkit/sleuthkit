@@ -22,6 +22,7 @@ extern "C" {
 #define LOGICAL_ROOT_INUM 0x10000
 #define LOGICAL_INUM_DIR_INC 0x10000
 #define LOGICAL_BLOCK_SIZE TSK_IMG_INFO_CACHE_LEN
+#define LOGICAL_MAX_PATH_UNICODE 32767
 
 /*
 * Structure of an logcial file system handle.
