@@ -1081,7 +1081,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	vector<wstring> file_names;
 	vector<wstring> dir_names;
 	if (TSK_OK != load_dir_and_file_lists_win(path, file_names, dir_names, LOGICALFS_LOAD_ALL)) {
-		fprintf(stderr, "Error in load_dir_and_file_lists_win\n");
 		// Error message already set
 		free(path);
 		return TSK_ERR;
