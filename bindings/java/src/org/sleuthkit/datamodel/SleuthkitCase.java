@@ -8625,7 +8625,6 @@ public class SleuthkitCase {
 					OsAccount.NO_OWNER_ID,
 					OsAccount.NO_ACCOUNT);
 
-			trans.commit();
 			trans = null;
 			return layoutFile;
 
