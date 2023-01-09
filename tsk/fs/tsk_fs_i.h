@@ -69,6 +69,11 @@ extern "C" {
 #define setbit(a,i)     (((uint8_t *)(a))[(i)/NBBY] |= (1<<((i)%NBBY)))
 #endif                          /*  */
 
+/* Threshold to prevent the processing of very large directories.
+ * This is the maximum number of entries in a single directory that will be
+ * processed before bailing out */
+#define MAX_DIR_SIZE_TO_PROCESS 1000000
+
 /* Data structure and action to internally load a file */
     typedef struct {
         char *base;
