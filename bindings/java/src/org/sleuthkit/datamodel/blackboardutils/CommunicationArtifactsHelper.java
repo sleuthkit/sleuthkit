@@ -44,9 +44,7 @@ import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskDataException;
-import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
-import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments.FileAttachment;
 
 /**
  * A class that helps modules to create communication artifacts: contacts,
@@ -149,6 +147,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * This constructor is intended to be used when there is no known
 	 * application account and a device account should be used instead.
 	 *
+	 * NOTE: This constructor should not be used when using transactions.
+	 * 
 	 * @param caseDb       The case database.
 	 * @param moduleName   The name of the module creating the artifacts.
 	 * @param srcContent   The source/parent content of the artifacts.
