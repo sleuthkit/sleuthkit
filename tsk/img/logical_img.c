@@ -170,7 +170,8 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	TSTRNCPY(logical_info->base_path, a_images[0], len + 1);
 	// Remove trailing slash
 #ifdef TSK_WIN32
-	if (logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'/') {
+	if ((logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'/') 
+			|| (logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'\\')) {
 		logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] = '\0';
 	}
 #else

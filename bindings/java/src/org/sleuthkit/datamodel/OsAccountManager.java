@@ -1484,12 +1484,12 @@ public final class OsAccountManager {
 			}
 
 			if (Objects.nonNull(accountType)) {
-				updateAccountColumn(osAccount.getId(), "type", accountType, connection);
+				updateAccountColumn(osAccount.getId(), "type", accountType.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (Objects.nonNull(accountStatus)) {
-				updateAccountColumn(osAccount.getId(), "status", accountStatus, connection);
+				updateAccountColumn(osAccount.getId(), "status", accountStatus.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 

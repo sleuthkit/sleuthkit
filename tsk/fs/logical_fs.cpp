@@ -274,17 +274,55 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 TSK_TCHAR * create_search_path(const TSK_TCHAR *base_path) {
 	size_t len = TSTRLEN(base_path);
 	TSK_TCHAR * searchPath;
-	searchPath = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (len + 4));
+	size_t searchPathLen = len + 4;
+	searchPath = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (searchPathLen));
 	if (searchPath == NULL) {
 		return NULL;
 	}
-	TSTRNCPY(searchPath, base_path, len + 1);
+
 #ifdef TSK_WIN32
-	TSTRNCAT(searchPath, L"/*", 3);
+	TSTRNCPY(searchPath, base_path, len + 1);
+	TSTRNCAT(searchPath, L"\\*", 4);
 #else
+	TSTRNCPY(searchPath, base_path, len + 1);
 	TSTRNCAT(searchPath, "/*", 3);
 #endif
 	return searchPath;
+}
+
+/*
+* Create the wildcard search path used to find directory contents using
+* the absolute directory and unicode prefix. We only call this method for
+* long paths because it does not work in cygwin - prepending "\\?\" only
+* works for absolute paths starting with a drive letter.
+*
+* @param base_path The path to the directory to open
+*
+* @return The search path with wildcard appended (must be freed by caller)
+*/
+TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
+#ifdef TSK_WIN32
+
+	// First convert the base path to an absolute path
+	TCHAR absPath[LOGICAL_MAX_PATH_UNICODE];
+	int ret = GetFullPathNameW(base_path, LOGICAL_MAX_PATH_UNICODE, absPath, NULL);
+
+	size_t len = TSTRLEN(absPath);
+	TSK_TCHAR * searchPath;
+	size_t searchPathLen = len + 9;
+	searchPath = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (searchPathLen));
+	if (searchPath == NULL) {
+		return NULL;
+	}
+
+	TSTRNCPY(searchPath, L"\\\\?\\", 5);
+	TSTRNCAT(searchPath, absPath, len + 1);
+	TSTRNCAT(searchPath, L"\\*", 4);
+	return searchPath;
+#else
+	// Nothing to do here if it's not Windows
+	return null;
+#endif
 }
 
 /*
@@ -301,25 +339,29 @@ TSK_TCHAR * create_search_path(const TSK_TCHAR *base_path) {
 static TSK_RETVAL_ENUM
 load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_names, vector<wstring>& dir_names, LOGICALFS_DIR_LOADING_MODE mode) {
 
-	WIN32_FIND_DATA fd;
+	WIN32_FIND_DATAW fd;
 	HANDLE hFind;
 
-	// Create the search string (base path + "/*")
+	// Create the search string (base path + "\*")
 	TSK_TCHAR * search_path_wildcard = create_search_path(base_path);
 	if (search_path_wildcard == NULL) {
 		return TSK_ERR;
 	}
 
+	// If the paths is too long, attempt to make a different version that will work
 	if (TSTRLEN(search_path_wildcard) >= MAX_PATH) {
 		free(search_path_wildcard);
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("load_dir_and_file_lists: Error looking up contents of directory (path too long) %" PRIttocTSK, base_path);
-		return TSK_ERR;
+		search_path_wildcard = create_search_path_long_path(base_path);
+		if (search_path_wildcard == NULL) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_GENFS);
+			tsk_error_set_errstr("load_dir_and_file_lists: Error looking up contents of directory (path too long) %" PRIttocTSK, base_path);
+			return TSK_ERR;
+		}
 	}
 
 	// Look up all files and folders in the base directory 
-	hFind = ::FindFirstFile(search_path_wildcard, &fd);
+	hFind = ::FindFirstFileW(search_path_wildcard, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 		do {
 			if (shouldTreatAsDirectory(fd.dwFileAttributes)) {
@@ -336,7 +378,7 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 					file_names.push_back(fd.cFileName);
 				}
 			}
-		} while (::FindNextFile(hFind, &fd));
+		} while (::FindNextFileW(hFind, &fd));
 		::FindClose(hFind);
 		free(search_path_wildcard);
 		return TSK_OK;
@@ -577,7 +619,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (found_path_len + 1));
 		TSTRNCPY(search_helper->found_path, parent_path, TSTRLEN(parent_path) + 1);
 #ifdef TSK_WIN32
-		TSTRNCAT(search_helper->found_path, L"/", 2);
+		TSTRNCAT(search_helper->found_path, L"\\", 2);
 #else
 		TSTRNCAT(search_helper->found_path, "/", 2);
 #endif
@@ -604,7 +646,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		return TSK_ERR;
 	TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
 #ifdef TSK_WIN32
-	TSTRNCAT(current_path, L"/", 2);
+	TSTRNCAT(current_path, L"\\", 2);
 #else
 	TSTRNCAT(current_path, "/", 2);
 #endif
@@ -621,7 +663,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 				return TSK_ERR;
 			TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
 #ifdef TSK_WIN32
-			TSTRNCAT(current_path, L"/", 2);
+			TSTRNCAT(current_path, L"\\", 2);
 #else
 			TSTRNCAT(current_path, "/", 2);
 #endif
@@ -701,10 +743,11 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 			// If we were looking for a directory, we're done
 			return cache_path;
 		}
-		
+
 		// Otherwise, set up the search parameters to start with the folder found
 		starting_inum = dir_addr;
 		starting_path = cache_path;
+
 	}
 
 	// Create the struct that holds search params and results
@@ -744,7 +787,6 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 	TSK_INUM_T inum)
 {
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
-
 	if (a_fs_file == NULL) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -773,16 +815,25 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 
 #ifdef TSK_WIN32
 	// Load the file
-	if (TSTRLEN(path) >= MAX_PATH) {
-		free(path);
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("load_dir_and_file_lists: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
-		return TSK_ERR;
+	WIN32_FIND_DATAW fd;
+	HANDLE hFind;
+	if (TSTRLEN(path) < MAX_PATH) {
+		hFind = ::FindFirstFileW(path, &fd);
+	} 
+	else {
+		TCHAR absPath[LOGICAL_MAX_PATH_UNICODE + 4];
+		TSTRNCPY(absPath, L"\\\\?\\", 4);
+		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
+		if (absPathLen <= 0) {
+			free(path);
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_GENFS);
+			tsk_error_set_errstr("logicalfs_file_add_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			return TSK_ERR;
+		}
+		hFind = ::FindFirstFileW(absPath, &fd);
 	}
 
-	WIN32_FIND_DATA fd;
-	HANDLE hFind = ::FindFirstFile(path, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 
 		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, a_fs_file);
@@ -793,7 +844,7 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 	else {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("logicalfs_dir_open_meta: Error loading directory %" PRIttocTSK, path);
+		tsk_error_set_errstr("logicalfs_file_add_meta: Error loading directory %" PRIttocTSK, path);
 		free(path);
 		return TSK_ERR;
 	}
@@ -875,7 +926,7 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 	TSK_TCHAR *path_buf = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) *(len + 2));
 	TSTRNCPY(path_buf, base_path, TSTRLEN(base_path) + 1);
 #ifdef TSK_WIN32
-	TSTRNCAT(path_buf, L"/", 2);
+	TSTRNCAT(path_buf, L"\\", 2);
 #else
 	TSTRNCAT(path_buf, "/", 2);
 #endif
@@ -978,9 +1029,26 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 
 #ifdef TSK_WIN32
 	// Populate the fs_file field
-	WIN32_FIND_DATA fd;
-	HANDLE hFind = ::FindFirstFile(path, &fd);
+	WIN32_FIND_DATAW fd;
+	HANDLE hFind;
+	if (TSTRLEN(path) < MAX_PATH) {
+		hFind = ::FindFirstFileW(path, &fd);
+	}
+	else {
+		TCHAR absPath[LOGICAL_MAX_PATH_UNICODE + 4];
+		TSTRNCPY(absPath, L"\\\\?\\", 4);
+		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
+		if (absPathLen <= 0) {
+			free(path);
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_GENFS);
+			tsk_error_set_errstr("logicalfs_dir_open_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			return TSK_ERR;
+		}
+		hFind = ::FindFirstFileW(absPath, &fd);
+	}
 	if (hFind != INVALID_HANDLE_VALUE) {
+
 		if ((fs_dir->fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
 			free(path);
 			return TSK_ERR;
@@ -990,8 +1058,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			free(path);
 			return TSK_ERR;
 		}
-		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, fs_dir->fs_file);
+
+		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, fs_dir->fs_file); 
 		::FindClose(hFind);
+
 		if (result != TSK_OK) {
 			// Error message already set
 			return TSK_ERR;
@@ -1301,9 +1371,27 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 
 #ifdef TSK_WIN32
 		// Open the file
-		HANDLE fd = CreateFile(path, FILE_READ_DATA,
-			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
-			NULL);
+		HANDLE fd;
+		if (TSTRLEN(path) < MAX_PATH) {
+			fd = CreateFileW(path, FILE_READ_DATA,
+				FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
+				NULL);
+		}
+		else {
+			TCHAR absPath[LOGICAL_MAX_PATH_UNICODE + 4];
+			TSTRNCPY(absPath, L"\\\\?\\", 4);
+			int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
+			if (absPathLen <= 0) {
+				free(path);
+				tsk_error_reset();
+				tsk_error_set_errno(TSK_ERR_FS_GENFS);
+				tsk_error_set_errstr("logicalfs_read_block: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+				return TSK_ERR;
+			}
+			fd = CreateFileW(absPath, FILE_READ_DATA,
+				FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
+				NULL);
+		}
 		if (fd == INVALID_HANDLE_VALUE) {
 			tsk_release_lock(&(img_info->cache_lock));
 			int lastError = (int)GetLastError();
