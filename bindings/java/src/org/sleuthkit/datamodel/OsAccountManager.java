@@ -685,8 +685,6 @@ public final class OsAccountManager {
 					Optional<OsAccountInstance> existingInstanceRetry = cachedAccountInstance(osAccountId, dataSourceObjId, instanceType);
 					if (existingInstanceRetry.isPresent()) {
 						return existingInstanceRetry.get();
-					} else {
-						throw new TskCoreException(String.format("Could not get autogen key after row insert for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));	
 					}
 				}
 			}
@@ -695,6 +693,30 @@ public final class OsAccountManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+		
+		// It's possible that we weren't able to load the account instance because it
+		// is already in the database but the instance cache was cleared during an account merge.
+		// Try loading it here and re-adding to the cache.
+		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + osAccountId
+				+ "AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
+		List<OsAccountInstance> instances = getOsAccountInstances(whereClause);
+		if (instances.isEmpty()) {
+			throw new TskCoreException(String.format("Could not get autogen key after row insert or reload instance for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
+		}
+		
+		OsAccountInstance accountInstance = instances.get(0);
+		synchronized (osAcctInstancesCacheLock) {
+			OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
+			// remove from cache any instances less significant (higher ordinal) than this instance
+			for (OsAccountInstance.OsAccountInstanceType type : OsAccountInstance.OsAccountInstanceType.values()) {
+				if (accountInstance.getInstanceType().compareTo(type) < 0) {
+					osAccountInstanceCache.remove(key);
+				}
+			}
+			// add the most significant instance to the cache
+			osAccountInstanceCache.put(key, accountInstance);
+		}
+		return accountInstance;
 	}
 
 	/**
@@ -1462,12 +1484,12 @@ public final class OsAccountManager {
 			}
 
 			if (Objects.nonNull(accountType)) {
-				updateAccountColumn(osAccount.getId(), "type", accountType, connection);
+				updateAccountColumn(osAccount.getId(), "type", accountType.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (Objects.nonNull(accountStatus)) {
-				updateAccountColumn(osAccount.getId(), "status", accountStatus, connection);
+				updateAccountColumn(osAccount.getId(), "status", accountStatus.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
