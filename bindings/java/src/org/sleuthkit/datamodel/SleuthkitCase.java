@@ -8445,7 +8445,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
+		/**
 	 * Add a new layout file to the database.
 	 *
 	 * @param fileName   The name of the file.
@@ -8471,10 +8471,14 @@ public class SleuthkitCase {
 			List<TskFileRange> fileRanges,
 			Content parent) throws TskCoreException {
 		
+		long dataSourceId = (parent instanceof AbstractFile)
+				? ((AbstractFile) parent).getDataSourceObjectId()
+				: parent.getDataSource().getId();
+		
 		CaseDbTransaction transaction = beginTransaction();
 		try {
 			LayoutFile lf = addLayoutFile(fileName, size, dirFlag, metaFlag, 
-					ctime, crtime, atime, mtime, fileRanges, parent, transaction);
+					ctime, crtime, atime, mtime, fileRanges, parent, dataSourceId, transaction);
 			transaction.commit();
 			return lf;
 		} catch (TskCoreException ex) {
@@ -8483,21 +8487,21 @@ public class SleuthkitCase {
 		}
 	}
 	
-	
-	/**
+		/**
 	 * Add a new layout file to the database.
 	 *
-	 * @param fileName   The name of the file.
-	 * @param size       The size of the file in bytes.
-	 * @param dirFlag    The allocated status from the name structure
-	 * @param metaFlag   The allocated status from the metadata structure
-	 * @param ctime      The changed time of the file.
-	 * @param crtime     The creation time of the file.
-	 * @param atime      The accessed time of the file
-	 * @param mtime      The modified time of the file.
-	 * @param fileRanges The byte ranges that belong to this file (relative to
-	 *                   start of image)
-	 * @param parent     The parent of the file
+	 * @param fileName     The name of the file.
+	 * @param size         The size of the file in bytes.
+	 * @param dirFlag      The allocated status from the name structure
+	 * @param metaFlag     The allocated status from the metadata structure
+	 * @param ctime        The changed time of the file.
+	 * @param crtime       The creation time of the file.
+	 * @param atime        The accessed time of the file
+	 * @param mtime        The modified time of the file.
+	 * @param fileRanges   The byte ranges that belong to this file (relative to
+	 *                     start of image)
+	 * @param parent       The parent of the file
+	 * @param dataSourceId The data source id.
 	 * @param trans        The current transaction.
 	 *
 	 * @return The new LayoutFile
@@ -8509,7 +8513,7 @@ public class SleuthkitCase {
 			TSK_FS_NAME_FLAG_ENUM dirFlag, TSK_FS_META_FLAG_ENUM metaFlag,
 			long ctime, long crtime, long atime, long mtime,
 			List<TskFileRange> fileRanges,
-			Content parent, CaseDbTransaction trans) throws TskCoreException {
+			Content parent, long dataSourceId, CaseDbTransaction trans) throws TskCoreException {
 
 		if (null == parent) {
 			throw new TskCoreException("Parent can not be null");
@@ -8579,7 +8583,7 @@ public class SleuthkitCase {
 			prepStmt.setByte(18, FileKnown.UNKNOWN.getFileKnownValue()); // Known
 			prepStmt.setNull(19, java.sql.Types.VARCHAR); // MIME type	
 			prepStmt.setString(20, parentPath); // parent path
-			prepStmt.setLong(21, parent.getDataSource().getId()); // data_source_obj_id
+			prepStmt.setLong(21, dataSourceId); // data_source_obj_id
 
 			prepStmt.setString(22, extractExtension(fileName)); 				//extension
 
@@ -8608,7 +8612,7 @@ public class SleuthkitCase {
 			 */
 			LayoutFile layoutFile = new LayoutFile(this,
 					newFileId,
-					parent.getDataSource().getId(),
+					dataSourceId,
 					fileSystemObjectId,
 					fileName,
 					TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE,
